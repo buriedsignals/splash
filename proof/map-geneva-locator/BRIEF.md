@@ -20,23 +20,23 @@ aspect at every size — never stretched, never cropped. What changes is where t
 
 | size | delivered | arrangement | the map | leftover |
 | --- | --- | --- | --- | --- |
-| landscape 1920 × 1080 | **yes**, measured 1920 × 1080 from the PNG's own IHDR | plate right, column left | 910 × 910 | 765 px of column |
+| landscape 1920 × 1080 | **yes**, measured 1920 × 1080 from the PNG's own IHDR | plate right, column left, credit across the foot | 846 × 846 | 829 px of column |
 | square 1080 × 1080 | refused | — | — | — |
 | portrait 1080 × 1920 | refused | — | — | — |
 
-Nothing is letterboxed at landscape: a square plate in a 1750 × 910 content box is bound by HEIGHT,
-so the map takes 910 × 910 and the 765 px left on the other axis is the text column. The map is
+Nothing is letterboxed at landscape: a square plate in a 1750 × 846 content box is bound by HEIGHT,
+so the map takes 846 × 846 and the 829 px left on the other axis is the text column. The map is
 never given more than its own geography can fill and it is never stretched — `mapStageBox`.
 
 Both refusals are the same refusal, and it is the type floor's, not the geography's:
 
-- **square** — the column beside a 936 × 936 plate is **−105 px**, under the 473 px this beat's own
+- **square** — the column beside a 747 × 747 plate is **93 px**, under the 446 px this beat's own
   longest title word and legend rows need, so the plate has to go above the column; stacked, the
-  furniture takes **1277 px of the 936 px band**.
+  furniture takes **1032 px of the 747 px band**.
 - **portrait** — the same, inside Meta's 979 px safe band rather than the whole frame: the column
-  beside an 835 × 835 plate is −4 px, and the furniture takes 1277 px of 835.
+  beside a 646 × 646 plate is 194 px, and the furniture takes 1032 px of 646.
 
-1277 px is what a 36 px floor costs this beat: a 3-line title, a 3-row legend, a 7-line caveat and a
+1032 px is what a 36 px floor costs this beat: a 3-line title, a 3-row legend, a 7-line caveat and a
 3-line credit. Nothing in the removal ladder makes type smaller, and the caveat is the sentence that
 keeps the claim honest ("2 stand apart from that cluster…"), so it is not a line to drop.
 `render.mjs --still --size square` reproduces the refusal with these numbers in it.

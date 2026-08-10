@@ -53,9 +53,14 @@ const BASE = {
   TITLE: { fontSize: 20, fontWeight: 700, lead: 26 },
   SOURCE: { fontSize: 13, fontWeight: 400, lead: 17 },
   CAPTION: { fontSize: 12, fontWeight: 600 },
-  NOTE: { fontSize: 11.5, fontWeight: 400, lead: 15 },
-  LABEL: { fontSize: 11, fontWeight: 600 },
-  LEGEND_LABEL: { fontSize: 11.5, fontWeight: 400 },
+  // THE THREE SUB-12 TOKENS WERE RAISED TO 12, and that is a decision rather than a rounding. The
+  // size table derives every row's `typeScale` from a smallest base token of 12 — the seed's own
+  // — so a beat carrying 11 and 11.5 misses every floor by construction and needs a multiplier of
+  // its own to catch up, which then inflates the whole hierarchy. Raising three tokens by one
+  // point at 900x560 is the smaller change and it keeps the beat inside the table's own arithmetic.
+  NOTE: { fontSize: 12, fontWeight: 400, lead: 15 },
+  LABEL: { fontSize: 12, fontWeight: 600 },
+  LEGEND_LABEL: { fontSize: 12, fontWeight: 400 },
   GUTTER: 32,
   MARKER_R: 5,
   MARKER_STROKE: 1.4,
@@ -173,11 +178,28 @@ export function LocatorStill({
   // COVERED by the platform's own chrome and no clipping counter can see that.
   const band = stageFor(size);
   const top = band.top + PAD;
-  const bottom = band.bottom - PAD;
   const contentWidth = FRAME.width - PAD * 2;
-  const contentHeight = bottom - top;
 
+  // ── THE CREDIT IS A STRIP ACROSS THE FOOT OF THE FRAME, NOT A BLOCK IN THE COLUMN ───────────
+  //
+  // It used to be the last block of the text column, and at 900x560 that was the same thing. At
+  // 1920x1080 it is not: wrapped into a 765 px column the credit becomes THREE lines, and its first
+  // line lands at 0.832 down the frame — outside the bottom eighth
+  // `credit-anchors-to-the-frame-bottom.test.ts` holds every beat in this corpus to, and outside it
+  // for a reason that has nothing to do with the credit and everything to do with the column it was
+  // put in. Across the full content width it is one line, on the floor of the frame, where this
+  // project puts it on every graphic. The map and the column then take what is above it.
+  //
+  // `sourceBottom` names the BAND's bottom rather than the frame's, and that is deliberate: at
+  // portrait the platform covers the frame's last 672 px, so a credit pinned to the frame's floor
+  // is a credit nobody can read — and a covered credit is an attribution failure, not a cosmetic
+  // one. Where no band is reserved, `band.top + band.height` IS the frame's height.
   const sourceText = `${source} · ${basemapCredit}`;
+  const sourceLines = wrap(sourceText, contentWidth, T.SOURCE);
+  const sourceBottom = band.top + band.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * T.SOURCE.lead;
+  const bottom = sourceTop - T.SOURCE.fontSize - sp(BASE.BLOCK_AIR);
+  const contentHeight = bottom - top;
 
   // ── WHERE THE MAP GOES, MEASURED ────────────────────────────────────────────────────────────
   // First arrangement: the plate takes the full content height and the column takes what is left
@@ -204,7 +226,6 @@ export function LocatorStill({
   const columnWidth = sideBySide ? columnBeside : contentWidth;
 
   const titleLines = wrap(title, columnWidth, T.TITLE);
-  const sourceLines = wrap(sourceText, columnWidth, T.SOURCE);
   const caveatLines = wrap(caveat, columnWidth, T.NOTE);
   const legendLines = wrap(legendCaption, columnWidth, T.CAPTION);
 
@@ -214,9 +235,6 @@ export function LocatorStill({
     sp(BASE.LEGEND_TOP_AIR) +
     CATEGORY_ORDER.length * sp(BASE.LEGEND_ROW);
   const caveatBlock = T.NOTE.fontSize + (caveatLines.length - 1) * T.NOTE.lead;
-  const sourceBlock =
-    T.SOURCE.fontSize + (sourceLines.length - 1) * T.SOURCE.lead;
-
   // Second arrangement: the plate above the column. The furniture is measured FIRST and the map
   // takes what is left — which is the rule read from the other end, and the only order that can
   // refuse honestly. A map sized first and furniture squeezed after is how a credit ends up off
@@ -228,7 +246,6 @@ export function LocatorStill({
     sp(BASE.LEGEND_TO_CAVEAT) +
     caveatBlock +
     sp(BASE.CAVEAT_TO_SOURCE) +
-    sourceBlock +
     sp(BASE.BLOCK_AIR);
   const stackedMapHeight = contentHeight - stackedFurniture;
 
@@ -287,15 +304,9 @@ export function LocatorStill({
     legendLines.length * (T.CAPTION.fontSize + sp(BASE.CAPTION_LEAD)) +
     sp(BASE.LEGEND_TOP_AIR) +
     CATEGORY_ORDER.length * sp(BASE.LEGEND_ROW);
-  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
-  // visual, the same place on every graphic this project ships, and it carries the basemap credit
-  // with it, unsplit. The bottom stack still builds upward from there, so the source pushes the
-  // caveat up by exactly its own height. See map-beat/assets/Co2MapStill.tsx, which this is copied
-  // from.
-  const sourceBottom = bottom;
-  const sourceTop = sourceBottom - (sourceLines.length - 1) * T.SOURCE.lead;
-  const caveatBottom =
-    sourceTop - T.SOURCE.fontSize - sp(BASE.CAVEAT_TO_SOURCE);
+  // The caveat is the last block INSIDE the column, on its floor; the credit strip sits below the
+  // whole content area. See map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const caveatBottom = bottom;
   const caveatTop = caveatBottom - (caveatLines.length - 1) * T.NOTE.lead;
   // The two halves that can meet are the HEADER (title + legend) and the top of the bottom stack.
   if (caveatTop - T.NOTE.fontSize - sp(BASE.LEGEND_TO_CAVEAT) < legendBottom)
@@ -561,10 +572,11 @@ export function LocatorStill({
           {line}
         </text>
       ))}
+      {/* The credit strip: full content width, on the band's own floor, under everything. */}
       {sourceLines.map((line, i) => (
         <text
           key={line}
-          x={COLUMN.x}
+          x={PAD}
           y={sourceTop + i * T.SOURCE.lead}
           fill={muted}
           fontSize={T.SOURCE.fontSize}
