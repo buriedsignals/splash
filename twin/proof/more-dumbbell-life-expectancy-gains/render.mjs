@@ -13,6 +13,15 @@ import {
   readPalette,
   seriesInks,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { DumbbellLifeExpectancyGains } from "./DumbbellLifeExpectancyGains.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -131,7 +140,32 @@ async function main() {
   const [startInk, endInk] = seriesInks(palette, 2);
   console.log(`dot inks — 2000 ${startInk}, 2023 ${endInk}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "more-dumbbell-life-expectancy-gains-still"
+      : `more-dumbbell-life-expectancy-gains-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A dumbbell's category axis is nominal, so it
+  // is a band-scale type with a twin form — and this beat is already drawn in it, rows down the
+  // frame with every country name horizontal on one line. Rung R0 costs it nothing and no aspect
+  // clamp applies; what a tall frame costs it is rows, which the component refuses.
+  const form = assertTypeMayEnter("dumbbell", size, {
+    what: "more-dumbbell-life-expectancy-gains",
+  });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(DumbbellLifeExpectancyGains, {
       rows: sorted,
       title,
@@ -141,13 +175,24 @@ async function main() {
       ground,
       startInk,
       endInk,
+      size,
     }),
-    width: 900,
-    height: 860,
-    outDir: HERE,
-    name: "more-dumbbell-life-expectancy-gains-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "more-dumbbell-life-expectancy-gains" });
+  assertWithinStage(svg, size, { what: "more-dumbbell-life-expectancy-gains" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file`);
 }
 
 main();

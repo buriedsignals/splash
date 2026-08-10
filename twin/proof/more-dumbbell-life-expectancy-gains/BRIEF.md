@@ -1,8 +1,16 @@
+---
+size: landscape
+type: dumbbell
+---
+
 # Beat — Life expectancy gains, ten countries, 2000-2023
 
-**Type:** dumbbell (range plot). **Medium/genre:** chart / static. **Channel:** article web, 900 x
-860 (taller than the 900x560 default — a per-story FRAME choice, 10 rows on one shared scale plus
-a legend and a bottom value axis need more vertical room than the default gives).
+**Type:** dumbbell (range plot). **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. The per-story `900 x 860` frame this beat
+used to state in prose is gone — it was a third statement of a size nothing downstream read, beside
+the component's own `const FRAME` and the two literals in the render script.
 
 ## Claim
 
@@ -41,3 +49,34 @@ legend swatches read as "2000" (blue) / "2023" (vermillion) above the plot; ever
 in black ink outside its own dot, never inside either accent colour; the connector line is a
 muted, thin, neutral grey that reads as scaffolding under the two dots, not a third mark competing
 for attention.
+
+## The three export sizes — one ships, two are refused, and the refusal is measured
+
+Rendered at all three and opened. **Landscape 1920x1080 is what this beat delivers.** Portrait and
+square are refused by `assertRowsFit`, on measurement rather than preference:
+
+| size | band | title + legend | credit | value axis | left for 10 rows | one name's ink |
+|---|---|---|---|---|---|---|
+| landscape | 910 px | 48 px x 3 lines = 295 | 31 px x 1 = 53 | 75 | **487 px → 48.7 px pitch** | 29.6 px |
+| square | 936 px | 66 px x 7 lines = 738 | 42 px x 3 = 192 | 102 | **−96 px** | 40.1 px |
+| portrait | 979 px (Meta's safe band) | 66 px x 7 = 738 | 42 px x 3 = 192 | 102 | **−53 px** | 40.1 px |
+
+**What binds is the TITLE, and that is the finding.** Ten rows need 401 px of ink between them and
+portrait's band has 685 px once the credit and the value axis are paid for — the rows fit. What does
+not fit is a 160-character claim sentence set at 66 px, which takes seven lines and 738 px on its
+own. Three lines would ship. **The removal ladder has no rung for it**: R3 and R7 remove a
+*standfirst*, and this beat has none — its title IS the claim, carrying "gained the most, +5.0
+years; United States gained the least, +2.5 years" inside the sentence. Shortening it is an
+editorial decision about what the beat says, which is the journalist's, so the producer refuses and
+says which size it does ship rather than quietly rewriting the claim to fit a phone.
+
+R8 is not available either: the claim is "every one of these **ten** countries", so dropping rows
+drops it.
+
+**What landscape cost.** The 900 x 860 frame this beat was tuned at is 1.05:1; landscape is 1.78:1
+with its type at 2.2x. Ten rows that sat under 14 px names now sit 48.7 px apart under 31 px names,
+with 19 px of air — comfortable. Two things had to move to get there, both invisible at the old
+frame: the credit now WRAPS (one 900 px line became three at a phone's scale and ran off the frame),
+and the legend's second entry is laid out from the measured width of the first instead of the
+literal `PAD + 90`, which was the width of the word "2000" at 13 px and overlapped once that word
+was 39 px tall.
