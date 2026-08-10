@@ -26,6 +26,12 @@ L'accent maison (`#0B7A75`) est réservé au **point de 2024 et à son étiquett
 courbe qui y mène. Le pic de 1973 et le trait de 1967 sont en muted. **Le maximum n'est pas le
 sujet** : accentuer 1973 serait exactement l'anti-pattern que la doctrine nomme.
 
+*Amendement du 2026-08-10 :* **l'encre du trait de 1967 n'est plus le muted**, elle est dérivée de
+ce que le trait traverse. Le muted mesurait 1,20:1 contre la courbe accentuée que le trait coupe —
+et il la coupe précisément au croisement, qui est toute la thèse du beat. La règle du muted tient
+toujours pour l'ÉTIQUETTE du trait et pour le marqueur du pic, qui reposent sur la page. Voir la
+section « Reproducibility and size » plus bas.
+
 ## Source
 
 `Source : Global Carbon Budget 2025, via Our World in Data · données 2024, extraites le 6 août 2026`
@@ -84,3 +90,13 @@ through the line it names. This is the standing finding `type-at-size.mjs` alrea
 line's own `suspect` field — the failure travels with the plot's WIDTH against the ink drawn in it
 and is aspect-blind — so nothing here invents a tighter bound to hide it. The arm was rendered,
 looked at, and deleted; only landscape is delivered.
+
+**A rule nobody could see, found the moment the beat had a runner.** Writing the SVG beside the PNG
+put this beat's markup in front of `annotation-reads-over-what-it-crosses.test.ts` for the first
+time, and it measured the 1967 reference: drawn in `muted`, it reads 5.92:1 against the white page
+it is nominally on and **1.20:1 against the accent series line it crosses** — at the crossing, which
+is the beat's whole claim. Its ink is now derived from what it crosses (`inkThatReadsOver([ground,
+accent])`, the same helper and the same precedent as the histogram beat's median rule). The label
+and the peak marker stay muted: they sit on the page. This is the concrete cost of an artifact
+nothing could regenerate — the defect was in the committed still all along, and no guard in this
+repository could reach it.

@@ -30,6 +30,10 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 import { frameInsetFor, sizeFor, stageFor } from "#shared/chart-beat/sizes.mjs";
 import { assertPlotAspect } from "#shared/chart-beat/type-at-size.mjs";
+import {
+  NON_TEXT_CONTRAST_FLOOR,
+  inkThatReadsOver,
+} from "#shared/chart-beat/annotation-ink.mjs";
 
 /** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
  *  a size it refuses is refused by the runner before a mark is drawn. */
@@ -74,6 +78,9 @@ const BASE = {
   REFERENCE_LABEL_LIFT: 8,
   REFERENCE_LABEL_INSET: 4,
   PEAK_LABEL_LIFT: 10,
+  /** The reference rule's dash. A dash pattern is a spacing number like any other: left at "5 4" on
+   *  a 1920px frame it reads as a broken hairline rather than as a deliberate dashed rule. */
+  REFERENCE_DASH: [5, 4],
   /** The mark weights. A mark's size is a frame quantity like any other — left at their 900px
    *  value on a 1920px frame the two dots would have read as specks. */
   LINE_WIDTH: 2.5,
@@ -121,6 +128,7 @@ function tokens(typeScale: number) {
     REFERENCE_LABEL_LIFT: sp(BASE.REFERENCE_LABEL_LIFT),
     REFERENCE_LABEL_INSET: sp(BASE.REFERENCE_LABEL_INSET),
     PEAK_LABEL_LIFT: sp(BASE.PEAK_LABEL_LIFT),
+    REFERENCE_DASH: BASE.REFERENCE_DASH.map((v) => Math.max(1, sp(v))).join(" "),
     LINE_WIDTH: Math.max(1, sp(BASE.LINE_WIDTH)),
     PEAK_DOT_R: Math.max(1, sp(BASE.PEAK_DOT_R)),
     END_DOT_R: Math.max(1, sp(BASE.END_DOT_R)),
@@ -342,6 +350,24 @@ export function EmissionsLine({
   // shares its vertical band with nothing but the dashed rule it names.
   const referenceBaseline = g.referenceY - T.REFERENCE_LABEL_LIFT;
 
+  // THE REFERENCE RULE IS COLOURED AGAINST WHAT IT CROSSES, NOT AGAINST THE PAGE.
+  //
+  // It was `stroke={muted}` — 5.92:1 against the white page it is nominally drawn on, and
+  // **1.20:1 against the accent-coloured series line it crosses**. The rule spans the whole plot,
+  // so it necessarily runs through the curve; and it runs through it AT THE CROSSING, which is this
+  // beat's entire claim. A reference that disappears exactly where the reader is asked to look is
+  // not a faint rule, it is an absent one, and no contrast check that measures ink against the
+  // GROUND can say so. `shared/chart-beat/annotation-ink.mjs` is the helper, and the histogram
+  // beat's median rule is the precedent: an annotation that crosses a mark takes its ink from the
+  // mark. The ground belongs in the set because the rule crosses bare page for most of its length.
+  //
+  // Found by the guard, on this beat's first ever committed SVG: until it had a runner, nothing in
+  // `proof/` could see this file's markup at all.
+  const referenceRuleInk = inkThatReadsOver(
+    [ground, accent],
+    NON_TEXT_CONTRAST_FLOOR,
+  );
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -427,15 +453,16 @@ export function EmissionsLine({
         </text>
       ))}
 
-      {/* The reference: a dashed rule, because it is a level somebody chose, not a measurement. */}
+      {/* The reference: a dashed rule, because it is a level somebody chose, not a measurement.
+          Its INK is derived above, from what it crosses — see `referenceRuleInk`. */}
       <line
         x1={g.plot.left}
         x2={g.plot.right}
         y1={g.referenceY}
         y2={g.referenceY}
-        stroke={muted}
+        stroke={referenceRuleInk}
         strokeWidth={1}
-        strokeDasharray="5 4"
+        strokeDasharray={T.REFERENCE_DASH}
       />
       <text
         x={g.plot.left + T.REFERENCE_LABEL_INSET}
