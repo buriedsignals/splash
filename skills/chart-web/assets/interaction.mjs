@@ -237,70 +237,6 @@ export function initLines(root, tooltip) {
   });
 }
 
-/**
- * THE ENTRANCE TRIGGER — the whole of this genre's entrance that is script, and it is one class.
- *
- * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
- * number the entrance uses was computed server-side from the beat's own geometry and the entrance
- * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
- * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
- * This function's entire job is to say WHEN, once, per figure.
- *
- * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This genre's delivery model is an embed: a CMS drops
- * the file into an article and the figure may sit two screens below the fold. An entrance that
- * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
- * two-second build they never saw — strictly worse than never having animated it. So the trigger is
- * the figure ENTERING THE READER'S VIEW.
- *
- * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
- * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
- * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
- * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
- * screen — reachable at every figure height there is.
- *
- * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
- * every time it scrolled past would be decoration, and the contract has no loop in it.
- *
- * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
- * entrance plays on load, which is the behaviour this function exists to improve on but is still
- * strictly better than a figure that never gets its class and — with `animation-fill-mode:
- * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
- * risk here; only when the build runs.
- *
- * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
- * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
- * `.line-hit` — the shape this file already had.
- */
-export function initEntrance(root) {
-  const figures = Array.prototype.slice
-    .call(root.querySelectorAll(".chart-figure"))
-    .filter(function (figure) {
-      return figure.querySelector("[data-entrance-motion]") !== null;
-    });
-  if (figures.length === 0) return;
-
-  if (typeof IntersectionObserver === "undefined") {
-    figures.forEach(function (figure) {
-      figure.classList.add("entered");
-    });
-    return;
-  }
-
-  const observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("entered");
-        observer.unobserve(entry.target);
-      });
-    },
-    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
-  );
-  figures.forEach(function (figure) {
-    observer.observe(figure);
-  });
-}
-
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
@@ -308,7 +244,6 @@ export function initAll() {
     initChart(svg, tooltip);
     initLines(svg, tooltip);
   });
-  initEntrance(document);
 }
 
 // Guarded rather than a bare top-level call: this file is also imported directly by

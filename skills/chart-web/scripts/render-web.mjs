@@ -153,6 +153,19 @@ async function renderWeb({ component, props, outDir, name }) {
   );
   const inlineScript = inlineable(interactionSource);
 
+  // THE ENTRANCE'S TRIGGER SHIPS WITH THE ENTRANCE, in its own block, and AFTER the beat's own.
+  // Both halves of that are load-bearing and were measured, not assumed (see
+  // `assets/entrance-trigger.mjs`'s own header): seven beats in this repository write their own
+  // hover mechanic and PATCH the delivered file, swapping the first inlined `<script>` for it. When
+  // the trigger lived inside `interaction.mjs` those beats shipped the entrance's CSS, declared its
+  // layers, passed the markup guard — and never got the `entered` class from anything. Emitted
+  // second, a runner that replaces the first block leaves this one standing.
+  const entranceScript = declaresEntrance
+    ? `<script>\n${inlineable(
+        await readFile(join(HERE, "../assets/entrance-trigger.mjs"), "utf8"),
+      )}\n</script>\n`
+    : "";
+
   const html = `<!doctype html>
 <html lang="fr">
 <head>
@@ -169,7 +182,7 @@ ${markup}
 <script>
 ${inlineScript}
 </script>
-</body>
+${entranceScript}</body>
 </html>
 `;
 

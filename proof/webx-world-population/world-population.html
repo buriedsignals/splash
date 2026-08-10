@@ -444,6 +444,49 @@ function initLines(root, tooltip) {
   });
 }
 
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+<script>
+// twin/skills/chart-web/assets/entrance-trigger.mjs
+//
+// THE ENTRANCE'S OWN SCRIPT, AND THE REASON IT IS NOT IN `interaction.mjs` ANY MORE.
+//
+// It used to be one function inside that file, called from its `initAll()`. Two things were wrong
+// with that, and both were MEASURED on a real beat rather than reasoned about:
+//
+//   1. **A beat may replace the interaction script wholesale, and seven of them do.** Every
+//      non-line beat in this repository (lollipop, dumbbell, boxplot, pyramid, scatter, diverging,
+//      small multiples) writes its own hover mechanic — a lollipop's fifteen band rows have no
+//      "nearest by x" to resolve — and its runner PATCHES the delivered file, swapping the genre's
+//      inlined `<script>` for its own. The entrance CSS still shipped, the markup still declared its
+//      layers, this guard's markup half still passed, and the `entered` class was never added by
+//      anything: `verify-entrance.mjs` timed out waiting 5s for it on the first such beat migrated.
+//      A page whose entrance silently does not exist, with every check green.
+//   2. **`initAll()` returns early when there is no `#tooltip`**, so a beat with no hover at all
+//      would lose its entrance to a guard clause about something else entirely.
+//
+// The entrance's CSS is emitted by `render-web.mjs` for a beat that DECLARED an entrance, and
+// nothing else. Its trigger is now emitted by the same gate, in its own `<script>`, AFTER the
+// beat's own — so a runner that swaps the first block leaves this one standing. One cost, one
+// condition, one place. There is no second copy of this logic to walk.
+//
+// It is a classic script, not a module (`render-web.mjs`'s `inlineable` strips `export`), so it
+// runs in a CMS iframe or a sandboxed embed that restricts module scripts.
+
 /**
  * THE ENTRANCE TRIGGER — the whole of this genre's entrance that is script, and it is one class.
  *
@@ -508,21 +551,9 @@ function initEntrance(root) {
   });
 }
 
-function initAll() {
-  const tooltip = document.getElementById("tooltip");
-  if (!tooltip) return;
-  document.querySelectorAll("svg.chart").forEach(function (svg) {
-    initChart(svg, tooltip);
-    initLines(svg, tooltip);
-  });
-  initEntrance(document);
-}
-
-// Guarded rather than a bare top-level call: this file is also imported directly by
-// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
-// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
-// it is parsed, unchanged.
-if (typeof document !== "undefined") initAll();
+// Guarded rather than a bare call, for the same reason `interaction.mjs` guards its own: this file
+// is read as text and inlined, and a `document`-less context must not throw on it.
+if (typeof document !== "undefined") initEntrance(document);
 
 </script>
 </body>

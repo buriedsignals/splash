@@ -379,6 +379,30 @@ describe("the markup half: what a page that declares an entrance must already sa
             "no-preference) — under `reduce` it would still resolve",
         );
 
+      // 7 (not in W3 either) — THE PAGE SHIPS THE THING THAT STARTS IT.
+      //
+      // Every clause above reads the page's markup and its stylesheet, and all of them pass on a
+      // page whose entrance never runs, because the class that unlocks the whole
+      // `@media (prefers-reduced-motion: no-preference)` block is added by SCRIPT. Measured on the
+      // first non-line beat migrated: the trigger lived inside `interaction.mjs`, seven beats in
+      // this repository replace that script wholesale with their own hover mechanic, and
+      // `verify-entrance.mjs` sat for five seconds waiting for an `entered` class nothing was going
+      // to add. Declared layers, correct delays, keyframes in the right query, guard green, entrance
+      // absent. So the trigger is now its own emitted block (`assets/entrance-trigger.mjs`, after
+      // the beat's own script so a patcher cannot eat it) and this is the clause that says it is
+      // there — checked by its BEHAVIOUR, the class it adds and the observed margin, not by a
+      // filename a rename would quietly break.
+      if (!html.includes('classList.add("entered")'))
+        failures.push(
+          "the page declares an entrance and ships nothing that adds the `entered` class — every " +
+            "keyframe here is unreachable and the reader sees the settled page",
+        );
+      if (!html.includes("rootMargin"))
+        failures.push(
+          "the page adds `entered` without an IntersectionObserver margin — an entrance that plays " +
+            "on load plays to nobody, and an embed sits below an article's fold",
+        );
+
       // 6 — the order on the page is the contract's order.
       const rank = new Map(
         ENTRANCE_ORDER.map((name, i) => [name as string, i]),
