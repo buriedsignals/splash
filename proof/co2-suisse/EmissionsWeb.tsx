@@ -43,6 +43,15 @@
 
 import { tickStep } from "d3-array";
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceClipId,
+  entranceLayer,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   crossingGeometry,
   fr,
   yTickValues,
@@ -235,6 +244,73 @@ export function EmissionsWeb({
   const endLabel = `${last.year} · ${fr(last.mt)} ${UNIT}`;
 
   const yTicks = yTickValues(data, reference);
+
+  // ── THE ENTRANCE, carried from `proof/co2-suisse`'s own video ancestor — `chart-video/assets/
+  // EmissionsVideo.tsx` and `CO2_TIMING`, which is the composition this whole contract was copied
+  // from. This beat is the project's first, and it gets the treatment its own video already has,
+  // through the genre's line mechanism:
+  //
+  //   - THE REFERENCE is the dashed 1990 rule, laid down left to right before any evidence, with its
+  //     label at the video's own 0.55 of that event.
+  //   - THE REVEAL is a CLIP WIPE and not a per-mark growth: this x axis IS time, 75 annual
+  //     readings evenly spaced, so the head advancing across it is the truth and easing it would
+  //     give some years more screen time than others. The peak marker and its label are gated on the
+  //     head reaching the peak's own x, plus the video's own 0.06-of-the-reveal lag — derived from
+  //     this beat's geometry, not typed.
+  //   - THE SUBJECT is the final reading, landing as its own event; THE CONCLUSION is its value.
+  const revealHeadAt = (atX: number) =>
+    atProgress(WEB_ENTRANCE.reveal, atX / frame.width);
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const referenceRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const referenceLabelLayer = entranceLayer("reference", "fade", {
+    delay: atProgress(WEB_ENTRANCE.reference, 0.55),
+    duration: LABEL_FADE_MS,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const revealLayer = entranceLayer("reveal", "wipe", {
+    delay: WEB_ENTRANCE.reveal.start,
+    duration: WEB_ENTRANCE.reveal.duration,
+    ease: ENTRANCE_EASING.LINEAR,
+  });
+  const peakMarkLayer = entranceLayer("reveal", "fade", {
+    delay: revealHeadAt(g.peak.x),
+    duration: LABEL_FADE_MS,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const peakLabelLayer = entranceLayer("reveal", "fade", {
+    delay: revealHeadAt(g.peak.x) + 0.06 * WEB_ENTRANCE.reveal.duration,
+    duration: LABEL_FADE_MS,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const subjectLayer = entranceLayer("subject", "land", {
+    delay: WEB_ENTRANCE.subject.start,
+    duration: WEB_ENTRANCE.subject.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const conclusionLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const revealClipId = entranceClipId(title);
+  // A DERIVED delay can overrun the contract even when the contract itself is legal, because half of
+  // them come from the data. The peak label is the latest thing this beat derives.
+  const lastDerivedEnd =
+    revealHeadAt(g.peak.x) + 0.06 * WEB_ENTRANCE.reveal.duration + LABEL_FADE_MS;
+  if (lastDerivedEnd > endOf(WEB_ENTRANCE.conclusion))
+    throw new Error(
+      `the peak label's derived arrival ends at ${Math.round(lastDerivedEnd)}ms, after the ` +
+        `conclusion at ${endOf(WEB_ENTRANCE.conclusion)}ms`,
+    );
   const topValue = Math.max(...yTicks);
   const tickLabels = yTicks.map((v) =>
     v === topValue ? `${fr(v, 0)} ${UNIT}` : fr(v, v === reference ? 1 : 0),
@@ -291,7 +367,11 @@ export function EmissionsWeb({
           browser at 375px, where "pic de 1973" printed straight through "aviation internationale".
           A fixed pixel value, not a fraction of the width: it is furniture, and furniture in this
           genre does not stretch. */}
-      <div className="chart-header" style={{ marginBottom: 22 }}>
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={{ ...furnitureLayer().vars, marginBottom: 22 }}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
       </div>
@@ -304,7 +384,11 @@ export function EmissionsWeb({
           aspectRatio: `${totalWidth} / ${totalHeight}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {g.ticksY.map((tick, i) => (
             <span
               key={tick.value}
@@ -343,6 +427,7 @@ export function EmissionsWeb({
             fill={ground}
           />
 
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
           {g.ticksY.map((tick) =>
             // The reference's own row gets no regular gridline — the dashed reference rule below
             // already marks this height, and a second plain line there would read as clutter.
@@ -359,11 +444,14 @@ export function EmissionsWeb({
               />
             ),
           )}
+          </g>
 
           {/* The reference: a dashed rule, because it is a level somebody chose, not a
               measurement. Never gated behind interaction — see `web-discipline.md`, "What must not
               become interactive". */}
           <line
+            {...referenceRuleLayer.attrs}
+            style={referenceRuleLayer.vars}
             x1={0}
             x2={frame.width}
             y1={g.referenceY}
@@ -374,21 +462,60 @@ export function EmissionsWeb({
             vectorEffect="non-scaling-stroke"
           />
 
-          <path
-            d={path}
-            fill="none"
-            stroke={accent}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          {/* THE REVEAL — the curve uncovered left to right by a clip whose rect grows from x=0,
+              the same picture frame for frame as the video's `drawnSoFar`. ONLY the visible stroke
+              is clipped: the `.pt` targets and the `.hit-area` below stay outside it, so hover, tap
+              and keyboard answer for all 75 readings from the first millisecond. */}
+          <defs>
+            <clipPath id={revealClipId}>
+              <rect
+                {...revealLayer.attrs}
+                style={revealLayer.vars}
+                x={0}
+                y={0}
+                width={frame.width}
+                height={frame.height}
+              />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${revealClipId})`}>
+            <path
+              d={path}
+              fill="none"
+              stroke={accent}
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
 
           {/* The peak is context, not the subject: muted, marked, and silent about its own value —
               identical to the static beat. Hover/focus on that year's own point still answers the
               exact figure if asked. */}
-          <circle cx={g.peak.x} cy={g.peak.y} r={3} fill={muted} />
-          <circle cx={g.end.x} cy={g.end.y} r={4} fill={accent} />
+          {/* The peak marker sits OUTSIDE the reveal's clip and fades in at the instant the head
+              passes its own x — the video's mechanism exactly. A circle uncovered by a vertical
+              wipe would arrive as two half-moons. */}
+          <circle
+            {...peakMarkLayer.attrs}
+            style={peakMarkLayer.vars}
+            cx={g.peak.x}
+            cy={g.peak.y}
+            r={3}
+            fill={muted}
+          />
+          {/* THE SUBJECT, drawn at (0, 0) inside a `<g>` carrying the translate, so `scale()` grows
+              it about its own centre — no `transform-origin` percentage to get wrong. */}
+          <g transform={`translate(${g.end.x} ${g.end.y})`}>
+            <circle
+              {...subjectLayer.attrs}
+              style={subjectLayer.vars}
+              cx={0}
+              cy={0}
+              r={4}
+              fill={accent}
+            />
+          </g>
 
           {/* Interaction layer: every reading, not just the ones the frame has room to label.
               Invisible at rest (`fill="transparent"`) — `.pt` only becomes visible in `:hover`/
@@ -430,8 +557,10 @@ export function EmissionsWeb({
             gridlines put behind it. */}
         <div className="overlay" aria-hidden="true">
           <span
+            {...referenceLabelLayer.attrs}
             className="note reference-label"
             style={{
+              ...referenceLabelLayer.vars,
               left: "0%",
               top: `${pct(g.referenceY, frame.height)}%`,
               color: muted,
@@ -440,8 +569,10 @@ export function EmissionsWeb({
             {referenceLabel}
           </span>
           <span
+            {...peakLabelLayer.attrs}
             className="note peak-label above"
             style={{
+              ...peakLabelLayer.vars,
               left: `${pct(g.peak.x, frame.width)}%`,
               top: `${pct(g.peak.y, frame.height)}%`,
               color: muted,
@@ -450,8 +581,10 @@ export function EmissionsWeb({
             {peakLabel}
           </span>
           <span
+            {...conclusionLayer.attrs}
             className="end-label"
             style={{
+              ...conclusionLayer.vars,
               left: `${pct(g.end.x, frame.width)}%`,
               top: `${pct(g.end.y, frame.height)}%`,
               color: accent,
@@ -461,7 +594,11 @@ export function EmissionsWeb({
           </span>
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {xTicks.map((tick) => (
             <span
               key={tick.year}
@@ -474,7 +611,13 @@ export function EmissionsWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }

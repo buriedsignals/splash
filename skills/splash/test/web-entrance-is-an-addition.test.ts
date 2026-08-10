@@ -144,16 +144,24 @@ const TWIN = join(new URL(".", import.meta.url).pathname, "../../..");
 /**
  * The chart × web pages that do NOT carry an entrance yet, named exactly.
  *
- * Not a skip list and not a shrug: every one of these is a beat whose own composition has to decide
- * which of ITS marks is the subject and where its reveal's head is, which is an editorial call per
- * beat and not a transformation that can be applied to sixteen files at once — the same reason
- * `map-web`'s three pages are named in `LEGACY_MAP_VOCABULARY` rather than migrated by a
- * script. The list is EXACT, so migrating one reddens this guard until the name is removed, and a
- * seventeenth page landing tomorrow with no entrance reddens it without anybody remembering.
+ * Not a skip list and not a shrug: every one of these was a beat whose own composition had to decide
+ * which of ITS marks is the subject and how its reveal moves, which is an editorial call per beat
+ * and not a transformation that can be applied to sixteen files at once.
+ *
+ * **IT IS NOW EMPTY, and that is the point of keeping it.** Every chart × web page in this
+ * repository carries an entrance, so the list states a fact rather than a debt — and a seventeenth
+ * page landing tomorrow with no entrance reddens this guard without anybody having to remember.
+ * Adding a name back to it is how a page opts out, and it costs a line of explanation each time.
+ *
+ * The editorial calls were not invented per beat either. The owner's answer was that each type
+ * already has an arrival choreography in its own VIDEO beat, so every one of these was carried from
+ * there — `vidy-pyramid-niger-population`, `video-population-growth-dumbbell`,
+ * `vidy-boxplot-co2-by-continent`, `vidx-stacked-bar-swiss-electricity`,
+ * `vidy-waterfall-germany-electricity-mix`, `vidx-scatter-income-life-expectancy`,
+ * `vidx-grouped-bar-co2-per-capita`, `vidx-slope-child-mortality` — and each beat's own file names
+ * the video it took its choreography from.
  */
-const ENTRANCE_PENDING = [
-  "proof/co2-suisse/co2.html",
-];
+const ENTRANCE_PENDING: string[] = [];
 
 type Subject = { label: string; html: string };
 
