@@ -14,7 +14,10 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
@@ -27,10 +30,20 @@ const PEERS = [
   "Denmark", "Finland", "Belgium", "Austria", "Singapore",
 ];
 
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   title: "Among twenty wealthy countries, the United States has the lowest life expectancy",
   source: "Source: World Bank via Gapminder, UN World Population Prospects (2024), via Our World in Data · 2022 data",
   subjectCountry: "United States",

@@ -10,18 +10,31 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidx-slope-child-mortality";
 
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
   countries: ["Niger", "Nigeria", "Rwanda", "India", "Brazil", "Switzerland"], // sorted by 1990 value, descending
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   title: "Rwanda cut its child mortality rate by three-quarters since 1990",
   source: "Source: UN Inter-agency Group for Child Mortality Estimation, via Our World in Data · 1990 & 2023 data",
   reference: 2.5,

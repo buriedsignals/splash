@@ -5,7 +5,7 @@
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
 // alias, and not `twin-chart-beat`'s original. A skill never imports another skill; a story never
 // reaches into a skill's `assets/`, only its `scripts/` — same direction
 // `../video-population-growth-dumbbell/render.mjs` uses.
@@ -16,19 +16,34 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+  seriesInks,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidy-waterfall-germany-electricity-mix";
 
+// The colours this beat is drawn in come from the recorded decision beside it, never from a hex
+// typed here — see `PALETTE.md`. THREE data colours (the three bar roles), so all three come
+// through `seriesInks`, which hands back the recorded accents in the order they were recorded and
+// throws rather than padding a missing one with the furniture grey.
+const palette = readPalette(HERE, { stopAt: resolve(HERE, "..") });
+const [increase, decrease, total] = seriesInks(palette, 3);
+console.log(
+  `palette read from ${palette.source} — ground ${palette.ground}, increase ${increase}, ` +
+    `decrease ${decrease}, total ${total}, chosen by ${palette.origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
-  ground: "#FFFFFF",
-  increase: "#0072B2", // Okabe-Ito blue
-  decrease: "#D55E00", // Okabe-Ito vermillion
-  total: "#3D3D3D",
+  ground: palette.ground,
+  increase,
+  decrease,
+  total,
   title:
     "Germany's electricity generation fell as coal and nuclear losses outpaced renewable growth, 2010–2023",
   source: "Source: Ember & Energy Institute, via Our World in Data · TWh, 2010 vs 2023",

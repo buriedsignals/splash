@@ -12,12 +12,22 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
+import { deriveFurniture, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "cumulative-co2-area";
+
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
 
 /**
  * The story's own constants — the journalist's words, from BRIEF.md. `reference` and
@@ -28,8 +38,8 @@ const COMPOSITION = "cumulative-co2-area";
  * living only in a prompt, never checked against the committed CSV).
  */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   title:
     "More than half of Switzerland's all-time CO₂ has been emitted since 1986.",
   source:

@@ -212,7 +212,18 @@ export type StackedBarVideoProps = {
   title: string;
   source: string;
   ground: string;
+  /** The primary house accent — the reference the subject emphasis and the year label are drawn in. */
   accent: string;
+  /**
+   * ONE INK PER BAND, bottom to top, matching `legendLabels`. Passed in rather than built here:
+   * this component used to compose its own fills as `[accent, muted, muted]`, which drew two of
+   * the three bands in the FURNITURE grey — a colour derived from the ground to recede behind the
+   * data, not to carry it, and one that does not move when a newsroom changes its accent. The
+   * runner now reads the recorded palette and hands all three through `seriesInks`, so every band
+   * is a colour somebody chose. The three bands are three CATEGORIES, not three steps of a scale,
+   * which is why they are three hues rather than three shades of one.
+   */
+  bandInks: [string, string, string];
   ink: string;
   muted: string;
   grid: string;
@@ -229,6 +240,7 @@ export function StackedBarVideo({
   source,
   ground,
   accent,
+  bandInks,
   ink,
   muted,
   grid,
@@ -371,8 +383,9 @@ export function StackedBarVideo({
           label without crowding a 1080px-wide frame at this scale). */}
       <g opacity={axisOpacity}>
         {legendLabels.map((label, i) => {
-          const fills = [accent, muted, muted];
-          const opacities = [1, 1, 0.5];
+          // The swatch is the band's own ink, at full opacity. Three distinct inks separate
+          // themselves; the half-opacity third swatch this used to carry existed only because two
+          // of the three fills were the same furniture grey.
           const lx = PAD + i * 250;
           return (
             <g key={label}>
@@ -381,8 +394,7 @@ export function StackedBarVideo({
                 y={legendBaseline - 16}
                 width={16}
                 height={16}
-                fill={fills[i]}
-                opacity={opacities[i]}
+                fill={bandInks[i]}
               />
               <text
                 x={lx + 24}
@@ -512,22 +524,21 @@ export function StackedBarVideo({
               y={solarWindY}
               width={col.width}
               height={Math.max(0, g.zeroY - solarWindY)}
-              fill={accent}
+              fill={bandInks[0]}
             />
             <rect
               x={col.x}
               y={hydroY}
               width={col.width}
               height={Math.max(0, solarWindY - hydroY)}
-              fill={muted}
+              fill={bandInks[1]}
             />
             <rect
               x={col.x}
               y={nuclearOtherY}
               width={col.width}
               height={Math.max(0, hydroY - nuclearOtherY)}
-              fill={muted}
-              opacity={0.5}
+              fill={bandInks[2]}
             />
             {isSubject && subjectSpring > 0 ? (
               <rect

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   EVENT_ORDER,
   checkTiming,
@@ -6,6 +8,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import {
   contrastRatio,
   luminance,
@@ -100,8 +103,13 @@ describe("progressOf on the heatmap timing", () => {
 // ── The colour ramp: a mechanical proof, not an eyeballed list. ────────────────────────────────
 
 describe("rampAnchors + rampColor on this beat's ground and accent", () => {
-  const GROUND = "#FFFFFF";
-  const ACCENT = "#1E7B45";
+  // Read from `PALETTE.md`, not repeated here. A ramp proof that pinned its own copy of the two
+  // hexes would keep passing after the recorded answer changed, which is the same failure the
+  // literals in `render.mjs` were: the proof has to run against the colour the beat draws.
+  const { ground: GROUND, accent: ACCENT } = readPalette(
+    dirname(fileURLToPath(import.meta.url)),
+    { stopAt: resolve(dirname(fileURLToPath(import.meta.url)), "..") },
+  );
   const { low, high } = rampAnchors(GROUND, ACCENT);
 
   it("should produce a low anchor that clears the 3:1 non-text floor against the real ground", () => {
@@ -161,7 +169,11 @@ describe("textOnCell", () => {
   });
 
   it("should flip its choice as the cell's own colour crosses the midpoint, never a fixed ink", () => {
-    const { low, high } = rampAnchors("#FFFFFF", "#1E7B45");
+    const here = dirname(fileURLToPath(import.meta.url));
+    const { ground, accent } = readPalette(here, {
+      stopAt: resolve(here, ".."),
+    });
+    const { low, high } = rampAnchors(ground, accent);
     const paleChoice = textOnCell(rampColor(0, low, high));
     const darkChoice = textOnCell(rampColor(1, low, high));
     expect(paleChoice).not.toBe(darkChoice);

@@ -5,7 +5,7 @@
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
 // alias and not `twin-chart-beat`'s original, the same direction
 // `../video-population-growth-dumbbell/render.mjs` takes.
 //
@@ -15,7 +15,10 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 // The annotation-ink arithmetic, reached the way every static beat reaches it. It lives HERE and
 // not in `HistogramVideo.tsx` for a measured reason: it takes `contrast` from `render-still.mjs`,
 // which loads a native rasteriser, and Remotion's webpack cannot parse a `.node` binary — the
@@ -34,10 +37,20 @@ const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidy-histogram-life-expectancy";
 
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#B5541E",
+  ground,
+  accent,
   title:
     "In 2023, more countries reach 75-to-80 years of life expectancy than any other five-year span",
   source: "Source: UN World Population Prospects, via Our World in Data · 2023, 237 countries and territories",

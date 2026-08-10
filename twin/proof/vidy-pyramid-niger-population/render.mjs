@@ -6,9 +6,9 @@
 //
 // `deriveFurniture` is imported from `twin-chart-video`'s own copy
 // (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — the same direction
-// `../video-population-growth-dumbbell/render.mjs` uses, not the `#shared/*` alias: a story workspace
+// `../video-population-growth-dumbbell/render.mjs` uses, not the `#shared/…` alias: a story workspace
 // reaches a skill's script by relative path for the render-time-only node helpers, and consumes the
-// shared TYPE via `#shared/*` in the composition/timing files instead.
+// shared TYPE via `#shared/…` in the composition/timing files instead.
 //
 // Usage:  bun proof/vidy-pyramid-niger-population/render.mjs [--still-only] [--data <csv>] [--out <dir>]
 
@@ -16,18 +16,32 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+  seriesInks,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidy-pyramid-niger-population";
 
+// The colours this beat is drawn in come from the recorded decision beside it, never from a hex
+// typed here — see `PALETTE.md`. TWO data colours (the two sides of the pyramid), so both come
+// through `seriesInks`, which hands back the recorded accents in the order they were recorded and
+// throws rather than padding a missing one with the furniture grey.
+const palette = readPalette(HERE, { stopAt: resolve(HERE, "..") });
+const [male, female] = seriesInks(palette, 2);
+console.log(
+  `palette read from ${palette.source} — ground ${palette.ground}, male ${male}, female ${female}, chosen by ${palette.origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
-  ground: "#FFFFFF",
-  male: "#0072B2",
-  female: "#D55E00",
+  ground: palette.ground,
+  male,
+  female,
   title: "Niger's youngest age band dwarfs its entire population aged 65 and older",
   note: "Each bar pair is a five-year age band's population by sex, 2023",
   source:

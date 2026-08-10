@@ -63,6 +63,17 @@ import { PYRAMID_TIMING } from "./timing-contract";
 
 const FRAME = { width: 1080, height: 1350 };
 const PAD = 64;
+
+/**
+ * THE TWO MASK STOPS — physics, not palette, and named so that is legible at the use site.
+ *
+ * An SVG mask reads its own luminance: full white keeps what is under it, full black erases it.
+ * Neither is a colour anybody chose, neither reaches a reader's eye, and neither moves when a
+ * newsroom changes its accent — so they are NOT recorded in `PALETTE.md` and must not be. Every
+ * colour in this component that a reader actually sees arrives as a prop.
+ */
+const MASK_KEEP = "#FFFFFF";
+const MASK_ERASE = "#000000";
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 const TITLE = { fontSize: 34, fontWeight: 700, lead: 42 };
@@ -512,7 +523,13 @@ export function PyramidVideo({
               width={width}
               height={height}
             >
-              <rect x={0} y={0} width={width} height={height} fill="#FFFFFF" />
+              <rect
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                fill={MASK_KEEP}
+              />
               {labelClearances.map((clearance, i) => (
                 <rect
                   key={g.rows[i].ageBand}
@@ -520,7 +537,7 @@ export function PyramidVideo({
                   y={clearance.top}
                   width={gutter * 2}
                   height={clearance.height}
-                  fill="#000000"
+                  fill={MASK_ERASE}
                   opacity={spineClearanceOn[i]}
                 />
               ))}

@@ -16,6 +16,7 @@ const PLACEHOLDER: StackedBarVideoProps = {
   source: "Placeholder",
   ground: "#FFFFFF",
   accent: "#0B7A75",
+  bandInks: ["#0B7A75", "#C1440E", "#1F6FB2"],
   ink: "#000000",
   muted: "#616161",
   grid: "#D1D1D1",

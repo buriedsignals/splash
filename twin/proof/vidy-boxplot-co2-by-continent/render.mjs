@@ -5,7 +5,7 @@
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
 // alias, and not `twin-chart-beat`'s original. Same direction
 // `video-population-growth-dumbbell/render.mjs` takes, for the same reason: a skill never imports
 // another skill, but a story workspace importing INTO a skill's own scripts is fine (the skill's
@@ -18,17 +18,30 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidy-boxplot-co2-by-continent";
 
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
+
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   // The multiple is a HOLE the data fills, not a number typed into a sentence. It used to read
   // "over 4×" as a literal — true against the Americas' own median (4.6× and 4.8×) while the two
   // conclusion labels beside it divided by the 53-country median and printed 3.8× and 3.9×. Two

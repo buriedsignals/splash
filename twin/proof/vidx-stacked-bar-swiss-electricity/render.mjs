@@ -10,12 +10,29 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+  seriesInks,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidx-stacked-bar-swiss-electricity";
+
+// The colours this beat is drawn in come from the recorded decision beside it, never from a hex
+// typed here — see `PALETTE.md`. THREE data colours, one per band, so all three come through
+// `seriesInks`: it returns the recorded accents first and in the recorded order, and throws rather
+// than padding a missing one with the furniture grey. That padding is exactly what this beat used
+// to do — two of its three bands were `muted`, and a newsroom changing its accent moved one band
+// out of three.
+const palette = readPalette(HERE, { stopAt: resolve(HERE, "..") });
+const bandInks = seriesInks(palette, 3);
+console.log(
+  `palette read from ${palette.source} — ground ${palette.ground}, ` +
+    `bands ${bandInks.join(", ")}, chosen by ${palette.origin}`,
+);
 
 const YEARS = [2000, 2010, 2020, 2024];
 
@@ -24,8 +41,9 @@ const YEARS = [2000, 2010, 2020, 2024];
  *  CSV this script reads, so it is built after the read (see `title` below) rather than typed
  *  beside constants that cannot move with the file. */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: palette.ground,
+  accent: palette.accent,
+  bandInks,
   source: "Source: Ember & Energy Institute, via Our World in Data · 2000, 2010, 2020 & 2024 data",
   legendLabels: ["Solar & wind", "Hydropower", "Nuclear & other"],
   subjectYear: 2024,

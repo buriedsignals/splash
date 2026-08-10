@@ -1,6 +1,11 @@
 {
   "ground": "#FFFFFF",
   "accent": "#0B7A75",
+  "bandInks": [
+    "#0B7A75",
+    "#C1440E",
+    "#1F6FB2"
+  ],
   "source": "Source: Ember & Energy Institute, via Our World in Data · 2000, 2010, 2020 & 2024 data",
   "legendLabels": [
     "Solar & wind",

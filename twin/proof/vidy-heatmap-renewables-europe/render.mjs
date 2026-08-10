@@ -16,12 +16,25 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "../../skills/twin-chart-video/scripts/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "vidy-heatmap-renewables-europe";
+
+// The two colours this beat is drawn in come from the recorded decision beside it, never from a
+// hex typed here — see `PALETTE.md`. The search stops at `proof/`, so a palette recorded once at a
+// story root would serve every beat under it.
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: resolve(HERE, ".."),
+});
+console.log(
+  `palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+);
 
 /**
  * The story's own constants — the journalist's words, from `BRIEF.md`. `accent` is this beat's
@@ -29,8 +42,8 @@ const COMPOSITION = "vidy-heatmap-renewables-europe";
  * deep ends from it at render time, and the same hue draws Iceland's subject outline/wash.
  */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#1E7B45",
+  ground,
+  accent,
   title:
     "Iceland has run almost entirely on renewable electricity every year since 2016 — most of Europe is still catching up",
   source:
