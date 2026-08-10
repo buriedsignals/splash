@@ -160,14 +160,18 @@ else
 //
 // Ambient values are still honoured — a CI run legitimately exports them — but never silently: a
 // key that is only in the environment is reported as such, because a producer will not see it.
-function parseEnvFile(text) {
-  const env = {};
-  for (const line of text.split(/\r?\n/)) {
-    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\S+)\s*$/.exec(line);
-    if (match) env[match[1]] = match[2];
-  }
-  return env;
-}
+//
+// SINCE 2026-08-10 THIS IS NO LONGER THE ONLY CALLER THAT KNOWS. `runPreflight` reads the root's
+// `.env` itself and layers it over whatever `env` it is handed, because the rule living HERE, in a
+// comment, is precisely how a model calling preflight from prose got it wrong on a real run and told
+// a journalist a capability was closed that was open (`survey/codex-and-gemini-2026-08-10.md` §3.2).
+// The merge below is now belt AND braces — it is kept because it is the truthful expression of what
+// this command asks, not because preflight needs it.
+//
+// `parseEnvFile` and `resolveEnvKey` are both imported from the product's own `keys.mjs` rather than
+// re-implemented here, for the reason this file's header already gives: two implementations of one
+// rule is the divergence class this project has been bitten by.
+const { resolveEnvKey, parseEnvFile } = await import(join(ROOT, "skills", "splash", "scripts", "keys.mjs"));
 const envPath = join(ROOT, ".env");
 const rootEnv = existsSync(envPath) ? parseEnvFile(await Bun.file(envPath).text()) : {};
 if (existsSync(envPath)) ok("the root's .env", `${Object.keys(rootEnv).length} name(s) in ${envPath.replace(HOME, "~")}`);
@@ -184,7 +188,6 @@ const CANONICAL_KEYS = [
 // the latter and missed both MapTiler and Datawrapper: what was actually set in the environment was
 // `VITE_MAPTILER_KEY`, an ALIAS the toolchain accepts. Re-implementing the alias table here would
 // be a second copy of a rule that already exists, and it would have drifted on its first day.
-const { resolveEnvKey } = await import(join(ROOT, "skills", "splash", "scripts", "keys.mjs"));
 for (const name of CANONICAL_KEYS) {
   if (resolveEnvKey(process.env, name) && !resolveEnvKey(rootEnv, name))
     note(

@@ -111,6 +111,43 @@ export async function recordKey({ root, name, value }) {
   await writeFile(path, lines.join("\n"));
 }
 
+/**
+ * The other half of `recordKey`: read back what a root has recorded, as a plain object.
+ *
+ * `recordKey` writes `<root>/.env`, every producer reads `<root>/.env` as a FILE
+ * (`splash-root.mjs`), and until this existed there was no reader in this toolchain at all — so
+ * `runPreflight`'s caller had to know, from nowhere, that it must merge the file itself. It did not,
+ * measured on Codex (`survey/codex-and-gemini-2026-08-10.md` §3.2): the model called
+ * `runPreflight({root, env: process.env})` and told the journalist the map capability was shut over
+ * a key that is present in the root at 0600 and answers 200.
+ *
+ * Deliberately the same shape the doctor's own parser had — one `NAME=value` per line, no quoting,
+ * no `export`, no interpolation — because that is what `recordKey` writes and what a journalist
+ * pastes. The doctor now imports THIS one rather than keeping the second copy, for the reason its
+ * own header already gives about `resolveEnvKey`: two implementations of one rule drift on their
+ * first day.
+ *
+ * A missing, unreadable or empty file is `{}`, never a throw: a root with no `.env` is an ordinary
+ * root that has recorded no key yet, and it is preflight's job to report that as a closed
+ * capability, not to fail.
+ */
+export function parseEnvFile(text) {
+  const env = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\S+)\s*$/.exec(line);
+    if (match) env[match[1]] = match[2];
+  }
+  return env;
+}
+
+export async function readRootEnv(root) {
+  try {
+    return parseEnvFile(await readFile(join(root, ".env"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
 const MAPTILER_PROBE = (key) =>
   `https://api.maptiler.com/maps/dataviz/style.json?key=${encodeURIComponent(key)}`;
 const DATAWRAPPER_PROBE = "https://api.datawrapper.de/v3/me";

@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.mjs";
-import { probeMapTiler, probeDatawrapper, probeCloudflare, resolveEnvKey } from "./keys.mjs";
+import { probeMapTiler, probeDatawrapper, probeCloudflare, resolveEnvKey, readRootEnv } from "./keys.mjs";
 
 const ROOT_TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "root-template");
 const ROOT_TEMPLATE_PACKAGE_JSON = join(ROOT_TEMPLATE_DIR, "package.json");
@@ -176,44 +176,118 @@ async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn,
   return { id, opens, available: result.ok, reason: result.detail, fill };
 }
 
+// Where a capability's key was actually read from — `"root .env"`, `"environment"`, or `"unset"`.
+// This is the honest half of the precedence rule documented above `runPreflight`: the root's file
+// wins, and a key that lives ONLY in the caller's environment is never allowed to pass unnamed,
+// because every producer reads the file and will not see it.
+function sourceOfKeys(rootEnv, callerEnv, names) {
+  const each = names.map((name) => {
+    if (resolveEnvKey(rootEnv, name)) return "root .env";
+    if (resolveEnvKey(callerEnv, name)) return "environment";
+    return "unset";
+  });
+  if (each.some((s) => s === "environment")) return "environment";
+  if (each.every((s) => s === "root .env")) return "root .env";
+  return "unset";
+}
+
+function withSource(row, { rootEnv, callerEnv, names, root }) {
+  const source = sourceOfKeys(rootEnv, callerEnv, names);
+  if (source !== "environment") return { ...row, source };
+  return {
+    ...row,
+    source,
+    reason:
+      `${row.reason} — but ${names.join(" / ")} resolves only from this shell's environment, ` +
+      `not from ${join(root, ".env")}, which is the file every producer reads. Record it with ` +
+      `recordKey (scripts/keys.mjs) or this row and the render will disagree.`,
+  };
+}
+
+/**
+ * THE `env` RULE, and it is a rule rather than a convention because a model got it wrong on a real
+ * run: **the root's own `.env` is the authority, and this function reads it itself.**
+ *
+ * Measured on Codex, 2026-08-10 (`survey/codex-and-gemini-2026-08-10.md` §3.2): the model called
+ * `runPreflight({root, env: process.env})` from prose and told the journalist *"les cartes … sont
+ * fermées faute de clés"* — while `MAPTILER_KEY` sat in that root's `.env` at 0600 and answered 200.
+ * `installer/doctor.mjs` had predicted exactly this in a comment and merged the file itself
+ * (`env: {...process.env, ...rootEnv}`), so the ONE caller that knew the rule was the one caller a
+ * model never reads. The lesson lived in a comment instead of in the code.
+ *
+ * Two ways to close it were open, and this is the one taken, with its reason:
+ *
+ *   - REFUSE an ambient environment. Rejected as unimplementable honestly: `process.env` is a plain
+ *     object, and nothing distinguishes it from an environment a caller assembled deliberately
+ *     except heuristics (does it carry `PATH`? `HOME`?). A heuristic refusal blocks the legitimate
+ *     callers — CI that genuinely exports its keys, the doctor, this suite — while a caller that
+ *     spreads `{...process.env}` evades it. A guard that can be walked around by a spread is not a
+ *     guard.
+ *   - PRECEDENCE, taken. `<root>/.env` is read here and layered OVER whatever `env` the caller
+ *     passed, so the report agrees with the producers by construction: `bake-plate.mjs` and
+ *     `substituteKeys` read that same file, and a capability row that disagreed with them was the
+ *     defect. A caller that passes `{}`, `process.env`, or a merged object now gets the same answer.
+ *
+ * The quiet failure precedence could have introduced — hiding a key that is genuinely missing from
+ * the root — is closed rather than accepted: every capability row carries `source`, and a key that
+ * resolves only from the environment says so in its own `reason`, because a producer will not see
+ * it. `available` still reports what the PROBE said, so this never tells a journalist a capability
+ * is closed when it is open — which is the whole point of the fix.
+ */
 export async function runPreflight({ root, env, fetchFn }) {
   const dependencies = await checkDependencies(root);
   const newsroom = await checkNewsroom(root);
   const checks = [dependencies, newsroom];
 
+  // The precedence rule, in one line: the caller's environment is a fallback, the root's own file
+  // is the authority. See the header above for why this is not a refusal.
+  const callerEnv = env ?? {};
+  const rootEnv = await readRootEnv(root);
+  const effectiveEnv = { ...callerEnv, ...rootEnv };
+  const sourced = (row, names) => withSource(row, { rootEnv, callerEnv, names, root });
+
   const capabilities = {
-    map: await checkCapability({
-      id: "map",
-      opens: "map beats",
-      canonicalEnv: "MAPTILER_KEY",
-      env,
-      probeFn: probeMapTiler,
-      fetchFn,
-      fill: "MAPTILER_KEY — a free key from maptiler.com/cloud (Account → Keys), written into the .env at the Splash root",
-    }),
-    datawrapper: await checkCapability({
-      id: "datawrapper",
-      opens: "Datawrapper beats",
-      canonicalEnv: "DATAWRAPPER_TOKEN",
-      env,
-      probeFn: probeDatawrapper,
-      fetchFn,
-      fill: "DATAWRAPPER_TOKEN — an API token from app.datawrapper.de/account/api-tokens, written into the .env at the Splash root",
-    }),
+    map: sourced(
+      await checkCapability({
+        id: "map",
+        opens: "map beats",
+        canonicalEnv: "MAPTILER_KEY",
+        env: effectiveEnv,
+        probeFn: probeMapTiler,
+        fetchFn,
+        fill: "MAPTILER_KEY — a free key from maptiler.com/cloud (Account → Keys), written into the .env at the Splash root",
+      }),
+      ["MAPTILER_KEY"],
+    ),
+    datawrapper: sourced(
+      await checkCapability({
+        id: "datawrapper",
+        opens: "Datawrapper beats",
+        canonicalEnv: "DATAWRAPPER_TOKEN",
+        env: effectiveEnv,
+        probeFn: probeDatawrapper,
+        fetchFn,
+        fill: "DATAWRAPPER_TOKEN — an API token from app.datawrapper.de/account/api-tokens, written into the .env at the Splash root",
+      }),
+      ["DATAWRAPPER_TOKEN"],
+    ),
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
     // report the capability available.
     hostedEmbed: await (async () => {
-      const accountId = resolveEnvKey(env, "CLOUDFLARE_ACCOUNT_ID");
-      const apiToken = resolveEnvKey(env, "CLOUDFLARE_API_TOKEN");
+      const accountId = resolveEnvKey(effectiveEnv, "CLOUDFLARE_ACCOUNT_ID");
+      const apiToken = resolveEnvKey(effectiveEnv, "CLOUDFLARE_API_TOKEN");
       const result = await probeCloudflare(accountId, apiToken, fetchFn);
-      return {
-        id: "hosted-embed",
-        opens: "the hosted embed delivery form",
-        available: result.ok,
-        reason: result.detail,
-        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — the account id from dash.cloudflare.com and a token with Pages:Edit, both written into the .env at the Splash root",
-      };
+      return sourced(
+        {
+          id: "hosted-embed",
+          opens: "the hosted embed delivery form",
+          available: result.ok,
+          reason: result.detail,
+          fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — the account id from dash.cloudflare.com and a token with Pages:Edit, both written into the .env at the Splash root",
+        },
+        ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"],
+      );
     })(),
   };
 

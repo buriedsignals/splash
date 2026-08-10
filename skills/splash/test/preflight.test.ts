@@ -334,10 +334,15 @@ describe("runPreflight — capabilities, not a verdict", () => {
   //              yet built: this row is hardcoded closed, never probed |"
   //   (fail) should not claim in prose that a capability it probes is never probed
   it("should not claim in prose that a capability it probes is never probed", async () => {
-    const skill = readFileSync(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
+    const skill = readFileSync(
+      join(import.meta.dirname, "..", "SKILL.md"),
+      "utf8",
+    );
     const rows = skill
       .split(/\r?\n/)
-      .filter((line) => /^\| *(`MAPTILER_KEY`|`DATAWRAPPER_TOKEN`|Cloudflare Pages)/.test(line));
+      .filter((line) =>
+        /^\| *(`MAPTILER_KEY`|`DATAWRAPPER_TOKEN`|Cloudflare Pages)/.test(line),
+      );
     expect(rows.length).toBe(3);
     for (const row of rows) {
       expect(row).not.toMatch(/never probed|not yet built|hardcoded closed/);
@@ -453,9 +458,7 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       await installResolvableDependency(name);
     }
     const declaredShared = await declaredSharedFiles();
-    expect(declaredShared).toContain(
-      join("chart-beat", "inspect-render.mjs"),
-    );
+    expect(declaredShared).toContain(join("chart-beat", "inspect-render.mjs"));
     for (const relPath of declaredShared) {
       if (relPath === join("chart-beat", "inspect-render.mjs")) continue;
       const dest = join(root, "shared", relPath);
@@ -465,9 +468,7 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
     const check = report.checks.find((c) => c.id === "dependencies");
     expect(check?.status).toBe("fail");
-    expect(check?.detail).toContain(
-      "shared/chart-beat/inspect-render.mjs",
-    );
+    expect(check?.detail).toContain("shared/chart-beat/inspect-render.mjs");
     expect(check?.detail).not.toContain("render-still.mjs");
     expect(report.ready).toBe(false);
   });
@@ -576,5 +577,165 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(check?.status).toBe("fail");
     expect(check?.detail).toContain("@resvg/resvg-js");
     expect(report.ready).toBe(false);
+  });
+});
+
+/**
+ * THE ROOT'S OWN `.env` IS THE AUTHORITY — the guard for the defect a live run found, not a
+ * defect imagined here.
+ *
+ * Measured on Codex 0.144.1, 2026-08-10 (`survey/codex-and-gemini-2026-08-10.md` §3.2): a model
+ * called `runPreflight({root, env: process.env})` from prose and told the journalist *"les cartes …
+ * sont fermées faute de clés"*, while `MAPTILER_KEY` sat in that root's own `.env` at 0600 and
+ * answered 200. `installer/doctor.mjs` had merged the file itself for exactly this reason and left
+ * a comment predicting the mistake — so the rule existed in a comment in a file no orchestrating
+ * model reads, and `SKILL.md` documented the signature without it.
+ *
+ * The fixture is the one that would have caught it: a root whose `.env` carries a working key,
+ * called with an environment that does not.
+ *
+ * THE MUTATION THAT REDDENS IT, run in a copy of the tree under /tmp, never here — replace the two
+ * lines in `runPreflight` that read the root's file (`const rootEnv = await readRootEnv(root)` and
+ * the `...rootEnv` spread) with `const rootEnv = {}`, which is the code as it stood before this
+ * commit. Four of the eight tests below go red; these two name the defect verbatim:
+ *
+ *   (fail) should report the map capability OPEN when the key is in the root's .env and the
+ *          caller's environment does not carry it
+ *   error: expect(received).toBe(expected)
+ *   Expected: true
+ *   Received: false
+ *
+ *   (fail) should probe with the root's own key, not the ambient one of the same name
+ *   error: expect(received).toContain(expected)
+ *   Expected to contain: "recorded-in-the-root"
+ *   Received: "https://api.maptiler.com/maps/dataviz/style.json?key=stale-ambient-key"
+ *
+ * WHAT IT DOES NOT CLOSE, stated rather than left to be discovered: whether the key in that file is
+ * the one a PRODUCER will use is proved elsewhere (`the-key-has-one-home.test.ts` — that every
+ * script resolves the same `.env`); this file only proves preflight reads that same file. And a
+ * key that lives only in the environment is reported, never refused: the row stays `available` if
+ * it probes green, because it does open the medium for anything running in that same shell — what
+ * it cannot do is silently pass as recorded, which is what `source` and the appended reason exist
+ * to prevent.
+ */
+describe("runPreflight — the root's own .env is the authority, the caller's env is a fallback", () => {
+  it("should report the map capability OPEN when the key is in the root's .env and the caller's environment does not carry it", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await writeFile(join(root, ".env"), "MAPTILER_KEY=recorded-in-the-root\n");
+
+    // The shape the model actually passed: a shell environment, carrying no MapTiler key at all.
+    const shellEnv = {
+      PATH: "/usr/bin:/bin",
+      HOME: "/Users/nobody",
+      LANG: "fr_FR.UTF-8",
+    };
+    const report = await runPreflight({
+      root,
+      env: shellEnv,
+      fetchFn: okFetch,
+    });
+
+    expect(report.capabilities.map.available).toBe(true);
+    expect(report.capabilities.map.source).toBe("root .env");
+    expect(capabilityGap(report.capabilities, "map")).toBeNull();
+  });
+
+  it("should probe with the root's own key, not the ambient one of the same name", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await writeFile(join(root, ".env"), "MAPTILER_KEY=recorded-in-the-root\n");
+    let seenUrl = "";
+    const capturing = async (url: string) => {
+      seenUrl = String(url);
+      return new Response("{}", { status: 200 });
+    };
+    await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "stale-ambient-key" },
+      fetchFn: capturing,
+    });
+    // The producers read the file. A report that probed the ambient value would be answering a
+    // question nobody asked — and would go green on a key no render can reach.
+    expect(seenUrl).toContain("recorded-in-the-root");
+    expect(seenUrl).not.toContain("stale-ambient-key");
+  });
+
+  it("should give the same answer whether it is handed process.env, an empty object, or a merge", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await writeFile(
+      join(root, ".env"),
+      "MAPTILER_KEY=recorded-in-the-root\nDATAWRAPPER_TOKEN=recorded-too\n",
+    );
+    const answers = [];
+    for (const env of [{}, { PATH: "/usr/bin" }, { ...process.env }]) {
+      const report = await runPreflight({ root, env, fetchFn: okFetch });
+      answers.push([
+        report.capabilities.map.available,
+        report.capabilities.datawrapper.available,
+      ]);
+    }
+    expect(answers).toEqual([
+      [true, true],
+      [true, true],
+      [true, true],
+    ]);
+  });
+
+  it("should read the engine's own alias out of the root's .env too, not only the canonical name", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await writeFile(join(root, ".env"), "VITE_MAPTILER_KEY=engine-key\n");
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.capabilities.map.available).toBe(true);
+    expect(report.capabilities.map.source).toBe("root .env");
+  });
+
+  // The other half of the bargain: precedence must not make a key that is genuinely missing from
+  // the root pass unnamed. It probes green — it really does open the medium for anything running in
+  // this shell — but a render reads the FILE, so the row says where the key is and is not.
+  it("should name a key that resolves only from the environment, because the producers read the file", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "ambient-only" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.map.available).toBe(true);
+    expect(report.capabilities.map.source).toBe("environment");
+    expect(report.capabilities.map.reason).toContain("MAPTILER_KEY");
+    expect(report.capabilities.map.reason).toContain(".env");
+  });
+
+  it("should report source unset when the key is in neither place, and stay ready", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.capabilities.map.source).toBe("unset");
+    expect(report.capabilities.datawrapper.source).toBe("unset");
+    expect(report.capabilities.hostedEmbed.source).toBe("unset");
+    expect(report.ready).toBe(true);
+  });
+
+  it("should treat a root with no .env at all as a root that has recorded nothing, never as a failure", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.ready).toBe(true);
+    expect(report.capabilities.map.available).toBe(false);
+  });
+
+  // The prose that states the rule, held to the code — the half that would have prevented the run:
+  // the signature was documented and the rule was not, so a model reading SKILL.md could not have
+  // known. If someone deletes the paragraph, this goes red.
+  it("should state the env rule in SKILL.md beside the signature, not only in a comment", async () => {
+    const skill = readFileSync(
+      join(import.meta.dirname, "..", "SKILL.md"),
+      "utf8",
+    );
+    expect(skill).toContain("The rule about `env`");
+    expect(skill).toMatch(/reads the root's own `\.env` itself/);
   });
 });

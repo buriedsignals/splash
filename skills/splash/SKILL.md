@@ -133,14 +133,26 @@ scrolly beat whenever they resolve. A model reading that row told a journalist a
 unavailable while `offerForms` would have offered it — **a delivery constraint that did not come from
 `offerForms`, which is the one absolute in this file's own never-list.**
 
-`runPreflight({root, env, fetchFn})` returns `{ready, blockers, checks, capabilities}`:
+`runPreflight({root, env, fetchFn})` returns `{ready, blockers, checks, capabilities}`.
+
+**The rule about `env`, stated here because it was once left to be discovered.** `env` is a
+*fallback*: preflight reads the root's own `.env` itself and layers it OVER whatever you pass, so
+`runPreflight({root, env: process.env, fetchFn: fetch})` and `runPreflight({root, env: {}, fetchFn:
+fetch})` give the same answer on the same root. That is not decoration — on 2026-08-10 a model on
+Codex called it with the shell's environment and told the journalist the map capability was shut,
+while `MAPTILER_KEY` was in that root's `.env` at `0600` and answered 200
+(`survey/codex-and-gemini-2026-08-10.md` §3.2). The root's file is the authority because it is what
+every *producer* reads. The reverse case is never hidden: a key resolvable only from the environment
+is reported with `source: "environment"` and says so in its own `reason`, because a render will not
+see it.
 
 - `checks` holds only the two facts that can block the session outright: `dependencies` and
   `newsroom-profile`. `ready` is `true` exactly when neither is a blocker — see the newsroom
   section below for what counts as answered.
 - `capabilities.map` / `capabilities.datawrapper` / `capabilities.hostedEmbed` each carry
-  `{available, reason}` (plus `opens`, the label from the table above) — a missing or rejected key
-  narrows `capabilities`, and never appears in `blockers`.
+  `{available, reason, source}` (plus `opens`, the label from the table above, and `fill`) — a
+  missing or rejected key narrows `capabilities`, and never appears in `blockers`. `source` is
+  `"root .env"`, `"environment"` or `"unset"`: where the key was actually read from, never a guess.
 - `assertPreflightReady(report)` (`scripts/preflight.mjs`) is the mechanical stop the old prose
   only described: it throws, naming every blocker, when `ready` is false, and does nothing at all
   otherwise. It never inspects `capabilities` — call it once, right after `runPreflight`, instead of
@@ -249,7 +261,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
 | Layer | File | Role |
 | --- | --- | --- |
 | Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/genre/size/`reachable`/`chosen`) before ever reporting `production`. Past Gate 2 it walks the beats: `beatsAwaitingApproval` first — **nothing about `export/` may shorten the walk past it** — then `beatsAwaitingDelivery`, per beat, into `export/<beat>/`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
-| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
+| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. **`env` is a fallback: the root's own `.env` is read here and wins over it** (see "The rule about `env`" above), so the report can never tell a journalist a capability is closed over a key their root records. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it and a `source` naming where its key came from. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents` |
 | Maintainer notes | `scripts/notes.mjs` | `recordMaintainerNote({storyDir, phase, note})` — appends to `stories/<slug>/NOTES-FOR-MAINTAINER.md`, creating it with its own header. Refuses an empty note, a note with no phase, and any path inside `export/` (that directory is what the newsroom receives). The other end of `formatHandover`'s throw |
@@ -407,7 +419,10 @@ if (missing.length > 0) {
   establishes what is possible" above), `assertPreflightReady` (the mechanical stop), and
   `capabilityGap` (the seam a later phase reads before offering a medium).
 - `scripts/keys.mjs` — `probeMapTiler`, `probeDatawrapper`, `resolveEnvKey` (canonical name first,
-  then the sibling engine's own aliases).
+  then the sibling engine's own aliases), `recordKey` (the one path that accepts a key from a
+  journalist) and its reader `readRootEnv` / `parseEnvFile` — the root's `.env` as an object, which
+  is what makes preflight's `env` a fallback rather than the authority, and which the doctor imports
+  instead of keeping a second parser.
 - `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` (a recorded
   `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
   one).
