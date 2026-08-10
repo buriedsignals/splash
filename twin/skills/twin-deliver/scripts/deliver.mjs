@@ -189,8 +189,36 @@ async function copyTree(srcDir, destDir, written, { env = process.env } = {}) {
   }
 }
 
+// The one string that makes an artifact a MAP artifact for this file's purposes: the slot a live
+// MapTiler style URL leaves for its key. Split so this module's own source is not itself a hit for
+// the value-independent scan in `splash-twin/test/no-key-in-the-repository.test.ts`.
+const MAP_KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
+
+/**
+ * Does this artifact actually carry a MapTiler key slot?
+ *
+ * THE QUESTION THE KEY RULE HAS TO ASK, and for a long time did not. Everything below protects one
+ * thing: a PUBLISHED MAP that carries a key. Whether a beat is that is a fact about the FILE — it
+ * either leaves a slot for a key or it does not — and the check used to read the ENVIRONMENT alone,
+ * so a `MAPTILER_KEY` sitting in a root's `.env` decided the fate of a bar chart.
+ *
+ * That is not hypothetical. In the owner's own end-to-end run the delivery step refused an HTML beat
+ * that was not a map at all — zero occurrences of `maptiler`, no key slot anywhere in the file — and
+ * the run then talked its way around the refusal. A rule that fires on artifacts it cannot possibly
+ * be protecting is a rule that teaches the reader to route around it.
+ *
+ * So: no slot, nothing to substitute, nothing to say, nothing to refuse. The file is delivered
+ * exactly as it was rendered.
+ */
+export function carriesMapKey(html) {
+  return String(html).includes(MAP_KEY_PLACEHOLDER);
+}
+
 /**
  * RULING R1b — the moment the key enters the file, and the only one.
+ *
+ * SCOPED TO THE ARTIFACT, NOT TO THE ENVIRONMENT (see `carriesMapKey` above): a file with no key
+ * slot returns untouched before any of the states below is even considered.
  *
  * A map × web beat renders with a documented PLACEHOLDER where its MapTiler key belongs, because
  * every beat commits its own HTML and the FJM deliverable is an MIT open-source release: a real key
@@ -227,6 +255,10 @@ async function copyTree(srcDir, destDir, written, { env = process.env } = {}) {
  *                                    ship a dead map to someone who believes they configured one.
  */
 export function substituteKeys(html, env = process.env) {
+  // The artifact decides, not the environment. A beat with no key slot is not a map delivery and
+  // has nothing here to protect.
+  if (!carriesMapKey(html)) return html;
+
   const key = env.MAPTILER_DELIVERY_KEY;
   if (!key) {
     if (env.MAPTILER_KEY)
@@ -239,8 +271,7 @@ export function substituteKeys(html, env = process.env) {
       );
     return html;
   }
-  const placeholder = "__MAPTILER" + "_KEY__";
-  return html.split(placeholder).join(key);
+  return html.split(MAP_KEY_PLACEHOLDER).join(key);
 }
 
 // A real, dependency-free build entry point: Bun's own bundler ships inside the Bun runtime,

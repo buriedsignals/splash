@@ -78,6 +78,7 @@ Two things close it, and both are code rather than convention:
 | --- | --- | --- |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment) |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
@@ -156,6 +157,24 @@ Two things close it, and both are code rather than convention:
 5. **`materialise` returns every path it wrote**, the hand-over included. A caller that wants to
    confirm the delivery can list `written` without re-reading the directory.
 
+### The MapTiler key — the ARTIFACT decides, never the environment
+
+A map × web beat renders with a documented placeholder where its MapTiler key belongs, and
+`substituteKeys` puts the real key in at delivery and nowhere earlier (ruling R1b: every beat commits
+its own HTML, so a key in a rendered file is a key in the repository).
+
+**`carriesMapKey(html)` is asked first, and it reads the FILE.** An artifact with no key slot is not
+a map delivery: it is copied through untouched, and nothing about MapTiler is decided, said or
+refused for it. This was measured the hard way — in the owner's own run the delivery step refused an
+HTML beat that was not a map at all (zero occurrences of `maptiler`, no key slot in the file), purely
+because a `MAPTILER_KEY` sat in the environment. A rule that fires where it cannot be protecting
+anything teaches its reader to route around it, and that is exactly what the run then did.
+
+For an artifact that DOES carry the slot, three states and no fourth: `MAPTILER_DELIVERY_KEY` set →
+substituted, the delivery is live; neither key set → the placeholder travels through and the page
+ships its complete fallback layer, exactly as it does offline; only `MAPTILER_KEY` set → **throws**,
+because R1b clause 4 says the delivered key is a second, origin-restricted one.
+
 ## Quick start
 
 ```js
@@ -194,6 +213,7 @@ const written = await materialise({
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
 | Where a beat's delivery lands | `export/<beat>/` — one directory per beat, never one per story | `exportDirFor`, `scripts/deliver.mjs` |
+| What makes an artifact a MAP delivery, for the key rule | `1` string — the key slot the renderer leaves in the file (`carriesMapKey`). Nothing about the environment, the genre or the medium enters that decision | `MAP_KEY_PLACEHOLDER`, `scripts/deliver.mjs` |
 | What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"twin-deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
