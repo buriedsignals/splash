@@ -37,6 +37,15 @@
  * reusing the same shared `#tooltip` element the skill's HTML wrapper already builds.
  */
 
+import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
 import { rankingGeometry, en, type Row } from "./bar-geometry";
 
 const UNIT = "t";
@@ -197,6 +206,88 @@ export function RankingWeb({
 
   const totalWidth = categoryGutterPx + frame.width + valueGutterPx;
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, in the video's own order,
+  // with the bar family's own reveal: each bar grows from the zero baseline to ITS OWN value.
+  //
+  // NOT A CLIP WIPE, and the reason is this exact type. A wipe uncovers the finished picture left to
+  // right; every bar here starts at the same zero, so at 40 % of the wipe all ten bars are the same
+  // length — the graphic states that Poland and Switzerland are equal, for most of the build, which
+  // is the negation of the sentence above it. `references/types/bar-and-column.md`'s whole rule is
+  // that the LENGTH is the reading, and that applies to every frame of the build, not only the last.
+  //
+  //   - THE REFERENCE is the zero baseline. It is the axis this type is not allowed to relax, so it
+  //     is laid down — grown from the plot's own top edge — before a single bar is measured on it.
+  //   - THE ORDER is the ranking's own, top row first, which is how a ranking is read.
+  //   - THE SUBJECT IS TAKEN OUT OF THE CASCADE. Switzerland is row 9 of 10; in rank order its bar
+  //     would arrive next-to-last among nine others and land on nobody. It arrives after every other
+  //     row as its own event, and its row stays empty until then — which is the emphasis, and it
+  //     costs the SETTLED page nothing: no ring, no recolour, not one changed pixel at rest.
+  //   - THE CONCLUSION is Switzerland's own printed value, once its bar has landed.
+  //
+  // Every value label is gated on ITS OWN bar's arrival, never on the master clock — the label rule
+  // (`doctrine/references/motion-grammar.md`), which `verify-entrance.mjs` pairs by name and drives.
+  const subjectIndex = g.rows.findIndex((row) => row.name === subject);
+  if (subjectIndex < 0)
+    throw new Error(
+      `the subject "${subject}" is not one of the ${g.rows.length} rows this beat draws`,
+    );
+  const cascade = g.rows.filter((row) => row.name !== subject);
+  const windowFor = (name: string) =>
+    name === subject
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((row) => row.name === name),
+          cascade.length,
+        );
+  const eventFor = (name: string) =>
+    name === subject ? ("subject" as const) : ("reveal" as const);
+  const barLayer = (name: string, x0: number) => {
+    const own = windowFor(name);
+    return entranceLayer(eventFor(name), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "x", origin: { x: x0, y: 0 }, key: name },
+    });
+  };
+  const valueLabelLayer = (name: string) =>
+    name === subject
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: name,
+        })
+      : entranceLayer("reveal", "fade", {
+          delay: atProgress(windowFor(name), 1),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: name,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const baselineLayer = entranceLayer("reference", "grow", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+    // No key: the axis is what the bars are MEASURED AGAINST, not one of the readings.
+    grow: { axis: "y", origin: { x: 0, y: 0 } },
+  });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((row) => atProgress(windowFor(row.name), 1) + LABEL_FADE_MS),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last cascading row's value label ends at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms — a row of the ranking would still be arriving while the ` +
+        `mark the takeaway is about is already there`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -217,7 +308,11 @@ export function RankingWeb({
     >
       {/* A fixed row of air under the header: the top row's own name and value sit at the plot's
           very top edge, and a label centred on that row reaches half a line above it. */}
-      <div className="chart-header" style={{ marginBottom: 18 }}>
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={{ ...furnitureLayer().vars, marginBottom: 18 }}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -232,7 +327,11 @@ export function RankingWeb({
           aspectRatio: `${totalWidth} / ${frame.height}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {g.rows.map((row) => (
             <span
               key={row.name}
@@ -280,6 +379,8 @@ export function RankingWeb({
               to find the plot's top edge, and flips the tooltip below the pointer rather than over
               the header when the topmost row is hovered. */}
           <line
+            {...baselineLayer.attrs}
+            style={baselineLayer.vars}
             x1={0}
             x2={0}
             y1={0}
@@ -289,16 +390,24 @@ export function RankingWeb({
             vectorEffect="non-scaling-stroke"
           />
 
-          {g.rows.map((row) => (
-            <rect
-              key={row.name}
-              x={row.x0}
-              y={row.top}
-              width={Math.max(row.barWidth, 0)}
-              height={row.height}
-              fill={row.name === subject ? accent : muted}
-            />
-          ))}
+          {/* THE REVEAL — each bar grows from the zero baseline to ITS OWN value, in the ranking's
+              own order, and Switzerland's arrives last as its own event. See the entrance block
+              above for why this is not the clip this genre uses on a line. */}
+          {g.rows.map((row) => {
+            const layer = barLayer(row.name, row.x0);
+            return (
+              <rect
+                key={row.name}
+                {...layer.attrs}
+                style={layer.vars}
+                x={row.x0}
+                y={row.top}
+                width={Math.max(row.barWidth, 0)}
+                height={row.height}
+                fill={row.name === subject ? accent : muted}
+              />
+            );
+          })}
 
           {/* Interaction layer: one direct hit target per row, spanning the full band — not the
               skill's shared nearest-point `.hit-area`, which resolves many points along ONE
@@ -329,24 +438,35 @@ export function RankingWeb({
             a real grid track rather than air the longest bar could eat. Unconditional: the rounded
             reading is the argument and is never gated behind interaction. */}
         <div className="overlay" aria-hidden="true">
-          {g.rows.map((row, i) => (
-            <span
-              key={`value-${row.name}`}
-              className="value-label"
-              style={{
-                left: `${pct(row.x1, frame.width)}%`,
-                top: `${pct(row.centerY, frame.height)}%`,
-                color: row.name === subject ? accent : muted,
-                fontWeight: row.name === subject ? 700 : frame.value.fontWeight,
-              }}
-            >
-              {printedLabels[i]}
-            </span>
-          ))}
+          {g.rows.map((row, i) => {
+            const layer = valueLabelLayer(row.name);
+            return (
+              <span
+                key={`value-${row.name}`}
+                {...layer.attrs}
+                className="value-label"
+                style={{
+                  ...layer.vars,
+                  left: `${pct(row.x1, frame.width)}%`,
+                  top: `${pct(row.centerY, frame.height)}%`,
+                  color: row.name === subject ? accent : muted,
+                  fontWeight: row.name === subject ? 700 : frame.value.fontWeight,
+                }}
+              >
+                {printedLabels[i]}
+              </span>
+            );
+          })}
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }

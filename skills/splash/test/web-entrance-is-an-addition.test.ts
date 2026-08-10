@@ -12,8 +12,10 @@
  * WHY IT IS DRIVEN AND NOT READ. The failure mode this project has already met, on the scrolly, is
  * a reveal that is an OPACITY FADE OVER A FINISHED PICTURE — every check green, every attribute
  * present, and a reader watching a static chart get less transparent. Nothing in the markup
- * distinguishes it from a reveal that builds. So the reveal is measured as GEOMETRY, twice, by two
- * independent instruments:
+ * distinguishes it from a reveal that builds. So the reveal is measured as GEOMETRY, never read off
+ * an attribute — by two independent instruments where the reveal is a CLIP, and by a third where it
+ * is not (`verify-entrance.mjs` walks every mark's own painted extent; a bar family's reveal is not
+ * a clip, and could not be, because a clip leaves every bar the same length mid-build):
  *
  *   - the clip's own `scaleX`, read out of the computed transform matrix — exact, and the number
  *     the CSS is actually running;
@@ -44,20 +46,21 @@
  *   5. THE WHOLE ENTRANCE COMPLETES INSIDE `ENTRANCE_CEILING_MS`, measured on the layers the page
  *      actually ships rather than on the contract — half of a beat's delays are derived from its own
  *      geometry, so the contract passing is not the same claim.
- *   0. (not in W3, and the newest) THE PER-MARK REVEAL'S VOCABULARY IS COMPLETE. A `grow` layer — the
- *      bar family's reveal, one mark growing from its own baseline to its own value — carries an
- *      axis and a baseline, and on the `reveal` event it carries its own KEY. `entranceLayer`
- *      already refuses to build one without them; this reads them off the delivered FILE, because
- *      three beats here patch their own HTML after it is rendered, and because a `grow` that lost
- *      its `--e-sx` resolves its keyframe to `scale(1, 1)`: a mark drawn in full from the first
- *      millisecond, with every other clause below green. Keys are unique, and every layer gated on
- *      a mark's arrival names one that exists — that pairing is what makes the label rule checkable
- *      at all, in this file and in `verify-entrance.mjs`.
  *   6. (not in W3) THE ORDER ON THE PAGE IS THE ORDER IN THE CONTRACT, and the LABEL RULE holds:
  *      no layer's delay precedes the delay of the event before it, and the conclusion — the
  *      subject's own value, in words — is measured to be invisible in a real browser while the mark
  *      it names is still arriving. That is `motion-grammar.md`'s "a label's reveal gates on its own
  *      mark", driven rather than derived from the numbers that were used to write it.
+ *   7. (not in W3 either) THE PAGE SHIPS THE THING THAT STARTS IT — see the clause itself below.
+ *   8. (not in W3 either, and the newest) THE PER-MARK REVEAL'S VOCABULARY IS COMPLETE. A `grow`
+ *      layer — the bar family's reveal, one mark growing from its own baseline to its own value —
+ *      carries an axis and a baseline, and on the `reveal` event it carries its own KEY.
+ *      `entranceLayer` already refuses to build one without them; this reads them off the delivered
+ *      FILE, because several beats here patch their own HTML after it is rendered, and because a
+ *      `grow` that lost its `--e-sx` resolves its keyframe to `scale(1, 1)`: a mark drawn in full
+ *      from the first millisecond, with every other clause here green. Keys are unique, and every
+ *      layer gated on a mark's arrival names one that exists — that pairing is what makes the label
+ *      rule checkable at all, in this file and in `verify-entrance.mjs`.
  *
  * AND THE HALF THAT IS NOT ABOUT MOTION AT ALL: a page that declares NO entrance must ship none of
  * its cost — no keyframes, no rules, not a line. That is the same gate the filter vocabulary earned
@@ -151,7 +154,6 @@ const TWIN = join(new URL(".", import.meta.url).pathname, "../../..");
 const ENTRANCE_PENDING = [
   "proof/co2-suisse/co2.html",
   "proof/web-co2-decline-slope/co2-decline-slope.html",
-  "proof/web-co2-ranking/dist/co2-ranking.html",
   "proof/web-income-life-expectancy/income-life-expectancy.html",
   "proof/webx-carbon-footprint/carbon-footprint.html",
   "proof/webx-electricity-mix/electricity-mix.html",

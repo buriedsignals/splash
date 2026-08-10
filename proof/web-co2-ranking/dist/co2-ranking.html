@@ -167,6 +167,46 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 }
 #tooltip[hidden] { display: none; }
 
+
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes chart-entrance-fade { from { opacity: 0; } }
+  @keyframes chart-entrance-wipe { from { transform: scaleX(0); } }
+  @keyframes chart-entrance-land { from { transform: scale(0); } }
+  @keyframes chart-entrance-grow { from { transform: scale(var(--e-sx, 1), var(--e-sy, 1)); } }
+
+  /* One class, added once, by an IntersectionObserver — never on load. An embed can sit far below
+     the fold of an article, and an entrance nobody watched is a worse artifact than a static one.
+     `backwards` and not `forwards`: the element holds the keyframe's FROM state through its own
+     delay (without it every layer would be fully drawn until its turn came, which is no entrance at
+     all), and once the animation is over the element returns to its own settled style rather than
+     being frozen at a computed value. */
+  .chart-figure.entered [data-entrance-motion] {
+    animation-duration: var(--e-dur);
+    animation-delay: var(--e-delay);
+    animation-timing-function: var(--e-ease, linear);
+    animation-fill-mode: backwards;
+  }
+  .chart-figure.entered [data-entrance-motion="fade"] { animation-name: chart-entrance-fade; }
+  .chart-figure.entered [data-entrance-motion="wipe"] { animation-name: chart-entrance-wipe; }
+  .chart-figure.entered [data-entrance-motion="land"] { animation-name: chart-entrance-land; }
+  .chart-figure.entered [data-entrance-motion="grow"] { animation-name: chart-entrance-grow; }
+  .chart-figure.entered [data-entrance-motion="wipe"],
+  .chart-figure.entered [data-entrance-motion="land"] {
+    transform-box: view-box;
+    transform-origin: 0 0;
+  }
+  /* A grown mark states its OWN baseline, because there is no single one: a column grows up from
+     the plot floor, a diverging bar out from a centre line, a stem right from wherever the value
+     axis's zero landed. The fallback is the other two motions' own 0 0, so a missing pair is the
+     old behaviour rather than an undefined one — and entranceLayer refuses to emit a grow layer
+     without them, so the fallback is never what a delivered page runs. */
+  .chart-figure.entered [data-entrance-motion="grow"] {
+    transform-box: view-box;
+    transform-origin: var(--e-ox, 0) var(--e-oy, 0);
+  }
+}
+
 .chart-plot.ranking-plot {
   grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
   min-height: var(--min-plot-h);
@@ -198,7 +238,7 @@ svg.chart rect.row-hit:hover, svg.chart rect.row-hit.row-active {
 </style>
 </head>
 <body>
-<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--category-size:14px;--category-weight:500;--value-size:14px;--value-weight:500"><div class="chart-header" style="margin-bottom:18px"><h2 class="chart-title">Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies</h2><p class="chart-caveat">Essentially level with Sweden, and little more than half of Poland&#x27;s, the highest of the group.</p></div><div class="chart-plot ranking-plot" style="--y-gutter:109px;--r-gutter:37px;--x-axis-h:0px;--min-plot-h:260px;aspect-ratio:786 / 400"><div class="y-axis"><span class="cat-label" style="top:5%;color:#616161;font-weight:500">Poland</span><span class="cat-label" style="top:15%;color:#616161;font-weight:500">Germany</span><span class="cat-label" style="top:25%;color:#616161;font-weight:500">Norway</span><span class="cat-label" style="top:35%;color:#616161;font-weight:500">Austria</span><span class="cat-label" style="top:45%;color:#616161;font-weight:500">Italy</span><span class="cat-label" style="top:55%;color:#616161;font-weight:500">Spain</span><span class="cat-label" style="top:65%;color:#616161;font-weight:500">United Kingdom</span><span class="cat-label" style="top:75%;color:#616161;font-weight:500">France</span><span class="cat-label" style="top:85%;color:#0B7A75;font-weight:700">Switzerland</span><span class="cat-label" style="top:95%;color:#616161;font-weight:500">Sweden</span></div><svg role="group" aria-label="Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 640 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="640" height="400" fill="#FFFFFF"></rect><line x1="0" x2="0" y1="0" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="0" y="6" width="640" height="28" fill="#616161"></rect><rect x="0" y="46" width="611.8615881313476" height="28" fill="#616161"></rect><rect x="0" y="86" width="602.7130201487275" height="28" fill="#616161"></rect><rect x="0" y="126" width="558.6455441311248" height="28" fill="#616161"></rect><rect x="0" y="166" width="459.91477872037467" height="28" fill="#616161"></rect><rect x="0" y="206" width="415.72373399417427" height="28" fill="#616161"></rect><rect x="0" y="246" width="409.10546808484435" height="28" fill="#616161"></rect><rect x="0" y="286" width="358.80737213446525" height="28" fill="#616161"></rect><rect x="0" y="326" width="324.9383009551151" height="28" fill="#0B7A75"></rect><rect x="0" y="366" width="324.6642893776673" height="28" fill="#616161"></rect><rect class="row-hit" x="0" y="0" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: 7.080 t" data-detail="Poland · 7.080 t"></rect><rect class="row-hit" x="0" y="40" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: 6.769 t" data-detail="Germany · 6.769 t"></rect><rect class="row-hit" x="0" y="80" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Norway: 6.668 t" data-detail="Norway · 6.668 t"></rect><rect class="row-hit" x="0" y="120" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Austria: 6.180 t" data-detail="Austria · 6.180 t"></rect><rect class="row-hit" x="0" y="160" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: 5.088 t" data-detail="Italy · 5.088 t"></rect><rect class="row-hit" x="0" y="200" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: 4.599 t" data-detail="Spain · 4.599 t"></rect><rect class="row-hit" x="0" y="240" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: 4.526 t" data-detail="United Kingdom · 4.526 t"></rect><rect class="row-hit" x="0" y="280" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: 3.969 t" data-detail="France · 3.969 t"></rect><rect class="row-hit" x="0" y="320" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: 3.595 t" data-detail="Switzerland · 3.595 t"></rect><rect class="row-hit" x="0" y="360" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Sweden: 3.592 t" data-detail="Sweden · 3.592 t"></rect></svg><div class="overlay" aria-hidden="true"><span class="value-label" style="left:100%;top:5%;color:#616161;font-weight:500">7.1 t</span><span class="value-label" style="left:95.6%;top:15%;color:#616161;font-weight:500">6.8 t</span><span class="value-label" style="left:94.2%;top:25%;color:#616161;font-weight:500">6.7 t</span><span class="value-label" style="left:87.3%;top:35%;color:#616161;font-weight:500">6.2 t</span><span class="value-label" style="left:71.9%;top:45%;color:#616161;font-weight:500">5.1 t</span><span class="value-label" style="left:65%;top:55%;color:#616161;font-weight:500">4.6 t</span><span class="value-label" style="left:63.9%;top:65%;color:#616161;font-weight:500">4.5 t</span><span class="value-label" style="left:56.1%;top:75%;color:#616161;font-weight:500">4.0 t</span><span class="value-label" style="left:50.8%;top:85%;color:#0B7A75;font-weight:700">3.6 t</span><span class="value-label" style="left:50.7%;top:95%;color:#616161;font-weight:500">3.6 t</span></div></div><p class="chart-source">Source: Global Carbon Budget (2025), via Our World in Data · 2024 data</p></figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--category-size:14px;--category-weight:500;--value-size:14px;--value-weight:500"><div class="chart-header" data-entrance="establish" data-entrance-motion="fade" style="--e-delay:0ms;--e-dur:290ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);margin-bottom:18px"><h2 class="chart-title">Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies</h2><p class="chart-caveat">Essentially level with Sweden, and little more than half of Poland&#x27;s, the highest of the group.</p></div><div class="chart-plot ranking-plot" style="--y-gutter:109px;--r-gutter:37px;--x-axis-h:0px;--min-plot-h:260px;aspect-ratio:786 / 400"><div class="y-axis" data-entrance="establish" data-entrance-motion="fade" style="--e-delay:0ms;--e-dur:290ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1)"><span class="cat-label" style="top:5%;color:#616161;font-weight:500">Poland</span><span class="cat-label" style="top:15%;color:#616161;font-weight:500">Germany</span><span class="cat-label" style="top:25%;color:#616161;font-weight:500">Norway</span><span class="cat-label" style="top:35%;color:#616161;font-weight:500">Austria</span><span class="cat-label" style="top:45%;color:#616161;font-weight:500">Italy</span><span class="cat-label" style="top:55%;color:#616161;font-weight:500">Spain</span><span class="cat-label" style="top:65%;color:#616161;font-weight:500">United Kingdom</span><span class="cat-label" style="top:75%;color:#616161;font-weight:500">France</span><span class="cat-label" style="top:85%;color:#0B7A75;font-weight:700">Switzerland</span><span class="cat-label" style="top:95%;color:#616161;font-weight:500">Sweden</span></div><svg role="group" aria-label="Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 640 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="640" height="400" fill="#FFFFFF"></rect><line data-entrance="reference" data-entrance-motion="grow" style="--e-delay:330ms;--e-dur:240ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:1;--e-sy:0;--e-ox:0px;--e-oy:0px" x1="0" x2="0" y1="0" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Poland" style="--e-delay:690ms;--e-dur:155ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="6" width="640" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Germany" style="--e-delay:787ms;--e-dur:154ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="46" width="611.8615881313476" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Norway" style="--e-delay:883ms;--e-dur:155ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="86" width="602.7130201487275" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Austria" style="--e-delay:980ms;--e-dur:155ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="126" width="558.6455441311248" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Italy" style="--e-delay:1077ms;--e-dur:154ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="166" width="459.91477872037467" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Spain" style="--e-delay:1173ms;--e-dur:155ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="206" width="415.72373399417427" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="United Kingdom" style="--e-delay:1270ms;--e-dur:155ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="246" width="409.10546808484435" height="28" fill="#616161"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="France" style="--e-delay:1367ms;--e-dur:154ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="286" width="358.80737213446525" height="28" fill="#616161"></rect><rect data-entrance="subject" data-entrance-motion="grow" data-entrance-key="Switzerland" style="--e-delay:1560ms;--e-dur:200ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="326" width="324.9383009551151" height="28" fill="#0B7A75"></rect><rect data-entrance="reveal" data-entrance-motion="grow" data-entrance-key="Sweden" style="--e-delay:1463ms;--e-dur:97ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);--e-sx:0;--e-sy:1;--e-ox:0px;--e-oy:0px" x="0" y="366" width="324.6642893776673" height="28" fill="#616161"></rect><rect class="row-hit" x="0" y="0" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: 7.080 t" data-detail="Poland · 7.080 t"></rect><rect class="row-hit" x="0" y="40" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: 6.769 t" data-detail="Germany · 6.769 t"></rect><rect class="row-hit" x="0" y="80" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Norway: 6.668 t" data-detail="Norway · 6.668 t"></rect><rect class="row-hit" x="0" y="120" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Austria: 6.180 t" data-detail="Austria · 6.180 t"></rect><rect class="row-hit" x="0" y="160" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: 5.088 t" data-detail="Italy · 5.088 t"></rect><rect class="row-hit" x="0" y="200" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: 4.599 t" data-detail="Spain · 4.599 t"></rect><rect class="row-hit" x="0" y="240" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: 4.526 t" data-detail="United Kingdom · 4.526 t"></rect><rect class="row-hit" x="0" y="280" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: 3.969 t" data-detail="France · 3.969 t"></rect><rect class="row-hit" x="0" y="320" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: 3.595 t" data-detail="Switzerland · 3.595 t"></rect><rect class="row-hit" x="0" y="360" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Sweden: 3.592 t" data-detail="Sweden · 3.592 t"></rect></svg><div class="overlay" aria-hidden="true"><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Poland" class="value-label" style="--e-delay:845ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:100%;top:5%;color:#616161;font-weight:500">7.1 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Germany" class="value-label" style="--e-delay:941ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:95.6%;top:15%;color:#616161;font-weight:500">6.8 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Norway" class="value-label" style="--e-delay:1038ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:94.2%;top:25%;color:#616161;font-weight:500">6.7 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Austria" class="value-label" style="--e-delay:1135ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:87.3%;top:35%;color:#616161;font-weight:500">6.2 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Italy" class="value-label" style="--e-delay:1231ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:71.9%;top:45%;color:#616161;font-weight:500">5.1 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Spain" class="value-label" style="--e-delay:1328ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:65%;top:55%;color:#616161;font-weight:500">4.6 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="United Kingdom" class="value-label" style="--e-delay:1425ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:63.9%;top:65%;color:#616161;font-weight:500">4.5 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="France" class="value-label" style="--e-delay:1521ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:56.1%;top:75%;color:#616161;font-weight:500">4.0 t</span><span data-entrance="conclusion" data-entrance-motion="fade" data-entrance-label="Switzerland" class="value-label" style="--e-delay:1760ms;--e-dur:270ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:50.8%;top:85%;color:#0B7A75;font-weight:700">3.6 t</span><span data-entrance="reveal" data-entrance-motion="fade" data-entrance-label="Sweden" class="value-label" style="--e-delay:1560ms;--e-dur:110ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1);left:50.7%;top:95%;color:#616161;font-weight:500">3.6 t</span></div></div><p class="chart-source" data-entrance="establish" data-entrance-motion="fade" style="--e-delay:0ms;--e-dur:290ms;--e-ease:cubic-bezier(0.33, 1, 0.68, 1)">Source: Global Carbon Budget (2025), via Our World in Data · 2024 data</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
@@ -454,6 +494,102 @@ function initAll() {
 // In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
 // it is parsed, unchanged.
 if (typeof document !== "undefined") initAll();
+
+</script>
+<script>
+// twin/skills/chart-web/assets/entrance-trigger.mjs
+//
+// THE ENTRANCE'S OWN SCRIPT, AND THE REASON IT IS NOT IN `interaction.mjs` ANY MORE.
+//
+// It used to be one function inside that file, called from its `initAll()`. Two things were wrong
+// with that, and both were MEASURED on a real beat rather than reasoned about:
+//
+//   1. **A beat may replace the interaction script wholesale, and seven of them do.** Every
+//      non-line beat in this repository (lollipop, dumbbell, boxplot, pyramid, scatter, diverging,
+//      small multiples) writes its own hover mechanic — a lollipop's fifteen band rows have no
+//      "nearest by x" to resolve — and its runner PATCHES the delivered file, swapping the genre's
+//      inlined `<script>` for its own. The entrance CSS still shipped, the markup still declared its
+//      layers, this guard's markup half still passed, and the `entered` class was never added by
+//      anything: `verify-entrance.mjs` timed out waiting 5s for it on the first such beat migrated.
+//      A page whose entrance silently does not exist, with every check green.
+//   2. **`initAll()` returns early when there is no `#tooltip`**, so a beat with no hover at all
+//      would lose its entrance to a guard clause about something else entirely.
+//
+// The entrance's CSS is emitted by `render-web.mjs` for a beat that DECLARED an entrance, and
+// nothing else. Its trigger is now emitted by the same gate, in its own `<script>`, AFTER the
+// beat's own — so a runner that swaps the first block leaves this one standing. One cost, one
+// condition, one place. There is no second copy of this logic to walk.
+//
+// It is a classic script, not a module (`render-web.mjs`'s `inlineable` strips `export`), so it
+// runs in a CMS iframe or a sandboxed embed that restricts module scripts.
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this genre's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This genre's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+// Guarded rather than a bare call, for the same reason `interaction.mjs` guards its own: this file
+// is read as text and inlined, and a `document`-less context must not throw on it.
+if (typeof document !== "undefined") initEntrance(document);
 
 </script>
 <script>
