@@ -126,3 +126,35 @@ beside it.
 ## Source line
 
 `Source: World Bank Open Data, indicator SP.POP.TOTL (population, total), 2023 · basemap © MapTiler, © OpenStreetMap`
+
+## Size — REFUSED, with the numbers, and the finding this beat settles — 2026-08-11
+
+**This beat pins no size, and that is a decision rather than an omission.** The full measurement is
+`probe/VERDICT.md`; re-run it with `bun proof/mapvid-dot-population/probe/size-budget.mjs`.
+
+This is the beat that settles the shared finding, because it is the least word-heavy of the three map
+videos — the ledger measured its words at 729 px of a 910 px band — and it carries the shortest
+headline of the four owing a pin, 56 characters, already one line at its own frame.
+
+**R6 fired at landscape, on one word.** *Half of this map's people live in 5 of its 42 countries.*
+becomes *Half this map's people live in 5 of its 42 countries.* — 53 characters, every quantity, what
+each counts and the field intact, and English takes "half the people" as readily as "half of the
+people". The margin is worth recording: the long form measures 1760 px against landscape's 1750 px
+measure and breaks by **10 px**. At square, portrait and this beat's own 1080 × 1440 frame the rung
+declines, so nothing delivered changes.
+
+**And a one-line title leaves 88 px for the map** — a 99 × 88 plate in a 1920 × 1080 frame, 5% of its
+width, against the 936 × 827 the beat really draws. That is 1.1% of the shipped plate's area: 2,996
+dots at one dot per 199,000 people are not smaller there, they are gone. Square is 794 px short and
+portrait 751 px.
+
+**The refusal does not rest on the caveat**, which here is the honesty line three times over — a
+dot's position inside its country is random, time on screen is not population, and Russia and seven
+micro-territories are excluded. Gone entirely, landscape reaches 330 px, square is still 34 px short
+and portrait reaches 9 px. The disclosure is kept and the beat still refuses.
+
+So the shortest headline of the four, on one line, in the least word-heavy of the three, leaves 88 px
+of map. **The title was one block among five.** What fills these frames is this genre laying title,
+plate, key, meter, conclusion, caveat and source in ONE COLUMN at a 30 px video floor while a
+landscape frame answers with 1750 px of width against 910 px of band. The room is in the width, and
+taking it is a redraw of the layout rather than a rung.
