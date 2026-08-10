@@ -437,7 +437,7 @@ async function refuseToWipeAnotherBeat(exportDir, beatDir) {
 async function withHandover(written, { exportDir, genre, handover, states = [] }) {
   if (!handover) {
     throw new Error(
-      "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.",
+      "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (language, placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: language is STORYBOARD.md's `language:` field, placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.",
     );
   }
   const path = join(exportDir, "HANDOVER.md");

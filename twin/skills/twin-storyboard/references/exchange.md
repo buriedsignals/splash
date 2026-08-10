@@ -250,7 +250,14 @@ anti-patterns of this case. Derived from the nine previous movements, so never c
   A recommendation before ⑤ is a sentence.
 - **Never ask twice.** Repetition is a bug, not caution.
 - **Silence is not consent.** A proposal waits for an answer.
-- **The journalist's language governs** the entire exchange, errors and recaps included.
+- **The journalist's language governs** the entire exchange, errors and recaps included — and it is
+  RECORDED, in `STORYBOARD.md`'s `language:` field, as its code (`fr`, `de-CH`). Ruling R4: it
+  follows the ARTICLE, not the newsroom's configuration (a francophone paper can publish in
+  English), and it is confirmed with the journalist against what `NEWSROOM.md` says the newsroom
+  publishes in. It is written down because the exchange is not the last thing they read: the
+  delivery writes `HANDOVER.md` and makes both halves of the closing offer long after this
+  conversation's own language has stopped being visible, and it reads that field rather than
+  guessing. A hand-over came out in English on a French story exactly once, for want of it.
 - **Never write in their place**: not the title, not the takeaway, not the caption, not the
   source, without validation. Editorial intent never leaves the journalist.
 - **A gate closes into a file**, not into the conversation.

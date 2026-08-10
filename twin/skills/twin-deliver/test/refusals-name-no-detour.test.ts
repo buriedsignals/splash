@@ -113,6 +113,7 @@ describe("the detector can see the defect it was written for", () => {
 });
 
 const handover = {
+  language: "en",
   placement: "after the paragraph on winter rainfall",
   alt: "Rainfall fell in three of the last four winters",
   credit: "Source: MeteoSwiss, as of 2026-08-10",
@@ -268,6 +269,17 @@ describe("every refusal in the delivery path, triggered for real", () => {
         }),
       ),
     );
+    // and the language it is written in, which is read and never guessed.
+    messages.push(
+      await refusalFrom(() =>
+        formatHandover({
+          ...handover,
+          genre: "web",
+          files: ["still.png"],
+          language: "",
+        }),
+      ),
+    );
 
     // cms-insert — the kind vocabulary, the empty insertion, and the partial-article guard.
     messages.push(
@@ -331,6 +343,9 @@ describe("every refusal in the delivery path, triggered for real", () => {
 const SCRIPTS = [
   "deliver.mjs",
   "format-handover.mjs",
+  // The two refusals that decide what language the delivery is written in are on the delivery path
+  // like every other one here, so they are read by the same scan.
+  "journalist-language.mjs",
   "cms-insert.mjs",
   "deploy-embed.mjs",
 ];
@@ -360,7 +375,7 @@ function thrownMessages(source: string): string[] {
 }
 
 describe("every refusal in the delivery path, read from the source", () => {
-  it("should name no way around itself, in any of the four scripts", () => {
+  it("should name no way around itself, in any of the delivery path's scripts", () => {
     const offenders: string[] = [];
     let count = 0;
     for (const script of SCRIPTS) {

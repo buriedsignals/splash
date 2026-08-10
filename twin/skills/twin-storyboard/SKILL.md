@@ -81,9 +81,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    The order is the argument: each movement depends on the one before it. This is prose conducted
    in conversation — this skill's reference is what governs it, not code.
 2. **The exchange writes `STORYBOARD.md`**: YAML front matter (`takeaway`, the hand-of-the-journalist
-   fields, the two recorded verdicts `grounding` and `reference`, and
+   fields, the two recorded verdicts `grounding` and `reference`, `language`, and
    `slots: [{id, proves, medium, genre, size, reachable, candidates, chosen}, ...]`) above the prose
    the journalist actually reads.
+
+   **`language` is the story's own, as a code** (`fr`, `de-CH`) — ruling R4: it follows the ARTICLE
+   rather than the newsroom's configuration, and is confirmed with the journalist against the
+   languages `NEWSROOM.md` records. It is written down because the exchange is not the last thing
+   the journalist reads: `twin-deliver` writes `HANDOVER.md` and makes the closing offer in it, by
+   READING this field. A hand-over came out in English on a French story for want of it.
 
    **`size` is asked at G2c only where the genre has one** (ruling R2). A `static` or `video` beat
    ships at `landscape` (YouTube, article web), `square` (social posts) or `portrait` (stories), and

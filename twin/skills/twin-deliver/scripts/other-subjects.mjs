@@ -31,6 +31,7 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PRODUCIBLE_GENRES, capabilityGap } from "./another-genre.mjs";
+import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-language.mjs";
 
 export const SUBJECTS_FILE = "SUBJECTS.md";
 
@@ -38,6 +39,49 @@ export const SUBJECTS_FILE = "SUBJECTS.md";
 // they are separate facts: a journalist can want the same beat as a video and want nothing else
 // from the article, or the reverse.
 export const SUBJECT_OFFER_RECEIPT = ".other-subjects";
+
+// This offer's own sentences, in each language it is made in — the same discipline as
+// `format-handover.mjs` and `another-genre.mjs`: no journalist-facing literal in the body below.
+const SUBJECT_COPY = {
+  en: {
+    nothingWaiting: [
+      "Your article had other angles in it, and none of them is waiting: the one you have just",
+      "delivered is what this piece supports right now.",
+    ],
+    closedHeading: "One thing that is only unavailable for the moment:",
+    opensWith: (opens) => `. To open it: ${opens}`,
+    closeNothing: "Say you are done, and the story is closed.",
+    opening: [
+      "There is more in this article than the visual you just delivered. These are the other things",
+      "in it worth drawing — each would tell your reader something this beat does not show:",
+    ],
+    close: [
+      "Taking one starts a new visual in this story, from the beginning — you frame it, you see it,",
+      "you approve it, and it is delivered on its own, beside the one you already have. Name one, or",
+      "say you are done: both are an answer, and either ends the story cleanly.",
+    ],
+  },
+  fr: {
+    nothingWaiting: [
+      "Votre article contenait d'autres angles, et aucun n'est en attente : celui que vous venez de",
+      "recevoir est ce que cet article permet de montrer aujourd'hui.",
+    ],
+    closedHeading: "Une seule chose est indisponible, et seulement pour le moment :",
+    opensWith: (opens) => `. Pour l'ouvrir : ${opens}`,
+    closeNothing: "Dites que vous avez terminé, et le sujet est clos.",
+    opening: [
+      "Il y a davantage dans cet article que le visuel que vous venez de recevoir. Voici ce qu'il",
+      "contient d'autre qui mérite d'être dessiné — chacun dirait à votre lecteur quelque chose que ce",
+      "visuel-ci ne montre pas :",
+    ],
+    close: [
+      "En prendre un lance un nouveau visuel dans ce sujet, depuis le début — vous le cadrez, vous le",
+      "voyez, vous le validez, et il est livré à part, à côté de celui que vous avez déjà. Nommez-en",
+      "un, ou dites que vous avez terminé : les deux sont une réponse, et l'une comme l'autre clôt",
+      "proprement le sujet.",
+    ],
+  },
+};
 
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const OUR_PATH = /\bskills\//;
@@ -196,43 +240,36 @@ export async function otherSubjectsFor({ storyDir, capabilities = {} }) {
  * The honest empty case is a first-class outcome: an article that yielded nothing else says so, and
  * the run closes. Inventing a second-rate angle to fill the offer is the failure this paragraph
  * exists to name.
+ *
+ * Written in the story's own language (A25, ruling R4), read from `STORYBOARD.md` and never guessed.
+ * `learns` is the journalist's own recorded sentence and is already in their language; only the
+ * scaffold around it is translated here. The one line that is not is a `closed` row's `because`,
+ * which preflight measures in English — recorded in `another-genre.mjs`'s `capabilityGap`.
  */
-export function formatSubjectOffer(rows) {
+export function formatSubjectOffer(rows, { language } = {}) {
+  const scaffold = resolveScaffoldLanguage(language);
+  const copy = SUBJECT_COPY[scaffold.written];
   const offered = rows.filter((row) => row.verdict === "offered");
   const closed = rows.filter((row) => row.verdict === "closed");
 
   if (offered.length === 0) {
-    const lines = [
-      "Your article had other angles in it, and none of them is waiting: the one you have just",
-      "delivered is what this piece supports right now.",
-      "",
-    ];
+    const lines = [...untranslatedNotice(scaffold), ...copy.nothingWaiting, ""];
     if (closed.length > 0) {
-      lines.push("One thing that is only unavailable for the moment:", "");
+      lines.push(copy.closedHeading, "");
       for (const row of closed) {
-        lines.push(`- ${row.learns} — ${row.because}${row.opens ? `. To open it: ${row.opens}` : ""}`);
+        lines.push(`- ${row.learns} — ${row.because}${row.opens ? copy.opensWith(row.opens) : ""}`);
       }
       lines.push("");
     }
-    lines.push("Say you are done, and the story is closed.", "");
+    lines.push(copy.closeNothing, "");
     return lines.join("\n");
   }
 
-  const lines = [
-    "There is more in this article than the visual you just delivered. These are the other things",
-    "in it worth drawing — each would tell your reader something this beat does not show:",
-    "",
-  ];
+  const lines = [...untranslatedNotice(scaffold), ...copy.opening, ""];
   for (const row of offered) {
     lines.push(`- ${row.learns}`);
   }
-  lines.push(
-    "",
-    "Taking one starts a new visual in this story, from the beginning — you frame it, you see it,",
-    "you approve it, and it is delivered on its own, beside the one you already have. Name one, or",
-    "say you are done: both are an answer, and either ends the story cleanly.",
-    "",
-  );
+  lines.push("", ...copy.close, "");
   return lines.join("\n");
 }
 

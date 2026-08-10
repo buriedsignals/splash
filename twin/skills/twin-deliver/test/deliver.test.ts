@@ -25,6 +25,10 @@ import {
 // Every field below is already recorded during the exchange: placement and credit are hand fields
 // 4 and 5, alt is in the component, the caveat is the limits field.
 const handover = {
+  // `language` is one of them too, and it is the story's, read from STORYBOARD.md — the fixtures
+  // below assert the English scaffold, so the fixture story is an English one. The French path is
+  // driven end to end in its own case ("should write the hand-over in the story's own language").
+  language: "en",
   placement: "after the paragraph on winter rainfall, article web, full width",
   alt: "Rainfall in Annemasse fell in three of the last four winters",
   credit: "Source: MeteoSwiss, as of 2026-08-10",

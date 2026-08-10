@@ -50,6 +50,9 @@ until the choice does.
   `otherSubjectsFor` + `formatSubjectOffer` for the other subjects in the same article. Wait for
   each answer and write it (`recordGenreAnswer`, `recordSubjectAnswer`). A delivery with either half
   unanswered is not closed (`deliveryClosed`), and both receipts say so on disk.
+- **Hand `language` to all three of them** — `materialise`'s hand-over payload, `otherGenresFor` and
+  `formatGenreOffer`, `formatSubjectOffer` — as `STORYBOARD.md` records it. They refuse without it
+  rather than write to a newsroom in a language nobody chose.
 - **Not** for production. This skill never renders a chart or a map — it only decides which
   already-rendered (or already-written) files leave the beat directory, and in what shape.
 
@@ -86,6 +89,7 @@ Two things close it, and both are code rather than convention:
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
+| The language it is written in | `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` | Ruling R4: the journalist's language follows the ARTICLE and is confirmed with them, so it is READ from `STORYBOARD.md`'s `language:` field — never detected from the prose, never defaulted. Every journalist-facing document this skill writes (the hand-over, both halves of the closing offer) is rendered from a copy table keyed by language. `en` and `fr` are written today; any other recorded language gets the English scaffold **and a line at the top of the document saying so** |
 | The other genres | `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`, `deliveryClosed` | After the delivery: which other genres this beat could be produced in, filtered by what is producible, what the capability allows and what the journalist says does not suit it. The answer — taken or declined — is a fact on disk |
 | The other subjects | `scripts/other-subjects.mjs` — `recordSurveyedSubjects`, `otherSubjectsFor`, `formatSubjectOffer`, `recordSubjectAnswer` | The article's own other angles, written at the proposal into `stories/<slug>/SUBJECTS.md` and RE-CHECKED at the end of the run — drawn, closed, unreachable, or still worth offering |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
@@ -161,11 +165,24 @@ Two things close it, and both are code rather than convention:
    sizes, with no placement, no alt text and no credit line. Every input is already recorded during
    the exchange: placement and credit are hand fields 4 and 5, the alt is in the component, the
    caveat is `limits`. A caller with nothing to hand in has not read the storyboard back.
+
+   **And it is written in the STORY's language, which is one of those recorded inputs.** The owner's
+   own run delivered a French story — article, takeaway, hand fields, title, alt text, credit line —
+   inside an English scaffold: *"## Where it goes in the article"* above a French sentence, in the
+   one artifact the newsroom keeps (A25). Ruling R4 had already settled the principle and nothing
+   had applied it here. `language` is now part of the payload, read from `STORYBOARD.md`'s
+   `language:` field — a code, never free text, never sniffed from the prose — and the same rule
+   governs both halves of the closing offer, which the journalist reads at the same moment.
+   **A language with no scaffold falls back to English AND says so**, in a line above the document
+   it is about: refusing would block a journalist from their own delivered work over a gap that is
+   ours, and falling back silently is the defect itself. One English line can still reach a French
+   offer — the "not available" sentence, which preflight measures in English — and that is recorded
+   in `FEEDBACK-2026-08-10.md` rather than left in a delivered document for someone to find.
 5. **`materialise` returns every path it wrote**, the hand-over included. A caller that wants to
    confirm the delivery can list `written` without re-reading the directory.
 
-6. **`otherGenresFor({medium, deliveredGenre, capabilities, notSuited})` — the offer the run used to
-   end without.** The owner delivered an interactive web chart and was never asked whether he also
+6. **`otherGenresFor({medium, deliveredGenre, capabilities, notSuited, language})` — the offer the
+   run used to end without.** The owner delivered an interactive web chart and was never asked whether he also
    wanted it as a still for print or a video for a feed: *"À la toute fin il ne me propose pas
    d'exporter sous un autre genre si jamais."* This names the genres the SAME beat could also be
    produced in — never the one just delivered — with what each is for and what it costs in time.
@@ -315,16 +332,22 @@ const written = await materialise({
 | Shortest a subject's own reason may read before it counts as a name rather than a reason | `5` words | `validateSubject`, `scripts/other-subjects.mjs` |
 | What answers close the subject half | `3` — `declined`, `taken <id>`, and `none` for an article that carried nothing else | `recordSubjectAnswer`, `scripts/other-subjects.mjs` |
 | How many live-tile states a delivery can be in | `4` (`none`, `restricted`, `development`, `unkeyed`) — an unknown one throws in the hand-over rather than saying nothing | `LIVE_TILE_STATES`, `scripts/deliver.mjs` |
-| What each of those states says to the journalist | `4` paragraph blocks, one per state, `none` being silence | `LIVE_TILES`, `scripts/format-handover.mjs` |
+| What each of those states says to the journalist | `4` paragraph blocks, one per state, `none` being silence — **in each language the delivery is written in**, and a state present in one table and missing from another is refused rather than silently dropped | `LIVE_TILES`, `scripts/format-handover.mjs` |
+| How many languages a delivery can be WRITTEN in | `2` (`en`, `fr`) — any other recorded language gets the English scaffold plus a line saying so; a missing one throws | `SCAFFOLD_LANGUAGES`, `scripts/journalist-language.mjs` |
 | Which CMS kind `cms-insertion` demonstrates when the caller supplies none | `"we-publish"` (override with `materialise`'s own `cms` object) | `materialise`'s `"cms-insertion"` branch |
 
 ## Files
 
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
-  hand fields 4 and 5, the caveat is `limits`, the alt is in the component. `LIVE_TILES` is the
-  four-state vocabulary that says which MapTiler key the delivered page carries and what it costs —
-  an enum, never a sentence a caller writes.
+  hand fields 4 and 5, the caveat is `limits`, the alt is in the component, the `language` is the
+  storyboard's own field. `LIVE_TILES` is the four-state vocabulary that says which MapTiler key
+  the delivered page carries and what it costs — an enum, never a sentence a caller writes — held
+  per language, like every other sentence in the document.
+- `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` and
+  `SCAFFOLD_LANGUAGES`: the one reading of what language a delivery is written in, and the one
+  decision about a language it is not written in (English, with the fallback stated in the document
+  rather than discovered by the reader).
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper),
   `carriesMapKey` and `mapKeyState` (the key question, asked of the artifact),
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one

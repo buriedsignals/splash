@@ -60,7 +60,11 @@ const SHUT = {
 
 describe("otherGenresFor — what else this beat could be", () => {
   it("should name the other genres, never the one just delivered", () => {
-    const rows = otherGenresFor({ medium: "chart", deliveredGenre: "web" });
+    const rows = otherGenresFor({
+      medium: "chart",
+      deliveredGenre: "web",
+      language: "en",
+    });
     expect(rows.map((r) => r.genre)).toEqual(["static", "video", "scrolly"]);
     expect(rows.every((r) => r.verdict === "offered")).toBe(true);
   });
@@ -69,6 +73,7 @@ describe("otherGenresFor — what else this beat could be", () => {
     for (const row of otherGenresFor({
       medium: "chart",
       deliveredGenre: "static",
+      language: "en",
     })) {
       expect(row.gives.split(/\s+/).length).toBeGreaterThan(6);
       expect(row.costs.split(/\s+/).length).toBeGreaterThan(4);
@@ -79,9 +84,11 @@ describe("otherGenresFor — what else this beat could be", () => {
     // An image beat reaches static and scrolly. Video is ABSENT from the table, and an absent row
     // is the point — the offer cannot name a genre that would fail at production.
     expect(
-      otherGenresFor({ medium: "image", deliveredGenre: "scrolly" }).map(
-        (r) => r.genre,
-      ),
+      otherGenresFor({
+        medium: "image",
+        deliveredGenre: "scrolly",
+        language: "en",
+      }).map((r) => r.genre),
     ).toEqual(["static"]);
   });
 
@@ -89,6 +96,7 @@ describe("otherGenresFor — what else this beat could be", () => {
     const rows = otherGenresFor({
       medium: "map",
       deliveredGenre: "static",
+      language: "en",
       capabilities: SHUT,
     });
     expect(rows.every((r) => r.verdict === "closed")).toBe(true);
@@ -102,6 +110,7 @@ describe("otherGenresFor — what else this beat could be", () => {
     const rows = otherGenresFor({
       medium: "map",
       deliveredGenre: "static",
+      language: "en",
       capabilities: OPEN,
     });
     expect(rows.map((r) => r.verdict)).toEqual([
@@ -115,6 +124,7 @@ describe("otherGenresFor — what else this beat could be", () => {
     const rows = otherGenresFor({
       medium: "chart",
       deliveredGenre: "web",
+      language: "en",
       notSuited: [
         {
           genre: "video",
@@ -132,6 +142,7 @@ describe("otherGenresFor — what else this beat could be", () => {
       otherGenresFor({
         medium: "chart",
         deliveredGenre: "web",
+        language: "en",
         notSuited: [{ genre: "video" }],
       }),
     ).toThrow(/needs a genre AND the reason/);
@@ -142,6 +153,7 @@ describe("otherGenresFor — what else this beat could be", () => {
       otherGenresFor({
         medium: "chart",
         deliveredGenre: "web",
+        language: "en",
         notSuited: [
           {
             genre: "video",
@@ -154,7 +166,11 @@ describe("otherGenresFor — what else this beat could be", () => {
 
   it("should refuse a medium it does not produce at all", () => {
     expect(() =>
-      otherGenresFor({ medium: "hologram", deliveredGenre: "web" }),
+      otherGenresFor({
+        medium: "hologram",
+        deliveredGenre: "web",
+        language: "en",
+      }),
     ).toThrow(/not a medium this toolchain produces/);
   });
 });
@@ -165,12 +181,13 @@ describe("formatGenreOffer — what the journalist reads", () => {
       otherGenresFor({
         medium: "map",
         deliveredGenre: "web",
+        language: "en",
         capabilities: SHUT,
         notSuited: [
           { genre: "scrolly", reason: "there is one reading here, not four" },
         ],
       }),
-      { beatName: "1-rainfall" },
+      { beatName: "1-rainfall", language: "en" },
     );
     expect(text).not.toMatch(/\bskills\//);
     expect(text).not.toMatch(/\.(mjs|mts|cjs|cts|tsx|jsx)\b/);
@@ -182,7 +199,12 @@ describe("formatGenreOffer — what the journalist reads", () => {
     // The single-format model, in the journalist's own terms: producing another genre means
     // producing the beat again — its own size, its own review, its own delivery.
     const text = formatGenreOffer(
-      otherGenresFor({ medium: "chart", deliveredGenre: "static" }),
+      otherGenresFor({
+        medium: "chart",
+        deliveredGenre: "static",
+        language: "en",
+      }),
+      { language: "en" },
     );
     expect(text).toContain("separate piece of work");
     expect(text).toMatch(/approve/);
@@ -190,7 +212,12 @@ describe("formatGenreOffer — what the journalist reads", () => {
 
   it("should say plainly that declining is an answer", () => {
     const text = formatGenreOffer(
-      otherGenresFor({ medium: "chart", deliveredGenre: "static" }),
+      otherGenresFor({
+        medium: "chart",
+        deliveredGenre: "static",
+        language: "en",
+      }),
+      { language: "en" },
     );
     expect(text).toMatch(/say you are done/i);
   });
@@ -200,15 +227,51 @@ describe("formatGenreOffer — what the journalist reads", () => {
       otherGenresFor({
         medium: "map",
         deliveredGenre: "static",
+        language: "en",
         capabilities: SHUT,
       }),
+      { language: "en" },
     );
     expect(text).toContain("Not available at the moment");
     expect(text).toMatch(/the story is closed/);
   });
 });
 
+/**
+ * A25, ruling R4 — this offer is read at the same moment as `HANDOVER.md`, by the same person, in
+ * the same language. The story's language is READ (`STORYBOARD.md`), never detected.
+ *
+ * MUTATIONS (in a copy under /tmp): make `otherGenresFor` ignore `language` and always read the `en`
+ * table → the "what it is for" case reddens; make `formatGenreOffer` ignore it → the headings case
+ * reddens; drop the notice → the untranslated case reddens.
+ */
+describe("formatGenreOffer — in the story's own language", () => {
+  const rowsIn = (language: string) =>
+    otherGenresFor({ medium: "chart", deliveredGenre: "static", language });
+
+  it("should make the whole offer in French, the descriptions included", () => {
+    const text = formatGenreOffer(rowsIn("fr"), { language: "fr" });
+    expect(text).toContain("Ce que ce visuel pourrait être aussi");
+    expect(text).toContain("une page dans laquelle le lecteur se déplace");
+    expect(text).toMatch(/dites que vous avez terminé/i);
+    expect(text).not.toContain("separate piece of work");
+    expect(text).not.toContain("What else this beat could be");
+  });
+
+  it("should refuse to make the offer at all when no language was recorded", () => {
+    expect(() => rowsIn("")).toThrow(/own language/);
+    expect(() => formatGenreOffer(rowsIn("en"))).toThrow(/STORYBOARD\.md/);
+  });
+
+  it("should say it is falling back to English when the recorded language has no scaffold", () => {
+    const text = formatGenreOffer(rowsIn("de"), { language: "de" });
+    expect(text).toContain("written in English, not in `de`");
+    expect(text).toContain("What else this beat could be");
+  });
+});
+
 const handover = {
+  language: "en",
   placement: "after the paragraph on winter rainfall",
   alt: "Rainfall fell in three of the last four winters",
   credit: "Source: MeteoSwiss, as of 2026-08-10",

@@ -18,7 +18,17 @@
 // `twin-palette/scripts/format-proposal.mjs` and `twin-newsroom-charter/scripts/format-proposal.mjs`
 // render the question from structured input, so nothing the function was not given can appear in it.
 // **There is no free-text `notes` field, and adding one is the change this file exists to prevent.**
+//
+// AND IT IS WRITTEN IN THE STORY'S OWN LANGUAGE (A25, ruling R4). Every scaffold sentence below is
+// a table keyed by language, not a literal, because the run that produced this document delivered a
+// French story inside an English frame. `language` is READ from `STORYBOARD.md` — never detected,
+// never defaulted — and `journalist-language.mjs` holds the one decision about a language we cannot
+// write in: fall back to English and SAY SO at the top of the page.
 
+import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-language.mjs";
+
+// `language` is deliberately not in this list: it has its own refusal, in `resolveScaffoldLanguage`,
+// which says where it is recorded and why it is never guessed. One check, in the place that owns it.
 const REQUIRED = ["genre", "placement", "alt", "credit"];
 
 // WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,
@@ -33,38 +43,85 @@ const REQUIRED = ["genre", "placement", "alt", "credit"];
 //
 // Every sentence is about THEIR article and THEIR account. Nothing about our code reaches this page
 // — the same rule `refuseMaintainerText` enforces for the fields the caller supplies.
-const LIVE_TILES = {
-  none: null,
-  restricted: [
-    "## The live map in this file",
-    "",
-    "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-    "inside the file, and it is the one restricted to your own domains — copied out of the page, it",
-    "does not work anywhere else.",
-  ],
-  development: [
-    "## The live map in this file, and the key it carries",
-    "",
-    "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-    "inside the file: anyone who opens the published article can read it, and it is your development",
-    "key, which is not restricted to your own domains.",
-    "",
-    "What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by",
-    "whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler",
-    "switches off **every** key on it — including the maps in articles you published years ago.",
-    "",
-    "The way to close that, when you want to: create a second MapTiler key restricted to your own",
-    "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry",
-    "the restricted key, which is worth nothing to anyone who lifts it out of the page.",
-  ],
-  unkeyed: [
-    "## The live map in this file",
-    "",
-    "No MapTiler key was recorded, so this page does not draw its map live: it shows the map layer",
-    "that is baked into the file. That layer is complete and readable — it simply does not pan or",
-    "zoom. Recording a MapTiler key on the setup page is what makes the live version possible.",
-  ],
+// Exported for ONE reason: so a test can assert that every language carries the same states. The
+// runtime refusal below is the defence at the point of use; the parity test is the one that can go
+// red the moment a language is added and a state forgotten, which is when it would actually happen.
+export const LIVE_TILES = {
+  en: {
+    none: null,
+    restricted: [
+      "## The live map in this file",
+      "",
+      "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
+      "inside the file, and it is the one restricted to your own domains — copied out of the page, it",
+      "does not work anywhere else.",
+    ],
+    development: [
+      "## The live map in this file, and the key it carries",
+      "",
+      "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
+      "inside the file: anyone who opens the published article can read it, and it is your development",
+      "key, which is not restricted to your own domains.",
+      "",
+      "What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by",
+      "whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler",
+      "switches off **every** key on it — including the maps in articles you published years ago.",
+      "",
+      "The way to close that, when you want to: create a second MapTiler key restricted to your own",
+      "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry",
+      "the restricted key, which is worth nothing to anyone who lifts it out of the page.",
+    ],
+    unkeyed: [
+      "## The live map in this file",
+      "",
+      "No MapTiler key was recorded, so this page does not draw its map live: it shows the map layer",
+      "that is baked into the file. That layer is complete and readable — it simply does not pan or",
+      "zoom. Recording a MapTiler key on the setup page is what makes the live version possible.",
+    ],
+  },
+  fr: {
+    none: null,
+    restricted: [
+      "## La carte en direct dans ce fichier",
+      "",
+      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
+      "qui permet ce dessin est à l'intérieur du fichier, et c'est celle qui est restreinte à vos",
+      "propres domaines — sortie de la page, elle ne fonctionne nulle part ailleurs.",
+    ],
+    development: [
+      "## La carte en direct dans ce fichier, et la clé qu'elle emporte",
+      "",
+      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
+      "qui permet ce dessin est à l'intérieur du fichier : n'importe qui ouvrant l'article publié peut",
+      "la lire, et c'est votre clé de développement, qui n'est pas restreinte à vos propres domaines.",
+      "",
+      "Ce que cela vous coûte, clairement. Les tuiles que dessine cette carte sont facturées à votre",
+      "compte MapTiler, quelle que soit la personne qui utilise la clé. Et si ce compte atteint un jour",
+      "100 % de son plafond de dépenses, MapTiler coupe **toutes** les clés qui s'y trouvent — y compris",
+      "les cartes des articles que vous avez publiés il y a des années.",
+      "",
+      "Comment fermer cela, quand vous le voudrez : créez une seconde clé MapTiler restreinte à vos",
+      "propres domaines, et enregistrez-la sur la page de configuration sous le nom",
+      "`MAPTILER_DELIVERY_KEY`. Les livraisons suivantes emporteront la clé restreinte, qui ne vaut rien",
+      "pour qui l'extrait de la page.",
+    ],
+    unkeyed: [
+      "## La carte en direct dans ce fichier",
+      "",
+      "Aucune clé MapTiler n'a été enregistrée : cette page ne dessine donc pas sa carte en direct, elle",
+      "affiche la couche cartographique intégrée au fichier. Cette couche est complète et lisible — elle",
+      "ne se déplace simplement pas et ne zoome pas. Enregistrer une clé MapTiler sur la page de",
+      "configuration est ce qui rend la version en direct possible.",
+    ],
+  },
 };
+
+// The vocabulary a caller is checked against, read from ONE table rather than from whichever
+// language was picked: it must not become "the states this language happens to have translated".
+// A state present here and missing from another language's table is a paragraph silently dropped —
+// which, for `development`, is the one thing here nobody may fail to be told — so that is a second,
+// separate refusal below rather than an `undefined` that renders as nothing.
+const KNOWN_LIVE_TILES = LIVE_TILES.en;
 
 // A MAINTAINER-FACING SENTENCE PHYSICALLY CANNOT PASS THROUGH THIS FUNCTION.
 //
@@ -94,19 +151,84 @@ function refuseMaintainerText(field, value) {
 // What each delivered file is FOR, by extension. A journalist holding a PNG and an SVG needs to be
 // told which one goes to the CMS; "here are two files" is what the run said and it is not an answer.
 const ROLE_BY_EXTENSION = {
-  ".svg": "the vector file — this is the one to give the CMS, and it stays sharp at any size",
-  ".png": "a raster copy, for a system that cannot take the vector",
-  ".html": "the page itself — one self-contained file, nothing else to run",
-  ".mp4": "the video file",
-  ".txt": "the live address this beat was published to",
-  ".md": "a document about the delivery, not the delivery itself",
+  en: {
+    ".svg": "the vector file — this is the one to give the CMS, and it stays sharp at any size",
+    ".png": "a raster copy, for a system that cannot take the vector",
+    ".html": "the page itself — one self-contained file, nothing else to run",
+    ".mp4": "the video file",
+    ".txt": "the live address this beat was published to",
+    ".md": "a document about the delivery, not the delivery itself",
+    other: "delivered with the beat",
+  },
+  fr: {
+    ".svg": "le fichier vectoriel — c'est celui à donner au CMS, et il reste net à toutes les tailles",
+    ".png": "une copie matricielle, pour un système qui ne prend pas le vectoriel",
+    ".html": "la page elle-même — un seul fichier autonome, rien d'autre à faire tourner",
+    ".mp4": "le fichier vidéo",
+    ".txt": "l'adresse en ligne où ce visuel a été publié",
+    ".md": "un document au sujet de la livraison, pas la livraison elle-même",
+    other: "livré avec ce visuel",
+  },
 };
 
-function roleFor(name) {
+function roleFor(name, written) {
   const dot = name.lastIndexOf(".");
   const extension = dot === -1 ? "" : name.slice(dot).toLowerCase();
-  return ROLE_BY_EXTENSION[extension] ?? "delivered with the beat";
+  const roles = ROLE_BY_EXTENSION[written];
+  return roles[extension] ?? roles.other;
 }
+
+// The scaffold itself, in each language it is written in. Everything a journalist reads that is NOT
+// their own recorded words is here, and nowhere else — a literal left in the body below is exactly
+// how this document came out half-English the first time.
+//
+// `genreNoun` renders the genre the beat was delivered in as a word rather than as this toolchain's
+// own token. An unknown genre falls back to the token — it is the value that was chosen, and
+// inventing a translation for a genre nobody has heard of would be worse than printing it plainly.
+const COPY = {
+  en: {
+    title: "# What you have, and where it goes",
+    intro: (genre) => [
+      `This is the ${genre} form of this beat, delivered. Everything below is what you recorded during`,
+      "the exchange, read back — nothing here is new.",
+    ],
+    genreNoun: { static: "still-image", web: "web-page", video: "video", scrolly: "scroll-driven" },
+    files: "## The files",
+    placement: "## Where it goes in the article",
+    alt: "## The alt text",
+    altHelp: [
+      "Paste this as the image's alternative text. A reader using a screen reader gets the finding,",
+      "not a description of a chart.",
+    ],
+    credit: "## The credit line",
+    caveat: "## The one thing this does not show",
+    caveatHelp: [
+      "You named this limit yourself, and it belongs beside the visual — in the caption or the",
+      "paragraph next to it — not only in your notes.",
+    ],
+  },
+  fr: {
+    title: "# Ce que vous avez, et où cela va",
+    intro: (genre) => [
+      `Voici ce visuel livré sous sa forme ${genre}. Tout ce qui suit est ce que vous avez enregistré`,
+      "pendant l'échange, relu — rien ici n'est nouveau.",
+    ],
+    genreNoun: { static: "image fixe", web: "page web", video: "vidéo", scrolly: "au fil du défilement" },
+    files: "## Les fichiers",
+    placement: "## Où cela va dans l'article",
+    alt: "## Le texte alternatif",
+    altHelp: [
+      "Collez ceci comme texte alternatif de l'image. Un lecteur qui utilise un lecteur d'écran reçoit",
+      "le constat, et non la description d'un graphique.",
+    ],
+    credit: "## La ligne de crédit",
+    caveat: "## La seule chose que cela ne montre pas",
+    caveatHelp: [
+      "Vous avez nommé cette limite vous-même, et sa place est à côté du visuel — dans la légende ou",
+      "dans le paragraphe voisin — pas seulement dans vos notes.",
+    ],
+  },
+};
 
 function baseName(path) {
   const parts = path.split(/[\\/]/);
@@ -121,13 +243,22 @@ function baseName(path) {
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it
  * looks complete.
  */
-export function formatHandover({ files, placement, alt, credit, caveat, genre, liveTiles = "none" }) {
+export function formatHandover({ files, placement, alt, credit, caveat, genre, language, liveTiles = "none" }) {
   // A CLOSED vocabulary, checked rather than defaulted: an unrecognised state would silently drop
   // the paragraph that says a development key is shipping, which is the one thing here nobody may
   // fail to be told.
-  if (!Object.prototype.hasOwnProperty.call(LIVE_TILES, liveTiles)) {
+  if (!Object.prototype.hasOwnProperty.call(KNOWN_LIVE_TILES, liveTiles)) {
     throw new Error(
-      `liveTiles ${JSON.stringify(liveTiles)} is not a state this hand-over knows — ${Object.keys(LIVE_TILES).join(", ")}`,
+      `liveTiles ${JSON.stringify(liveTiles)} is not a state this hand-over knows — ${Object.keys(KNOWN_LIVE_TILES).join(", ")}`,
+    );
+  }
+  // Read, never detected, and never defaulted to English — see `journalist-language.mjs` for the
+  // decision this makes and for what happens to a language this document is not written in.
+  const scaffold = resolveScaffoldLanguage(language);
+  const copy = COPY[scaffold.written];
+  if (!Object.prototype.hasOwnProperty.call(LIVE_TILES[scaffold.written], liveTiles)) {
+    throw new Error(
+      `this hand-over is written in ${scaffold.written} and has no paragraph for the ${JSON.stringify(liveTiles)} live-tile state — a state that exists in one language and not another would drop the paragraph rather than say it`,
     );
   }
   const given = { genre, placement, alt, credit };
@@ -150,51 +281,45 @@ export function formatHandover({ files, placement, alt, credit, caveat, genre, l
   }
 
   const lines = [
-    "# What you have, and where it goes",
+    copy.title,
     "",
-    `This is the ${genre} form of this beat, delivered. Everything below is what you recorded during`,
-    "the exchange, read back — nothing here is new.",
+    // The notice comes FIRST, before a word of the document it is about: a journalist who recorded
+    // `de` should read why this page is in English before reading the English.
+    ...untranslatedNotice(scaffold),
+    ...copy.intro(copy.genreNoun[genre] ?? genre),
     "",
-    "## The files",
+    copy.files,
     "",
   ];
 
   for (const file of files) {
     const name = baseName(file);
-    lines.push(`- **\`${name}\`** — ${roleFor(name)}`);
+    lines.push(`- **\`${name}\`** — ${roleFor(name, scaffold.written)}`);
   }
 
   lines.push(
     "",
-    "## Where it goes in the article",
+    copy.placement,
     "",
     placement,
     "",
-    "## The alt text",
+    copy.alt,
     "",
-    "Paste this as the image's alternative text. A reader using a screen reader gets the finding,",
-    "not a description of a chart.",
+    ...copy.altHelp,
     "",
     `> ${alt}`,
     "",
-    "## The credit line",
+    copy.credit,
     "",
     `> ${credit}`,
     "",
   );
 
-  if (LIVE_TILES[liveTiles]) lines.push(...LIVE_TILES[liveTiles], "");
+  const tiles = LIVE_TILES[scaffold.written][liveTiles];
+  if (tiles) lines.push(...tiles, "");
 
   if (caveat && String(caveat).trim()) {
-    lines.push(
-      "## The one thing this does not show",
-      "",
-      "You named this limit yourself, and it belongs beside the visual — in the caption or the",
-      "paragraph next to it — not only in your notes.",
-      "",
-      `> ${caveat}`,
-      "",
-    );
+    lines.push(copy.caveat, "", ...copy.caveatHelp, "", `> ${caveat}`, "");
   }
 
   return lines.join("\n");

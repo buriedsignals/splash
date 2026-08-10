@@ -94,6 +94,8 @@ const SHUT = {
 };
 
 const handover = {
+  // This story IS French — it is the owner's own run, the one A25 came out of.
+  language: "fr",
   placement: "après le paragraphe qui donne les 34 Mt, pleine largeur",
   alt: "Les Jeux eux-mêmes pèsent 14 des 34 millions de tonnes",
   credit: "Source : bilans carbone publiés par les organisateurs",
@@ -251,6 +253,7 @@ describe("what the journalist reads at the end of their run", () => {
     await makeBeat("1-glace-des-sponsors");
     const text = formatSubjectOffer(
       await otherSubjectsFor({ storyDir, capabilities: SHUT }),
+      { language: "en" },
     );
 
     expect(text).not.toMatch(/\bskills\//);
@@ -265,6 +268,7 @@ describe("what the journalist reads at the end of their run", () => {
     await makeBeat("1-glace-des-sponsors");
     const text = formatSubjectOffer(
       await otherSubjectsFor({ storyDir, capabilities: OPEN }),
+      { language: "en" },
     );
 
     expect(text).toContain("où se trouvent les glaciers");
@@ -278,9 +282,35 @@ describe("what the journalist reads at the end of their run", () => {
     const rows = await otherSubjectsFor({ storyDir, capabilities: OPEN });
     expect(rows.every((r) => r.verdict === "drawn")).toBe(true);
 
-    const text = formatSubjectOffer(rows);
+    const text = formatSubjectOffer(rows, { language: "en" });
     expect(text).toMatch(/none of them is waiting/);
     expect(text).toMatch(/the story is closed/);
+  });
+
+  // A25, ruling R4. This story is French — the owner's own — and this offer is the last thing they
+  // read. MUTATION (in a copy under /tmp): make `formatSubjectOffer` ignore `language` → the French
+  // case reddens on the heading it finds; drop the notice → the untranslated case reddens.
+  it("should make the offer in French for a French story", async () => {
+    await recordSurveyedSubjects({ storyDir, subjects: SURVEYED });
+    await makeBeat("1-glace-des-sponsors");
+    const rows = await otherSubjectsFor({ storyDir, capabilities: OPEN });
+
+    const text = formatSubjectOffer(rows, { language: "fr" });
+    expect(text).toContain("Il y a davantage dans cet article");
+    expect(text).toContain("où se trouvent les glaciers");
+    expect(text).toMatch(/dites que vous avez terminé/i);
+    expect(text).not.toContain("There is more in this article");
+  });
+
+  it("should refuse to make the offer when no language was recorded, and say so plainly in English when it has no scaffold", async () => {
+    await recordSurveyedSubjects({ storyDir, subjects: SURVEYED });
+    await makeBeat("1-glace-des-sponsors");
+    const rows = await otherSubjectsFor({ storyDir, capabilities: OPEN });
+
+    expect(() => formatSubjectOffer(rows)).toThrow(/own language/);
+    expect(formatSubjectOffer(rows, { language: "it" })).toContain(
+      "written in English, not in `it`",
+    );
   });
 });
 
@@ -405,8 +435,10 @@ describe("taking a subject starts a new beat in the same story", () => {
     expect(await readFile(join(firstExport, "still.png"), "utf8")).toBe(
       "png-1-glace-des-sponsors",
     );
+    // The first beat's hand-over survives untouched — and, this being a French story, it is written
+    // in French down to the heading (A25): the whole document, not the journalist's words alone.
     expect(await readFile(join(firstExport, "HANDOVER.md"), "utf8")).toContain(
-      "credit",
+      "## La ligne de crédit",
     );
     expect((await readdir(join(storyDir, "export"))).sort()).toEqual([
       "1-glace-des-sponsors",
