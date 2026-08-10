@@ -389,7 +389,7 @@ describe("whereIs", () => {
     ]);
   });
 
-  it("should report done once the export holds a file and a render exists", async () => {
+  it("should report done once the beat has been delivered into its own export directory", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
@@ -402,7 +402,65 @@ describe("whereIs", () => {
       "x",
     );
     await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
-    await writeFile(join(dir, "export", "rainfall.png"), "x");
+    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
+    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+    expect((await whereIs(dir)).phase).toBe("done");
+  });
+
+  // TWO BEATS, AND THE FIRST ONE DELIVERED. This is the fixture that did not exist, and its absence
+  // is the whole reason the defect below survived a suite that tests the approval gate directly:
+  // every approval case above runs with `export/` EMPTY, and every export case runs with ONE beat.
+  // Put both halves in one story and the story-level `if (exported.length > 0) return done`
+  // short-circuit -- which sat ABOVE the approval check -- announced a finished story over a beat
+  // nobody had been shown.
+  //
+  // RED, in a copy of the tree under /tmp, with that short-circuit restored to where it was:
+  //
+  //   expect(state.phase).toBe("production");
+  //                       ^
+  //   error: expect(received).toBe(expected)
+  //   Expected: "production"
+  //   Received: "done"
+  //   (fail) should stay in production when one beat is delivered and another is not approved
+  //   (fail) should not call a story done while an approved beat has not been delivered
+  it("should stay in production when one beat is delivered and another is not approved", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    for (const beat of ["1-rainfall", "2-snowpack"]) {
+      await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
+      await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
+    }
+    // Beat 1 was shown, approved and delivered. Beat 2 has rendered and nobody has seen it.
+    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
+    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual([
+      "beat 2-snowpack: rendered but not approved",
+    ]);
+  });
+
+  // The same short-circuit's other half: `done` meant "a file exists somewhere under export/", so
+  // one delivered beat closed the story for every beat. Delivery is per beat now, like approval.
+  it("should not call a story done while an approved beat has not been delivered", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    for (const beat of ["1-rainfall", "2-snowpack"]) {
+      await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
+      await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
+      await writeFile(join(dir, "beats", beat, "APPROVED.md"), "seen");
+    }
+    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
+    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+
+    expect((await whereIs(dir)).phase).toBe("delivery");
+
+    await mkdir(join(dir, "export", "2-snowpack"), { recursive: true });
+    await writeFile(join(dir, "export", "2-snowpack", "snowpack.png"), "x");
     expect((await whereIs(dir)).phase).toBe("done");
   });
 

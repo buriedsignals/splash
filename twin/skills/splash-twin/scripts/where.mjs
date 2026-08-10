@@ -275,6 +275,20 @@ async function beatsAwaitingApproval(storyDir) {
   return waiting;
 }
 
+// G4, per beat, and it is the same shape as G3 one phase earlier: a beat is delivered when its own
+// `export/<beat>/` holds something. `twin-deliver`'s `exportDirFor` writes exactly there — one
+// directory per beat, because a story-level one made each delivery destroy the last.
+//
+// `done` used to mean "any file exists anywhere under export/", which is how a two-beat story
+// reported itself finished while its second beat sat rendered and unapproved (see `whereIs`).
+async function beatsAwaitingDelivery(storyDir, beats) {
+  const waiting = [];
+  for (const beat of beats) {
+    if ((await list(join(storyDir, "export", beat))).length === 0) waiting.push(beat);
+  }
+  return waiting;
+}
+
 export async function whereIs(storyDir) {
   const source = await list(join(storyDir, "source"));
   if (!source.includes("article.md") || !source.includes("profile.json")) {
@@ -289,25 +303,37 @@ export async function whereIs(storyDir) {
   if (gateGaps.length > 0) return { phase: "storyboard", missing: gateGaps };
 
   const rendered = await renderedBeats(storyDir);
-  const hasRender = rendered.length > 0;
   const exported = await list(join(storyDir, "export"));
 
-  if (!hasRender && exported.length > 0) {
-    return { phase: "production", missing: ["no renders exist in any beat"] };
+  if (rendered.length === 0) {
+    // A file in `export/` with nothing rendered anywhere is not a finished story, it is an
+    // inconsistent one — something was delivered that no producer in this directory made.
+    if (exported.length > 0) return { phase: "production", missing: ["no renders exist in any beat"] };
+    return { phase: "production", missing: [] };
   }
 
-  if (exported.length > 0) return { phase: "done", missing: [] };
-
-  if (hasRender) {
-    const waiting = await beatsAwaitingApproval(storyDir);
-    if (waiting.length > 0) {
-      return {
-        phase: "production",
-        missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
-      };
-    }
-    return { phase: "delivery", missing: [] };
+  // APPROVAL IS ASKED FIRST, and nothing about `export/` may shorten the walk past it.
+  //
+  // It used to be the other way round: `if (exported.length > 0) return {phase:"done"}` sat ABOVE
+  // this check, so ANY file under `export/` ended the story. A two-beat story that delivered beat 1
+  // therefore reported `{"phase":"done","missing":[]}` while beat 2 sat rendered and unapproved —
+  // one reading announcing a later phase than the check that owns the question, which is the exact
+  // class (twin/FEEDBACK-2026-08-10.md, A14) this whole file was rewritten to make impossible. The
+  // approval gate was real; it was simply placed downstream of a story-level short-circuit that
+  // predated it, and every test exercised it with `export/` empty.
+  const waiting = await beatsAwaitingApproval(storyDir);
+  if (waiting.length > 0) {
+    return {
+      phase: "production",
+      missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
+    };
   }
 
-  return { phase: "production", missing: [] };
+  // Every rendered beat has been approved. The story is done only when every one of them has also
+  // been DELIVERED — per beat, into its own `export/<beat>/`. `missing` stays empty because
+  // `delivery` is a phase with work left to dispatch, not a blocked state to report and stop on.
+  const undelivered = await beatsAwaitingDelivery(storyDir, rendered);
+  if (undelivered.length > 0) return { phase: "delivery", missing: [] };
+
+  return { phase: "done", missing: [] };
 }

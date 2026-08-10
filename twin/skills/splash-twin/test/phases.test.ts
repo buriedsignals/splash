@@ -101,8 +101,11 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   );
   observed.add((await whereIs(storyDir)).phase); // delivery: approved, nothing exported
 
-  await writeFile(join(storyDir, "export", "rainfall.png"), "x");
-  observed.add((await whereIs(storyDir)).phase); // done: something has been exported
+  // Delivery is per beat, into `export/<beat>/` — the shape `twin-deliver`'s `exportDirFor` writes,
+  // and the shape `whereIs` reads. A story is done when every approved beat has one.
+  await mkdir(join(storyDir, "export", "1-rainfall"), { recursive: true });
+  await writeFile(join(storyDir, "export", "1-rainfall", "rainfall.png"), "x");
+  observed.add((await whereIs(storyDir)).phase); // done: the beat has been delivered
 
   return observed;
 }
