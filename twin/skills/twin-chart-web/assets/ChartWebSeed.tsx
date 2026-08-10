@@ -639,10 +639,32 @@ export function ChartWebSeed({
             />
           ))}
 
+          {/* THE ANNOTATIONS CARRY THE VOCABULARY, and that is a correction the first render of
+              this rework earned by being looked at. An annotation on a LEVEL (the reference rule
+              and its label, below) is transversal furniture and stays drawn in every state — it is
+              a horizontal line at 912 mm, not a reading. An annotation on a READING is not: the
+              notable-year marker belongs to 2020 and the end label prints 2025's own value, so
+              under "2015–2019" they hung over an empty plot, pointing at a line that had stopped
+              six years earlier, and the end label printed a number the narrowed view does not
+              contain. That is the reader-facing contradiction this rework exists to prevent, one
+              layer up from the marks. Under the DIMMING this genre used to do it read as merely
+              faint; hiding makes it visible, which is the argument for hiding. */}
           {peakPoint && (
-            <circle cx={peakPoint.x} cy={peakPoint.y} r={3} fill={muted} />
+            <circle
+              {...attrsFor(filterIndex, String(PEAK_YEAR))}
+              cx={peakPoint.x}
+              cy={peakPoint.y}
+              r={3}
+              fill={muted}
+            />
           )}
-          <circle cx={end.x} cy={end.y} r={4} fill={accent} />
+          <circle
+            {...attrsFor(filterIndex, String(end.year))}
+            cx={end.x}
+            cy={end.y}
+            r={4}
+            fill={accent}
+          />
 
           {/* Interaction layer — items 2 and 3 of this file's own doc-comment, plus the filter's
               own `data-period`. Every reading is `tabIndex={0}` with its own `aria-label`/
@@ -698,6 +720,7 @@ export function ChartWebSeed({
           </span>
           {peakPoint && (
             <span
+              {...attrsFor(filterIndex, String(PEAK_YEAR))}
               className="note peak-label above"
               style={{
                 left: `${pct(peakPoint.x, frame.width)}%`,
@@ -709,6 +732,7 @@ export function ChartWebSeed({
             </span>
           )}
           <span
+            {...attrsFor(filterIndex, String(end.year))}
             className="end-label"
             style={{
               left: `${pct(end.x, frame.width)}%`,

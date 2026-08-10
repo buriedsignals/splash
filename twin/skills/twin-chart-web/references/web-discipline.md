@@ -476,6 +476,16 @@ decorative `<circle>`, the table row — four chances to forget the fifth kind o
   dot and leader line correctly tagged is invisible to the markup scan and reddens the driven walk
   with *"Switzerland belongs to a datum this option excludes and is still drawn"*.
 
+**An annotation on a READING carries the vocabulary; an annotation on a LEVEL does not.** This is a
+correction the first render of this rework earned by being opened and looked at, and it is the same
+defect as B6.18b one layer up. The seed's notable-year marker belongs to 2020 and its end label
+prints 2025's own value; under "2015–2019" both hung over an empty plot beside a line that had
+stopped six years earlier, and the end label printed a number the narrowed view does not contain.
+The reference rule is different in kind — a horizontal line at 912 mm annotates a LEVEL, not a
+reading — so it is transversal furniture and stays drawn in every state, which is what "What must
+not become interactive" was always about. Under the DIMMING this genre used to do, the orphaned
+annotations read as merely faint; hiding makes them visible, which is an argument FOR hiding.
+
 ### One overturn, kept with its cost attached: filtering HIDES, it no longer dims
 
 This section used to read that filtering "only ever DIMS a subset the default view already draws …

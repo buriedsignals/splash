@@ -512,14 +512,25 @@ describe("the filter — declared by the beat, default view complete, native con
     expect(checkedRule).not.toContain("var(--accent)");
   });
 
-  it("should never gate the reference rule, the peak label or the end label behind the filter", () => {
-    // These three are the argument, already stated (web-discipline.md, "What must not become
-    // interactive") — none of them may carry the attribute the filter's CSS keys off.
+  it("should never gate the reference rule — a level, not a reading — behind the filter", () => {
+    // The reference rule is a horizontal line at 912 mm — it annotates a LEVEL, not a reading, so
+    // it is transversal furniture and stays drawn in every filter state.
     const markup = renderSeed();
     const overlay = markup.slice(
       markup.indexOf('class="overlay"'),
       markup.indexOf('<div class="x-axis"'),
     );
-    expect(overlay).not.toContain("data-filter");
+    const referenceLabel = overlay.slice(
+      overlay.indexOf('class="note reference-label"') - 200,
+      overlay.indexOf("2015 level"),
+    );
+    expect(referenceLabel).not.toContain("data-filter");
+
+    // The other two DO carry it, and that is the correction a look at the render earned: the
+    // notable-year marker belongs to 2020 and the end label prints 2025's own value, so under
+    // "2015–2019" they used to hang over an empty plot beside a line that stopped six years
+    // earlier — the end label printing a number the narrowed view does not contain.
+    expect(overlay).toContain('data-key="2020" data-filter="2020-2025"');
+    expect(overlay).toContain('data-key="2025" data-filter="2020-2025"');
   });
 });
