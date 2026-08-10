@@ -131,6 +131,7 @@
       ]
     }
   ],
+  "size": "landscape",
   "ink": "#000000",
   "muted": "#616161",
   "grid": "#d1d1d1"

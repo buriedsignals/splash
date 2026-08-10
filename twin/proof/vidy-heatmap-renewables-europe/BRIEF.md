@@ -1,4 +1,21 @@
+---
+size: landscape
+type: heatmap
+---
+
 # Beat — Iceland has run almost entirely on renewable electricity every year since 2016
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and why the other two refuse.** A heatmap is a MATRIX — eight countries against
+nine years — and both axes are the argument, so it has no twin form: transposing it swaps which
+variable reads down the frame, which is a different chart rather than a rotation of this one. No
+aspect range has ever been MEASURED for it at a tall or square frame, so `type-at-size.mjs`
+refuses by default and names the measurement that is missing. The 1080 x 1080 this beat used to
+draw at was not a decision, it was a default.
 
 **Proves:** since 2016, Iceland has generated essentially 100% of its electricity from renewables
 in every single year, while the rest of a comparable set of European countries sits well below

@@ -56,23 +56,120 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { HEATMAP_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 36, fontWeight: 700, lead: 44 };
-const SOURCE = { fontSize: 18, fontWeight: 400 };
-const LEGEND_TITLE = { fontSize: 20, fontWeight: 600 };
-const LEGEND_LABEL = { fontSize: 18, fontWeight: 500 };
-const ROW_LABEL = { fontSize: 21, fontWeight: 500 };
-const ROW_LABEL_ACCENT = { fontSize: 21, fontWeight: 700 };
-const COL_LABEL = { fontSize: 16, fontWeight: 500 };
-const CELL_VALUE = { fontSize: 16, fontWeight: 700 };
-const CAPTION = { fontSize: 21, fontWeight: 600 };
-const CELL_GAP = 4;
-const LEGEND_BAR = { width: 420, height: 20 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "heatmap";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts — the gap that separates one cell from
+ * the next, and the legend bar's own width and height, which are marks and not type but are just as
+ * much 1080-square tuning.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: the column
+ * headers and the printed cell values were 16px on a 1080 frame, 5.3 CSS px on the phone a square
+ * post is read on.
+ */
+const BASE = {
+  TITLE: { fontSize: 27, fontWeight: 700, lead: 33 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  LEGEND_TITLE: { fontSize: 15, fontWeight: 600 },
+  LEGEND_LABEL: { fontSize: 14, fontWeight: 500 },
+  ROW_LABEL: { fontSize: 16, fontWeight: 500 },
+  ROW_LABEL_ACCENT: { fontSize: 16, fontWeight: 700 },
+  COL_LABEL: { fontSize: 12, fontWeight: 500 },
+  CELL_VALUE: { fontSize: 12, fontWeight: 700 },
+  CAPTION: { fontSize: 16, fontWeight: 600 },
+  CELL_GAP: 3,
+  LEGEND_BAR: { width: 315, height: 15 },
+  TITLE_TO_LEGEND: 30,
+  LEGEND_TITLE_TO_BAR: 26,
+  LEGEND_LABEL_LIFT: 8,
+  BAR_TO_COL_LABEL: 33,
+  COL_LABEL_TO_PLOT: 12,
+  CAPTION_LIFT: 11,
+  CAPTION_BAND: 33,
+  SOURCE_AIR: 11,
+  ROW_LABEL_AIR: 12,
+  ROW_LABEL_INSET: 11,
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = { cell: 0.4, subject: 1.6 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    LEGEND_TITLE: f(BASE.LEGEND_TITLE) as typeof BASE.LEGEND_TITLE,
+    LEGEND_LABEL: f(BASE.LEGEND_LABEL) as typeof BASE.LEGEND_LABEL,
+    ROW_LABEL: f(BASE.ROW_LABEL) as typeof BASE.ROW_LABEL,
+    ROW_LABEL_ACCENT: f(BASE.ROW_LABEL_ACCENT) as typeof BASE.ROW_LABEL_ACCENT,
+    COL_LABEL: f(BASE.COL_LABEL) as typeof BASE.COL_LABEL,
+    CELL_VALUE: f(BASE.CELL_VALUE) as typeof BASE.CELL_VALUE,
+    CAPTION: f(BASE.CAPTION) as typeof BASE.CAPTION,
+    CELL_GAP: sp(BASE.CELL_GAP),
+    LEGEND_BAR: {
+      width: sp(BASE.LEGEND_BAR.width),
+      height: sp(BASE.LEGEND_BAR.height),
+    },
+    TITLE_TO_LEGEND: sp(BASE.TITLE_TO_LEGEND),
+    LEGEND_TITLE_TO_BAR: sp(BASE.LEGEND_TITLE_TO_BAR),
+    LEGEND_LABEL_LIFT: sp(BASE.LEGEND_LABEL_LIFT),
+    BAR_TO_COL_LABEL: sp(BASE.BAR_TO_COL_LABEL),
+    COL_LABEL_TO_PLOT: sp(BASE.COL_LABEL_TO_PLOT),
+    CAPTION_LIFT: sp(BASE.CAPTION_LIFT),
+    CAPTION_BAND: sp(BASE.CAPTION_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    ROW_LABEL_AIR: sp(BASE.ROW_LABEL_AIR),
+    ROW_LABEL_INSET: sp(BASE.ROW_LABEL_INSET),
+    STROKE: {
+      cell: st(BASE_STROKE.cell),
+      subject: st(BASE_STROKE.subject),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark.
+ * The still path reads the rendered SVG's `font-size` attributes; a video composition's markup only
+ * exists inside the browser Remotion drives, so the equivalent reading is the element tree.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 
 export type CountryRow = {
   country: string;
@@ -276,6 +373,8 @@ export type HeatmapVideoProps = {
   grid: string;
   subjectCountry: string;
   subjectNote: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -292,11 +391,43 @@ export function HeatmapVideo({
   grid,
   subjectCountry,
   subjectNote,
+  size,
   timing = HEATMAP_TIMING,
 }: HeatmapVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    LEGEND_TITLE,
+    LEGEND_LABEL,
+    ROW_LABEL,
+    ROW_LABEL_ACCENT,
+    COL_LABEL,
+    CELL_VALUE,
+    CAPTION,
+    CELL_GAP,
+    LEGEND_BAR,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL — before anything is measured.
+  //
+  // A heatmap is a MATRIX: eight rows against nine years, and both axes are the argument. It has no
+  // twin form — transposing it swaps which variable reads down the frame, which is a different
+  // chart, not a rotation of this one — and no aspect range has ever been MEASURED for it at a tall
+  // or square frame. `type-at-size.mjs` refuses by default and names the measurement that is
+  // missing, rather than returning a grid of long thin cells that clips nothing and collides with
+  // nothing.
+  const form = formForSize(TYPE, size);
+  if (form.verdict !== "as-is")
+    throw new Error(
+      `vidy-heatmap-renewables-europe: ${TYPE} cannot be drawn at ${size}. ${form.reason}\n` +
+        `It ships at landscape.`,
+    );
 
   if (data.length < 2)
     throw new Error(`need at least two rows, got ${data.length}`);
@@ -331,15 +462,17 @@ export function HeatmapVideo({
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const legendTitleBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
-  const legendBarTop = legendTitleBaseline + 34;
-  const legendLabelBaseline = legendBarTop - 10; // sits ABOVE the bar, never under the column headers
-  const colLabelBaseline = legendBarTop + LEGEND_BAR.height + 44;
-  const plotTop = colLabelBaseline + 16;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_LEGEND;
+  const legendBarTop = legendTitleBaseline + T.LEGEND_TITLE_TO_BAR;
+  // sits ABOVE the bar, never under the column headers
+  const legendLabelBaseline = legendBarTop - T.LEGEND_LABEL_LIFT;
+  const colLabelBaseline =
+    legendBarTop + LEGEND_BAR.height + T.BAR_TO_COL_LABEL;
+  const plotTop = colLabelBaseline + T.COL_LABEL_TO_PLOT;
   // This beat's caption used to own the frame's bottom margin. The credit owns it now, so the
   // caption sits directly above the credit's ink instead — the one place in the video family where
   // the credit displaced something rather than joining an empty margin.
-  const captionBaseline = sourceBaseline - SOURCE.fontSize - 14;
+  const captionBaseline = sourceBaseline - SOURCE.fontSize - T.CAPTION_LIFT;
 
   const maxRowLabelWidth = Math.max(
     ...data.map((r) =>
@@ -354,8 +487,8 @@ export function HeatmapVideo({
     top: plotTop,
     right: PAD,
     // Reserves the caption line under the grid, AND the credit under the caption.
-    bottom: PAD + 44 + SOURCE.fontSize + 14,
-    left: PAD + 16 + maxRowLabelWidth,
+    bottom: PAD + T.CAPTION_BAND + SOURCE.fontSize + T.SOURCE_AIR,
+    left: PAD + T.ROW_LABEL_AIR + maxRowLabelWidth,
   };
 
   const g = heatmapGeometry(data.length, years.length, {
@@ -434,7 +567,7 @@ export function HeatmapVideo({
 
   const lastCol = years.length - 1;
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -486,7 +619,7 @@ export function HeatmapVideo({
         {data.map((row, i) => (
           <text
             key={`row-${row.country}`}
-            x={g.plot.left - 14}
+            x={g.plot.left - T.ROW_LABEL_INSET}
             y={g.rowY[i] + g.rowHeight / 2 + rowLabelBaselineOffset}
             fill={i === subjectIndex && subjectProgress > 0 ? accent : ink}
             fontSize={
@@ -522,7 +655,7 @@ export function HeatmapVideo({
                 height={g.rowHeight - CELL_GAP}
                 fill="none"
                 stroke={grid}
-                strokeWidth={1}
+                strokeWidth={T.STROKE.cell}
               />
             ),
           ),
@@ -606,7 +739,7 @@ export function HeatmapVideo({
               height={g.rowHeight - CELL_GAP}
               fill={fill}
               stroke={grid}
-              strokeWidth={1}
+              strokeWidth={T.STROKE.cell}
             />
           );
         }),
@@ -621,7 +754,7 @@ export function HeatmapVideo({
           height={g.rowHeight}
           fill="none"
           stroke={accent}
-          strokeWidth={4}
+          strokeWidth={T.STROKE.subject}
           opacity={outlineOpacity}
         />
       ) : null}
@@ -661,4 +794,16 @@ export function HeatmapVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-heatmap-renewables-europe at ${size}` },
+  );
+
+  return drawing;
 }
