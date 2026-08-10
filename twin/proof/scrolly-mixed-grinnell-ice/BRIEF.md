@@ -231,6 +231,22 @@ rail measures real time and moves on every frame of it.
 Screenshots in `drive/`: seven settled steps at each width, plus both **handovers** at position 1.5
 and 3.5 — the moments a sampled probe never looks at and the ones this beat is actually about.
 
+### What the handovers look like, said rather than measured — including the one that reads worse
+
+The two are not equally good, and the difference is instructive. **Photograph → map (1.5) reads
+well**: a photograph and a basemap are both continuous-tone pictures, so one dissolving into the
+other is a transition a reader has seen a thousand times, and at the midpoint the 2009 frame — the
+basin as a lake — sits under the park's outline, which is very nearly the sentence the next step is
+about. **Map → chart (3.5) is the weakest moment in the piece**: for the ~0.2 of a step where both
+are near half strength, the glacier's outline and its two labels are superimposed on the chart's line
+and grid, and two line drawings at 50% over one another read as noise rather than as one thing
+becoming another. It is short, it is legible on either side of it, the guard measures 59/59 of those
+frames moving geometry, and it is still the shot in `drive/1600x900-handover-3-5.png` I would want to
+improve first. The honest options are a shorter crossfade window for that one leg, or the outgoing
+map fading through a wipe rather than an alpha — neither of which is a small change to a beat whose
+whole claim is that ONE lerp drives everything, which is why this round names it instead of
+special-casing it.
+
 ## Reduced motion
 
 `prefers-reduced-motion: reduce` makes `stateAt` snap to the nearer step. The reader is still taken
