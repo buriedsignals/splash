@@ -59,6 +59,16 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceClipId,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   panelGeometry,
   sharedXDomain,
   sharedYDomain,
@@ -213,6 +223,79 @@ export function SmallMultiplesCo2Web({
     return { country, slot, isSubject: country.name === subject, ...g };
   });
 
+  // ── THE ENTRANCE. **No video sibling exists for this type**, so nothing is being carried here and
+  // nothing is being invented either: a small multiple is four LINE panels, and a line whose x axis
+  // is time already has its mechanism in this genre — the clip wipe, the same picture frame for
+  // frame as the video's `drawnSoFar` (`chart-web/references/web-discipline.md`). What the four
+  // panels add is the one thing the bar family taught: they are four marks, so they cascade rather
+  // than drawing on one clock, in the story's own reading order (`order`, left to right, top to
+  // bottom).
+  //
+  // EACH PANEL HAS ITS OWN CLIP, and each clip needs an id no other panel and no other embed on the
+  // page can collide with — `url(#id)` resolves to the FIRST match in document order, so a shared id
+  // would make one panel's line reveal when another's clock fired. `entranceClipId` is hashed over
+  // the panel's own country name as well as the beat's title.
+  //
+  // The zero baseline every panel shares is the reference, laid down across all four before a single
+  // line draws. The subject panel is lifted out of the cascade and draws last, its end value the
+  // conclusion — the device this genre uses wherever a video would ring an already-drawn mark.
+  const cascade = panels.filter((p) => !p.isSubject);
+  const windowFor = (name: string) =>
+    name === subject
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((p) => p.country.name === name),
+          cascade.length,
+        );
+  const eventFor = (name: string) =>
+    name === subject ? ("subject" as const) : ("reveal" as const);
+  const clipIdFor = (name: string) => entranceClipId(`${title}·${name}`);
+  const wipeLayer = (name: string) => {
+    const own = windowFor(name);
+    return entranceLayer(eventFor(name), "wipe", {
+      delay: own.start,
+      duration: own.duration,
+      // LINEAR, and the reason is the line genre's own: the x axis IS time, so easing the head
+      // would give some years more screen time than others.
+      ease: ENTRANCE_EASING.LINEAR,
+    });
+  };
+  const endLabelLayer = (name: string) =>
+    name === subject
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+        })
+      : entranceLayer(eventFor(name), "fade", {
+          delay: atProgress(windowFor(name), 1),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const baselineLayer = () =>
+    entranceLayer("reference", "wipe", {
+      delay: WEB_ENTRANCE.reference.start,
+      duration: WEB_ENTRANCE.reference.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map(
+      (p) => atProgress(windowFor(p.country.name), 1) + LABEL_FADE_MS,
+    ),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last panel's end label ends at ${lastCascadeEnd}ms, after the subject panel finishes at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms`,
+    );
+
   if (!panels.some((p) => p.isSubject))
     throw new Error(
       `subject ${JSON.stringify(subject)} does not match any country name in ${countries.map((c) => c.name).join(", ")}`,
@@ -247,7 +330,11 @@ export function SmallMultiplesCo2Web({
         ["--panel-label-weight" as string]: frame.panelLabel.fontWeight,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{caption}</p>
       </div>
@@ -283,13 +370,21 @@ export function SmallMultiplesCo2Web({
                   shared axis and unit (`small-multiples.md`). Accented when this is the subject, so
                   a reader can tell which panel is Poland at a glance, no interaction required. */}
               <span
+                {...furnitureLayer().attrs}
                 className="panel-name"
-                style={{ color: p.isSubject ? accent : ink }}
+                style={{
+                  ...furnitureLayer().vars,
+                  color: p.isSubject ? accent : ink,
+                }}
               >
                 {p.country.name}
               </span>
 
-              <div className="panel-y">
+              <div
+                className="panel-y"
+                {...furnitureLayer().attrs}
+                style={furnitureLayer().vars}
+              >
                 {yTicks.map((v) => (
                   <span
                     key={v}
@@ -327,9 +422,15 @@ export function SmallMultiplesCo2Web({
                     p.plot.bottom -
                     (p.plot.bottom - p.plot.top) *
                       ((v - yDomain[0]) / (yDomain[1] - yDomain[0]));
+                  // The bottom of a zero-based scale is not a gridline, it is the floor every
+                  // reading is measured from — this beat's reference, laid down before any line.
+                  const isBaseline = v === yDomain[0];
+                  const layer = isBaseline ? baselineLayer() : furnitureLayer();
                   return (
                     <line
                       key={v}
+                      {...layer.attrs}
+                      style={layer.vars}
                       x1={0}
                       x2={frame.panelWidth}
                       y1={ty}
@@ -350,15 +451,32 @@ export function SmallMultiplesCo2Web({
                   strokeWidth={1}
                   vectorEffect="non-scaling-stroke"
                 />
-                <path
-                  d={p.path}
-                  fill="none"
-                  stroke={lineColour}
-                  strokeWidth={p.isSubject ? 2.5 : 1.75}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
+                {/* THE REVEAL — this panel's own clip, on this panel's own clock. Only the drawn
+                    stroke is clipped; the `.pt` targets and the hit area below stay outside it, so
+                    hover, tap and keyboard answer for every reading from the first millisecond. */}
+                <defs>
+                  <clipPath id={clipIdFor(p.country.name)}>
+                    <rect
+                      {...wipeLayer(p.country.name).attrs}
+                      style={wipeLayer(p.country.name).vars}
+                      x={0}
+                      y={0}
+                      width={frame.panelWidth}
+                      height={frame.panelHeight}
+                    />
+                  </clipPath>
+                </defs>
+                <g clipPath={`url(#${clipIdFor(p.country.name)})`}>
+                  <path
+                    d={p.path}
+                    fill="none"
+                    stroke={lineColour}
+                    strokeWidth={p.isSubject ? 2.5 : 1.75}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </g>
 
                 {/* This panel's own interaction layer — invisible at rest, wired by
                     `small-multiples-interaction.mjs` inside this panel's own closure. Every reading
@@ -397,7 +515,12 @@ export function SmallMultiplesCo2Web({
                   already carried by that reading's own `aria-label` above. The end dot is HTML for
                   the reason `END_DOT_PX` states. The label carries a `--ground` chip: these panels
                   are short enough that the line's own last segments pass directly under it. */}
-              <div className="panel-overlay" aria-hidden="true">
+              <div
+                className="panel-overlay"
+                {...endLabelLayer(p.country.name).attrs}
+                style={endLabelLayer(p.country.name).vars}
+                aria-hidden="true"
+              >
                 <span
                   className="end-dot"
                   style={{
@@ -422,7 +545,11 @@ export function SmallMultiplesCo2Web({
 
               {/* The shared x-axis, at each panel's own edge: the first and last year of the one
                   domain all four share. Identical position in every panel. */}
-              <div className="panel-x">
+              <div
+                className="panel-x"
+                {...furnitureLayer().attrs}
+                style={furnitureLayer().vars}
+              >
                 <span className="axis-label x start">{xDomain[0]}</span>
                 <span className="axis-label x end">{xDomain[1]}</span>
               </div>
@@ -431,7 +558,13 @@ export function SmallMultiplesCo2Web({
         })}
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
