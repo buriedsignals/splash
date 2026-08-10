@@ -270,7 +270,7 @@ const READ = () => {
           ? high
           : low;
     const tip = origin === high ? low : high;
-    return { el, axis, settled, origin, tip, box, grows };
+    return { el, axis, settled, origin, tip, box, grows, tag: el.tagName.toLowerCase() };
   });
   const step =
     Math.max(1e-6, Math.max(0, ...geometry.map((g) => g.settled))) /
@@ -294,7 +294,13 @@ const READ = () => {
     // `both` scales about the mark's own centre, so the extent is uncovered from the middle
     // outward rather than from one end — the walk below assumes a baseline at one end and would
     // report a growing dot as arriving late. Its scale is exact and is the reading that matters.
-    if (ctm && g.settled > 0 && g.grows && g.axis !== "both") {
+    // A `<g>` IS NOT HIT-TESTABLE — measured, not assumed: `elementsFromPoint` returns the painted
+    // leaf and its HTML ancestors, never an intermediate SVG group, so a mark declared on a group
+    // reads 0 painted at every sample on a page that is fully drawn. That is a real defect in the
+    // beat, not in the reading (a group is also the one place a scale can silently mean something
+    // different from the same scale on its children), so it is reported by name below rather than
+    // absorbed.
+    if (ctm && g.settled > 0 && g.grows && g.axis !== "both" && g.tag !== "g") {
       const direction = g.tip >= g.origin ? 1 : -1;
       const across =
         g.axis === "x" ? g.box.y + g.box.height / 2 : g.box.x + g.box.width / 2;
@@ -314,8 +320,9 @@ const READ = () => {
       settled: Math.round(g.settled * 100) / 100,
       // Null, not zero, when the reading does not apply — a fading mark has no painted extent to
       // report and a growing dot's is measured from its centre. A zero here would read as "absent".
+      tag: g.tag,
       painted:
-        g.grows && g.axis !== "both"
+        g.grows && g.axis !== "both" && g.tag !== "g"
           ? Math.round(Math.min(painted, g.settled) * 100) / 100
           : null,
       scale: Math.round(scale * 1000) / 1000,
@@ -376,6 +383,7 @@ function markSeries(samples) {
   return samples[0].marks.map((first) => ({
     key: first.key,
     axis: first.axis,
+    tag: first.tag,
     grows: first.painted !== null,
     settled: first.settled,
     painted: seriesOf(first.key, "painted"),
@@ -435,6 +443,13 @@ function markFailures(samples, label) {
       `${label}: every one of the ${rows.length} marks had already begun arriving at the first ` +
         `reading after entry (${rows.map((r) => `${r.key}=${r.arrival[0]}`).join(", ")}) — nothing ` +
         `here is arriving, which is what a fade over a finished picture measures like`,
+    );
+
+  for (const row of rows.filter((r) => r.grows && r.tag === "g"))
+    failures.push(
+      `${label}: mark ${row.key} is declared on a <g>, which no hit test can reach — put the layer ` +
+        `on the drawable it wraps. Scaling each child about the SAME baseline is the same picture ` +
+        `and it is measurable`,
     );
 
   // 1b — AND FOR A MARK THAT GROWS, ITS PAINTED EXTENT AGREES. The second instrument, independent

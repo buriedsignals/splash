@@ -29,6 +29,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   stackedBarGeometry,
   formatNumber,
   STACK_ORDER,
@@ -167,6 +176,98 @@ export function StackedBarWeb({
 
   const y = (value: number) => frame.height - (value / 100) * frame.height;
 
+  // ── THE ENTRANCE, carried from `proof/vidx-stacked-bar-swiss-electricity` (this claim's own
+  // video sibling), which already answered the question this type poses: a stacked segment sits on
+  // the one below it, so what is a segment's baseline?
+  //
+  // THE VIDEO'S ANSWER: there is no per-segment baseline, because the segments do not cascade
+  // against each other. The WHOLE COLUMN rises from the shared zero as ONE event — `StackedBarVideo`
+  // interpolates all three segment tops from `g.zeroY` on the same `colProgress`, so the three
+  // heights scale together and the column's proportions are correct at every frame. In CSS that is
+  // exactly one `scaleY` on the column's own group about the zero rule, which is why the three
+  // `<rect>`s are wrapped in a `<g>` here and the group carries the layer, not the rects.
+  //
+  // Columns take their own overlapping slices of the reveal in the order the data is given (there,
+  // chronological; here, the sort the runner hands in — renewables descending).
+  //
+  // ONE THING THE WEB CANNOT CARRY, stated rather than substituted. The video's `subject` is a RING
+  // and a wash dropped onto a column that has already landed. This page has no ring at rest and the
+  // entrance may not add one — the settled page is what SSR ships and every keyframe runs *to* it.
+  // So the web's emphasis is the subject's own ARRIVAL: its column is lifted out of the cascade and
+  // lands after every other, its place staying empty until then. Same event, same position in the
+  // order, a gesture the medium has.
+  const subjectName = countries[0].name;
+  const cascade = bars.filter((b) => b.name !== subjectName);
+  const windowFor = (name: string) =>
+    name === subjectName
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((b) => b.name === name),
+          cascade.length,
+        );
+  const eventFor = (name: string) =>
+    name === subjectName ? ("subject" as const) : ("reveal" as const);
+  //
+  // THE LAYER GOES ON EACH SEGMENT, NOT ON A GROUP WRAPPING THEM, and that is arithmetic rather
+  // than taste: scaling every rect of a column about the SAME zero is the identical picture to
+  // scaling their group — a rect spanning `a..b` maps to `zero + s(a-zero) .. zero + s(b-zero)`,
+  // which is exactly the video's two interpolations. It is also the only form that can be measured:
+  // `elementsFromPoint` returns the painted leaf and its HTML ancestors, never an intermediate SVG
+  // `<g>`, so a mark declared on a group reads zero painted extent at every sample on a page that is
+  // fully drawn. Driven here first, and `verify-entrance.mjs` now names it.
+  const segmentKey = (name: string, key: Segment) => `${name}·${key}`;
+  const segmentLayer = (name: string, key: Segment) => {
+    const own = windowFor(name);
+    return entranceLayer(eventFor(name), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "y", origin: { x: 0, y: y(0) } },
+      mark: segmentKey(name, key),
+    });
+  };
+  // The video paints a column's own total label at 0.9 of that column's local progress — its own
+  // clock, not the master one. Same fraction here, and the same reason: the share printed inside a
+  // band names a height, and a height that is still growing is not that number yet.
+  const segmentLabelLayer = (name: string, key: Segment) =>
+    name === subjectName
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: segmentKey(name, key),
+        })
+      : entranceLayer("reveal", "fade", {
+          delay: atProgress(windowFor(name), 0.9),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: segmentKey(name, key),
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  // The zero rule is lifted out of the gridline loop: it is not a gridline, it is the floor every
+  // column stands on, and this beat's reference. A horizontal rule laid down left to right is a
+  // `wipe`, the motion this genre already uses for a reference.
+  const zeroRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((b) => atProgress(windowFor(b.name), 0.9) + LABEL_FADE_MS),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last cascading column's labels end at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms — a column would still be arriving while the one the ` +
+        `takeaway is about is already there`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -185,7 +286,11 @@ export function StackedBarWeb({
         ["--note-size" as string]: `${frame.category.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -196,7 +301,9 @@ export function StackedBarWeb({
           browser does that arithmetic for free, correctly, at every width. */}
       <div
         className="chart-legend"
+        {...furnitureLayer().attrs}
         style={{
+          ...furnitureLayer().vars,
           flex: "0 0 auto",
           display: "flex",
           flexWrap: "wrap",
@@ -234,7 +341,11 @@ export function StackedBarWeb({
           aspectRatio: `${yGutterPx + frame.width} / ${frame.height + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {tickValues.map((value, i) => (
             <span
               key={value}
@@ -271,30 +382,54 @@ export function StackedBarWeb({
             fill={ground}
           />
 
-          {tickValues.map((value) => (
-            <line
-              key={value}
-              x1={0}
-              x2={frame.width}
-              y1={y(value)}
-              y2={y(value)}
-              stroke={value === 0 ? muted : grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* Gridlines are FURNITURE and come up on one clock with the labels beside them. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {tickValues
+              .filter((value) => value !== 0)
+              .map((value) => (
+                <line
+                  key={value}
+                  x1={0}
+                  x2={frame.width}
+                  y1={y(value)}
+                  y2={y(value)}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+          </g>
+          <line
+            {...zeroRuleLayer.attrs}
+            style={zeroRuleLayer.vars}
+            x1={0}
+            x2={frame.width}
+            y1={y(0)}
+            y2={y(0)}
+            stroke={muted}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
 
+          {/* THE REVEAL — one group per column, ONE scaleY about the zero rule, so all three
+              segments rise together and the column's proportions are right at every frame. The
+              video's own answer for this type: see the entrance block above. */}
           {bars.map((b) =>
-            b.segments.map((s) => (
-              <rect
-                key={`${b.name}-${s.key}`}
-                x={s.x}
-                y={s.y}
-                width={s.width}
-                height={s.height}
-                fill={colours[s.key]}
-              />
-            )),
+            b.segments.map((s) => {
+              const layer = segmentLayer(b.name, s.key);
+              return (
+                <rect
+                  key={`${b.name}-${s.key}`}
+                  {...layer.attrs}
+                  style={layer.vars}
+                  x={s.x}
+                  y={s.y}
+                  width={s.width}
+                  height={s.height}
+                  fill={colours[s.key]}
+                />
+              );
+            }),
           )}
 
           {/* Interaction layer: one direct hit target per segment, `tabIndex={0}` and `aria-label`
@@ -329,7 +464,9 @@ export function StackedBarWeb({
               .map((s) => (
                 <span
                   key={`label-${b.name}-${s.key}`}
+                  {...segmentLabelLayer(b.name, s.key).attrs}
                   style={{
+                    ...segmentLabelLayer(b.name, s.key).vars,
                     position: "absolute",
                     left: `${pct(s.x + s.width / 2, frame.width)}%`,
                     top: `${pct(s.y + s.height / 2, frame.height)}%`,
@@ -357,7 +494,11 @@ export function StackedBarWeb({
             doubles every label's own room to two columns (96px at 375) at EVERY width, which is the
             point: a fix that holds at one width and fails at another is the two-rung assumption
             smuggled back in. */}
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {bars.map((b, i) => (
             <span
               key={b.name}
@@ -382,7 +523,13 @@ export function StackedBarWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
