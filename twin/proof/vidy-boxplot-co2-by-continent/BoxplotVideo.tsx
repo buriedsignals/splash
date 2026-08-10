@@ -56,25 +56,143 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { BOXPLOT_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 36, fontWeight: 700, lead: 46 };
-const SOURCE = { fontSize: 19, fontWeight: 400 };
-const AXIS_UNIT = { fontSize: 19, fontWeight: 400 };
-const TICK_LABEL = { fontSize: 18, fontWeight: 400 };
-const CATEGORY_LABEL = { fontSize: 24, fontWeight: 600 };
-const CATEGORY_LABEL_ACCENT = { fontSize: 24, fontWeight: 700 };
-const N_LABEL = { fontSize: 17, fontWeight: 400 };
-const MEDIAN_LABEL = { fontSize: 19, fontWeight: 600 };
-const OUTLIER_LABEL = { fontSize: 17, fontWeight: 500 };
-const NOTE = { fontSize: 19, fontWeight: 400 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "boxplot";
 
-const OUTLIER_R = 6;
-const WHISKER_CAP = 20;
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts — the whisker cap's own width, the
+ * outlier radius, the cap on how wide a box may get, the lift of an outlier's label off its dot.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: this beat's
+ * `n =` row and its outlier labels were 17px on a 1080 frame, 5.7 CSS px on the phone a square post
+ * is read on — the exact figure the W4 audit measured across this corpus.
+ */
+const BASE = {
+  TITLE: { fontSize: 25, fontWeight: 700, lead: 32 },
+  SOURCE: { fontSize: 13, fontWeight: 400 },
+  AXIS_UNIT: { fontSize: 13, fontWeight: 400 },
+  TICK_LABEL: { fontSize: 13, fontWeight: 400 },
+  CATEGORY_LABEL: { fontSize: 17, fontWeight: 600 },
+  CATEGORY_LABEL_ACCENT: { fontSize: 17, fontWeight: 700 },
+  N_LABEL: { fontSize: 12, fontWeight: 400 },
+  MEDIAN_LABEL: { fontSize: 13, fontWeight: 600 },
+  OUTLIER_LABEL: { fontSize: 12, fontWeight: 500 },
+  NOTE: { fontSize: 13, fontWeight: 400 },
+  OUTLIER_R: 4,
+  RING_AIR: 4,
+  WHISKER_CAP: 14,
+  BOX_HALF_MAX: 32,
+  TITLE_TO_AXIS_UNIT: 24,
+  AXIS_UNIT_TO_NOTE: 23,
+  NOTE_TO_PLOT: 28,
+  PLOT_RIGHT_AIR: 14,
+  X_LABEL_BAND: 38,
+  SOURCE_AIR: 17,
+  Y_GUTTER: 32,
+  TICK_LABEL_INSET: 7,
+  OUTLIER_LABEL_LIFT: 7,
+  CATEGORY_DROP: 21,
+  N_ROW_DROP: 14,
+  MEDIAN_LABEL_GAP: 7,
+  DASH_REFERENCE: [4, 3],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = {
+  grid: 0.4,
+  reference: 0.8,
+  whisker: 0.8,
+  box: 0.8,
+  median: 1.2,
+  outlier: 0.4,
+  ring: 1.2,
+};
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS_UNIT: f(BASE.AXIS_UNIT) as typeof BASE.AXIS_UNIT,
+    TICK_LABEL: f(BASE.TICK_LABEL) as typeof BASE.TICK_LABEL,
+    CATEGORY_LABEL: f(BASE.CATEGORY_LABEL) as typeof BASE.CATEGORY_LABEL,
+    CATEGORY_LABEL_ACCENT: f(
+      BASE.CATEGORY_LABEL_ACCENT,
+    ) as typeof BASE.CATEGORY_LABEL_ACCENT,
+    N_LABEL: f(BASE.N_LABEL) as typeof BASE.N_LABEL,
+    MEDIAN_LABEL: f(BASE.MEDIAN_LABEL) as typeof BASE.MEDIAN_LABEL,
+    OUTLIER_LABEL: f(BASE.OUTLIER_LABEL) as typeof BASE.OUTLIER_LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    OUTLIER_R: sp(BASE.OUTLIER_R),
+    RING_AIR: sp(BASE.RING_AIR),
+    WHISKER_CAP: sp(BASE.WHISKER_CAP),
+    BOX_HALF_MAX: sp(BASE.BOX_HALF_MAX),
+    TITLE_TO_AXIS_UNIT: sp(BASE.TITLE_TO_AXIS_UNIT),
+    AXIS_UNIT_TO_NOTE: sp(BASE.AXIS_UNIT_TO_NOTE),
+    NOTE_TO_PLOT: sp(BASE.NOTE_TO_PLOT),
+    PLOT_RIGHT_AIR: sp(BASE.PLOT_RIGHT_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_GUTTER: sp(BASE.Y_GUTTER),
+    TICK_LABEL_INSET: sp(BASE.TICK_LABEL_INSET),
+    OUTLIER_LABEL_LIFT: sp(BASE.OUTLIER_LABEL_LIFT),
+    CATEGORY_DROP: sp(BASE.CATEGORY_DROP),
+    N_ROW_DROP: sp(BASE.N_ROW_DROP),
+    MEDIAN_LABEL_GAP: sp(BASE.MEDIAN_LABEL_GAP),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      grid: st(BASE_STROKE.grid),
+      reference: st(BASE_STROKE.reference),
+      whisker: st(BASE_STROKE.whisker),
+      box: st(BASE_STROKE.box),
+      median: st(BASE_STROKE.median),
+      outlier: st(BASE_STROKE.outlier),
+      ring: st(BASE_STROKE.ring),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark.
+ * The still path reads the rendered SVG's `font-size` attributes; a video composition's markup only
+ * exists inside the browser Remotion drives, so the equivalent reading is the element tree.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 
 export type Outlier = { country: string; value: number };
 
@@ -219,6 +337,8 @@ export type BoxplotVideoProps = {
   referenceLabel: string;
   axisUnit: string;
   subjectContinent: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -235,11 +355,44 @@ export function BoxplotVideo({
   referenceLabel,
   axisUnit,
   subjectContinent,
+  size,
   timing = BOXPLOT_TIMING,
 }: BoxplotVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    AXIS_UNIT,
+    TICK_LABEL,
+    CATEGORY_LABEL,
+    CATEGORY_LABEL_ACCENT,
+    N_LABEL,
+    MEDIAN_LABEL,
+    OUTLIER_LABEL,
+    NOTE,
+    OUTLIER_R,
+    WHISKER_CAP,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL — before anything is measured.
+  //
+  // A box plot's value axis is a continuum and the SHAPE of each group — the box, the whiskers,
+  // where the outliers sit relative to them — is the whole argument. It has no twin form, and no
+  // aspect range has ever been MEASURED for it at a tall or square frame, so `type-at-size.mjs`
+  // refuses by default and names the measurement that is missing. The probe's finding is exactly
+  // about this class: a distribution redrawn at another aspect scores zero clipped runs and zero
+  // collisions and is a different claim.
+  const form = formForSize(TYPE, size);
+  if (form.verdict !== "as-is")
+    throw new Error(
+      `vidy-boxplot-co2-by-continent: ${TYPE} cannot be drawn at ${size}. ${form.reason}\n` +
+        `It ships at landscape.`,
+    );
 
   if (data.length < 2)
     throw new Error(`need at least two groups, got ${data.length}`);
@@ -261,7 +414,7 @@ export function BoxplotVideo({
   // The axis unit keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const axisUnitBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 34;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_AXIS_UNIT;
   // The reference line's caption lives in the header, not floating beside the line itself: at
   // 3.69 t the dashed rule crosses through the BODY of two boxes (Americas', Asia's) and runs
   // flush against the median value labels of the others — there is no clean band beside the line
@@ -270,20 +423,25 @@ export function BoxplotVideo({
   // opacity (`referenceLabelOpacity`), so it still arrives as its own event, just parked where
   // nothing else is ever drawn — the same render-verify-then-move fix `EmissionsVideo.tsx`'s own
   // reference caption documents taking, for the same reason (the first placement collided).
-  const referenceNoteBaseline = axisUnitBaseline + 32;
+  const referenceNoteBaseline = axisUnitBaseline + T.AXIS_UNIT_TO_NOTE;
 
   const padding = {
-    top: referenceNoteBaseline + 40,
-    right: PAD + 20,
+    top: referenceNoteBaseline + T.NOTE_TO_PLOT,
+    right: PAD + T.PLOT_RIGHT_AIR,
     // Grown by the credit's own height plus clear air. 24px rather than the family's 10: this
     // beat draws TWO rows under the plot (the continent name and its `n = ` row), and the first
     // render left the `n = ` row and the credit about ten pixels apart — legible, but not the
     // clear band the rest of the family gets.
-    bottom: PAD + 54 + SOURCE.fontSize + 24,
-    left: PAD + 46,
+    bottom: PAD + T.X_LABEL_BAND + SOURCE.fontSize + T.SOURCE_AIR,
+    left: PAD + T.Y_GUTTER,
   };
 
-  const g = boxplotGeometry(data, { width, height, padding });
+  const g = boxplotGeometry(data, {
+    width,
+    height,
+    padding,
+    boxHalfMax: T.BOX_HALF_MAX,
+  });
   const ticks = g.y.ticks(5);
   // ONE decimal count for the whole axis, taken from the tick set as a set. Each tick used to pick
   // its own (`t < 1 ? 1 : 0`), which printed this beat's own axis as `0.0, 5, 10, 15, 20`: the
@@ -375,7 +533,11 @@ export function BoxplotVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const ringRadius = interpolate(subjectSpring, [0, 1], [0, OUTLIER_R + 6]);
+  const ringRadius = interpolate(
+    subjectSpring,
+    [0, 1],
+    [0, OUTLIER_R + T.RING_AIR],
+  );
   const ringOpacity = interpolate(subjectSpring, [0, 1], [0, 1]);
   const highlightOpacity = interpolate(subjectSpring, [0, 1], [0, 0.1]);
   // The category label crossfades from ink to bold accent, gated on the SUBJECT event's own
@@ -402,9 +564,12 @@ export function BoxplotVideo({
   // marks; an uncrowded pair keeps its natural offset so a distant outlier's label stays with it.
   // Shared by BOTH the plain value label (pre-conclusion) and the conclusion's "× median" label,
   // so the text never jumps position when it swaps wording.
-  const MIN_LABEL_GAP = 22;
+  // The stacking floor between two outlier labels, DERIVED from the label's own drawn size rather
+  // than typed: it was 22 against a 17px label, so the ratio is the fact and the pixel was a
+  // coincidence of one frame.
+  const MIN_LABEL_GAP = Math.round(OUTLIER_LABEL.fontSize * 1.29);
   const naturalLabelY = subjectOutliersSorted.map(
-    (o) => g.y(o.value) - OUTLIER_R - 10,
+    (o) => g.y(o.value) - OUTLIER_R - T.OUTLIER_LABEL_LIFT,
   );
   const crowded = naturalLabelY.some(
     (y, i) => i > 0 && y - naturalLabelY[i - 1] < MIN_LABEL_GAP,
@@ -419,7 +584,7 @@ export function BoxplotVideo({
     subjectOutlierLabelY.set(o.country, placedY);
   });
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -472,10 +637,10 @@ export function BoxplotVideo({
               y1={g.y(t)}
               y2={g.y(t)}
               stroke={grid}
-              strokeWidth={1}
+              strokeWidth={T.STROKE.grid}
             />
             <text
-              x={g.plot.left - 10}
+              x={g.plot.left - T.TICK_LABEL_INSET}
               y={g.y(t) + TICK_LABEL.fontSize * 0.32}
               fill={muted}
               fontSize={TICK_LABEL.fontSize}
@@ -499,8 +664,8 @@ export function BoxplotVideo({
           y1={referenceY}
           y2={referenceY}
           stroke={muted}
-          strokeWidth={2}
-          strokeDasharray="8 6"
+          strokeWidth={T.STROKE.reference}
+          strokeDasharray={T.DASH_REFERENCE}
         />
       ) : null}
       <text
@@ -548,7 +713,7 @@ export function BoxplotVideo({
               y1={p.yWhiskerLo}
               y2={p.yWhiskerHi}
               stroke={muted}
-              strokeWidth={2}
+              strokeWidth={T.STROKE.whisker}
               opacity={groupOpacity[i]}
             />
             <line
@@ -557,7 +722,7 @@ export function BoxplotVideo({
               y1={p.yWhiskerLo}
               y2={p.yWhiskerLo}
               stroke={muted}
-              strokeWidth={2}
+              strokeWidth={T.STROKE.whisker}
               opacity={groupOpacity[i]}
             />
             <line
@@ -566,7 +731,7 @@ export function BoxplotVideo({
               y1={p.yWhiskerHi}
               y2={p.yWhiskerHi}
               stroke={muted}
-              strokeWidth={2}
+              strokeWidth={T.STROKE.whisker}
               opacity={groupOpacity[i]}
             />
             {/* Box: Q1 to Q3, the one hue every box shares. */}
@@ -578,7 +743,7 @@ export function BoxplotVideo({
               fill={accent}
               fillOpacity={0.22}
               stroke={accent}
-              strokeWidth={2}
+              strokeWidth={T.STROKE.box}
               opacity={groupOpacity[i]}
             />
             {/* Median: in ink, never the box's own colour (`boxplot.md`). */}
@@ -588,7 +753,7 @@ export function BoxplotVideo({
               y1={p.yMedian}
               y2={p.yMedian}
               stroke={ink}
-              strokeWidth={3}
+              strokeWidth={T.STROKE.median}
               opacity={groupOpacity[i]}
             />
             {/* Outlier dots — every point beyond the Tukey fence, drawn individually, never
@@ -601,7 +766,7 @@ export function BoxplotVideo({
                 r={OUTLIER_R}
                 fill={accent}
                 stroke={ink}
-                strokeWidth={1}
+                strokeWidth={T.STROKE.outlier}
                 opacity={groupOpacity[i]}
               />
             ))}
@@ -620,8 +785,8 @@ export function BoxplotVideo({
                     y={
                       isSubject
                         ? (subjectOutlierLabelY.get(o.country) ??
-                          o.y - OUTLIER_R - 10)
-                        : o.y - OUTLIER_R - 10
+                          o.y - OUTLIER_R - T.OUTLIER_LABEL_LIFT)
+                        : o.y - OUTLIER_R - T.OUTLIER_LABEL_LIFT
                     }
                     fill={ink}
                     fontSize={OUTLIER_LABEL.fontSize}
@@ -639,7 +804,7 @@ export function BoxplotVideo({
                 labelAccentOpacity is never driven for it. */}
             <text
               x={p.cx}
-              y={g.plot.bottom + 30}
+              y={g.plot.bottom + T.CATEGORY_DROP}
               fill={accented ? accent : ink}
               fontSize={
                 accented
@@ -658,7 +823,12 @@ export function BoxplotVideo({
             </text>
             <text
               x={p.cx}
-              y={g.plot.bottom + 30 + categoryLabelBaselineOffset + 20}
+              y={
+                g.plot.bottom +
+                T.CATEGORY_DROP +
+                categoryLabelBaselineOffset +
+                T.N_ROW_DROP
+              }
               fill={muted}
               fontSize={N_LABEL.fontSize}
               textAnchor="middle"
@@ -668,7 +838,7 @@ export function BoxplotVideo({
             </text>
             {/* Median value, printed beside the box. */}
             <text
-              x={p.cx + g.boxHalfWidth + 10}
+              x={p.cx + g.boxHalfWidth + T.MEDIAN_LABEL_GAP}
               y={p.yMedian + MEDIAN_LABEL.fontSize * 0.32}
               fill={ink}
               fontSize={MEDIAN_LABEL.fontSize}
@@ -692,7 +862,7 @@ export function BoxplotVideo({
               r={ringRadius}
               fill="none"
               stroke={accent}
-              strokeWidth={3}
+              strokeWidth={T.STROKE.ring}
               opacity={ringOpacity}
             />
           ))
@@ -727,4 +897,16 @@ export function BoxplotVideo({
       ))}
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-boxplot-co2-by-continent at ${size}` },
+  );
+
+  return drawing;
 }

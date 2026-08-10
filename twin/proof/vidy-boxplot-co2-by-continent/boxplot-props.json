@@ -74,6 +74,7 @@
   "referenceValue": 3.6921155,
   "referenceLabel": "Median across all 53 countries",
   "subjectContinent": "Americas",
+  "size": "landscape",
   "ink": "#000000",
   "muted": "#616161",
   "grid": "#d1d1d1",

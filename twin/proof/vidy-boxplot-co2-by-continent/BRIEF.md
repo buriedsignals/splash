@@ -1,4 +1,22 @@
+---
+size: landscape
+type: boxplot
+---
+
 # Beat — CO₂ emissions per capita vary widely within every continent, and the Americas hide the widest outliers
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and why the other two refuse.** A box plot's argument is the SHAPE of each group
+— the box, the whiskers, and where the outliers sit relative to them. It has no twin form, and no
+aspect range has ever been MEASURED for it at a tall or square frame, so `type-at-size.mjs`
+refuses by default and names the measurement that is missing. That is this beat's own class of
+finding turned on itself: the portrait probe destroyed a distribution while every clipping and
+collision counter stayed at zero. The 1080 x 1080 this beat used to draw at was not a decision, it
+was a default.
 
 **Proves:** within every continent, per-country CO₂ emissions per capita span a wide range — and in
 the Americas specifically, the United States and Canada each emit more than 4× the region's own
