@@ -223,8 +223,8 @@ export function SwissAgePyramid({
   // white at 5.19:1, vertically centred on the band's own ink. The leader goes with it — a leader
   // exists to bridge a distance, and the label now stands on the thing it names.
   //
-  // Measured, not assumed: the bar is 23.3px tall against an 11.2px ink band and 337px wide against
-  // a 183px label. If a longer callout or a shorter bar ever breaks that, this THROWS with both
+  // Measured, not assumed: the bar is 23.3px tall against an 11.2px ink band and 356.8px wide
+  // against a 182.9px label. If a longer callout or a shorter bar ever breaks that, this THROWS with both
   // numbers rather than drawing a sentence over the edge of its own mark.
   const peakNote = (() => {
     if (!peak) return null;
