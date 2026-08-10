@@ -200,21 +200,66 @@ function layerTimings(html: string): { delay: number; duration: number }[] {
   return out;
 }
 
-/** `data-entrance` and `data-entrance-motion`, paired with the delay written on the same element. */
+/**
+ * `data-entrance` and `data-entrance-motion`, paired with the delay written on the SAME element.
+ *
+ * READ PER TAG, NOT BY ADJACENCY, and that is a correction the first migrated beat earned. The
+ * first version of this function matched
+ * `data-entrance="…" data-entrance-motion="…" style="…"` as one run, which silently required the
+ * three attributes to be neighbours. They are not: a layer that also carries a `className` — which
+ * every LABEL does, because it needs `.note` or `.end-label` to be styled at all — renders as
+ * `data-entrance=… data-entrance-motion=… class=… style=…`, and the run does not match.
+ *
+ * Measured on `proof/webx-life-expectancy/life-expectancy.html` the day it was migrated: **12 real
+ * layers on the page, 9 seen**. The three invisible ones were the reference label, the crossing
+ * label and THE CONCLUSION — which is to say clause 6, the rule that the page's order is the
+ * contract's order, was running on everything except the layer whose lateness the rule exists to
+ * forbid. A guard that reads two thirds of a page is not a weaker guard, it is a guard that reports
+ * green on the third that matters.
+ *
+ * So the tag is scanned as a tag: from `<` to the `>` that is not inside a quoted value, then each
+ * attribute read out of it independently and in any order.
+ */
 function layers(
   html: string,
 ): { event: string; motion: string; delay: number }[] {
   const out: { event: string; motion: string; delay: number }[] = [];
-  const re =
-    /data-entrance="([a-z]+)"\s+data-entrance-motion="([a-z]+)"\s+style="([^"]*)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html))) {
-    const delay = /--e-delay:\s*(\d+)ms/.exec(m[3]);
+  for (const tag of tagsCarrying(html, "data-entrance-motion")) {
+    const event = /\sdata-entrance="([a-z]+)"/.exec(tag);
+    const motion = /\sdata-entrance-motion="([a-z]+)"/.exec(tag);
+    const delay = /--e-delay:\s*(\d+)ms/.exec(tag);
     out.push({
-      event: m[1],
-      motion: m[2],
+      // A layer carrying a motion and NO event is a real defect — it animates without belonging to
+      // the argument — so it is reported as an unknown event rather than skipped.
+      event: event ? event[1] : "(no data-entrance)",
+      motion: motion ? motion[1] : "(none)",
       delay: delay ? Number(delay[1]) : NaN,
     });
+  }
+  return out;
+}
+
+/** Every open tag in the document containing `attribute`, quote-aware so a `>` inside an attribute
+ *  value (a `translate(…)` in a style, a `>` in an `aria-label`) cannot end a tag early. */
+function tagsCarrying(html: string, attribute: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < html.length; i++) {
+    if (html[i] !== "<") continue;
+    if (!/[a-zA-Z]/.test(html[i + 1] ?? "")) continue;
+    let quote: string | null = null;
+    let end = i + 1;
+    for (; end < html.length; end++) {
+      const c = html[end];
+      if (quote) {
+        if (c === quote) quote = null;
+      } else if (c === '"' || c === "'") quote = c;
+      else if (c === ">") break;
+    }
+    const tag = html.slice(i, end + 1);
+    // The stylesheet's own `[data-entrance-motion="fade"]` selectors live inside a `<style>` tag,
+    // which this scan would otherwise hand back as one enormous "layer".
+    if (tag.includes(attribute) && !tag.startsWith("<style")) out.push(tag);
+    i = end;
   }
   return out;
 }
