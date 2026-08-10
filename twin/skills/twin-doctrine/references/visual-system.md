@@ -93,6 +93,25 @@ page. A production skill drafting a new type that colours its value labels the s
 without a second, separate contrast check for the label specifically, will reproduce a defect that
 has already shipped and been fixed six times over.
 
+**And the rule reaches the ANNOTATION layer, not only the value label.** The paragraph above was
+written for text, and for seven sessions nothing in this tree applied it to anything else: a dashed
+median rule, a leader, a bracket and a hatch are not text, so no check reached them. Measured across
+the 48 committed statics on 2026-08-10: **21 of the 32 dashed rules that cross a mark at all were
+under their floor**, the worst at 1.20:1 — an accent rule spending 97 % of its length inside a bar
+it cannot be seen against. Two floors, and they are not the same one: a rule or any other non-text
+mark is **SC 1.4.11, 3:1**; text is **SC 1.4.3, 4.5:1**, relaxed to 3:1 only at 24 px, or 18.66 px
+bold. Collapsing them into one number fails a legitimate rule or passes an illegible label. The
+mechanism is `twin-chart-beat/scripts/annotation-ink.mjs` — `marksUnder` finds what the annotation
+lies over, `inkThatReadsOver` returns the pole that reads against all of it, and
+`assertAnnotationReadsOverMarks` throws when a beat has decided on a colour that does not. Its
+honest consequence, which looks like a regression and is not: an accent rule crossing a mid-grey bar
+comes back near-black. **A teal rule a reader cannot see was not carrying the accent either.**
+
+There is a third outcome, and it is the useful one: when NEITHER pole clears the floor, the
+annotation is in the wrong PLACE, not the wrong colour. A callout lying half on white paper and half
+on a mid-blue bar has no ink at all — 4.05:1 one side, 1.00:1 the other — and the fix is to move it
+onto one background or the other, which is what `static-swiss-age-pyramid` did.
+
 ## An open gap: adjacency inside an already-safe palette
 
 A CVD-safe palette (Okabe-Ito or equivalent) guarantees its members are distinguishable from each

@@ -56,6 +56,7 @@ measures 3.95:1. A mid-grey newsroom ground is exactly where the obvious rule is
 | Preview | `assets/preview.png` | The seed rendered on a light ground at landscape — what this skill produces, without running it |
 | Sizes | `scripts/sizes.mjs` | `SIZES` + `sizeFor` — the three export sizes R2 names, carried not imported, walked by `splash-twin/test/size-table-parity.test.ts` |
 | Render | `scripts/render-still.mjs` | `deriveFurniture`, `contrast`, `measureText`, `renderStill` |
+| Annotation | `scripts/annotation-ink.mjs` | `marksUnder`, `inkThatReadsOver`, `assertAnnotationReadsOverMarks` — an annotation's ink measured against the MARKS it is drawn over, not against the page |
 
 `scripts/render-still.mjs` is the twin's one script with dependencies — `react-dom/server` and
 `@resvg/resvg-js`, both from the root's own `package.json` — and its header says so.
@@ -160,6 +161,8 @@ by an ordinary relative path — that import is for this skill's own tests
 | Want | Knob | Where |
 | --- | --- | --- |
 | The contrast floor muted text must clear against the ground | `4.5` | `deriveFurniture`, `render-still.mjs` |
+| The floor a dashed rule, leader or other NON-text annotation must clear against every mark it crosses (SC 1.4.11) | `3` (`NON_TEXT_CONTRAST_FLOOR`) | `annotation-ink.mjs` |
+| The floor an annotation's TEXT must clear against every mark it sits on (SC 1.4.3) | `4.5` (`TEXT_CONTRAST_FLOOR`), relaxed to `3` (`LARGE_TEXT_CONTRAST_FLOOR`) at `24` px, or `18.66` px bold | `annotation-ink.mjs` |
 | How far muted starts from the ground, before escalation | `0.62` (steps of `1/50` up to the ink) | `deriveFurniture` |
 | How loud the gridlines are | `0.18` of the way from ground to ink | `deriveFurniture` |
 | How closely the still survives being looked at | `2` (raster scale) | `rasterise`, `render-still.mjs` | 
@@ -204,11 +207,25 @@ by an ordinary relative path — that import is for this skill's own tests
   — that vendored copy, not this one, is what an installed beat actually imports, via
   `#shared/twin-chart-beat/render-still.mjs`. `splash-twin/test/root-template-shared.test.ts`
   guards the two copies from drifting apart.
+- `scripts/annotation-ink.mjs` — `NON_TEXT_CONTRAST_FLOOR`, `TEXT_CONTRAST_FLOOR`,
+  `textContrastFloor`, `inkBox`, `overlaps`, `marksUnder`, `worstContrast`,
+  `assertAnnotationReadsOverMarks`, `inkThatReadsOver`. `deriveFurniture` answers "what ink reads on
+  this newsroom's GROUND"; this answers the other question, the one an annotation actually poses —
+  what ink reads on the MARK it is drawn over. Measured before it existed: the carbon histogram's
+  median rule at **1.20:1** against the bar it spends 97 % of its length inside, the Swiss pyramid's
+  peak callout at **4.05:1** with 57 % of its ink box on a `#0072B2` band, and 21 of the 32 dashed
+  rules in the corpus that cross a mark at all under the 3:1 floor. Vendored the same way as
+  `render-still.mjs`, at `shared/twin-chart-beat/` and
+  `assets/root-template/shared/twin-chart-beat/`; `splash-twin/test/annotation-ink-parity.test.ts`
+  WALKS the tree for the basename rather than taking a list, so a fourth copy is guarded the day it
+  lands.
 - `scripts/render-preview.mjs` — renders the seed to PNG; accepts `--out <dir>` to write the proof
   to that directory instead of `assets/preview.png`.
 - `scripts/inspect-render.mjs` — `inspectSvg`: contrast against the real ground, alt-text
   presence, root `<title>` leakage. Vendored the same way, alongside `render-still.mjs`, at
   `assets/root-template/shared/twin-chart-beat/inspect-render.mjs`.
+- `test/annotation-ink.test.ts` — the arithmetic above, on real pairs out of this corpus, with the
+  two mutations that redden it printed in its header.
 - `test/render-still.test.ts` — `bun:test` coverage: the ink pole on a mid grey, the muted contrast
   floor on six grounds, the gap that breaks the line, the fitted scale and its zero floors, the
   gap note centred between the readings it separates, the closed palette, the
