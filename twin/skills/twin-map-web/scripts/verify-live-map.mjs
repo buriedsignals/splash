@@ -33,6 +33,19 @@
 //      height held 11° of latitude against the study set's 21, and cropped six of thirteen — and
 //      neither of the comparisons above could see it.
 //
+//   4. B6.18b — A LABEL IS ON SCREEN IF AND ONLY IF THE MARK IT NAMES IS PAINTED. The owner's
+//      report: *"the highlighted symbol's label does not disappear with its symbol when a filter is
+//      applied — it should."* This began as `labels === painted`, which quietly asserted that a beat
+//      labels every mark: `proof/mapgen-symbol-web` labels ONE point on purpose (label width is a
+//      fixed number of CSS pixels while its position is a percentage, so decluttering computed once
+//      is wrong at every width but one), and the count rule called that correct beat broken in all
+//      five filter states. Comparing SETS by `data-key` says the same thing about the seed and the
+//      truth about the symbol beat. Mutation, run in a copy outside the tree: delete the
+//      `.point-label:not([data-group=…])` rule from the symbol beat's own `buildCss` and re-render —
+//      *"FAIL … filter mw-filter-sunda-arc: the labels q0 are still on screen with their own marks
+//      filtered away — a name floating over a mark that is not on the map"*, in three of the four
+//      arc states.
+//
 // AT TWO CONTAINER ASPECTS, and that is the point rather than thoroughness for its own sake: the
 // defect is invisible when the container's aspect matches the plate's, because then the box-derived
 // scale and the camera-derived one agree. A square-ish container would have passed the whole time.
@@ -212,15 +225,28 @@ export async function measureFilterStates(browser, keyedPath, shape) {
     states.push({
       chip,
       ...(await page.evaluate(() => {
-        const visible = (selector) =>
-          Array.from(document.querySelectorAll(selector)).filter((node) => node.offsetParent !== null).length;
+        const keysOf = (selector) =>
+          Array.from(document.querySelectorAll(selector))
+            .filter((node) => node.offsetParent !== null)
+            .map((node) => node.getAttribute("data-key"))
+            .filter(Boolean);
+        const source = window.__mwMap.getSource("mw-marks")._data.features;
+        const filter = window.__mwMap.getFilter("mw-marks");
         return {
-          labels: visible(".point-label"),
-          buttons: visible(".pt"),
-          painted: window.__mwMap.getSource("mw-marks")._data.features.filter((feature) => {
-            const filter = window.__mwMap.getFilter("mw-marks");
-            return !filter || feature.properties.group === filter[2];
-          }).length,
+          labelKeys: keysOf(".point-label"),
+          buttonKeys: keysOf(".pt"),
+          paintedKeys: source
+            .filter((feature) => !filter || feature.properties[filter[1][1]] === filter[2])
+            .map((feature) => feature.properties.key),
+          // Every key that carries a label AT ALL, filtered or not — the denominator the label
+          // count has to be read against. A beat may label every mark (this skill's own seed) or
+          // exactly one (proof/mapgen-symbol-web labels only the subject, deliberately: label
+          // width is fixed CSS pixels while position is a percentage, so decluttering computed
+          // once is wrong at every width but one). Comparing a raw label count to a painted count
+          // asserts the first shape and calls the second a defect.
+          labelledKeys: Array.from(document.querySelectorAll(".point-label"))
+            .map((node) => node.getAttribute("data-key"))
+            .filter(Boolean),
         };
       })),
     });
@@ -275,21 +301,37 @@ export async function verifyLiveMap({ htmlPath, key }) {
     // The filter, at one shape — it is a property of the page, not of the container.
     const filtering = await measureFilterStates(browser, keyedPath, SHAPES[0]);
     for (const state of filtering.states) {
-      if (state.labels !== state.painted)
+      const painted = new Set(state.paintedKeys);
+      // B6.18b, as an invariant rather than as a count: a label is on screen if and only if the
+      // mark it names is painted. Stated this way it holds for a beat that labels every mark and
+      // for one that labels a single subject, and it still reddens on the defect the owner
+      // reported — "the highlighted symbol's label does not disappear with its symbol when a
+      // filter is applied".
+      const orphans = state.labelKeys.filter((key) => !painted.has(key));
+      if (orphans.length > 0)
         failures.push(
-          `${filtering.shape}, filter ${state.chip}: ${state.labels} labels visible but ${state.painted} marks ` +
-            `painted — one half of the mark is following the filter and the other is not`,
+          `${filtering.shape}, filter ${state.chip}: the labels ${orphans.join(", ")} are still on screen ` +
+            `with their own marks filtered away — a name floating over a mark that is not on the map`,
         );
-      if (state.buttons !== state.painted)
+      const missing = state.labelledKeys.filter(
+        (key) => painted.has(key) && !state.labelKeys.includes(key),
+      );
+      if (missing.length > 0)
         failures.push(
-          `${filtering.shape}, filter ${state.chip}: ${state.buttons} hit targets visible but ${state.painted} ` +
-            `marks painted — the keyboard path and the drawn map disagree about what is on the page`,
+          `${filtering.shape}, filter ${state.chip}: the marks ${missing.join(", ")} are painted but their ` +
+            `own labels are hidden — the label and its mark are following two different mechanisms`,
+        );
+      if (state.buttonKeys.length !== state.paintedKeys.length)
+        failures.push(
+          `${filtering.shape}, filter ${state.chip}: ${state.buttonKeys.length} hit targets visible but ` +
+            `${state.paintedKeys.length} marks painted — the keyboard path and the drawn map disagree about ` +
+            `what is on the page`,
         );
     }
     // Anti-vacuity, and it is the whole reason this is not just an equality: with the filter broken
     // in BOTH halves at once, every count would be 13 and every equality above would hold. At least
     // two distinct counts means the control actually narrows something.
-    const distinct = new Set(filtering.states.map((state) => state.painted));
+    const distinct = new Set(filtering.states.map((state) => state.paintedKeys.length));
     if (filtering.chips.length > 1 && distinct.size < 2)
       failures.push(
         `${filtering.shape}: every filter state paints the same ${[...distinct][0]} marks across ` +
@@ -332,8 +374,8 @@ if (import.meta.main) {
   }
   for (const state of filtering.states)
     console.log(
-      `   filter ${state.chip.padEnd(34)} labels ${String(state.labels).padStart(2)}  ` +
-        `hit targets ${String(state.buttons).padStart(2)}  marks painted ${String(state.painted).padStart(2)}`,
+      `   filter ${state.chip.padEnd(34)} labels ${String(state.labelKeys.length).padStart(2)}/${String(state.labelledKeys.length).padStart(2)}  ` +
+        `hit targets ${String(state.buttonKeys.length).padStart(2)}  marks painted ${String(state.paintedKeys.length).padStart(2)}`,
     );
   if (failures.length > 0) {
     for (const failure of failures) console.error(`FAIL ${failure}`);

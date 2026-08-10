@@ -200,7 +200,17 @@ export function QuakeSymbolWeb({
           className="mw-viewport"
           style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
         >
-          <div className="mw-zoomable">
+          {/* LAYER 2 — the live MapTiler map (ruling R1). Empty and invisible until
+              `live-map.mjs` gets a `map.on("load")`; a style failure, a dead key, no network or no
+              JavaScript at all leaves layer 1 below exactly where it is. Its own container, never a
+              wrapper around the fallback, so the swap is one `hidden` flip and never a half-drawn
+              state. */}
+          <div id="mw-map" className="mw-live-map" />
+          {/* LAYER 1 — the baked plate, complete and script-free: what a reader gets with
+              JavaScript off, offline, or after the account's keys are invalidated at 100% of its
+              spending limit. The unzoomed state is not a preview of the real view, it IS the full
+              claim. */}
+          <div id="mw-fallback" className="mw-fallback">
             {/* Geometry only — no <text> anywhere inside this SVG. `role="group"` rather than
                 `role="img"`: nothing inside is focusable, and the meaningful description is the
                 `aria-label`, while the real interaction lives in the HTML overlay. */}
@@ -252,11 +262,31 @@ export function QuakeSymbolWeb({
                 })}
               </g>
             </svg>
+          </div>
 
+          {/* LAYER 3 — the overlay: the subject's label and the per-point hit targets. A SIBLING of
+              the two map layers, never a child of either, because it belongs to BOTH: it is the only
+              keyboard path to the data. Nested inside the fallback, hiding the fallback on
+              `map.on("load")` would take every Tab stop with it — a total loss of keyboard reach on
+              the exact path the ruling was supposed to improve. Positioned in PERCENTAGES here,
+              which is what the fallback needs; `live-map.mjs` repositions the same nodes with
+              `map.project()` on every camera move, which is what the live map needs. */}
+          <div className="mw-overlay">
             {/* The subject's own label: HTML, positioned by percentage of the frame, sized in fixed
-                CSS pixels. Drawn unconditionally — it is the claim, not an interaction result. */}
+                CSS pixels. Drawn unconditionally — it is the claim, not an interaction result.
+                `data-key`/`data-side`/`data-gap`/`data-dy` are what `reposition()` needs to place
+                this node against the LIVE camera; without them the label sits at its baked
+                percentage while the circle it names has moved.
+                `data-group` closes B6.18b: a filter that hides the subject's circle must hide the
+                subject's label with it, or the reader is left with a magnitude floating over a mark
+                that is no longer on the map. */}
             <span
               className="point-label subject"
+              data-key={subject.key}
+              data-side={side}
+              data-gap={subjectRadius + frame.width * 0.012}
+              data-dy={dy}
+              data-group={slugOf(subject.arc)}
               style={subjectLabelStyle}
             >{`${UNIT}${en(subject.mag)}`}</span>
 

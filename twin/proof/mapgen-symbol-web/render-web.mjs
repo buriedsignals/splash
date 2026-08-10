@@ -20,6 +20,7 @@
 // Usage:  bun proof/mapgen-symbol-web/render-web.mjs [outDir] [--data <csv>]
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -43,12 +44,22 @@ import {
 } from "./geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Resolved through node's own module resolution, never by a relative path out of this beat.
+// `no-cross-skill-imports.test.ts` reads path STRINGS, not just import statements, and a literal
+// `../../node_modules/...` reads to it — correctly — as a specifier leaving the beat. A package
+// name is the honest way to say "this comes from a dependency".
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
+const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
 // ===== CONFIG — this beat's own story =====
 const BEAT = {
   source: "Source: USGS Earthquake Catalog (earthquake.usgs.gov), western Pacific",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
 };
+/** geo-discipline rule 7's water colour, applied to the LIVE style exactly as `bake.mjs` applies it
+ *  to the baked one — read from the bake rather than typed twice. */
+const WATER_FILL = "#aac9e0";
 const PLATE_SIZE = 1000;
 // FROZEN BESIDE THE BEAT, for the same reason the csv is: a basemap living in `/tmp` cannot be
 // committed, so the delivered html could be neither reproduced nor audited — and MapTiler restyles,
@@ -68,7 +79,133 @@ const OUTPUT_NAME = "quake-symbol.html";
  * SSRs the table when the beat asked for it, wraps both in one self-contained HTML file and writes
  * it. Generic across map-web beats: it knows nothing of this story's own points or groups.
  */
-async function renderMapWeb({ component, table, props, outDir, name, regionTable = false }) {
+/**
+ * RULING R1b — THE KEY NEVER ENTERS THE REPOSITORY. R1 accepted the key being visible to a reader of
+ * a published article; it did not accept an unbounded public leak, and the two are different
+ * exposures. This beat COMMITS its rendered HTML and the FJM deliverable is an MIT open-source
+ * release, so a real key here would be scanned by bots within minutes of the push and would survive
+ * in the history after any later removal. `twin-deliver` substitutes the real key at the moment the
+ * file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts` reddens if one ever
+ * reaches a tracked file.
+ *
+ * The delivered key is a SECOND, origin-restricted MapTiler key, not the development one: MapTiler's
+ * documented mitigation for a client-side key is Allowed HTTP origins, enforced server-side, and an
+ * account's DEFAULT key cannot be restricted.
+ */
+export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
+
+/**
+ * The plan the live layer reads out of the page. Every camera number comes from this beat's own
+ * frozen `geometry.json` — `frameCorners` is the extent the camera ACTUALLY showed, which is not the
+ * bounds it was asked for.
+ *
+ * ONE LAYER, and it is a proportional symbol, so its radius is `"camera"`: derived from the camera
+ * at the fit and then held constant in screen pixels as the reader zooms. A circle here encodes a
+ * MAGNITUDE, and growing it with the zoom would make M9.1 mean two different sizes at two zooms.
+ */
+export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
+  const corners = geometry.frameCorners;
+  if (!corners || !(geometry.degreesPerPixel > 0))
+    throw new Error(
+      "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
+        "constrained to nor a ground scale to draw its marks at",
+    );
+  const lons = geometry.points.map((p) => p.lon);
+  const lats = geometry.points.map((p) => p.lat);
+  const maxMag = Math.max(...geometry.points.map((p) => p.mag));
+  // THE SAME radius scale the SVG draws from — `QuakeSymbolWeb`'s own
+  // `MARK_MAX_RADIUS_FRACTION` (0.045), so the fallback circle and the live circle can never be two
+  // sizes. A second constant here is exactly the "two numbers describing one circle" defect the live
+  // layer already paid for once.
+  const radiusOf = radiusScale(maxMag, geometry.frame.width * 0.045);
+  const anchors = {};
+  for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
+  const studyLonSpan = Math.max(...lons) - Math.min(...lons);
+  return {
+    styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
+    waterFill,
+    frame: geometry.frame,
+    degreesPerPixel: geometry.degreesPerPixel,
+    metresPerPixel: geometry.metresPerPixel,
+    bakeZoom: geometry.zoom,
+    studyBounds: {
+      west: Math.min(...lons),
+      east: Math.max(...lons),
+      south: Math.min(...lats),
+      north: Math.max(...lats),
+    },
+    // HOW FAR IN THE READER MAY GO, AT MINIMUM — and this beat is the reason the floor exists.
+    //
+    // `leash()`'s own rule is "as far as the study set still fills the frame", which is right for a
+    // reader looking at the whole claim and useless for the reader this beat has: the two events off
+    // Singkil and Sinabang sit 3.6 px apart on a 1000 px plate under circles ~28 px across, and the
+    // beat's own caveat says so in words. A reader who cannot pull them apart has exactly the map
+    // the still already gave them. Measured on the delivered page before this floor existed: 1.58
+    // zoom levels of headroom at 1600x900 and **0.33 at 768x1024** — a factor of 1.26, which is not
+    // "moving through the map" in any sense ruling R1 meant.
+    //
+    // So the floor is the zoom at which the CLOSEST PAIR stops overlapping. A camera-scaled circle
+    // holds its screen size as the reader zooms (a circle encodes a magnitude, not a ground area),
+    // so each doubling of zoom doubles the distance between two centres while the radii stay put:
+    // the pair separates once `distance x 2**h >= rA + rB`. Every number in it is read off this
+    // beat's own frozen data and its own radius scale — nothing is picked.
+    minZoomHeadroom: separationHeadroom(geometry.points, radiusOf),
+    anchors,
+    layers: [
+      {
+        id: "mw-marks",
+        type: "circle",
+        // Largest first in the SOURCE order, so MapLibre paints the small circles last and a small
+        // event inside a large one stays hoverable — the same invariant `targetOrder` states for
+        // the HTML buttons.
+        data: {
+          type: "FeatureCollection",
+          features: drawOrder(geometry.points).map((point) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [point.lon, point.lat] },
+            properties: {
+              key: point.key,
+              name: point.place,
+              group: slugOf(point.arc),
+              subject: point.key === subjectKey,
+              r: radiusOf(point.mag),
+            },
+          })),
+        },
+        paint: {
+          "circle-color": ["case", ["get", "subject"], accent, muted],
+          "circle-opacity": ["case", ["get", "subject"], 0.42, 0.26],
+          "circle-stroke-color": ["case", ["get", "subject"], accent, muted],
+          "circle-stroke-width": 1,
+        },
+        radius: "camera",
+        filterProperty: "group",
+        hover: true,
+      },
+    ],
+  };
+}
+
+/**
+ * The zoom headroom a reader needs before the two closest events stop overlapping — measured on the
+ * plate, in the plate's own units, from the same radius scale the circles are drawn at.
+ *
+ * Returns 0 when nothing overlaps, which is the honest answer: a study set drawn without collisions
+ * needs no extra leash, and `leash()`'s own frame-filling rule then governs alone.
+ */
+export function separationHeadroom(points, radiusOf) {
+  let worst = 0;
+  for (let i = 0; i < points.length; i++)
+    for (let j = i + 1; j < points.length; j++) {
+      const gap = Math.hypot(points[i].px - points[j].px, points[i].py - points[j].py);
+      const touching = radiusOf(points[i].mag) + radiusOf(points[j].mag);
+      if (gap <= 0 || gap >= touching) continue;
+      worst = Math.max(worst, Math.log2(touching / gap));
+    }
+  return Math.round(worst * 1000) / 1000;
+}
+
+async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable
@@ -77,6 +214,16 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
 
   const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
   const inlineScript = inlineable(interactionSource);
+
+  // maplibre-gl inlined rather than loaded from a CDN. A `<script src>` would trade 803 KB of
+  // payload for a SECOND third-party host; inlining keeps the count at one — api.maptiler.com —
+  // which is the honest reading of R1.
+  const liveBlock = live
+    ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
+      `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
+      `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
+      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+    : "";
 
   const groups = groupsOf(props.geometry.points);
   assertDistinctSlugs(groups);
@@ -100,6 +247,7 @@ ${tableHtml}
 <script>
 ${inlineScript}
 </script>
+${liveBlock}
 </body>
 </html>
 `;
@@ -159,6 +307,10 @@ function buildCss({ ground, accent, ink, muted, groups, frame }) {
       const attr = slugOf(g);
       return [
         `.map-web-page:has(#${id}:checked) .pt:not([data-group="${attr}"]) { display: none; }`,
+        // B6.18b: the LABEL too. Without this rule a filter hid the subject's circle and its hit
+        // target and left "M9.1" floating over a mark that was no longer on the map — measured on
+        // the delivered page, not deduced. The seed had this rule; this beat did not.
+        `.map-web-page:has(#${id}:checked) .point-label:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) svg.map circle[data-group]:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) .region-table tbody tr:not([data-group="${attr}"]) { display: none; }`,
       ].join("\n");
@@ -286,7 +438,31 @@ body {
   overflow: visible;
   border: 1px solid var(--muted);
 }
-.mw-zoomable { position: relative; width: 100%; height: 100%; }
+/* The two map layers occupy the SAME box, the live one underneath. It is laid out from the first
+   frame rather than revealed later, because a container with no size is a map with no size:
+   MapLibre reads the box at construction, and a display:none container gives it 0x0 and a canvas
+   nothing ever paints into. Invisible-but-laid-out, then, and the swap is one flip of the
+   fallback's own hidden attribute. */
+.mw-fallback, .mw-live-map, .mw-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mw-live-map { z-index: 0; }
+.mw-fallback { z-index: 1; background: var(--ground); }
+.mw-fallback[hidden] { display: none; }
+/* The overlay is a SIBLING of both map layers and is never hidden with either: it carries the
+   subject's label and every Tab stop, so hiding it with the fallback would take the whole keyboard
+   path away at the moment the live map arrives. */
+.mw-overlay { z-index: 2; pointer-events: none; }
+.mw-overlay .pt { pointer-events: auto; }
+/* Live, the canvas is what a pointer talks to: queryRenderedFeatures makes the hit area the
+   RENDERED MARK at every size and every zoom, which is what B6.18a asked for and what a fixed 28px
+   button under a 90px disc could never give. The buttons stay in the DOM, still Tab-reachable and
+   still carrying their own aria-label — only their pointer-events go. */
+html.mw-live .mw-overlay .pt { pointer-events: none; }
+/* B5.1, and the conflict that dissolves with the ruling. The viewport keeps the PLATE's aspect,
+   because scaling a raster non-uniformly is a lie about distance and shape. A LIVE map has no plate
+   aspect to preserve — the canvas IS the container and the camera fills it — so live, the map takes
+   the whole stage. The fallback keeps its aspect-ratio, unchanged, because it is still a plate. */
+html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
+.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* Furniture, in HTML: font-size is a fixed CSS number on every rule below, so it never tracks the
    container's width the way an SVG <text> inside a scaling viewBox would. */
@@ -515,6 +691,17 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     // 3% at the top cannot be ranked by eye, and the table is the only channel that carries every
     // reading at once — including the event whose hit target is covered by its neighbour's.
     regionTable: true,
+    // Ruling R1: this beat is a LIVE MapTiler map with the baked plate as its fallback layer.
+    live: true,
+    plan: livePlan({
+      geometry: { ...geometry, points },
+      subjectKey: SUBJECT_KEY,
+      accent: palette.accent,
+      muted: deriveFurniture(palette.ground).muted,
+      // The SAME literal the bake writes into the plate (`bake.mjs`'s water override). If the live
+      // style and its own fallback disagree about the colour of water, the swap is visible.
+      waterFill: WATER_FILL,
+    }),
   });
   // The one thing a reader is promised and a markup check cannot see: the detail string on the hit
   // target has to be the SAME string the table shows for that event.
@@ -539,4 +726,4 @@ if (import.meta.main) {
   console.log(`symbol-web beat → ${outPath}  [${points} events]`);
 }
 
-export { render, renderMapWeb, ensurePlate, loadPlate, BEAT, PLATE_SIZE, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH };
+export { render, renderMapWeb, ensurePlate, loadPlate, BEAT, WATER_FILL, PLATE_SIZE, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH };
