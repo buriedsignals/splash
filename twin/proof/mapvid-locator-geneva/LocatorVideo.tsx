@@ -41,7 +41,12 @@ const FRAME = { width: 1080, height: 1350 };
 const PAD = 72;
 const MAP = 660;
 const MAP_X = (FRAME.width - MAP) / 2;
-const MAP_Y = 280;
+/** The plate's top edge. It came DOWN by 50px when the credit left the header for the frame's
+ *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
+ *  needed that room to hold the credit as well as the caveat. The same move the seed made
+ *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
+ *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
+const MAP_Y = 230;
 
 const TITLE = { fontSize: 34, fontWeight: 700, lead: 43 };
 const SOURCE = { fontSize: 18, fontWeight: 400, lead: 23 };
@@ -182,11 +187,22 @@ export function LocatorVideo({
   const conclusionLines = wrap(conclusion, FRAME.width - PAD * 2, CONCLUSION);
 
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 34;
-  const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
-  if (sourceBottom > MAP_Y - 16)
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
+  // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
+  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
+  // RE-POINTED when the source moved to the bottom: a comparison against `sourceBottom` cannot go
+  // red once the source sits on the frame's floor. The TITLE block is what the plate can now
+  // actually collide with.
+  const titleBottom = titleTop + (titleLines.length - 1) * TITLE.lead;
+  if (titleBottom > MAP_Y - 16)
     throw new Error(
-      `the header does not fit: the source ends at ${sourceBottom} and the map starts at ${MAP_Y}. Shorten the title, or move the map down.`,
+      `the header does not fit: the title ends at ${titleBottom} and the map starts at ${MAP_Y}. Shorten the title, or move the map down.`,
     );
 
   const axisCaptionY = MAP_Y + MAP + 40;
@@ -195,7 +211,6 @@ export function LocatorVideo({
   const conclusionTop = axisLabelY + 44;
   const conclusionBottom =
     conclusionTop + (conclusionLines.length - 1) * CONCLUSION.lead;
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
   if (conclusionBottom > caveatTop - NOTE.fontSize - 14)
     throw new Error(
       `the column does not fit: the conclusion ends at ${conclusionBottom} and the caveat starts at ${caveatTop}. Shorten one of them.`,

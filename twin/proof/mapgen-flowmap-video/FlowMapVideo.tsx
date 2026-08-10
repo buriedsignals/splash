@@ -185,7 +185,15 @@ export function FlowMapVideo({
   );
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 30;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
+  // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
+  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
 
   const totalKm = cumKm[cumKm.length - 1] ?? 0;
   // The Danube touches 10 countries; Moldova's sub-1km frontage near Giurgiulești doesn't register
@@ -226,7 +234,6 @@ export function FlowMapVideo({
   const legendBottom = legendY + 18 + rows.length * rowHeight;
 
   const conclusionTop = legendBottom + 40;
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
   const conclusionBottom =
     conclusionTop + (conclusionLines.length - 1) * CONCLUSION.lead;
   if (conclusionBottom > caveatTop - NOTE.fontSize - 16)

@@ -34,7 +34,12 @@ import { QUAKE_TIMING, progressOf } from "./timing";
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;
 const MAP = 620;
-const MAP_Y = 300;
+/** The plate's top edge. It came DOWN by 40px when the credit left the header for the frame's
+ *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
+ *  needed that room to hold the credit as well as the caveat. The same move the seed made
+ *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), and the guard below is what said so —
+ *  it threw, by name, with the numbers in the message. */
+const MAP_Y = 260;
 const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
 const MAX_RADIUS = 46;
 
@@ -128,7 +133,25 @@ export function QuakeSymbolVideo({
   );
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 40;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
+  // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
+  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
+
+  // Loud, not silent: the plate's own floor and the bottom stack must not meet. The plate is
+  // fixed, so this is the one collision a longer source or caveat can actually cause — the same
+  // guard the seed carries (Co2MapVideo.tsx), added here because this beat had none and the first
+  // render after the credit moved put the caveat's first line 13px under the plate's edge.
+  if (caveatTop - NOTE.fontSize - 16 < MAP_Y + MAP)
+    throw new Error(
+      `the bottom stack does not fit: the plate ends at ${MAP_Y + MAP} and the caveat starts at ${caveatTop}. ` +
+        `Shorten the source or the caveat, or raise MAP_Y (${MAP_Y}).`,
+    );
 
   const maxMag = Math.max(...geometry.points.map((p) => p.mag));
   const radiusOf = radiusScale(maxMag, MAX_RADIUS);
@@ -379,7 +402,7 @@ export function QuakeSymbolVideo({
             <text
               key={line}
               x={PAD}
-              y={FRAME.height - PAD - (caveatLines.length - 1 - i) * NOTE.lead}
+              y={caveatBottom - (caveatLines.length - 1 - i) * NOTE.lead}
               fill={muted}
               fontSize={NOTE.fontSize}
             >

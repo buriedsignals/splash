@@ -36,7 +36,12 @@ import { CHOROPLETH_TIMING, progressOf, type BeatTiming } from "./timing.ts";
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;
 const MAP = 620;
-const MAP_Y = 300;
+/** The plate's top edge. It came DOWN by 50px when the credit left the header for the frame's
+ *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
+ *  needed that room to hold the credit as well as the caveat. The same move the seed made
+ *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
+ *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
+const MAP_Y = 250;
 const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
 
 const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
@@ -173,7 +178,16 @@ export function ChoroplethVideo({
   );
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 40;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
+  // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
+  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
+  const noDataY = caveatTop - NOTE.fontSize - 22;
 
   const value = new Map(rows.map((row) => [row.key, row.value]));
   const order = revealOrder(rows);
@@ -185,8 +199,14 @@ export function ChoroplethVideo({
   const atValue = (v: number) =>
     barBottom - scalePosition(v, breaks) * LEGEND.barHeight;
 
-  const noDataY = MAP_Y + MAP + 52;
-  const caveatTop = noDataY + 38;
+  // Loud, not silent: the plate's own floor and the bottom stack must not meet. The plate is
+  // fixed, so this is the one collision a longer source or caveat can actually cause — the same
+  // guard the seed carries, for the same reason.
+  if (noDataY - 17 < MAP_Y + MAP + 16)
+    throw new Error(
+      `the bottom stack does not fit: the plate ends at ${MAP_Y + MAP} and the stack starts at ${noDataY}. ` +
+        `Shorten the source or the caveat, or raise MAP_Y (${MAP_Y}).`,
+    );
 
   const subjectShape = geometry.shapes.find((shape) => shape.key === subject);
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
