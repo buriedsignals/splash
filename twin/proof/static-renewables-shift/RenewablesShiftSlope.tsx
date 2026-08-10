@@ -157,10 +157,15 @@ export function RenewablesShiftSlope({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
+    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+  // The period labels keep the air they always had above them, measured from the LAST HEADER line
+  // rather than from the source, which is no longer in the header.
   const periodBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SUBTITLE.lead + 34;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 34;
 
   const widestLabel = Math.max(
     ...series.map((s) =>
@@ -173,7 +178,14 @@ export function RenewablesShiftSlope({
   const padding = {
     top: periodBaseline + 20,
     right: PAD + 12 + widestLabel,
-    bottom: PAD + 20,
+    // Grown by the source block's own height plus clear air: the credit now sits on the frame's
+    // bottom margin, so the band beneath the plot has to end above its ink.
+    bottom:
+      PAD +
+      20 +
+      (sourceLines.length - 1) * SUBTITLE.lead +
+      SOURCE.fontSize +
+      10,
     left: PAD + 12 + widestLabel,
   };
 

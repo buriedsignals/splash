@@ -157,8 +157,10 @@ export function RankBars({
   const limitsLines = wrap(limits, width - PAD * 2, SUBTITLE);
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
-  const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 20;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
   // Row labels ("2. Suisse") sit left of the plot, right-aligned; value labels sit at each bar's
   // own end. Both gutters are measured from the widest string that will really be drawn in them —
@@ -173,8 +175,11 @@ export function RankBars({
     ...data.map((d) => measureText(fr(d.value), VALUE_LABEL)),
   );
 
-  const plotTop = sourceBaseline + 28;
-  const plotBottom = height - (PAD + 22); // room for the x-axis tick labels below the bars
+  // The plot starts below the LAST HEADER line, never below the source.
+  const plotTop = limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 28;
+  // Room for the x-axis tick labels below the bars, AND for the credit that now owns the frame's
+  // bottom margin.
+  const plotBottom = height - (PAD + 22 + SOURCE.fontSize + 10);
   const padding = {
     top: plotTop,
     right: PAD + 10 + valueLabelWidth,

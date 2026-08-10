@@ -283,10 +283,14 @@ export function CoalShareHeatmap({
   const titleBaseline = PAD + TITLE.fontSize;
   const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  const sourceBaseline =
-    subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 24;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
-  const legendTop = sourceBaseline + 22;
+  // The legend keeps the air it always had above it, measured from the LAST HEADER line rather
+  // than from the source, which is no longer in the header.
+  const legendTop = subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 22;
   const legendLabelBaseline = legendTop + LEGEND.height + 15;
   const yearLabelBaseline = legendLabelBaseline + 30;
 
@@ -299,7 +303,9 @@ export function CoalShareHeatmap({
     left: PAD + rowLabelGutter,
     top: yearLabelBaseline + 10,
     right: width - PAD,
-    bottom: height - PAD,
+    // The grid used to run to the frame's floor. The credit owns that margin now, so the grid's
+    // last row ends above the credit's ink instead.
+    bottom: sourceBaseline - SOURCE.fontSize - 12,
   };
   const { cells, cellWidth, rowCentres } = heatmapGeometry(
     rows,

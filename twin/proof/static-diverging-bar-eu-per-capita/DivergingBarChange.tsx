@@ -267,11 +267,15 @@ export function DivergingBarChange({
   const titleBaseline = PAD + TITLE.fontSize;
   const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  const sourceTop =
-    subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 24;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceTop = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The axis title keeps the air it always had above it, measured from the LAST HEADER line
+  // rather than from the source, which is no longer in the header.
   const axisTitleBaseline =
-    sourceTop + (sourceLines.length - 1) * SOURCE.lead + 34;
+    subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 34;
   const axisTickBaseline = axisTitleBaseline + 28;
 
   // ── Both gutters measured against the strings that will actually be drawn in them, at the exact
@@ -297,7 +301,9 @@ export function DivergingBarChange({
     // domain's maximum is +0.03 — so zero sits at 98% of the plot and that label lands in the
     // right gutter. Measured, not assumed.
     right: PAD + valueGutter + 10,
-    bottom: PAD,
+    // Grown by the source block's own height plus clear air: the credit now sits on the frame's
+    // bottom margin, so the last row has to end above its ink.
+    bottom: PAD + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + nameGutter + valueGutter,
   };
 

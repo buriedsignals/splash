@@ -127,10 +127,20 @@ export function CarbonFootprintHistogram({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
   const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
+    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+  // The plot starts below the LAST HEADER line, never below the source: that dependency is what
+  // would otherwise have dragged the whole plot down the frame with the credit.
   const plotTop =
-    sourceBaseline + (sourceLines.length - 1) * SUBTITLE.lead + 34;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 34;
+  // The x-axis title used to sit on `height - PAD` — the slot the credit now owns. The first
+  // render of this change put the two on top of each other, in the PNG, and that is what moved
+  // this from a literal to a derivation: the title sits directly ABOVE the credit block, clear of
+  // its first line's ink.
+  const axisTitleBaseline = sourceBaseline - SOURCE.fontSize - 8;
 
   const tickLabels = scaleLinear()
     .domain([0, Math.max(...bins.map((b) => b.count))])
@@ -141,7 +151,11 @@ export function CarbonFootprintHistogram({
   const padding = {
     top: plotTop,
     right: PAD + 8,
-    bottom: PAD + 24 + AXIS_TITLE.fontSize + 6,
+    // Derived from where the axis title now sits, not from a constant: the tick-label band (20px
+    // below the plot's floor, plus its descender) has to end above the axis title's ink. The
+    // arithmetic reproduces the old 83px exactly when the credit is absent — the whole reserve
+    // simply follows the axis title up the frame.
+    bottom: height - axisTitleBaseline + AXIS_TITLE.fontSize + 30,
     left: PAD + 10 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
@@ -263,7 +277,7 @@ export function CarbonFootprintHistogram({
       </text>
       <text
         x={(plot.left + plot.right) / 2}
-        y={height - PAD}
+        y={axisTitleBaseline}
         fill={muted}
         fontSize={AXIS_TITLE.fontSize}
         fontWeight={AXIS_TITLE.fontWeight}

@@ -13,11 +13,11 @@ Generated from 213 countries, median 3.14 t/capita.
 | landscape | 1920x1080 | 2.1 | 24 | **0** | **0** | 51% | 80.9% | 2.82:1 | 3.5:1 |
 | square | 1080x1080 | 1.2 | 24 | **0** | **0** | 71.9% | 80.2% | 1.12:1 | 8.9:1 |
 | portrait | 1080x1920 | 1.2 | 24 | **0** | **0** | 84.2% | 80.2% | 0.54:1 | 18.4:1 |
-| landscape, half frame at 2x (960x540, typeScale 1.05) | 960x540 | 1.05 | 24 | **0** | **0** | 51.1% | 80.6% | 2.8:1 | 3.5:1 |
+| landscape, half frame at 2x (960x540, typeScale 1.05) | 960x540 | 1.05 | 24 | **0** | **0** | 50.9% | 80.6% | 2.81:1 | 3.5:1 |
 
 ## 4 — what needed editing
 
-`ProbeHistogram.tsx` is 339 lines against the beat's 300.
+`ProbeHistogram.tsx` is 347 lines against the beat's 314.
 Run `diff -u ../CarbonFootprintHistogram.tsx ProbeHistogram.tsx` and read it: the answer
 to measurement 4 is whether that diff contains anything outside {typeScale, tick hints,
 collision thresholds, the frame itself}.

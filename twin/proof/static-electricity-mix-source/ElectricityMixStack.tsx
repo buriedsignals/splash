@@ -155,10 +155,15 @@ export function ElectricityMixStack({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
+    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+  // The legend keeps the air it always had above it, measured from the LAST HEADER line rather
+  // than from the source, which is no longer in the header.
   const legendBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SUBTITLE.lead + 28;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 28;
 
   // The tick set is read from d3's own `.ticks(5)` on the 0-100 domain, never a hand-picked list
   // of round numbers — the render is what caught a hand-picked list here: `.ticks(5)` on 0-100
@@ -173,7 +178,14 @@ export function ElectricityMixStack({
   const padding = {
     top: legendBaseline + 24,
     right: PAD,
-    bottom: PAD + 24,
+    // Grown by the source block's own height plus clear air: the credit now sits on the frame's
+    // bottom margin, so the band beneath the plot has to end above its ink.
+    bottom:
+      PAD +
+      24 +
+      (sourceLines.length - 1) * SUBTITLE.lead +
+      SOURCE.fontSize +
+      10,
     left: PAD + 10 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 

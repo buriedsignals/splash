@@ -243,8 +243,10 @@ export function SolarSmallMultiples({
   const titleBaseline = PAD + TITLE.fontSize;
   const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  const sourceBaseline =
-    subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 24;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
   // Both gutters measured from the widest string that will really be drawn in them.
   const provisionalYTicks = scaleLinear()
@@ -276,9 +278,11 @@ export function SolarSmallMultiples({
     10;
 
   const padding = {
-    top: sourceBaseline + 30,
+    // The panels start below the LAST HEADER line, never below the source.
+    top: subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 30,
     right: PAD,
-    bottom: PAD,
+    // Grown by the credit's own height plus clear air: it now sits on the frame's bottom margin.
+    bottom: PAD + SOURCE.fontSize + 10,
     left: PAD + yLabelGutter,
   };
 

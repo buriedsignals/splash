@@ -146,8 +146,10 @@ export function TopEmittersColumns({
   const titleBaseline = PAD + TITLE.fontSize;
   const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  const sourceBaseline =
-    subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 24;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin."
+  const sourceBaseline = height - PAD;
 
   // The band width each category label has to live inside is only known after the band scale
   // exists, and the band scale needs the padding, which needs the label height. Resolve it in
@@ -161,9 +163,14 @@ export function TopEmittersColumns({
   const deepestLabel = Math.max(...wrapped.map((w) => w.lines.length));
 
   const padding = {
-    top: sourceBaseline + 46,
+    // The plot starts below the LAST HEADER line, never below the source: that dependency is what
+    // would otherwise have dragged the whole plot down the frame with the credit.
+    top: subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 46,
     right: PAD,
-    bottom: PAD + 10 + deepestLabel * CATEGORY_LABEL.lead,
+    // Grown by the source's own height plus clear air, so the category-label band beneath the
+    // plot ends above the credit's ink.
+    bottom:
+      PAD + 10 + deepestLabel * CATEGORY_LABEL.lead + SOURCE.fontSize + 10,
     left: PAD,
   };
 

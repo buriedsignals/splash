@@ -162,10 +162,17 @@ export function IncomeLifeExpectancyScatter({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
+    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+  // The plot starts below the LAST HEADER line, never below the source.
   const plotTop =
-    sourceBaseline + (sourceLines.length - 1) * SUBTITLE.lead + 30;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 30;
+  // The x-axis title used to sit on `height - PAD` — the slot the credit now owns. It sits
+  // directly ABOVE the credit block, clear of its first line's ink.
+  const axisTitleBaseline = sourceBaseline - SOURCE.fontSize - 8;
 
   // A scatter needs an axis label on both axes — unlike a bar's shared baseline, a bare number
   // here carries no cue for what a position means (the sheet's own accessibility note). Reserve a
@@ -175,7 +182,10 @@ export function IncomeLifeExpectancyScatter({
   const padding = {
     top: plotTop,
     right: PAD + 8,
-    bottom: PAD + 24 + AXIS_TITLE.fontSize + 6,
+    // Derived from where the axis title now sits, not from a constant: the tick-label band below
+    // the plot's floor has to end above the axis title's ink. Reproduces the old reserve exactly
+    // when there is no credit block to clear.
+    bottom: height - axisTitleBaseline + AXIS_TITLE.fontSize + 30,
     left: PAD + yAxisTitleWidth + 10 + measureText("90", AXIS),
   };
 
@@ -287,7 +297,7 @@ export function IncomeLifeExpectancyScatter({
       </text>
       <text
         x={(plot.left + plot.right) / 2}
-        y={height - PAD}
+        y={axisTitleBaseline}
         fill={muted}
         fontSize={AXIS_TITLE.fontSize}
         fontWeight={AXIS_TITLE.fontWeight}

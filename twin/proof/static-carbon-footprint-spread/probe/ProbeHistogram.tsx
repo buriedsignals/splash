@@ -165,10 +165,15 @@ export function ProbeHistogram({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + sp(28);
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
   const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + sp(22);
+    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+  // The plot starts below the LAST HEADER line, never below the source.
   const plotTop =
-    sourceBaseline + (sourceLines.length - 1) * SUBTITLE.lead + sp(34);
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + sp(34);
+  // The x-axis title sits directly above the credit block, which now owns the bottom margin.
+  const axisTitleBaseline = sourceBaseline - SOURCE.fontSize - sp(8);
 
   const tickLabels = scaleLinear()
     .domain([0, Math.max(...bins.map((b) => b.count))])
@@ -179,7 +184,10 @@ export function ProbeHistogram({
   const padding = {
     top: plotTop,
     right: PAD + sp(8),
-    bottom: PAD + sp(24) + AXIS_TITLE.fontSize + sp(6),
+    // Derived from where the axis title now sits: the tick-label band below the plot's floor has
+    // to end above the axis title's ink. Reproduces the old reserve exactly when there is no
+    // credit block to clear.
+    bottom: height - axisTitleBaseline + AXIS_TITLE.fontSize + sp(30),
     left: PAD + sp(10) + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
@@ -302,7 +310,7 @@ export function ProbeHistogram({
       </text>
       <text
         x={(plot.left + plot.right) / 2}
-        y={height - PAD}
+        y={axisTitleBaseline}
         fill={muted}
         fontSize={AXIS_TITLE.fontSize}
         fontWeight={AXIS_TITLE.fontWeight}

@@ -149,10 +149,15 @@ export function DumbbellLifeExpectancyGains({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x, so a wrapped credit grows upward
+  // into the frame rather than downward out of it. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The legend keeps the air it always had above it, measured from the LAST HEADER line rather
+  // than from the source, which is no longer in the header.
   const legendBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 30;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 30;
 
   // The category gutter is measured from the widest name actually drawn — the type sheet's own
   // named failure mode (`references/types/dumbbell.md`, "The one thing that goes wrong"): this
@@ -173,7 +178,10 @@ export function DumbbellLifeExpectancyGains({
   const padding = {
     top: legendBaseline + 26,
     right: PAD + 10 + rightLabelGutter,
-    bottom: PAD + 34,
+    // Grown by the source block's own height plus clear air: the credit now sits on the frame's
+    // bottom margin, so the axis band beneath the plot has to end above its ink.
+    bottom:
+      PAD + 34 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + categoryGutter + 18 + 10 + leftLabelGutter,
   };
 

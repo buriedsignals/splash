@@ -103,14 +103,16 @@ export function EmissionsLine({
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  // The limits subtitle sits directly under the title, above the source line — title, subtitle,
-  // source, the same order `information-architecture.md` states, anchored at the top of the frame
-  // per this genre's own override of where the source line sits (`static-discipline.md`).
+  // The limits subtitle sits directly under the title. Title and subtitle are anchored at the top
+  // of the frame; the source is not part of that stack any more — it sits on the frame's own
+  // bottom margin (`information-architecture.md` item 5, `static-discipline.md`).
   const limitsLines = wrap(limits, width - PAD * 2, SUBTITLE);
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 30;
-  const sourceBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
   // Both gutters measured from the widest string that will really be drawn in them.
   const last = data[data.length - 1];
@@ -124,8 +126,10 @@ export function EmissionsLine({
   // Y-axis-only provisional plot rectangle: top/bottom depend on the header block's height, which
   // is already fixed at this point, and NOT on the left gutter the tick labels below are about to
   // measure — so they can be computed before `crossingGeometry` needs the finished padding.
-  const plotTop = sourceBaseline + 34;
-  const plotBottom = height - (PAD + 24);
+  // The plot starts below the LAST HEADER line, never below the source.
+  const plotTop = limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 34;
+  // Room for the x-axis tick labels, AND for the credit that now owns the bottom margin.
+  const plotBottom = height - (PAD + 24 + SOURCE.fontSize + 10);
   const gridScale = scaleLinear()
     .domain([floor, ceiling])
     .range([plotBottom, plotTop]);
@@ -147,7 +151,7 @@ export function EmissionsLine({
   const padding = {
     top: plotTop,
     right: PAD + 12 + measureText(endLabel, LABEL),
-    bottom: PAD + 24,
+    bottom: PAD + 24 + SOURCE.fontSize + 10,
     left: PAD + 10 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 

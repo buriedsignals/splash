@@ -217,8 +217,9 @@ export function EmitterRankBump({
     `${years[years.length - 1]}`,
   );
 
-  // ── The header block: title, then the caveat, then the source. `static-discipline.md`'s order,
-  // anchored at the top of the frame.
+  // ── The header block: title, then the caveat, anchored at the top of the frame. The source is
+  // no longer part of it — it sits on the frame's own bottom margin, `static-discipline.md`,
+  // "The source on the frame's bottom margin."
   const textWidth = width - PAD * 2;
   const titleLines = wrap(title, textWidth, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
@@ -226,10 +227,12 @@ export function EmitterRankBump({
   const caveatBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const sourceLines = wrap(source, textWidth, SOURCE);
-  const sourceBaseline =
-    caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 22;
+  // The LAST source line lands on `height - PAD`; a wrapped credit grows upward into the frame.
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The axis title keeps the air it always had above it, measured from the LAST HEADER line
+  // rather than from the source, which has left the header.
   const axisTitleBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 30;
+    caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 30;
 
   // ── Gutters, every one measured against the strings that will actually sit in them.
   const rankColumn = Math.max(
@@ -253,11 +256,16 @@ export function EmitterRankBump({
   const padding = {
     top: axisTitleBaseline + 22,
     right: PAD + nameColumn + DOT_R + GAP,
+    // Grown by the source block's own height plus clear air: the conclusion line beneath the plot
+    // has to end above the credit's ink, which now sits on the frame's bottom margin.
     bottom:
       PAD +
       conclusionLines.length * CONCLUSION.lead +
       conclusionGap +
-      yearLabelBlock,
+      yearLabelBlock +
+      (sourceLines.length - 1) * SOURCE.lead +
+      SOURCE.fontSize +
+      10,
     left: PAD + rankColumn + GAP + nameColumn + DOT_R + GAP,
   };
 
