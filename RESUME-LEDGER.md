@@ -192,6 +192,34 @@ at the video table's 30 px landscape floor these beats' WORDS fill the band — 
 before R9 costs the caveat, which on a map is the honesty line. **This does not come down by trying
 harder.** It comes down when those beats' words are shortened, which is an editorial decision.
 
+**RESOLVED 2026-08-11 — the words WERE shortened, and the last sentence above is measured false.**
+The removal ladder gained **R6**, a rung that shortens a title and refuses a shortening that drops
+what it asserts (`skills/chart-beat/scripts/type-at-size.mjs`, six mutations in
+`the-title-rung-shortens-without-dropping.test.ts`). Each of the three map videos now carries its own
+`probe/size-budget.mjs` — reproducing its component's baseline arithmetic at every candidate frame,
+calibrated against the frame it really ships, and generous in the stated direction — plus a
+`probe/VERDICT.md`. What they read:
+
+- **locator** — R6 FIRES, 3 title lines to 2 at landscape (114 characters to 101, every quantity,
+  the place, and **what the 11 counts** kept). The line is worth 90 px against a 106 px gap; spending
+  the conclusion as well leaves 53 px of plate, a 53 × 53 map in a 1920 px frame.
+- **dot map** — R6 FIRES on one word ("half of this map's people" → "half this map's people"; the
+  long form overruns landscape's measure by 10 px). A **one-line title leaves 88 px of plate**, 1.1%
+  of the area its 2,996 dots are drawn in. This is the beat that settles the lot: least word-heavy,
+  shortest headline, and still nowhere near.
+- **hex grid** — R6 DECLINES at every frame: the shortest form that still makes the claim is 80
+  characters against 85 and wraps the same. 58 px of plate at landscape.
+
+**The refusal does not rest on the caveat**, and that was measured rather than assumed: with the
+caveat gone entirely, square and portrait still have no room for any of the three. The honesty line
+is kept AND the beats refuse.
+
+**What would actually move them, named and not attempted:** this genre lays seven blocks in ONE
+COLUMN — title, plate, legend/ruler/meter, conclusion, caveat, source — while a 1920 × 1080 frame
+offers 1750 px of width against 910 px of band. A landscape layout that puts the plate BESIDE its
+words rather than between them is where the room is. That is a redraw of the genre's layout, a
+person's decision, and not a rung on any ladder.
+
 **Resume points:**
 
 1. **`shared/chart-video/sizes.mjs` contradicts itself** and nobody has decided which half is right.
@@ -225,7 +253,12 @@ Both predate this work and belong to other sessions.
 - **`proof/comparison`** — comparison plates only, no brief, nothing to pin.
 - **`vidz-diverging-bar-eu-per-capita`** — 27 EU rows clear no size against the type floor without
   dropping member states, which would change what the beat states. A redraw decision, not a
-  migration.
+  migration. **2026-08-11: closed as a question, still refused as a beat.** R6 declines here (62
+  characters against 72, same line count everywhere), and a title of NO HEIGHT would not close it —
+  440 px of plot at landscape where one column of 27 rows needs 1,242. The fourth frame is priced:
+  the beat fits 1080 × 1350 only at a 17 px axis tick, **5.7 CSS px** on the 360 dp phone that frame
+  is read on, and a fourth row honouring the table's own 12-CSS-px rule delivers a 10.3 px row pitch
+  against a 54 px lane even with the title gone. **The beat is not waiting on a row in the table.**
 - **The line's measured aspect range** was taken at 900×560 and at the probe's frames, never at
   16:9, while this corpus's own accepted landscape line measures 1.94:1. The range's own file
   already records the doubt.

@@ -101,8 +101,35 @@ const PROOF = join(TWIN, "proof");
  * hex grid, 1191 px for the locator — and the removal ladder's last rung before R9 costs the
  * caveat, which on a map is the honesty line. Two of their siblings that ship both genres
  * (`map-quake-symbol`, `mapgen-choropleth-video`) pin and deliver their STATIC and refuse their
- * video for the same arithmetic. So this number does not come down by trying harder; it comes down
- * when those beats' words are shortened, which is an editorial decision and not a migration.
+ * video for the same arithmetic.
+ *
+ * ── THE WORDS WERE SHORTENED, 2026-08-11, AND THE NUMBER DID NOT MOVE ─────────────────────────
+ *
+ * This paragraph used to end: "it comes down when those beats' words are shortened, which is an
+ * editorial decision and not a migration." **That was a prediction and it is now measured false.**
+ * The removal ladder gained R6, a rung that shortens a title and refuses a shortening that drops
+ * what it asserts, and each of the four beats has its own `probe/size-budget.mjs` reproducing its
+ * component's layout at every candidate frame. What they read:
+ *
+ *   locator      R6 FIRES — 3 title lines to 2 at landscape. The line is worth 90 px against a
+ *                106 px gap, and spending the conclusion as well leaves 53 px of plate: a 53 x 53
+ *                map in a 1920 px frame.
+ *   dot map      R6 FIRES on one word, and a ONE-LINE title leaves 88 px of plate — 1.1% of the
+ *                area this beat's 2,996 dots are drawn in.
+ *   hex grid     R6 DECLINES at every frame: the shortest form that still makes the claim is 80
+ *                characters against 85 and wraps the same. 58 px of plate at landscape.
+ *   diverging    R6 DECLINES, and a title of NO HEIGHT would not close it either — 440 px of plot
+ *                where one column of 27 rows needs 1,242. A fourth 4:5 row in the table, priced at
+ *                the same 36 px floor every row carries, delivers a 10.3 px row pitch against a
+ *                54 px lane. The beat is not waiting on a row.
+ *
+ * And on all four the refusal was re-measured with the caveat GONE, so it does not rest on the
+ * honesty line: square and portrait still have no room for any of the three maps.
+ *
+ * So the number stays at four for a reason that is now closed rather than open. What would move the
+ * three map videos is a landscape layout putting the plate BESIDE its words instead of between
+ * them — this genre lays seven blocks in one column while a 1920 x 1080 frame offers 1750 px of
+ * width against 910 px of band. That is a redraw of the genre, a person's decision, and not a rung.
  *
  * It is re-measured off the tree rather than decremented by hand each time, because several lots
  * migrate in parallel: a number typed from a stale read could go UP, which is the one thing a
