@@ -131,10 +131,13 @@ look at them; each catches what the other is blind to.
 | Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, the fluid frame (geometry stretches, type stays fixed), the filter rule, what must never become interactive, the one box this genre allows |
 | Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with that story's own STILL beat — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here. Not shared with the video SEED: that is a skill file and carries its own inlined copy |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `ChartWebSeed`-shaped component: SVG geometry plus HTML/CSS furniture, called once — not two pre-rendered rungs |
-| Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
+| Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts. It no longer carries the entrance's trigger: seven beats replace this script wholesale with their own hover mechanic, and the entrance went with it |
+| Entrance (contract) | `assets/entrance.ts` | The five events a graphic arrives in — `establish · reference · reveal · subject · conclusion` — with `endOf`/`progressOf`/`atProgress`, `WEB_ENTRANCE` (the edit), `ENTRANCE_CEILING_MS`, `entranceLayer`, `entranceClipId`. A vendored COPY of `chart-video/assets/timing.ts`, because the web entrance replays the video's own choreography and a skill never imports another; `splash/test/web-entrance-parity.test.ts` holds the two in step |
+| Entrance (trigger) | `assets/entrance-trigger.mjs` | The whole of the entrance that is script, and it is one class: an `IntersectionObserver` adds `entered` when the figure comes into the reader's view. Emitted in its own block by `renderWeb`, under the same gate as the entrance CSS and AFTER the beat's own script, so a runner that patches the first block cannot eat it |
 | Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
 | Verify | `scripts/verify-web.mjs` | The genre's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
+| Verify (entrance) | `scripts/verify-entrance.mjs` | The entrance's own evidence — `verify-web.mjs` drives the fit, the hover and the filter, and none of its three instruments can see an ARRIVAL. Three passes at two widths, on the delivered file with one article-height spacer above it (an embed's real situation): scripting on below the fold, `prefers-reduced-motion: reduce`, and JavaScript disabled. The reveal is measured as GEOMETRY twice — the clip's own `scaleX` out of the computed matrix, and how many of the beat's marks are hit-testable through `elementsFromPoint` — because an opacity fade over a finished picture passes every attribute check there is |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
@@ -289,7 +292,6 @@ skill into a journalist's root — the whole premise — did not build.
 | How many x ticks `tickStep` derives a round interval from | `6` | `FRAME.xTickHint`, `ChartWebSeed.tsx` |
 | A regular gridline this close to the reference is dropped | `20` | `FRAME.minGridlineGapPx`, `ChartWebSeed.tsx` |
 | The fixed pixel type sizes for title/subtitle/source/axis/label/note/filter — never tracks the viewBox | `24`/`14`/`13`/`12`/`14`/`12`/`13` | `FRAME.title`/`subtitle`/`source`/`axis`/`label`/`note`/`filter`, `ChartWebSeed.tsx` |
-| The reading-measure cap on the header block and the source line — the chart frame itself is never capped | `640px` | `.chart-header, .chart-source`, `render-web.mjs` |
 | The frame's own fixed inner margin — content never touches the frame's edge, at any width | `24` | `FRAME_PAD_PX`, `render-web.mjs` |
 | How much of the window a beat may fill before the plot starts giving height back | `100dvh` (with a `100vh` fallback first) | `.chart-figure`'s `max-height`, `render-web.mjs` |
 | Where the plot stops shrinking — below it, a short window gets a scrollbar rather than a strip | `120` | `PLOT_FLOOR_PX`, `render-web.mjs` |
@@ -301,7 +303,12 @@ skill into a journalist's root — the whole premise — did not build.
 | The level the seed's reference rule holds against | `2015` | `REFERENCE_YEAR`, `ChartWebSeed.tsx` |
 | The one year the seed's own peak marker names | `2020` | `PEAK_YEAR`, `ChartWebSeed.tsx` |
 | The seed's own filter split | `2020` | `FILTER_SPLIT_YEAR`, `ChartWebSeed.tsx` |
-| How much a filtered-out segment/point dims | `0.2` | `render-web.mjs` |
+| How a filtered-out mark leaves — it is REMOVED, not dimmed, and `map-web` has always removed (the overturn is recorded in `render-web.mjs`'s `FILTER_CHROME_CSS` header) | `display: none` | `filterCss`, `filter.ts` |
+| The whole entrance's shape — five events, their starts and durations, in milliseconds | `0/290`, `330/240`, `690/870`, `1560/200`, `1760/270` | `WEB_ENTRANCE`, `entrance.ts` |
+| How long the whole entrance may take. A stated judgement, not a measurement: an entrance nobody watched to the end is worse than no entrance | `2400` | `ENTRANCE_CEILING_MS`, `entrance.ts` |
+| How long a DERIVED label takes to fade in (the reference's label, a marker's note) | `110` | `LABEL_FADE_MS`, `entrance.ts` |
+| The two easings, named once so a beat never types a bezier. The reveal's is LINEAR and that is not taste — the x axis is time, so easing it would give some years more screen time than others | `linear` / `cubic-bezier(0.33, 1, 0.68, 1)` | `ENTRANCE_EASING`, `entrance.ts` |
+| How far up the window a figure must come before its entrance starts | `0px 0px -15% 0px` | `rootMargin`, `entrance-trigger.mjs` |
 
 ## Files
 
@@ -328,12 +335,38 @@ skill into a journalist's root — the whole premise — did not build.
   shipped beat). Regenerate with `bun scripts/render-preview.mjs` whenever the seed changes.
 - `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own sample
   data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
-- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
+- `assets/interaction.mjs` — the hover/keyboard script, inlined verbatim into the HTML.
   `nearestIndex` is pure and unit-tested; `initChart`/`initAll` are DOM wiring, verified by driving
-  a real browser, not by a test.
+  a real browser, not by a test. It is no longer "the one script this genre ships": the entrance's
+  trigger used to live here and was moved out, because seven beats in `proof/` replace this file
+  with their own hover mechanic and their runners patch the delivered page to do it — which took
+  the entrance with it, silently, with every markup check still green.
+- `assets/entrance.ts` — the entrance CONTRACT: the five events a graphic arrives in, in the
+  video's own order and under its ordering rule, with the arithmetic (`endOf`, `progressOf`,
+  `atProgress`) and this genre's own edit (`WEB_ENTRANCE`, 2.03s against the video's 6.4). A
+  vendored COPY of `chart-video/assets/timing.ts` — the owner asked for the video's own style and a
+  skill never imports another — so what was copied verbatim, what was deliberately changed (`hold`
+  dropped, milliseconds not frames, motion ÷3 and the two pauses ÷5) and why is written in its own
+  header, event by event, with each video ancestor beside it. Held in step by
+  `splash/test/web-entrance-parity.test.ts`, which compares the shared arithmetic as text AND runs
+  the same fixtures through both `checkTiming` and `checkEntrance`, because a text comparison cannot
+  see a rule whose meaning drifted while its letters stayed.
+- `assets/entrance-trigger.mjs` — the whole of the entrance that is script: one
+  `IntersectionObserver` adding one class. It writes no opacity, no transform and no length — every
+  number was computed server-side from the beat's own geometry and written on the elements as custom
+  properties. `renderWeb` emits it, in its own `<script>`, only for a beat that declared an entrance
+  and after that beat's own script.
+- `scripts/verify-entrance.mjs` — the entrance's own evidence, and the reason it is a separate
+  script from `verify-web.mjs` is that none of that file's instruments can see an arrival. Usage:
+  `bun scripts/verify-entrance.mjs` drives the seed, `--file x.html` an existing beat, `--out DIR`
+  writes the frames a human then opens — which is not optional, and is how the lollipop's clip
+  reveal was caught stating that all fifteen countries were equal while every check was green.
 - `scripts/render-web.mjs` — the genre's own machinery: `renderWeb({ component, props, outDir,
   name })` SSRs the component once, derives the furniture, inlines the interaction script, writes
-  one self-contained HTML file. It knows no story's numbers. Beneath it, `SEED`, `render` and the
+  one self-contained HTML file. A beat DECLARES an entrance the same way it declares a filter — by
+  doing it, by tagging its own layers — and this file reads that back off the SSR'd markup and emits
+  the entrance's stylesheet and its trigger only then, so a page that declares none ships not a line
+  of either. It knows no story's numbers. Beneath it, `SEED`, `render` and the
   CLI block are the runner for THIS SKILL'S OWN SEED, behind a labelled `CONFIG — edit for your
   story` seam. Nothing in this file imports out of this skill, which is what makes the directory
   copy-pasteable; a story's runner lives beside the story (`proof/co2-suisse/render-web.mjs`).
