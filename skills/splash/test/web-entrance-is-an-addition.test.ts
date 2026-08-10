@@ -163,7 +163,6 @@ const ENTRANCE_PENDING = [
   "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html",
   "proof/weby-population-pyramid-switzerland/population-pyramid-switzerland.html",
   "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html",
-  "proof/webz-diverging-bar-eu-per-capita/diverging-bar-eu-per-capita.html",
 ];
 
 type Subject = { label: string; html: string };

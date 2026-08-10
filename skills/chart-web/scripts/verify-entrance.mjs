@@ -318,6 +318,11 @@ const READ = () => {
     segsHit: hit,
     segsTotal: total,
     marks: declaredMarks,
+    // The quantum of every painted reading on this page, published rather than re-derived: it is
+    // the tolerance every comparison against a painted extent is entitled to, and a check that
+    // invented its own (a mark's OWN settled/40) reported six short bars as unfinished on a page
+    // that was complete.
+    markStep: Math.round(step * 100) / 100,
     markLabels,
     dotWidth: dot ? Math.round(dot.getBoundingClientRect().width * 10) / 10 : null,
     endLabelOpacity: end ? Number(getComputedStyle(end).opacity) : null,
@@ -355,8 +360,9 @@ function markFailures(samples, label) {
   const failures = [];
   const rows = markSeries(samples);
   // The quantum of the painted-extent reading — every mark is walked in this same step, so it is
-  // also the tolerance every comparison between two marks is allowed.
-  const step = Math.max(...rows.map((r) => r.settled), 1e-6) / 40;
+  // also the tolerance every comparison against a painted extent is allowed. Published by the
+  // reader rather than re-derived here, so the two can never disagree about it.
+  const step = samples[0].markStep;
   const spread = (values) => Math.max(...values) - Math.min(...values);
 
   const keys = rows.map((r) => r.key);
@@ -464,7 +470,12 @@ function markFailures(samples, label) {
     for (const l of samples[i].markLabels) {
       const mark = samples[i].marks.find((m) => m.key === l.names);
       if (!mark || l.opacity <= 0.02) continue;
-      if (mark.painted < 0.9 * mark.settled) {
+      // BOTH instruments, and each is here for a different failure. The mark's own SCALE is exact
+      // and answers the per-mark question directly, which the painted extent cannot on a bar shorter
+      // than the shared step — six of this beat's twenty-seven are. The PAINTED extent is what
+      // catches a reveal that is not a per-mark growth at all, where every scale sits at 1 and only
+      // what is on the screen changes.
+      if (mark.scale < 0.9 || mark.painted < 0.9 * mark.settled - step) {
         failures.push(
           `${label}: at reading ${i} the label for ${l.names} was painted (opacity ${l.opacity}) ` +
             `while its own mark was ${mark.painted} of ${mark.settled} — a value label may not ` +
@@ -639,7 +650,7 @@ try {
       // The same claim for a per-mark reveal, and it needs its own sentence: `scaleX` is 1 on a page
       // that has no clip at all, so the clause above passes vacuously on every bar-family beat.
       const unarrived = first.marks.filter(
-        (m) => m.scale !== 1 || m.painted < m.settled - m.settled / 40,
+        (m) => m.scale !== 1 || m.painted < m.settled - first.markStep,
       );
       check(
         unarrived.length === 0,
@@ -693,7 +704,7 @@ try {
           `transform ${noJs.transform} — the settled page must be complete`,
       );
       const short = noJs.marks.filter(
-        (m) => m.scale !== 1 || m.painted < m.settled - m.settled / 40,
+        (m) => m.scale !== 1 || m.painted < m.settled - noJs.markStep,
       );
       check(
         short.length === 0,

@@ -61,6 +61,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   divergingGeometry,
   en,
   exact,
@@ -271,6 +280,98 @@ export function DivergingBarWeb({
   const totalWidth = yGutterPx + lGutterPx + frame.width + rGutterPx;
   const totalHeight = NOTE_ROW_PX + frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, with the bar family's own
+  // per-mark reveal: every bar grows out of the zero line to ITS OWN value.
+  //
+  // WHY A CLIP CANNOT DO THIS ONE AT ALL, even more plainly than on a ranking. These bars diverge:
+  // twenty-six grow LEFT out of the zero line and one grows RIGHT. A left-to-right wipe would
+  // uncover the longest fall's far end FIRST and the zero line LAST — it would build every bar
+  // backwards, from the value toward the reference the value is measured from. Growing each mark
+  // from its own baseline is the only reveal this type has, which is why the motion exists.
+  //
+  //   - THE REFERENCE is the zero line, and on this type it is the whole argument: "more or less
+  //     than 1990" is a sign. It is laid down, alone, before any bar.
+  //   - THE ORDER is the rows' own, which is sorted from the largest rise to the largest fall.
+  //   - THE SUBJECT IS CROATIA, and it is taken out of the cascade. It is row 0 — the single rise —
+  //     so in row order it would arrive FIRST, before the twenty-six falls it is the exception to.
+  //     Its own row stays empty while they arrive, and it lands last, which is the claim.
+  //   - THE AVERAGE OF THE FALLS is a summary OF the falls, so it may not precede them. It arrives
+  //     at the end of the reveal, with its own label, on the same reasoning as the label rule.
+  //   - THE CONCLUSION is Croatia's own printed change, once its bar has landed.
+  const subjectRow = g.points.find((p) => p.country === subject)!;
+  const cascade = g.points.filter((p) => p.country !== subject);
+  const windowFor = (country: string) =>
+    country === subject
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((p) => p.country === country),
+          cascade.length,
+        );
+  const eventFor = (country: string) =>
+    country === subject ? ("subject" as const) : ("reveal" as const);
+  const barLayer = (country: string) => {
+    const own = windowFor(country);
+    return entranceLayer(eventFor(country), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      // The baseline is the ZERO LINE for every row, on both sides of it — the one point a
+      // diverging bar may not move while it grows.
+      grow: { axis: "x", origin: { x: g.zeroX, y: 0 }, key: country },
+    });
+  };
+  const valueLabelLayer = (country: string) =>
+    country === subject
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: country,
+        })
+      : entranceLayer("reveal", "fade", {
+          delay: atProgress(windowFor(country), 1),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: country,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const zeroLineLayer = entranceLayer("reference", "grow", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+    // No key: the zero line is what the bars are MEASURED AGAINST, not one of the readings.
+    grow: { axis: "y", origin: { x: g.zeroX, y: g.plot.top } },
+  });
+  /** The falls' own average, and its label — after the last fall, never before. */
+  const averageLayer = () =>
+    entranceLayer("reveal", "fade", {
+      delay: endOf(WEB_ENTRANCE.reveal),
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const subjectNoteLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+    names: subject,
+  });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((p) => atProgress(windowFor(p.country), 1) + LABEL_FADE_MS),
+    endOf(WEB_ENTRANCE.reveal) + LABEL_FADE_MS,
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last cascading row's value label ends at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms — a fall would still be arriving while the one rise the ` +
+        `takeaway is about is already there`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -297,7 +398,11 @@ export function DivergingBarWeb({
         ["--cat-subject-weight" as string]: frame.categorySubject.fontWeight,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{caveat}</p>
       </div>
@@ -319,14 +424,22 @@ export function DivergingBarWeb({
             argument-bearing furniture: drawn unconditionally, never behind an interaction. */}
         <div className="note-row">
           <span
+            {...averageLayer().attrs}
             className="note average-label"
-            style={{ left: `${pct(averageX, frame.width)}%` }}
+            style={{
+              ...averageLayer().vars,
+              left: `${pct(averageX, frame.width)}%`,
+            }}
           >
             {averageFallLabel}
           </span>
         </div>
 
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {g.points.map((p) => (
             <span
               key={p.country}
@@ -381,38 +494,48 @@ export function DivergingBarWeb({
             fill={subjectBand}
           />
 
-          {ticks.map((tick) => (
-            <line
-              key={tick.value}
-              x1={tick.x}
-              x2={tick.x}
-              y1={g.plot.top}
-              y2={g.plot.bottom}
-              stroke={grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* Gridlines are FURNITURE and come up on ONE clock with the labels beside them. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticks.map((tick) => (
+              <line
+                key={tick.value}
+                x1={tick.x}
+                x2={tick.x}
+                y1={g.plot.top}
+                y2={g.plot.bottom}
+                stroke={grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
 
           {/* The bars. Two fills, one per sign — accent for the rise the headline is about, the
               furniture's own muted for the falls. On this type colour encodes the SIGN, which is
               the one place the type's requirement outranks this corpus's habit of holding the
               accent back for the subject; here it costs nothing, because the subject IS the only
               row on the positive side. */}
-          {g.points.map((p) => (
-            <rect
-              key={p.country}
-              x={Math.min(g.zeroX, p.xValue)}
-              y={p.rowY - barHeight / 2}
-              width={Math.abs(p.xValue - g.zeroX)}
-              height={barHeight}
-              fill={p.change >= 0 ? accent : muted}
-            />
-          ))}
+          {g.points.map((p) => {
+            const layer = barLayer(p.country);
+            return (
+              <rect
+                key={p.country}
+                {...layer.attrs}
+                style={layer.vars}
+                x={Math.min(g.zeroX, p.xValue)}
+                y={p.rowY - barHeight / 2}
+                width={Math.abs(p.xValue - g.zeroX)}
+                height={barHeight}
+                fill={p.change >= 0 ? accent : muted}
+              />
+            );
+          })}
 
           {/* The reference: the zero line, drawn ON TOP of the bars so no fill can cover it — the
               type sheet's own requirement, and the reason it is not painted before them. */}
           <line
+            {...zeroLineLayer.attrs}
+            style={zeroLineLayer.vars}
             x1={g.zeroX}
             x2={g.zeroX}
             y1={g.plot.top}
@@ -425,7 +548,9 @@ export function DivergingBarWeb({
           {/* Where the 26 falls average out. Dashed, in ink, drawn full height. Its label lives in
               the note row above. */}
           <line
+            {...averageLayer().attrs}
             className="average-rule"
+            style={averageLayer().vars}
             x1={averageX}
             x2={averageX}
             y1={g.plot.top}
@@ -471,39 +596,50 @@ export function DivergingBarWeb({
               domain's maximum at +0.03, the whole span from the plot's left edge to the zero line is
               unused on this one row and on no other. */}
           <span
+            {...subjectNoteLayer.attrs}
             className="note subject-note on-band"
             style={{
+              ...subjectNoteLayer.vars,
               left: `${pct(g.zeroX, frame.width)}%`,
-              top: `${pct(g.points.find((p) => p.country === subject)!.rowY, frame.height)}%`,
+              top: `${pct(subjectRow.rowY, frame.height)}%`,
             }}
           >
             {subjectNote}
           </span>
 
-          {g.points.map((p) => (
-            <span
-              key={p.country}
-              // `on-band` is what makes the chip behind this label the SUBJECT BAND's colour rather
-              // than the ground — see `blend` above for why a ground chip on a tinted band reads as
-              // a hole punched through it.
-              className={[
-                "value-label",
-                p.change >= 0 ? "positive" : "negative",
-                p.country === subject ? "on-band" : "",
-              ]
-                .join(" ")
-                .trim()}
-              style={{
-                left: `${pct(p.xValue, frame.width)}%`,
-                top: `${pct(p.rowY, frame.height)}%`,
-              }}
-            >
-              {en(p.change)}
-            </span>
-          ))}
+          {g.points.map((p) => {
+            const layer = valueLabelLayer(p.country);
+            return (
+              <span
+                key={p.country}
+                {...layer.attrs}
+                // `on-band` is what makes the chip behind this label the SUBJECT BAND's colour
+                // rather than the ground — see `blend` above for why a ground chip on a tinted band
+                // reads as a hole punched through it.
+                className={[
+                  "value-label",
+                  p.change >= 0 ? "positive" : "negative",
+                  p.country === subject ? "on-band" : "",
+                ]
+                  .join(" ")
+                  .trim()}
+                style={{
+                  ...layer.vars,
+                  left: `${pct(p.xValue, frame.width)}%`,
+                  top: `${pct(p.rowY, frame.height)}%`,
+                }}
+              >
+                {en(p.change)}
+              </span>
+            );
+          })}
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticks.map((tick) => (
             <span
               key={tick.value}
@@ -522,7 +658,13 @@ export function DivergingBarWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
