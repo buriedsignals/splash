@@ -9,6 +9,19 @@ import {
   exportDirFor,
 } from "../scripts/deliver.mjs";
 
+// A hand-over payload, module-scope, because EVERY delivery needs one: G4 closes into
+// `export/<beat>/HANDOVER.md` the way every other gate closes into a file. `materialise` used to
+// return early when the caller passed none, so every form worked without one — and the run that
+// produced A11 ("name the files, say where they go, give the advice") would have produced it again.
+// Every field below is already recorded during the exchange: placement and credit are hand fields
+// 4 and 5, alt is in the component, the caveat is the limits field.
+const handover = {
+  placement: "after the paragraph on winter rainfall, article web, full width",
+  alt: "Rainfall in Annemasse fell in three of the last four winters",
+  credit: "Source: MeteoSwiss, as of 2026-08-10",
+  caveat: "four winters is a short window",
+};
+
 let beatDir: string, exportDir: string;
 beforeEach(async () => {
   const base = await mkdtemp(join(tmpdir(), "beat-"));
@@ -178,12 +191,16 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
     const files = await readdir(exportDir);
     expect(files).toContain("still.png");
     expect(files).toContain("still.svg");
     expect(files).not.toContain("package.json");
-    expect(written).toHaveLength(2);
+    // The two rendered files, plus HANDOVER.md — G4 closes into that file, so it is part of every
+    // delivery rather than an extra a caller may skip.
+    expect(files).toContain("HANDOVER.md");
+    expect(written).toHaveLength(3);
   });
 
   // The shared copyTree helper is exercised at depth by the source-bundle test below; this
@@ -201,6 +218,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
 
     const files = await readdir(exportDir);
@@ -216,6 +234,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
     const files = await readdir(exportDir);
     expect(files).toContain("package.json");
@@ -227,7 +246,7 @@ describe("materialise", () => {
 
   it("should refuse a form that was never offered", async () => {
     await expect(
-      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
+      materialise({ form: "embed", genre: "static", beatDir, exportDir, handover }),
     ).rejects.toThrow("not an offered form");
   });
 
@@ -238,7 +257,7 @@ describe("materialise", () => {
   // existed anywhere.
   it("should refuse a form that exists for a different genre than the one given", async () => {
     await expect(
-      materialise({ form: "owned-file", genre: "print", beatDir, exportDir }),
+      materialise({ form: "owned-file", genre: "print", beatDir, exportDir, handover }),
     ).rejects.toThrow("not an offered form");
   });
 
@@ -250,10 +269,11 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
 
     await expect(
-      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
+      materialise({ form: "embed", genre: "static", beatDir, exportDir, handover }),
     ).rejects.toThrow("not an offered form");
 
     const files = await readdir(exportDir);
@@ -275,6 +295,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
 
     const files = await readdir(exportDir);
@@ -296,6 +317,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
     expect(await readdir(exportDir)).toContain("still.png");
 
@@ -304,6 +326,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
     const files = await readdir(exportDir);
     expect(files).not.toContain("still.png");
@@ -319,6 +342,7 @@ describe("materialise", () => {
       genre: "static",
       beatDir,
       exportDir,
+      handover,
     });
 
     const files = await readdir(exportDir);
@@ -343,16 +367,19 @@ describe("materialise", () => {
         genre,
         beatDir,
         exportDir,
+        handover,
       });
       const files = await readdir(exportDir);
       expect(files).toContain("still.png");
       expect(files).toContain("still.svg");
       expect(files).not.toContain("package.json");
-      expect(written).toHaveLength(2);
+      // The beat's two rendered files, plus HANDOVER.md — G4 closes into that file.
+      expect(files).toContain("HANDOVER.md");
+      expect(written).toHaveLength(3);
     });
 
     it(`should write a runnable bundle for a ${genre} beat when the source form is chosen`, async () => {
-      await materialise({ form: "source-bundle", genre, beatDir, exportDir });
+      await materialise({ form: "source-bundle", genre, beatDir, exportDir, handover });
       const files = await readdir(exportDir);
       expect(files).toContain("package.json");
       expect(files).toContain("Rainfall.tsx");
@@ -429,6 +456,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: {},
+        handover,
       }),
     ).rejects.toThrow("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN");
   });
@@ -441,15 +469,19 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       exportDir: webExportDir,
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
       fetchFn: fakeCloudflare(),
+      handover,
     });
     // Dotfiles filtered: `materialise` leaves a `.delivered-from` receipt naming the beat, which
     // is bookkeeping (it is what refuses a SECOND beat delivering over this one), not a delivered
     // file. `written` below is the real "only one file was delivered" assertion, and it is unfiltered.
     const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
-    expect(files).toEqual(["EMBED_URL.txt"]);
+    expect(files.sort()).toEqual(["EMBED_URL.txt", "HANDOVER.md"]);
     const url = await Bun.file(join(webExportDir, "EMBED_URL.txt")).text();
     expect(url.trim()).toBe("https://deadbeef.some-project.pages.dev");
-    expect(written).toEqual([join(webExportDir, "EMBED_URL.txt")]);
+    expect(written).toEqual([
+      join(webExportDir, "EMBED_URL.txt"),
+      join(webExportDir, "HANDOVER.md"),
+    ]);
   });
 
   it("should refuse to materialise embed when renders/ holds more than one file", async () => {
@@ -462,6 +494,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
         exportDir: webExportDir,
         env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
         fetchFn: fakeCloudflare(),
+        handover,
       }),
     ).rejects.toThrow("expected exactly one file");
   });
@@ -478,13 +511,17 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       fetchFn: async () => {
         throw new Error("cms-insertion must never call fetch");
       },
+      handover,
     });
     const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
-    expect(files).toEqual(["CMS-INSERTION.md"]);
+    expect(files.sort()).toEqual(["CMS-INSERTION.md", "HANDOVER.md"]);
     const doc = await Bun.file(join(webExportDir, "CMS-INSERTION.md")).text();
     expect(doc).toContain("UNPROVEN");
     expect(doc).toContain("<h1>rainfall</h1>"); // the beat's own HTML made it into the payload
-    expect(written).toEqual([join(webExportDir, "CMS-INSERTION.md")]);
+    expect(written).toEqual([
+      join(webExportDir, "CMS-INSERTION.md"),
+      join(webExportDir, "HANDOVER.md"),
+    ]);
   });
 
   it("should honour a caller-supplied cms option, building a livingdocs insertion instead of the we-publish default", async () => {
@@ -495,6 +532,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       exportDir: webExportDir,
       env: {},
       cms: { kind: "livingdocs", articleId: "real-article-id" },
+      handover,
     });
     const doc = await Bun.file(join(webExportDir, "CMS-INSERTION.md")).text();
     expect(doc).toContain("insertComponent");
@@ -510,6 +548,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: {},
+        handover,
       }),
     ).rejects.toThrow(/two \.html files/);
   });
@@ -522,10 +561,11 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       exportDir: webExportDir,
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
       fetchFn: fakeCloudflare(),
+      handover,
     });
-    expect((await readdir(webExportDir)).filter((f) => !f.startsWith("."))).toEqual([
-      "EMBED_URL.txt",
-    ]);
+    expect(
+      (await readdir(webExportDir)).filter((f) => !f.startsWith(".")).sort(),
+    ).toEqual(["EMBED_URL.txt", "HANDOVER.md"]);
 
     await materialise({
       form: "cms-insertion",
@@ -533,9 +573,10 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: {},
+      handover,
     });
     const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
-    expect(files).toEqual(["CMS-INSERTION.md"]);
+    expect(files.sort()).toEqual(["CMS-INSERTION.md", "HANDOVER.md"]);
   });
 });
 
@@ -582,12 +623,6 @@ describe("ownedFileForInsertion — which file goes to the CMS", () => {
 // this was two filenames and two sizes: no statement of which file goes where, no alt text, no
 // credit line, no restatement of the caveat the beat's own subtitle already carried.
 describe("HANDOVER.md — what the journalist actually receives", () => {
-  const handover = {
-    placement: "after the paragraph that first states the divergence, full width",
-    alt: "Three sponsors account for more of the melt than the Games themselves.",
-    credit: "Source: SGR / New Weather Institute, Olympics Torched (2026)",
-    caveat: "One report's figures; the derived third row is a subtraction, not a measurement.",
-  };
 
   it("should be written beside the chosen form, naming every delivered file", async () => {
     const written = await materialise({
@@ -634,9 +669,32 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
     expect(written).toContain(join(exportDir, "HANDOVER.md"));
   });
 
-  it("should not be written when the caller handed nothing back to read out", async () => {
-    const written = await materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {} });
-    expect(written.some((p) => p.endsWith("HANDOVER.md"))).toBe(false);
+  // G4 CLOSES INTO A FILE, like every other gate. `withHandover` used to return early whenever the
+  // caller passed no payload, so every delivery form worked without one — and `whereIs` called the
+  // story done regardless. The run that produced A11 (two filenames and two sizes, no placement, no
+  // alt text, no credit line) would have produced it again, silently.
+  //
+  // RED, in a copy of the tree under /tmp, with the early return restored:
+  //   error: expect(received).rejects.toThrow(expected)
+  //   Received promise resolved instead of rejected
+  //   (fail) should refuse a delivery that hands nothing back to read out
+  //   (fail) should say what to hand in, naming where each field was already recorded
+  it("should refuse a delivery that hands nothing back to read out", async () => {
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        env: {},
+      }),
+    ).rejects.toThrow(/closes into export\/<beat>\/HANDOVER\.md/);
+  });
+
+  it("should say what to hand in, naming where each field was already recorded", async () => {
+    await expect(
+      materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {} }),
+    ).rejects.toThrow(/placement and credit are hand fields 4 and 5/);
   });
 });
 
@@ -680,12 +738,14 @@ describe("a story has more than one beat", () => {
       genre: "static",
       beatDir,
       exportDir: exportDirFor(storyDir, "1-rainfall"),
+      handover,
     });
     await materialise({
       form: "source-bundle",
       genre: "static",
       beatDir: beatTwo,
       exportDir: exportDirFor(storyDir, "2-temperature"),
+      handover,
     });
 
     expect(await readdir(exportDirFor(storyDir, "1-rainfall"))).toContain("still.png");
@@ -698,12 +758,14 @@ describe("a story has more than one beat", () => {
       genre: "static",
       beatDir,
       exportDir: exportDirFor(storyDir, "1-rainfall"),
+      handover,
     });
     await materialise({
       form: "owned-file",
       genre: "static",
       beatDir: beatTwo,
       exportDir: exportDirFor(storyDir, "2-temperature"),
+      handover,
     });
 
     const delivered = (await readdir(join(storyDir, "export"))).sort();
@@ -715,10 +777,10 @@ describe("a story has more than one beat", () => {
   // two different beats the same directory is refused on the second call, before anything is wiped.
   it("should refuse, rather than wipe, when another beat's delivery is already there", async () => {
     const shared = join(storyDir, "export");
-    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: shared });
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: shared, handover });
 
     await expect(
-      materialise({ form: "owned-file", genre: "static", beatDir: beatTwo, exportDir: shared }),
+      materialise({ form: "owned-file", genre: "static", beatDir: beatTwo, exportDir: shared, handover }),
     ).rejects.toThrow(/would destroy it/);
 
     expect(await readdir(shared)).toContain("still.png");
@@ -727,8 +789,8 @@ describe("a story has more than one beat", () => {
 
   it("should still let the same beat change its mind in its own directory", async () => {
     const mine = exportDirFor(storyDir, "1-rainfall");
-    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: mine });
-    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir: mine });
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: mine, handover });
+    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir: mine, handover });
 
     const files = await readdir(mine);
     expect(files).not.toContain("still.png");

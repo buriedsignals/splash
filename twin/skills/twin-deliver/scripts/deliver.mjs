@@ -339,14 +339,23 @@ async function refuseToWipeAnotherBeat(exportDir, beatDir) {
 // whatever form was chosen, naming each delivered file and its role, the placement read back from
 // the storyboard, the alt text, the credit line and the one caveat.
 //
-// It is written only when the caller hands in the payload, and that is not laziness: `formatHandover`
-// throws rather than render a document with a blank where the credit line should be, and every one
-// of its inputs is already recorded somewhere (placement and credit are hand fields 4 and 5, the
-// caveat is `limits`, the alt is in the component). A caller with nothing to hand in has not read
-// the storyboard back, and gets the delivery it asked for without a hand-over rather than a
-// hand-over full of holes.
+// IT IS NOT OPTIONAL, AND THAT IS G4. Every other phase of this journey closes into a file that
+// must exist; delivery used to close into "any file in export/", and `withHandover` returned early
+// whenever the caller passed no payload — so every delivery form worked without one, silently. The
+// run that produced A11 ("delivery must be far clearer: name the files, say where they go, give the
+// advice") would have produced it again, and `whereIs` would still have called the story done.
+//
+// The old argument for optional was that `formatHandover` throws rather than render a document with
+// a blank where the credit line should be. That argument survives and points the other way: every
+// one of its inputs is ALREADY RECORDED (placement and credit are hand fields 4 and 5, the caveat is
+// `limits`, the alt is in the component), so a caller with nothing to hand in has not read the
+// storyboard back — and that is a refusal, not a delivery.
 async function withHandover(written, { exportDir, genre, handover }) {
-  if (!handover) return written;
+  if (!handover) {
+    throw new Error(
+      "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.",
+    );
+  }
   const path = join(exportDir, "HANDOVER.md");
   await writeFile(path, formatHandover({ ...handover, genre, files: written }));
   written.push(path);

@@ -82,6 +82,19 @@ function without<T extends Record<string, string>>(
 
 const storyboard = build();
 
+// What a DELIVERED beat looks like on disk: its own directory under `export/`, holding the chosen
+// form's files AND the hand-over. G4 closes into `export/<beat>/HANDOVER.md` the way G3 closes into
+// `APPROVED.md` one phase earlier — a delivery of files nobody was told what to do with is the run
+// that produced A11, and it is not a closed gate.
+async function deliver(storyDir: string, beat: string, fileName: string) {
+  await mkdir(join(storyDir, "export", beat), { recursive: true });
+  await writeFile(join(storyDir, "export", beat, fileName), "x");
+  await writeFile(
+    join(storyDir, "export", beat, "HANDOVER.md"),
+    "# What you have, and where it goes",
+  );
+}
+
 describe("whereIs", () => {
   it("should report intake when the source is empty", async () => {
     const state = await whereIs(dir);
@@ -402,8 +415,7 @@ describe("whereIs", () => {
       "x",
     );
     await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
-    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
-    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+    await deliver(dir, "1-rainfall", "rainfall.png");
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
@@ -433,8 +445,7 @@ describe("whereIs", () => {
     }
     // Beat 1 was shown, approved and delivered. Beat 2 has rendered and nobody has seen it.
     await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
-    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
-    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+    await deliver(dir, "1-rainfall", "rainfall.png");
 
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
@@ -454,13 +465,40 @@ describe("whereIs", () => {
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
       await writeFile(join(dir, "beats", beat, "APPROVED.md"), "seen");
     }
-    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
-    await writeFile(join(dir, "export", "1-rainfall", "rainfall.png"), "x");
+    await deliver(dir, "1-rainfall", "rainfall.png");
 
     expect((await whereIs(dir)).phase).toBe("delivery");
 
-    await mkdir(join(dir, "export", "2-snowpack"), { recursive: true });
-    await writeFile(join(dir, "export", "2-snowpack", "snowpack.png"), "x");
+    await deliver(dir, "2-snowpack", "snowpack.png");
+    expect((await whereIs(dir)).phase).toBe("done");
+  });
+
+  // G4 CLOSES INTO A FILE, like G3 one phase earlier. A directory of delivered files with nothing
+  // saying which one goes where in the article, what the alt text is or what the credit line reads
+  // is the delivery the run actually made — two filenames and two sizes (A11). It is not a closed
+  // gate, and `materialise` refuses to make one.
+  //
+  // RED, in a copy of the tree under /tmp, with `beatsAwaitingDelivery` back to "any file in
+  // export/<beat>/":
+  //   error: expect(received).toBe(expected)   Expected: "delivery"   Received: "done"
+  //   (fail) should stay in delivery when the files are there and nothing hands them over
+  it("should stay in delivery when the files are there and nothing hands them over", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
+    await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
+    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+
+    await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
+    await writeFile(join(dir, "export", "1-rainfall", "still.png"), "x");
+    await writeFile(join(dir, "export", "1-rainfall", "still.svg"), "<svg/>");
+    expect((await whereIs(dir)).phase).toBe("delivery");
+
+    await writeFile(
+      join(dir, "export", "1-rainfall", "HANDOVER.md"),
+      "# What you have, and where it goes",
+    );
     expect((await whereIs(dir)).phase).toBe("done");
   });
 

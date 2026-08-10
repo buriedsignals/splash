@@ -105,7 +105,14 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   // and the shape `whereIs` reads. A story is done when every approved beat has one.
   await mkdir(join(storyDir, "export", "1-rainfall"), { recursive: true });
   await writeFile(join(storyDir, "export", "1-rainfall", "rainfall.png"), "x");
-  observed.add((await whereIs(storyDir)).phase); // done: the beat has been delivered
+  observed.add((await whereIs(storyDir)).phase); // still delivery: nothing hands the files over
+
+  // G4 closes into `export/<beat>/HANDOVER.md`, the way G3 closes into `APPROVED.md`.
+  await writeFile(
+    join(storyDir, "export", "1-rainfall", "HANDOVER.md"),
+    "# What you have, and where it goes",
+  );
+  observed.add((await whereIs(storyDir)).phase); // done: the beat has been handed over
 
   return observed;
 }

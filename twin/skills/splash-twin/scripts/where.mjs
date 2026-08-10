@@ -275,16 +275,20 @@ async function beatsAwaitingApproval(storyDir) {
   return waiting;
 }
 
-// G4, per beat, and it is the same shape as G3 one phase earlier: a beat is delivered when its own
-// `export/<beat>/` holds something. `twin-deliver`'s `exportDirFor` writes exactly there — one
-// directory per beat, because a story-level one made each delivery destroy the last.
+// G4 CLOSES INTO A FILE, exactly as G3 does one phase earlier, and the file is the hand-over:
+// `export/<beat>/HANDOVER.md`. `twin-deliver`'s `exportDirFor` writes that directory — one per beat,
+// because a story-level one made each delivery destroy the last — and `materialise` refuses a
+// delivery with no hand-over payload rather than writing files nobody was told what to do with.
 //
-// `done` used to mean "any file exists anywhere under export/", which is how a two-beat story
-// reported itself finished while its second beat sat rendered and unapproved (see `whereIs`).
+// The weaker rule this replaces was "any file exists anywhere under `export/`", which is how a
+// two-beat story reported itself finished while its second beat sat rendered and unapproved, and how
+// a delivery of two filenames and two sizes — no placement, no alt text, no credit line — counted as
+// a closed gate. A11 is the item that names that delivery.
 async function beatsAwaitingDelivery(storyDir, beats) {
   const waiting = [];
   for (const beat of beats) {
-    if ((await list(join(storyDir, "export", beat))).length === 0) waiting.push(beat);
+    const handover = await read(join(storyDir, "export", beat, "HANDOVER.md"));
+    if (handover === null) waiting.push(beat);
   }
   return waiting;
 }

@@ -302,7 +302,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
    | `storyboard` | Restitution, the journalist's hand, the survey, the medium/genre/size sub-gates, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `genre` (G2b), `size` (G2c), `reachable: yes` and `chosen` drawn from its own `candidates` |
    | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. Then **SURFACE THE ARTIFACT** — the file path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video — and ask approve-or-correct. That turn says **nothing about delivery**: the forms are `offerForms`' output and cannot be known before it runs. | G3, per beat | `beats/<n>-<slug>/APPROVED.md` |
-   | `delivery` | Per beat, `twin-deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. | — | `export/<beat>/*` |
+   | `delivery` | Per beat, `twin-deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. The delivery closes by handing it over: which file goes where in the article, the alt text, the credit line, the one caveat. | **G4**, per beat | `export/<beat>/HANDOVER.md` (beside the chosen form's own files) |
    | `done` | Terminal — **every** approved beat has been delivered. One delivered beat does not close a story that has two. | — | (`export/<beat>/` holds the chosen form, for each of them) |
 
 4. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
@@ -389,7 +389,7 @@ if (missing.length > 0) {
 | How many responsibilities this skill holds | `4`, and no fifth | this document, `Overview` |
 | Source files intake must freeze before leaving `intake` | `2` (`article.md`, `profile.json`) | `whereIs` |
 | Hand-of-the-journalist fields `whereIs` itself requires before leaving `storyboard` | `6` (`HAND.length` — mirrors `twin-storyboard`'s own `HAND` constant) | `scripts/where.mjs` |
-| What a beat needs before the story can be `done` | `2` files of its own — `APPROVED.md` (G3) and something in `export/<beat>/` (G4). Both are checked per beat, never story-wide | `beatsAwaitingApproval` / `beatsAwaitingDelivery`, `scripts/where.mjs` |
+| What a beat needs before the story can be `done` | `2` files of its own — `beats/<n>/APPROVED.md` (G3) and `export/<beat>/HANDOVER.md` (G4). Both are checked per beat, never story-wide | `beatsAwaitingApproval` / `beatsAwaitingDelivery`, `scripts/where.mjs` |
 | Turns a beat gets before production stalls | `3` | spec §8, `How it works` step 5 |
 | Hard stops preflight recognises | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them | `scripts/preflight.mjs`, `runPreflight` |
 | Capabilities preflight reports | `3` (`map`, `datawrapper`, `hostedEmbed`) | `scripts/preflight.mjs`, `runPreflight` |

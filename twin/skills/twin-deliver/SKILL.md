@@ -79,7 +79,7 @@ Two things close it, and both are code rather than convention:
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
-| Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/HANDOVER.md`: each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
+| Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
 | CMS doctrine | `references/cms-insertion.md` | Both mechanics in prose — We.Publish's `updateArticle` is total, Livingdocs' `insertComponent` is a genuine insertion — and what remains untested |
@@ -146,8 +146,15 @@ Two things close it, and both are code rather than convention:
      article, so a mutation that would drop any part of the article it read is refused before it is
      ever built, let alone sent. `references/cms-insertion.md` documents both CMS mechanics in
      prose and states plainly what remains untested.
-4. **`materialise` returns every path it wrote.** A caller that wants to confirm the delivery
-   can list `written` without re-reading the directory.
+4. **Every form closes into `export/<beat>/HANDOVER.md` — that is G4, and it is not optional.**
+   `materialise` throws when the caller hands in no payload, rather than delivering files nobody was
+   told what to do with. It used to return early instead, so every form worked without one and
+   `whereIs` called the story done anyway — which is how the run delivered two filenames and two
+   sizes, with no placement, no alt text and no credit line. Every input is already recorded during
+   the exchange: placement and credit are hand fields 4 and 5, the alt is in the component, the
+   caveat is `limits`. A caller with nothing to hand in has not read the storyboard back.
+5. **`materialise` returns every path it wrote**, the hand-over included. A caller that wants to
+   confirm the delivery can list `written` without re-reading the directory.
 
 ## Quick start
 
