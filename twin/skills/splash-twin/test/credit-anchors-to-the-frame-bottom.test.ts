@@ -397,9 +397,39 @@ function* beatHtml(dir: string): Generator<string> {
   }
 }
 
+/**
+ * A BEAT NOBODY HAS COMMITTED YET IS NOT JUDGED HERE. Seven sessions share this worktree, and the
+ * residue table above is a record about committed pages: reddening six other sessions because one
+ * of them has an in-flight beat is how a check becomes a thing people learn to work around. The
+ * page enters this population the moment its beat is committed, and it is judged then. Same rule,
+ * same reason, as `scripts/matrix.mjs --check` and the edge census in
+ * `interaction-promises-are-kept.test.ts`.
+ */
+const UNTRACKED_BEATS = new Set(
+  Bun.spawnSync(
+    [
+      "git",
+      "ls-files",
+      "--others",
+      "--directory",
+      "--exclude-standard",
+      "proof/",
+    ],
+    { cwd: TWIN },
+  )
+    .stdout.toString()
+    .split("\n")
+    .filter((line) => /^proof\/[^/]+\/$/.test(line.trim()))
+    .map((line) => line.trim().slice(0, -1)),
+);
+
 const BEAT_HTML = beatDirs()
   .flatMap((d) => [...beatHtml(d)])
   .map((path) => ({ path, label: relative(TWIN, path) }))
+  .filter(
+    ({ label }) =>
+      ![...UNTRACKED_BEATS].some((dir) => label.startsWith(`${dir}/`)),
+  )
   .sort((a, b) => a.label.localeCompare(b.label));
 
 describe("the credit sits under the visual in a delivered HTML page", () => {
