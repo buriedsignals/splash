@@ -150,3 +150,28 @@ TITLE, and on these beats the title is the claim.** 27 rows is that finding at i
 because the rows are a MEMBERSHIP LIST — R8 (reclassify, and say so) does not shorten this beat's
 sentence, it destroys it, which is why `render.mjs` already throws on a partial field. So the beat
 stays refused and `BEATS_OWING_A_PIN` keeps counting it.
+
+### The title rung, applied — and a fourth frame, priced — 2026-08-11
+
+The section above named the missing piece: "the ladder has no rung for a TITLE, and on these beats
+the title is the claim." **The ladder has one now** — R6, which shortens a title and refuses a
+shortening that drops what it asserts. Applied here it **declines**: the shorter form is *Croatia
+alone in the EU emits more CO₂ per person than in 1990*, 62 characters against 72, keeping Croatia,
+the EU, CO₂, per person, more and 1990, with *only* becoming *alone* in the same class of qualifier —
+and it wraps to the same number of lines at every candidate frame. A rung that frees no budget does
+not fire, so this beat's own sentence stays.
+
+**And a title of no height at all would not close the gap.** Measured, because it is the only way to
+bound the question: with the whole ladder spent and the title gone, landscape gives 440 px of plot
+where one column of 27 rows needs 1,242, square gives 7 px and portrait 50. The shortfall at
+landscape is 802 px against a whole title worth 153. The words were never the constraint here.
+
+**A fourth row in the table would buy this beat nothing, and that is now priced rather than
+asserted.** The beat fits 1080 × 1350 only at a tuning whose smallest token is a 17 px axis tick —
+**5.7 CSS px** on the 360 dp phone a 1080-wide frame is read full-bleed on, against the 12 CSS px
+floor every row of the table already carries. A fourth row honouring that same rule would carry a 36
+px floor, and at that floor this beat is 179 px short with the ladder spent and reaches a 10.3 px row
+pitch against a 54 px lane even with the title gone. So the beat is not waiting on a row in the
+table; 27 rows do not go into 1080 px of height at a legible type size.
+
+`BEATS_OWING_A_PIN` keeps counting it, and the reason is now closed rather than open.

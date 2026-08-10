@@ -31,6 +31,7 @@ for one, two and three columns. Two thresholds decide a row:
 | portrait 1080×1920 (story band) | R1+R7 | **−406 px** | 54 px | — | — | — |
 | portrait 1080×1920, **no story band** | R1+R7 | 391 px | 54 px | 14.5 px | 27.9 px, panel −146 | — |
 | landscape, **shipped tuning** | R1+R7 | 361 px | 38 px | 13.4 px | 25.8 px | 40.1 px, panel 145 |
+| **a 4:5 row at the phone's own floor** | R1+R6+R7 | **−179 px** | 54 px | — | — | — |
 | *CALIBRATION — 1080×1350 as shipped* | *keep everything* | *850 px* | *22 px* | ***31.5 px, FITS*** | *panel 245* | *panel 81* |
 
 Nothing fits, at any column count, with the ladder spent. The closest any candidate comes is the
@@ -72,8 +73,7 @@ The beat fits **exactly one frame — 1080 × 1350 — and that frame is not in 
 chosen for the content ("Twenty-seven rows in a 1080 × 1080 square would leave each row 24px"), the
 way every frame in this corpus was chosen before R2 pinned three.
 
-The binding constraint is not the columns, not the band and not this beat's furniture. It is the one
-the static lot already wrote down and left open:
+The binding constraint was recorded as the one the static lot wrote down and left open:
 
 > **The ladder has no rung for a TITLE, and on these beats the title is the claim.** At a 36 px
 > floor the headline takes 72–78 px over 3–4 lines and the credit 42 px over 3. This is the real
@@ -83,6 +83,70 @@ the static lot already wrote down and left open:
 27 rows is that finding at its most extreme, because the rows are a MEMBERSHIP LIST: the EU has 27
 member states, and R8 (reclassify — "rows 10 → 6, and say so") destroys the sentence rather than
 shortening it. So the beat is left refused, deliberately, and `BEATS_OWING_A_PIN` keeps counting it.
+
+**That open question is now closed, and the answer is no — see the two sections below.** The ladder
+gained its title rung on 2026-08-11; applied here it declines, and a title of no height at all would
+not close the gap either.
+
+## R6 — the title rung, applied and DECLINED — 2026-08-11
+
+| | |
+|---|---|
+| as it ships | *Croatia is the only EU country emitting more CO₂ per person than in 1990* (72 characters) |
+| shortened | *Croatia alone in the EU emits more CO₂ per person than in 1990* (62) |
+
+The shorter form keeps everything the sentence asserts, and the rung checked each: the subject
+(Croatia), the field it is exclusive within (the EU), the quantity's subject (CO₂), the rate (per
+person), the direction (more) and the year it is more than (1990). *only* becomes *alone*, which is
+the same class of qualifier, and "is the … country emitting" becomes "emits".
+
+**It wraps to the same number of lines at every candidate frame** — two at landscape, four at square
+and portrait, two at the beat's own — so R6 does not fire and the journalist's sentence stays. Ten
+characters is not a line: at landscape the title is drawn at 80 px into a 1750 px measure, where one
+line holds about 45 characters, and the shortest form that still makes this claim is 62.
+
+## And a title of NO HEIGHT would not close it either
+
+Not available — take away a beat's claim and there is no beat, which is why R6 shortens rather than
+drops. Measured anyway, because it is the only way to bound the question:
+
+| frame | plot with the ladder spent AND the title gone | 27 rows need |
+|---|---|---|
+| landscape 1920×1080 | 440 px | 1 col 1,242 px · 2 col 644 px, and the panel is 360 against 515 of gutter |
+| landscape, shipped tuning | 514 px | 1 col 1,026 px · 3 col clears the lane at 57.1 px and the panel is 145 against 439 |
+| square 1080×1080 | **7 px** | — |
+| portrait 1080×1920 | **50 px** | — |
+| portrait, no story band | 847 px | 1 col 1,458 px; 2 col clears the lane at 60.5 px and the panel is −146 |
+
+At landscape the shortfall on one column is **802 px** at the table's tuning and **512 px** at the
+beat's own, against a whole title worth 153 px. **The words were never the constraint here.** 27 rows
+at a video legibility floor need more height than a 1080 px frame has, whatever is written above
+them.
+
+## What a fourth frame would cost — priced, 2026-08-11
+
+The beat fits exactly one frame, 1080 × 1350, and `sizes.mjs` records in its own header that "R2
+named three, and a fourth row is a decision nobody has taken". Nobody has taken it here either. What
+has been done is to price it, because a refusal that names an unpriced alternative is not finished.
+
+**It fits that frame only by drawing type nobody can read on the device the frame is for.** The
+beat's smallest token is a 17 px axis tick in a 1080-wide frame, which on the 360 dp phone such a
+frame is read full-bleed on is **5.7 CSS px** — against the 12 CSS px floor three independent sources
+converge on, and which every row of the table already carries as `minTypePx`.
+
+So a fourth row would carry the same rule the other three do — 12 × 1080 / 360 = **36 px** — and the
+last candidate in the run is what that row would really deliver:
+
+| a 4:5 row at the phone's own floor | plot | 1 col pitch |
+|---|---|---|
+| keep everything | **−536 px** | — |
+| the whole ladder spent (R1+R6+R7) | **−179 px** | — |
+| *and the title gone as well* | 277 px | **10.3 px against a 54 px lane** |
+
+**A fourth frame buys this beat nothing.** It is not a missing row in the table; it is 27 rows that do
+not go into 1080 px of height at a legible type size. That is worth saying plainly, because it moves
+the decision: adding a row to the table would not have delivered this beat, so the beat is not
+waiting on one.
 
 ## The instrument, and its stated limit
 

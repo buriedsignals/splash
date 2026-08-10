@@ -36,6 +36,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { measureText } from "#shared/chart-beat/render-still.mjs";
+import { shortenTitle } from "#shared/chart-beat/type-at-size.mjs";
 import { SIZES } from "#shared/chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -123,6 +124,17 @@ const largest = fell.reduce((a, b) => (b.change < a.change ? b : a));
 // The beat's real words. Retyped here rather than imported for the reason given above; every number
 // in them is derived from the frozen file, so a data refresh cannot make this probe stale silently.
 const title = `${subject.country} is the only EU country emitting more CO₂ per person than in ${FROM}`;
+/**
+ * THE SHORTER FORM, written for R6 — the removal ladder's title rung, added 2026-08-11 because this
+ * beat's own verdict named the missing rung: "the ladder has no rung for a TITLE, and on these beats
+ * the title is the claim."
+ *
+ * Kept, because each is what the sentence asserts: the subject (Croatia), the field it is exclusive
+ * within (the EU), the quantity's own subject (CO₂), the rate (per person), the direction (more) and
+ * the year it is more than (1990). "only" becomes "alone", which is the same class of qualifier, and
+ * "is the … country emitting" becomes "emits". Ten characters, no fact.
+ */
+const shortTitle = `${subject.country} alone in the EU emits more CO₂ per person than in ${FROM}`;
 const caveat =
   `${subject.country}'s rise is ${signed(subject.change)} tonnes per person — the only one, and a small one: ` +
   `${subject.from.toFixed(2)} in ${FROM} against ${subject.to.toFixed(2)} in ${TO}. ` +
@@ -147,6 +159,21 @@ const CANDIDATES = {
     ...SIZES.landscape,
     typeScale: 1.2 * (1920 / 1080),
   },
+  /**
+   * THE FOURTH ROW, PRICED. The beat fits 1080 x 1350 at the tuning it ships — and it ships that
+   * tuning with its smallest token at 17px, which on the 360 dp phone a 1080-wide frame is read at
+   * is **5.7 CSS px**. A fourth row in the table would carry the same `minTypePx` rule as the other
+   * three (12 CSS px x 1080 / 360 = 36), and this arm is what that row would actually deliver. It is
+   * the only honest way to answer "what would a fourth frame cost", because a row that fits by
+   * exempting itself from the table's own legibility floor is not a row.
+   */
+  "a 4:5 ROW at the phone's own floor": {
+    width: 1080,
+    height: 1350,
+    typeScale: 3.0,
+    minTypePx: 36,
+    stage: null,
+  },
   "CALIBRATION — the shipped frame": {
     width: 1080,
     height: 1350,
@@ -156,12 +183,21 @@ const CANDIDATES = {
   },
 };
 
-/** The removal ladder, in `type-at-size.mjs`'s own order: R1 is free, then R3, then R7. */
+/**
+ * The removal ladder, in `type-at-size.mjs`'s own order: R1 is free, then R3, then R6, then R7.
+ *
+ * The last arm is NOT AVAILABLE and is measured anyway. A title cannot be removed — take away a
+ * beat's claim and there is no beat, which is the whole reason R6 shortens rather than drops — so
+ * the zero-title arm exists only to bound the question this beat was left open on. If a title of no
+ * height closed the gap, the gap would be about words. It does not.
+ */
 const LADDER = [
-  { name: "keep everything", axisTitle: true, caveat: "full" },
-  { name: "R1 (axis title)", axisTitle: false, caveat: "full" },
-  { name: "R1+R3 (caveat's first sentence)", axisTitle: false, caveat: "first" },
-  { name: "R1+R7 (no caveat)", axisTitle: false, caveat: "none" },
+  { name: "keep everything", axisTitle: true, caveat: "full", title: "long" },
+  { name: "R1 (axis title)", axisTitle: false, caveat: "full", title: "long" },
+  { name: "R1+R3 (caveat's first sentence)", axisTitle: false, caveat: "first", title: "long" },
+  { name: "R1+R6 (title shortened)", axisTitle: false, caveat: "first", title: "short" },
+  { name: "R1+R6+R7 (no caveat)", axisTitle: false, caveat: "none", title: "short" },
+  { name: "title GONE (not available)", axisTitle: false, caveat: "none", title: "none" },
 ];
 
 const findings = [];
@@ -204,9 +240,23 @@ for (const [name, row] of Object.entries(CANDIDATES)) {
   const gutterPerColumn = nameGutter + valueGutter * 2;
   const laneNeeded = Math.round(T.ROW_LABEL.fontSize * ROW_AIR);
 
+  const r6 = shortenTitle({
+    long: title,
+    short: shortTitle,
+    linesOf: (text) => wrap(text, measure, T.TITLE).length,
+    what: `vidz-diverging-bar-eu-per-capita at ${name}`,
+  });
+  console.log(
+    `${name.padEnd(31)} R6: ` +
+      (r6.fires
+        ? `FIRED — ${r6.linesBefore} lines -> ${r6.linesAfter}`
+        : `DECLINED — ${r6.reason.split("\n")[0]}`),
+  );
+
   for (const rung of LADDER) {
-    const titleLines = wrap(title, measure, T.TITLE);
-    let y = top + T.TITLE.fontSize + (titleLines.length - 1) * T.TITLE.lead;
+    const used = rung.title === "none" ? "" : rung.title === "short" && r6.fires ? r6.title : title;
+    const titleLines = used ? wrap(used, measure, T.TITLE) : [];
+    let y = top + (used ? T.TITLE.fontSize + (titleLines.length - 1) * T.TITLE.lead : 0);
     if (rung.caveat !== "none") {
       const text =
         rung.caveat === "first" ? caveat.slice(0, caveat.indexOf(". ") + 1) : caveat;
