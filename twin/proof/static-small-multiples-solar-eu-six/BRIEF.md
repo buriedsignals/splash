@@ -1,3 +1,8 @@
+---
+size: landscape
+type: small-multiples
+---
+
 # Beat — solar's rise in the EU's six largest countries, panel by panel
 
 **Type:** small multiples (six line panels). **Medium/genre:** chart / static. **Channel:**
@@ -114,3 +119,26 @@ Two things, both found in the rendered PNG rather than by any check:
    the reserved gutter is `measureText` of the widest label that will really be drawn — and still
    reading as a number about to fall off the page. The reserve gained the clearance rather than
    the label gaining a smaller font.
+
+## Size — 2026-08-11
+
+**Pinned: landscape (1920 x 1080)**, in the front matter, read by `readPinnedSize` and verified from
+the delivered PNG's own IHDR. It shipped 1800 x 1240 before, a frame stated twice as literals that
+agreed with each other.
+
+**The packing is asked of the frame, not written down.** `COLUMNS = 3` is gone; `columnsFor(width,
+height, panels)` picks the grid whose panel box lands nearest the 1.6:1 shape these six panels were
+drawn and accepted at — 3 x 2 on a wide frame, 2 x 3 on a tall one. That is the spec's own
+instruction for this beat: the size table must not learn how many columns a six-panel grid takes, or
+it stops being a table.
+
+**Square and portrait are refused by `type-at-size.mjs`.** The panels are line charts, and a line's
+argument is a slope; no aspect range has been measured for a small-multiples grid at a tall frame,
+so the toolchain refuses rather than choosing one. `columnsFor` is written and tested for the tall
+case anyway, so the day a probe measures the range there is nothing else to build.
+
+**One defect the bigger type exposed:** the credit was drawn as a single unwrapped line. At a 2.2x
+scale it measures past the frame's right margin — an unwrapped constant is exactly what clips a
+credit in silence. It wraps on the real frame width now and its LAST line lands on the bottom of
+the band. The two tick hints are COUNTS and are deliberately outside the scaling helper: multiplied
+by 2.2 they would have asked for nine gridlines and thirteen year labels in each of six panels.

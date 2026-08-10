@@ -23,33 +23,134 @@ import {
   measureText,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 
 export type Panel = {
   country: string;
   readings: { year: number; value: number }[];
 };
 
-const FRAME = { width: 900, height: 620 };
-const PAD = 40;
-const TITLE = { fontSize: 24, fontWeight: 700, lead: 30 };
-const SUBTITLE = { fontSize: 15, fontWeight: 400, lead: 20 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const PANEL_TITLE = { fontSize: 15, fontWeight: 700 };
-const AXIS = { fontSize: 12, fontWeight: 400 };
-const END_LABEL = { fontSize: 13, fontWeight: 700 };
+/** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
+ *  a size it refuses is refused by the runner before a mark is drawn. */
+export const TYPE = 'small-multiples';
 
-const COLUMNS = 3;
-const COLUMN_GAP = 30;
-const ROW_GAP = 36;
+/**
+ * THE 900-WIDE TUNING, KEPT AS THE BASE, WITH THE SIZE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: the frame is `sizeFor(size)`'s,
+ * and `size` is the decision gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`.
+ * Before this the size was stated TWICE as literals — once here and once in the render script — and
+ * `renderStill` compared them against each other, so they agreed by construction and nothing
+ * downstream of the gate ever read what the journalist chose.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts: the probe measured eleven bare
+ * literals in the layout arithmetic of the SIMPLEST static in this corpus, and scaling the type
+ * while leaving them collided the title into the subtitle at 1920x1080
+ * (`proof/static-carbon-footprint-spread/probe/VERDICT.md`). `PAD` is the one that does NOT go
+ * through it: a frame's margin is proportional to the CANVAS, not to the type — `frameInsetFor` in
+ * `sizes.mjs` states the split and argues it.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  TITLE_TO_SUBTITLE: 26,
+  HEADER_TO_GRID: 30,
+  SOURCE_AIR: 10,
+  Y_LABEL_AIR: 8,
+  END_LABEL_AIR: 10,
+  SUBTITLE: { fontSize: 15, fontWeight: 400, lead: 20 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  PANEL_TITLE: { fontSize: 15, fontWeight: 700 },
+  AXIS: { fontSize: 12, fontWeight: 400 },
+  END_LABEL: { fontSize: 13, fontWeight: 700 },
+  COLUMN_GAP: 30,
+  ROW_GAP: 36,
+  PANEL_HEADER: 22,
+  X_AXIS_BAND: 24,
+  LINE_WIDTH: 2.5,
+  END_DOT: 3.5,
+} as const;
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = (tok: { fontSize: number; fontWeight: number; lead?: number }) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SUBTITLE: f(BASE.SUBTITLE) as typeof BASE.SUBTITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    PANEL_TITLE: f(BASE.PANEL_TITLE) as typeof BASE.PANEL_TITLE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    END_LABEL: f(BASE.END_LABEL) as typeof BASE.END_LABEL,
+    TITLE_TO_SUBTITLE: sp(BASE.TITLE_TO_SUBTITLE),
+    HEADER_TO_GRID: sp(BASE.HEADER_TO_GRID),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_LABEL_AIR: sp(BASE.Y_LABEL_AIR),
+    END_LABEL_AIR: sp(BASE.END_LABEL_AIR),
+    COLUMN_GAP: sp(BASE.COLUMN_GAP),
+    ROW_GAP: sp(BASE.ROW_GAP),
+    PANEL_HEADER: sp(BASE.PANEL_HEADER),
+    X_AXIS_BAND: sp(BASE.X_AXIS_BAND),
+    LINE_WIDTH: sp(BASE.LINE_WIDTH),
+    END_DOT: sp(BASE.END_DOT),
+  };
+}
+
+/** The removal ladder this beat runs, per size, recorded so the render can print it and the
+ *  artifact can carry it. At a phone frame the type floor is 36px, which triples the headline and
+ *  the credit; R3 fires before a mark is drawn. */
+export function rungsFor(size: string): string[] {
+  if (sizeFor(size).minTypePx < 36) return [];
+  return ["R3: the standfirst keeps its first sentence only"];
+}
+
+function firstSentence(text: string): string {
+  const stop = text.indexOf(". ");
+  return stop === -1 ? text : text.slice(0, stop + 1);
+}
+/**
+ * HOW MANY COLUMNS THE SIX PANELS TAKE — asked of the FRAME, not written down.
+ *
+ * The spec's own instruction for this beat: "the beat asks the size for its dimensions and decides
+ * its own packing — `SIZES` must not learn how many columns a six-panel grid takes, or it stops
+ * being a table." So the grid is chosen to keep each panel's own aspect near the landscape shape
+ * the sheet's panels were designed at: a wide frame takes 3 x 2, a tall one 2 x 3.
+ *
+ * A COUNT, so it never goes through the type scale.
+ */
+function columnsFor(width: number, height: number, panels: number): number {
+  const candidates = [1, 2, 3, panels].filter(
+    (c, i, all) => c <= panels && all.indexOf(c) === i,
+  );
+  let best = candidates[0];
+  let bestError = Infinity;
+  for (const columns of candidates) {
+    const rows = Math.ceil(panels / columns);
+    // A panel's own box, before furniture — the aspect the reader compares six of.
+    const aspect = width / columns / (height / rows);
+    // 1.6:1 is the shape the six panels in this beat were drawn and accepted at (900x620 with a
+    // 3 x 2 grid). Nothing about it is universal; it is this corpus's own accepted panel.
+    const error = Math.abs(Math.log(aspect / 1.6));
+    if (error < bestError) {
+      bestError = error;
+      best = columns;
+    }
+  }
+  return best;
+}
 /** Space above each panel's plot box for that panel's own country name. */
-const PANEL_HEADER = 22;
 /** Space under the bottom row for the shared x tick labels. */
-const X_AXIS_BAND = 24;
+/** Tick COUNTS, not spacing numbers — deliberately outside the scaling helper, because multiplied
+ *  by a 2.2 type scale they would ask for nine gridlines and thirteen year labels. */
 const Y_TICK_HINT = 4;
 const X_TICK_HINT = 6;
-const LINE_WIDTH = 2.5;
-const END_DOT = 3.5;
-
 /** Pure geometry: panels to a grid of boxes plus one shared pair of scales. Knows no colour, no
  *  font and no label. */
 export function gridGeometry(
@@ -215,6 +316,7 @@ export function SolarSmallMultiples({
   alt,
   ground,
   accent,
+  size,
 }: {
   /** Already ordered by the caller — `small-multiples.md` asks for a meaningful panel order
    *  ("by the value the story cares about"), never alphabetical by default. */
@@ -225,6 +327,8 @@ export function SolarSmallMultiples({
   alt: string;
   ground: string;
   accent: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 }) {
   if (panels.length < 3)
     throw new Error(
@@ -237,16 +341,30 @@ export function SolarSmallMultiples({
     );
 
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height } = FRAME;
-
-  const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
-  const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  const { width, height, typeScale, minTypePx } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const rungs = rungsFor(size);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
+  const titleLines = wrap(title, width - PAD * 2, T.TITLE);
+  const titleBaseline = contentTop + T.TITLE.fontSize;
+  const subtitleTop =
+    titleBaseline + (titleLines.length - 1) * T.TITLE.lead + T.TITLE_TO_SUBTITLE;
+  const standfirst = rungs.some((r) => r.startsWith("R3"))
+    ? firstSentence(subtitle)
+    : subtitle;
+  const subtitleLines = wrap(standfirst, width - PAD * 2, T.SUBTITLE);
+  // THE T.SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
   // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD;
+  // The credit was drawn as ONE unwrapped line. At a 2.2x type scale it measures past the frame's
+  // right margin, and an unwrapped constant is exactly what clips a credit in silence. It wraps on
+  // the real frame width now, and its LAST line lands on the bottom of the band.
+  const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
+  const sourceLead = Math.round(T.SOURCE.fontSize * 1.35);
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
 
   // Both gutters measured from the widest string that will really be drawn in them.
   const provisionalYTicks = scaleLinear()
@@ -259,49 +377,58 @@ export function SolarSmallMultiples({
   const yLabelGutter =
     Math.max(
       ...provisionalYTicks.map((t, i) =>
-        measureText(formatTick(t, i === provisionalYTicks.length - 1), AXIS),
+        measureText(formatTick(t, i === provisionalYTicks.length - 1), T.AXIS),
       ),
-    ) + 8;
+    ) + T.Y_LABEL_AIR;
   const endGutter =
     Math.max(
       ...panels.map((p) =>
         measureText(
           formatShare(p.readings[p.readings.length - 1].value),
-          END_LABEL,
+          T.END_LABEL,
         ),
       ),
     ) +
-    END_DOT +
-    // 5 to clear the dot, 5 more so the widest label does not finish flush against the frame's
-    // own padding — the first render left it 3px clear, which is measured-correct and still
+    T.END_DOT +
+    // Half to clear the dot, half again so the widest label does not finish flush against the
+    // frame's own padding — the first render left it 3px clear, which is measured-correct and still
     // reads as a label about to fall off the page.
-    10;
+    T.END_LABEL_AIR;
 
   const padding = {
     // The panels start below the LAST HEADER line, never below the source.
-    top: subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 30,
+    top:
+      subtitleTop +
+      (subtitleLines.length - 1) * T.SUBTITLE.lead +
+      T.HEADER_TO_GRID,
     right: PAD,
-    // Grown by the credit's own height plus clear air: it now sits on the frame's bottom margin.
-    bottom: PAD + SOURCE.fontSize + 10,
+    // Grown by the credit's own height plus clear air: it sits on the bottom of the band.
+    bottom:
+      height - (sourceBaseline - T.SOURCE.fontSize - T.SOURCE_AIR),
     left: PAD + yLabelGutter,
   };
+  const columns = columnsFor(
+    width - padding.left - padding.right,
+    height - padding.top - padding.bottom,
+    panels.length,
+  );
 
   const { boxes, yTicks, xTickCandidates } = gridGeometry(panels, {
     width,
     height,
     padding,
-    columns: COLUMNS,
-    columnGap: COLUMN_GAP,
-    rowGap: ROW_GAP,
-    panelHeader: PANEL_HEADER,
-    xAxisBand: X_AXIS_BAND,
+    columns,
+    columnGap: T.COLUMN_GAP,
+    rowGap: T.ROW_GAP,
+    panelHeader: T.PANEL_HEADER,
+    xAxisBand: T.X_AXIS_BAND,
     endGutter,
   });
 
   const xTicks = labelledXTicks(
     xTickCandidates,
     (year) => boxes[0].x(year),
-    (label) => measureText(label, AXIS),
+    (label) => measureText(label, T.AXIS),
     10,
   );
 
@@ -317,6 +444,7 @@ export function SolarSmallMultiples({
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       fontFamily={FONT_FAMILY}
+      data-ladder={rungs.join("; ") || "none"}
     >
       <desc>{alt}</desc>
       <rect x={0} y={0} width={width} height={height} fill={ground} />
@@ -325,10 +453,10 @@ export function SolarSmallMultiples({
         <text
           key={line}
           x={PAD}
-          y={titleBaseline + i * TITLE.lead}
+          y={titleBaseline + i * T.TITLE.lead}
           fill={ink}
-          fontSize={TITLE.fontSize}
-          fontWeight={TITLE.fontWeight}
+          fontSize={T.TITLE.fontSize}
+          fontWeight={T.TITLE.fontWeight}
         >
           {line}
         </text>
@@ -337,16 +465,24 @@ export function SolarSmallMultiples({
         <text
           key={line}
           x={PAD}
-          y={subtitleTop + i * SUBTITLE.lead}
+          y={subtitleTop + i * T.SUBTITLE.lead}
           fill={muted}
-          fontSize={SUBTITLE.fontSize}
+          fontSize={T.SUBTITLE.fontSize}
         >
           {line}
         </text>
       ))}
-      <text x={PAD} y={sourceBaseline} fill={muted} fontSize={SOURCE.fontSize}>
-        {source}
-      </text>
+      {sourceLines.map((line, i) => (
+        <text
+          key={line}
+          x={PAD}
+          y={sourceBaseline + i * sourceLead}
+          fill={muted}
+          fontSize={T.SOURCE.fontSize}
+        >
+          {line}
+        </text>
+      ))}
 
       {boxes.map((box) => {
         const last = box.points[box.points.length - 1];
@@ -356,8 +492,8 @@ export function SolarSmallMultiples({
               x={box.plot.left}
               y={box.plot.top - 8}
               fill={ink}
-              fontSize={PANEL_TITLE.fontSize}
-              fontWeight={PANEL_TITLE.fontWeight}
+              fontSize={T.PANEL_TITLE.fontSize}
+              fontWeight={T.PANEL_TITLE.fontWeight}
             >
               {box.panel.country}
             </text>
@@ -377,7 +513,7 @@ export function SolarSmallMultiples({
                     x={box.plot.left - 8}
                     y={box.y(tick) + 4}
                     fill={muted}
-                    fontSize={AXIS.fontSize}
+                    fontSize={T.AXIS.fontSize}
                     textAnchor="end"
                   >
                     {formatTick(tick, tickIndex === yTicks.length - 1)}
@@ -390,19 +526,19 @@ export function SolarSmallMultiples({
               d={path(box.points) ?? undefined}
               fill="none"
               stroke={accent}
-              strokeWidth={LINE_WIDTH}
+              strokeWidth={T.LINE_WIDTH}
               strokeLinejoin="round"
               strokeLinecap="round"
             />
-            <circle cx={last.cx} cy={last.cy} r={END_DOT} fill={accent} />
+            <circle cx={last.cx} cy={last.cy} r={T.END_DOT} fill={accent} />
             {/* The value is ink, never the accent: an accent that clears the 3:1 non-text floor as
                 a line can still miss the 4.5:1 text floor as a printed number. */}
             <text
-              x={last.cx + END_DOT + 5}
+              x={last.cx + T.END_DOT + 5}
               y={last.cy + 4}
               fill={ink}
-              fontSize={END_LABEL.fontSize}
-              fontWeight={END_LABEL.fontWeight}
+              fontSize={T.END_LABEL.fontSize}
+              fontWeight={T.END_LABEL.fontWeight}
             >
               {formatShare(last.value)}
             </text>
@@ -414,7 +550,7 @@ export function SolarSmallMultiples({
                   x={box.x(year)}
                   y={box.plot.bottom + 18}
                   fill={muted}
-                  fontSize={AXIS.fontSize}
+                  fontSize={T.AXIS.fontSize}
                   textAnchor="middle"
                 >
                   {year}
