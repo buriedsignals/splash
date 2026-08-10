@@ -397,6 +397,23 @@ export const REMOVAL_LADDER = [
     loses: "-",
   },
   {
+    rung: "R6",
+    what:
+      "SHORTEN the title to the fewest words that still make its claim — never drop it. The " +
+      "beat supplies the shorter form in its own words; `shortenTitle` refuses one that drops a " +
+      "quantity, what that quantity counts, a named subject, or a qualifier class",
+    recovers: "one line of the largest type on the frame — 89-100px on a video landscape",
+    loses:
+      "nothing the sentence asserts, or the rung does not fire. What it can cost is rhythm: the " +
+      "shorter form is a real edit and a person has to read it",
+    note:
+      "the ONLY rung whose input is editorial. Added 2026-08-11 because four beats refused every " +
+      "frame in the table with the title as the binding constraint, and the ladder had no rung " +
+      "for a title at all — R7 removes the standfirst, and there was nothing between that and " +
+      "refusing. A title cannot be REMOVED: it is the beat's claim, and a beat without its claim " +
+      "is not the beat. It can very often be SAID SHORTER.",
+  },
+  {
     rung: "R7",
     what: "the standfirst entirely",
     recovers: "its whole height",
@@ -463,4 +480,307 @@ export function assertPlotAspect(plot, type, size, { what = "this render" } = {}
           `Give the height back to the furniture, or ship a size whose frame it fits.`) +
       (form.suspect ? `\nNote on this range: ${form.suspect}` : ""),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// R6 — THE TITLE RUNG. A CLAIM SAID SHORTER, NOT A CLAIM DROPPED.
+//
+// WHY IT EXISTS. Four beats refused every row of the export table with the same binding constraint,
+// and the ledger names it in one line: **"the ladder has no rung for a TITLE, and on these beats
+// the title is the claim."** At a video legibility floor a claim-length headline takes two to six
+// lines of the largest type on the frame, and the ladder went straight from R5 (a no-op) to R7
+// (remove the standfirst) to R9 (refuse). There was nothing between "remove something else" and
+// "do not ship".
+//
+// WHY IT SHORTENS AND NEVER DROPS. Every other rung REMOVES — that is the ladder's founding rule,
+// because "make it smaller" is the instruction that fails at the moment it is needed. A title is
+// the one piece of furniture that rule cannot be applied to: removing a beat's claim removes the
+// beat. So this rung is the exception, and it earns the exception by removing WORDS rather than
+// MEANING: "six in ten countries emit under 4 tonnes of CO2 per person a year" is not shorter than
+// what it means, but plenty of headlines are.
+//
+// WHERE THE WORDS COME FROM. The beat's own. Nothing here generates a title, and nothing here
+// paraphrases one — a template that rewrote a journalist's sentence would be the same defect as a
+// palette nobody chose, one layer up. The beat supplies BOTH forms and this decides whether the
+// short one still says what the long one said.
+//
+// ── WHAT "STILL SAYS IT" MEANS, MECHANICALLY ──────────────────────────────────────────────────
+//
+// A claim asserts a SUBJECT, a QUANTITY and a DIRECTION. Each of the three is checked, and each
+// check names what it would lose rather than returning a score:
+//
+//   1. QUANTITIES survive. Every numeral in the long form appears in the short one, and so does
+//      every counting word (`one` … `twelve`, `half`, `third`, `quarter`, `both`). A dropped
+//      number is a dropped fact.
+//   2. WHAT A QUANTITY COUNTS survives. For each numeral, the next two content words in the long
+//      form — its unit and the thing it measures — must appear in the short one. This is the check
+//      that catches the shortening a proper-noun scan cannot see: "All 11 of these international
+//      organisations" cut to "All 11" keeps every numeral and every proper noun, and states
+//      nothing.
+//   3. NAMED SUBJECTS survive. Capitalised words and acronyms, minus the function words a sentence
+//      can open with, so `Croatia` at position 0 counts and `The` does not.
+//   4. QUALIFIER CLASSES survive, and are not reversed. `only` may become `alone`; it may not
+//      vanish, and `more` may not become `less`.
+//
+// ── ITS STATED LIMITS, BECAUSE A GUARD TRUSTED PAST ITS REACH IS WORSE THAN NO GUARD ──────────
+//
+//   · **A common-noun head that no numeral counts is invisible to it.** Rule 2 reaches the subject
+//     of "11 international organisations"; it does not reach the subject of a title that counts
+//     nothing. Rule 3 only sees proper nouns.
+//   · **There is no thesaurus and no comparison-word list.** `than` / `out of` / `versus` were
+//     considered and left out: a word list wide enough to accept "360 of 366" for "360 out of 366"
+//     has to contain `of`, which every sentence carries, and a check that always passes is
+//     decoration. Dropping a comparison in practice drops a quantity or a direction word, and both
+//     of those are checked.
+//   · **It cannot read.** It can say a claim was not dropped; it cannot say the shorter sentence
+//     lands. That is why `shortenTitle` returns both forms for the render to emit, and why the
+//     rung's discipline is that a person opens the result.
+//
+// ── AND IT DOES NOT FIRE FOR NOTHING ──────────────────────────────────────────────────────────
+//
+// The ladder's own R5 lesson, applied: dropping the median's label freed no budget at all and the
+// reader lost the median for nothing, so every rung is applied speculatively and kept only if the
+// slack really improved. A shorter title that still wraps to the same number of lines recovers
+// zero pixels, and this rung declines it and says so — the journalist's sentence stays as written.
+// `linesOf` is REQUIRED rather than defaulted, because a rung that guessed at line counts from a
+// character count would be deciding an editorial question on a number it did not measure.
+
+/** The counting words that are quantities. Indexed by value, so `one` and `1` are the same fact. */
+export const COUNTING_WORDS = {
+  one: "1",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  ten: "10",
+  eleven: "11",
+  twelve: "12",
+  half: "half",
+  third: "third",
+  quarter: "quarter",
+  both: "both",
+};
+
+/**
+ * The qualifier classes. A claim may swap a word for another in its own class and still say the
+ * same thing; it may not lose the class, and it may not swap a class for its opposite.
+ */
+export const QUALIFIER_CLASSES = {
+  universal: ["all", "every", "each", "whole", "entire", "always", "throughout"],
+  exclusive: ["only", "alone", "sole", "solely", "lone", "just", "single"],
+  negation: ["not", "no", "never", "none", "nor", "without", "neither", "nothing", "isn't", "does't"],
+  increase: [
+    "more", "higher", "greater", "above", "over", "up", "rose", "rise", "rises", "risen",
+    "grew", "grow", "grown", "gained", "increase", "increased", "added", "larger", "bigger",
+  ],
+  decrease: [
+    "less", "fewer", "lower", "below", "under", "down", "fell", "fall", "falls", "fallen",
+    "cut", "shrank", "shrunk", "dropped", "lost", "decrease", "decreased", "smaller",
+  ],
+  rate: ["per", "apiece", "each"],
+};
+
+/** Classes that mean the opposite of one another. Swapping one for the other reverses the claim. */
+const OPPOSED_CLASSES = [["increase", "decrease"]];
+
+/**
+ * Words a sentence may OPEN with that are not its subject. Only consulted at position 0 — anywhere
+ * else a capital is a name.
+ */
+const OPENING_FUNCTION_WORDS = new Set([
+  "the", "a", "an", "this", "that", "these", "those", "in", "on", "at", "of", "for", "from",
+  "and", "but", "or", "not", "no", "all", "every", "each", "half", "one", "two", "three", "four",
+  "five", "six", "seven", "eight", "nine", "ten", "only", "just", "its", "their", "his", "her",
+  "by", "with", "to", "as", "after", "before", "when", "where", "how", "why", "what", "which",
+  "who", "there", "here", "it", "they", "we", "you", "more", "fewer", "less", "most", "over",
+  "under", "nearly", "almost", "about", "up", "down", "since", "between", "across", "within",
+]);
+
+/** Words rule 2 walks past when it looks for what a number counts. */
+const COUNTED_STOPWORDS = new Set([
+  ...OPENING_FUNCTION_WORDS,
+  "is", "are", "was", "were", "be", "been", "being", "has", "have", "had", "do", "does", "did",
+  "than", "out", "per", "into", "onto", "off", "own", "still", "already", "yet", "then", "so",
+  "s", "and", "or", "any", "some", "other", "another", "same", "such", "own",
+]);
+
+/** Everything a claim asserts that this file can name, read off one sentence. Pure. */
+export function claimTokens(sentence) {
+  const raw = String(sentence ?? "").split(/\s+/).filter(Boolean);
+  const bare = (token) =>
+    token
+      .replace(/^[^\p{L}\p{N}]+/u, "")
+      .replace(/[^\p{L}\p{N}%]+$/u, "")
+      .replace(/['’]s$/u, "");
+  const words = raw.map(bare);
+  const lower = words.map((w) => w.toLowerCase());
+  // A numeral, with thousands separators removed and the decimal point kept: `14,175` and `14 175`
+  // are the same quantity as `14175`, and `4.4` is not the same as `44`.
+  const numeralIn = (word) => {
+    const hit = /\d[\d.,   ]*\d|\d/u.exec(word);
+    return hit ? hit[0].replace(/[,   ]/gu, "").replace(/\.$/, "") : null;
+  };
+  const numerals = [];
+  const counted = [];
+  for (let at = 0; at < words.length; at++) {
+    const value = numeralIn(words[at]);
+    if (value === null) continue;
+    numerals.push(value);
+    const phrase = [];
+    for (let next = at + 1; next < words.length && phrase.length < 2; next++) {
+      if (numeralIn(words[next]) !== null) break;
+      if (!lower[next] || COUNTED_STOPWORDS.has(lower[next])) continue;
+      phrase.push(words[next]);
+    }
+    if (phrase.length) counted.push({ numeral: value, phrase });
+  }
+  const quantityWords = lower.filter((w) => Object.hasOwn(COUNTING_WORDS, w));
+  const subjects = words.filter((word, at) => {
+    if (!/^\p{Lu}/u.test(word)) return false;
+    if (at === 0 && OPENING_FUNCTION_WORDS.has(lower[at])) return false;
+    return true;
+  });
+  const qualifiers = Object.entries(QUALIFIER_CLASSES)
+    .filter(([, members]) => members.some((m) => lower.includes(m)))
+    .map(([name]) => name);
+  return { numerals, counted, subjects, qualifiers, words, lower };
+}
+
+/** Whether `sentence` still carries `word` — allowing a plural or a possessive, nothing looser. */
+function carries(sentence, word) {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:['’]?s)?(?![\\p{L}\\p{N}])`, "iu").test(
+    String(sentence),
+  );
+}
+
+/**
+ * WHETHER A SHORTER FORM STILL MAKES THE LONGER ONE'S CLAIM.
+ *
+ * Returns `{ ok, lost }` where every entry of `lost` names what would go and which rule saw it —
+ * never a score, because "the title lost 12% of its claim" is not a sentence anybody can act on.
+ */
+export function claimSurvives(long, short) {
+  const before = claimTokens(long);
+  const after = claimTokens(short);
+  const lost = [];
+  for (const numeral of new Set(before.numerals))
+    if (!after.numerals.includes(numeral))
+      lost.push({ rule: "quantity", token: numeral, why: `the number ${numeral} is not in the shorter form` });
+  for (const word of new Set(before.quantityWords ?? []))
+    if (!after.lower.includes(word) && !after.numerals.includes(COUNTING_WORDS[word]))
+      lost.push({ rule: "quantity", token: word, why: `the counting word "${word}" is not in the shorter form` });
+  for (const { numeral, phrase } of before.counted)
+    for (const word of phrase)
+      if (!carries(short, word))
+        lost.push({
+          rule: "what the quantity counts",
+          token: word,
+          why: `${numeral} counts "${phrase.join(" ")}" and the shorter form does not say "${word}"`,
+        });
+  for (const subject of new Set(before.subjects))
+    if (!carries(short, subject))
+      lost.push({ rule: "named subject", token: subject, why: `"${subject}" is not in the shorter form` });
+  for (const name of before.qualifiers)
+    if (!after.qualifiers.includes(name))
+      lost.push({
+        rule: "qualifier",
+        token: name,
+        why:
+          `the long form qualifies its claim as ${name} (${QUALIFIER_CLASSES[name]
+            .filter((m) => before.lower.includes(m))
+            .join(", ")}) and the shorter form carries no word of that class`,
+      });
+  for (const [one, other] of OPPOSED_CLASSES)
+    for (const [from, to] of [
+      [one, other],
+      [other, one],
+    ])
+      if (before.qualifiers.includes(from) && !before.qualifiers.includes(to) && after.qualifiers.includes(to))
+        lost.push({
+          rule: "reversed",
+          token: to,
+          why: `the long form says ${from} and the shorter form says ${to} — that is a different claim, not a shorter one`,
+        });
+  // De-duplicated: one word can be both a named subject and what a number counts, and reporting it
+  // twice makes a single loss read as two.
+  const seen = new Set();
+  return {
+    ok: lost.length === 0,
+    lost: lost.filter((l) => {
+      const key = `${l.rule}|${l.token}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }),
+  };
+}
+
+/**
+ * R6, AS THE THING A PRODUCER CALLS.
+ *
+ * `linesOf(text)` is the beat's OWN wrap, at its own measure and its own title font — required,
+ * never defaulted, because the rung's whole justification is the line it recovers and a line count
+ * guessed from a character count is not a measurement.
+ *
+ * It never throws. A rung that cannot fire is a RESULT the render reports beside the picture, the
+ * same shape `formForSize` returns a refusal in: the journalist's own sentence stays as written and
+ * the reason is on the record.
+ */
+export function shortenTitle({ long, short, linesOf, what = "this beat" } = {}) {
+  if (typeof linesOf !== "function")
+    throw new Error(
+      `${what}: R6 needs the beat's own line measurer — shortenTitle({ long, short, linesOf }). ` +
+        `A title rung that counted characters would be deciding an editorial question on a number ` +
+        `it never measured.`,
+    );
+  const declined = (reason) => ({ rung: "R6", fires: false, title: long, long, short, reason });
+  if (typeof short !== "string" || !short.trim())
+    return declined(`no shorter form was written for this title, so R6 has nothing to apply.`);
+  if (short.trim() === String(long).trim())
+    return declined(`the shorter form is the title itself.`);
+  if (short.length >= String(long).length)
+    return declined(
+      `the "shorter" form is ${short.length} characters against the title's ${String(long).length} — ` +
+        `that is a rewrite, and R6 only shortens.`,
+    );
+  const survives = claimSurvives(long, short);
+  if (!survives.ok)
+    return {
+      ...declined(
+        `the shorter form would drop what the title asserts, so R6 does not fire:\n  ` +
+          survives.lost.map((l) => `${l.rule}: ${l.why}`).join("\n  ") +
+          `\nA claim said in fewer words is a rung; a claim said less is not. Write a form that ` +
+          `keeps these, or take the next rung.`,
+      ),
+      lost: survives.lost,
+    };
+  const before = linesOf(long);
+  const after = linesOf(short);
+  if (!(after < before))
+    return declined(
+      `the shorter form still wraps to ${after} line${after === 1 ? "" : "s"}, the same as the ` +
+        `title's ${before}, so R6 recovers nothing and the journalist's own sentence stays. ` +
+        `(The ladder's R5 is the precedent: a rung that frees no budget costs the reader something ` +
+        `for nothing.)`,
+    );
+  return {
+    rung: "R6",
+    fires: true,
+    title: short,
+    long,
+    short,
+    linesBefore: before,
+    linesAfter: after,
+    recoveredLines: before - after,
+    reason:
+      `R6 fired: the title was said in ${short.length} characters instead of ${String(long).length}, ` +
+      `${before} lines instead of ${after === 1 ? "one" : after}, and every quantity, everything ` +
+      `those quantities count, every named subject and every qualifier class survived. ` +
+      `Both forms are on the record so a person can read the one that ships.`,
+  };
 }
