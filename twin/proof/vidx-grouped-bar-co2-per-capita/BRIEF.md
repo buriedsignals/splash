@@ -1,4 +1,20 @@
+---
+size: landscape
+type: grouped-bar
+---
+
 # Beat — China's per-person CO2 emissions have nearly tripled since 2000, overtaking the world average
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and what the other two sizes would cost.** A grouped bar's category axis is
+nominal, so `formForSize` answers `transpose` at a square or tall frame — five groups of two
+vertical columns become ten rows, which is a redraw this beat does not carry. Both refuse loudly,
+naming ladder rung R0, rather than stretching ten columns into 1080 px and clipping nothing. The
+1080 x 1080 this beat used to draw at was not a decision, it was a default.
 
 **Proves:** between 2000 and 2023, China's per-person CO2 emissions grew from 2.87 to 8.56 tonnes —
 nearly tripling — and now sit almost twice the 2023 world average (4.71 t), among five major
