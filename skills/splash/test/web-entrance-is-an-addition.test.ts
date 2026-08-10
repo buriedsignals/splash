@@ -148,7 +148,6 @@ const ENTRANCE_PENDING = [
   "proof/webx-electricity-mix/electricity-mix.html",
   "proof/webx-germany-bridge/germany-bridge.html",
   "proof/webx-wind-vs-solar/wind-vs-solar.html",
-  "proof/webx-world-population/world-population.html",
   "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html",
   "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html",
   "proof/weby-lollipop-co2-per-capita/lollipop-co2-per-capita.html",

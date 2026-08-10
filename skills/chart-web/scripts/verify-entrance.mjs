@@ -104,17 +104,54 @@ const READ = () => {
   // Occlusion is not a confound in either form: `elementsFromPoint` returns the whole stack and the
   // test is `includes`, so a transparent `.pt` target sitting over the curve does not hide it. What
   // IS being measured is clipping, which removes an element from the stack entirely.
+  //
+  // A STROKE AND A REGION ARE SAMPLED DIFFERENTLY, and the distinction was measured rather than
+  // anticipated. `webx-world-population` draws an AREA, and outline sampling — which reads a stroked
+  // curve exactly right — reported 16 of 22 hittable on the SETTLED page. A probe named the six:
+  // three on the area's closing baseline edge (y exactly 704, the element's own `bottom`, where
+  // `elementsFromPoint` resolves to the div outside it) and three on its top outline. All eleven
+  // samples on the sibling `fill="none"` line path hit. **A region's outline is its EDGE, and a
+  // point on an edge belongs to neither side.**
+  //
+  // Nudging the edge point toward the bounding box's centre was tried first and is WRONG, which the
+  // measurement said before the reasoning did: an area anchored to zero has its centre ABOVE its own
+  // top outline, so the nudge walked out of the fill rather than into it, and the reading did not
+  // move off 16. So a region is not sampled from its outline at all — it is asked where its own
+  // interior is. Eleven columns across its `getBBox`, each scanned downward for the first point
+  // `isPointInFill` accepts. That is exact for any shape, convex or not, and it is also the right
+  // sample set for THIS measurement: eleven points spread across x is precisely what a left-to-right
+  // wipe uncovers in order.
   const segs = Array.prototype.slice.call(document.querySelectorAll(".seg"));
   const samplesOf = (el) => {
     if (el.tagName.toLowerCase() === "path" && el.getTotalLength) {
-      const length = el.getTotalLength();
       const ctm = el.getScreenCTM();
-      if (length > 0 && ctm) {
+      if (!ctm) return [];
+      const toScreen = (ux, uy) => {
+        const s = new DOMPoint(ux, uy).matrixTransform(ctm);
+        return [s.x, s.y];
+      };
+      const filled = getComputedStyle(el).fill !== "none";
+      if (filled && el.isPointInFill) {
+        const box = el.getBBox();
+        const out = [];
+        for (let i = 0; i < 11; i++) {
+          const ux = box.x + ((i + 0.5) / 11) * box.width;
+          for (let j = 1; j < 60; j++) {
+            const uy = box.y + (j / 60) * box.height;
+            if (el.isPointInFill(new DOMPoint(ux, uy))) {
+              out.push(toScreen(ux, uy));
+              break;
+            }
+          }
+        }
+        return out;
+      }
+      const length = el.getTotalLength();
+      if (length > 0) {
         const out = [];
         for (let i = 0; i <= 10; i++) {
           const p = el.getPointAtLength((i / 10) * length);
-          const s = new DOMPoint(p.x, p.y).matrixTransform(ctm);
-          out.push([s.x, s.y]);
+          out.push(toScreen(p.x, p.y));
         }
         return out;
       }

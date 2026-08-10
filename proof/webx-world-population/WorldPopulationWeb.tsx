@@ -24,6 +24,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceClipId,
+  entranceLayer,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   chartGeometry,
   xTickValues,
   billions,
@@ -158,6 +167,86 @@ export function WorldPopulationWeb({
     frame.xTickHint,
   );
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, in the video's own order.
+  //
+  // WHAT THIS BEAT DECIDED, and one of the calls is not the obvious one.
+  //
+  //   - THE REFERENCE IS THE ZERO BASELINE. This beat has no dashed rule to borrow — its sibling
+  //     line beats measure a claim against a past level, and this one does not. But an area is a
+  //     STOCK accumulated above zero (`references/types/area.md`: the fill IS the claim), so the
+  //     baseline is not decoration here, it is the level every reading is measured from, and this
+  //     component already draws it differently from the other gridlines (`muted`, not `grid`). It
+  //     is laid down alone, left to right, before the fill grows off it. Leaving `reference` empty
+  //     and folding the baseline into the furniture would have been the lazy reading, and it would
+  //     have made the entrance a four-event one with a gap where its argument's floor belongs.
+  //   - THE SUBJECT is the 2023 reading, the top of that accumulation, and the conclusion is its
+  //     own value in words. The headline claim is "passed 8 billion in 2022"; 2023 is where the
+  //     series and the printed value stand.
+  //   - THE 1805 CROSSING MARKER is a note on a READING, so its delay is DERIVED — the wipe's head
+  //     reaching that reading's own x, plus the video's own 0.06-of-the-reveal lag. 1805 is five
+  //     years into a 224-year series, so it arrives almost as soon as the reveal starts, which is
+  //     the correct answer and not a mistimed one: the head really does pass it there.
+  //
+  // The reveal is linear because the x axis IS time, and the fill and the stroke are uncovered by
+  // the SAME clip, so the area never leads or trails its own outline.
+  const revealHeadAt = (atX: number) =>
+    atProgress(WEB_ENTRANCE.reveal, atX / frame.width);
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const baselineLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const revealLayer = entranceLayer("reveal", "wipe", {
+    delay: WEB_ENTRANCE.reveal.start,
+    duration: WEB_ENTRANCE.reveal.duration,
+    ease: ENTRANCE_EASING.LINEAR,
+  });
+  const crossingMarkLayer = crossingPoint
+    ? entranceLayer("reveal", "fade", {
+        delay: revealHeadAt(crossingPoint.x),
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const crossingLabelLayer = crossingPoint
+    ? entranceLayer("reveal", "fade", {
+        delay:
+          revealHeadAt(crossingPoint.x) + 0.06 * WEB_ENTRANCE.reveal.duration,
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const subjectLayer = entranceLayer("subject", "land", {
+    delay: WEB_ENTRANCE.subject.start,
+    duration: WEB_ENTRANCE.subject.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const conclusionLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  // Unique per beat: two of these files can land in one article and `url(#id)` takes the FIRST
+  // match in document order, so a shared id would make one figure's entrance drive the other's clip.
+  const revealClipId = entranceClipId(title);
+  const lastDerivedEnd = crossingLabelLayer
+    ? revealHeadAt(crossingPoint!.x) +
+      0.06 * WEB_ENTRANCE.reveal.duration +
+      LABEL_FADE_MS
+    : 0;
+  if (lastDerivedEnd > endOf(WEB_ENTRANCE.conclusion))
+    throw new Error(
+      `the crossing label's derived arrival ends at ${Math.round(lastDerivedEnd)}ms, after the ` +
+        `conclusion at ${endOf(WEB_ENTRANCE.conclusion)}ms — a note would appear after the ` +
+        `sentence that closes the argument`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -176,7 +265,11 @@ export function WorldPopulationWeb({
         ["--note-size" as string]: `${frame.note.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
       </div>
@@ -189,7 +282,11 @@ export function WorldPopulationWeb({
           aspectRatio: `${yGutterPx + frame.width} / ${frame.height + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {tickValues.map((value, i) => (
             <span
               key={value}
@@ -223,41 +320,100 @@ export function WorldPopulationWeb({
             fill={ground}
           />
 
-          {tickValues.map((value) => (
+          {/* The regular gridlines are FURNITURE and arrive with the axis labels beside them, on ONE
+              clock. THE ZERO LINE IS NOT AMONG THEM — see the entrance's own note above: it is the
+              level this stock is measured from, so it is the reference and it is drawn below. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {tickValues.map((value) =>
+              value === 0 ? null : (
+                <line
+                  key={value}
+                  x1={0}
+                  x2={frame.width}
+                  y1={y(value)}
+                  y2={y(value)}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ),
+            )}
+          </g>
+
+          {/* THE REFERENCE — the baseline, laid down left to right before any evidence, `scaleX`
+              from its own `x1` of 0. */}
+          {tickValues.includes(0) && (
             <line
-              key={value}
+              {...baselineLayer.attrs}
+              style={baselineLayer.vars}
               x1={0}
               x2={frame.width}
-              y1={y(value)}
-              y2={y(value)}
-              stroke={value === 0 ? muted : grid}
+              y1={y(0)}
+              y2={y(0)}
+              stroke={muted}
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
             />
-          ))}
+          )}
 
-          {/* The fill IS the claim: a stock accumulated over time, read as an area
-              (`references/types/area.md`). */}
-          <path d={areaPath} fill={accent} fillOpacity={0.18} />
-          <path
-            d={linePath}
-            fill="none"
-            stroke={accent}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          {/* THE REVEAL. The fill IS the claim — a stock accumulated over time, read as an area
+              (`references/types/area.md`) — and it is uncovered left to right by a clip whose rect
+              grows from x=0, the same picture frame for frame as the video's `drawnSoFar`. The fill
+              and the stroke share ONE clip, so the area never leads or trails its own outline.
+              ONLY THE VISIBLE MARKS ARE CLIPPED: the `.pt` targets and the `.hit-area` below stay
+              outside it, so hover, tap and keyboard answer for all 224 readings from the first
+              millisecond. */}
+          <defs>
+            <clipPath id={revealClipId}>
+              <rect
+                {...revealLayer.attrs}
+                style={revealLayer.vars}
+                x={0}
+                y={0}
+                width={frame.width}
+                height={frame.height}
+              />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${revealClipId})`}>
+            <path d={areaPath} fill={accent} fillOpacity={0.18} />
+            <path
+              d={linePath}
+              fill="none"
+              stroke={accent}
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
 
-          {crossingPoint && (
+          {/* The crossing MARK sits OUTSIDE the reveal's clip and fades in at the instant the head
+              passes its own x — a circle uncovered by a vertical wipe would arrive as two
+              half-moons, which is a head's look on a stroke and nothing's look on a dot. */}
+          {crossingPoint && crossingMarkLayer && (
             <circle
+              {...crossingMarkLayer.attrs}
+              style={crossingMarkLayer.vars}
               cx={crossingPoint.x}
               cy={crossingPoint.y}
               r={3}
               fill={muted}
             />
           )}
-          <circle cx={end.x} cy={end.y} r={4} fill={accent} />
+          {/* THE SUBJECT, landing as its own event once the fill has reached it. Drawn at (0, 0)
+              inside a `<g>` carrying the translate, so `transform: scale()` grows it about its own
+              centre with no `transform-origin` percentage and no `transform-box` question. */}
+          <g transform={`translate(${end.x} ${end.y})`}>
+            <circle
+              {...subjectLayer.attrs}
+              style={subjectLayer.vars}
+              cx={0}
+              cy={0}
+              r={4}
+              fill={accent}
+            />
+          </g>
 
           {/* Interaction layer: every one of the 224 annual readings is `tabIndex={0}` with its own
               `aria-label`/`data-detail` baked in at build time — reachable with the script absent
@@ -293,10 +449,12 @@ export function WorldPopulationWeb({
         {/* HTML overlay — the same grid cell as the `<svg>`. Never toggled by the script: the
             crossing marker's label and the end label are the argument, already stated. */}
         <div className="overlay" aria-hidden="true">
-          {crossingPoint && (
+          {crossingPoint && crossingLabelLayer && (
             <span
+              {...crossingLabelLayer.attrs}
               className="note"
               style={{
+                ...crossingLabelLayer.vars,
                 left: `${pct(crossingPoint.x, frame.width)}%`,
                 top: `${pct(crossingPoint.y, frame.height)}%`,
                 transform: `${anchorAt(crossingPoint.x / frame.width)} translateY(-100%) translateY(-10px)`,
@@ -307,8 +465,10 @@ export function WorldPopulationWeb({
             </span>
           )}
           <span
+            {...conclusionLayer.attrs}
             className="end-label"
             style={{
+              ...conclusionLayer.vars,
               left: `${pct(end.x, frame.width)}%`,
               top: `${pct(end.y, frame.height)}%`,
               color: accent,
@@ -318,7 +478,11 @@ export function WorldPopulationWeb({
           </span>
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {xTicks.map((year) => {
             const p = points.find((pt) => pt.year === year);
             if (!p) return null;
@@ -335,7 +499,13 @@ export function WorldPopulationWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
