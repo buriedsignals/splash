@@ -31,6 +31,19 @@ beat is the chart-side reading of that rule, and it passes it on the strict vers
   takes as long as it takes, differently for each reader, and needs going back. Scroll gives that
   pace to the reader and reverses on demand. A video also carries none of this in text — with
   JavaScript off, this file still delivers all four paragraphs and the first chart (measured below).
+- **The picture does NOT evolve within a step, and that is the argument rather than a defect.**
+  Driven continuously on 2026-08-10 — a per-frame recorder installed before the scroll was touched,
+  both directions, three widths — this beat measured **0 of 113, 0 of 99 and 0 of 88 intra-step
+  frames on which any geometry moved**: about half of every sweep changed only an opacity (the
+  cross-fade at a boundary) and the rest changed nothing at all. The sibling single-visual beats
+  were repaired to move on every frame, because their claim is one picture the reader navigates
+  INSIDE. This beat's claim is the opposite one — four encodings of one column, *"each is true, each
+  hides what the next one shows"* — and a picture that continuously morphed a line into a ranked bar
+  would be a fifth thing that is none of the four. The reader's own motion is carried by the card
+  travelling over the frame, and the frame swaps in the clear gap between two cards. **Recorded so
+  the number is not mistaken for a missing repair**; if this beat's argument ever becomes "one chart,
+  four readings", it is the single-visual sibling `scrolly-one-chart-swiss-life-expectancy` that is
+  the model, not this one.
 - **The honest cost**, so it is not sold as free: the four charts are not simultaneously visible, so
   a reader cannot hold two encodings side by side at one instant. This beat trades that for pace and
   for one full-frame chart at a time. A small-multiples static beat makes the opposite trade and is
