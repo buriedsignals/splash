@@ -43,6 +43,40 @@ function fr(value: number, decimals = 2): string {
 
 /** Wrap on the measured width of the real string, never on a character count — this beat's own
  *  copy of the same wrapping rule every other beat duplicates. */
+/**
+ * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
+ *
+ * Carried verbatim across the wrap family (`splash-twin/test/helper-parity.test.ts` compares them
+ * case for case). `wrap` breaks between words, so a token wider than the measure was emitted whole
+ * and ran off the frame — invisible at 900x560 and a 219px overflow the moment a phone frame put
+ * 78px type on a 1080px canvas. A hyphen is already a break and already reads as one, so a
+ * hyphenated token is split at its own hyphens and `wrap` re-joins without a space after one.
+ *
+ * A token with no hyphen and no room is emitted WHOLE and not refused: breaking a word
+ * mid-syllable is a decision about somebody's name, and a throw here would be a contract change
+ * for the fluid web copies, where a transient 1px measure during layout is ordinary. The overflow
+ * is refused where it can be SEEN — `three-sizes-no-collision.test.ts` measures every run's real
+ * ink box against the frame edge.
+ */
+function breakLongTokens(
+  words: string[],
+  maxWidth: number,
+  font: { fontSize: number; fontWeight: number },
+): string[] {
+  const out: string[] = [];
+  for (const word of words) {
+    const pieces = word.split("-");
+    if (pieces.length === 1 || measureText(word, font) <= maxWidth) {
+      out.push(word);
+      continue;
+    }
+    pieces.forEach((piece, i) =>
+      out.push(i < pieces.length - 1 ? `${piece}-` : piece),
+    );
+  }
+  return out;
+}
+
 export function wrap(
   text: string,
   maxWidth: number,
@@ -50,8 +84,9 @@ export function wrap(
 ): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = line ? `${line} ${word}` : word;
+  for (const word of breakLongTokens(text.split(/\s+/), maxWidth, font)) {
+    const joiner = line.endsWith("-") ? "" : " ";
+    const trial = line ? `${line}${joiner}${word}` : word;
     if (line && measureText(trial, font) > maxWidth) {
       lines.push(line);
       line = word;

@@ -1,4 +1,4 @@
-// twin/skills/twin-chart-beat/scripts/sizes.mjs
+// twin/skills/twin-chart-video/scripts/sizes.mjs
 //
 // The three export sizes ruling R2 names, and nothing else. Landscape for YouTube and article web,
 // portrait for stories, square for social posts.
@@ -46,24 +46,26 @@
 //
 //   portrait  1080 read full-bleed at 360 dp  ->  12 x 3.000 = 36
 //   square    1080 read full-bleed at 360 dp  ->  12 x 3.000 = 36   (a feed post is full-width too)
-//   landscape 1920 read in a 900 px article column -> 12 x 2.133 = 25.6 -> 26
+//   landscape 1920 watched full-screen on a phone TURNED  ->  ~800 dp  ->  12 x 2.4 = 28.8 -> 30
 //
-// NAMED AND NOT ANSWERED: landscape is R2's YouTube row as well as its article row, and a landscape
-// video watched full-screen on a phone held upright is ~360 dp wide, which would put the floor at
-// 64 px. Nobody has looked at that, so nothing here pretends to. The 26 is the ARTICLE reference,
-// which is the reference this project has already accepted and rendered.
+// THE ROW THAT DIFFERS FROM `twin-chart-beat`, and why. A static landscape is read in a ~900 px
+// article column; a landscape VIDEO is watched, and the mode a 16:9 video is designed for is the
+// phone turned sideways, ~800 dp. So this skill's landscape floor is 30 where the static skill's is
+// 26 — the same 12 CSS px rule against a different reading distance, which is exactly the split
+// `typeScale` is per-craft-skill for.
+//
+// NAMED AND NOT ANSWERED: the same video watched IN A FEED, upright, is 360 dp wide, which would
+// put the floor at 64 px and make most of this corpus illegible in that mode. Nobody has looked at
+// a video in a feed, so nothing here pretends to. Recorded rather than guessed.
 //
 // `typeScale` is the row's DEFAULT multiplier over a beat's 900x560 base tokens, and it is chosen so
 // the smallest base token a beat draws clears `minTypePx`. It is a default and not a guarantee: a
 // beat whose smallest token is smaller than the seed's is refused loudly by `assertTypeFloor`, which
 // measures the RENDERED markup rather than trusting the multiplier.
 //
-//     seed base tokens: TITLE 26 / LABEL 15 / SOURCE 14 / AXIS 13 / GAP_NOTE 12  <- smallest is 12
+//     base tokens (the same 900x560 convention): smallest is 12
 //     portrait & square  36 / 12 = 3.0
-//     landscape          26 / 12 = 2.17 -> 2.2
-//
-// The previous landscape value of 2.1 put the gap note at 25.2 px, a fifth of a pixel under its own
-// floor. It is raised rather than waived, because a floor with an exception in it is a preference.
+//     landscape          30 / 12 = 2.5
 //
 // WHY EACH ROW CARRIES A `stage`, AND WHY ONLY ONE ROW HAS ONE
 //
@@ -96,7 +98,7 @@
 // (`skills/splash/src/channel.ts:53-61`). An even table never needs the tolerance, so the guard
 // asserts the property instead of a comment recording it.
 export const SIZES = {
-  landscape: { width: 1920, height: 1080, typeScale: 2.2, minTypePx: 26, stage: null },
+  landscape: { width: 1920, height: 1080, typeScale: 2.5, minTypePx: 30, stage: null },
   square: { width: 1080, height: 1080, typeScale: 3.0, minTypePx: 36, stage: null },
   portrait: {
     width: 1080,

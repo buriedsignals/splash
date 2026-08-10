@@ -39,14 +39,22 @@
  * `twin-dw-beat`'s copy legitimately carries none at all (Datawrapper lays out type server-side)
  * and a copy carrying `typeScale: "large"` is a different kind of wrong from a copy carrying 1.4.
  *
+ * **`minTypePx` is not compared either, and `stage` IS.** One layer down, the same split: a
+ * legibility floor is 12 CSS px measured against the distance this craft's output is read at, so
+ * the static and video copies differ at landscape on purpose. A platform's safe band is a fact
+ * about the FRAME — Meta reserves 14% top and 35% bottom of a 1080x1920 story whoever drew it — so
+ * a copy that disagrees on `stage` is drift and is caught.
+ *
  * ── OTHER THINGS IT CANNOT SEE ─────────────────────────────────────────────────────────────────
  *
- * 1. Whether any of the numbers are GOOD. `landscape.typeScale: 2.1` is defensible because
- *    `proof/static-carbon-footprint-spread/probe/` rendered it and a person opened it; nothing here
- *    re-does that, and nothing here could. A table can be internally consistent and ugly.
+ * 1. Whether any of the numbers are GOOD. `landscape.typeScale: 2.2` is defensible because
+ *    `proof/static-carbon-footprint-spread/probe/` rendered it and a person opened it, and because
+ *    `minTypePx` now gives it an outside floor to clear; nothing here re-does the looking, and
+ *    nothing here could. A table can be internally consistent and ugly.
  * 2. Whether a beat USES the table. A component that kept `const FRAME = { width: 900 … }` beside a
- *    perfectly-parity-checked `sizes.mjs` passes every assertion below. That is Task 3's own guard's
- *    job, and for video it is `video-size-comes-from-the-composition.test.ts`.
+ *    perfectly-parity-checked `sizes.mjs` passes every assertion below. That is
+ *    `delivered-size-matches-the-pin.test.ts`'s job for static, and
+ *    `video-size-comes-from-the-composition.test.ts`'s for video.
  * 3. Aspect ratios. `landscape` being 16:9 is a fact about the row's two numbers, and if someone
  *    changes both copies to 1920x1000 in step this file is content. What it defends is that the
  *    copies AGREE, not that they are right — the deliberate division of labour with the probe.
@@ -69,6 +77,31 @@
  * (the static beats reach the table in Task 3), so `twin-chart-beat`'s mirror exists ahead of its
  * consumers and deleting it fires nothing. It reddens the moment the first beat imports it, which
  * is the only moment its absence would actually break anything.
+ *
+ * ── THE SECOND ROUND, 2026-08-11: the safe band, the legibility floor, and the delivered file ──
+ * Same method, same sandbox (`/tmp/w4c3mut/`, an rsync of the tree with `node_modules` symlinked).
+ * Baseline 12 pass / 0 fail.
+ *
+ *   dw copy's portrait stage top 269 -> 260             RED  — the safe-band assertion, 11/1
+ *   dw copy's square row loses `minTypePx`              RED  — the floor assertion, 11/1
+ *   dw copy's landscape floor 26 -> 27 (odd)            RED  — the floor assertion, 11/1
+ *   `assertDeliveredSize` EXEMPTS landscape             RED  — 11/1. This is the original Splash's
+ *                                                              own defect written back in
+ *                                                              (`chart-native/scripts/produce.mjs:352-368`)
+ *                                                              and it must not survive here.
+ *   `readPngSize` stops refusing non-PNGs               RED  — 11/1
+ *   the stage removed from EVERY copy in step           RED  — 11/1, on the premise line. Without
+ *                                                              it the safe-band comparison would go
+ *                                                              vacuously green on three `none`s.
+ *   dw copy's landscape floor 26 -> 30 (value only)    GREEN — DELIBERATELY, and for the same
+ *                                                              reason `typeScale` is: a floor is
+ *                                                              12 CSS px measured against the
+ *                                                              distance THIS craft is read at. A
+ *                                                              static landscape sits in a ~900px
+ *                                                              article column (26); a landscape
+ *                                                              VIDEO is watched on a phone turned
+ *                                                              sideways (30). Forcing them equal
+ *                                                              would force one number to be wrong.
  */
 import { describe, it, expect } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -109,12 +142,24 @@ function findAllSource(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-type Row = { width: number; height: number; typeScale?: number };
+type Stage = { top: number; bottom: number } | null;
+type Row = {
+  width: number;
+  height: number;
+  typeScale?: number;
+  minTypePx: number;
+  stage: Stage;
+};
 type Copy = {
   path: string;
   label: string;
   SIZES: Record<string, Row>;
   sizeFor: (n: string) => Row;
+  assertDeliveredSize: (
+    got: { width: number; height: number },
+    n: string,
+  ) => Row;
+  readPngSize: (bytes: Uint8Array) => { width: number; height: number };
 };
 
 const paths = findAll(TWIN, "sizes.mjs");
@@ -126,6 +171,8 @@ for (const path of paths) {
     label: relative(TWIN, path),
     SIZES: mod.SIZES,
     sizeFor: mod.sizeFor,
+    assertDeliveredSize: mod.assertDeliveredSize,
+    readPngSize: mod.readPngSize,
   });
 }
 const canonical = copies.find((c) => c.path === CANONICAL);
@@ -237,6 +284,104 @@ describe("the export-size table — every copy in the tree, discovered rather th
           true,
         ]);
       }
+    }
+  });
+
+  it("should agree, row by row, on the platform safe band every copy reserves", () => {
+    // `stage` is the ONE new field that IS compared across copies, and the split is the point.
+    // `typeScale` and `minTypePx` are per craft skill because they answer "how far away is this
+    // read" — an article column, a phone held upright, a phone turned sideways. A platform's safe
+    // band is a fact about the FRAME: Meta reserves 14% top and 35% bottom of a 1080x1920 story
+    // whoever drew it. So a copy that disagrees here is drift, not a craft difference.
+    //
+    // `null` is asserted as a value rather than tolerated as an absence, for the reason the table's
+    // own header gives: it lets "this row has no reserve" be told apart from "somebody forgot".
+    const line = (label: string, table: Record<string, Row>) =>
+      `${label} :: ` +
+      ROWS.map((r) => {
+        const s = table[r]?.stage;
+        return `${r} ${s === null ? "none" : s === undefined ? "MISSING" : `${s.top}-${s.bottom}`}`;
+      }).join(" | ");
+    for (const copy of copies) {
+      expect(line(copy.label, copy.SIZES)).toBe(
+        line(copy.label, canonical!.SIZES),
+      );
+    }
+    // And the premise, so the comparison above cannot go vacuously green on three MISSINGs.
+    expect(line("canonical", canonical!.SIZES)).toBe(
+      "canonical :: landscape none | square none | portrait 269-1248",
+    );
+  });
+
+  it("should carry a legibility floor on every row, in even whole pixels", () => {
+    // Required, unlike `typeScale` — every size is READ at some distance, including Datawrapper's,
+    // whose copy carries the floor it cannot yet enforce rather than pretending the question does
+    // not apply to it. The VALUE is not compared across copies (see the previous assertion).
+    //
+    // Even, for the same reason the dimensions are: a floor is compared against a scaled token, and
+    // an odd floor invites the half-pixel tolerance the original Splash needed.
+    for (const copy of copies) {
+      for (const row of ROWS) {
+        const floor = copy.SIZES[row].minTypePx;
+        expect([
+          copy.label,
+          row,
+          Number.isInteger(floor) && floor > 0 && floor % 2 === 0,
+        ]).toEqual([copy.label, row, true]);
+      }
+    }
+  });
+
+  it("should measure the DELIVERED artifact, in every copy, and refuse all three sizes alike", () => {
+    // The assertion the whole size decision rests on, and the one W4 shipped without: `renderStill`
+    // compared the element's drawn frame against the width and height it was handed, and both came
+    // from the same two literals in the beat's own render script, so they agreed by construction.
+    //
+    // The exemption is checked as hard as the refusal. The original Splash exempts LANDSCAPE from
+    // its own equivalent (`skills/chart-native/scripts/produce.mjs:352-368`), which enforces the
+    // contract for two cases and leaves the default one open — so every row is driven here, and a
+    // copy that quietly passes one of them fails.
+    for (const copy of copies) {
+      expect([copy.label, typeof copy.assertDeliveredSize]).toEqual([
+        copy.label,
+        "function",
+      ]);
+      for (const row of ROWS) {
+        const right = copy.SIZES[row];
+        expect(copy.assertDeliveredSize({ ...right }, row)).toEqual(
+          copy.sizeFor(row),
+        );
+        let message = "";
+        try {
+          copy.assertDeliveredSize(
+            { width: right.width, height: right.height + 2 },
+            row,
+          );
+        } catch (e) {
+          message = (e as Error).message;
+        }
+        expect([
+          copy.label,
+          row,
+          message.includes(`${right.width}x${right.height}`),
+        ]).toEqual([copy.label, row, true]);
+      }
+    }
+  });
+
+  it("should read a PNG's size out of its own bytes, and refuse what is not a PNG", () => {
+    // The reading `assertDeliveredSize` is fed by. A hand-built IHDR rather than a rendered file, so
+    // this stays a unit of the parser and not a second render test.
+    const png = new Uint8Array(33);
+    png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+    new DataView(png.buffer).setUint32(16, 1080);
+    new DataView(png.buffer).setUint32(20, 1920);
+    for (const copy of copies) {
+      expect([copy.label, copy.readPngSize(png)]).toEqual([
+        copy.label,
+        { width: 1080, height: 1920 },
+      ]);
+      expect(() => copy.readPngSize(new Uint8Array(64))).toThrow(/not a PNG/);
     }
   });
 

@@ -87,6 +87,32 @@
  *   title wraps to a fixed 900 measure       GREEN
  *   GAP_NOTE.fontSize back to a bare 12      GREEN
  *
+ * ── THE 2026-08-11 NARROWING, and what it cost ───────────────────────────────────────────────
+ *
+ * Assertion 4 above used to compare the layout's single tightest moment across the three sizes and
+ * require the SAME PAIR OF WORDS at the same proportion. It no longer can, and the reason is a
+ * design change rather than a weakening: once portrait and square type for a PHONE (a 36px floor,
+ * `sizes.mjs`) instead of for an article column, the title wraps to a different number of lines,
+ * the credit wraps at two sizes and not the third, and ladder rung R2 drops the labelled gridlines
+ * from five to three — so the closest pair legitimately differs and the topmost tick is no longer
+ * a comparable landmark. On top of that `PAD` deliberately STOPPED scaling with the type: it is the
+ * frame's margin and it scales with the canvas, which is the exact shape of the defect this
+ * assertion hunts, now intentional.
+ *
+ * So it was narrowed to what survives: a text BLOCK'S OWN LEADING — two adjacent runs carrying the
+ * same base token, both `start`-anchored, at the same drawn `x`. Everything else vertically
+ * adjacent is separated by the plot, whose height and tick count are per-size decisions.
+ *
+ * **The cost is real and is not hidden: `HEADER_TO_PLOT` back to a bare 34 is now GREEN here.**
+ * Re-run 2026-08-11, 10 pass / 0 fail. It is covered instead by
+ * `seed-scales-with-its-size.test.ts`, which asserts every token `tokens()` returns is the same
+ * multiple of the scale at every scale — RED 3/1 on that mutation, and RED on five more this file
+ * was already green for (`sp = v => v`, `X_TICK_DROP`, `GAP_NOTE.fontSize`, the two tick hints,
+ * and `frameInset` frozen). That file is weaker in KIND — it cannot see a literal that bypasses
+ * `tokens` altogether — and this file's ink measurement is what still catches those.
+ *
+ * ── the older finding, unchanged ──────────────────────────────────────────────────────────────
+ *
  * **`X_TICK_DROP` CANNOT REDDEN THIS GUARD, and an earlier version of this header claimed it did.**
  * The claim was false when it was typed — `git log ee55c95a..` on `ChartSeed.tsx` is empty, so the
  * seed never changed under it. The arithmetic: `padding.bottom` is
@@ -171,6 +197,11 @@ type Run = {
   text: string;
   /** The size it is DRAWN at, read off the markup — assertion 4 divides by it. */
   fontSize: number;
+  /** Read off the markup too. Assertion 4 uses it to tell a flowed text block from an axis. */
+  anchor: string;
+  /** The DRAWN x, not the ink's left edge — two lines of one block share the first and not the
+   *  second, because a glyph's left side bearing differs per string. */
+  x: number;
   left: number;
   right: number;
   top: number;
@@ -184,7 +215,8 @@ type Run = {
  * frames are comparable — 24px of air under a 27px label and 14px under a 16px label are the same
  * picture, and the raw pixel counts say they are not.
  */
-function tightestMoment(runs: Run[]) {
+function tightestMoment(runs: Run[], typeScale: number) {
+  const byRole = new Map<string, { pair: string; ratio: number; gap: number }>();
   let worst: { pair: string; ratio: number; gap: number } | null = null;
   for (let i = 0; i < runs.length; i++) {
     for (let j = i + 1; j < runs.length; j++) {
@@ -195,16 +227,58 @@ function tightestMoment(runs: Run[]) {
         a.bottom <= b.top ? [a, b] : b.bottom <= a.top ? [b, a] : [null, null];
       if (!upper || !lower) continue;
       const gap = lower.top - upper.bottom;
+      // ADJACENT ONLY. A pair with a third run between them is not a GAP, it is a distance — the
+      // title and the credit are 743px apart at landscape and 450 at square, and both are correct,
+      // because what sits between them is the plot and the plot's height is the size's own
+      // decision. Before this filter, comparing them across sizes read the plot's aspect as drift.
+      // The global tightest moment used to exclude these implicitly, by being the minimum; now that
+      // every role is compared, the exclusion has to be stated.
+      const between = runs.some(
+        (r) =>
+          r !== upper &&
+          r !== lower &&
+          Math.min(r.right, Math.min(upper.right, lower.right)) -
+            Math.max(r.left, Math.max(upper.left, lower.left)) >
+            0 &&
+          r.top >= upper.bottom &&
+          r.bottom <= lower.top,
+      );
+      if (between) continue;
       const ratio = gap / Math.min(upper.fontSize, lower.fontSize);
-      if (!worst || ratio < worst.ratio)
-        worst = {
-          pair: `${JSON.stringify(upper.text)} / ${JSON.stringify(lower.text)}`,
-          ratio,
-          gap,
-        };
+      const moment = {
+        pair: `${JSON.stringify(upper.text)} / ${JSON.stringify(lower.text)}`,
+        ratio,
+        gap,
+      };
+      if (!worst || ratio < worst.ratio) worst = moment;
+      // The ROLE of a gap, which is what makes it comparable across sizes: the two runs' BASE
+      // tokens, recovered by dividing the drawn size by the size's own scale. A title-to-title gap
+      // is `26/26` at every size even when the title wraps to a different number of lines; a
+      // header-to-plot gap is `26/13`. See the assertion's own comment for why the pair's TEXT
+      // stopped being usable as the key.
+      // A TEXT BLOCK'S OWN LEADING, and nothing else. Two runs belong to the same block when they
+      // carry the same BASE token (the drawn size divided by the size's own scale) and share a DRAWN
+      // x — the ink's left edge is not it, because a glyph's left side bearing differs per string
+      // and two lines of the same title come back 3px apart. Everything else that is vertically adjacent — a title over the topmost gridline
+      // label, one y tick over the next — is separated by the PLOT, whose height and whose tick
+      // COUNT are per-size decisions (ladder rung R2 drops five labelled gridlines to three on a
+      // phone frame). Comparing those across sizes reads a deliberate decision as drift, which is
+      // what the first version of this revision did.
+      // `textAnchor="start"` is what a FLOWED block has. A y-tick label is `end`-anchored and an
+      // x-tick label is `middle`-anchored, and two y ticks of equal width share a left edge without
+      // being a block at all — their spacing is the gridline spacing, which is the plot's business.
+      const sameBlock =
+        upper.anchor === "start" &&
+        lower.anchor === "start" &&
+        Math.round(upper.fontSize / typeScale) === Math.round(lower.fontSize / typeScale) &&
+        upper.x === lower.x;
+      if (!sameBlock) continue;
+      const role = String(Math.round(upper.fontSize / typeScale));
+      const held = byRole.get(role);
+      if (!held || ratio < held.ratio) byRole.set(role, moment);
     }
   }
-  return worst;
+  return worst ? { ...worst, byRole } : null;
 }
 
 function textRuns(svg: string): Run[] {
@@ -227,6 +301,8 @@ function textRuns(svg: string): Run[] {
     runs.push({
       text: content,
       fontSize,
+      anchor,
+      x,
       left: x + box.x + shift,
       right: x + box.x + shift + box.width,
       top: y + box.y,
@@ -311,31 +387,46 @@ describe("the seed draws cleanly at every size the table offers", () => {
    */
   it("should reach its tightest moment at the same pair of words, and by the same proportion, at every size", () => {
     const moments = Object.keys(SIZES).map((size) => {
-      const worst = tightestMoment(drawn.get(size)!);
+      const worst = tightestMoment(
+        drawn.get(size)!,
+        (SIZES as Record<string, { typeScale: number }>)[size].typeScale,
+      );
       if (!worst) throw new Error(`no measurable clear air at ${size}`);
       return { size, ...worst };
     });
-    // The premise, pinned: with nothing measurable the two checks below go vacuously green.
+    // The premise, pinned: with nothing measurable the checks below go vacuously green.
     expect(moments.length).toBe(Object.keys(SIZES).length);
 
-    const pairs = [...new Set(moments.map((m) => m.pair))];
-    const ratios = moments.map((m) => m.ratio);
-    const spread = Math.max(...ratios) - Math.min(...ratios);
-    const detail = moments.map(
-      (m) =>
-        `${m.size}: ${m.ratio.toFixed(3)}x the type (${m.gap.toFixed(1)}px) between ${m.pair}`,
+    // Every gap ROLE that exists at all three sizes. A role that exists at only some of them is
+    // excluded rather than compared, and that exclusion is the whole of the 2026-08-11 revision:
+    // once portrait and square type for a PHONE instead of for an article column, the same title
+    // wraps to a different number of lines and the credit wraps at two sizes and not at the third.
+    // The closest pair by TEXT then legitimately differs between sizes — 0.425x of the title's own
+    // leading at landscape against 0.352x of the CREDIT's leading at portrait, with both blocks
+    // perfectly proportional — and the old form read that as drift. Comparing role to role
+    // compares like with like and still reaches the frozen literal: a frozen `HEADER_TO_PLOT` is
+    // the `26/13` role and exists everywhere.
+    const roles = [...moments[0].byRole.keys()].filter((role) =>
+      moments.every((m) => m.byRole.has(role)),
     );
+    // Pinned, so a rendering change that left no shared role at all cannot pass by having nothing
+    // to compare. Three is the count the seed draws today; the assertion is "several", not "three".
+    expect([roles.length >= 1, roles.length]).toEqual([true, roles.length]);
+
     const problems: string[] = [];
-    if (pairs.length !== 1)
-      problems.push(
-        "a different pair of words is the closest pair at different sizes — something between them is not scaling with the type",
-        ...detail,
-      );
-    if (spread > 0.1)
-      problems.push(
-        `the tightest moment drifts by ${spread.toFixed(3)}x across the sizes, tolerance 0.10 — a gap is being held in pixels while the type around it is scaled`,
-        ...detail,
-      );
+    for (const role of roles) {
+      const per = moments.map((m) => ({ size: m.size, ...m.byRole.get(role)! }));
+      const ratios = per.map((p) => p.ratio);
+      const spread = Math.max(...ratios) - Math.min(...ratios);
+      if (spread > 0.1)
+        problems.push(
+          `the ${role}px block's leading drifts by ${spread.toFixed(3)}x across the sizes, tolerance 0.10 — a gap is being held in pixels while the type around it is scaled`,
+          ...per.map(
+            (p) =>
+              `  ${p.size}: ${p.ratio.toFixed(3)}x the type (${p.gap.toFixed(1)}px) between ${p.pair}`,
+          ),
+        );
+    }
     expect(problems).toEqual([]);
   });
 });

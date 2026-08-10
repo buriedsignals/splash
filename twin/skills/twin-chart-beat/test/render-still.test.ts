@@ -383,7 +383,12 @@ describe("renderStill", () => {
       });
       const svg = await readFile(svgPath, "utf8");
 
-      const label = `${subject} 604 mm`;
+      // AND THE LABEL ITSELF IS PER SIZE. At a phone frame the seed drops the subject from the end
+      // label and keeps the value: at 42px "Annemasse-les-Voirons-sur-Arve 604 mm" is ~500px of ink
+      // laid across the very series it labels, and the subject is already the headline's subject.
+      // Asserting the long form at every size would assert a defect at two of the three.
+      const phone = sizeFor(size).minTypePx >= 36;
+      const label = phone ? "604 mm" : `${subject} 604 mm`;
       const match = svg.match(
         new RegExp(
           `<text[^>]*\\bx="([\\d.]+)"[^>]*\\bfont-size="(\\d+)"[^>]*\\bfont-weight="(\\d+)"[^>]*>${label}</text>`,

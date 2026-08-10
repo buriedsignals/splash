@@ -18,7 +18,7 @@ import {
   measureText,
   FONT_FAMILY,
 } from "../scripts/render-still.mjs";
-import { sizeFor } from "../scripts/sizes.mjs";
+import { sizeFor, stageFor } from "../scripts/sizes.mjs";
 
 type Reading = { year: number; value: number | null };
 type Padding = { top: number; right: number; bottom: number; left: number };
@@ -45,7 +45,7 @@ type Padding = { top: number; right: number; bottom: number; left: number };
 const BASE = {
   PAD: 40,
   TITLE: { fontSize: 26, fontWeight: 700, lead: 34 },
-  SOURCE: { fontSize: 14, fontWeight: 400 },
+  SOURCE: { fontSize: 14, fontWeight: 400, lead: 18 },
   AXIS: { fontSize: 13, fontWeight: 400 },
   LABEL: { fontSize: 15, fontWeight: 600 },
   // The note that names a hole in the series. It was a bare `fontSize={12}` at the mark itself,
@@ -64,13 +64,33 @@ const BASE = {
   MARK_BASELINE_NUDGE: 5,
 };
 
+/**
+ * THE ONE LITERAL THAT MUST NOT SCALE WITH THE TYPE, and finding it cost a set of rendered
+ * collisions. Everything a `sp()` touches is a gap BETWEEN WORDS — leading, the air under the
+ * header, the drop to a tick baseline — and those are proportional to the type by definition, which
+ * is what `three-sizes-no-collision.test.ts`'s fourth assertion measures.
+ *
+ * `PAD` is not one of those. It is the frame's own margin, and it is proportional to the CANVAS.
+ * Scaling it with the type is invisible while `typeScale` happens to equal `width / 900` — which is
+ * exactly what the shipped table carried, so the probe never separated them. The moment portrait's
+ * scale rose from 1.2 to 3.0 to clear the phone's legibility floor, a 40px margin became 120px on a
+ * 1080px frame: a quarter of the width spent on air, before a single word was drawn.
+ *
+ * The floor under it is the mobile-first wireframe's own, with its own reason: Meta reserves 6% =
+ * 65px each side of a 1080 story, and 2 x the smallest type is the next value up, "so the margin
+ * can never be thinner than the smallest word is tall."
+ */
+export function frameInset(width: number, minTypePx: number) {
+  return Math.max(Math.round((BASE.PAD * width) / 900), minTypePx * 2);
+}
+
 export function tokens(typeScale: number) {
   const sp = (v: number) => Math.round(v * typeScale);
   return {
     sp,
     PAD: sp(BASE.PAD),
     TITLE: { ...BASE.TITLE, fontSize: sp(BASE.TITLE.fontSize), lead: sp(BASE.TITLE.lead) },
-    SOURCE: { ...BASE.SOURCE, fontSize: sp(BASE.SOURCE.fontSize) },
+    SOURCE: { ...BASE.SOURCE, fontSize: sp(BASE.SOURCE.fontSize), lead: sp(BASE.SOURCE.lead) },
     AXIS: { ...BASE.AXIS, fontSize: sp(BASE.AXIS.fontSize) },
     LABEL: { ...BASE.LABEL, fontSize: sp(BASE.LABEL.fontSize) },
     GAP_NOTE: { ...BASE.GAP_NOTE, fontSize: sp(BASE.GAP_NOTE.fontSize) },
@@ -147,8 +167,26 @@ function yScale(data: Reading[]) {
  * — every tick is a multiple of a round step that the data's own extent reaches — but there are
  * enough of them to read a value off the axis directly. The unit is stated once, on the top one.
  */
-export function yTickValues(data: Reading[]): number[] {
-  return yScale(data).ticks(Y_TICK_HINT);
+export function yTickValues(data: Reading[], hint: number = Y_TICK_HINT): number[] {
+  return yScale(data).ticks(hint);
+}
+
+/**
+ * LADDER RUNG R2, and it is the only rung that gives budget back without removing anything
+ * vertical: fewer labelled gridlines means a narrower y gutter, so the plot gets WIDER, and since
+ * a plot's height floor is `plotWidth / maxAspect`, a wider plot has a LOWER floor to clear. The
+ * wireframe's own note — "it is always tried before anything is dropped."
+ *
+ * It fires where the frame is read on a phone, which is what `minTypePx` records: at a 36px floor
+ * five labelled ticks on a 1080-tall frame put "650" and "600" 2.7px apart, measured. Andrews &
+ * Smrdel's responsive line does the same thing in the same order — labels "progressively removed at
+ * equal intervals" — via Horak et al. §2.4.6.
+ *
+ * Five stays the static genre's conventional density wherever the frame is read at arm's length
+ * (`static-discipline.md`, "Axis density"). This is not a global sparsening.
+ */
+export function yTickHintFor(size: string): number {
+  return sizeFor(size).minTypePx >= 36 ? 3 : Y_TICK_HINT;
 }
 
 /**
@@ -162,11 +200,25 @@ export function yTickValues(data: Reading[]): number[] {
  * (`static-discipline.md`, "Axis density"). It is not shared with the motion genre, which keeps
  * its own sparse first/middle/last rule on purpose.
  */
-export function xTickValues(years: number[]): number[] {
+/**
+ * LADDER RUNG R2 on the other axis, and it is not symmetrical with the y one. A y label is dropped
+ * because five of them stack too close vertically; an x label is dropped because at a 36px floor
+ * six four-digit years are WIDER than the plot they label. Measured on this seed at 1080x1080:
+ * "2016"/"2018" overlapping by 52.9px, and every adjacent pair after it.
+ *
+ * The step stays derived — `tickStep` still answers with the nearest 1/2/5x10ⁿ interval — so a
+ * phone frame gets decade ticks where an article frame got five-year ones, and neither count is
+ * hand-picked for a story.
+ */
+export function xTickHintFor(size: string): number {
+  return sizeFor(size).minTypePx >= 36 ? 3 : X_TICK_HINT;
+}
+
+export function xTickValues(years: number[], hint: number = X_TICK_HINT): number[] {
   const first = Math.min(...years);
   const last = Math.max(...years);
   if (first === last) return [first];
-  const step = tickStep(first, last, X_TICK_HINT);
+  const step = tickStep(first, last, hint);
   const values: number[] = [];
   for (let year = Math.ceil(first / step) * step; year <= last; year += step) {
     values.push(year);
@@ -184,7 +236,15 @@ export function lineGeometry(
     width,
     height,
     padding,
-  }: { width: number; height: number; padding: Padding },
+    yTickHint = Y_TICK_HINT,
+    xTickHint = X_TICK_HINT,
+  }: {
+    width: number;
+    height: number;
+    padding: Padding;
+    yTickHint?: number;
+    xTickHint?: number;
+  },
 ) {
   const plot = {
     left: padding.left,
@@ -199,7 +259,9 @@ export function lineGeometry(
   const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
   const y = yScale(data).range([plot.bottom, plot.top]);
   const [floor, ceiling] = y.domain();
-  const ticks = y.ticks(Y_TICK_HINT);
+  // The hint travels with the call. Reading it off the module constant while the LABELS were
+  // measured at a per-size hint is how a gridline and its label stop being the same list.
+  const ticks = y.ticks(yTickHint);
 
   const points = data.map((d) => ({
     year: d.year,
@@ -249,7 +311,7 @@ export function lineGeometry(
     end: points.findLast((p) => p.value !== null),
     zeroY: floor < 0 && ceiling > 0 ? y(0) : null,
     ticksY: ticks.map((value) => ({ value, y: y(value) })),
-    ticksX: xTickValues(years).map((year) => ({
+    ticksX: xTickValues(years, xTickHint).map((year) => ({
       year,
       x: x(year),
     })),
@@ -264,14 +326,56 @@ export function wrap(
 ): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = line ? `${line} ${word}` : word;
+  for (const word of breakLongTokens(text.split(/\s+/), maxWidth, font)) {
+    const joiner = line.endsWith("-") ? "" : " ";
+    const trial = line ? `${line}${joiner}${word}` : word;
     if (line && measureText(trial, font) > maxWidth) {
       lines.push(line);
       line = word;
     } else line = trial;
   }
   return line ? [...lines, line] : lines;
+}
+
+/**
+ * A WORD WIDER THAN ITS OWN MEASURE, WHICH ONLY A PHONE FRAME PRODUCES.
+ *
+ * `wrap` breaks between words, so a single token wider than the measure is emitted whole and runs
+ * off the frame. At 900x560 that never happened; at 1080 wide with 78px type it happens on the
+ * first render — a 30-character hyphenated place name measured 1225px against a 936px measure and
+ * drew 219px outside the frame, with no assertion but a real ink box seeing it.
+ *
+ * Breaking at a HYPHEN is ordinary typography and loses nothing: the hyphen is already there and
+ * already reads as a break. So a hyphenated token is split at its own hyphens, each hyphen kept on
+ * the line it ends, and `wrap` re-joins without a space after one.
+ *
+ * A token with no hyphen and no room is EMITTED WHOLE, deliberately, and this is the one place a
+ * refusal was written and then taken back out. Two reasons, both measured rather than argued.
+ * First, breaking a word mid-syllable is a decision about somebody's name and is not this file's
+ * to take. Second, `wrap` is a CARRIED helper — six copies across the static and web families,
+ * compared case for case by `splash-twin/test/helper-parity.test.ts` — and a throw is a contract
+ * change for all six, including the fluid web frame, where a transient 1px measure during layout
+ * is ordinary and must not be fatal. The overflow it would have caught is already refused where it
+ * can be SEEN: `three-sizes-no-collision.test.ts` measures every run's real ink box against the
+ * frame edge and fails the render.
+ */
+function breakLongTokens(
+  words: string[],
+  maxWidth: number,
+  font: { fontSize: number; fontWeight: number },
+): string[] {
+  const out: string[] = [];
+  for (const word of words) {
+    const pieces = word.split("-");
+    if (pieces.length === 1 || measureText(word, font) <= maxWidth) {
+      out.push(word);
+      continue;
+    }
+    pieces.forEach((piece, i) =>
+      out.push(i < pieces.length - 1 ? `${piece}-` : piece),
+    );
+  }
+  return out;
 }
 
 export function ChartSeed({
@@ -294,9 +398,13 @@ export function ChartSeed({
   size: string;
 }) {
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height, typeScale } = sizeFor(size);
+  const { width, height, typeScale, minTypePx } = sizeFor(size);
+  // THE BAND THE BEAT MAY DRAW IN. At landscape and square that is the whole frame. At portrait the
+  // platform reserves 14% at the top for its profile row and 35% at the foot for the caption,
+  // buttons and progress bar — 979px of the 1920 are ours, and content outside it is at risk of
+  // being COVERED rather than clipped, which is why no counter in this project ever saw it.
+  const stage = stageFor(size);
   const {
-    PAD,
     TITLE,
     SOURCE,
     AXIS,
@@ -311,16 +419,36 @@ export function ChartSeed({
     Y_TICK_BASELINE_NUDGE,
     MARK_BASELINE_NUDGE,
   } = tokens(typeScale);
+  // `tokens()` still exports a type-proportional `PAD` for beats that separate WORDS with it. This
+  // seed does not: everything it insets from the frame edge is canvas-proportional. See
+  // `frameInset` for the collision that separated the two.
+  const INSET = frameInset(width, minTypePx);
+  // The two edges everything hangs off. Where the platform reserves a band, ITS edge is the
+  // margin — adding our own inset inside a 269px reserve would spend the budget twice.
+  const contentTop = stage.reserved ? stage.top : INSET;
+  // Named `sourceBottom` because that is what it IS and what the tree's own guard follows
+  // (`splash-twin/test/credit-anchors-to-the-frame-bottom.test.ts` reads the chain to its
+  // definition rather than trusting the name). At portrait the band's foot is the frame's foot as
+  // far as the reader is concerned: below it is the platform's, not ours.
+  const sourceBottom = stage.reserved ? stage.bottom : height - INSET;
 
   // The header is laid out first, because the plot starts where the header stops.
-  const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title. It is anchored to
-  // `height - PAD` — the same inset the title hangs off at the top, on the same x — so the credit
-  // is in a constant place on every graphic this project ships, whatever the header did above it.
-  // See references/static-discipline.md, "The source on the frame's bottom margin," for the
-  // reversal and the cost it accepts.
-  const sourceBaseline = height - PAD;
+  const titleLines = wrap(title, width - INSET * 2, TITLE);
+  const titleBaseline = contentTop + TITLE.fontSize;
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND, not under the title — the same edge the title hangs
+  // off at the top, on the same x — so the credit is in a constant place on every graphic this
+  // project ships, whatever the header did above it. See references/static-discipline.md, "The
+  // source on the frame's bottom margin," for the reversal and the cost it accepts.
+  //
+  // AND AT PORTRAIT THAT BOTTOM MARGIN IS THE PLATFORM'S, NOT OURS. The seed anchored the credit at
+  // `height - PAD`, which on a 1080x1920 story is 1800 — 550px inside the reserve. A
+  // COVERED CREDIT IS AN ATTRIBUTION FAILURE, not a cosmetic one, so the credit becomes the last
+  // line of the STAGE. `CENTRING-VERDICT.md` left this open; `MOBILE-FIRST-WIREFRAME.md` §3.1
+  // settles it in favour of attribution and charges the 36px to the budget.
+  const sourceBaseline = sourceBottom;
+  // The credit wraps. It was one unwrapped run, which is invisible at 900x560 (a 14px credit fits)
+  // and drew 504px outside a 1080 frame the moment the type reached the phone's floor.
+  const sourceLines = wrap(source, width - INSET * 2, SOURCE);
 
   // Both gutters are measured from the widest string that will actually be drawn in them.
   const present = data.filter(
@@ -331,8 +459,16 @@ export function ChartSeed({
       "a line beat needs at least two readings, got " + present.length,
     );
   const last = present[present.length - 1];
-  const endLabel = `${subject} ${last.value} ${UNIT}`;
-  const tickLabels = yTickValues(data).map((v, i, all) =>
+  // THE END LABEL'S SHORT FORM AT PHONE SIZES, and the probe found this by rendering rather than by
+  // reasoning: at 42 frame px a long place name plus its value is ~500px of ink — half the
+  // plot's width — laid across the very series it labels. And the subject is already the headline's
+  // subject, so naming it twice buys nothing. This is NOT a ladder rung: there is nothing left for
+  // a rung to reduce afterwards, so it is the default at those sizes rather than a fallback.
+  const endLabel = stage.reserved || minTypePx >= 36
+    ? `${last.value} ${UNIT}`
+    : `${subject} ${last.value} ${UNIT}`;
+  const yHint = yTickHintFor(size);
+  const tickLabels = yTickValues(data, yHint).map((v, i, all) =>
     i === all.length - 1 ? `${v} ${UNIT}` : `${v}`,
   );
   const padding = {
@@ -340,7 +476,7 @@ export function ChartSeed({
     // moving the source would otherwise have dragged the whole plot down the frame with it. The
     // header gives back the 26px it used to reserve to separate title from source.
     top: titleBaseline + (titleLines.length - 1) * TITLE.lead + HEADER_TO_PLOT,
-    right: PAD + END_LABEL_GUTTER + measureText(endLabel, LABEL),
+    right: INSET + END_LABEL_GUTTER + measureText(endLabel, LABEL),
     // And the floor is DERIVED from where the source now sits, not guessed: the x-axis label band
     // has to end above the source's own ink. Measured, not assumed — the first attempt reserved
     // `PAD + SOURCE.fontSize + 14` (68px, on the argument that a 14px line 40px above the floor
@@ -348,14 +484,18 @@ export function ChartSeed({
     // struck straight through "2016" and "2018". 86px is what the frame actually needs.
     // Nothing HORIZONTAL moves in any of this — no measured gutter is re-measured, which is what
     // keeps the change out of the label-collision class this project keeps finding by eye.
+    // The reserve is the whole CREDIT BLOCK, not one line of it. A wrapped credit that reserved a
+    // single line would put the x-axis labels through its upper lines — the same defect the
+    // original arithmetic produced with one line, found the same way, by looking.
     bottom:
       height -
       sourceBaseline +
       SOURCE.fontSize +
+      (sourceLines.length - 1) * SOURCE.lead +
       X_TICK_DROP +
       X_AXIS_TO_SOURCE_GAP,
     left:
-      PAD +
+      INSET +
       Y_TICK_INSET +
       Math.max(...tickLabels.map((label) => measureText(label, AXIS))),
   };
@@ -364,6 +504,8 @@ export function ChartSeed({
     width,
     height,
     padding,
+    yTickHint: yHint,
+    xTickHint: xTickHintFor(size),
   });
 
   return (
@@ -381,7 +523,7 @@ export function ChartSeed({
       {titleLines.map((line, i) => (
         <text
           key={line}
-          x={PAD}
+          x={INSET}
           y={titleBaseline + i * TITLE.lead}
           fill={ink}
           fontSize={TITLE.fontSize}
@@ -390,9 +532,20 @@ export function ChartSeed({
           {line}
         </text>
       ))}
-      <text x={PAD} y={sourceBaseline} fill={muted} fontSize={SOURCE.fontSize}>
-        {source}
-      </text>
+      {sourceLines.map((line, i) => (
+        <text
+          key={line}
+          x={INSET}
+          // The LAST line sits on the credit's own baseline, so the block grows UPWARD from a fixed
+          // foot. Growing downward would push the credit into the platform's reserve, which is the
+          // one place it must never go.
+          y={sourceBaseline - (sourceLines.length - 1 - i) * SOURCE.lead}
+          fill={muted}
+          fontSize={SOURCE.fontSize}
+        >
+          {line}
+        </text>
+      ))}
 
       {ticksY.map((tick, i) => (
         <g key={tick.value}>

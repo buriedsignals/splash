@@ -154,6 +154,14 @@ const CASES: Array<[string, number]> = [
   ["Supercalifragilisticexpialidocious", 40],
   ["two  spaces   between", 200],
   ["exactly at the boundary", 1],
+  // A hyphenated token WIDER than its measure. Added 2026-08-11 with the hyphen-breaking change:
+  // without a case that exercises it, six copies could have been changed and only one of them
+  // actually would have been. The measure is deliberately below the token's own width so the
+  // break fires; at 300 it would not, and the case would prove nothing.
+  ["Annemasse-les-Voirons-sur-Arve", 120],
+  // …and the same token with room to spare, so a copy that breaks EAGERLY — splitting a
+  // hyphenated word that fits — is caught as well as one that never breaks.
+  ["Annemasse-les-Voirons-sur-Arve", 600],
 ];
 
 // Proves the premise stated in the file doc-comment, so it is never merely assumed: the two
