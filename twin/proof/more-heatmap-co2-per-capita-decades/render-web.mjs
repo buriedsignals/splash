@@ -1,31 +1,38 @@
 // twin/proof/more-heatmap-co2-per-capita-decades/render-web.mjs
 //
-// This beat's own web runner. It does not call the `twin-chart-web` skill's generic `renderWeb`
-// (`skills/twin-chart-web/scripts/render-web.mjs`), because that function hard-codes inlining the
-// skill's own `assets/interaction.mjs` — a nearest-point-by-x model built for a line's small
-// circles, not a grid of already-discrete cells (see `Co2HeatmapWeb.tsx`'s own doc-comment). This
-// file follows the same SHAPE that function establishes (SSR one element per layout, derive
-// furniture/measure in node, inline one interaction script, write one self-contained HTML file) —
-// it is a legitimate second instance of the render ladder's third rung, not a reinvention of it.
+// This beat's own WEB runner — the shape every other beat in this genre uses: the story's own
+// constants, the story's own CSV reader, the story's own component, handed to the skill's generic
+// `renderWeb` (`skills/twin-chart-web/scripts/render-web.mjs`).
 //
-// Usage: bun render-web.mjs [outDir]
+// IT USED TO BE A SECOND COPY OF THAT FUNCTION, and that is the whole of B6.2. This file carried
+// its own `buildCss` — with `.chart-figure { max-width: 900px }` and a `@media` rung boundary —
+// because the component it drove was a two-rung, words-inside-the-SVG build that could not be
+// widened without magnifying its own type. `Co2HeatmapWeb.tsx` is now on the genre's fluid frame
+// (geometry-only SVG, every word HTML at a fixed pixel size), so the second stylesheet, the second
+// SSR loop, the cap and the media query all retire together and this runner is 100 lines shorter.
+// The genre's shared `buildCss` is the one that ships, which is what makes "fills its container"
+// a property of the genre rather than of this beat.
+//
+// After the skill's `renderWeb` writes the self-contained HTML, this runner does two story-owned
+// repairs in place, the same two the bump beat's runner owns:
+//
+//   1. Appends this beat's OWN interaction script (`./interaction.mjs`) as a second inline
+//      `<script>` — a grid of already-discrete cells needs no nearest-point-by-x resolution, and
+//      the skill's own script (which runs first, finds no `.pt` circles, and is a harmless no-op)
+//      is built for points strung along one line.
+//   2. Appends this beat's own CSS: the column-header row ABOVE the plot (the genre's shared
+//      `.chart-plot` puts its axis row below), the legend row, and the in-cell value's own type.
+//
+// `renderWeb` hard-codes `<html lang="fr">`; this beat's words are English, so the runner patches
+// it — a per-story fix, not a change to the skill, which takes no `lang` parameter.
+//
+// Usage: bun proof/more-heatmap-co2-per-capita-decades/render-web.mjs [outDir]
 
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import {
-  deriveFurniture,
-  measureText,
-} from "#shared/twin-chart-beat/render-still.mjs";
-import {
-  Co2HeatmapWeb,
-  DESKTOP_LAYOUT,
-  LAYOUTS,
-  NARROW_LAYOUT,
-  checkRampFloor,
-} from "./Co2HeatmapWeb.tsx";
+import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { Co2HeatmapWeb, FRAME, checkRampFloor } from "./Co2HeatmapWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // And the OUTPUT defaults beside the beat too — where this beat's html is actually committed. It
@@ -134,145 +141,91 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   checkRampFloor(GROUND);
 
-  const furniture = deriveFurniture(GROUND);
-  const svgs = LAYOUTS.map((layout) =>
-    renderToStaticMarkup(
-      createElement(Co2HeatmapWeb, {
-        cells,
-        countries,
-        decades: DECADES,
-        title: TITLE,
-        source: SOURCE,
-        limits: LIMITS,
-        alt: ALT,
-        ground: GROUND,
-        ...furniture,
-        measure: measureText,
-        layout,
-      }),
-    ),
-  );
+  const { outPath } = await renderWeb({
+    component: Co2HeatmapWeb,
+    props: {
+      cells,
+      countries,
+      decades: DECADES,
+      title: TITLE,
+      source: SOURCE,
+      limits: LIMITS,
+      alt: ALT,
+      ground: GROUND,
+      frame: FRAME,
+    },
+    outDir,
+    name,
+  });
 
-  const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
-  const inlineScript = interactionSource.replace(/^export /gm, "");
+  await repair(outPath);
 
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${TITLE}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-${buildCss(furniture)}
-</style>
-</head>
-<body>
-<figure class="chart-figure">
-${svgs.join("\n")}
-</figure>
-<div id="tooltip" role="status" aria-live="polite" hidden></div>
-<script>
-${inlineScript}
-</script>
-</body>
-</html>
-`;
-
-  await mkdir(outDir, { recursive: true });
-  const outPath = join(outDir, name);
-  await writeFile(outPath, html);
   return { outPath, cells: cells.length, countries: countries.length };
 }
 
-/** Every type size a layout declares, in one list — so a role added later is measured too. */
-function declaredTypeSizes(layout) {
-  return Object.values(layout)
-    .filter((v) => v && typeof v === "object" && typeof v.fontSize === "number")
-    .map((v) => v.fontSize);
-}
+/** The two in-place repairs this runner owns — see this file's header for why each is a story-level
+ *  fix rather than a change to the skill's generic `renderWeb`. */
+async function repair(outPath) {
+  let html = await readFile(outPath, "utf8");
 
-/**
- * THE RUNG BOUNDARY IS DERIVED, NOT PICKED — and the step in type size across it is a property of
- * the two-rung pattern, not a defect in where the boundary sits. Both halves matter; read them
- * together before moving anything here.
- *
- * THE BOUNDARY. Both rungs are ONE SVG scaled to the column, so every type size in a rung is
- * multiplied by (column width / that rung's own design width), and a rung shown below its own
- * legibility floor prints type nobody can read. The floor is 9px — the smallest size the narrow
- * layout declares at its own design width. The desktop rung's smallest declared type is 12px, so it
- * may be scaled to 9/12 = 0.75 and no further: 900 x 0.75 = 675px of column. At the 480px this file
- * used to carry, the desktop rung was still on screen at scale 0.5344 — measured in Chrome at a
- * 481px viewport: title 12.83px, source 6.95px, legend 6.41px, all below the floor and the smallest
- * barely half. That move was right and is not in question.
- *
- * THE STEP ACROSS THE SEAM, and why moving the boundary can never close it. A rung's rendered type
- * is a FIXED FRACTION of the column: the smallest role is 9/375 = 0.0240 narrow against 12/900 =
- * 0.0133 desktop, the title 16/375 = 0.0427 against 24/900 = 0.0267. Those fractions do not depend
- * on the column, so the step at the seam is their RATIO — 1.80x for the floor role, 1.60x for the
- * title — **at every possible boundary**. Moving the boundary moves both sides together and leaves
- * the ratio untouched. Measured in Chrome on both files rather than argued: pre-repair, seam at
- * 480/481, title 20.48 -> 12.83 (1.596x); post-repair, seam at 675/676, title 28.80 -> 18.03
- * (1.597x). The same step, in the same direction, before and after. What the move changed is the
- * absolute sizes — nothing now renders under 9px, where 6.41px used to.
- *
- * A THIRD RUNG DOES NOT HELP, for the same arithmetic. Two rungs meet without a step only if they
- * declare the same type-to-width fraction; a rung with the desktop rung's fraction hits the 9px
- * floor at exactly the same column width the desktop rung does, so it can cover nothing new. To
- * live below 675 a rung MUST carry a larger fraction — which is the step. The boundary exists
- * precisely because the fraction has to change; a seam without a step is a contradiction in terms
- * in this pattern.
- *
- * THE FIX THAT WAS TRIED AND REJECTED, so nobody spends the afternoon on it again. Capping the
- * narrow rung at its own design width (`max-width: 375px`, the symmetry the desktop rung already
- * has at 900) does close the seam almost exactly — measured: title 16.00 -> 18.03, +12.7% and
- * upward as the window widens, floor role 9.00 -> 9.01, 0 collisions and no horizontal scroll at
- * 375/430/480/600/674/675/676/700/800/900/1200. It was reverted after LOOKING at it: from 375px to
- * 675px the graphic then sits in a 375px column with up to 300px of the window empty beside it,
- * which is a permanent layout defect on every tablet and every half-width desktop window, traded
- * for a jolt a reader only ever sees while dragging a window edge. `web-discipline.md` names that
- * empty space as its own failure mode. The real answer is the fluid seed — words as HTML at a fixed
- * px size over a geometry-only SVG, where nothing type-related scales with the column — and
- * retrofitting the eleven web chart beats onto it is a known open item, not a seam repair.
- */
-function rungBoundary(desktop, narrow) {
-  const floorPx = Math.min(...declaredTypeSizes(narrow));
-  const desktopFloorScale = floorPx / Math.min(...declaredTypeSizes(desktop));
-  if (desktopFloorScale >= 1)
-    throw new Error(
-      `the desktop rung is already at or below the ${floorPx}px floor at its own design width`,
-    );
-  return {
-    breakpointPx: Math.round(desktop.width * desktopFloorScale),
-    desktopCapPx: desktop.width,
-  };
-}
+  html = html.replace('<html lang="fr">', '<html lang="en">');
 
-function buildCss({ ink, muted, grid }) {
-  const { breakpointPx, desktopCapPx } = rungBoundary(DESKTOP_LAYOUT, NARROW_LAYOUT);
-  return `
-:root { --ink: ${ink}; --muted: ${muted}; --grid: ${grid}; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #FFFFFF; font-family: Helvetica, Arial, sans-serif; }
-.chart-figure { margin: 0; max-width: ${desktopCapPx}px; }
-svg.chart { display: block; width: 100%; height: auto; }
-svg.chart[data-layout="narrow"] { display: none; }
-/* The boundary is derived from the two rungs' own declared type — see rungBoundary() in
-   render-web.mjs for the arithmetic, and for why the step in type size across this line is a
-   property of the two-rung pattern that moving the line cannot close. */
-@media (max-width: ${breakpointPx}px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+  const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
+  if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");
+  html = html.replace("</body>", `<script>\n${interactionSource.replace(/^export /gm, "")}\n</script>\n</body>`);
+
+  // This beat's own rules, after the genre's shared stylesheet.
+  //
+  // THE COLUMN HEADERS SIT ABOVE THE GRID, which is the one structural departure a heatmap forces:
+  // the genre's shared `.chart-plot` is `grid-template-rows: 1fr var(--x-axis-h)` — an axis row
+  // BELOW the geometry — and a matrix names its columns above them. The three track assignments
+  // below re-point the same four children (`.y-axis`, `svg.chart`, `.overlay`, `.x-axis`) at the
+  // flipped rows; nothing else about the shared grid changes, and the `%` positions the component
+  // writes are unaffected because they are positions inside those children, not inside the grid.
+  //
+  // THE IN-CELL VALUE IS FURNITURE, so it does not stretch: a fixed pixel size, centred on its own
+  // cell by the same `%` the geometry put the cell at. Whether there is room for it at a given
+  // width is decided by the `@container` rule the component itself emits (see `cellValueFloorPx`),
+  // never by anything written here.
+  const ownCss = `
+.heatmap-figure .chart-legend {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 10px;
+  font-size: var(--legend-size);
+  color: var(--muted);
 }
+.heatmap-figure .legend-swatch { display: block; border: 1px solid var(--grid); }
+.chart-plot.heatmap-plot {
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: var(--x-axis-h) 1fr;
+  min-height: var(--min-plot-h);
+}
+.heatmap-plot .x-axis { grid-column: 2; grid-row: 1; }
+.heatmap-plot .y-axis { grid-column: 1; grid-row: 2; }
+.heatmap-plot svg.chart { grid-column: 2; grid-row: 2; }
+.heatmap-plot .overlay { grid-column: 2; grid-row: 2; }
+/* The shared rule anchors an x label 6px BELOW its row; this one hangs from the row's bottom edge,
+   because the row is above the grid it names. */
+.heatmap-plot .axis-label.x { top: auto; bottom: 4px; transform: translateX(-50%); }
+.heatmap-plot .axis-label.y { right: 10px; transform: translateY(-50%); }
 .cell { cursor: pointer; }
 .cell:hover, .cell:focus, .cell-active { outline: 2px solid var(--ink); outline-offset: -2px; }
 .cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-#tooltip {
-  position: fixed; max-width: 240px; padding: 6px 10px; font-size: 13px; line-height: 1.3;
-  background: #FFFFFF; color: var(--ink); border: 1px solid var(--muted); border-radius: 3px;
-  pointer-events: none; z-index: 10;
+.cell-value {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: var(--cell-value-size);
+  font-weight: var(--cell-value-weight);
+  white-space: nowrap;
 }
-#tooltip[hidden] { display: none; }
-`.trim();
+`;
+  if (!html.includes("</style>")) throw new Error("renderWeb output has no </style> to repair");
+  html = html.replace("</style>", `${ownCss}</style>`);
+
+  await writeFile(outPath, html);
 }
 
 if (import.meta.main) {

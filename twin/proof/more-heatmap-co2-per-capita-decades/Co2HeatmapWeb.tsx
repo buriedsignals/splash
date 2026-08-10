@@ -1,23 +1,47 @@
 /**
- * Beat: per-capita CO₂ emissions, eight countries x seven decades (heatmap / matrix), web genre.
+ * Beat: per-capita CO₂ emissions, eight countries × seven decades (heatmap / matrix), web genre.
  *
  * Written fresh from `references/types/heatmap.md`'s own description — region-by-year is the
  * type sheet's own worked example of what this type is FOR, so this beat draws exactly that shape:
  * one categorical axis (country), one temporal axis (decade), one quantitative value (average
- * annual tonnes CO₂ per capita) encoded as cell colour. Nothing here is imported from the seed
- * (`twin-chart-beat/assets/ChartSeed.tsx`, a line) or from the web genre's own worked example
- * (`proof/co2-suisse/EmissionsWeb.tsx`, also a line, whose `.pt`/`.hit-area`/nearest-by-x
- * interaction model does not fit a grid of already-discrete, non-overlapping cells) — a heatmap's
- * geometry, its ramp, and its interaction are all written new for this beat, per this project's own
- * "write the beat's own component" rule (`twin-chart-beat/SKILL.md`, "When to use").
+ * annual tonnes CO₂ per capita) encoded as cell colour.
  *
  * What the web genre adds here, honestly, per `web-discipline.md`'s "What hover reveals": each
- * cell prints its own ROUNDED value unconditionally (`heatmap.md`'s own rule — "if exact numbers
- * matter, put the value inside the cell too" — a coarse 56-cell grid is exactly the case where the
- * numbers ARE the story). Hover/focus adds the one thing the static print can't hold without
- * turning into 56 stacked sentences: a full, exact reading — country, decade, precise value, and
- * how many years the decade's average was built from (5 for the partial 2020s, 10 for every other
- * decade) — printed nowhere by default.
+ * cell prints its own ROUNDED value unconditionally wherever the cell has room for it (`heatmap.md`'s
+ * own rule — "if exact numbers matter, put the value inside the cell too" — a coarse 56-cell grid
+ * is exactly the case where the numbers ARE the story). Hover/focus adds the one thing the static
+ * print can't hold without turning into 56 stacked sentences: a full, exact reading — country,
+ * decade, precise value, and how many years the decade's average was built from (5 for the partial
+ * 2020s, 10 for every other decade).
+ *
+ * MIGRATED TO THE FLUID FRAME, and this beat was the last one that had not been. It used to ship
+ * TWO pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 375px `NARROW_LAYOUT`, everything drawn as
+ * `<text>` inside one scaled SVG — swapped by a `@media` query, under a `.chart-figure` capped at
+ * `max-width: 900px`. The owner's report is the one sentence that kills that whole shape: **the
+ * visual must take the full available width.** A rung is a cap by construction (an SVG whose words
+ * are inside it cannot be widened without magnifying its type), so the repair is not moving the cap
+ * — it is the seed's separation: the `<svg>` carries GEOMETRY ONLY (56 rects and one outline, no
+ * `<text>` at all) under `preserveAspectRatio="none"`, and every word — title, caveat, source,
+ * legend, the eight row headers, the seven column headers and the 56 in-cell values — is HTML at a
+ * FIXED CSS pixel size, positioned in `%` over the same grid cell. Geometry stretches; type does
+ * not. Both rungs, the media query and the cap are gone, and this file now renders ONCE.
+ *
+ * The long note the old file carried about "the step in type size across the seam" retires with the
+ * seam: there is no boundary left to place, because nothing type-related scales with the column any
+ * more. Its own closing sentence said so — *"the real answer is the fluid seed … retrofitting is a
+ * known open item, not a seam repair."* This is that retrofit.
+ *
+ * THE ONE DECISION A HEATMAP FORCES THAT THE SEED DOES NOT FACE. An in-cell value is a fixed-size
+ * word inside a stretching box, so below some plot width the word is wider than the cell that holds
+ * it. That width is DERIVED here from the widest value string this beat actually prints, and the
+ * values are hidden below it by one `@container` rule — the same mechanism `BumpWeb.tsx` uses for
+ * its year ticks, and for the same reason: a de-collision decision belongs at the width it is taken
+ * at, never baked once. Where the values go, the reading does not: every cell is still `tabIndex=0`
+ * with its own `aria-label` and `data-detail`, so the exact figure is a Tab or a pointer away, and
+ * the alt text carries the claim in full.
+ *
+ * `deriveFurniture`/`measureText` are not called here — `renderWeb` derives them once in node and
+ * threads them in as props (`ink`/`muted`/`grid`/`measure`).
  */
 
 import { scaleLinear } from "d3-scale";
@@ -30,86 +54,72 @@ export type Cell = {
   value: number;
 };
 
-export type WebLayout = {
-  name: "desktop" | "narrow";
-  width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  subtitle: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  axis: { fontSize: number };
-  cellValue: { fontSize: number; fontWeight: number };
-  legend: { fontSize: number; fontWeight: number };
-  cellSize: number;
-  cellGap: number;
-  rowLabelGutter: number;
-};
-
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 24, fontWeight: 700, lead: 30 },
-  subtitle: { fontSize: 14, fontWeight: 400, lead: 20 },
-  source: { fontSize: 13, fontWeight: 400, lead: 18 },
-  axis: { fontSize: 13 },
-  cellValue: { fontSize: 13, fontWeight: 600 },
-  legend: { fontSize: 12, fontWeight: 400 },
-  cellSize: 66,
-  cellGap: 4,
-  rowLabelGutter: 118,
-};
-
-// The task requires checking this layout at 375px — a touch narrower than the web genre's
-// established 360px floor (`web-discipline.md`'s CO2 beat), so this beat's own narrow layout is
-// sized to fit inside 375px rather than reusing that constant unexamined.
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 375,
-  pad: 14,
-  title: { fontSize: 16, fontWeight: 700, lead: 21 },
-  subtitle: { fontSize: 11, fontWeight: 400, lead: 15 },
-  source: { fontSize: 10, fontWeight: 400, lead: 14 },
-  axis: { fontSize: 9 },
-  cellValue: { fontSize: 9, fontWeight: 600 },
-  legend: { fontSize: 10, fontWeight: 400 },
-  cellSize: 30,
-  cellGap: 2,
-  rowLabelGutter: 62,
-};
-
-export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
-
-/** Space between a row header's own right edge and the first cell of its row. */
-export const ROW_LABEL_GAP = 10;
-
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-export function wrap(
-  text: string,
-  maxWidth: number,
-  font: { fontSize: number; fontWeight: number },
-  measure: Measure,
-): string[] {
-  const lines: string[] = [];
-  let line = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = line ? `${line} ${word}` : word;
-    if (line && measure(trial, font) > maxWidth) {
-      lines.push(line);
-      line = word;
-    } else line = trial;
-  }
-  return line ? [...lines, line] : lines;
-}
+/** This genre's single fluid frame, in this beat's own shape. Declared here rather than imported
+ *  from the skill's seed for the reason that file's own doc-comment gives: a compile-time-only type
+ *  has no `#shared/*` vendoring path, and a relative import across the skill boundary hard-codes
+ *  this dev repository's own directory layout. Duplicate, do not link. */
+export type HeatmapFrame = {
+  /** One cell's side in canonical SVG user units — proportions only, never a rendered pixel size
+   *  and never a cap. */
+  cellSize: number;
+  /** The ground-coloured separation between two cells, in CSS PIXELS, drawn as a non-scaling stroke
+   *  on each cell rather than as a gap in the geometry. The distinction is not cosmetic: a gap is
+   *  geometry, and geometry stretches — under `preserveAspectRatio="none"` at 3440px a 4-unit gap
+   *  rendered 27px wide horizontally against 5px vertically, so the grid read as seven columns with
+   *  white alleys between them. Measured in the ultrawide render, then moved into the stroke, which
+   *  `vectorEffect="non-scaling-stroke"` holds at the same pixel width in both axes at every
+   *  stretch. */
+  cellSeparatorPx: number;
+  /** Fixed CSS pixel row ABOVE the plot, for the decade headers — a margin, not part of the
+   *  viewBox. A heatmap's column headers sit above its grid, which is the one place this beat's own
+   *  stylesheet departs from the genre's shared `.chart-plot` (whose axis row is below). */
+  xAxisRowPx: number;
+  /** Air between a row header and the first cell of its row. */
+  gap: number;
+  title: { fontSize: number; fontWeight: number };
+  subtitle: { fontSize: number };
+  source: { fontSize: number };
+  axis: { fontSize: number };
+  /** The value printed inside a cell. Its own measured width is what decides the plot width below
+   *  which the values are dropped — see `cellValueFloorPx`. */
+  cellValue: { fontSize: number; fontWeight: number };
+  legend: { fontSize: number };
+  /** The legend swatch's own fixed size in CSS pixels — furniture, so it does not stretch. */
+  legendSwatch: { width: number; height: number };
+  /** One row's own floor in CSS pixels: the plot's `min-height` is this times the number of
+   *  countries, so eight rows never squeeze below a legible cell however short the window gets. */
+  minRowPx: number;
+};
+
+export const FRAME: HeatmapFrame = {
+  cellSize: 66,
+  cellSeparatorPx: 2,
+  xAxisRowPx: 22,
+  gap: 10,
+  title: { fontSize: 24, fontWeight: 700 },
+  subtitle: { fontSize: 14 },
+  source: { fontSize: 13 },
+  axis: { fontSize: 13 },
+  // 11px, not the 13px the desktop rung used and not the 9px the narrow rung used. Measured against
+  // this beat's own widest value string at the narrowest plot this genre verifies at: at 13px the
+  // values are wider than the cell that holds them on a phone and would be dropped there entirely;
+  // at 11px they clear it with air to spare, and 11px is the floor this project's own mobile-first
+  // probe settled on. Nothing in between was picked by eye.
+  cellValue: { fontSize: 11, fontWeight: 600 },
+  legend: { fontSize: 12 },
+  legendSwatch: { width: 200, height: 12 },
+  minRowPx: 20,
+};
 
 /** Sequential ramp, single-hue (`heatmap.md`'s own rule against a multi-hue "lively" gradient):
  *  channel-wise linear interpolation between a pale tint and a deep pole of the house teal, so
  *  luminance moves in exactly one direction, start to finish — checked by the caller, not assumed,
- *  via `rampContrastFloor` below. */
+ *  via `checkRampFloor` below. */
 // The obvious pale-tint low end (`#E3F2F0`) measured 1.15:1 against a white ground — it nearly
 // vanished, caught by `checkRampFloor` at build time before it was ever looked at. `#4A9C8F` is
 // the palest stop on this single hue that still clears the 3:1 shape floor against white.
@@ -160,16 +170,14 @@ export function checkRampFloor(ground: string, steps = 9): void {
   }
 }
 
-/** Pure geometry: cells to rects on a country x decade grid. `countries` is the row order the
- *  caller already chose (`render-web.mjs`'s own comment explains the ordering rule); `decades` is
- *  the column order, always chronological. */
+/** Pure geometry: cells to rects on a country × decade grid, in canonical SVG user units whose
+ *  origin is the grid's own top-left. The row-header gutter and the column-header row are CSS grid
+ *  tracks around this rectangle, never padding baked into the `viewBox`. */
 export function heatmapGeometry(
   cells: Cell[],
   countries: string[],
   decades: number[],
-  layout: WebLayout,
-  originX: number,
-  originY: number,
+  frame: HeatmapFrame,
 ) {
   const byKey = new Map(cells.map((c) => [`${c.country}|${c.decade}`, c]));
   const values = cells.map((c) => c.value);
@@ -180,13 +188,23 @@ export function heatmapGeometry(
     decades.map((decade, col) => {
       const cell = byKey.get(`${country}|${decade}`);
       if (!cell) throw new Error(`missing cell for ${country} / ${decade}s`);
-      const x = originX + col * (layout.cellSize + layout.cellGap);
-      const y = originY + row * (layout.cellSize + layout.cellGap);
-      return { ...cell, row, col, x, y, fill: rampColour(t(cell.value)) };
+      return {
+        ...cell,
+        row,
+        col,
+        x: col * frame.cellSize,
+        y: row * frame.cellSize,
+        fill: rampColour(t(cell.value)),
+      };
     }),
   );
 
-  return { grid, domain };
+  return {
+    grid,
+    domain,
+    width: decades.length * frame.cellSize,
+    height: countries.length * frame.cellSize,
+  };
 }
 
 // English-language beat throughout (title, source, alt) — a decimal COMMA here would be a language
@@ -194,6 +212,62 @@ export function heatmapGeometry(
 // furniture is a defect even when every number is right"). Plain decimal point.
 function fr1(v: number): string {
   return v.toFixed(1);
+}
+
+/** A coordinate as a percentage of the box it was drawn in — what lets an HTML label sit exactly
+ *  where the geometry put the cell it names, at any container width. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
+}
+
+/**
+ * THE PLOT WIDTH BELOW WHICH A FIXED-SIZE WORD IS WIDER THAN THE STRETCHING COLUMN IT SITS IN.
+ *
+ * A column's rendered width is `cellSize / gridWidth` of the plot's own width, because the geometry
+ * stretches and nothing else in this component does. The word printed over it does NOT stretch, so
+ * the two cross at exactly one width, and that width is arithmetic rather than judgement: the
+ * widest string of that role, plus the air it needs either side, scaled back out to the plot.
+ * Two roles use it — the in-cell value and the decade header — and both are decided by CSS at the
+ * width it is true at, never baked once the way the pre-fluid build baked a whole rung.
+ */
+export function columnFloorPx(
+  widestWordPx: number,
+  airPx: number,
+  gridWidth: number,
+  frame: HeatmapFrame,
+): number {
+  return Math.ceil(((widestWordPx + airPx * 2) * gridWidth) / frame.cellSize);
+}
+
+/** The two container names the floors above are written against — declared on the two children that
+ *  occupy the plot's own grid track (`.overlay` and `.x-axis`), so a query on either is a query on
+ *  the exact width the arithmetic is expressed in. */
+const CELL_CONTAINER = "heatmap-plot-area";
+const HEADER_CONTAINER = "heatmap-header-row";
+
+/**
+ * Below `valueFloorPx` the in-cell values go: the reading is still one Tab or one pointer away on
+ * every cell, and the alt text carries the claim, so what is lost is a convenience and not the
+ * argument. Below `headerFloorPx` the decade headers SHORTEN rather than disappear — `1960s` becomes
+ * `60s` — because a matrix whose columns are unnamed is not a matrix a reader can use, and both
+ * forms are emitted server-side so the swap is a CSS `display` and never a script.
+ */
+export function fluidWordCss(
+  valueFloorPx: number,
+  headerFloorPx: number,
+): string {
+  return [
+    `.heatmap-plot .overlay { container-type: inline-size; container-name: ${CELL_CONTAINER}; }`,
+    `.heatmap-plot .x-axis { container-type: inline-size; container-name: ${HEADER_CONTAINER}; }`,
+    `.heatmap-plot .axis-label.x .short { display: none; }`,
+    `@container ${CELL_CONTAINER} (max-width: ${valueFloorPx}px) {`,
+    `  .heatmap-plot .cell-value { display: none; }`,
+    `}`,
+    `@container ${HEADER_CONTAINER} (max-width: ${headerFloorPx}px) {`,
+    `  .heatmap-plot .axis-label.x .long { display: none; }`,
+    `  .heatmap-plot .axis-label.x .short { display: inline; }`,
+    `}`,
+  ].join("\n");
 }
 
 export function Co2HeatmapWeb({
@@ -208,7 +282,7 @@ export function Co2HeatmapWeb({
   ink,
   muted,
   grid: gridColour,
-  layout,
+  frame,
   measure,
 }: {
   cells: Cell[];
@@ -222,7 +296,7 @@ export function Co2HeatmapWeb({
   ink: string;
   muted: string;
   grid: string;
-  layout: WebLayout;
+  frame: HeatmapFrame;
   measure: Measure;
 }) {
   if (cells.length !== countries.length * decades.length)
@@ -230,253 +304,221 @@ export function Co2HeatmapWeb({
       `expected ${countries.length * decades.length} cells, got ${cells.length}`,
     );
 
-  const { width, pad } = layout;
+  const {
+    grid,
+    domain,
+    width: gridWidth,
+    height: gridHeight,
+  } = heatmapGeometry(cells, countries, decades, frame);
 
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const limitsLines = wrap(limits, width - pad * 2, layout.subtitle, measure);
-  const limitsBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    limitsBaseline +
-    (limitsLines.length - 1) * layout.subtitle.lead +
-    Math.round(layout.subtitle.lead * 1.1);
+  // The row-header gutter, measured from the real strings at their own FIXED type size — never a
+  // guessed constant. The old build carried a literal (118 desktop / 62 narrow) and had to raise it
+  // at render time when "United Kingdom" measured past it; here the measurement IS the gutter.
+  const rowGutterPx =
+    Math.ceil(Math.max(...countries.map((c) => measure(c, frame.axis)))) +
+    frame.gap;
 
-  const legendBaseline =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.title.lead * 0.9);
-
-  // The legend's own bottom edge (its min/max labels, drawn BELOW the swatch) — column headers
-  // start clear of this, never guessed close enough to collide. A first render put the min/max
-  // labels almost on top of the "1970s"/"1980s" column headers (7px apart) — caught by looking,
-  // fixed by deriving the gap from the legend's own type size instead of a fixed offset.
-  const legendBottom = legendBaseline + layout.legend.fontSize + 4;
-  const originY = legendBottom + Math.round(layout.axis.fontSize * 2.4);
-  // The row-header gutter is a MINIMUM (it also decides how much of the frame the grid gets), never
-  // the whole answer: the labels that live in it are right-anchored, so a gutter narrower than the
-  // widest of them pushes that one label out of the frame's left pad. Measured at 375: the narrow
-  // layout's literal 62 against a widest row label ("United Kingdom") of 64.05 put that label's left
-  // edge at x 1.95, where every other element in the frame sits at the 14px pad. The widest label is
-  // measured in the font it will be drawn in, and the gutter is raised to hold it whenever the
-  // literal is too small — the desktop layout's own 118 is already wider than its labels need and is
-  // left exactly as it was.
-  const widestRowLabel = Math.max(
-    ...countries.map((country) => measure(country, layout.axis)),
+  // Both floors, from the real strings this beat prints — never a constant.
+  const valueFloorPx = columnFloorPx(
+    Math.max(...grid.map((c) => measure(fr1(c.value), frame.cellValue))),
+    4,
+    gridWidth,
+    frame,
   );
-  const rowLabelGutter = Math.max(
-    layout.rowLabelGutter,
-    widestRowLabel + ROW_LABEL_GAP,
+  const headerFloorPx = columnFloorPx(
+    Math.max(...decades.map((d) => measure(`${d}s`, frame.axis))),
+    3,
+    gridWidth,
+    frame,
   );
-  const originX = pad + rowLabelGutter;
-
-  const { grid, domain } = heatmapGeometry(
-    cells,
-    countries,
-    decades,
-    layout,
-    originX,
-    originY,
-  );
-
-  const plotWidth =
-    decades.length * (layout.cellSize + layout.cellGap) - layout.cellGap;
-  const plotHeight =
-    countries.length * (layout.cellSize + layout.cellGap) - layout.cellGap;
-  const height = originY + plotHeight + layout.axis.fontSize * 2 + pad;
-
-  // Legend swatch: a small horizontal gradient strip built from the same ramp, min/max labelled —
-  // "colour without a key is not decoded, it's just admired" (`heatmap.md`).
-  const legendSteps = 24;
-  const legendCaption = `t CO2/capita, decade average`;
-  // The swatch's own x offset, MEASURED from the caption text it sits beside, not a fixed
-  // "190 desktop / 95 narrow" guess — at the narrow layout's smaller font the caption still
-  // measured past 95px, so the gradient strip started mid-word and ghosted over "decade average",
-  // caught by looking at the rendered 375px page. A fixed gap after the caption's own real width
-  // holds at any layout's own font size, and the swatch's own width is capped by what is actually
-  // left of the frame after that offset, never assumed to fit a budget guessed before it existed.
-  const legendSwatchX = pad + measure(legendCaption, layout.legend) + 14;
-  const legendWidth = Math.min(220, width - pad - legendSwatchX);
+  const minPlotHeightPx = countries.length * frame.minRowPx + frame.xAxisRowPx;
+  const legendCaption = "t CO₂/capita, decade average";
+  const rampStops = Array.from({ length: 12 }, (_, i) =>
+    rampColour(i / 11),
+  ).join(", ");
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure heatmap-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--grid" as string]: gridColour,
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.subtitle.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--axis-size" as string]: `${frame.axis.fontSize}px`,
+        ["--legend-size" as string]: `${frame.legend.fontSize}px`,
+        ["--cell-value-size" as string]: `${frame.cellValue.fontSize}px`,
+        ["--cell-value-weight" as string]: frame.cellValue.fontWeight,
+      }}
     >
-      {/* No `role="img"` on the root — same departure the web genre's own doctrine takes for its
-          line beat, and for the identical reason: every cell below stays individually focusable
-          and individually named, which `role="img"` would flatten away
-          (`web-discipline.md`, "One deliberate departure"). */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      {/* The one rule a static stylesheet cannot hold: the width below which a fixed-size value is
+          wider than the stretching cell around it, derived above from the real strings.
+          `dangerouslySet` because React escapes text children of `<style>`; the content is this
+          component's own arithmetic, never a caller's string. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: fluidWordCss(valueFloorPx, headerFloorPx),
+        }}
+      />
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {limitsLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={limitsBaseline + i * layout.subtitle.lead}
-          fill={muted}
-          fontSize={layout.subtitle.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
+      <div className="chart-header">
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{limits}</p>
+      </div>
 
-      {/* Legend: one shared key for the whole grid, per `heatmap.md` and the small-multiples
-          sibling rule against repeating shared context per unit — here it is stated once, at the
-          level of the whole grid, never once per cell. */}
-      <text
-        x={pad}
-        y={legendBaseline}
-        fill={muted}
-        fontSize={layout.legend.fontSize}
-      >
-        {legendCaption}
-      </text>
-      {Array.from({ length: legendSteps }).map((_, i) => (
-        <rect
-          key={i}
-          x={legendSwatchX + (i * legendWidth) / legendSteps}
-          y={legendBaseline - layout.legend.fontSize}
-          width={legendWidth / legendSteps + 0.5}
-          height={layout.legend.fontSize}
-          fill={rampColour(i / (legendSteps - 1))}
+      {/* The key, stated ONCE for the whole grid — `heatmap.md`'s own rule, and the sibling rule
+          against repeating shared context per unit. Plain HTML: the swatch is a CSS gradient built
+          from the same `rampColour` the cells are filled from, so the key and the grid can never
+          disagree about what a colour means. */}
+      <div className="chart-legend">
+        <span className="legend-caption">{legendCaption}</span>
+        <span className="legend-min">{fr1(domain[0])}</span>
+        <span
+          className="legend-swatch"
+          style={{
+            width: `${frame.legendSwatch.width}px`,
+            height: `${frame.legendSwatch.height}px`,
+            background: `linear-gradient(to right, ${rampStops})`,
+          }}
         />
-      ))}
-      <text
-        x={legendSwatchX}
-        y={legendBaseline + layout.legend.fontSize + 2}
-        fill={muted}
-        fontSize={layout.legend.fontSize}
+        <span className="legend-max">{fr1(domain[1])}</span>
+      </div>
+
+      <div
+        className="chart-plot heatmap-plot"
+        style={{
+          ["--y-gutter" as string]: `${rowGutterPx}px`,
+          ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
+          ["--min-plot-h" as string]: `${minPlotHeightPx}px`,
+          aspectRatio: `${rowGutterPx + gridWidth} / ${gridHeight + frame.xAxisRowPx}`,
+        }}
       >
-        {fr1(domain[0])}
-      </text>
-      <text
-        x={legendSwatchX + legendWidth}
-        y={legendBaseline + layout.legend.fontSize + 2}
-        fill={muted}
-        fontSize={layout.legend.fontSize}
-        textAnchor="end"
-      >
-        {fr1(domain[1])}
-      </text>
+        {/* Column headers — decades, chronological, above the grid. HTML at a fixed size, in `%`
+            over the same track the geometry is drawn in. */}
+        <div className="x-axis">
+          {decades.map((decade, col) => (
+            <span
+              key={decade}
+              className="axis-label x"
+              style={{
+                left: `${pct(col * frame.cellSize + frame.cellSize / 2, gridWidth)}%`,
+                color: muted,
+              }}
+            >
+              {/* Both forms, server-side; which one shows is the container's decision, never a
+                  script's. `60s` is unambiguous under a caveat and a source line that both name
+                  the window, and the full decade is in every cell's own reading. */}
+              <span className="long">{`${decade}s`}</span>
+              <span className="short">{`${String(decade).slice(2)}s`}</span>
+            </span>
+          ))}
+        </div>
 
-      {/* Column headers — decades, chronological, stated once each above the grid. */}
-      {decades.map((decade, col) => (
-        <text
-          key={decade}
-          x={
-            originX +
-            col * (layout.cellSize + layout.cellGap) +
-            layout.cellSize / 2
-          }
-          y={originY - 8}
-          fill={muted}
-          fontSize={layout.axis.fontSize}
-          textAnchor="middle"
+        {/* Row headers — countries, in the deliberate order the caller chose. */}
+        <div className="y-axis">
+          {countries.map((country, row) => (
+            <span
+              key={country}
+              className="axis-label y"
+              style={{
+                top: `${pct(row * frame.cellSize + frame.cellSize / 2, gridHeight)}%`,
+                color: ink,
+              }}
+            >
+              {country}
+            </span>
+          ))}
+        </div>
+
+        {/* GEOMETRY ONLY below — not one `<text>` element. The cells are rects, and a rect under a
+            non-uniform scale is still a rect, which is exactly why this type survives
+            `preserveAspectRatio="none"` where a circle would not. */}
+        <svg
+          // Named `group`, not `img` — the ruling `SlopeWeb.tsx` records: `img` raises the ARIA
+          // children-presentational question for the 56 focusable cells below, `group` names the
+          // graphic without raising it. `<desc>` still carries the alt text.
+          role="group"
+          aria-label={title}
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${gridWidth} ${gridHeight}`}
+          preserveAspectRatio="none"
         >
-          {`${decade}s`}
-        </text>
-      ))}
+          <desc>{alt}</desc>
+          <rect
+            x={0}
+            y={0}
+            width={gridWidth}
+            height={gridHeight}
+            fill={ground}
+          />
 
-      {/* Row headers — countries, in the deliberate order the caller chose. */}
-      {countries.map((country, row) => (
-        <text
-          key={country}
-          x={originX - ROW_LABEL_GAP}
-          y={
-            originY +
-            row * (layout.cellSize + layout.cellGap) +
-            layout.cellSize / 2 +
-            4
-          }
-          fill={ink}
-          fontSize={layout.axis.fontSize}
-          textAnchor="end"
-        >
-          {country}
-        </text>
-      ))}
+          {grid.map((c) => {
+            const yearsNote = c.years < 10 ? ` (${c.years} yrs)` : "";
+            return (
+              <rect
+                key={`${c.country}-${c.decade}`}
+                className="cell"
+                x={c.x}
+                y={c.y}
+                width={frame.cellSize}
+                height={frame.cellSize}
+                fill={c.fill}
+                stroke={ground}
+                strokeWidth={frame.cellSeparatorPx}
+                vectorEffect="non-scaling-stroke"
+                tabIndex={0}
+                role="img"
+                aria-label={`${c.country}, ${c.decade}s${yearsNote}: ${fr1(c.value)} tonnes per capita`}
+                data-detail={`${c.country} · ${c.decade}s${yearsNote}: ${fr1(c.value)} t CO2 per capita`}
+              />
+            );
+          })}
 
-      {/* Cells: square-ish with a thin ground-coloured separator (the gap itself, via cellGap),
-          each one an independently focusable/hoverable target — no hit-area/nearest-x needed,
-          because unlike points on a line, cells are already discrete, non-overlapping regions. */}
-      {grid.map((c) => {
-        const labelInk =
-          contrast("#000000", c.fill) >= contrast("#FFFFFF", c.fill)
-            ? "#000000"
-            : "#FFFFFF";
-        const yearsNote = c.years < 10 ? ` (${c.years} yrs)` : "";
-        return (
-          <g key={`${c.country}-${c.decade}`}>
-            <rect
-              className="cell"
-              x={c.x}
-              y={c.y}
-              width={layout.cellSize}
-              height={layout.cellSize}
-              fill={c.fill}
-              tabIndex={0}
-              role="img"
-              aria-label={`${c.country}, ${c.decade}s${yearsNote}: ${fr1(c.value)} tonnes per capita`}
-              data-detail={`${c.country} · ${c.decade}s${yearsNote}: ${fr1(c.value)} t CO2 per capita`}
-            />
-            <text
-              x={c.x + layout.cellSize / 2}
-              y={c.y + layout.cellSize / 2 + layout.cellValue.fontSize * 0.35}
-              fill={labelInk}
-              fontSize={layout.cellValue.fontSize}
-              fontWeight={layout.cellValue.fontWeight}
-              textAnchor="middle"
-              pointerEvents="none"
+          {/* Outline around the grid gives the "no-data" convention and the thin cell separators
+              `gridColour` a job — a hairline frame, not a decorative box. */}
+          <rect
+            x={0}
+            y={0}
+            width={gridWidth}
+            height={gridHeight}
+            fill="none"
+            stroke={gridColour}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+
+        {/* The 56 in-cell values, HTML at a fixed size over the same grid cell as the `<svg>`.
+            `pointer-events: none` is inherited from `.overlay` (the shared stylesheet), which is
+            load-bearing: a value sitting on its own cell must not intercept the pointer the cell
+            beneath it answers. Each carries the ink its own fill demands, computed against that
+            fill and nothing else. */}
+        <div className="overlay" aria-hidden="true">
+          {grid.map((c) => (
+            <span
+              key={`v-${c.country}-${c.decade}`}
+              className="cell-value"
+              style={{
+                left: `${pct(c.x + frame.cellSize / 2, gridWidth)}%`,
+                top: `${pct(c.y + frame.cellSize / 2, gridHeight)}%`,
+                color:
+                  contrast("#000000", c.fill) >= contrast("#FFFFFF", c.fill)
+                    ? "#000000"
+                    : "#FFFFFF",
+              }}
             >
               {fr1(c.value)}
-            </text>
-          </g>
-        );
-      })}
-      {/* Outline around the grid gives the "no-data" convention and the thin cell separators
-          `gridColour` a job — a hairline frame, not a decorative box. */}
-      <rect
-        x={originX}
-        y={originY}
-        width={plotWidth}
-        height={plotHeight}
-        fill="none"
-        stroke={gridColour}
-        strokeWidth={1}
-      />
-    </svg>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <p className="chart-source">{source}</p>
+    </figure>
   );
 }

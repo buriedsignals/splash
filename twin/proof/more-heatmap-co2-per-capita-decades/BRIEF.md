@@ -1,7 +1,10 @@
 # Beat — Poland now outpaces Germany, but everyone is down from their own peak
 
-**Type:** heatmap (matrix). **Medium/genre:** chart / web. **Channel:** article web, 900×~800
-desktop / 375×~1050 narrow.
+**Type:** heatmap (matrix). **Medium/genre:** chart / web. **Channel:** article web, ONE fluid
+frame — the figure fills whatever container it is given, at any width, and its height follows from
+the grid's own aspect ratio inside the window-fit clamp. It used to ship two pre-rendered rungs
+(900px desktop / 375px narrow) under a 900px cap; see `Co2HeatmapWeb.tsx`'s own doc-comment for why
+a rung is a cap and what replaced it.
 
 ## Claim
 
@@ -53,7 +56,12 @@ compiling or the tests passing:
 Hover over the Poland/2020s cell shows `Poland · 2020s (5 yrs): 7.8 t CO2 per capita` — the exact
 figure, the partial-decade note, and nothing else moves. Tab from a blank focus reaches the first
 cell (`Sweden, 1960s`) with an identical tooltip from focus alone — every cell is reachable with no
-dependency on a mouse. At 375px the grid reflows to the narrow layout with no horizontal overflow.
+dependency on a mouse. Measured at 375 / 768 / 1400 / 1600 / 3440: the figure's own width equals
+the document's at every one of them, with no horizontal overflow — at 375 the plot is 327px wide,
+at 3440 it is 3392px, and the same single frame drew both. Two things shorten at 375 and at no
+other width, each by one `@container` rule derived from the real strings: the decade headers become
+`60s`…`20s` below a 302px plot (at 375 the full form left 0px between them), and the in-cell values
+would drop below a 215px plot (they do not at 375 — 11px values in a ~30px cell).
 With JavaScript disabled, the title, legend, grid, axis labels and all 56 in-cell values survive
 unchanged — only the hover/tap/keyboard detail box is gone, exactly the degrade
 `web-discipline.md` asks for.

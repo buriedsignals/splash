@@ -12,8 +12,14 @@ thing a static frame and a video build cannot have, a reader who can ask the cha
 get an exact answer back, without anything the static frame already states being gated behind that
 ask.
 
-**Fifteen beats ship through this skill** — `co2-suisse` plus the `web-*`, `webx-*` and `weby-*`
-workspaces — and every one of them is on the fluid frame this skill now teaches. Each composition
+**Eighteen beats ship through this skill** — `co2-suisse` plus the `web-*`, `webx-*`, `weby-*`,
+`webz-*` and `more-heatmap-*` workspaces — counted by the eighteen `proof/*/render-web.mjs` that
+import this skill's own `renderWeb`, and every one of them is on the fluid frame this skill teaches.
+`more-heatmap-co2-per-capita-decades` was the last hold-out — a two-rung, words-inside-the-SVG build
+under a 900px cap, with its own second copy of `buildCss` — and it is the beat the owner opened when
+he asked for the full available width. Its runner now calls `renderWeb` like every other, so the
+genre has exactly one stylesheet again. The five `mapgen-*-web` beats are the MAP genre and do not
+come through here. Each composition
 (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) lives with the rest of its story's own files, not inside
 this skill's `assets/`, so this skill never hosts a particular story's numbers, only the genre's own
 mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.mjs`). A worked

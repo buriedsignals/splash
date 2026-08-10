@@ -169,6 +169,20 @@ extended here to a chart. That is the "adapt cheaply" this genre requires, and i
 claim from "adapt without a client-side layout engine recomputing gutters and tick counts," which
 this file continues to reject exactly as its first build did.
 
+**A rung IS a cap, and that is why the last two-rung beat had to be rewritten rather than adjusted.**
+`more-heatmap-co2-per-capita-decades` shipped two pre-rendered SVGs — 900px and 375px — swapped by a
+`@media` query under `.chart-figure { max-width: 900px }`. Its own runner argued at length about
+where to put the boundary between them and concluded that the step in type size across the seam is a
+property of the pattern that moving the boundary cannot close. It was right, and it was answering
+the wrong question: an SVG with its words INSIDE it cannot be widened without magnifying its type,
+so any such beat must be capped at its design width. The owner's sentence — *the visual must take
+the full available width* — is a rejection of the rung, not of where it sits. The repair is the
+separation this section already teaches, applied to that beat: geometry-only `<svg>`, every word
+HTML at a fixed pixel size. Both rungs, the media query, the cap and the second copy of `buildCss`
+retired together. `web-frame-is-fluid.test.ts` measures `.chart-figure` against the document at 1600
+and 3440 so a cap cannot come back in any spelling. (The five `mapgen-*-web` beats DO still cap at
+860–900px; they are the map genre, with their own frame contract and their own chantier.)
+
 **"Decided once" is about the ARITHMETIC, never about the answer — and this genre shipped that
 confusion once.** Deciding a type size or a tick *density* once is right: those are properties of
 the type, and the type does not stretch. Deciding a *de-collision* once is not, because whether two
