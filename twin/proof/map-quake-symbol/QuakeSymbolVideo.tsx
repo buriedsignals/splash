@@ -33,7 +33,7 @@ import {
   drawOrder,
   energyRatio,
   spanReferenceValues,
-  radiusScale,
+  energyRadiusScale,
   type QuakeRow,
 } from "./geo-symbol";
 import type { BeatTiming } from "./timing-contract";
@@ -49,12 +49,24 @@ const MAP = 620;
  *  it threw, by name, with the numbers in the message. */
 const MAP_Y = 260;
 const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
-const MAX_RADIUS = 46;
+/**
+ * THE SIZE OF THE BIGGEST MARK IS DERIVED, NOT TYPED (B6.17). The fraction is the seed's own
+ * (`twin-map-web/assets/MapWebSeed.tsx`'s `MARK_MAX_RADIUS_FRACTION`); the floor is the smallest
+ * radius a reader can still resolve as a disc rather than a dot, and it is what actually decides
+ * the answer for this value set; the ceiling is the share of the plate one mark may take before
+ * the beat refuses to draw the set at all. See `energyRadiusScale`.
+ */
+const MARK_MAX_RADIUS_FRACTION = 0.062;
+const MIN_LEGIBLE_RADIUS_PX = 4;
+const MARK_MAX_RADIUS_CEILING_FRACTION = 0.12;
 
 const TITLE = { fontSize: 40, fontWeight: 700, lead: 50 };
 const SOURCE = { fontSize: 19, fontWeight: 400, lead: 24 };
 const CAPTION = { fontSize: 18, fontWeight: 600 };
 const LEGEND_LABEL = { fontSize: 15, fontWeight: 400 };
+/** The air between two reference circles, or between their two labels — whichever is tighter
+ *  decides, see the legend block below. */
+const LEGEND_CIRCLE_GAP = 18;
 const NOTE = { fontSize: 17, fontWeight: 400, lead: 22 };
 const CONCLUSION = { fontSize: 23, fontWeight: 700, lead: 30 };
 
@@ -161,8 +173,15 @@ export function QuakeSymbolVideo({
         `Shorten the source or the caveat, or raise MAP_Y (${MAP_Y}).`,
     );
 
-  const maxMag = Math.max(...geometry.points.map((p) => p.mag));
-  const radiusOf = radiusScale(maxMag, MAX_RADIUS);
+  const { radiusOf } = energyRadiusScale(
+    geometry.points.map((p) => p.mag),
+    {
+      frameWidth: geometry.frame.width,
+      maxRadiusFraction: MARK_MAX_RADIUS_FRACTION,
+      minLegibleRadiusPx: MIN_LEGIBLE_RADIUS_PX,
+      maxRadiusCeilingFraction: MARK_MAX_RADIUS_CEILING_FRACTION,
+    },
+  );
   const legend = spanReferenceValues(geometry.points.map((p) => p.mag));
   const subject = geometry.points.find((p) => p.key === subjectKey);
   if (!subject) throw new Error(`no point for the subject ${subjectKey}`);
@@ -363,8 +382,15 @@ export function QuakeSymbolVideo({
               maxR * 2 +
               34;
             const ordered = [...legend].reverse();
+            // Spacing derived from BOTH neighbours — see the still sibling's own note. The old
+            // `r + maxR * 0.55 + 22` never looked at the next circle's radius, which was invisible
+            // while every key was within 8% of every other and drew one ring through another the
+            // moment the energy scale started separating them.
+            const labelWidths = ordered.map((v) =>
+              measureText(`M${v.toFixed(1)}`, LEGEND_LABEL),
+            );
             let cx = COLUMN.x + radiusOf(ordered[0]!);
-            return ordered.map((v) => {
+            return ordered.map((v, i) => {
               const r = radiusOf(v);
               const mark = (
                 <Fragment key={v}>
@@ -387,7 +413,12 @@ export function QuakeSymbolVideo({
                   </text>
                 </Fragment>
               );
-              cx += r + maxR * 0.55 + 22;
+              const next = ordered[i + 1];
+              if (next !== undefined)
+                cx += Math.max(
+                  r + radiusOf(next) + LEGEND_CIRCLE_GAP,
+                  (labelWidths[i]! + labelWidths[i + 1]!) / 2 + LEGEND_CIRCLE_GAP,
+                );
               return mark;
             });
           })()}

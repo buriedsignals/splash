@@ -12,11 +12,16 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { QuakeSymbolStill } from "./QuakeSymbolStill.tsx";
 import {
   drawOrder,
   quakesFromCsv,
-  radiusScale,
+  energyRadiusScale,
+  energyRatio,
+  overlapReport,
   symbolClaimViolations,
   yearWindow,
 } from "./geo-symbol.ts";
@@ -59,26 +64,22 @@ const runnerUp = ranked[1];
 const smallest = ranked[ranked.length - 1];
 const subjectYear = Number(subject.time.slice(0, 4));
 const minMag = smallest.mag;
-// The size margin is a RATIO, so it holds at any maximum radius — the still draws at 30 px, the
-// video at 46. Measured through the beat's own scale rather than by re-deriving √(9.1/8.6) by hand.
-const STILL_MAX_RADIUS = 30;
-const radiusOf = radiusScale(subject.mag, STILL_MAX_RADIUS);
-const radiusGainPct = (radiusOf(subject.mag) / radiusOf(runnerUp.mag) - 1) * 100;
-const radiusGainPx = radiusOf(subject.mag) - radiusOf(runnerUp.mag);
 const magSpan = Math.round((subject.mag - minMag) * 10) / 10;
-console.log(
-  `derived: window ${window.label} · subject M${subject.mag} vs runner-up M${runnerUp.mag} ` +
-    `· radius ratio ${(1 + radiusGainPct / 100).toFixed(6)} (+${radiusGainPct.toFixed(2)}%, ` +
-    `+${radiusGainPx.toFixed(2)}px at the still's 30px maximum)`,
-);
 
 /**
  * The story's own constants. Only the editorial words are typed here; every quantity, every year
  * and the size comparison come from the derivations above.
  */
+// The colours are READ, not typed — see `PALETTE.md` beside this file.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#C1440E",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   subjectKey: subject.key, // the largest row in quakes-symbol.csv, found by sorting it
   comparisonKey: runnerUp.key, // the next-largest
   title:
@@ -88,21 +89,21 @@ const BEAT = {
     `Source: USGS Earthquake Catalog (earthquake.usgs.gov), M${minMag}+, western Pacific, ` +
     `${window.label}`,
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
-  legendCaption: "Magnitude (radius scaled to √magnitude, not to energy released)",
+  legendCaption: "Magnitude (circle AREA is proportional to the energy released)",
   // grounded-by-hand: caveat:32 — a constant of the moment-magnitude scale (10^1.5 = 31.6 times the
   // energy per whole step), not a reading from quakes-symbol.csv. No computation over this beat's
   // own rows could ever produce it; it holds whatever earthquakes the file happens to contain.
+  // The second sentence is filled in below, once the plate is known: it carries the overlap this
+  // camera really leaves, counted rather than felt.
   caveat:
-    "Moment magnitude is a logarithmic scale: each whole step is roughly 32× the energy release, " +
-    `so a circle ${magSpan} units bigger is not ${magSpan}× the event — it is orders of magnitude bigger.`,
+    "Moment magnitude is logarithmic, so these circles are sized by ENERGY, not by the magnitude " +
+    `number: the M${subject.mag} mark covers ${Math.round(energyRatio(subject.mag, minMag))}× the area of an M${minMag} one.`,
   alt:
     `Map of the western Pacific. A circle marks each of ${quakes.length} earthquakes of magnitude ` +
-    `${minMag} or higher, ${window.label}, sized by magnitude. The ${subjectYear} Tohoku earthquake, ` +
-    `magnitude ${subject.mag} off Japan, is outlined in the accent colour. It is the largest circle, but ` +
-    `only just: radius goes as the square root of magnitude from zero, so it is under ` +
-    `${Math.ceil(radiusGainPct)}% wider than the magnitude-${runnerUp.mag} circle off Sumatra — a ` +
-    `difference of ${radiusGainPx.toFixed(1)} pixels at this size. The accent outline, not the size, ` +
-    `is what identifies it.`,
+    `${minMag} or higher, ${window.label}. Circle AREA is proportional to the energy released, so the ` +
+    `${subjectYear} Tohoku earthquake off Japan, magnitude ${subject.mag} and outlined in the accent ` +
+    `colour, is by far the largest mark on the map — ${Math.round(energyRatio(subject.mag, runnerUp.mag))}× the ` +
+    `area of the magnitude-${runnerUp.mag} circle off Sumatra, which is the next biggest.`,
 };
 
 const violations = symbolClaimViolations({ rows: quakes, subjectKey: BEAT.subjectKey });
@@ -135,12 +136,41 @@ async function plateOf(dir) {
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
 }
 
+// WHAT THIS CAMERA LEAVES OVERLAPPING, COUNTED (B6.17). The owner's report was "watch overlap and
+// the size of symbols close together — it becomes unreadable fast". Part of it was the flat size
+// scale, fixed in `energyRadiusScale`; part of it is the data — two of these events are catalogued
+// less than two pixels apart at this camera, and no radius makes them two marks. So the number goes
+// in the beat's own caveat rather than being left for a reader to discover, the same way the hex
+// beat states the events its frame crops. Measured on the still's plate; the ratio is identical on
+// the video's, because both the positions and the radii scale with the frame.
+const sizingGeometry = JSON.parse(
+  await readFile(join(stillPlate, "geometry.json"), "utf8"),
+);
+const { radiusOf: sizingRadiusOf, maxRadiusPx, minRadiusPx } = energyRadiusScale(
+  sizingGeometry.points.map((p) => p.mag),
+  {
+    frameWidth: sizingGeometry.frame.width,
+    maxRadiusFraction: 0.062,
+    minLegibleRadiusPx: 4,
+    maxRadiusCeilingFraction: 0.12,
+  },
+);
+const overlap = overlapReport(sizingGeometry.points, sizingRadiusOf);
+console.log(
+  `size: radius ${minRadiusPx.toFixed(2)}–${maxRadiusPx.toFixed(2)}px on a ${sizingGeometry.frame.width}px plate ` +
+    `(${(maxRadiusPx / minRadiusPx).toFixed(2)}x) · ${overlap.overlappingPairs} of ${overlap.pairs} pairs overlap, ` +
+    `${overlap.marksTouched} of ${sizingGeometry.points.length} marks touched`,
+);
+const caveat =
+  BEAT.caveat +
+  ` ${overlap.marksTouched} of the ${sizingGeometry.points.length} overlap a neighbour; smaller circles are drawn on top.`;
+
 const shared = {
   title: BEAT.title,
   source: BEAT.source,
   basemapCredit: BEAT.basemapCredit,
   legendCaption: BEAT.legendCaption,
-  caveat: BEAT.caveat,
+  caveat,
   alt: BEAT.alt,
   ground: BEAT.ground,
   accent: BEAT.accent,

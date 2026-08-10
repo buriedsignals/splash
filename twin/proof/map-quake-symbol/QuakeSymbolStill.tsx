@@ -12,7 +12,7 @@ import {
   drawOrder,
   labelPlacement,
   spanReferenceValues,
-  radiusScale,
+  energyRadiusScale,
   type QuakeRow,
 } from "./geo-symbol";
 
@@ -22,7 +22,16 @@ const GUTTER = 32;
 const MAP = FRAME.height - PAD * 2;
 const MAP_X = FRAME.width - PAD - MAP;
 const COLUMN = { x: PAD, width: MAP_X - GUTTER - PAD };
-const MAX_RADIUS = 30;
+/**
+ * THE SIZE OF THE BIGGEST MARK IS DERIVED, NOT TYPED (B6.17). The fraction is the seed's own
+ * (`twin-map-web/assets/MapWebSeed.tsx`'s `MARK_MAX_RADIUS_FRACTION`); the floor is the smallest
+ * radius a reader can still resolve as a disc rather than a dot, and it is what actually decides
+ * the answer for this value set; the ceiling is the share of the plate one mark may take before
+ * the beat refuses to draw the set at all. See `energyRadiusScale`.
+ */
+const MARK_MAX_RADIUS_FRACTION = 0.062;
+const MIN_LEGIBLE_RADIUS_PX = 4;
+const MARK_MAX_RADIUS_CEILING_FRACTION = 0.12;
 
 const TITLE = { fontSize: 20, fontWeight: 700, lead: 26 };
 const SOURCE = { fontSize: 13, fontWeight: 400, lead: 17 };
@@ -30,6 +39,9 @@ const CAPTION = { fontSize: 12, fontWeight: 600, lead: 16 };
 const NOTE = { fontSize: 11.5, fontWeight: 400, lead: 15 };
 const POINT_LABEL = { fontSize: 11, fontWeight: 600 };
 const LEGEND_LABEL = { fontSize: 11.5, fontWeight: 400 };
+/** The air between two reference circles, or between their two labels — whichever is tighter
+ *  decides, see the legend block below. */
+const LEGEND_CIRCLE_GAP = 16;
 
 export type QuakeSymbolStillProps = {
   geometry: {
@@ -83,8 +95,15 @@ export function QuakeSymbolStill({
   subjectKey,
 }: QuakeSymbolStillProps) {
   const scale = MAP / geometry.frame.width;
-  const maxMag = Math.max(...geometry.points.map((p) => p.mag));
-  const radiusOf = radiusScale(maxMag, MAX_RADIUS);
+  const { radiusOf } = energyRadiusScale(
+    geometry.points.map((p) => p.mag),
+    {
+      frameWidth: geometry.frame.width,
+      maxRadiusFraction: MARK_MAX_RADIUS_FRACTION,
+      minLegibleRadiusPx: MIN_LEGIBLE_RADIUS_PX,
+      maxRadiusCeilingFraction: MARK_MAX_RADIUS_CEILING_FRACTION,
+    },
+  );
   const drawn = drawOrder(geometry.points); // largest first, so smaller circles paint on top
 
   const titleLines = wrap(title, COLUMN.width, TITLE);
@@ -294,8 +313,17 @@ export function QuakeSymbolStill({
         const maxR = Math.max(...legend.map((v) => radiusOf(v)));
         const baseline = legendTop + maxR * 2 + 22;
         const ordered = [...legend].reverse(); // smallest first
+        // THE SPACING IS DERIVED FROM BOTH NEIGHBOURS, not from the current circle plus a constant.
+        // It used to advance by `r + maxR * 0.55 + 20`, which never looked at the NEXT circle's
+        // radius — harmless while every key was within 8% of every other, and wrong the moment the
+        // scale started separating them: at the energy scale's 9.44x span the M9.1 ring drew
+        // straight through the M8.5 one. Each step now clears both radii, and also both labels,
+        // which are centred over their own crowns.
+        const labelWidths = ordered.map((v) =>
+          measureText(`M${v.toFixed(1)}`, LEGEND_LABEL),
+        );
         let cx = COLUMN.x + radiusOf(ordered[0]!);
-        return ordered.map((v) => {
+        return ordered.map((v, i) => {
           const r = radiusOf(v);
           const mark = (
             <Fragment key={v}>
@@ -318,7 +346,13 @@ export function QuakeSymbolStill({
               </text>
             </Fragment>
           );
-          cx += r + Math.max(...legend.map((val) => radiusOf(val))) * 0.55 + 20;
+          const next = ordered[i + 1];
+          if (next !== undefined)
+            cx +=
+              Math.max(
+                r + radiusOf(next) + LEGEND_CIRCLE_GAP,
+                (labelWidths[i]! + labelWidths[i + 1]!) / 2 + LEGEND_CIRCLE_GAP,
+              );
           return mark;
         });
       })()}
