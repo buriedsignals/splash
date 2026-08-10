@@ -1,7 +1,13 @@
 // The render ladder for the proportional-symbol beat.
 //
+// TWO GENRES, TWO TABLES. The still is read in an article column and takes `chart-beat`'s size
+// table (landscape floor 26); the video is watched and takes `chart-video`'s (landscape floor 30,
+// because a 16:9 video is designed for a phone turned sideways, ~800 dp). Both read the SAME pin,
+// out of this beat's own `BRIEF.md` front matter — one journalist's decision, two floors.
+//
 // Usage:
 //   bun proof/map-quake-symbol/render.mjs --still
+//   bun proof/map-quake-symbol/render.mjs --still --size square   # LOOKING, into sizes/
 //   bun proof/map-quake-symbol/render.mjs --final-frame
 //   bun proof/map-quake-symbol/render.mjs --video
 
@@ -15,6 +21,23 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+// The STATIC genre's size table — the same one every static chart beat reads, and deliberately not
+// a fourth copy of it. `minTypePx` is "12 CSS px at the distance this output is read", and a static
+// map sits in the same ~900px article column a static chart does.
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+// …and the VIDEO genre's, for the mp4 half. Same three rows, a different floor, which is exactly
+// the split `typeScale` is per-craft-skill for.
+import {
+  assertDeliveredSize as assertDeliveredVideoSize,
+  sizeFor as videoSizeFor,
+} from "#shared/chart-video/sizes.mjs";
 import { QuakeSymbolStill } from "./QuakeSymbolStill.tsx";
 import {
   drawOrder,
@@ -29,7 +52,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "quake-symbol";
+const BEAT_ID = "quake-symbol";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -37,8 +60,34 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size was two literals in each component and two more below, compared
+// against each other by `renderStill` — so they agreed by construction and the pin reached nothing.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers: the delivered file keeps the
+// beat's own name and the pinned size, and an override says so on stdout and writes elsewhere.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+const { width: FRAME_WIDTH, height: FRAME_HEIGHT } = sizeFor(size);
+
 const dataPath = flag("--data", join(HERE, "quakes-symbol.csv"));
-const outDir = flag("--out", join(HERE, "render"));
+const outDir = flag(
+  "--out",
+  sizeFlag === -1 ? join(HERE, "render") : join(HERE, "sizes"),
+);
+const stillStem = sizeFlag === -1 ? "static" : `static-${size}`;
+const videoStem = sizeFlag === -1 ? BEAT_ID : `${BEAT_ID}-${size}`;
+if (sizeFlag !== -1)
+  console.log(
+    `LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`,
+  );
+console.log(
+  `pinned size: ${size} — still ${FRAME_WIDTH}x${FRAME_HEIGHT} (floor ${sizeFor(size).minTypePx}px), ` +
+    `video ${videoSizeFor(size).width}x${videoSizeFor(size).height} (floor ${videoSizeFor(size).minTypePx}px)`,
+);
+
 // Both plates are frozen BESIDE THE BEAT, exactly as the csv is: `/tmp` cannot be committed, so a
 // render reading its basemap from there leaves a still and an mp4 nobody can reproduce or audit —
 // and MapTiler restyles, so a re-bake months later is a different picture under the same circles.
@@ -64,7 +113,6 @@ const runnerUp = ranked[1];
 const smallest = ranked[ranked.length - 1];
 const subjectYear = Number(subject.time.slice(0, 4));
 const minMag = smallest.mag;
-const magSpan = Math.round((subject.mag - minMag) * 10) / 10;
 
 /**
  * The story's own constants. Only the editorial words are typed here; every quantity, every year
@@ -141,8 +189,12 @@ async function plateOf(dir) {
 // scale, fixed in `energyRadiusScale`; part of it is the data — two of these events are catalogued
 // less than two pixels apart at this camera, and no radius makes them two marks. So the number goes
 // in the beat's own caveat rather than being left for a reader to discover, the same way the hex
-// beat states the events its frame crops. Measured on the still's plate; the ratio is identical on
-// the video's, because both the positions and the radii scale with the frame.
+// beat states the events its frame crops.
+//
+// THE RATIO IS THE SAME AT EVERY EXPORT SIZE, and that is worth saying out loud now that the frame
+// moves: the radii are fractions of the plate and the distances between marks are drawn from the
+// same plate, so both scale together. Drawing the plate at 910 px instead of 496 makes every mark
+// bigger and changes nothing about how much of the field overlaps.
 const sizingGeometry = JSON.parse(
   await readFile(join(stillPlate, "geometry.json"), "utf8"),
 );
@@ -177,20 +229,35 @@ const shared = {
   ...furniture,
   subjectKey: BEAT.subjectKey,
   comparisonKey: BEAT.comparisonKey,
+  size,
 };
 
 await mkdir(outDir, { recursive: true });
 
 if (wantStill) {
   const { geometry, plate } = await plateOf(stillPlate);
-  const { pngPath } = await renderStill({
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(QuakeSymbolStill, { ...shared, geometry, plate }),
-    width: 900,
-    height: 560,
+    width: FRAME_WIDTH,
+    height: FRAME_HEIGHT,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
     outDir,
-    name: "static",
+    name: stillStem,
   });
-  console.log(`still → ${pngPath}\nNow open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: pngPath,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "map-quake-symbol" });
+  assertWithinStage(svg, size, { what: "map-quake-symbol" });
+  console.log(
+    `still → ${pngPath} at ${FRAME_WIDTH}x${FRAME_HEIGHT}, verified from the file\nNow open it and look at it.`,
+  );
 }
 
 function remotion(args) {
@@ -201,17 +268,45 @@ function remotion(args) {
   return Math.round((Date.now() - started) / 1000);
 }
 
+/**
+ * The DELIVERED mp4's own dimensions, read out of the container by `ffprobe`.
+ *
+ * The video analogue of `readPngSize`, and it exists for the same reason: the only reading the code
+ * that wrote the file cannot make agree with itself. `Root.tsx` sizes the composition and the
+ * component draws into it, both from the same table — so they agree by construction, and an encoder
+ * that letterboxed or a `--scale` left on a command line would arrive in the newsroom unnoticed.
+ */
+function mp4Size(path) {
+  const probe = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", path],
+    { encoding: "utf8" },
+  );
+  if (probe.status !== 0) throw new Error(`ffprobe could not read ${path}: ${probe.stderr}`);
+  const [width, height] = probe.stdout.trim().split(",").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`ffprobe returned no dimensions for ${path}: ${probe.stdout}`);
+  return { width, height };
+}
+
 if (wantFinalFrame || wantVideo) {
+  // ONE COMPOSITION PER SIZE, selected by id. `QuakeSymbolVideo` refuses inside the composition,
+  // loudly and with its own arithmetic, at every size whose band its words do not leave a map in —
+  // which today is all three. See `BRIEF.md`'s table and the block at the top of that component.
+  const COMPOSITION = `${BEAT_ID}-${size}`;
   const { geometry, plate } = await plateOf(videoPlate);
-  const propsPath = join(outDir, "video-props.json");
+  const propsPath = join(outDir, `${videoStem}-props.json`);
   await writeFile(propsPath, JSON.stringify({ ...shared, geometry, plate }));
 
-  const framePath = join(outDir, "final-frame.png");
+  const framePath = join(outDir, `${videoStem}-final-frame.png`);
   const stillSeconds = remotion(["still", ENTRY, COMPOSITION, framePath, "--frame=-1", `--props=${propsPath}`, "--timeout=180000"]);
-  console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s]`);
+  assertDeliveredVideoSize(readPngSize(await readFile(framePath)), size, {
+    what: framePath,
+  });
+  console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s], verified from the file`);
 
   if (wantVideo) {
-    const videoPath = join(outDir, "quake-symbol.mp4");
+    const videoPath = join(outDir, `${videoStem}.mp4`);
     const videoSeconds = remotion([
       "render",
       ENTRY,
@@ -221,7 +316,10 @@ if (wantFinalFrame || wantVideo) {
       "--concurrency=1",
       "--timeout=180000",
     ]);
-    console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+    // And the DELIVERED mp4, out of the container itself. This is the assertion the whole size
+    // decision rests on for the video genre: everything upstream of it agrees with itself.
+    assertDeliveredVideoSize(mp4Size(videoPath), size, { what: videoPath });
+    console.log(`video → ${videoPath}  [${videoSeconds}s], verified from the container`);
   }
 }
 
