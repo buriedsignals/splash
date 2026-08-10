@@ -1,6 +1,0 @@
-{
-  "id": "commute-distribution",
-  "data": "minutes,workers\n0-15,1200\n15-30,2400\n30-45,1800\n45-60,900\n60+,400",
-  "intent": "What does the distribution of commute times look like across the workforce?",
-  "expect": { "family": "distribution", "maxWarnings": 0 }
-}

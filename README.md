@@ -1,81 +1,26 @@
-# Splash
+# Splash — the doctrine twin
 
-**Open-source visual storytelling for every newsroom.**
+This is the doctrine twin: a fresh, prose-first rebuild of Splash, built on the
+`experiment/doctrine-twin` branch. It is never merged into `main`. It exists to be measured against
+`main` — three cases replayed and compared on the render, by eye, at honest cost — and either wins
+that comparison or is discarded. Nothing in this branch decides that on its own.
 
-Splash turns an article and/or a dataset into a finished, exported visual — a chart, a map, a scrollytelling piece, or a short video — and hands the newsroom a file it owns (a self-contained HTML page, an MP4, or an image).
+## Isolation from `main`
 
-It **orchestrates production**; it does not generate the text or the illustration. The editorial intention stays with the journalist: Splash reads the article, proposes where a visual would serve the story, and — once the journalist confirms — produces it, following data-visualisation best practices wired into the tool as guardrails.
+Rémy's constraint: the two must never meet, mix, or influence each other. Mechanically:
 
-> Status: **v0.1.0 — developer preview.** Verified on Claude Code; other runtimes are planned. Not yet published for public install.
+- Build under `twin/` while harvesting seeds, sheets and references from `skills/`; a final commit
+  removes `skills/` so the branch tree **is** the twin.
+- Harvesting is **read-and-rewrite**, never a copy that keeps a link. No twin import points at
+  `skills/` — and once `skills/` is gone that is mechanically impossible.
+- The twin never writes into an existing Splash root. Its root is distinct; its `NEWSROOM.md` is its
+  own.
+- The public product name stays *Splash*. **Skill ids are distinct**, otherwise the two overwrite
+  each other in `~/.claude/skills` at install time — which is exactly the entanglement being
+  refused. Two entities, two id sets, one public name.
 
-## How it works
-
-Splash is a set of composable **skills** for an AI coding agent. You install it once, then drive it from a single entry point: *"make me a visual from this article."* The agent runs six phases, each with an explicit human gate — nothing ships without your confirmation:
-
-```
-INPUT → ANALYSE → CADRAGE (framing) → PROPOSITION → PRODUCTION → EXPORT
-```
-
-- **ANALYSE** reads the article silently to find the data and the quantified claims.
-- **CADRAGE** asks a few framing questions (the takeaway, the channel, the constraints).
-- **PROPOSITION** proposes vetoable opportunities — *what to show, which visual, why.*
-- **PRODUCTION** produces the chosen visual and shows you the real render.
-- **EXPORT** hands over the owned file (or a hosted embed link).
-
-## Architecture
-
-Three layers, composed silently:
-
-| Layer | What it is | Where |
-|-------|-----------|-------|
-| ① Knowledge base | Layered dataviz knowledge (global × type × format), grounded and wired to conformance checks | `knowledge/references/` |
-| ② Suggester | Reads the article → vetoable proposals; routes each to the right element & format | `skills/suggest-article`, `skills/suggest-chart` |
-| ③ Producers | Turn a validated spec into static / interactive / video output | `skills/{dw-chart,chart-native,map-dw,map-native,scrolly}` |
-
-The whole flow is sequenced by the `splash` skill (`skills/splash/`).
-
-**Engines.** Charts and maps each have a *thin* delegated-render path (Datawrapper: `dw-chart`, `map-dw`) and a *rich* native path (a pure geometric core → one component → static + interactive + video: `chart-native`, `map-native`). `scrolly` is the shared scroll-driven mechanism.
-
-## For developers
-
-Requirements: [Bun](https://bun.sh).
+## Running the tests
 
 ```bash
-git clone <repo-url> splash && cd splash
-bun run check        # typecheck + tests across all skills
+cd twin && bun test
 ```
-
-Each skill is self-contained (`SKILL.md` + `src/` + `scripts/` + tests). Producer suites that hit the Datawrapper API need a `DATAWRAPPER_API_TOKEN` in `.env` (see `.env.example`); they are skipped without it.
-
-### Fresh clone / fresh worktree checklist
-
-A worktree that skips any of these steps fails in ways that look like a code regression but
-aren't. Each step below states what it prevents — run them in order:
-
-1. **`bun install` at the repo root.** Without it, `cd lib && bun test` fails with ~48 phantom
-   errors ("Cannot find package 'zod'", `@noble/hashes`, `fflate`) that have nothing to do with
-   whatever you changed.
-2. **`bun install` in each skill you'll touch or test**: `skills/chart-native`,
-   `skills/map-native`, `skills/dw-chart` — and additionally `skills/scrolly` and
-   `skills/image-native` if you're running the full `bun run check`. Each skill has its own
-   `node_modules`; the root install does not cascade into them.
-3. **A root `.env`** (gitignored — copy `.env.example`) if you'll run `skills/image-native`'s
-   suite: its test drives a real scrolly build and fails without one.
-4. **`bunx remotion browser ensure`** in `skills/chart-native` and `skills/map-native`. Both
-   engines render video through Remotion, which needs its own downloaded Chrome Headless Shell
-   (tens of MB, separate from anything `bun install` fetches). Skipping this doesn't fail fast —
-   the first test that renders a video triggers the download **mid-suite**, and on a flaky
-   network it can stall partway through, leaving a corrupt half-extracted browser behind. Every
-   video render after that dies with an unreadable subprocess dump that looks like a regression
-   in whatever you just changed, not a networking hiccup from two steps ago. Running this command
-   up front turns that failure mode into a normal, retriable download you see happen.
-
-To load Splash into Claude Code:
-
-```bash
-claude --plugin-dir .
-```
-
-## License
-
-[MIT](LICENSE) © Rémy Dumas. Funded by the Fondation pour le Journalisme (FJM).

@@ -1,6 +1,0 @@
-{
-  "id": "region-rents",
-  "data": "town,rent\nAnnemasse,1180\nGeneva,2450\nAnnecy,1390\nThonon,1020\nSaint-Julien,1310",
-  "intent": "Rank towns by average monthly rent, highest first.",
-  "expect": { "family": "ranking", "maxWarnings": 0 }
-}

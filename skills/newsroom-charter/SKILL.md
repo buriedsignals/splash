@@ -1,173 +1,203 @@
 ---
 name: newsroom-charter
-description: Use when a newsroom has no NEWSROOM-PROFILE.md and the journalist does not know their own house colours — derives a proposed charter (brand colour, ground, typefaces) by MEASURING the newsroom's own website, shows every value with where it was read, and writes the profile only after the journalist validates it. Refuses and falls back to asking when the site declares nothing. Keywords charte, charte graphique, house style, brand colour, couleur maison, newsroom profile, NEWSROOM-PROFILE, palette, identité visuelle, design profile, extract colours from site, theme.
+description: Use to derive a proposed newsroom charter — brand colour, further accents, ground, typefaces — by measuring the newsroom's own website, when the journalist doesn't have a NEWSROOM.md yet and doesn't know their house colours off the top of their head. Every value ships with where it was read, and every accent ships with what it MEASURES against the ground, so a pair a reader could not see fails here rather than at the render. Nothing is written until the journalist confirms it.
 ---
 
-# newsroom-charter — derive a newsroom's house style from its own website
+# newsroom-charter — measure the site, show the evidence, ask when it's silent
 
 ## Overview
 
-Splash applies a newsroom's house style only when `NEWSROOM-PROFILE.md` already exists, and that
-file asks for `#rrggbb`. A journalist is not a designer and does not know their newsroom's hex —
-so the profile stays unwritten and every visual ships in Splash's generic auto-colour. This skill
-closes that hole from the one place the answer already lives: **the newsroom's own website**,
-which has been serving its brand colour to readers for years.
+`preflight.mjs` (in `twin/skills/splash`) already reads and validates a `NEWSROOM.md`, but
+nothing in this branch has ever *produced* one — a journalist who doesn't already know their house
+hex codes has no path to a first draft except typing guesses into the front matter by hand. This
+skill is that path. Given a newsroom's URL, it fetches the homepage and a bounded handful of its
+own stylesheets, reads what they **declare** — a `theme-color` meta tag, a `:root` custom
+property, a `background` rule on `html`/`body`, a `font-family` stack, an alternate-language link —
+and turns that into a charter proposal: `name`, `url`, `languages`, `brandColor`, `accents`,
+`ground`, `typefaces`, the exact front matter `NEWSROOM.example.md` documents.
 
-It **measures** the site, **shows** what it read and **where** it read it, and writes the profile
-**only after the journalist says yes**. It is the ② orchestration half of a deterministic ③
-extractor (`lib/newsroom/charter.ts`); the extractor does the reading, this skill owns the
-conversation and the gate.
+Two of those fields are PLURAL, because a newsroom rarely has one of either, and extending
+`NEWSROOM.md` without extending the derivation would only move the typing back to the journalist:
+
+- **`languages`** comes from `<html lang>` plus the site's own alternate-language declarations
+  (`<link rel="alternate" hreflang="…">`, `og:locale:alternate`) — a multilingual newsroom has
+  already written that list down so search engines can find its other editions. A site declaring
+  one language resolves to one language, which is an ANSWER, not a gap.
+- **`accents`** collects the further brand-named colours beyond the one that became `brandColor`,
+  held to exactly the same bar (non-neutral, unqualified selector, a `brand`/`primary`/`accent`
+  name hint) so a design system's status colours stay out. Its absence is the one null this skill
+  does NOT turn into a question: a newsroom with one accent colour has one accent colour, and it is
+  reported in `nothingFurther` instead of `unresolved`. Asking for a second house colour would be
+  inventing a need rather than filling a gap.
+
+Three rules shape every line of this skill more than the extraction technique does:
+
+1. **Every value ships beside the declaration it was read from.** Not `brandColor: #d5121e`
+   floating alone — that value next to `<meta name="theme-color" content="#d5121e"/>`, so a
+   journalist can look at the real tag and agree or correct it. A value with no evidence attached
+   is not a proposal, it's an assertion.
+2. **It proposes; it never writes.** `deriveCharter` has no write path — not a commented-out one,
+   not a flag that turns it on. It returns a structured proposal; `formatProposal` renders that as
+   readable markdown. Turning a confirmed proposal into an actual `NEWSROOM.md` happens outside
+   this skill, by hand, the same way `NEWSROOM.md` is authored today.
+3. **A field with no honest evidence is `null`, named in `unresolved`, and turned into a question
+   — never filled with a plausible-looking default.** Run this against four real newsrooms
+   (Quick start) and one of them — nzz.ch — comes back with **both colour fields unresolved**,
+   `brandColor` and `ground` alike, because nothing on that page or in its stylesheets declares
+   either one plainly. That is not a bug this skill failed to work around; a fabricated palette
+   that *looked* measured would have been the actual failure.
 
 ## When to use
 
-- The journalist has no `NEWSROOM-PROFILE.md` and wants their visuals to look like their outlet.
-- Or they have one and want to add the colour they left blank.
-- Or they say some version of « je ne sais pas quelle est notre couleur » / « je ne suis pas
-  graphiste ».
-- Requirement to proceed: **the newsroom's public site address**. That is the only input.
+- A journalist is setting up a newsroom's `NEWSROOM.md` for the first time and doesn't know their
+  brand hex, ground hex, or house typefaces from memory — before `splash`'s
+  `runPreflight` can pass, because a `NEWSROOM.md` with real values has to exist somewhere first.
+- To refresh a stale proposal after a newsroom's site redesign — this skill never reads an
+  existing `NEWSROOM.md`, so re-running it costs nothing and never conflicts with one.
+- **Not** for a newsroom that already has a validated `NEWSROOM.md` — there is nothing this skill
+  adds once `preflight.mjs` is already green.
+- **Not** for anything beyond the front matter's three derivable fields. It never proposes prose,
+  a tagline, or anything editorial — those are the journalist's, always were.
 
-## The gotcha — a measurement is not a decision
+## The one gotcha that will waste your day (read first)
 
-Non-negotiable, and the reason this skill exists in two halves:
+**A `:root` block on a real newsroom's site is not a short list of brand tokens — it's the whole
+design system, and most of it is noise wearing a colour.** Heidi.news's own stylesheet declares
+colour custom properties for `--card-warning-border-color`, `--color-danger-400`,
+`--color-grey-00`, and dozens more — real hex values, all of them, none of them the brand colour.
+A naive "grab any hex-valued custom property under `:root`" would report `--color-danger-400`
+(`#d5121e`, coincidentally identical to Heidi's real theme-color — a lucky collision, not a
+signal) with the exact same confidence as the one that's actually named for the job. This is why
+`derive-charter.mjs` treats a `theme-color` meta tag as the *only* high-confidence signal for
+`brandColor`, and falls back to a **named-hint** search (`brand`/`primary`/`accent` in the
+property's own name) only when no meta tag exists at all — and even then, ships the full
+declaration as evidence so a wrong guess is visibly wrong, not silently plausible. An earlier
+version of that hint list also matched `theme` and `highlight`, and promptly picked
+`--swiper-theme-color` (`#007aff`) off nzz.ch's site — the Swiper carousel library's own default
+blue, nothing to do with the NZZ brand. Found by running this against a real site, not reasoned
+out in advance; see `references/site-declarations.md` for the rest of what surprised the first
+implementation.
 
-- **A colour read off a site is a MEASUREMENT.** A colour the journalist confirms is a
-  **DECISION**. Never present the first as the second, never write the first to disk. Same rule
-  that makes `suggest-image` ask for a photograph's credit instead of writing one.
-- **Always show the receipt.** Every value is relayed with where it came from — « cette couleur
-  vient du logo », « c'est la couleur des liens dans vos articles ». A journalist can only
-  disagree with a value whose origin they can see.
-- **The site may not answer, and that is a legitimate outcome.** A white site with black text and
-  a raster logo declares no brand hue. Say so and ask the question — never pick the least-grey
-  pixel and call it the house colour.
-- **Never raise the confidence the extractor states.** `inferred` means the site names nothing and
-  the value is a guess; relay it as a guess. `declared` means the site literally states it.
-- The two subcommands **cannot reach each other**: `read` writes nothing, and `write` never sees
-  the site or the proposal — it takes values on the command line. That is a guard against the two
-  coupling SILENTLY; it is not proof a human was involved. `--confirmed` is self-attested, and
-  nothing stops an agent from reading a hex off `read`'s output and typing it into `write` on the
-  next call. **The gate below is the control, not the flag.** If the newsroom ever needs evidence
-  rather than a guard, that is the sign-off primitive (`apply-signoff.mjs` / `requiredSigners`),
-  not this boolean.
+The same caution applies to `ground`: a selector like `html.short-video` or `:root.dark` is real
+evidence of a real declaration, but it names a component's or a theme-toggle's own conditional
+override, not the page's plain default. `derive-charter.mjs` only accepts an **unqualified**
+`html`, `body`, or bare `:root` rule for `ground` — a qualified one is left in `candidates` for
+the record, never auto-picked. On lemonde.fr, that means `ground` comes back `null` even though a
+background *is* declared in the fetched CSS — correctly, because the only one found is scoped to a
+video-player mode, not the site's own default background.
 
 ## Architecture
 
-```
-journalist gives a URL          ② newsroom-charter (THIS skill, gated)      ③ the profile
-──────────────────────         ─────────────────────────────────────      ─────────────────
-site address            →  read: fetch page + same-host stylesheets   →  NEWSROOM-PROFILE.md
-                             → rank by HOW DELIBERATELY declared          (palette /
-                             → show every value + its receipt              source / lang / theme)
-                             → MANDATORY GATE (confirm / correct / drop)
-                             → write: only the values the journalist typed back
-```
+| Layer | File | Role |
+| --- | --- | --- |
+| Bounded fetch | `scripts/fetch-document.mjs` | `fetchWithTimeout(url, opts)` — races a real request against a hard timer; never hangs, whatever the far end (or a test double) does |
+| Pure readers | `scripts/extract.mjs` | `extractThemeColor`, `extractName`, `extractLanguage`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`, `extractRootCustomProperties`, `extractBackgroundDeclarations`, `extractFontFamilies` — no network, text in, evidence out |
+| Orchestrator | `scripts/derive-charter.mjs` | `deriveCharter({url, fetchFn, timeoutMs, maxStylesheets})` — fetches the page and its stylesheets, runs every reader, picks the highest-confidence candidate per field, names every field it couldn't |
+| Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the human-facing markdown: the NEWSROOM.md front-matter shape, every value's evidence, every unresolved field as a question, and what each accent measures against the ground |
+| Legibility | `scripts/derive-charter.mjs` | `contrast`, `adjustToContrast`, `measureLegibility(fields)` — every accent against the proposed ground, the 3:1 mark floor, and the nearest passing variant offered beside a failure. Duplicated from `palette`, held in step by `helper-parity.test.ts` |
 
-The extractor is `lib/newsroom/charter.ts` (pure, never throws), the bounded fetch is
-`lib/newsroom/charter-fetch.ts`, and the writer is `lib/newsroom/profile-write.ts` — the same one
-the setup page uses, so a charter-written profile and a hand-filled one are the same file.
+## How it works (the shape)
 
-## How it works
-
-1. **Ask for the site.** « Quelle est l'adresse du site de votre rédaction ? Je vais y lire les
-   couleurs que vous publiez déjà — je ne changerai rien sans votre accord. » Nothing else is
-   needed. Do NOT ask for a hex; that is the whole point.
-
-2. **Measure.**
-   ```bash
-   bun skills/splash/scripts/propose-charter.mjs read <site-url>
-   ```
-   If the site refuses a plain fetch (a 403 behind a bot wall), get the HTML by any means —
-   `firecrawl scrape <url>` is installed — save it, and read from the file instead:
-   `… read --html-file page.html --url <site-url>`. Say in the relay that only the saved page
-   was seen, never its stylesheets.
-
-3. **Read the output honestly.** It carries ranked candidates with a `signal` per reading, the
-   ground, the typefaces, and a `What this reading cannot promise` section. **Relay that section
-   too** — an extraction that hid its own caveats would be the fabricated finding this project
-   forbids. Never present a `declared`-confidence value and an `inferred` one in the same tone.
-
-4. **★ GATE — MANDATORY, non-skippable.** Present, in the journalist's language:
-   - the proposed **house colour**, with its origin: « Je propose #d5121e — c'est la couleur que
-     votre site déclare lui-même aux navigateurs. » / « …c'est la couleur du remplissage de votre
-     logo. » / « …c'est la couleur de vos liens ; le site ne nomme aucune couleur de marque, donc
-     c'est une déduction, pas une certitude. »
-   - the **ground**, ONLY if a dark one was measured — and always with the caveat the extractor
-     attaches to it (a page stacks backgrounds; the one on `<body>` may sit behind the white
-     column the reader looks at). Ask them to confirm by eye.
-   - the **typefaces**, stated as **noted, not applied**: « J'ai relevé Publico Text — Splash ne
-     sait pas encore appliquer une typo, je l'inscris comme information dans le profil. » Never
-     imply a chart will use it.
-   - the **source name** and the **language** of the deliverables, which the site does not answer
-     and which you must ASK for.
-
-   Then say plainly: « Corrige, remplace ou retire ce que tu veux avant que j'écrive quoi que ce
-   soit. » Then **confirm back** the final values and get an explicit yes. Never proceed on
-   silence; never treat the proposal itself as approval; the journalist's edits win verbatim.
-
-5. **When the site answers nothing** (`confidence: none`, no candidates) — do not improvise.
-   This also fires when a colour WAS read but only from unlabelled declarations (bbc.com's
-   `#e00000`, out of hashed Emotion classes). The notes name that colour; relay it as « la seule
-   couleur que j'ai vue, sans que le site la désigne comme la vôtre », never as a proposal.
-   Say it: « Votre site n'affiche aucune couleur de marque que je puisse lire (fond blanc, texte
-   noir, logo en image). Quelle est votre couleur ? Si vous ne savez pas, dites-le : Splash
-   choisira une couleur adaptée au sujet de chaque visuel, ce qui est un bon défaut. » A profile
-   with no palette is valid — `source` + `lang` alone are worth writing.
-
-6. **Write, with the confirmed values only.**
-   ```bash
-   bun skills/splash/scripts/propose-charter.mjs write . --confirmed \
-     --palette "#d5121e" [--theme "#…"|dark] \
-     --name "Heidi.news" --site-url "https://www.heidi.news" --lang fr \
-     [--typeface "Publico Text"]
-   ```
-   It refuses without `--confirmed`, and refuses to overwrite an existing profile without
-   `--replace` (that file belongs to the newsroom once created). It prints what it wrote — relay
-   it, and tell the journalist the file is theirs to edit.
-
-7. **Say what changes.** From now on every chart, map and scrolly is produced in that colour, and
-   any single visual can still override it. If the confirmed colour is hard to tell apart for a
-   colour-blind reader, Splash **keeps it anyway** (it is their brand) and flags it at review —
-   the existing `brandExplicit` policy. Say that rather than silently changing their colour.
+1. **Fetch the page, bounded.** `fetchWithTimeout` races the request against a timer that always
+   wins — a hung connection, a fake test double that never resolves, a real DNS failure, all come
+   back as a structured `{ok, status, text, error}`, never an unhandled rejection and never a
+   silent empty page standing in for "nothing here."
+2. **On failure, stop and hand back the honest fallback.** `deriveCharter` returns `{ok: false,
+   error, askInstead}` — three concrete questions to ask the journalist directly — and never
+   attempts to derive anything from a page it couldn't read.
+3. **On success, read what the document itself carries plus a bounded handful of its own
+   stylesheets** (`maxStylesheets`, default 4, first-linked-first). Each stylesheet gets its own
+   bounded fetch; one failing doesn't fail the others — it's named in `stylesheetsFailed` and the
+   rest still contribute.
+4. **Every reader in `extract.mjs` only reports what's actually declared.** A `theme-color` not
+   shaped like `#rrggbb`/`#rgb` is skipped, not coerced. A `font-family` stack of nothing but
+   generic keywords (`inherit`, `sans-serif`, an unresolved `var(--x)`) reports nothing. A
+   `background:` match is required to be a real property, not a custom-property NAME that merely
+   *contains* the word (`--articleBackground` is not `background:` — see
+   `references/extraction-traps.md`).
+5. **`derive-charter.mjs` ranks candidates, never averages or merges them.** A `theme-color` meta
+   outranks a named custom property for `brandColor`; an unqualified `html`/`body`/`:root` rule
+   outranks a qualified one for `ground`; the most-declared font stack outranks a one-off. Every
+   field that has no candidate clearing that bar comes back `null`, listed in `unresolved`.
+6. **`formatProposal` renders the result — always readable, never written.** The `ok: false` path
+   renders the ask-instead questions. The `ok: true` path renders the front-matter block with
+   every resolved value quoted, every unresolved one spelled `# UNRESOLVED — ask the journalist`,
+   and a "Where each value was read" section pairing every value with its source and its literal
+   declaration text.
 
 ## Quick start
 
-```bash
-bun skills/splash/scripts/propose-charter.mjs read https://www.heidi.news
-# → #d5121e, from <meta name="theme-color"> — confidence: declared
-# … journalist confirms …
-bun skills/splash/scripts/propose-charter.mjs write . --confirmed \
-  --palette "#d5121e" --name "Heidi.news" --site-url "https://www.heidi.news" --lang fr
+```js
+import { deriveCharter } from "./scripts/derive-charter.mjs";
+import { formatProposal } from "./scripts/format-proposal.mjs";
+
+const proposal = await deriveCharter({ url: "https://www.heidi.news" });
+console.log(formatProposal(proposal));
 ```
 
-## Tuning knobs (each = one number)
+```yaml
+# Charter proposal for https://www.heidi.news
 
-All in `lib/newsroom/charter.ts` unless noted.
+PROPOSED, not written. This is not NEWSROOM.md — copy it there only after the journalist has
+confirmed or corrected every line below.
 
-- **signal weights**: theme-color 100 · brand-property 90 · masthead 85 · link 75 ·
-  accent-property 70 · control 55 · any other declared colour 8 (`WEIGHT`) — the method IS this
-  ordering. `accent-property` is an INPUT signal (a site's `--accent` custom property), not a
-  proposed field — the charter stopped offering an accent since nothing rendered it
-- **FREQUENCY_BONUS_CAP**: 4 — the most a colour can earn from merely being common. It is kept
-  under the SMALLEST gap between two adjacent weights (5); nothing bigger is a tiebreak. The
-  ordering itself does not depend on it — candidates sort lexicographically on
-  (best signal, occurrences, hex), so frequency structurally cannot outrank a declaration
-- **FREQUENCY_HALF**: 20 occurrences — where the frequency bonus reaches half its cap
-- **MIN_CANDIDATE_SCORE**: 55 — under it nothing is proposed at all (an unlabelled hex out of a
-  bundle is not evidence); the colour is named in the notes and the question is asked instead
-- **MASTHEAD_WINDOW**: 1200 characters after a `logo`/`masthead` attribute, and only inside an
-  actual `<svg>` — a wider window credited a share icon as the masthead
-- **EVIDENCE_CAP**: 12 receipts kept per candidate (the count is still exact)
-- **NEUTRAL_SATURATION**: 0.18 — below it, a colour is a grey and cannot be a brand hue
-- **NEUTRAL_LIGHTNESS_MIN / MAX**: 0.09 / 0.94 — the near-black and near-white cut-offs
-- **MERGE_DISTANCE**: 12 (RGB) — two readings closer than this are the same house colour
-- **DARK_GROUND_LUMINANCE**: 0.2 — where a measured ground counts as dark
-- **GROUND_MIN_ALPHA**: 0.9 — a more transparent colour is a wash, never the page
-- **MAX_SHEETS / MAX_BYTES / TIMEOUT_MS**: 8 · 2 MB · 10 s (`charter-fetch.ts`)
+---
+name: Heidi.news
+url: https://www.heidi.news
+language: fr
+brandColor: "#d5121e"
+ground: # UNRESOLVED — ask the journalist
+typefaces: "Sang Bleu Kingdom, Roboto"
+---
+
+## Where each value was read
+- **name**: `Heidi.news` — <title> — `<title>Heidi.news</title>`
+- **language**: `fr` — <html lang> — `<html data-ariato="Heidi BookmarkLoader" lang="fr-CH"`
+- **brandColor**: `#d5121e` — meta[name=theme-color] — `<meta name="theme-color" content="#d5121e"/>`
+- **ground** — not declared anywhere this skill reads. Ask the journalist directly.
+- **typefaces**: `Sang Bleu Kingdom, Roboto` — font-family declarations — `font-family: 'Sang Bleu Kingdom' · font-family: 'Roboto'`
+```
+
+(Real output, captured running this skill against the live site — not hand-typed.)
+
+`brandColor` here is `#d5121e` — a red — which is worth naming explicitly: Heidi.news's own
+confirmed `NEWSROOM.example.md` carries `brandColor: "#0B7A75"`, a teal, chosen by the newsroom
+itself. The `theme-color` meta tag is CMS-level default chrome colouring for mobile browsers, not
+necessarily the considered house accent a newsroom would confirm — which is exactly why this
+skill's whole design is "propose with evidence, let the journalist decide" rather than "measure
+and trust." The measured value and the newsroom's real answer can legitimately differ; the
+evidence line is what lets a journalist catch that in one glance instead of trusting a number.
+
+## Tuning knobs
+
+| Want | Knob | Where |
+| --- | --- | --- |
+| How long a single fetch (page or stylesheet) may run before it's abandoned | `8000` ms | `DEFAULT_TIMEOUT_MS`, `derive-charter.mjs` (override via `deriveCharter({timeoutMs})`) |
+| How many linked stylesheets get fetched and read | `4` | `DEFAULT_MAX_STYLESHEETS`, `derive-charter.mjs` (override via `deriveCharter({maxStylesheets})`) |
+| How many candidate font stacks are folded into the proposed `typefaces` value | `2` | `chooseTypefaces`, `derive-charter.mjs` |
+| Which custom-property name fragments count as a brand-colour hint | `brand`, `primary`, `accent` | `BRAND_NAME_HINT`, `derive-charter.mjs` |
+| Which custom-property name fragments count as a ground-colour hint | `background`, `ground`, `surface`, `page` | `GROUND_NAME_HINT`, `derive-charter.mjs` |
+| Which two hex values never count as a confident colour candidate | `#ffffff`, `#000000` | `isNeutralHex`, `extract.mjs` |
+| The contrast an accent must clear against the proposed ground before the proposal says it can come out as it is | `3` | `NON_TEXT_CONTRAST_MIN`, `derive-charter.mjs` |
 
 ## Files
 
-- `skills/newsroom-charter/SKILL.md` — this procedure (②)
-- `skills/splash/scripts/propose-charter.mjs` — the `read` / `write` CLI, deliberately split
-- `lib/newsroom/charter.ts` — the extractor: signals, ranking, refusal (③, pure)
-- `lib/newsroom/charter-fetch.ts` — bounded same-host fetch of the page + its stylesheets
-- `lib/newsroom/profile-write.ts` — the single writer of `NEWSROOM-PROFILE.md`
-- `NEWSROOM-PROFILE.example.md` — every field the profile reader understands
+- `scripts/fetch-document.mjs` — `fetchWithTimeout`, the one bounded-network primitive every other
+  script builds on.
+- `scripts/extract.mjs` — the pure readers: `extractThemeColor`, `extractName`,
+  `extractLanguage`, `extractAlternateLanguages`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`,
+  `extractRootCustomProperties`, `extractBackgroundDeclarations`, `extractFontFamilies`, plus
+  `normalizeHex`/`isNeutralHex`.
+- `scripts/derive-charter.mjs` — `deriveCharter`, the orchestrator. No write path.
+- `scripts/format-proposal.mjs` — `formatProposal`, the markdown renderer.
+- `references/site-declarations.md` — what real newsrooms' sites actually declare (and don't),
+  learned running this against heidi.news, lemonde.fr, theguardian.com and nzz.ch.
+- `references/extraction-traps.md` — the specific parsing bugs a real site's markup and CSS
+  exposed, each pinned by a test in `test/extract.test.ts`.
+- `test/fetch-document.test.ts` — the timeout/hang/abort contract, plus one live request against a
+  real site.
+- `test/extract.test.ts` — every reader, against both synthetic fixtures and the real declaration
+  shapes four real newsrooms ship.
+- `test/derive-charter.test.ts` — the ranking rules, the honest-fallback path, and a static assertion
+  that this module exposes no write-shaped export.
+- `test/format-proposal.test.ts` — the rendered markdown, resolved and unresolved alike.

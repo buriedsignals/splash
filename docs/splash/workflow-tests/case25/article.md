@@ -1,1 +1,0 @@
-Where does the European Union's budget actually go? Nearly a third — about 31% — still flows to agriculture and rural support. Another 29% goes to 'cohesion': the funds that prop up poorer regions. Research and innovation take 11%, while running the Union itself — administration — costs 7%. Everything else, from border security to foreign aid, makes up the remaining 22%.

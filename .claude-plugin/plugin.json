@@ -1,7 +1,7 @@
 {
   "name": "splash",
-  "description": "Open-source visual storytelling for every newsroom — turns an article and/or its data into a finished, exported visual (chart, map, scrolly, video). No code to write.",
-  "version": "0.2.0",
+  "description": "Splash: Visual journalism for every newsroom — a skill pack a newsroom installs and drives from its own AI assistant. Entry point: the splash skill.",
+  "version": "0.1.0",
   "author": {
     "name": "Remy Dumas"
   },
@@ -14,7 +14,6 @@
     "map",
     "scrollytelling",
     "remotion",
-    "datawrapper",
     "maplibre",
     "visual-journalism"
   ]

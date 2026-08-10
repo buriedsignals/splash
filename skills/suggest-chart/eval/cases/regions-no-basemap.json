@@ -1,6 +1,0 @@
-{
-  "id": "regions-no-basemap",
-  "data": "zone,value\nZone A,42\nZone B,31\nZone C,28",
-  "intent": "Which internal sales zone performed best?",
-  "expect": { "family": "ranking", "element": "chart", "maxWarnings": 0 }
-}
