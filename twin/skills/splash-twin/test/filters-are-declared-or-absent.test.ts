@@ -42,13 +42,23 @@
  * `twin-map-web/scripts/verify-live-map.mjs`, which spends tile quota and therefore does not belong
  * in a suite that runs on every commit.
  *
- * THE MUTATION THAT REDDENS IT (a guard that cannot go red is worse than none — run in a copy under
- * /tmp, never in this tree):
+ * THE MUTATIONS THAT REDDEN IT — a guard that cannot go red is worse than none. All four were run
+ * in a copy of the tree under `/tmp` (`/private/tmp/filter-mutation`), never in this tree, against
+ * a baseline of 30 pass / 0 fail:
  *
- *   1. delete the `[data-filter]:not(...)` line from `filter.ts`'s `filterCss` → every driven page
- *      fails "still has a client rect".
- *   2. drop `attrsFor` from ONE element (the seed's `.seg`) → the build refuses before rendering.
- *   3. put the dead `.chart-filter` CSS back into a beat with no control → the census fails.
+ *   1. delete the `[data-filter]:not(…)` line from `filter.ts`'s `filterCss` → 2 fail; the driven
+ *      walk reports every excluded datum "still has a client rect", and the census loses the rules.
+ *   2. drop `attrsFor` from the scatter's `.point-label` ONLY, leaving its dot and leader line
+ *      correctly tagged → the markup scan is structurally blind to it (the element carries no
+ *      `data-key` to look up) and the driven walk reddens with *"Switzerland belongs to a datum
+ *      this option excludes and is still drawn"*. This is the mutation that proves the driven half
+ *      is not redundant with the build-time half.
+ *   3. write `data-key` by hand without the vocabulary → the BUILD refuses, before any file is
+ *      written: *"an element drawn from "AFG" carries no data-filter, so a narrowed view would
+ *      leave it behind while its siblings disappear"*.
+ *   4. restore one page from before this chantier (dead `.chart-filter` CSS, no control) → the
+ *      census fails naming `.chart-filter` and `#period-* dimming`. On the whole tree as it stood
+ *      that morning this half was 21 fail / 4 pass.
  */
 
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
@@ -129,7 +139,32 @@ type Page = {
   hasRules: boolean;
   /** The narrowing note. */
   hasNotes: boolean;
+  /** Still on the mechanism the vocabulary replaces — see `LEGACY_MAP_VOCABULARY`. */
+  legacy: boolean;
 };
+
+/**
+ * THE ONE PART OF THE TREE THIS GUARD MEASURES BUT DOES NOT YET HOLD TO THE VOCABULARY, named page
+ * by page rather than described.
+ *
+ * `twin-map-web` still runs the mechanism the vocabulary replaces: a filter derived from whether
+ * points happen to carry more than one `group`, hidden by four hand-written selectors over
+ * `data-group`. Migrating it was the last step of this chantier and it was NOT taken, because every
+ * file it needs — `MapWebSeed.tsx`, `render-web.mjs`, `live-map.mjs`, `map-web-discipline.md` — was
+ * being written by another session at the time, and a clobbered hour costs more than an honest gap.
+ *
+ * So these three pages are driven on their OWN vocabulary (`data-group`) instead of skipped: the
+ * walk below reads whichever attribute a page carries, so B6.18b's class is checked on them today.
+ * What they are exempt from is the narrowing NOTE, which the legacy mechanism has no notion of.
+ *
+ * **This list is exact, and that is what makes the gap self-closing**: migrating a page reddens this
+ * test until its path is removed, and adding a NEW page on the legacy mechanism reddens it too.
+ */
+const LEGACY_MAP_VOCABULARY = [
+  "proof/mapgen-locator-web/locator.html",
+  "proof/mapgen-symbol-web/quake-symbol.html",
+  "skills/twin-map-web/output-proof/population.html",
+];
 
 const PAGES: Page[] = trackedWebPages().map((path) => {
   const html = readFileSync(join(TWIN, path), "utf8");
@@ -140,6 +175,7 @@ const PAGES: Page[] = trackedWebPages().map((path) => {
     hasAttrs: / data-filter="/.test(html),
     hasRules: /\[data-filter\]:not\(\[data-filter~=/.test(html),
     hasNotes: / data-filter-note="/.test(html),
+    legacy: / data-group="/.test(html),
   };
 });
 
@@ -152,8 +188,23 @@ describe("the census: a page has a whole filter or none of one", () => {
     expect(PAGES.filter((p) => !p.hasControl).length).toBeGreaterThan(0);
   });
 
+  it("names every page still on the legacy map vocabulary, exactly", () => {
+    expect(
+      PAGES.filter((p) => p.legacy)
+        .map((p) => p.path)
+        .sort(),
+    ).toEqual([...LEGACY_MAP_VOCABULARY].sort());
+  });
+
   it.each(PAGES.map((p) => [p.path, p] as const))("%s", (_path, page) => {
-    if (page.hasControl) {
+    if (page.legacy) {
+      // Held to its OWN mechanism's coherence, not to the vocabulary's: a control, the attribute it
+      // keys off, and a rule that hides by it.
+      expect({
+        control: page.hasControl,
+        rules: /\[data-group="[^"]+"\]\) \{ display: none/.test(page.html),
+      }).toEqual({ control: true, rules: true });
+    } else if (page.hasControl) {
       expect({
         rules: page.hasRules,
         attrs: page.hasAttrs,
@@ -190,8 +241,9 @@ type Vocabulary = {
 
 async function readVocabulary(
   page: import("puppeteer").Page,
+  attr: string,
 ): Promise<Vocabulary> {
-  return page.evaluate(() => {
+  return page.evaluate((a: string) => {
     const radios = [
       ...document.querySelectorAll<HTMLInputElement>(
         "fieldset input[type=radio]",
@@ -199,17 +251,14 @@ async function readVocabulary(
     ];
     const byKey = new Map<string, { slugs: string[]; names: Set<string> }>();
     for (const el of document.querySelectorAll<HTMLElement>(
-      "[data-key][data-filter]",
+      `[data-key][${a}]`,
     )) {
       const key = el.getAttribute("data-key")!;
-      const slugs = (el.getAttribute("data-filter") ?? "")
-        .split(/\s+/)
-        .filter(Boolean);
+      const slugs = (el.getAttribute(a) ?? "").split(/\s+/).filter(Boolean);
       const entry = byKey.get(key) ?? { slugs, names: new Set<string>() };
-      // The datum's own rendered NAME — what the orphan-label check looks for once this datum is
-      // filtered away. Numbers and very short strings are skipped: "3.9" legitimately reappears in
-      // a legend that does not move under a filter, and a false red here would train someone to
-      // ignore this file.
+      // The datum's own rendered NAME — what the orphan check looks for once this datum is filtered
+      // away. Numbers and very short strings are skipped: "3.9" legitimately reappears in a legend
+      // that does not move under a filter, and a false red would train someone to ignore this file.
       const text = (el.textContent ?? "").trim();
       if (text && text.length >= 3 && !/^[\d\s.,%+-]+$/.test(text))
         entry.names.add(text);
@@ -220,7 +269,17 @@ async function readVocabulary(
     }
     return {
       options: radios
-        .map((r) => ({ id: r.id, slug: r.value || r.id.replace(/^.*?-/, "") }))
+        // A radio with no `value` attribute reports `"on"`, which is the browser's default and not
+        // a slug at all — the legacy map control has no `value`, so every option read as `"on"` and
+        // a whole driven run was meaningless while looking busy. The id is the reliable source: the
+        // slug is what follows this genre's own filter prefix.
+        .map((r) => ({
+          id: r.id,
+          slug:
+            r.value && r.value !== "on"
+              ? r.value
+              : r.id.replace(/^(?:chart-filter|mw-filter)-/, ""),
+        }))
         .filter((o) => o.id),
       keys: [...byKey.entries()].map(([key, v]) => ({
         key,
@@ -228,7 +287,7 @@ async function readVocabulary(
         names: [...v.names],
       })),
     };
-  });
+  }, attr);
 }
 
 /** What is actually laid out, for one key and for one word. `getClientRects()` is geometry the
@@ -276,9 +335,20 @@ async function orphanTexts(
   return page.evaluate(
     ({ hidden, kept }) => {
       const found = new Set<string>();
+      // THE CONTROL AND THE LEGEND ARE NOT ORPHANS. A chip reading "UN system" is visible precisely
+      // when that group is excluded — that is what a filter chip IS — and a size legend's reference
+      // label ("M8.0") deliberately does not move under a filter, because a legend that shrank with
+      // the selection would tell a reader the marks had been resized. Both are substrings of an
+      // excluded datum's accessible name, so both read as orphans until they are excluded here.
+      // Measured: without this clause the two legacy map pages reported 33 orphans, every one of
+      // them furniture — including a `<th scope="col">Organisation` in the accessible table's own
+      // header, which is why `thead` is in the list while `tbody` deliberately is not (a row header
+      // there IS a datum's name and must be checked).
+      const FURNITURE = "fieldset, legend, thead, [data-filter-note], [class*='legend'], figcaption";
       for (const el of document.querySelectorAll<HTMLElement>("body *")) {
         if (el.children.length > 0) continue; // leaves only: an ancestor's text is its children's
         if (el.getClientRects().length === 0) continue;
+        if (el.closest(FURNITURE)) continue;
         const text = (el.textContent ?? "").trim();
         if (text.length < 3 || /^[\d\s.,%+\-–—]+$/.test(text)) continue;
         if (!hidden.some((name) => name.includes(text))) continue;
@@ -297,7 +367,13 @@ const PHONE = { width: 375, height: 812 };
 describe("driven: a filtered value disappears whole", () => {
   const withFilter = PAGES.filter((p) => p.hasControl);
 
-  it.each(withFilter.map((p) => [p.path] as const))("%s", async (path) => {
+  it.each(withFilter.map((p) => [p.path, p] as const))(
+    "%s",
+    async (path, subject) => {
+      // The legacy map pages are driven on THEIR OWN attribute rather than skipped, so B6.18b's
+      // class is checked on them today; what they are exempt from is the narrowing note, which the
+      // mechanism they still run has no notion of.
+      const attr = subject.legacy ? "data-group" : "data-filter";
     const browser = await puppeteer.launch({
       headless: true,
       executablePath: resolveChrome(),
@@ -311,18 +387,23 @@ describe("driven: a filtered value disappears whole", () => {
         await page.goto(`file://${join(TWIN, path)}`, { waitUntil: "load" });
         const where = `${viewport.width}x${viewport.height}`;
 
-        const vocabulary = await readVocabulary(page);
+        const vocabulary = await readVocabulary(page, attr);
         if (vocabulary.keys.length === 0)
           failures.push(
             `${where}: the page has a control and no datum carries the vocabulary`,
           );
 
-        // THE DEFAULT STATE IS THE WHOLE CLAIM — nothing argument-bearing behind the control.
+        // THE DEFAULT STATE IS THE WHOLE CLAIM — nothing argument-bearing behind the control. Every
+        // datum must be DRAWN, which is "at least one of its elements has a box" and deliberately
+        // not "all of them do": measured on `proof/mapgen-locator-web`, nine of eleven markers ship
+        // a `.point-label` at `display: none` in the unfiltered state, because that beat declutters
+        // its label layer on purpose. Asserting every element would call a real editorial decision
+        // a defect, which is how a guard gets ignored.
         for (const { key } of vocabulary.keys) {
           const v = await visibility(page, key);
-          if (v.visible !== v.total)
+          if (v.visible === 0)
             failures.push(
-              `${where}: unfiltered, ${v.total - v.visible} of ${v.total} elements drawn from "${key}" are already hidden`,
+              `${where}: unfiltered, "${key}" is not drawn at all — none of its ${v.total} elements has a box`,
             );
         }
 
@@ -335,7 +416,7 @@ describe("driven: a filtered value disappears whole", () => {
           // only when the label has no box at all (a genre that draws the radio bare).
           const box = await page.evaluate((id) => {
             const input = document.getElementById(id) as HTMLInputElement;
-            const chip = input.closest("label") ?? input;
+            const chip = (input.closest("label") ?? input) as HTMLElement;
             const r = chip.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return null;
             return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
@@ -346,8 +427,7 @@ describe("driven: a filtered value disappears whole", () => {
               (document.getElementById(id) as HTMLInputElement).click();
             }, option.id);
           const isAll = await page.evaluate(
-            (id) =>
-              (document.getElementById(id) as HTMLInputElement).value === "all",
+            (id) => id.replace(/^(?:chart-filter|mw-filter)-/, "") === "all",
             option.id,
           );
 
@@ -391,7 +471,7 @@ describe("driven: a filtered value disappears whole", () => {
             failures.push(
               `${where}: the unfiltered view prints a narrowing note — ${note.join(" / ")}`,
             );
-          if (!isAll && note.length !== 1)
+          if (!isAll && !subject.legacy && note.length !== 1)
             failures.push(
               `${where} / "${option.slug}": ${note.length} narrowing notes are drawn, wanted exactly one`,
             );
@@ -401,6 +481,7 @@ describe("driven: a filtered value disappears whole", () => {
     } finally {
       await browser.close();
     }
-    expect(failures).toEqual([]);
-  });
+      expect(failures).toEqual([]);
+    },
+  );
 });
