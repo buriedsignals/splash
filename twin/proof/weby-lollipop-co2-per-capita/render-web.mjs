@@ -26,6 +26,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { LollipopCo2Web, FRAME } from "./LollipopCo2Web.tsx";
 
@@ -217,6 +218,15 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const claim = `Switzerland's 2024 per-capita CO₂ emissions were the ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest of these 15 European countries, at ${subjectRow.value.toFixed(1)} tonnes — less than half of ${highest.country}'s ${highest.value.toFixed(1)} tonnes.`;
 
+  // The two colours this beat is drawn in are recorded in `PALETTE.md` beside this file, never
+  // typed here — a hex in this call is a colour the newsroom's own recorded answer can never reach.
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: LollipopCo2Web,
     props: {
@@ -225,8 +235,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       title: claim,
       source: "Source: Global Carbon Budget 2025, via Our World in Data · 2024 data",
       alt: `Lollipop chart ranking 2024 per-capita CO2 emissions across 15 European countries, highest to lowest. ${highest.country} is highest at ${highest.value.toFixed(1)} tonnes per capita. Switzerland, highlighted, is ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest at ${subjectRow.value.toFixed(1)} tonnes. Every row prints its own rounded value; hovering, tapping or focusing a row reveals that row's reading to three decimals, which is what separates Switzerland from Sweden.`,
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
+      ground,
+      accent,
       subject: SUBJECT,
     },
     outDir,

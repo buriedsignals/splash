@@ -24,6 +24,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { summarizeDecade } from "./boxplot-geometry.ts";
 import { DecadeBoxplotWeb, FRAME } from "./DecadeBoxplotWeb.tsx";
@@ -240,6 +241,15 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     "Source: Global Carbon Budget 2025, via Our World in Data · France, 1950–2024, extracted 8 August 2026";
   const alt = `Box plot of France's annual per-capita CO2 emissions by decade, ${decadeFrom} to ${decadeTo}, in tonnes per capita. The median rises from ${summaries[0].median.toFixed(2)} in the ${summaries[0].label} to a peak of ${peakDecade.median.toFixed(2)} in the ${peakDecade.label}, then falls every decade after that to ${lastSummary.median.toFixed(2)} in the ${lastSummary.label} (n=${lastSummary.n}, a partial decade covering 2020-2024 only; every other decade shown is a full n=10). ${outlierCount === 0 ? "No decade produced a Tukey outlier." : summaries.filter((s) => s.outliers.length > 0).map((s) => `${s.label} has ${s.outliers.length} outlier reading${s.outliers.length > 1 ? "s" : ""} beyond the whisker: ${s.outliers.map((o) => `${o.value.toFixed(1)} (${o.year})`).join(", ")}.`).join(" ")} Every decade's own full five-number summary, Tukey fence and outlier list is available in exact figures via hover or keyboard focus on its own box — the static frame only ever prints the decade, its n, and (for three or fewer outliers) each outlier's own value.`;
 
+  // The two colours this beat is drawn in are recorded in `PALETTE.md` beside this file, never
+  // typed here — a hex in this call is a colour the newsroom's own recorded answer can never reach.
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: DecadeBoxplotWeb,
     props: {
@@ -248,8 +258,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       title,
       source,
       alt,
-      ground: "#FFFFFF",
-      accent: "#0072B2",
+      ground,
+      accent,
     },
     outDir,
     name,

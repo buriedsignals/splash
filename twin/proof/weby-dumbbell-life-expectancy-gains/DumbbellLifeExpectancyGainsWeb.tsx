@@ -51,9 +51,6 @@ const UNIT = "years";
  *  and at 375px, where the plot column is about 140px wide, that one wide label measurably
  *  overlapped the tick before it. Caught by driving the page, not by reading it. */
 const CAVEAT = "Life expectancy at birth, in years.";
-/** The two series' own fixed hues — Okabe-Ito blue and vermillion, the pair this project uses
- *  wherever two categories must be told apart by colour alone. */
-const COLOURS = { y2000: "#0072B2", y2023: "#D55E00" };
 const DOT_RADIUS = 6;
 /** The plot's own inset, in canonical SVG user units, so an end dot's own mark is never clipped in
  *  half by the `viewBox` edge. The LABEL beyond it is HTML and lands in a reserved gutter. */
@@ -160,6 +157,7 @@ export function DumbbellLifeExpectancyGainsWeb({
   grid,
   measure,
   frame,
+  colours,
 }: {
   /** Must already be sorted by gap, descending — this component draws whatever order it is handed
    *  and does not re-sort. */
@@ -175,6 +173,15 @@ export function DumbbellLifeExpectancyGainsWeb({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** The two ENDPOINT hues, handed in by the runner from the recorded `PALETTE.md` via
+   *  `seriesInks`. These were a module-level `{ y2000: "#0072B2", y2023: "#D55E00" }` here until
+   *  2026-08-10 — Okabe-Ito blue and vermillion, described in that comment as "the pair this
+   *  project uses wherever two categories must be told apart by colour alone", which is exactly the
+   *  argument, and exactly the reason the ANSWER cannot live in this file: a newsroom that records
+   *  its own pair could not reach it. The argument still stands — a dumbbell's two dots share a row
+   *  and a scale, so colour is the only thing separating them, and the pair has to hold apart under
+   *  every colour-vision deficiency, which is why they are separated by hue rather than lightness. */
+  colours: { y2000: string; y2023: string };
 }) {
   if (rows.length < 2)
     throw new Error(
@@ -210,8 +217,8 @@ export function DumbbellLifeExpectancyGainsWeb({
         ["--ground" as string]: ground,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
-        ["--y2000" as string]: COLOURS.y2000,
-        ["--y2023" as string]: COLOURS.y2023,
+        ["--y2000" as string]: colours.y2000,
+        ["--y2023" as string]: colours.y2023,
         // Fixed CSS pixel type sizes, threaded as custom properties. None of these ever changes
         // with the viewBox's width — that is the whole point of the redesign.
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -241,14 +248,14 @@ export function DumbbellLifeExpectancyGainsWeb({
         <span className="legend-key">
           <span
             className="legend-swatch"
-            style={{ background: COLOURS.y2000 }}
+            style={{ background: colours.y2000 }}
           />
           2000
         </span>
         <span className="legend-key">
           <span
             className="legend-swatch"
-            style={{ background: COLOURS.y2023 }}
+            style={{ background: colours.y2023 }}
           />
           2023
         </span>
@@ -381,7 +388,7 @@ export function DumbbellLifeExpectancyGainsWeb({
                 top: `${pct(d.rowY, frame.height)}%`,
                 width: `${DOT_RADIUS * 2}px`,
                 height: `${DOT_RADIUS * 2}px`,
-                background: COLOURS.y2000,
+                background: colours.y2000,
               }}
             />
           ))}
@@ -394,7 +401,7 @@ export function DumbbellLifeExpectancyGainsWeb({
                 top: `${pct(d.rowY, frame.height)}%`,
                 width: `${DOT_RADIUS * 2}px`,
                 height: `${DOT_RADIUS * 2}px`,
-                background: COLOURS.y2023,
+                background: colours.y2023,
               }}
             />
           ))}

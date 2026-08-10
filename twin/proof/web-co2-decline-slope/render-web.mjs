@@ -20,6 +20,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { SlopeWeb, FRAME } from "./SlopeWeb.tsx";
 
@@ -46,8 +47,9 @@ const COUNTRIES = [
 export const BEAT = {
   countries: COUNTRIES,
   highlighted: "Germany",
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   // The claim names the SET IT DRAWS, not a region. "Western European" was false of these ten:
   // under the UN geoscheme only Austria, France, Germany and Switzerland are Western Europe —
   // Poland is Eastern, Italy and Spain Southern, Norway and Sweden Northern. Widening the claim to
@@ -202,6 +204,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `furthest fall: ${ranked[0].name} (−${ranked[0].fall.toFixed(2)} t) — smallest: ${ranked.at(-1).name} (−${ranked.at(-1).fall.toFixed(2)} t)`,
   );
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: SlopeWeb,
     props: {
@@ -211,8 +220,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       limits: BEAT.limits,
       source: BEAT.source,
       alt: BEAT.alt,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
       highlighted: BEAT.highlighted,
       periodLabels: BEAT.periodLabels,
     },

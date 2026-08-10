@@ -21,6 +21,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { LifeExpectancyWeb, FRAME } from "./LifeExpectancyWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
@@ -31,8 +32,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 export const BEAT = {
   subject: "Switzerland",
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   source:
     "Source: UN, World Population Prospects (2024), via Our World in Data · Switzerland, 1950–2023, extracted 8 August 2026",
 };
@@ -90,6 +92,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const caveat = `Life expectancy at birth in ${BEAT.subject}, ${first.year}–${last.year}. Annual readings.`;
   const alt = `Line chart of life expectancy at birth in Switzerland, ${first.year} to ${last.year}. The line rises from ${formatNumber(first.value)} years in ${first.year} to ${formatNumber(last.value)} years in ${last.year}, a gain of ${formatNumber(delta)} years, first crossing 80 years in ${crossing.year}. Every one of the ${readings.length} annual readings, including two real dips around 2020 and 2022, has its own exact value on hover, tap or keyboard focus.`;
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: LifeExpectancyWeb,
     props: {
@@ -99,8 +108,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       source: BEAT.source,
       alt,
       subject: BEAT.subject,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
       referenceYear: first.year,
       crossingYear: crossing.year,
       frame: FRAME,

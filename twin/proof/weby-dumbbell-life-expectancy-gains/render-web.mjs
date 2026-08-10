@@ -29,6 +29,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import {
   DumbbellLifeExpectancyGainsWeb,
@@ -270,6 +271,17 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `(+${least.gap.toFixed(1)}). Every row's own exact gap is available on hover, tap or keyboard ` +
     `focus.`;
 
+  // The three colours this beat is drawn in are recorded in `PALETTE.md` beside this file, never
+  // typed here — a hex in this call is a colour the newsroom's own recorded answer can never reach.
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  // The two endpoint hues, in the order `PALETTE.md` records them: 2000 first, then 2023.
+  const [y2000, y2023] = seriesInks(palette, 2);
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+  console.log(`endpoints: 2000 ${y2000} | 2023 ${y2023}`);
+
   const { outPath } = await renderWeb({
     component: DumbbellLifeExpectancyGainsWeb,
     props: {
@@ -279,12 +291,14 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
-      // Nominal only. This beat carries no single semantic accent — the two series' own fixed hues
-      // do that job — but `renderWeb`'s shared CSS shell always writes `--accent` from this prop,
-      // and omitting it wrote the literal token `undefined` into the stylesheet. Nothing in this
-      // beat's markup or CSS reads it.
-      accent: "#0B7A75",
+      ground,
+      colours: { y2000, y2023 },
+      // `renderWeb`'s shared CSS shell always writes `--accent` from this prop, and omitting it
+      // wrote the literal token `undefined` into the stylesheet — so it has to be given something.
+      // Nothing in this beat's markup or CSS reads `--accent`; the two endpoint hues above carry
+      // the whole encoding. It used to be a nominal house teal typed here, which is a hex the
+      // newsroom's own recorded answer could never reach; it is now the recorded primary accent.
+      accent,
     },
     outDir,
     name,

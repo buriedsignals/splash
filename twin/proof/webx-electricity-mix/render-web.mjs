@@ -12,21 +12,25 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { contrast } from "../../skills/twin-chart-web/scripts/render-still.mjs";
 import { StackedBarWeb, FRAME } from "./StackedBarWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
 // same one the component labels every segment with, so the prose and the tooltips agree.
-import { formatNumber } from "./stacked-bar-geometry.ts";
+// `STACK_ORDER` is the order the stack draws its three bands in, and the order `PALETTE.md`
+// records its accents in — one list, so a recorded colour can never land on the wrong band.
+import { formatNumber, STACK_ORDER } from "./stacked-bar-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 const RENEWABLE_COLUMNS = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower"];
 const FOSSIL_COLUMNS = ["Gas", "Oil", "Coal"];
-const COLOURS = { renewables: "#009E73", nuclear: "#0072B2", fossil: "#D55E00" };
 
 export const BEAT = {
-  ground: "#FFFFFF",
+  // The four colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   source:
     "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026",
 };
@@ -83,11 +87,29 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   // to its own total), not a reading from data.csv. Every share in the sentence is interpolated.
   const alt = `100%-stacked bar chart of six countries' 2024 electricity generation by source: renewables, nuclear, fossil. ${top.name} is ${formatNumber(top.renewables, 0)}% renewable, the highest of the group; ${highestFossil.name} draws ${formatNumber(highestFossil.fossil, 0)}% from fossil fuel, the highest fossil share. Every segment's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus, including segments too thin to carry a printed label.`;
 
-  const segmentInk = {
-    renewables: contrast("#000000", COLOURS.renewables) >= contrast("#FFFFFF", COLOURS.renewables) ? "#000000" : "#FFFFFF",
-    nuclear: contrast("#000000", COLOURS.nuclear) >= contrast("#FFFFFF", COLOURS.nuclear) ? "#000000" : "#FFFFFF",
-    fossil: contrast("#000000", COLOURS.fossil) >= contrast("#FFFFFF", COLOURS.fossil) ? "#000000" : "#FFFFFF",
-  };
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  // One fill per band, in the order the stack draws them. `seriesInks` hands back the recorded
+  // accents first, so a newsroom that records three gets its own three.
+  const inks = seriesInks(palette, STACK_ORDER.length);
+  const colours = Object.fromEntries(STACK_ORDER.map((key, i) => [key, inks[i]]));
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+  console.log(
+    `bands: ${STACK_ORDER.map((key) => `${key} ${colours[key]}`).join(" | ")}`,
+  );
+
+  // The ink each printed share is set in, measured against ITS OWN BAND rather than the page — the
+  // pole that reads better on that fill. Derived from the recorded colours, so it follows them.
+  const segmentInk = Object.fromEntries(
+    STACK_ORDER.map((key) => [
+      key,
+      contrast("#000000", colours[key]) >= contrast("#FFFFFF", colours[key])
+        ? "#000000"
+        : "#FFFFFF",
+    ]),
+  );
 
   const { outPath } = await renderWeb({
     component: StackedBarWeb,
@@ -97,7 +119,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       subtitle,
       source: BEAT.source,
       alt,
-      ground: BEAT.ground,
+      ground,
+      colours,
       segmentInk,
       frame: FRAME,
     },

@@ -30,6 +30,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { FRAME, SwissAgePyramidWeb } from "./SwissAgePyramidWeb.tsx";
 
@@ -41,13 +42,6 @@ const DEFAULT_DATA_PATH = join(HERE, "data.csv");
 // file nobody looks at, printed a path, exited zero, and left the committed one stale.
 const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "population-pyramid-switzerland.html";
-
-/** Nominal accent — this beat carries no single semantic accent (the two sexes' own fixed hues,
- *  `SwissAgePyramidWeb.tsx`'s own `COLOURS`, carry the highlight), but `renderWeb`'s shared CSS
- *  shell always emits a `--accent` custom property from `props.accent`. Supplying a real, defined
- *  colour here (rather than leaving it `undefined`) keeps that shared shell's own CSS valid; no rule
- *  this beat writes ever reads `var(--accent)`. */
-const NOMINAL_ACCENT = "#0072B2";
 
 /** Simple `split(",")` — sufficient for these three plain-integer columns; no field in this file
  *  carries a comma. Same shape `static-swiss-age-pyramid/render.mjs`'s own `parseCsv` uses. */
@@ -260,6 +254,17 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   }
   console.log(`female > male from ${crossover.ageBand} upward`);
 
+  // The three colours this beat is drawn in are recorded in `PALETTE.md` beside this file, never
+  // typed here — a hex in this call is a colour the newsroom's own recorded answer can never reach.
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  // The two halves of the mirror, in the order `PALETTE.md` records them: male first, then female.
+  const [male, female] = seriesInks(palette, 2);
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+  console.log(`halves: male ${male} | female ${female}`);
+
   const { outPath } = await renderWeb({
     component: SwissAgePyramidWeb,
     props: {
@@ -271,8 +276,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
       alt: `Population pyramid of Switzerland by age and sex, ${YEAR}. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward. Every band's exact figures for both sexes are reachable by hover, tap or keyboard focus.`,
-      ground: "#FFFFFF",
-      accent: NOMINAL_ACCENT,
+      ground,
+      colours: { male, female },
+      // `renderWeb`'s shared CSS shell always emits a `--accent` custom property from `props.accent`,
+      // so it has to be given something; no rule this beat writes ever reads `var(--accent)`. The
+      // two halves above carry the whole encoding. This used to be a `NOMINAL_ACCENT` hex typed in
+      // this file — a colour the newsroom's own recorded answer could never reach.
+      accent,
       peakBand: peak.ageBand,
       // Three lines, not one run-on string, and the value is BACK. The old build passed the bare
       // "the widest band" because the long form ("55-59: the widest band (669,962)") measured 230px

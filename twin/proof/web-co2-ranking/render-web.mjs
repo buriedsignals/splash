@@ -26,6 +26,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { RankingWeb, FRAME } from "./RankingWeb.tsx";
 
@@ -34,8 +35,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 export const BEAT = {
   subject: "Switzerland",
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   title:
     "Switzerland's CO₂ emissions per capita are the second-lowest of ten major European economies",
   subtitle:
@@ -88,6 +90,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const data = rowsFromCsv(csv, { year: TARGET_YEAR });
   if (data.length < 1) throw new Error(`need at least one row, got ${data.length}`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: RankingWeb,
     props: {
@@ -98,8 +107,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       source: BEAT.source,
       alt: BEAT.alt,
       subject: BEAT.subject,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
     },
     outDir,
     name,

@@ -18,6 +18,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { WorldPopulationWeb, FRAME } from "./WorldPopulationWeb.tsx";
 // The beat's own formatters, taking their locale from the language the page declares — the same
@@ -27,8 +28,9 @@ import { billions, formatNumber } from "./population-geometry.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 export const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   source:
     "Source: HYDE (2023), Gapminder (2022) & UN World Population Prospects (2024), via Our World in Data · World, 1800–2023, extracted 8 August 2026",
 };
@@ -86,6 +88,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const limits = `${last.year}: ${billions(last.population, 2)} billion — more than ${formatNumber(multiple)}x its ${first.year} level of about ${billions(first.population, 2)} billion.`;
   const alt = `Filled area chart of world population, ${first.year} to ${last.year}. Population rises from about ${billions(first.population, 2)} billion in ${first.year} to ${billions(last.population, 2)} billion in ${last.year} (the latest year in this data), first crossing 1 billion in ${crossingRow.year} and 8 billion in ${eightBillionRow.year}. Every one of the ${data.length} annual readings has its own exact value on hover, tap or keyboard focus.`;
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: WorldPopulationWeb,
     props: {
@@ -94,8 +103,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       limits,
       source: BEAT.source,
       alt,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
       crossing: { year: crossingRow.year, label: `passed 1 billion in ${crossingRow.year}` },
       frame: FRAME,
     },

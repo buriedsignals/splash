@@ -18,6 +18,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { GroupedBarWeb, FRAME } from "./GroupedBarWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
@@ -39,7 +40,9 @@ const COLUMNS = [
 ];
 
 export const BEAT = {
-  ground: "#FFFFFF",
+  // The three colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   calloutSubject: "Switzerland",
   calloutText: "Solar leads wind here — the only reversal in this group",
   source:
@@ -105,6 +108,15 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     "Share of each country's total electricity generation in 2024, from generation by source in terawatt-hours.";
   const alt = `Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind's share is larger than solar's. Switzerland is the reverse: solar ${formatNumber(groups.find((g) => g.name === "Switzerland").solar)}%, wind ${formatNumber(groups.find((g) => g.name === "Switzerland").wind)}%. Every bar's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.`;
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  // The two series hues, in the order `PALETTE.md` records them: wind first, then solar.
+  const [wind, solar] = seriesInks(palette, 2);
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+  console.log(`series: wind ${wind} | solar ${solar}`);
+
   const { outPath } = await renderWeb({
     component: GroupedBarWeb,
     props: {
@@ -115,7 +127,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       alt,
       calloutSubject: BEAT.calloutSubject,
       calloutText: BEAT.calloutText,
-      ground: BEAT.ground,
+      ground,
+      colours: { wind, solar },
       frame: FRAME,
     },
     outDir,

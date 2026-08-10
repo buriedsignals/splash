@@ -39,8 +39,6 @@ import {
 } from "./grouped-bar-geometry";
 
 const UNIT = "%";
-const WIND_COLOUR = "#0072B2";
-const SOLAR_COLOUR = "#E69F00";
 
 type Measure = (
   text: string,
@@ -118,6 +116,7 @@ export function GroupedBarWeb({
   grid,
   measure,
   frame,
+  colours,
 }: {
   groups: Group[];
   title: string;
@@ -132,6 +131,14 @@ export function GroupedBarWeb({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** The two SERIES hues, handed in by the runner from the recorded `PALETTE.md` via `seriesInks`.
+   *  These were a module-level pair of hex constants here until 2026-08-10. The argument for two of them is the legend's own, restated: colour is the ONLY cue
+   *  tying a bar in the sixth group back to "wind" or "solar", so the pair must read apart by hue
+   *  under every colour-vision deficiency, and the annotation naming the subject stays ink rather
+   *  than becoming a third hue. WHICH two is the newsroom's answer, not this file's — and one of the
+   *  two this file used to name did not clear the 3:1 non-text floor against the ground it was drawn
+   *  on. See `PALETTE.md` beside this component for the measurement and what replaced it. */
+  colours: { wind: string; solar: string };
 }) {
   if (groups.length < 2)
     throw new Error(
@@ -164,7 +171,7 @@ export function GroupedBarWeb({
       className="chart-figure"
       style={{
         ["--ground" as string]: ground,
-        ["--accent" as string]: SOLAR_COLOUR,
+        ["--accent" as string]: colours.solar,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -200,8 +207,8 @@ export function GroupedBarWeb({
         }}
       >
         {[
-          { label: "Wind", colour: WIND_COLOUR },
-          { label: "Solar", colour: SOLAR_COLOUR },
+          { label: "Wind", colour: colours.wind },
+          { label: "Solar", colour: colours.solar },
         ].map((item) => (
           <span
             key={item.label}
@@ -315,14 +322,14 @@ export function GroupedBarWeb({
                 y={b.wind.y}
                 width={b.wind.width}
                 height={b.wind.height}
-                fill={WIND_COLOUR}
+                fill={colours.wind}
               />
               <rect
                 x={b.solar.x}
                 y={b.solar.y}
                 width={b.solar.width}
                 height={b.solar.height}
-                fill={SOLAR_COLOUR}
+                fill={colours.solar}
               />
 
               {/* Interaction layer: one direct hit target per bar, `tabIndex={0}` and `aria-label`

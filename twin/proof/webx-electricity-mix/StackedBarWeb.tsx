@@ -33,13 +33,9 @@ import {
   formatNumber,
   STACK_ORDER,
   type Country,
+  type Segment,
 } from "./stacked-bar-geometry";
 
-const COLOURS = {
-  renewables: "#009E73",
-  nuclear: "#0072B2",
-  fossil: "#D55E00",
-} as const;
 const LEGEND_LABELS = {
   renewables: "Renewables (hydro, wind, solar, bio)",
   nuclear: "Nuclear",
@@ -116,6 +112,7 @@ export function StackedBarWeb({
   grid,
   measure,
   frame,
+  colours,
   segmentInk,
 }: {
   countries: Country[];
@@ -129,10 +126,17 @@ export function StackedBarWeb({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** One fill per stack band, handed in by the runner from the recorded `PALETTE.md` via
+   *  `seriesInks`. These were three module-level hexes here until 2026-08-10, which meant a
+   *  newsroom could record its own colours and this chart would go on drawing the same three:
+   *  three categories that share no baseline need three fills that read apart, and WHICH three is
+   *  the newsroom's answer, not this file's. The argument for a three-way categorical split
+   *  survives the move; the answer to it no longer lives here. */
+  colours: Record<Segment, string>;
   /** Precomputed WCAG ink-on-fill per segment key, by the runner (`deriveFurniture`'s own
-   *  escalation logic, run once against each segment's fixed colour rather than the page ground —
+   *  escalation logic, run once against each segment's own fill rather than the page ground —
    *  a component never re-derives a colour rule). */
-  segmentInk: Record<keyof typeof COLOURS, string>;
+  segmentInk: Record<Segment, string>;
 }) {
   if (countries.length < 2)
     throw new Error(
@@ -168,7 +172,7 @@ export function StackedBarWeb({
       className="chart-figure"
       style={{
         ["--ground" as string]: ground,
-        ["--accent" as string]: COLOURS.renewables,
+        ["--accent" as string]: colours.renewables,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -214,7 +218,7 @@ export function StackedBarWeb({
                 width: "12px",
                 height: "12px",
                 flex: "0 0 auto",
-                background: COLOURS[key],
+                background: colours[key],
               }}
             />
             {LEGEND_LABELS[key]}
@@ -288,7 +292,7 @@ export function StackedBarWeb({
                 y={s.y}
                 width={s.width}
                 height={s.height}
-                fill={COLOURS[s.key]}
+                fill={colours[s.key]}
               />
             )),
           )}

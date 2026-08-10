@@ -32,6 +32,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { IncomeLifeExpectancyWeb, FRAME } from "./IncomeLifeExpectancyWeb.tsx";
 
@@ -45,8 +46,9 @@ const EXCLUDED_CODE = "CAF";
 
 /** The story's own constants — the journalist's words, from `BRIEF.md`. */
 export const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#C1440E",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   title:
     "Among the world's richest economies, the United States has one of the lowest life expectancies — years behind income-peer Switzerland.",
   subtitle:
@@ -358,6 +360,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const source = creditFrom(metadata, referenceYear(csv));
   console.log(`source: ${source}`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: IncomeLifeExpectancyWeb,
     props: {
@@ -367,8 +376,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       subtitle: BEAT.subtitle,
       source,
       alt,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
       filter: regionFilter(data),
       filterKeys: data.map((r) => r.code),
     },

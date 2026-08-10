@@ -20,6 +20,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { SmallMultiplesCo2Web, FRAME } from "./SmallMultiplesCo2Web.tsx";
 
@@ -35,8 +36,9 @@ const FIRST_YEAR = 1950;
 const LAST_YEAR = 2024;
 
 export const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   title:
     "Poland's per-capita CO2 emissions have overtaken Germany's, even as both have fallen sharply since their 1979-80 peaks.",
   caption:
@@ -305,6 +307,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `panels is available on hover, tap or keyboard focus.`;
   console.log(`alt: ${alt}`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: SmallMultiplesCo2Web,
     props: {
@@ -316,8 +325,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       caption: BEAT.caption,
       source: BEAT.source,
       alt,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
     },
     outDir,
     name,

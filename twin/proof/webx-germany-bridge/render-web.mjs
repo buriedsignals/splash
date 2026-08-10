@@ -14,6 +14,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { WaterfallWeb, FRAME } from "./WaterfallWeb.tsx";
 // The beat's own formatters, taking their locale from the language the page declares — the same
@@ -26,7 +27,9 @@ const RENEWABLE_COLUMNS = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hy
 const FOSSIL_COLUMNS = ["Gas", "Oil", "Coal"];
 
 export const BEAT = {
-  ground: "#FFFFFF",
+  // The three colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   source:
     "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026",
 };
@@ -92,6 +95,15 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     "The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.";
   const alt = `Waterfall chart of Germany's electricity generation, 2015 to 2024, in terawatt-hours: ${formatNumber(opening)} TWh in 2015, ${steps[1].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[1].value))} TWh from renewables, ${steps[2].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[2].value))} TWh from the nuclear phase-out, ${steps[3].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[3].value))} TWh from a falling fossil share, arriving at ${formatNumber(closing)} TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany's generation reached immediately after that step.`;
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  // The two sign fills, in the order `PALETTE.md` records them: increase first, then decrease.
+  const [increase, decrease] = seriesInks(palette, 2);
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+  console.log(`signs: increase ${increase} | decrease ${decrease}`);
+
   const { outPath } = await renderWeb({
     component: WaterfallWeb,
     props: {
@@ -100,7 +112,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       subtitle,
       source: BEAT.source,
       alt,
-      ground: BEAT.ground,
+      ground,
+      colours: { increase, decrease },
       frame: FRAME,
     },
     outDir,

@@ -35,8 +35,6 @@ import {
   type Step,
 } from "./waterfall-geometry";
 
-const COLOURS = { increase: "#0072B2", decrease: "#D55E00" };
-
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
@@ -101,6 +99,7 @@ export function WaterfallWeb({
   grid,
   measure,
   frame,
+  colours,
 }: {
   steps: Step[];
   title: string;
@@ -113,6 +112,15 @@ export function WaterfallWeb({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** The two SIGN fills, handed in by the runner from the recorded `PALETTE.md` via `seriesInks`.
+   *  These were a module-level `{ increase: "#0072B2", decrease: "#D55E00" }` here until
+   *  2026-08-10, which meant a newsroom could record its own colours and this bridge would go on
+   *  drawing the same two. The argument for two of them is unchanged and still holds: on a
+   *  waterfall, colour encodes the SIGN of each step, and the two have to read apart under every
+   *  colour-vision deficiency — which is why they are separated by hue and not by lightness. WHICH
+   *  two is the newsroom's answer, not this file's. The `total` bars stay `muted`, derived from the
+   *  ground, because a total is not a step and must not read as one. */
+  colours: { increase: string; decrease: string };
 }) {
   if (steps.length < 3)
     throw new Error(
@@ -148,7 +156,7 @@ export function WaterfallWeb({
       className="chart-figure"
       style={{
         ["--ground" as string]: ground,
-        ["--accent" as string]: COLOURS.decrease,
+        ["--accent" as string]: colours.decrease,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -183,8 +191,8 @@ export function WaterfallWeb({
         }}
       >
         {[
-          { label: "Increase", colour: COLOURS.increase },
-          { label: "Decrease", colour: COLOURS.decrease },
+          { label: "Increase", colour: colours.increase },
+          { label: "Decrease", colour: colours.decrease },
           { label: "Total", colour: muted },
         ].map((item) => (
           <span
@@ -289,7 +297,7 @@ export function WaterfallWeb({
                 fill={
                   b.kind === "total"
                     ? muted
-                    : COLOURS[b.kind as "increase" | "decrease"]
+                    : colours[b.kind as "increase" | "decrease"]
                 }
               />
               {/* Interaction layer: only the three DELTA bars get a hit target — this file's own

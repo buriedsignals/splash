@@ -11,6 +11,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { makeBins } from "./histogram-geometry";
 import { HistogramWeb, FRAME } from "./HistogramWeb.tsx";
@@ -18,8 +19,9 @@ import { HistogramWeb, FRAME } from "./HistogramWeb.tsx";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 export const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  // The two colours this beat is drawn in are NOT here. They are recorded in `PALETTE.md` beside
+  // this file and read back by `readPalette` in `render` below — a hex typed here is a colour the
+  // newsroom's own recorded answer can never reach.
   source:
     "Source: Global Carbon Budget (2025), via Our World in Data · co-emissions-per-capita, 2023 data, extracted 8 August 2026",
 };
@@ -84,6 +86,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const alt = `Histogram of CO2 emissions per capita for ${rows.length} countries in 2023, binned in ${BIN_WIDTH}-tonne intervals from ${BIN_LO} to ${BIN_HI}. ${underFour} countries (${share.toFixed(0)}%) sit under 4 tonnes; the distribution is right-skewed, with a handful of oil and gas producers stretching the tail out to ${BIN_HI} tonnes. A dashed line marks the median at ${med.toFixed(1)} tonnes. Every bin's exact count AND the full list of countries in it is available on hover, tap or keyboard focus.`;
   const medianLabel = `Median: ${med.toFixed(1)} t`;
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(
+    `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
+  );
+
   const { outPath } = await renderWeb({
     component: HistogramWeb,
     props: {
@@ -93,8 +102,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       subtitle,
       source: BEAT.source,
       alt,
-      ground: BEAT.ground,
-      accent: BEAT.accent,
+      ground,
+      accent,
       median: med,
       medianLabel,
     },

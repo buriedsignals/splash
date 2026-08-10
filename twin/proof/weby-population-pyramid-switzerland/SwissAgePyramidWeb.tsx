@@ -58,8 +58,6 @@ import {
   type Band,
 } from "./pyramid-geometry";
 
-/** The two sexes' own fixed hues — Okabe-Ito blue and vermillion. */
-const COLOURS = { male: "#0072B2", female: "#D55E00" };
 /** ONE half of the mirror, in canonical SVG user units. The full geometry is computed over
  *  `HALF * 2` with a zero-width central gutter (the gutter is a CSS track now, not user units), and
  *  the right half's coordinates are shifted back by this amount into its own `viewBox`. */
@@ -224,7 +222,10 @@ export function peakAnnotation(
   // override that only applies once the container is wide enough for it.
   const steps = [...above]
     .reverse()
-    .map((b) => ({ topPct: pct(b.centerLabelY, frameHeight), minHalfPx: thresholdPx(b) }))
+    .map((b) => ({
+      topPct: pct(b.centerLabelY, frameHeight),
+      minHalfPx: thresholdPx(b),
+    }))
     .filter((s) => Number.isFinite(s.minHalfPx))
     .sort((a, b) => a.minHalfPx - b.minHalfPx);
 
@@ -296,6 +297,7 @@ export function SwissAgePyramidWeb({
   alt,
   ground,
   accent,
+  colours,
   peakBand,
   peakLines,
   ink,
@@ -315,6 +317,13 @@ export function SwissAgePyramidWeb({
    *  property, so a real, defined colour is supplied rather than leaving it `undefined`. Unused by
    *  any rule this beat's own CSS or markup writes. */
   accent: string;
+  /** The two SIDES' hues, handed in by the runner from the recorded `PALETTE.md` via `seriesInks`.
+   *  These were a module-level `{ male: "#0072B2", female: "#D55E00" }` here until 2026-08-10 —
+   *  Okabe-Ito blue and vermillion. The argument for two of them survives the move: a pyramid
+   *  mirrors one quantity about a shared axis, and the two halves are told apart by colour and by
+   *  side, so the pair has to hold apart under every colour-vision deficiency — hue, not lightness.
+   *  WHICH two is the newsroom's answer, not this file's. */
+  colours: { male: string; female: string };
   peakBand: string;
   /** The annotation, one string per line — the band, what it is, and its own total. Worded by the
    *  runner from its own frozen data; placed here. */
@@ -351,7 +360,8 @@ export function SwissAgePyramidWeb({
   );
 
   const peak = bars.find((b) => b.ageBand === peakBand);
-  if (!peak) throw new Error(`no bar for the peak band ${JSON.stringify(peakBand)}`);
+  if (!peak)
+    throw new Error(`no bar for the peak band ${JSON.stringify(peakBand)}`);
   const narrowestPlotWidthPx = NARROWEST_VIEWPORT_PX - FRAME_PAD_TOTAL_PX;
   const narrowestHalfPx = (narrowestPlotWidthPx - bandGutterPx) / 2;
   // The plot's own rendered height at that width: `aspect-ratio` unless the row floor is taller,
@@ -390,8 +400,8 @@ export function SwissAgePyramidWeb({
         ["--accent" as string]: accent,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
-        ["--male" as string]: COLOURS.male,
-        ["--female" as string]: COLOURS.female,
+        ["--male" as string]: colours.male,
+        ["--female" as string]: colours.female,
         // Fixed CSS pixel type sizes, threaded as custom properties. None of these ever changes
         // with a viewBox's width — that is the whole point of the redesign.
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -432,14 +442,14 @@ export function SwissAgePyramidWeb({
         <span className="legend-key">
           <span
             className="legend-swatch"
-            style={{ background: COLOURS.male }}
+            style={{ background: colours.male }}
           />
           Men
         </span>
         <span className="legend-key">
           <span
             className="legend-swatch"
-            style={{ background: COLOURS.female }}
+            style={{ background: colours.female }}
           />
           Women
         </span>
@@ -484,7 +494,7 @@ export function SwissAgePyramidWeb({
               y={b.y}
               width={b.male_.width}
               height={b.height}
-              fill={COLOURS.male}
+              fill={colours.male}
             />
           ))}
           {/* The centre rule — drawn on the left half's own right edge, where the label gutter
@@ -507,7 +517,10 @@ export function SwissAgePyramidWeb({
 
         {/* The peak annotation's label — HTML at a fixed size, over the left half's own cell. */}
         <div className="overlay left" aria-hidden="true">
-          <span className="peak-leader-v peak-anchor" style={{ borderColor: ink }} />
+          <span
+            className="peak-leader-v peak-anchor"
+            style={{ borderColor: ink }}
+          />
           <span className="peak-leader-h" style={{ borderColor: ink }} />
           <span
             className="note peak-label peak-anchor"
@@ -564,7 +577,7 @@ export function SwissAgePyramidWeb({
               y={b.y}
               width={b.female_.width}
               height={b.height}
-              fill={COLOURS.female}
+              fill={colours.female}
             />
           ))}
           <line
