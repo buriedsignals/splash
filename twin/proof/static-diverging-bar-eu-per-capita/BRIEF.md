@@ -1,3 +1,8 @@
+---
+size: landscape
+type: diverging-bar
+---
+
 # Beat — Croatia is the only EU country emitting more CO₂ per person than in 1990
 
 **Proves:** of the 27 EU member states, exactly one emits more CO₂ per person in 2024 than it did in
@@ -157,3 +162,50 @@ grounds-by-coincidence hole, met in practice.
 
 Computed by `render.mjs` from the same figures and shipped as the SVG's `<desc>` — never a root
 `<title>`.
+
+## Size, and the packing it forced — 2026-08-11
+
+**Pinned: landscape (1920 x 1080).** Front matter above; `render.mjs` reads it with `readPinnedSize`
+and the delivered PNG is measured from its own IHDR. It shipped 1800 x 2000 before, a size nobody
+chose.
+
+**The inversion this beat pays for.** The old frame was 900 x 1000 and the 1000 was chosen FOR
+twenty-seven rows: width fixed, height following the content. R2 pins both, so the content has to
+fit the frame. At 1920 x 1080, after a headline, a standfirst, an axis and a credit, 27 rows get
+**12.6 px of pitch each against a 29 px row label** — every name printed through its neighbours,
+with `assertTypeFloor` GREEN (the type genuinely is 29 px) and `assertPlotAspect` silent (a
+band-scale type has no measured aspect range, so it never clamps). Neither guard can see it. The
+beat now measures its own row pitch and refuses under it.
+
+**What a landscape frame has that the old one did not is WIDTH.** So the rows pack into columns —
+each column its own name gutter, value gutter, zero line and axis, all on the SAME domain and the
+SAME panel width, so pixels-per-tonne is identical everywhere and any two bars stay comparable.
+That invariant is the one thing the packing may not cost.
+
+The ladder is run **speculatively**, in its own order, and the first candidate reaching the fewest
+columns anything reaches is drawn — `type-at-size.mjs`'s own "applied speculatively and kept only if
+the slack actually improved", made mechanical:
+
+| candidate | plot height | columns |
+|---|---|---|
+| keep everything | 339 px | 3 |
+| R1 (axis title) | 401 px | 3 |
+| **R1 + R3 (standfirst keeps its first sentence)** | **489 px** | **2** ← drawn |
+| R1 + R7 (standfirst entirely) | 546 px | 2 |
+
+Three columns is not merely worse, it is refused: a column costs a name gutter (209 px) plus two
+value gutters (119 px each) before one pixel of bar is drawn, and a third column leaves 193 px of
+panel against 328 px of gutter — a table with a decorative complication. The rungs that fired are
+written into the artifact itself as `data-ladder` on the root `<svg>`, and the runner reads them back
+out of the markup rather than recomputing them, so the record and the drawing cannot disagree.
+
+**Two defects caught by looking, both fixed:**
+- 27 rows in 2 columns is 14 and 13, not 13.5. Counting the pitch on `n / columns` landed at 28.6 px
+  against a 29 px floor — half a row's worth of error. It counts `ceil(n / columns)` now.
+- R1 folds the unit into a tick label, and the first render put it on the tick nearest zero: "−10
+  tonnes" grew until it touched "−15" and the axis lost its spacing. It goes on the **outermost**
+  tick — the first one read.
+
+**Square and portrait: REFUSED at R9.** Both are 1080 wide, and at a 36 px type floor one column's
+gutters alone cost 473 px of it (a 282 px name gutter plus two 161 px value gutters). There is no
+width left to spend on the height, which is the whole mechanism this beat depends on.
