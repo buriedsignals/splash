@@ -36,13 +36,13 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 | **stacked bar** | static-electricity-mix-source | webx-electricity-mix | vidx-stacked-bar-swiss-electricity | — |
 | **waterfall** | static-germany-electricity-bridge | webx-germany-bridge | vidy-waterfall-germany-electricity-mix | — |
 
-## Maps — 6 types, 17 beats
+## Maps — 6 types, 18 beats
 
 5 of 6 are proven in all three of static, web and video.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
-| **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | — |
+| **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | mapscrolly-one-map-europe-carbon |
 | **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | mapscrolly-quakes-three-ways |
 | **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
 | **hex grid** | map-quake-density<br>mapvid-hexgrid-quakes | mapgen-hexgrid-web | mapvid-hexgrid-quakes | — |
@@ -51,5 +51,5 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 
 ## Beats with no `BRIEF.md`
 
-`portrait-aspect-probe`, `mapscrolly-one-map-europe-carbon`, `co2-suisse`, `scrolly-one-chart-swiss-life-expectancy` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
+`portrait-aspect-probe`, `scrolly-mixed-grinnell-ice`, `co2-suisse`, `scrolly-one-chart-swiss-life-expectancy` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
 

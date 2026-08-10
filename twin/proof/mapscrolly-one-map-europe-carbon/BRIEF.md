@@ -1,8 +1,15 @@
 # One map, four readings — CO₂ per person across 41 European countries, 2023
 
+**Type:** choropleth, carried by the scroll vehicle. **Medium/genre:** map / **scrolly**.
+**Channel:** article web, one self-contained `render/one-map-four-readings.html`, **four steps**,
+one map and four cameras.
+
 A scroll-driven interactive. **One map. The scroll drives the camera** — it flies, zooms and settles
-once per step. Nothing is redrawn, nothing is re-projected, no second picture is loaded: it is the
-same baked plate and the same 41 shapes throughout, seen from four places.
+once per step. Nothing is redrawn and nothing is re-projected: it is the same 41 shapes throughout,
+over one live MapTiler basemap, seen from four places.
+
+*(The `**Type:**` line above was missing until 2026-08-10, which is why this beat was invisible to
+`MATRIX.md`'s coverage tables — recorded as a gap under B8.3 in `FEEDBACK-2026-08-10.md`.)*
 
 Sibling beat, deliberately the OTHER form: `mapscrolly-quakes-three-ways` shows one subject through
 four ENCODINGS and the comparison is its argument. This one navigates inside a single map.
