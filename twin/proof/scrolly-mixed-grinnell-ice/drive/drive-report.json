@@ -1,0 +1,360 @@
+{
+  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html",
+  "sweeps": [
+    {
+      "label": "1600x900 down",
+      "samples": 241,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.192,
+      "portHeight": 820.5,
+      "span": [
+        0,
+        6
+      ],
+      "worstStepDrift": 0.581,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 4710
+      },
+      "fluidity": {
+        "intraStepFrames": 225,
+        "paintChanged": 225,
+        "geometryChanged": 222,
+        "fractionMoving": 0.987,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 3,
+        "signalHeldFrames": 9,
+        "perMedium": {
+          "photo": {
+            "intraStepFrames": 56,
+            "paintChanged": 56,
+            "geometryChanged": 53,
+            "fractionMoving": 0.946
+          },
+          "map": {
+            "intraStepFrames": 75,
+            "paintChanged": 75,
+            "geometryChanged": 75,
+            "fractionMoving": 1
+          },
+          "chart": {
+            "intraStepFrames": 94,
+            "paintChanged": 94,
+            "geometryChanged": 94,
+            "fractionMoving": 1
+          }
+        },
+        "handover": {
+          "intraStepFrames": 59,
+          "paintChanged": 59,
+          "geometryChanged": 59,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    },
+    {
+      "label": "1600x900 up",
+      "samples": 241,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.192,
+      "portHeight": 820.5,
+      "span": [
+        6,
+        0
+      ],
+      "worstStepDrift": 0.585,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 3080
+      },
+      "fluidity": {
+        "intraStepFrames": 225,
+        "paintChanged": 225,
+        "geometryChanged": 223,
+        "fractionMoving": 0.991,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 2,
+        "signalHeldFrames": 9,
+        "perMedium": {
+          "chart": {
+            "intraStepFrames": 94,
+            "paintChanged": 94,
+            "geometryChanged": 94,
+            "fractionMoving": 1
+          },
+          "map": {
+            "intraStepFrames": 74,
+            "paintChanged": 74,
+            "geometryChanged": 74,
+            "fractionMoving": 1
+          },
+          "photo": {
+            "intraStepFrames": 57,
+            "paintChanged": 57,
+            "geometryChanged": 55,
+            "fractionMoving": 0.965
+          }
+        },
+        "handover": {
+          "intraStepFrames": 60,
+          "paintChanged": 60,
+          "geometryChanged": 60,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    },
+    {
+      "label": "1280x800 down",
+      "samples": 207,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.223,
+      "portHeight": 705.5,
+      "span": [
+        0,
+        6
+      ],
+      "worstStepDrift": 0.563,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 270
+      },
+      "fluidity": {
+        "intraStepFrames": 193,
+        "paintChanged": 193,
+        "geometryChanged": 191,
+        "fractionMoving": 0.99,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 2,
+        "signalHeldFrames": 7,
+        "perMedium": {
+          "photo": {
+            "intraStepFrames": 49,
+            "paintChanged": 49,
+            "geometryChanged": 47,
+            "fractionMoving": 0.959
+          },
+          "map": {
+            "intraStepFrames": 63,
+            "paintChanged": 63,
+            "geometryChanged": 63,
+            "fractionMoving": 1
+          },
+          "chart": {
+            "intraStepFrames": 81,
+            "paintChanged": 81,
+            "geometryChanged": 81,
+            "fractionMoving": 1
+          }
+        },
+        "handover": {
+          "intraStepFrames": 52,
+          "paintChanged": 52,
+          "geometryChanged": 52,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "samples": 207,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.223,
+      "portHeight": 705.5,
+      "span": [
+        6,
+        0
+      ],
+      "worstStepDrift": 0.565,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 3958
+      },
+      "fluidity": {
+        "intraStepFrames": 193,
+        "paintChanged": 193,
+        "geometryChanged": 191,
+        "fractionMoving": 0.99,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 2,
+        "signalHeldFrames": 7,
+        "perMedium": {
+          "chart": {
+            "intraStepFrames": 80,
+            "paintChanged": 80,
+            "geometryChanged": 80,
+            "fractionMoving": 1
+          },
+          "map": {
+            "intraStepFrames": 64,
+            "paintChanged": 64,
+            "geometryChanged": 64,
+            "fractionMoving": 1
+          },
+          "photo": {
+            "intraStepFrames": 49,
+            "paintChanged": 49,
+            "geometryChanged": 47,
+            "fractionMoving": 0.959
+          }
+        },
+        "handover": {
+          "intraStepFrames": 52,
+          "paintChanged": 52,
+          "geometryChanged": 52,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "samples": 168,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.32,
+      "portHeight": 572.5,
+      "span": [
+        0,
+        6
+      ],
+      "worstStepDrift": 0.542,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 720
+      },
+      "fluidity": {
+        "intraStepFrames": 156,
+        "paintChanged": 156,
+        "geometryChanged": 154,
+        "fractionMoving": 0.987,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 2,
+        "signalHeldFrames": 5,
+        "perMedium": {
+          "photo": {
+            "intraStepFrames": 39,
+            "paintChanged": 39,
+            "geometryChanged": 37,
+            "fractionMoving": 0.949
+          },
+          "map": {
+            "intraStepFrames": 52,
+            "paintChanged": 52,
+            "geometryChanged": 52,
+            "fractionMoving": 1
+          },
+          "chart": {
+            "intraStepFrames": 65,
+            "paintChanged": 65,
+            "geometryChanged": 65,
+            "fractionMoving": 1
+          }
+        },
+        "handover": {
+          "intraStepFrames": 41,
+          "paintChanged": 41,
+          "geometryChanged": 41,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    },
+    {
+      "label": "375x812 up",
+      "samples": 168,
+      "mediaSeen": [
+        "chart",
+        "map",
+        "photo"
+      ],
+      "tallestPanelAsFractionOfPort": 0.32,
+      "portHeight": 572.5,
+      "span": [
+        6,
+        0
+      ],
+      "worstStepDrift": 0.536,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 478
+      },
+      "fluidity": {
+        "intraStepFrames": 156,
+        "paintChanged": 156,
+        "geometryChanged": 153,
+        "fractionMoving": 0.981,
+        "alphaOnlyFrames": 0,
+        "alphaAtHandoverEdgeFrames": 3,
+        "signalHeldFrames": 5,
+        "perMedium": {
+          "chart": {
+            "intraStepFrames": 65,
+            "paintChanged": 65,
+            "geometryChanged": 65,
+            "fractionMoving": 1
+          },
+          "map": {
+            "intraStepFrames": 52,
+            "paintChanged": 52,
+            "geometryChanged": 52,
+            "fractionMoving": 1
+          },
+          "photo": {
+            "intraStepFrames": 39,
+            "paintChanged": 39,
+            "geometryChanged": 36,
+            "fractionMoving": 0.923
+          }
+        },
+        "handover": {
+          "intraStepFrames": 41,
+          "paintChanged": 41,
+          "geometryChanged": 41,
+          "fractionMoving": 1
+        }
+      },
+      "problems": []
+    }
+  ],
+  "reducedMotion": {
+    "samples": 241,
+    "distinctStates": 7,
+    "everySampleIsOneOfTheSevenStates": true,
+    "framesWithABlendedLayer": 0
+  },
+  "noJs": {
+    "visual": true,
+    "photographs": 4,
+    "firstPhotoOpacity": 1,
+    "photoLayerOpacity": 1,
+    "mapLayerOpacity": 0,
+    "chartLayerOpacity": 0,
+    "linePoints": 68,
+    "shapes": 2,
+    "paragraphs": 7,
+    "credit": "T. J. Hileman · Glacier National Park Archives, 1938",
+    "visualVisible": 1
+  }
+}

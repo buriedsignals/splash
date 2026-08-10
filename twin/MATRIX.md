@@ -11,9 +11,9 @@ it is a by-product of that beat's reveal, not a chart framed to be read at rest.
 This is a coverage map, never a quality one. Whether these artifacts are CORRECT is what the
 `AUDIT-*.md` files are for.
 
-## Charts — 18 types, 55 beats
+## Charts — 19 types, 56 beats
 
-17 of 18 are proven in all three of static, web and video.
+17 of 19 are proven in all three of static, web and video.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 | **histogram** | static-carbon-footprint-spread | webx-carbon-footprint | vidy-histogram-life-expectancy | — |
 | **line** | more-line-swiss-life-expectancy | webx-life-expectancy | life-expectancy<br>migration<br>vidx-line-life-expectancy | scrolly-chart-eu-carbon |
 | **lollipop** | more-lollipop-co2-per-capita | weby-lollipop-co2-per-capita | vidy-lollipop-renewables-share-europe | — |
+| **mixed scrolly** | — | — | — | scrolly-mixed-grinnell-ice |
 | **photograph sequence** | — | — | — | scrolly-image-grinnell-glacier |
 | **population pyramid** | static-swiss-age-pyramid | weby-population-pyramid-switzerland | vidy-pyramid-niger-population | — |
 | **scatter** | static-income-life-expectancy | web-income-life-expectancy | vidx-scatter-income-life-expectancy | — |
