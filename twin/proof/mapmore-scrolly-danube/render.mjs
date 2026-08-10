@@ -32,6 +32,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, Fragment } from "react";
 import { deriveFurniture } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import {
   assertTerritoryFillsReadAsLand,
   parseRouteCsv,
@@ -93,9 +96,17 @@ assertTerritoryFillsReadAsLand();
 // countries before Vienna" claim below is answered from the route, not guessed.
 const VIENNA = [16.3738, 48.2082];
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file, which also records why the
+// route is one step deeper than the Okabe-Ito orange this beat used to name here.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const SEED = {
-  ground: "#FFFFFF",
-  accent: "#E69F00",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   // The Danube touches ten countries; Moldova's sub-1km frontage near Giurgiulesti does not
   // register at this map's resolution (same fact the sibling static/video flow-map beats state in
   // their own caveat), so only nine are ever drawn here. A bare "nine countries" repeated that
