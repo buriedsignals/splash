@@ -228,6 +228,19 @@ its canonical geometry is.
    plot that is technically fine and visually squat. Every defect this genre has shipped that a
    script could not have caught was caught by an eye on a frame.
 
+> **Looking needs an instrument, and not every host has one.** <!-- @parity vision-dependency -->
+> This rung depends on a tool that DISPLAYS an image to you — `Read` on a `.png` path, `view_image`,
+> or whatever your host calls its equivalent. Measured 2026-08-10: a headless `codex exec` prompt
+> carries **none at all**, and the model, told to look, inspected the SVG instead — which models
+> contrast and alt text, never overlap or clipping — then shipped a NEW unseen collision on each of
+> three correction cycles while reporting success each time: a clipped title, then crushed y ticks,
+> then a clipped limits line (`survey/codex-and-gemini-2026-08-10.md` §3.3). **If you have no such
+> tool, you cannot perform this rung.** Say exactly that, in those words, to the journalist; leave
+> the render unapproved; and never report it as checked. Reading the source instead is not a
+> substitute for looking — it is how those three cycles went wrong. One turn settles which host you
+> are on: `bun skills/splash/scripts/vision-probe.mjs`, then open the image it writes and answer
+> with the word in it.
+
 ## Quick start
 
 ```sh

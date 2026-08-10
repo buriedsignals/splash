@@ -164,6 +164,36 @@ see it.
   instead of being told its whole environment is broken; a chart-only story never calls this with
   `"map"` at all, so a missing map key never reaches it.
 
+**The capability preflight cannot probe: whether this host can show you the render.** Every craft
+skill's render ladder ends in *"open it and look"* — and that rung needs a tool that DISPLAYS an
+image, which belongs to the host's prompt, not to the environment. No check running in a shell can
+detect it, so this one is proved rather than detected: `scripts/vision-probe.mjs` writes a PNG
+carrying a word (only the word's SHA-256 goes to disk, so nothing but looking can answer it), you
+open it and answer `--answer <the word>`, or `--cannot-see` if your host gives you no way to open an
+image at all. Run it once per session, before the first beat is rendered. A `blind` verdict is not
+an install problem and never blocks the session — it is the same shape as a closed capability, and
+it is the honest one: it means the ladder's last rung cannot be executed here, and every craft skill
+states what follows.
+
+> **Looking needs an instrument, and not every host has one.** <!-- @parity vision-dependency -->
+> This rung depends on a tool that DISPLAYS an image to you — `Read` on a `.png` path, `view_image`,
+> or whatever your host calls its equivalent. Measured 2026-08-10: a headless `codex exec` prompt
+> carries **none at all**, and the model, told to look, inspected the SVG instead — which models
+> contrast and alt text, never overlap or clipping — then shipped a NEW unseen collision on each of
+> three correction cycles while reporting success each time: a clipped title, then crushed y ticks,
+> then a clipped limits line (`survey/codex-and-gemini-2026-08-10.md` §3.3). **If you have no such
+> tool, you cannot perform this rung.** Say exactly that, in those words, to the journalist; leave
+> the render unapproved; and never report it as checked. Reading the source instead is not a
+> substitute for looking — it is how those three cycles went wrong. One turn settles which host you
+> are on: `bun skills/splash/scripts/vision-probe.mjs`, then open the image it writes and answer
+> with the word in it.
+
+**What this does NOT do, said plainly:** it does not substitute for looking, and nothing in this
+toolchain does. There is no fallback that reads a picture for you; the measured evidence is that
+inspecting the source gives false confidence, so a mechanism that encouraged it would be worse than
+an honest refusal. The probe proves the instrument exists. Whether you then look carefully is not
+mechanisable, and is not claimed here.
+
 **Both naming conventions are accepted.** This project's own names (`MAPTILER_KEY`,
 `DATAWRAPPER_TOKEN`) stay canonical; `resolveEnvKey` (`scripts/keys.mjs`) also accepts the sibling
 engine's own names as aliases — `MAPTILER_API_KEY` / `REMOTION_MAPTILER_KEY` / `VITE_MAPTILER_KEY`
@@ -410,6 +440,7 @@ if (missing.length > 0) {
 | Turns a beat gets before production stalls | `3` | spec §8, `How it works` step 5 |
 | Hard stops preflight recognises | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them | `scripts/preflight.mjs`, `runPreflight` |
 | Capabilities preflight reports | `3` (`map`, `datawrapper`, `hostedEmbed`) | `scripts/preflight.mjs`, `runPreflight` |
+| Characters in the word a host must read back off an image to prove it can see one | `5` (`TOKEN_LENGTH`, from a 27-glyph alphabet with the confusable pairs removed — one chance in 14 million of a guess) | `scripts/vision-probe.mjs` |
 | Newsroom identity outcomes | `4` (`pass`, `missing`, `declined`, `fail`) — `pass`/`declined` both count as answered | `scripts/preflight.mjs`, `checkNewsroom` |
 
 ## Files
@@ -426,6 +457,10 @@ if (missing.length > 0) {
 - `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` (a recorded
   `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
   one).
+- `scripts/vision-probe.mjs` — `issueProbe`, `answerProbe`, `recordCannotSee`, `readVerdict`: the
+  one question this toolchain's method depends on and never asked — can this host show you an
+  image. A proof, not a detection (the tool set lives in the model's prompt, which no shell can
+  read), and never a stand-in for looking.
 - `scripts/new-story.mjs` — `slugify`, `createStory`.
 - `scripts/notes.mjs` — `recordMaintainerNote`, the one path that writes
   `stories/<slug>/NOTES-FOR-MAINTAINER.md`. It appends, because a run finds more than one defect.

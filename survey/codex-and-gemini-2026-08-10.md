@@ -381,3 +381,41 @@ in the installed root**, measured here:
   cannot hit it. The finding is real for the co-installed case and for the flat door's lack of a
   namespace; it is not evidence that the twin is undiscoverable.
 - **Nothing here touched Goose, Claude Desktop, or the vision question on any host but Codex.**
+
+---
+
+## 6. What was done about the two defects — added 2026-08-10, after the measurements above
+
+Nothing in §§0–5 has been edited; this section only records where the two defects of §3.2 and §3.3
+landed, so a maintainer meeting them here is not left to find out by reading code.
+
+**§3.2, preflight called with the shell's environment — repaired.** `runPreflight` now reads
+`<root>/.env` itself and layers it over whatever `env` a caller hands it, so the call the model
+actually made (`{root, env: process.env}`) gives the doctor's answer. Precedence rather than a
+refusal, and the reason is in the code: `process.env` cannot be distinguished from a deliberately
+assembled environment except by heuristics, so a refusal would block CI and the doctor while a
+`{...process.env}` spread walked through it. Precedence is not allowed to be quiet either — every
+capability row carries `source` (`"root .env"` / `"environment"` / `"unset"`), and a key that
+resolves only from the shell says so in its own `reason`, because the producers read the file.
+`skills/splash/SKILL.md` states the rule beside the signature, which is the half whose absence
+caused the run.
+
+**§3.3, a host with no way to look — NOT repaired, and deliberately so.** It is a host constraint,
+and the finding of §3.3 is precisely that inspecting the source gives false confidence; a fallback
+that pretended to substitute for looking would be worse than an honest refusal. Three things shipped
+instead, all of them honest about their own limits:
+
+1. **The prose names what it depends on.** All ten `SKILL.md` files that tell the model to look
+   carry the same paragraph, byte for byte: what the rung needs, what was measured here when it was
+   absent, and what a host without it must do — say so to the journalist, leave the render
+   unapproved, never report it as checked.
+2. **A check that can tell it has no way to see.** `skills/splash/scripts/vision-probe.mjs` is a
+   PROOF, not a detection — a shell cannot read the model's tool set, so the question is settled by
+   handing the model an image carrying a word and asking for the word back. Only the word's SHA-256
+   reaches disk. A wrong answer is `blind`, exactly like `--cannot-see`.
+3. **The doctor names its own blindness** in a `note` row rather than leaving the question
+   unasked, and points at the probe.
+
+**What none of it closes:** a model may skip the probe, answer it dishonestly, or — having looked —
+look carelessly. §3.3's verdict on interactive Codex also stands untested: a TUI session may expose
+`view_image`, and that run is still one run away.

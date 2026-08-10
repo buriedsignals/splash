@@ -111,17 +111,38 @@ Discovery proven on both, a complete run proven on neither. **Not a defect in ei
   Codex never reached them. The gates held by the filesystem: nothing invented an approval, and
   delivery refused.
 
-**Two defects that are ours, not the hosts'** — both open:
+**Two defects that are ours, not the hosts'** — **both addressed 2026-08-10, one repaired and one
+made visible; read each one's "Since" line, because they were closed in different senses:**
 
 1. **A headless Codex prompt carries no image-viewing tool at all** (measured: zero occurrences),
    while seven skills instruct the model to open the PNG and look. It inspected the SVG instead —
    which models contrast and alt text but **not overlap or clipping** — and across three cycles
    shipped a new unseen collision each time while reporting success: clipped title, then crushed y
    ticks, then a clipped limits line. The method depends on looking; on that host it cannot.
+
+   **Since:** *not repaired — made visible, which is the honest ceiling here.* No fallback was
+   built: the measurement is that inspecting the source produces false confidence, so a mechanism
+   encouraging it would be worse than a refusal. What shipped is (a) the same paragraph, byte for
+   byte, in all ten `SKILL.md` files that tell the model to look — naming the tool the rung depends
+   on, and instructing a host without one to say so, leave the render unapproved and never report it
+   as checked; (b) `skills/splash/scripts/vision-probe.mjs`, a PROOF rather than a detection (a
+   shell cannot read the model's tool set): it writes an image carrying a word, keeps only that
+   word's SHA-256, and takes `--answer <word>` or `--cannot-see`; (c) a `note` row in the doctor that
+   names its own blindness and points at the probe. Guard:
+   `skills/splash/test/looking-needs-an-instrument.test.ts`, with three mutations recorded.
+   **Still open:** a model can decline to run the probe, answer it dishonestly, or look carelessly —
+   none of that is mechanisable, and none of it is claimed.
 2. **`runPreflight` called with the shell's environment reports a capability closed that is open.**
    The model told the journalist the map capability was shut while the key is present and answers
    200. `installer/doctor.mjs` predicts this verbatim; the skill documents the signature without the
    rule. A minutes-long fix, not yet made.
+
+   **Since: repaired.** `runPreflight` reads `<root>/.env` itself and layers it over whatever `env`
+   a caller passes — precedence, not refusal, because `process.env` cannot be told from a
+   deliberately assembled environment except by heuristics a spread would walk through. Every
+   capability row now carries `source` (`"root .env"` / `"environment"` / `"unset"`), and a key that
+   resolves only from the shell says so in its own `reason`, so precedence hides nothing. The rule
+   is stated in `skills/splash/SKILL.md` beside the signature, and a test holds it there.
 
 **Not tested, and not to be read as working**: G3/G4 on any host but Claude Code; whether Gemini can
 drive the twin at all; interactive Codex (a TUI session may expose image viewing and would change

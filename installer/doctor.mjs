@@ -143,6 +143,22 @@ else
     "none found. Static chart beats are unaffected; web, video and every map beat need one. Run: bunx puppeteer browsers install chrome — or set CHROME_PATH",
   );
 
+// ── 5b. The one prerequisite this command CANNOT measure ─────────────────────────────────────
+//
+// Every craft skill's render ladder ends in "open the PNG and look at it". That rung needs a tool
+// that displays an image to the MODEL, and the model's tool set lives in its prompt — which a shell
+// command cannot read. So this row is deliberately a `note` that names its own blindness rather
+// than a check pretending to answer: reported, never worked around.
+//
+// It is not hypothetical. Measured 2026-08-10 (`survey/codex-and-gemini-2026-08-10.md` §3.3): a
+// headless `codex exec` prompt carries no image-viewing tool at all, and the model, told to look,
+// inspected the SVG instead — which models contrast and alt text, never overlap or clipping — and
+// shipped a new unseen collision on each of three correction cycles while reporting success.
+note(
+  "can the host SHOW the model an image",
+  "not measurable from a shell — the tool set is in the model's prompt. Ask the model to run: bun skills/splash/scripts/vision-probe.mjs (it writes an image carrying a word, and only that word's hash to disk). every craft skill's ladder ends in \"open it and look\"; on a host that answers `--cannot-see`, that rung cannot be executed and a render must never be reported as checked",
+);
+
 // ── 6. The last word belongs to preflight — asked about THIS ROOT's environment ──────────────
 //
 // `env: process.env` was the obvious thing to pass and it is wrong, measured here during this
