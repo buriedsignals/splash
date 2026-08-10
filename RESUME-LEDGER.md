@@ -93,6 +93,30 @@ certify a beat drawing in no recorded colour at all. Nothing of it is in the tre
    neither staged nor re-run.
 
 The other 69 beats were **not** re-measured this session; the standing figure is the earlier sweep.
+
+**RESUMED AND CLOSED, 2026-08-10 (commit `8c463198`) — resume points 1 and 2 are done, and both
+beats turned out to be fine.** The million was reproduced first, on the beat nobody had touched:
+photographed one animation frame after the scroll, `mapscrolly-quakes-three-ways` moved **1,036,828
+px, 74% of the viewport** between two runs of *identical bytes*, so the cause is measured rather
+than suspected — **the shot was taken before the frame had finished painting**, not camera state.
+A second trap sat beside it: shooting at the EDGE of a step's stretch photographs the next frame,
+which makes all four of that beat's readings report the same 1,763 px. The shot now drives to each
+step's MIDPOINT and photographs only once three consecutive frames are byte-identical, never on a
+sleep; and **one run's pages are photographed twice**, so a beat whose repeat of its own bytes moves
+as far as the verdict's 200 px floor is reported `unmeasured` rather than judged — the check the
+thrown-away shot lacked. Settled, quakes reads events 51,098 · biggest 28,676 · strength 1,763 ·
+bins 1,606 px, byte-identical over three repeated runs, and its pair is a teal ring against a
+warm-red ring with everything else identical. **`scrolly-one-chart-swiss-life-expectancy` moves
+34,532 px (71% of its ink)** and **`scrolly-mixed-grinnell-ice` moves 5,144 px**; both pairs were
+opened and looked at. Harness noise measured **0 px on all 28 browser-path beats**. Resume point 2
+shipped with it: `pickBest` selects by the move, fixture at
+`skills/splash/test/the-palette-proof-reports-the-biggest-move.test.ts`, red under its mutation.
+Re-measured with the same shot, `mapscrolly-one-map-europe-carbon` reads **1,062,872 px, 86.9% of
+its ink, 0 px noise**. **Resume point 3 is still open** — the stale `drive/*.png`. And one honest
+STILL remains, `scrolly-image-grinnell-glacier`, which its own `PALETTE.md` predicts: the
+photographs are the whole visual, nothing encodes a value, and the two runs are byte-identical under
+the old shot as well as the new one.
+
 ### 4. A15 / A16 / A25
 
 ### 5. Codex and Gemini, and the gates on each — **MEASURED, both stopped on a paywall**
