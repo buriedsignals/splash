@@ -147,7 +147,6 @@ const ENTRANCE_PENDING = [
   "proof/webx-carbon-footprint/carbon-footprint.html",
   "proof/webx-electricity-mix/electricity-mix.html",
   "proof/webx-germany-bridge/germany-bridge.html",
-  "proof/webx-life-expectancy/life-expectancy.html",
   "proof/webx-wind-vs-solar/wind-vs-solar.html",
   "proof/webx-world-population/world-population.html",
   "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html",
@@ -180,10 +179,7 @@ function committedChartWebPages(): Subject[] {
 async function renderedSeed(): Promise<Subject> {
   const dir = await mkdtemp(join(tmpdir(), "entrance-seed-"));
   const { outPath } = await renderSeed({
-    dataPath: join(
-      TWIN,
-      "skills/chart-web/assets/sample-data/rainfall.json",
-    ),
+    dataPath: join(TWIN, "skills/chart-web/assets/sample-data/rainfall.json"),
     outDir: dir,
   });
   return {

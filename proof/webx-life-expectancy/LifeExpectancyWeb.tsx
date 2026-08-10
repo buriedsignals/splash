@@ -30,6 +30,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceClipId,
+  entranceLayer,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   chartGeometry,
   xTickValues,
   formatNumber,
@@ -206,6 +215,93 @@ export function LifeExpectancyWeb({
     frame.xTickHint,
   );
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, in the video's own order.
+  //
+  // WHAT THIS BEAT DECIDED, which is the half no script can do for it. The claim is *"life
+  // expectancy rose 15 years since 1950"*, and a rise of fifteen years is a statement about two
+  // heights, so:
+  //
+  //   - THE REFERENCE is the dashed 1950 rule. It is not a generic first-reading default here — the
+  //     claim is measured from it, so it has to be on screen, alone, before any evidence arrives.
+  //   - THE SUBJECT is the 2023 reading, the far end of that rise. It lands as its own event, and
+  //     the conclusion is its own value in words (`Suisse 84.0 (2023)`), stated once it has landed.
+  //   - THE CROSSING MARKER — "first year past 80" — is a note on a READING, so it is gated on the
+  //     wipe's head reaching that reading's own x, plus the video's own 0.06-of-the-reveal lag. That
+  //     delay is DERIVED from this beat's geometry and moves if the data does; nothing about it is
+  //     typed. It is the label rule (`doctrine/references/motion-grammar.md`: a label's reveal gates
+  //     on its own mark, never on a master clock).
+  //
+  // The reveal is linear because the x axis IS time — 74 annual readings, evenly spaced — so easing
+  // it would give some years more screen time than others, which is a lie about the pace of the
+  // data. The head advances in x across the whole `viewBox`, and `POINT_INSET` means the curve
+  // itself starts 6 units in; that only means the first fraction of the wipe crosses empty ground,
+  // which is the same margin the eye reads as the plot's own edge.
+  const revealHeadAt = (atX: number) =>
+    atProgress(WEB_ENTRANCE.reveal, atX / frame.width);
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const referenceRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const referenceLabelLayer = entranceLayer("reference", "fade", {
+    delay: atProgress(WEB_ENTRANCE.reference, 0.55),
+    duration: LABEL_FADE_MS,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const revealLayer = entranceLayer("reveal", "wipe", {
+    delay: WEB_ENTRANCE.reveal.start,
+    duration: WEB_ENTRANCE.reveal.duration,
+    ease: ENTRANCE_EASING.LINEAR,
+  });
+  const crossingMarkLayer = crossingPoint
+    ? entranceLayer("reveal", "fade", {
+        delay: revealHeadAt(crossingPoint.x),
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const crossingLabelLayer = crossingPoint
+    ? entranceLayer("reveal", "fade", {
+        delay:
+          revealHeadAt(crossingPoint.x) + 0.06 * WEB_ENTRANCE.reveal.duration,
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const subjectLayer = entranceLayer("subject", "land", {
+    delay: WEB_ENTRANCE.subject.start,
+    duration: WEB_ENTRANCE.subject.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const conclusionLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  // Unique per beat: two of these files can land in one article and `url(#id)` takes the FIRST
+  // match in document order, so a shared id would make one figure's entrance drive the other's clip.
+  const revealClipId = entranceClipId(title);
+  // Asserted rather than left to a reader: a DERIVED delay can overrun the contract even when the
+  // contract itself is legal, because half of them come from the data. The crossing label is the
+  // latest thing this beat derives.
+  const lastDerivedEnd = crossingLabelLayer
+    ? revealHeadAt(crossingPoint!.x) +
+      0.06 * WEB_ENTRANCE.reveal.duration +
+      LABEL_FADE_MS
+    : 0;
+  if (lastDerivedEnd > endOf(WEB_ENTRANCE.conclusion))
+    throw new Error(
+      `the crossing label's derived arrival ends at ${Math.round(lastDerivedEnd)}ms, after the ` +
+        `conclusion at ${endOf(WEB_ENTRANCE.conclusion)}ms — a note would appear after the ` +
+        `sentence that closes the argument`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -224,7 +320,11 @@ export function LifeExpectancyWeb({
         ["--note-size" as string]: `${frame.note.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{caveat}</p>
       </div>
@@ -237,7 +337,11 @@ export function LifeExpectancyWeb({
           aspectRatio: `${yGutterPx + frame.width} / ${frame.height + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {tickValues.map((value, i) => (
             <span
               key={value}
@@ -275,24 +379,34 @@ export function LifeExpectancyWeb({
             fill={ground}
           />
 
-          {tickValues.map((value) =>
-            // The reference's own row gets no regular gridline — the dashed rule below already
-            // marks that height.
-            value === referenceValue ? null : (
-              <line
-                key={value}
-                x1={0}
-                x2={frame.width}
-                y1={y(value)}
-                y2={y(value)}
-                stroke={grid}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
-            ),
-          )}
+          {/* The gridlines are FURNITURE and arrive with the axis labels beside them, on ONE clock —
+              a single `<g>` rather than a fade per line, which is the video's own rule: title,
+              source, axis, ticks, gridlines come up together and then never move again. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {tickValues.map((value) =>
+              // The reference's own row gets no regular gridline — the dashed rule below already
+              // marks that height.
+              value === referenceValue ? null : (
+                <line
+                  key={value}
+                  x1={0}
+                  x2={frame.width}
+                  y1={y(value)}
+                  y2={y(value)}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ),
+            )}
+          </g>
 
+          {/* THE REFERENCE, laid down left to right before any evidence — `scaleX` from this line's
+              own `x1` of 0. `non-scaling-stroke` keeps the dash pattern in screen units while it
+              grows, so the dashes do not compress as the rule lengthens. */}
           <line
+            {...referenceRuleLayer.attrs}
+            style={referenceRuleLayer.vars}
             x1={0}
             x2={frame.width}
             y1={referenceY}
@@ -303,25 +417,66 @@ export function LifeExpectancyWeb({
             vectorEffect="non-scaling-stroke"
           />
 
-          <path
-            d={path}
-            fill="none"
-            stroke={accent}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
+          {/* THE REVEAL — the curve uncovered left to right by a clip whose rect grows from x=0, the
+              same picture frame for frame as the video's `drawnSoFar` since the years ascend and the
+              head advances monotonically in x. A CLIP and not a `stroke-dashoffset`: that form was
+              measured under this genre's own `non-scaling-stroke` + `preserveAspectRatio="none"`
+              and came back 99 % drawn at t=0 (`chart-web/scripts/render-web.mjs`, `entranceCss`).
+              ONLY THE VISIBLE STROKE IS CLIPPED — the `.pt` targets and the `.hit-area` below stay
+              outside it, so hover, tap and keyboard answer for all 74 readings from the first
+              millisecond. The entrance is an addition to a page that already works. */}
+          <defs>
+            <clipPath id={revealClipId}>
+              <rect
+                {...revealLayer.attrs}
+                style={revealLayer.vars}
+                x={0}
+                y={0}
+                width={frame.width}
+                height={frame.height}
+              />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${revealClipId})`}>
+            <path
+              d={path}
+              fill="none"
+              stroke={accent}
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
 
-          {crossingPoint && (
+          {/* The crossing MARK sits OUTSIDE the reveal's clip and fades in at the instant the head
+              passes its own x — the video's mechanism exactly. A circle uncovered by a vertical wipe
+              would arrive as two half-moons, which is a head's look on a stroke and nothing's look
+              on a dot. */}
+          {crossingPoint && crossingMarkLayer && (
             <circle
+              {...crossingMarkLayer.attrs}
+              style={crossingMarkLayer.vars}
               cx={crossingPoint.x}
               cy={crossingPoint.y}
               r={3}
               fill={muted}
             />
           )}
-          <circle cx={end.x} cy={end.y} r={4} fill={accent} />
+          {/* THE SUBJECT, landing as its own event once the curve has reached it. Drawn at (0, 0)
+              inside a `<g>` carrying the translate, so `transform: scale()` grows it about its own
+              centre — no `transform-origin` percentage and no `transform-box` question, the two
+              things that resolve differently across engine versions. */}
+          <g transform={`translate(${end.x} ${end.y})`}>
+            <circle
+              {...subjectLayer.attrs}
+              style={subjectLayer.vars}
+              cx={0}
+              cy={0}
+              r={4}
+              fill={accent}
+            />
+          </g>
 
           {/* Interaction layer: every one of the 74 readings is `tabIndex={0}` with its own
               `aria-label`/`data-detail` baked in at build time — reachable with the script absent
@@ -365,8 +520,10 @@ export function LifeExpectancyWeb({
               beneath it (caught by driving the rendered file, not hypothetical). The curve is well
               clear of the reference line by the right edge, for every year in this series. */}
           <span
+            {...referenceLabelLayer.attrs}
             className="note"
             style={{
+              ...referenceLabelLayer.vars,
               left: "100%",
               top: `${pct(referenceY, frame.height)}%`,
               transform: "translate(-100%, -100%) translateY(-4px)",
@@ -375,10 +532,12 @@ export function LifeExpectancyWeb({
           >
             {referenceYear} level
           </span>
-          {crossingPoint && (
+          {crossingPoint && crossingLabelLayer && (
             <span
+              {...crossingLabelLayer.attrs}
               className="note"
               style={{
+                ...crossingLabelLayer.vars,
                 left: `${pct(crossingPoint.x, frame.width)}%`,
                 top: `${pct(crossingPoint.y, frame.height)}%`,
                 transform: `${anchorAt(crossingPoint.x / frame.width)} translateY(-100%) translateY(-8px)`,
@@ -389,8 +548,10 @@ export function LifeExpectancyWeb({
             </span>
           )}
           <span
+            {...conclusionLayer.attrs}
             className="end-label"
             style={{
+              ...conclusionLayer.vars,
               left: `${pct(end.x, frame.width)}%`,
               top: `${pct(end.y, frame.height)}%`,
               color: accent,
@@ -400,7 +561,11 @@ export function LifeExpectancyWeb({
           </span>
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {xTicks.map((year) => {
             const p = points.find((pt) => pt.year === year);
             if (!p) return null;
@@ -420,7 +585,13 @@ export function LifeExpectancyWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }

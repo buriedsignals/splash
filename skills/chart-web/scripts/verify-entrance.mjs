@@ -81,20 +81,75 @@ const READ = () => {
   const clip = document.querySelector('[data-entrance-motion="wipe"][width]');
   const matrix = clip ? getComputedStyle(clip).transform : "none";
   const scaleX = matrix === "none" ? 1 : Number(matrix.slice(matrix.indexOf("(") + 1).split(",")[0]);
+
+  // WHAT IS HIT-TESTED, AND WHY IT IS NOT ALWAYS `.seg`.
+  //
+  // The seed splits its line into `.seg` paths because its FILTER needs each reading addressable,
+  // and this instrument was written against that. No delivered beat is obliged to: a line beat that
+  // declares no filter draws ONE `<path>`, a histogram draws `<rect>`s, a lollipop draws stems and
+  // dots. Measured on `webx-life-expectancy`: zero `.seg` elements, so the sample set was empty and
+  // every reading came back `0 of 0` — which this file's own check reports as a FAILURE rather than
+  // a pass, so it never lied, but it also could not be run on fifteen of the sixteen beats waiting
+  // to be migrated.
+  //
+  // So the sample set is now "whatever the wipe actually uncovers": the drawable elements inside the
+  // clipped group, sampled at eleven points along a path's own length (`getPointAtLength`, mapped to
+  // client coordinates through the element's own screen CTM — the `viewBox` and this genre's
+  // `preserveAspectRatio="none"` stretch are both in that matrix) and at the centre otherwise.
+  //
+  // `.seg` STAYS THE PRIMARY when it is present, unchanged, so the numbers this instrument already
+  // published for the seed are the same numbers. The fallback is only reached when there is nothing
+  // named `.seg` to measure.
+  //
+  // Occlusion is not a confound in either form: `elementsFromPoint` returns the whole stack and the
+  // test is `includes`, so a transparent `.pt` target sitting over the curve does not hide it. What
+  // IS being measured is clipping, which removes an element from the stack entirely.
   const segs = Array.prototype.slice.call(document.querySelectorAll(".seg"));
-  let hit = 0;
-  for (const seg of segs) {
+  const samplesOf = (el) => {
+    if (el.tagName.toLowerCase() === "path" && el.getTotalLength) {
+      const length = el.getTotalLength();
+      const ctm = el.getScreenCTM();
+      if (length > 0 && ctm) {
+        const out = [];
+        for (let i = 0; i <= 10; i++) {
+          const p = el.getPointAtLength((i / 10) * length);
+          const s = new DOMPoint(p.x, p.y).matrixTransform(ctm);
+          out.push([s.x, s.y]);
+        }
+        return out;
+      }
+    }
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return [];
+    return [[r.left + r.width / 2, r.top + r.height / 2]];
+  };
+  let marks = segs.map((seg) => {
     const r = seg.getBoundingClientRect();
-    const stack = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    if (stack.includes(seg)) hit += 1;
+    return { el: seg, points: [[r.left + r.width / 2, r.top + r.height / 2]] };
+  });
+  if (marks.length === 0) {
+    const clipped = Array.prototype.slice.call(
+      document.querySelectorAll("[clip-path]"),
+    );
+    for (const group of clipped)
+      for (const el of Array.prototype.slice.call(
+        group.querySelectorAll("path, rect, circle, line, polygon, polyline"),
+      ))
+        marks.push({ el, points: samplesOf(el) });
+    marks = marks.filter((m) => m.points.length > 0);
   }
+  let hit = 0;
+  for (const mark of marks)
+    for (const [x, y] of mark.points)
+      if (document.elementsFromPoint(x, y).includes(mark.el)) hit += 1;
+  const total = marks.reduce((n, m) => n + m.points.length, 0);
   const dot = document.querySelector('[data-entrance-motion="land"]');
   const end = document.querySelector(".end-label");
   const figure = document.querySelector(".chart-figure");
   return {
     scaleX: Math.round(scaleX * 1000) / 1000,
     segsHit: hit,
-    segsTotal: segs.length,
+    segsTotal: total,
     dotWidth: dot ? Math.round(dot.getBoundingClientRect().width * 10) / 10 : null,
     endLabelOpacity: end ? Number(getComputedStyle(end).opacity) : null,
     headerOpacity: Number(getComputedStyle(document.querySelector(".chart-header")).opacity),
