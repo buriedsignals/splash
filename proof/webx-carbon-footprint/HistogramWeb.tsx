@@ -30,6 +30,15 @@
  * threads them in as props (`ink`/`muted`/`grid`/`measure`).
  */
 
+import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
 import { histogramGeometry, type Bin } from "./histogram-geometry";
 
 type Measure = (
@@ -156,6 +165,70 @@ export function HistogramWeb({
   const totalWidth = yGutterPx + frame.width;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, with the bar family's own
+  // per-mark reveal — and this is the first beat in the genre whose bars grow UPWARD, so the axis
+  // that carries the reading is y and the baseline is the plot's own floor.
+  //
+  // A clip wipe is wrong here for the same reason it is wrong on a ranking, with one extra twist a
+  // histogram makes plain: a wipe crossing left to right would uncover each bin at its FULL height
+  // the instant it reached it, so the distribution's shape — the whole reading — would be a curtain
+  // opening rather than a shape assembling. Each bin rises from the floor to its own count instead.
+  //
+  //   - THE REFERENCE is the zero rule the counts are measured from. Laid down left to right, alone,
+  //     before a single bin stands on it — the same gesture the line beat's dashed rule makes.
+  //   - THE ORDER is the data's own: the continuous variable, low to high, which is the only order
+  //     a histogram has. `references/types/histogram.md`'s bins are slices of one range, not
+  //     categories that could be sorted.
+  //   - THE SUBJECT IS THE MEDIAN RULE. This beat's takeaway is not about one bin — "six in ten
+  //     countries under four tonnes" is a statement about where the mass sits — and the median is
+  //     the single mark that states it. It is also a summary OF the distribution, so it could not
+  //     honestly precede it: it lands once every bin is standing.
+  //   - THE CONCLUSION is the median's own printed value, once its rule has landed.
+  const barWindow = (i: number) => markEvent(WEB_ENTRANCE.reveal, i, bars.length);
+  const barLayer = (i: number, baselineY: number) => {
+    const own = barWindow(i);
+    return entranceLayer("reveal", "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "y", origin: { x: 0, y: baselineY }, key: `bin-${bars[i].lo}` },
+    });
+  };
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  // A horizontal rule laid down left to right is a `wipe`: `scaleX` from its own x1, which is the
+  // motion this genre already uses for a reference rule. `grow` is for a mark with a value.
+  const zeroRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const medianRuleLayer = entranceLayer("subject", "grow", {
+    delay: WEB_ENTRANCE.subject.start,
+    duration: WEB_ENTRANCE.subject.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+    // Grown from the plot's own top edge, downward. No key: the median is what the distribution is
+    // summarised BY, not one of the counts, and the per-mark equality clause is computed over the
+    // counts.
+    grow: { axis: "y", origin: { x: medianX, y: 0 } },
+  });
+  const medianLabelLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const lastBinEnd = endOf(barWindow(bars.length - 1));
+  if (lastBinEnd > WEB_ENTRANCE.subject.start)
+    throw new Error(
+      `the last bin finishes rising at ${lastBinEnd}ms, after the median rule starts landing at ` +
+        `${WEB_ENTRANCE.subject.start}ms — a summary of the distribution would arrive while the ` +
+        `distribution is still assembling`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -177,7 +250,11 @@ export function HistogramWeb({
     >
       {/* A fixed row of air under the header: the topmost y tick label sits half a line above the
           plot's own top edge, and the median's own label sits inside it near the top. */}
-      <div className="chart-header" style={{ marginBottom: 18 }}>
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={{ ...furnitureLayer().vars, marginBottom: 18 }}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -190,7 +267,11 @@ export function HistogramWeb({
           aspectRatio: `${totalWidth} / ${totalHeight}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksY.map((tick, i) => (
             <span
               key={tick.value}
@@ -227,35 +308,69 @@ export function HistogramWeb({
             fill={ground}
           />
 
-          {ticksY.map((tick) => (
-            <line
-              key={tick.value}
-              x1={0}
-              x2={frame.width}
-              y1={tick.y}
-              y2={tick.y}
-              stroke={tick.value === 0 ? muted : grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* The gridlines are FURNITURE and come up on one clock with the labels beside them. The
+              ZERO rule is lifted out of this loop: it is not a gridline, it is the floor every bar's
+              height is measured from, and this beat's REFERENCE. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticksY
+              .filter((tick) => tick.value !== 0)
+              .map((tick) => (
+                <line
+                  key={tick.value}
+                  x1={0}
+                  x2={frame.width}
+                  y1={tick.y}
+                  y2={tick.y}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+          </g>
+          {ticksY
+            .filter((tick) => tick.value === 0)
+            .map((tick) => (
+              <line
+                key={tick.value}
+                {...zeroRuleLayer.attrs}
+                style={zeroRuleLayer.vars}
+                x1={0}
+                x2={frame.width}
+                y1={tick.y}
+                y2={tick.y}
+                stroke={muted}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
 
           {/* Bars sit edge-to-edge — contiguous slices of one continuous variable, not discrete
               categories (`references/types/histogram.md`). The 1-unit trim is in CANONICAL units, so
               at a wide frame it stretches into a hairline gap and at a narrow one it all but
               disappears; the bins still read as slices of one range either way. */}
-          {bars.map((b) => (
-            <rect
-              key={b.lo}
-              x={b.x}
-              y={b.y}
-              width={Math.max(b.width - 1, 0)}
-              height={b.height}
-              fill={muted}
-            />
-          ))}
+          {/* THE REVEAL — each bin rises from the zero rule to ITS OWN count, low to high, which is
+              the only order a histogram has. */}
+          {bars.map((b, i) => {
+            const layer = barLayer(i, b.y + b.height);
+            return (
+              <rect
+                key={b.lo}
+                {...layer.attrs}
+                style={layer.vars}
+                x={b.x}
+                y={b.y}
+                width={Math.max(b.width - 1, 0)}
+                height={b.height}
+                fill={muted}
+              />
+            );
+          })}
 
+          {/* THE SUBJECT — the one mark this beat's takeaway is about, and a summary of the shape
+              behind it, so it lands once every bin is standing. */}
           <line
+            {...medianRuleLayer.attrs}
+            style={medianRuleLayer.vars}
             x1={medianX}
             x2={medianX}
             y1={0}
@@ -290,8 +405,13 @@ export function HistogramWeb({
         {/* The median's own label, in the overlay so it tracks its rule at any width. */}
         <div className="overlay" aria-hidden="true">
           <span
+            {...medianLabelLayer.attrs}
             className="median-label"
-            style={{ left: `${pct(medianX, frame.width)}%`, top: "2%" }}
+            style={{
+              ...medianLabelLayer.vars,
+              left: `${pct(medianX, frame.width)}%`,
+              top: "2%",
+            }}
           >
             {medianLabel}
           </span>
@@ -300,7 +420,11 @@ export function HistogramWeb({
         {/* The x axis: one label per bin LOWER EDGE, drawn at that edge, plus the last bin's upper
             edge at the far right. See this file's own doc-comment — a label naming an edge and drawn
             at a centre is the defect this beat carried. */}
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {bars.map((b) => (
             <span
               key={`tick-${b.lo}`}
@@ -319,11 +443,21 @@ export function HistogramWeb({
         </div>
       </div>
 
-      <p className="axis-title x-axis-title">
+      <p
+        className="axis-title x-axis-title"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         CO2 emissions per capita (tonnes/year)
       </p>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
