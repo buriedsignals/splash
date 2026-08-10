@@ -49,6 +49,7 @@ import {
   lengthFractionAt,
   project,
   revealAt,
+  strokeWidthsFor,
 } from "./route-drive.mjs";
 import { TERRITORY_FILL_OPACITY, numeralInk } from "./geo-flow.ts";
 
@@ -123,6 +124,11 @@ export function MapFrame({
   const plateSize = frame;
   const camera = containCamera(NOMINAL, plateSize, MAX_SCALE);
   const transform = `translate(${camera.tx}px, ${camera.ty}px) scale(${camera.scale})`;
+  // The line weights, in the SVG's own user units, for THIS camera — the same function the driver
+  // calls on every paint. SSR'd at the nominal camera only, exactly like the transform above and
+  // the badge positions below: what a reader with JavaScript gets is recomputed against their own
+  // box on the first paint.
+  const strokes = strokeWidthsFor(camera);
   const boxStyle = {
     position: "absolute" as const,
     left: 0,
@@ -203,9 +209,12 @@ export function MapFrame({
               fill={c.colour}
               fillOpacity={TERRITORY_FILL_OPACITY}
               stroke={c.colour}
-              strokeWidth={1.4}
-              // The stroke is in SCREEN pixels, not plate units: the same 1.4 that reads as a hair
-              // at 1600px was 0.58px at 375px, which the compositor rounds away.
+              // 1.4 SCREEN pixels, divided back out of the camera's CSS scale — `STROKE_SCREEN_PX`
+              // carries the number and the measurement. `vectorEffect` is KEPT and is not what
+              // holds this: it neutralises the viewBox transform, which is the identity here, and
+              // it does nothing about the CSS `scale()` on the ancestor camera box. Believing
+              // otherwise is what drew this outline at 0.58px on a phone.
+              strokeWidth={strokes.territory}
               vectorEffect="non-scaling-stroke"
               // The SAME arrival rule the driver uses, not a second reading of it: `from <=
               // reveal` and `arrivalOpacity` disagree at exactly the boundary, and the boundary is
@@ -225,7 +234,7 @@ export function MapFrame({
             d={d}
             fill="none"
             stroke={ground}
-            strokeWidth={7}
+            strokeWidth={strokes.halo}
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity={0.85}
@@ -238,7 +247,7 @@ export function MapFrame({
             d={d}
             fill="none"
             stroke={accent}
-            strokeWidth={3.5}
+            strokeWidth={strokes.route}
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"

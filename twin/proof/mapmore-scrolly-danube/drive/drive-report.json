@@ -1,5 +1,5 @@
 {
-  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "file": "/private/tmp/danube-render/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
   "sweeps": [
     {
       "label": "1600x900 down",
@@ -235,5 +235,28 @@
     "paragraphs": 4,
     "credit": "Basemap © MapTiler © OpenStreetMap",
     "visualVisible": 1
+  },
+  "lineWeight": {
+    "problems": [],
+    "widths": [
+      {
+        "label": "1600x900",
+        "drawnWidthPx": 3.69,
+        "samples": 228,
+        "rejected": 12
+      },
+      {
+        "label": "1280x800",
+        "drawnWidthPx": 3.72,
+        "samples": 211,
+        "rejected": 29
+      },
+      {
+        "label": "375x812",
+        "drawnWidthPx": 3.99,
+        "samples": 137,
+        "rejected": 103
+      }
+    ]
   }
 }

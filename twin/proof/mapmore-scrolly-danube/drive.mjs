@@ -24,7 +24,7 @@ import { homedir } from "node:os";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
-import { report } from "./scroll-report.mjs";
+import { lineWeight, report } from "./scroll-report.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILE = "danube-scrolly.html";
@@ -197,6 +197,138 @@ const SNAPSHOT = () => {
   };
 };
 
+/**
+ * MEASURE THE ACCENT LINE OFF A SCREENSHOT, in the page's own canvas.
+ *
+ * Runs in the browser over a PNG data URL — `data:` images do not taint a canvas, so the pixels can
+ * be read back — and it measures the thing the reader has, which is PAINT. The colour is read off
+ * the element by the caller rather than written here: a second copy of the accent would be a second
+ * opinion about what this beat is drawn in.
+ *
+ * HOW A WIDTH IS TAKEN, and why it is not a run of same-coloured pixels. A run-length reading is
+ * whole-pixel and it needs the line to happen to run down the screen; on a 3px river it produced 14
+ * usable stretches at one width and NONE at another, which is a guard that reports "cannot measure"
+ * for a line that is drawn perfectly well. So the geometry is asked where the line is:
+ *
+ *   1. sample points along the path with `getPointAtLength`, over the VISIBLE part only (the dash
+ *      offset is what is not yet revealed), and map each to screen with the path's own screen CTM —
+ *      which includes the CSS transform on the camera box, i.e. exactly the scale this whole defect
+ *      was about;
+ *   2. at each sample take the local tangent, and scan the PERPENDICULAR with bilinear sampling;
+ *   3. turn each sampled pixel into an accent COVERAGE. The line always sits inside its own
+ *      ground-coloured halo, so every pixel on that scan is a mix of accent and ground and the
+ *      coverage is exact rather than thresholded: for ground `#FFFFFF`, `alpha = (255 - b) / 255`,
+ *      accepted only when r and g agree with the same mix. That is what makes the reading
+ *      SUB-PIXEL, which a hairline defect needs — 1 px and 1.5 px are the same integer;
+ *   4. the width at that point is the integral of coverage across the scan.
+ *
+ * Samples inside the prose card or a badge are dropped: those are occlusions, not thin line.
+ */
+const MEASURE_LINE = async (dataUrl, accent, ground) => {
+  const img = new Image();
+  img.src = dataUrl;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const { data, width, height } = ctx.getImageData(0, 0, img.width, img.height);
+  const ratio = img.width / window.innerWidth; // 1 unless the shot was taken at a device scale
+
+  /** Accent coverage of one pixel, 0..1, or null when it is not an accent-over-ground mix. */
+  const coverageAt = (px, py) => {
+    const x = Math.round(px);
+    const y = Math.round(py);
+    if (x < 0 || y < 0 || x >= width || y >= height) return null;
+    const i = (y * width + x) * 4;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    // Solve on the channel with the longest throw between ground and accent, then check the others.
+    const spans = [ground[0] - accent[0], ground[1] - accent[1], ground[2] - accent[2]];
+    const k = spans.map(Math.abs).indexOf(Math.max(...spans.map(Math.abs)));
+    if (spans[k] === 0) return null;
+    const alpha = (ground[k] - [r, g, b][k]) / spans[k];
+    if (!(alpha > -0.03) || alpha > 1.03) return null;
+    const a = Math.min(1, Math.max(0, alpha));
+    for (let c = 0; c < 3; c++) {
+      const expected = ground[c] + (accent[c] - ground[c]) * a;
+      if (Math.abs([r, g, b][c] - expected) > 14) return null;
+    }
+    return a;
+  };
+
+  const root = document.querySelector('[data-visual="danube-route"]');
+  const line = root.querySelector('[data-part=route][data-layer=line]');
+  const ctm = line.getScreenCTM();
+  const toScreen = (p) => ({ x: (ctm.a * p.x + ctm.c * p.y + ctm.e) * ratio, y: (ctm.b * p.x + ctm.d * p.y + ctm.f) * ratio });
+  const total = line.getTotalLength();
+  const hidden = parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
+  const visible = Math.max(0, total - hidden);
+  const occluders = [
+    ...Array.from(document.querySelectorAll(".step-panel")),
+    ...Array.from(root.querySelectorAll("[data-badge]")).filter((el) => Number(getComputedStyle(el).opacity) > 0.05),
+  ].map((el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left * ratio - 4, right: r.right * ratio + 4, top: r.top * ratio - 4, bottom: r.bottom * ratio + 4 };
+  });
+
+  const widths = [];
+  let rejected = 0;
+  const N = 240;
+  const REACH = 9; // screen px each side — wider than any width this beat could legitimately draw
+  const STEP = 0.2;
+  for (let k = 1; k <= N; k++) {
+    const s = (visible * k) / (N + 1);
+    const here = toScreen(line.getPointAtLength(s));
+    const ahead = toScreen(line.getPointAtLength(Math.min(visible, s + 1)));
+    const behind = toScreen(line.getPointAtLength(Math.max(0, s - 1)));
+    const tx = ahead.x - behind.x;
+    const ty = ahead.y - behind.y;
+    const len = Math.hypot(tx, ty);
+    if (len < 1e-6) continue;
+    const nx = -ty / len;
+    const ny = tx / len;
+    if (occluders.some((o) => here.x >= o.left && here.x <= o.right && here.y >= o.top && here.y <= o.bottom)) {
+      rejected++;
+      continue;
+    }
+    let sum = 0;
+    let peak = 0;
+    let outside = true;
+    for (let t = -REACH; t <= REACH; t += STEP) {
+      const a = coverageAt(here.x + nx * t, here.y + ny * t);
+      if (a === null) {
+        // Off the accent/ground mixture line: a territory fill, the basemap, another feature. Only
+        // fatal if it happens INSIDE the reach where the stroke itself must be.
+        if (Math.abs(t) < 1.5) outside = false;
+        continue;
+      }
+      sum += a * STEP;
+      if (a > peak) peak = a;
+    }
+    // A scan that never found the line (occluded by something unlisted, or off the frame) is not a
+    // measurement of a thin line; a scan that found more paint than any single stroke could hold is
+    // the path doubling back on itself. Both are dropped, and `lineWeight` fails on too few left.
+    if (!outside || peak < 0.35 || sum > 2 * REACH * 0.6) {
+      rejected++;
+      continue;
+    }
+    widths.push(sum / ratio);
+  }
+  widths.sort((a, b) => a - b);
+  return {
+    samples: widths.length,
+    rejected,
+    // Fewer than 20 usable scans of 240 is not a measurement, and `lineWeight` treats the null as a
+    // problem rather than a pass.
+    drawnWidthPx: widths.length >= 20 ? widths[Math.floor(widths.length / 2)] : null,
+    p10: widths.length ? Number(widths[Math.floor(widths.length * 0.1)].toFixed(2)) : null,
+    p90: widths.length ? Number(widths[Math.floor(widths.length * 0.9)].toFixed(2)) : null,
+  };
+};
+
 async function sweep(page, direction) {
   const samples = [];
   const max = await page.evaluate(PORT);
@@ -228,6 +360,8 @@ async function main() {
   const results = [];
   /** Every frame of every sweep, kept for the plate's resolution budget below. */
   const driven = [];
+  /** One measured drawn-line weight per width, fed to `lineWeight` below. */
+  const lineWeights = [];
 
   for (const size of SIZES) {
     const page = await browser.newPage();
@@ -243,6 +377,8 @@ async function main() {
     // One screenshot per step, at the sampled offset CLOSEST to that step. A window of ±0.02 does
     // not survive a continuous signal: progress moves about 0.03 per 30px increment, so whether any
     // sample lands inside a window that narrow is luck.
+    /** One measured line weight per step, at this width — see the note beside the measurement. */
+    const perStep = [];
     const settles = [0, 1, 2, 3].map((k) =>
       down.reduce((best, s) => (Math.abs(s.progress - k) < Math.abs(best.progress - k) ? s : best), down[0]).scrollY,
     );
@@ -256,7 +392,30 @@ async function main() {
         return new Promise((r) => setTimeout(r, 450));
       }, settles[k]);
       await page.screenshot({ path: join(SHOT_DIR, `${size.name}-step-${k + 1}.png`) });
+      // THE DRAWN LINE, MEASURED, off the shot just taken. The accent and the ground are read off
+      // the ELEMENTS rather than written here, so the guard cannot be measuring a colour the beat
+      // has stopped drawing in.
+      //
+      // EVERY step is measured and the widest-sampled one is kept, which is a lesson this guard
+      // learned on its first run: at 375px the prose card sits over almost the whole of the plate
+      // band by the last step, so a guard that only ever looked there reported "cannot measure" for
+      // a line that was drawn correctly and covered. The card is an occlusion; the width is not a
+      // function of the step.
+      const shot = await page.screenshot({ encoding: "base64" });
+      const [accent, ground] = await page.evaluate(() => {
+        const rgb = (el) => getComputedStyle(el).stroke.match(/\d+/g).slice(0, 3).map(Number);
+        return [
+          rgb(document.querySelector('[data-part=route][data-layer=line]')),
+          rgb(document.querySelector('[data-part=route][data-layer=halo]')),
+        ];
+      });
+      const measured = await page.evaluate(MEASURE_LINE, `data:image/png;base64,${shot}`, accent, ground);
+      perStep.push({ step: k + 1, ...measured });
     }
+    // The best-sampled step is the measurement for this width; the rest are recorded so a reader of
+    // the report can see how much of the river each step actually leaves uncovered.
+    const best = perStep.reduce((a, b) => (b.samples > a.samples ? b : a), perStep[0]);
+    lineWeights.push({ label: size.name, ...best, perStep });
     // And two mid-flight, halfway through the first and the last reveal — the moments a sampled
     // probe never looks at, and the ones where a growing line looks different from a swapped one.
     for (const [name, lo, hi] of [
@@ -346,16 +505,28 @@ async function main() {
       errors: [...new Set(driven.map((s) => s.liveError))],
     },
     noJs: nojsFacts,
+    // THE RIVER'S OWN WEIGHT ON SCREEN, measured off the last step's screenshot at each width. The
+    // beat's subject is a line; that it is DRAWN at a thickness a reader can follow is the one
+    // thing about it no attribute in the file can attest to.
+    lineWeight: lineWeight(lineWeights),
   };
   await writeFile(join(SHOT_DIR, "drive-report.json"), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));
   const failing = results.filter((r) => r.problems.length > 0);
+  const weightProblems = summary.lineWeight.problems;
   // Exit non-zero rather than printing a wall of problems and reporting success — a run that says
   // "197 problems" and exits 0 is how a slideshow gets called a clean run in a commit message.
-  if (failing.length > 0)
+  if (failing.length > 0 || weightProblems.length > 0)
     throw new Error(
-      `${failing.length} of ${results.length} sweeps have problems: ` +
-        failing.map((r) => `${r.label} (${r.problems.length})`).join(", "),
+      [
+        failing.length > 0
+          ? `${failing.length} of ${results.length} sweeps have problems: ` +
+            failing.map((r) => `${r.label} (${r.problems.length})`).join(", ")
+          : null,
+        weightProblems.length > 0 ? `the drawn line: ${weightProblems.join("; ")}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | "),
     );
 }
 

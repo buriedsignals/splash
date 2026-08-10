@@ -124,6 +124,79 @@ export function progressDisagreement(samples) {
   return { worst: Number(worst.toFixed(4)), at };
 }
 
+// ── THE DRAWN LINE'S OWN WEIGHT ────────────────────────────────────────────────────────────────
+//
+// WHY THIS IS MEASURED IN PIXELS AND NOT READ OFF THE MARKUP. The owner drove the keyed copy of
+// this beat and said *"la ligne de fleuve ne se dessine pas bien."* The markup was blameless:
+// `stroke-width="3.5"` with `vector-effect="non-scaling-stroke"`, and a comment beside it saying in
+// so many words that the stroke was therefore in screen pixels. Measured over the DRAWN pixels of
+// the delivered page, the accent line was **6 px at 1600 × 900, 5 px at 1280 × 800 and 1 px at
+// 375 × 812** — the contain fit (1.778 / 1.422 / 0.417) multiplying the declared width, because
+// `non-scaling-stroke` compensates for the viewBox transform (the identity here) and not for the
+// CSS `scale()` on the ancestor camera box. **A guard that asserted the attribute would have been
+// green throughout**, which is the same trap the mixed-media beat's park outline fell into at
+// 0.09 px. So this takes a number off the screenshot.
+//
+// TWO ASSERTIONS, and the second is the one that names the defect class:
+//   1. the drawn width sits in a band a river can be read at, at every width;
+//   2. the drawn widths AGREE ACROSS WIDTHS. A stroke that tracks the camera cannot pass this one
+//      even if some single width happens to land inside the band.
+
+/** The band, in SCREEN pixels, and the spread allowed between widths. */
+export const DRAWN_LINE_PX = { floor: 2, ceiling: 5, spread: 1.5 };
+
+/**
+ * The verdict on a set of measured line weights.
+ *
+ * `measured` is one entry per driven width: `{ label, drawnWidthPx, samples, rejected }`, where
+ * `drawnWidthPx` is the median of the accent coverage integrated across the line's own
+ * perpendicular, at points sampled along its geometry — i.e. its thickness in screen pixels, to
+ * sub-pixel resolution — and `null` when too few scans of the shot were usable. A null is a
+ * PROBLEM, not a pass: an unmeasurable line is one of the failure modes this exists to catch.
+ */
+export function lineWeight(measured, band = DRAWN_LINE_PX) {
+  const problems = [];
+  if (measured.length === 0) return { problems: ["no width was measured at all"], widths: [] };
+  for (const m of measured) {
+    if (!Number.isFinite(m.drawnWidthPx)) {
+      problems.push(
+        `${m.label}: the drawn accent line could not be measured (${m.samples ?? 0} usable scans, ` +
+          `${m.rejected ?? 0} rejected) — a line the perpendicular cannot find is a line a reader cannot follow`,
+      );
+      continue;
+    }
+    if (m.drawnWidthPx < band.floor)
+      problems.push(
+        `${m.label}: the river draws at ${m.drawnWidthPx.toFixed(2)}px, under the ${band.floor}px floor — a hairline`,
+      );
+    if (m.drawnWidthPx > band.ceiling)
+      problems.push(
+        `${m.label}: the river draws at ${m.drawnWidthPx.toFixed(2)}px, over the ${band.ceiling}px ceiling — ` +
+          `a pipe that swallows its own meanders`,
+      );
+  }
+  const values = measured.map((m) => m.drawnWidthPx).filter(Number.isFinite);
+  if (values.length > 1) {
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    if (hi - lo > band.spread)
+      problems.push(
+        `the river draws ${lo.toFixed(2)}px at one width and ${hi.toFixed(2)}px at another ` +
+          `(spread ${(hi - lo).toFixed(2)}px, allowed ${band.spread}px) — the stroke is tracking the camera's ` +
+          `scale instead of the screen`,
+      );
+  }
+  return {
+    problems,
+    widths: measured.map((m) => ({
+      label: m.label,
+      drawnWidthPx: Number.isFinite(m.drawnWidthPx) ? Number(m.drawnWidthPx.toFixed(2)) : null,
+      samples: m.samples ?? 0,
+      rejected: m.rejected ?? 0,
+    })),
+  };
+}
+
 /** The whole verdict for one sweep. `stepCount` is how many narrative steps the piece has. */
 export function report(label, samples, stepCount) {
   const problems = [];

@@ -14,7 +14,8 @@
 // is exactly the hole `AUDIT-W5-W6-map.md` §5.6 found on the map × web genre.
 //
 // THE MUTATIONS, run in an rsync copy of the tree under the session scratchpad — never in this
-// tree — with the red each one actually produced. Baseline in that copy: 46 pass, 0 fail.
+// tree — with the red each one actually produced. Baseline in that copy: 46 pass, 0 fail (53 pass
+// since M11's block was added).
 //
 // M1 — `route-drive.mjs`: `readProgress` returns 0 instead of throwing on a missing or garbled
 //      attribute. A beat that silently renders stop 0 forever looks exactly like a beat whose
@@ -153,6 +154,31 @@
 //               drives it [0.77ms]
 //        (fail) … > carries the delivery placeholder and no key at all (R1b) [0.10ms]
 //        42 pass, 4 fail
+//
+// M11 — `route-drive.mjs`: `strokeWidthsFor` hands the declared widths over untouched
+//       (`return { ...STROKE_SCREEN_PX };`) — i.e. `vector-effect: non-scaling-stroke` is believed,
+//       which is the state this beat shipped in and the state the owner drove. It is the mutation
+//       this guard exists for, and it has TWO reds because the defect has two halves: the
+//       arithmetic, and the paint.
+//
+//        error: expect(received).toBeCloseTo(expected, precision)
+//        Expected: 3.5
+//        Received: 6.222300000000001
+//        (fail) the river is drawn at a width a reader can follow > divides the camera's own scale
+//               back out, so the drawn width is the declared one [0.13ms]
+//        52 pass, 1 fail
+//
+//       and then, re-rendered and re-driven in the same copy — the reading taken off the SCREENSHOT
+//       at each width, which is the only place this defect was ever visible:
+//
+//        error: the drawn line: 1600x900: the river draws at 6.61px, over the 5px ceiling — a pipe
+//        that swallows its own meanders; 1280x800: the river draws at 5.35px, over the 5px ceiling
+//        — a pipe that swallows its own meanders; 375x812: the river draws at 1.80px, under the 2px
+//        floor — a hairline; the river draws 1.80px at one width and 6.61px at another (spread
+//        4.81px, allowed 1.5px) — the stroke is tracking the camera's scale instead of the screen
+//
+//       Every other guard in this file and every sweep in `drive.mjs` stays GREEN under M11, and so
+//       would any assertion on the markup: the file says `stroke-width="3.5"` throughout.
 
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -167,6 +193,8 @@ import {
   project,
   readProgress,
   revealAt,
+  STROKE_SCREEN_PX,
+  strokeWidthsFor,
 } from "./route-drive.mjs";
 import {
   bakeZoomOf,
@@ -175,7 +203,9 @@ import {
   viewForCamera,
 } from "./live-scroll-map.mjs";
 import {
+  DRAWN_LINE_PX,
   fluidity,
+  lineWeight,
   progressDisagreement,
   report,
   revealSpan,
@@ -701,6 +731,98 @@ describe("a badge is never cut down its side by the prose card", () => {
 
   it("does nothing on a phone, where the card has no vertical edge inside the frame", () => {
     expect(avoidStripe(180, 13, null, { width: 375, height: 812 })).toBe(180);
+  });
+});
+
+/**
+ * THE RIVER IS DRAWN AT A WIDTH A READER CAN FOLLOW, AT EVERY WIDTH.
+ *
+ * The owner drove the keyed copy and said *"la ligne de fleuve ne se dessine pas bien."* Measured
+ * over the DRAWN pixels of the delivered page, the accent line was 6px at 1600×900, 5px at 1280×800
+ * and 1px at 375×812 — the contain fit (1.778 / 1.422 / 0.417) multiplying one declared 3.5,
+ * because `vector-effect: non-scaling-stroke` neutralises the viewBox transform (the identity here)
+ * and does NOT touch the CSS `scale()` on the ancestor camera box. The markup said 3.5 throughout,
+ * so an attribute assertion would have been green while the river drew as a blobby pipe on a
+ * desktop and a hairline on a phone.
+ *
+ * Two halves are guarded here — the arithmetic that puts the intended screen width back, and the
+ * verdict `drive.mjs` reaches over its measured pixels. The measurement itself is in `drive.mjs`
+ * (it needs a screenshot), and M11 below is the mutation that reddens the whole chain.
+ */
+describe("the river is drawn at a width a reader can follow", () => {
+  it("divides the camera's own scale back out, so the drawn width is the declared one", () => {
+    // 1600×900 gives a contain fit of 1.778 and 375×812 gives 0.417 — the two ends this beat is
+    // verified at. The user-space width must move opposite to the scale, not with it.
+    const wide = strokeWidthsFor(
+      containCamera(
+        { width: 1600, height: 820 },
+        { width: 900, height: 420 },
+        MAX_SCALE,
+      ),
+    );
+    const phone = strokeWidthsFor(
+      containCamera(
+        { width: 375, height: 617 },
+        { width: 900, height: 420 },
+        MAX_SCALE,
+      ),
+    );
+    expect(wide.route * 1.7778).toBeCloseTo(STROKE_SCREEN_PX.route, 2);
+    expect(phone.route * 0.4167).toBeCloseTo(STROKE_SCREEN_PX.route, 2);
+    // And the halo and the outlines ride the same correction — the outline is the one whose
+    // 0.58px-on-a-phone the old comment claimed the attribute had already fixed.
+    expect(phone.halo * 0.4167).toBeCloseTo(STROKE_SCREEN_PX.halo, 2);
+    expect(phone.territory * 0.4167).toBeCloseTo(STROKE_SCREEN_PX.territory, 2);
+  });
+
+  it("does not fall over when handed a camera it cannot use", () => {
+    expect(strokeWidthsFor({ scale: 0 }).route).toBe(STROKE_SCREEN_PX.route);
+    expect(strokeWidthsFor(null).route).toBe(STROKE_SCREEN_PX.route);
+  });
+
+  it("passes a river drawn at the same weight everywhere", () => {
+    expect(
+      lineWeight([
+        { label: "1600x900", drawnWidthPx: 3.69, samples: 228, rejected: 12 },
+        { label: "1280x800", drawnWidthPx: 3.72, samples: 211, rejected: 29 },
+        { label: "375x812", drawnWidthPx: 3.99, samples: 137, rejected: 103 },
+      ]).problems,
+    ).toEqual([]);
+  });
+
+  it("catches the hairline and the pipe, by name", () => {
+    // The three numbers this beat actually measured before the fix.
+    const verdict = lineWeight([
+      { label: "1600x900", drawnWidthPx: 6.22, samples: 200, rejected: 40 },
+      { label: "1280x800", drawnWidthPx: 4.98, samples: 200, rejected: 40 },
+      { label: "375x812", drawnWidthPx: 1.46, samples: 40, rejected: 200 },
+    ]);
+    expect(verdict.problems.join("\n")).toContain("over the 5px ceiling");
+    expect(verdict.problems.join("\n")).toContain("under the 2px floor");
+  });
+
+  it("catches a stroke that tracks the camera even when each width alone looks legal", () => {
+    // Both inside the band, and still wrong: one declared width cannot draw 2.1px on a phone and
+    // 4.9px on a desktop unless something is scaling it.
+    const verdict = lineWeight([
+      { label: "1600x900", drawnWidthPx: 4.9, samples: 200, rejected: 10 },
+      { label: "375x812", drawnWidthPx: 2.1, samples: 120, rejected: 40 },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("tracking the camera's scale");
+  });
+
+  it("treats a line it could not measure as a failure, never as a pass", () => {
+    const verdict = lineWeight([
+      { label: "375x812", drawnWidthPx: null, samples: 0, rejected: 240 },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("could not be measured");
+    expect(lineWeight([]).problems).toHaveLength(1);
+  });
+
+  it("states its own band rather than hiding it in a comparison", () => {
+    expect(DRAWN_LINE_PX).toEqual({ floor: 2, ceiling: 5, spread: 1.5 });
   });
 });
 

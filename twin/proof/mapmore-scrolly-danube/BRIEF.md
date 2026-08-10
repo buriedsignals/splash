@@ -63,6 +63,49 @@ no new picture. That is a real argument. It was answered rather than accepted:
   graphic. Before the live layer that band sat in bare white; now the rest of the frame is real
   basemap, which is the difference between a stranded strip and a wide map on a narrow screen.
 
+## The river is drawn at a fixed SCREEN width (2026-08-10) — the defect the owner saw
+
+He opened the keyed copy and said: *"la ligne de fleuve ne se dessine pas bien."* He was right, and
+the markup was blameless. The route carried `stroke-width="3.5"` with `vector-effect:
+non-scaling-stroke` and a comment beside the territory outline saying in so many words that the
+stroke was therefore in screen pixels. **It was not.** `non-scaling-stroke` neutralises the
+transform between the element and its nearest SVG **viewport**; this SVG is `viewBox="0 0 900 420"`
+at `width=900 height=420`, so that transform is the identity and the attribute had nothing to do.
+The scale that reaches the reader is a **CSS `transform: scale()` on an ancestor `<div>`** — the
+camera box — which the effect does not touch. So the contain fit multiplied every declared width.
+
+**Measured over the DRAWN pixels of the delivered page** (perpendicular scans of the accent line,
+`drive.mjs`'s own `MEASURE_LINE`), before and after:
+
+| Frame | Contain fit | Drawn accent line, before | After |
+| --- | --- | --- | --- |
+| 1600 × 900 | 1.778 | **6.61 px** — a pipe, wider than the country borders it crosses, its tight meanders fused into blobs | **3.69 px** |
+| 1280 × 800 | 1.422 | **5.35 px** | **3.72 px** |
+| 375 × 812 | 0.417 | **1.80 px** — a hairline; 201 accent pixels for the whole Danube | **3.99 px** |
+
+The same arithmetic drew the 1.4 territory outline at **0.58 px** on a phone, which is exactly what
+the comment beside that attribute claimed it had already fixed. `STROKE_SCREEN_PX` in
+`route-drive.mjs` now carries the three numbers, and `strokeWidthsFor(camera)` divides the fit back
+out — one derivation, called by `MapFrame.tsx` for the SSR'd no-JavaScript picture and by
+`initRouteScrolly` on every paint, beside the transform that made it necessary. The badges have been
+fixed-size HTML for this same reason since the last anti-pattern below; this is that ruling applied
+to the drawing. The leader lines are untouched: they live outside the camera box and were always in
+frame pixels.
+
+**Two hypotheses were tested and cleared before this one, both by measurement.** The overlay is
+NOT misregistered against the live camera: over 13 sampled route points at each of the three widths,
+the SVG's screen position and `map.project()` of the same place differ by **0 px in x and 0.25 px in
+y** (the container's own half-pixel), and the asked zoom equals the delivered zoom to four decimals
+(5.569 / 5.247 / 3.476, `renderWorldCopies: true`, no clamp). And the fit is uniform — the screen
+CTM's `a` and `d` are equal at every width — so nothing here is drawn in a non-square space.
+
+**The guard is on the PAINT, never on the attribute** (`scroll-report.mjs`'s `lineWeight`, fed by
+`drive.mjs`): the drawn width must sit in [2, 5] px at every driven width, and the widths must agree
+across widths to within 1.5 px. The second clause is the one that names the defect class — a stroke
+that tracks the camera cannot pass it even if one width happens to land inside the band. M11 in
+`scroll.test.ts` is the mutation, with the red it produced; under it every other guard here, and
+every sweep, stays green.
+
 ## The reveal is continuous (2026-08-10)
 
 The vehicle was handed FOUR SSR'd pictures and swapped which one was painted, so between two steps
@@ -164,7 +207,10 @@ about to introduce instead of stopping short of it.
   the FALLBACK under a live MapTiler layer. What survives is the part that matters — one camera,
   captured once, never re-pointed per step.
 - The badges are HTML at a fixed pixel size, not SVG text inside the camera. Text inside the camera
-  scales with it: at 375 px the contain fit is 0.417, which drew a 12 px numeral at 5 px. Moving
+  scales with it: at 375 px the contain fit is 0.417, which drew a 12 px numeral at 5 px. **The
+  strokes had the SAME defect and survived this fix, because an attribute was believed instead of
+  measured** — see "The river is drawn at a fixed SCREEN width" above. The rule is that *anything
+  inside the camera box scales with the camera, and no SVG attribute exempts it.* Moving
   them out is also what lets `avoidStripe` keep them off the prose card's vertical edges — and on
   this beat that matters more than on one with a flying camera, because a badge that straddles a
   card edge here straddles it at *every* scroll position.

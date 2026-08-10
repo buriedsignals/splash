@@ -86,6 +86,55 @@ export function project(point, camera) {
   return [point[0] * camera.scale + camera.tx, point[1] * camera.scale + camera.ty];
 }
 
+// ── The line weights, in SCREEN pixels ─────────────────────────────────────────────────────────
+
+/**
+ * WHAT EVERY STROKE INSIDE THE CAMERA BOX IS MEANT TO MEASURE ON A READER'S SCREEN.
+ *
+ * These are SCREEN pixels, and until 2026-08-10 they were not: the numbers were written straight
+ * onto the paths as user units and `vector-effect: non-scaling-stroke` was expected to hold them.
+ * IT DOES NOT, and the reason is worth stating because the attribute's name promises the opposite.
+ * `non-scaling-stroke` neutralises the transform between the element and its nearest SVG VIEWPORT.
+ * This SVG is `viewBox="0 0 900 420"` at `width=900 height=420` — that transform is the identity,
+ * so the attribute has nothing to do — and the scale that actually reaches the reader is a **CSS
+ * transform on an ancestor `<div>`** (`[data-part=camera]`, `scale(camera.scale)`), which is
+ * outside what the effect compensates for. So the declared width was multiplied by the contain fit,
+ * every time.
+ *
+ * MEASURED on the delivered page, over the drawn pixels of the accent line (not its markup):
+ * **6 px at 1600 × 900, 5 px at 1280 × 800 and 1 px at 375 × 812** for one declared 3.5 — the fit
+ * being 1.778 / 1.422 / 0.417. The river was a blobby 6 px pipe on a desktop, wider than the
+ * country borders it crosses and fat enough to swallow its own meanders, and 201 accent pixels of
+ * hairline scratch on a phone. The owner: *"la ligne de fleuve ne se dessine pas bien."* The same
+ * arithmetic drew the 1.4 territory outline at 0.58 px on a phone — which is exactly what the
+ * comment beside that attribute in `MapFrame.tsx` claimed it had fixed.
+ *
+ * The badges next to these strokes have always been fixed-size HTML for the same reason (see
+ * `BRIEF.md`'s last anti-pattern). This is that ruling, applied to the drawing.
+ */
+export const STROKE_SCREEN_PX = {
+  /** The accent river itself. */
+  route: 3.5,
+  /** Its ground-coloured halo, so it reads over any basemap. Twice the line, as before. */
+  halo: 7,
+  /** A territory's own outline. */
+  territory: 1.4,
+};
+
+/**
+ * Those screen widths restated in the SVG's own user units, for a camera.
+ *
+ * ONE derivation, two consumers, the same shape the camera itself has: `MapFrame.tsx` calls it to
+ * SSR the no-JavaScript picture at the nominal camera, and `initRouteScrolly` calls it on every
+ * paint so a resize re-weights the drawing along with the transform it changed.
+ */
+export function strokeWidthsFor(camera) {
+  const scale = camera && camera.scale > 0 ? camera.scale : 1;
+  const out = {};
+  for (const [key, px] of Object.entries(STROKE_SCREEN_PX)) out[key] = px / scale;
+  return out;
+}
+
 // ── The reveal ─────────────────────────────────────────────────────────────────────────────────
 
 export function lerp(a, b, t) {
@@ -300,6 +349,7 @@ export function initRouteScrolly(root, config, onCamera) {
   if (cameraBoxes.length === 0)
     throw new Error("this beat's visual carries no [data-part=camera] box for the camera to move");
   const routes = Array.from(root.querySelectorAll("[data-part=route]"));
+  const outlines = Array.from(root.querySelectorAll("[data-territory]"));
   const shapes = config.territories.map((t) => root.querySelector(`[data-territory="${t.key}"]`));
   const badges = config.territories.map((t) => root.querySelector(`[data-badge="${t.key}"]`));
   const leaders = root.querySelector("[data-part=leaders]");
@@ -337,6 +387,15 @@ export function initRouteScrolly(root, config, onCamera) {
 
     const transform = `translate(${camera.tx}px, ${camera.ty}px) scale(${camera.scale})`;
     for (const el of cameraBoxes) el.style.transform = transform;
+    // THE LINE WEIGHTS, RE-DERIVED WITH THE TRANSFORM THAT CHANGED THEM. The camera box is scaled
+    // by CSS, so every stroke inside it is scaled with it; `strokeWidthsFor` divides the intended
+    // SCREEN width back out. Written on the same frame as the transform, from the same camera, so
+    // the two cannot disagree — a width computed for the previous box is the same defect class as
+    // a transform computed for it.
+    const widths = strokeWidthsFor(camera);
+    for (const el of routes)
+      el.style.strokeWidth = `${(el.dataset.layer === "halo" ? widths.halo : widths.route).toFixed(3)}`;
+    for (const el of outlines) el.style.strokeWidth = `${widths.territory.toFixed(3)}`;
     // The LIVE MapTiler camera, driven from the same resolved camera on the same frame. A hook
     // rather than a call into the live module, so this driver stays the one thing that decides
     // where the camera is and the live layer stays deletable without editing it.
