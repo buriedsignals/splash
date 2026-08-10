@@ -379,6 +379,50 @@ export function wcagContrast(a: string, b: string): number {
 }
 
 /**
+ * THE INK A DOT IS ACTUALLY DRAWN IN, DERIVED FROM THE HOUSE ACCENT AND THE GROUND IT LANDS ON.
+ *
+ * B6.13, first half: *"the colours do not work together — blue dots on grey do not stand out"*.
+ * Measured on the committed still, the accent `#0072B2` on the study area's composited `#CFCFCF`
+ * is **3.33:1** — over SC 1.4.11's 3:1 floor for a non-text graphical object, and the W3 audit's
+ * own verdict on it was "passes and does not read". Both are true, and the way out of that
+ * contradiction is not to lower the measurement, it is to notice WHAT is being measured: a dot on
+ * this map is **2.3 px across**. WCAG's non-text floor is written for a control or an icon a
+ * reader can already find; the floor a 2.3 px disc has to clear to be found at all is the TEXT
+ * floor, because that is the one calibrated for small shapes. Hence `MIN_DOT_CONTRAST_SMALL`.
+ *
+ * The lever is neither the palette nor the wash, and both were measured before this was written.
+ * The wash: at its lightest legal opacity (0.12, below which the study area stops reading as the
+ * study area at all — `MIN_STUDY_SEPARATION`) the dots reach only **3.67:1**, so the tint cannot
+ * pay for this. The palette: `PALETTE.md` records `#0072B2` as the journalist's own answer and a
+ * beat does not overrule that. What is left is the same move `deriveFurniture` makes for a ground
+ * — walk the recorded colour toward the pole it needs until it clears, and STOP THERE. Twenty per
+ * cent of the way to black gives `#005B8E` at **4.67:1**: the same blue, still recognisable beside
+ * the accent, and now visible on the grey.
+ *
+ * It THROWS rather than returning the best of a bad set. A dot map whose dots cannot be seen has
+ * no encoding at all, and finding that out at render time is the point.
+ */
+export const MIN_DOT_CONTRAST_SMALL = 4.5;
+
+/** @parity */
+export function dotInkThatReadsOn(
+  accent: string,
+  studyLand: string,
+  target: number = MIN_DOT_CONTRAST_SMALL,
+): string {
+  const pole = wcagContrast("#000000", studyLand) >= wcagContrast("#FFFFFF", studyLand) ? "#000000" : "#FFFFFF";
+  for (let step = 0; step <= 100; step++) {
+    const candidate = compositeOver(pole, accent, step / 100);
+    if (wcagContrast(candidate, studyLand) >= target) return candidate;
+  }
+  throw new Error(
+    `no shade of ${accent} reaches ${target}:1 on the study area's own ${studyLand} — even ${pole} ` +
+      `measures ${wcagContrast(pole, studyLand).toFixed(2)}:1. The dots ARE the data on this map, so this ` +
+      `is not a styling problem: change the ground under them or the colour recorded in PALETTE.md.`,
+  );
+}
+
+/**
  * The study area has to be a different KIND of thing from the land around it, and the dots have to
  * stay readable on it. Both are checked at render, on the composited colours, because the tint, its
  * opacity and the basemap's own land only meet on the plate.

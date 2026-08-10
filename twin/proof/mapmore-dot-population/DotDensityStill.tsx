@@ -8,10 +8,19 @@
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
 
-const FRAME = { width: 920, height: 1140 };
+const FRAME_WIDTH = 920;
 const PAD = 30;
 const MAP_X = 30;
 const MAP_Y = 108;
+/** The air between the plate's bottom edge and the dot-value key. */
+const KEY_GAP = 34;
+/** Between the dot-value key and the study-area key. */
+const STUDY_KEY_GAP = 26;
+/** Between the study-area key and the caveat block — the one piece of air that used to be 400px
+ *  of nothing. */
+const CAVEAT_GAP = 30;
+/** Between the caveat block and the credit at the frame's foot. */
+const SOURCE_GAP = 12;
 
 const TITLE = { fontSize: 21, fontWeight: 700, lead: 27 };
 const SOURCE = { fontSize: 13, fontWeight: 400, lead: 17 };
@@ -35,6 +44,8 @@ export type DotDensityStillProps = {
   alt: string;
   ground: string;
   accent: string;
+  /** The shade of `accent` that survives the study-area wash — see `dotInkThatReadsOn`. */
+  dotInk: string;
   ink: string;
   muted: string;
   landTint: string;
@@ -58,6 +69,54 @@ export function wrap(
     } else current = trial;
   }
   return current ? [...lines, current] : lines;
+}
+
+/**
+ * How tall the frame must be for THIS plate, THIS pair of keys and THIS caveat — derived, where it
+ * used to be a typed `height: 1140` (B6.13's second half). The two disagreed even with each other:
+ * this file's own docstring said 920 x 1010. Measured on the committed still before this existed,
+ * **about 400 px of the 1140 — 18% of the whole graphic — was bare ground between the study-area
+ * key and the caveat**, which is what the owner read as "such a large empty space at the bottom".
+ *
+ * Same shape and the same reason as `map-quake-density/HexGridStill.tsx`'s `stillFrameHeight`: the
+ * plate is drawn 1:1 and never scaled, so the frame follows the plate rather than the other way
+ * round, and the render asks for the height this function returns so the SVG it rasterises and the
+ * SVG this component draws are the same size.
+ */
+export function stillFrameHeight({
+  plateHeight,
+  dotKeyLineCount,
+  caveat,
+  source,
+  basemapCredit,
+}: {
+  plateHeight: number;
+  dotKeyLineCount: number;
+  caveat: string;
+  source: string;
+  basemapCredit: string;
+}): number {
+  const caveatLines = wrap(caveat, FRAME_WIDTH - PAD * 2, NOTE).length;
+  const sourceLines = wrap(
+    `${source} · ${basemapCredit}`,
+    FRAME_WIDTH - PAD * 2,
+    SOURCE,
+  ).length;
+  return (
+    MAP_Y +
+    plateHeight +
+    KEY_GAP +
+    (dotKeyLineCount - 1) * 20 +
+    STUDY_KEY_GAP +
+    NOTE.fontSize +
+    CAVEAT_GAP +
+    NOTE.fontSize +
+    (caveatLines - 1) * NOTE.lead +
+    SOURCE_GAP +
+    SOURCE.fontSize +
+    (sourceLines - 1) * SOURCE.lead +
+    PAD
+  );
 }
 
 function ringPath(rings: [number, number][][]): string {
@@ -88,6 +147,7 @@ export function DotDensityStill({
   alt,
   ground,
   accent,
+  dotInk,
   ink,
   muted,
   landTint,
@@ -95,6 +155,25 @@ export function DotDensityStill({
   studySwatch,
   studyCount,
 }: DotDensityStillProps) {
+  const dotKeyText = `● 1 dot = ${dotValue.toLocaleString("en-US")} people  —  ${totalDots.toLocaleString("en-US")} dots drawn for ${totalPopulation.toLocaleString("en-US")} people`;
+  const dotKeyLines = wrap(dotKeyText, FRAME_WIDTH - PAD * 2, DOT_KEY);
+  const FRAME = {
+    width: FRAME_WIDTH,
+    height: stillFrameHeight({
+      plateHeight: geometry.frame.height,
+      dotKeyLineCount: dotKeyLines.length,
+      caveat,
+      source,
+      basemapCredit,
+    }),
+  };
+  // A dot drawn in a colour nobody derived is the defect this prop exists to prevent: the accent
+  // straight off the palette measures 3.33:1 on this map's own study area (B6.13).
+  if (!dotInk)
+    throw new Error(
+      "no dotInk was supplied — render.mjs derives it with dotInkThatReadsOn against the study " +
+        "area's composited ground, and a dot map's dots cannot be drawn in an unmeasured colour",
+    );
   const titleLines = wrap(title, FRAME.width - PAD * 2, TITLE);
   const sourceLines = wrap(
     `${source} · ${basemapCredit}`,
@@ -122,12 +201,10 @@ export function DotDensityStill({
     height: geometry.frame.height,
   };
 
-  const dotKeyY = MAP.y + MAP.height + 34;
+  const dotKeyY = MAP.y + MAP.height + KEY_GAP;
   const studyKeyText = `Shaded: the ${studyCount} countries counted in that total. Unshaded land is outside this map — see the note below.`;
-  const dotKeyText = `● 1 dot = ${dotValue.toLocaleString("en-US")} people  —  ${totalDots.toLocaleString("en-US")} dots drawn for ${totalPopulation.toLocaleString("en-US")} people`;
-  const dotKeyLines = wrap(dotKeyText, FRAME.width - PAD * 2, DOT_KEY);
 
-  const studyKeyY = dotKeyY + (dotKeyLines.length - 1) * 20 + 26;
+  const studyKeyY = dotKeyY + (dotKeyLines.length - 1) * 20 + STUDY_KEY_GAP;
   if (studyKeyY + 6 > caveatTop - NOTE.fontSize - 10)
     throw new Error(
       "the column does not fit: the dot-value key collides with the caveat.",
@@ -215,7 +292,7 @@ export function DotDensityStill({
         {dots.map((d) => (
           <Fragment key={d.key}>
             {d.points.map((p, i) => (
-              <circle key={i} cx={p[0]} cy={p[1]} r={1.15} fill={accent} />
+              <circle key={i} cx={p[0]} cy={p[1]} r={1.15} fill={dotInk} />
             ))}
           </Fragment>
         ))}
