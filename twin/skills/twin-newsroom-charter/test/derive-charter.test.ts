@@ -168,3 +168,107 @@ describe("deriveCharter — never writes anything", () => {
     }
   });
 });
+
+/**
+ * THE EXTENDED MODEL — several languages, more than one accent — derived rather than typed.
+ *
+ * Extending `NEWSROOM.md` without extending the derivation just moves the typing back to the
+ * journalist, so these two fields are read from what the site DECLARES exactly like the others:
+ * the alternate-language links a multilingual newsroom already publishes for search engines, and
+ * the further brand tokens its own design system names.
+ *
+ * Each guard with the mutation that reddens it, run in /tmp/twin-mut, never in this tree:
+ *
+ *   MUTATION 1: `chooseLanguages` returns only the primary (drop the alternates).
+ *     (fail) the extended model > should read every language the site declares it publishes in
+ *     error: expect(received).toBe(expected) · Expected: "fr, de, it" · Received: "fr"
+ *
+ *   MUTATION 2: `NEVER_A_QUESTION` emptied, so a site with one accent is asked for more.
+ *     (fail) the extended model > should treat one accent as an answer, not as a question
+ *     error: expect(received).not.toContain(expected)
+ *     Expected to not contain: "accents" · Received: [ "accents", "typefaces" ]
+ *
+ *   MUTATION 3: `chooseAccents` stops removing the primary from its candidates.
+ *     (fail) the extended model > should never propose the primary accent twice
+ *     error: expect(received).toBe(expected) · Expected: "#c1440e" · Received: "#0b7a75, #c1440e"
+ */
+describe("deriveCharter — the extended model", () => {
+  const MULTILINGUAL = `<html lang="fr"><head>
+      <title>Le Temps</title>
+      <meta name="theme-color" content="#0B7A75"/>
+      <link rel="alternate" hreflang="de-CH" href="https://example.test/de"/>
+      <link rel="alternate" hreflang="it" href="https://example.test/it"/>
+      <link rel="alternate" hreflang="x-default" href="https://example.test/"/>
+      <link rel="stylesheet" href="/site.css">
+    </head></html>`;
+
+  it("should read every language the site declares it publishes in, the html lang first", async () => {
+    const proposal = await deriveCharter({
+      url: "https://example.test/",
+      fetchFn: fakeFetch({
+        "https://example.test/": { text: MULTILINGUAL },
+        "https://example.test/site.css": { text: "body{background:#FFFDF7}" },
+      }),
+    });
+    expect(proposal.fields.languages.value).toBe("fr, de, it");
+    // and the evidence is the declarations themselves, not a summary of them
+    expect(proposal.fields.languages.evidence).toContain('hreflang="de-CH"');
+    expect(proposal.fields.language.value).toBe("fr"); // the singular still resolves, unchanged
+  });
+
+  it("should report one language as one language, never as an unresolved field", async () => {
+    const proposal = await deriveCharter({
+      url: "https://example.test/",
+      fetchFn: fakeFetch({
+        "https://example.test/": {
+          text: `<html lang="fr"><head><title>X</title></head></html>`,
+        },
+      }),
+    });
+    expect(proposal.fields.languages.value).toBe("fr");
+    expect(proposal.unresolved).not.toContain("languages");
+  });
+
+  it("should propose every further accent the design system names, with its declaration", async () => {
+    const css = `:root{--brand-primary:#0B7A75;--accent-warm:#C1440E;--color-danger-400:#d5121e}
+      body{background:#FFFFFF}`;
+    const proposal = await deriveCharter({
+      url: "https://example.test/",
+      fetchFn: fakeFetch({
+        "https://example.test/": { text: MULTILINGUAL },
+        "https://example.test/site.css": { text: css },
+      }),
+    });
+    expect(proposal.fields.brandColor.value).toBe("#0b7a75");
+    // `--color-danger-400` is a real hex and NOT a brand token: the name hint is what keeps a
+    // design system's status colours out, and it must keep doing so for the plural too.
+    expect(proposal.fields.accents.value).toBe("#c1440e");
+    expect(proposal.fields.accents.evidence).toContain("--accent-warm");
+  });
+
+  it("should never propose the primary accent twice", async () => {
+    const css = `:root{--brand-primary:#0B7A75;--accent-warm:#C1440E}`;
+    const proposal = await deriveCharter({
+      url: "https://example.test/",
+      fetchFn: fakeFetch({
+        "https://example.test/": { text: MULTILINGUAL },
+        "https://example.test/site.css": { text: css },
+      }),
+    });
+    expect(proposal.fields.brandColor.value).toBe("#0b7a75");
+    expect(proposal.fields.accents.value).toBe("#c1440e");
+  });
+
+  it("should treat one accent as an answer, not as a question", async () => {
+    const proposal = await deriveCharter({
+      url: "https://example.test/",
+      fetchFn: fakeFetch({
+        "https://example.test/": { text: MULTILINGUAL },
+        "https://example.test/site.css": { text: "body{background:#FFFFFF}" },
+      }),
+    });
+    expect(proposal.fields.accents).toBe(null);
+    expect(proposal.unresolved).not.toContain("accents");
+    expect(proposal.nothingFurther).toEqual(["accents"]);
+  });
+});

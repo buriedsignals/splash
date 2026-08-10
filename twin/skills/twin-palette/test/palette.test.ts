@@ -157,7 +157,10 @@ describe("proposePalette", () => {
   // The common case, and the one the run hit: four conventions ship, so most subjects match none.
   // One option with no explanation of why there is only one reads as a tool with nothing to say.
   it("should say WHY the newsroom leads when no convention applies, rather than silently showing one option", () => {
-    const p = proposePalette({ newsroom: HEIDI, subject: "les glaciers et les sponsors des JO" });
+    const p = proposePalette({
+      newsroom: HEIDI,
+      subject: "les glaciers et les sponsors des JO",
+    });
     expect(p.options.map((o) => o.id)).toEqual(["house"]);
     expect(p.recommended).toBe("house");
     expect(p.noConventionReason).toBeTruthy();
@@ -208,7 +211,9 @@ describe("proposePalette", () => {
       newsroom: { brandColor: "#F2C744", ground: "#FFFFFF" },
       subject: "la part du solaire",
     });
-    expect(p.options.find((o) => o.id === "house")!.contrast.passes).toBe(false);
+    expect(p.options.find((o) => o.id === "house")!.contrast.passes).toBe(
+      false,
+    );
     expect(p.recommended).toBe("subject");
   });
 
@@ -235,6 +240,100 @@ describe("proposePalette", () => {
     const mod = await import("../scripts/palette.mjs");
     for (const name of Object.keys(mod)) {
       expect(name).not.toMatch(/^(write|save|apply|persist|set)/i);
+    }
+  });
+});
+
+/**
+ * A NEWSROOM WITH MORE THAN ONE ACCENT — and the property that must survive it: a longer recorded
+ * palette is not a way past the 3:1 floor. Every accent is scored exactly like the primary, a
+ * failing one is shown failing with its remedy, and `recommended` only ever names a measured pass.
+ *
+ * MUTATION 1: score only the primary (`accents.slice(0, 1)` in `proposePalette`). Run in
+ * /tmp/twin-mut:
+ *   (fail) a newsroom with several accents > should score every recorded accent, not only the
+ *          primary
+ *   error: expect(received).toEqual(expected)
+ *      "house",
+ *   -  "house-2",
+ *   -  "house-3",
+ *
+ * MUTATION 2: let `recommended` fall back to the first house option whatever its contrast
+ * (`options.find((o) => o.origin === "newsroom")?.id` as the last clause). Run in /tmp/twin-mut —
+ * and it reddens the standing guard next to it as well, which is the guard working:
+ *   (fail) proposePalette > should recommend NOTHING when the only option fails
+ *   error: expect(received).toBeNull() · Received: "house"
+ *   (fail) a newsroom with several accents > should never recommend an accent that misses the floor
+ *   error: expect(received).toBe(expected) · Expected: "house-2" · Received: "house"
+ *
+ * The PARITY test at the end is the twin's own answer to duplication: `houseAccents` here and
+ * `newsroomAccents` in splash-twin are the same rule written twice, on purpose (a skill stays
+ * copy-pasteable), so they are held in step behaviourally over a table of profiles rather than by
+ * eye. MUTATION 3: drop the de-duplication from `houseAccents`.
+ *   (fail) a newsroom with several accents > should read the same accents splash-twin's own reader
+ *          reads
+ *   error: expect(received).toEqual(expected)
+ *      "#0B7A75",
+ *   +  "#0B7A75",
+ *      "#C1440E",
+ */
+describe("a newsroom with several accents", () => {
+  const RICH = { ...HEIDI, accents: "#C1440E, #1F6FB2" };
+
+  it("should score every recorded accent, not only the primary", () => {
+    const p = proposePalette({ newsroom: RICH });
+    expect(p.options.map((o) => o.id)).toEqual(["house", "house-2", "house-3"]);
+    for (const option of p.options) {
+      expect(option.accent).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(option.contrast.min).toBe(NON_TEXT_CONTRAST_MIN);
+      expect(option.origin).toBe("newsroom");
+    }
+    expect(p.options.map((o) => o.accent)).toEqual([
+      "#0B7A75",
+      "#C1440E",
+      "#1F6FB2",
+    ]);
+  });
+
+  it("should never recommend an accent that misses the floor", () => {
+    // A primary that fails on white (1.6:1) and a second accent that clears it comfortably.
+    const p = proposePalette({
+      newsroom: { ...HEIDI, brandColor: "#FFD400", accents: "#1F6FB2" },
+    });
+    expect(p.options[0].contrast.passes).toBe(false);
+    expect(p.options[0].remedy).toBeTruthy();
+    expect(p.recommended).toBe("house-2");
+  });
+
+  it("should recommend nothing at all when no recorded accent clears the floor", () => {
+    const p = proposePalette({
+      newsroom: { ...HEIDI, brandColor: "#FFD400", accents: "#FFF2A0" },
+    });
+    expect(p.options.every((o) => !o.contrast.passes)).toBe(true);
+    expect(p.recommended).toBeNull();
+  });
+
+  it("should refuse a malformed accent by name rather than dropping it", () => {
+    expect(() =>
+      proposePalette({ newsroom: { ...HEIDI, accents: "#C1440E, rouge" } }),
+    ).toThrow('newsroom.accents must each be #rrggbb, got "rouge"');
+  });
+
+  it("should read the same accents splash-twin's own reader reads", async () => {
+    const { newsroomAccents } =
+      await import("../../splash-twin/scripts/newsroom.mjs");
+    const profiles = [
+      { ...HEIDI },
+      { ...HEIDI, accents: "" },
+      { ...HEIDI, accents: "#C1440E" },
+      { ...HEIDI, accents: " #C1440E ,#1F6FB2 " },
+      { ...HEIDI, accents: "#0B7A75, #C1440E" }, // the primary named again
+    ];
+    for (const profile of profiles) {
+      const fromPalette = proposePalette({ newsroom: profile }).options.map(
+        (o) => o.accent,
+      );
+      expect(fromPalette).toEqual(newsroomAccents(profile));
     }
   });
 });

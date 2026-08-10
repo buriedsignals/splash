@@ -7,6 +7,7 @@
 
 import { fetchWithTimeout } from "./fetch-document.mjs";
 import {
+  extractAlternateLanguages,
   extractBackgroundDeclarations,
   extractFontFamilies,
   extractInlineStyleBlocks,
@@ -70,6 +71,59 @@ function chooseGround(backgroundDecls, rootProps) {
   return null;
 }
 
+/**
+ * Every language the site says it publishes in, the `<html lang>` one first. A newsroom is not
+ * monolingual just because a form had one slot — this branch's own pilot is Swiss — and a
+ * multilingual site has already written the list down in its own alternate links.
+ *
+ * Returns `null` only when nothing declares a language at all, which is exactly when `language`
+ * itself is null: one missing fact, asked once. A site declaring one language resolves to that one
+ * language, which is an ANSWER ("we publish in French") and not a gap.
+ */
+function chooseLanguages(html, primary) {
+  const alternates = extractAlternateLanguages(html).filter((alt) => alt.value !== primary?.value);
+  if (!primary && alternates.length === 0) return null;
+  const values = [...(primary ? [primary.value] : []), ...alternates.map((a) => a.value)];
+  return {
+    value: values.join(", "),
+    source: alternates.length === 0 ? primary.source : `${primary ? "<html lang> + " : ""}alternate-language declarations`,
+    evidence: [...(primary ? [primary.evidence] : []), ...alternates.map((a) => a.evidence)].join(" · "),
+  };
+}
+
+/**
+ * The house accents BEYOND the primary one — a newsroom's identity is rarely one colour. Read from
+ * the same two places `chooseBrandColor` reads and held to the same bar (non-neutral, and an
+ * unqualified selector for a custom property), with whatever became `brandColor` removed so the
+ * primary is never proposed twice.
+ *
+ * Returns `null` when a site declares exactly one accent, and that is NOT a question: "this
+ * newsroom has one accent colour" is an answer. `deriveCharter` keeps it out of `unresolved` for
+ * that reason and reports it separately, so a journalist is never asked to invent a second house
+ * colour they do not have.
+ */
+function chooseAccents(themeColors, rootProps, brand) {
+  const seen = new Set(brand ? [brand.value.toLowerCase()] : []);
+  const found = [];
+  const consider = (value, source, evidence) => {
+    const key = value.toLowerCase();
+    if (isNeutralHex(value) || seen.has(key)) return;
+    seen.add(key);
+    found.push({ value, source, evidence });
+  };
+  for (const meta of themeColors) consider(meta.value, "meta[name=theme-color]", meta.evidence);
+  for (const prop of rootProps) {
+    if (!BRAND_NAME_HINT.test(prop.name) || !isUnqualifiedSelector(prop.selector)) continue;
+    consider(prop.value, `CSS custom property ${prop.name}`, prop.evidence);
+  }
+  if (found.length === 0) return null;
+  return {
+    value: found.map((f) => f.value).join(", "),
+    source: found.map((f) => f.source).join(" · "),
+    evidence: found.map((f) => f.evidence).join(" · "),
+  };
+}
+
 function chooseTypefaces(fontStacks) {
   if (fontStacks.length === 0) return null;
   const top = fontStacks.slice(0, 2);
@@ -128,16 +182,28 @@ export async function deriveCharter({
   const backgroundDecls = extractBackgroundDeclarations(css);
   const fontStacks = extractFontFamilies(css + "\n" + html);
 
+  const language = extractLanguage(html);
+  const brandColor = chooseBrandColor(themeColors, rootProps);
   const fields = {
     name: extractName(html),
-    language: extractLanguage(html),
-    brandColor: chooseBrandColor(themeColors, rootProps),
+    language,
+    languages: chooseLanguages(html, language),
+    brandColor,
+    accents: chooseAccents(themeColors, rootProps, brandColor),
     ground: chooseGround(backgroundDecls, rootProps),
     typefaces: chooseTypefaces(fontStacks),
   };
 
+  // `accents` is the one field whose absence is an ANSWER rather than a gap — a newsroom with one
+  // accent colour has one accent colour, and asking "what are your other house colours?" invents a
+  // need. It is reported in `nothingFurther` instead, so the outcome is still NAMED and never
+  // silently swallowed; every other null field becomes a question, exactly as before.
+  const NEVER_A_QUESTION = new Set(["accents"]);
   const unresolved = Object.entries(fields)
-    .filter(([, value]) => value === null)
+    .filter(([key, value]) => value === null && !NEVER_A_QUESTION.has(key))
+    .map(([key]) => key);
+  const nothingFurther = Object.entries(fields)
+    .filter(([key, value]) => value === null && NEVER_A_QUESTION.has(key))
     .map(([key]) => key);
 
   return {
@@ -145,6 +211,7 @@ export async function deriveCharter({
     url,
     fields,
     unresolved,
+    nothingFurther,
     candidates: { themeColors, rootProps, backgroundDecls, fontStacks },
     stylesheetsRead,
     stylesheetsFailed,

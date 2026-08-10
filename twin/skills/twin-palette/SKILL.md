@@ -14,11 +14,16 @@ copy by eye. A newsroom's identity was collected and then never used.
 
 This skill closes that. It does three things and refuses a fourth:
 
-1. **Proposes.** `proposePalette` returns up to two options — the newsroom's house colours, and the
+1. **Proposes.** `proposePalette` returns the options — the newsroom's house colours, and the
    subject's own convention when one applies — each carrying where its values came from, why it is
-   being offered, and what it **measured**.
-2. **Measures.** Every option is scored against `NON_TEXT_CONTRAST_MIN`. A failing option is shown
-   *as failing*, with the nearest passing variant offered beside it, never swapped in.
+   being offered, and what it **measured**. A `NEWSROOM.md` may record SEVERAL accents (`brandColor`
+   is the primary, `accents` lists the rest), and each one becomes its own scored option: a house
+   palette is rarely one colour, and a longer one must not become a way past the contrast floor.
+2. **Measures.** Every option is scored against `NON_TEXT_CONTRAST_MIN` — every recorded accent,
+   not only the first. A failing option is shown *as failing*, with the nearest passing variant
+   offered beside it, never swapped in, and `recommended` only ever names an option that PASSED:
+   a newsroom whose primary accent misses the floor gets the first of its own further accents that
+   clears it, and nothing at all when none does.
 3. **Reads the answer back.** `readPalette` walks up from a beat's own directory looking for
    `PALETTE.md`, so one recorded decision at a story root serves every beat under it.
 

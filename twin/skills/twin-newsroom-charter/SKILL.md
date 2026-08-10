@@ -12,9 +12,23 @@ nothing in this branch has ever *produced* one — a journalist who doesn't alre
 hex codes has no path to a first draft except typing guesses into the front matter by hand. This
 skill is that path. Given a newsroom's URL, it fetches the homepage and a bounded handful of its
 own stylesheets, reads what they **declare** — a `theme-color` meta tag, a `:root` custom
-property, a `background` rule on `html`/`body`, a `font-family` stack — and turns that into a
-charter proposal: `name`, `url`, `language`, `brandColor`, `ground`, `typefaces`, the exact front
-matter `NEWSROOM.example.md` documents.
+property, a `background` rule on `html`/`body`, a `font-family` stack, an alternate-language link —
+and turns that into a charter proposal: `name`, `url`, `languages`, `brandColor`, `accents`,
+`ground`, `typefaces`, the exact front matter `NEWSROOM.example.md` documents.
+
+Two of those fields are PLURAL, because a newsroom rarely has one of either, and extending
+`NEWSROOM.md` without extending the derivation would only move the typing back to the journalist:
+
+- **`languages`** comes from `<html lang>` plus the site's own alternate-language declarations
+  (`<link rel="alternate" hreflang="…">`, `og:locale:alternate`) — a multilingual newsroom has
+  already written that list down so search engines can find its other editions. A site declaring
+  one language resolves to one language, which is an ANSWER, not a gap.
+- **`accents`** collects the further brand-named colours beyond the one that became `brandColor`,
+  held to exactly the same bar (non-neutral, unqualified selector, a `brand`/`primary`/`accent`
+  name hint) so a design system's status colours stay out. Its absence is the one null this skill
+  does NOT turn into a question: a newsroom with one accent colour has one accent colour, and it is
+  reported in `nothingFurther` instead of `unresolved`. Asking for a second house colour would be
+  inventing a need rather than filling a gap.
 
 Three rules shape every line of this skill more than the extraction technique does:
 
@@ -169,7 +183,7 @@ evidence line is what lets a journalist catch that in one glance instead of trus
 - `scripts/fetch-document.mjs` — `fetchWithTimeout`, the one bounded-network primitive every other
   script builds on.
 - `scripts/extract.mjs` — the pure readers: `extractThemeColor`, `extractName`,
-  `extractLanguage`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`,
+  `extractLanguage`, `extractAlternateLanguages`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`,
   `extractRootCustomProperties`, `extractBackgroundDeclarations`, `extractFontFamilies`, plus
   `normalizeHex`/`isNeutralHex`.
 - `scripts/derive-charter.mjs` — `deriveCharter`, the orchestrator. No write path.

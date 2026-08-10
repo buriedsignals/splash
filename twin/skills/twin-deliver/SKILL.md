@@ -23,7 +23,13 @@ HTML page, "web" and "scrolly", which is exactly what each needs. **`embed` is r
 deployment, fetched back byte-identical to what was sent (see "How it works" below). **`cms-insertion`
 is NOT proven against a live CMS** — no We.Publish or Livingdocs endpoint exists anywhere in this
 toolchain to call. It builds and guards a real mutation payload, documents it, and says so in the
-document it writes. Read "How it works", step 3, before assuming either behaves like the other two.
+document it writes. Since the installer, a journalist's own CMS choice and credentials DO have a
+home — `CMS_KIND`, `CMS_ENDPOINT` and `CMS_TOKEN` in the root `.env`, written at `0600` through the
+same `recordKey` path as every other secret, the kind checked against `CMS_KINDS` so nothing can be
+recorded that `buildInsertion` would throw on. That changes where the answer lives and nothing else:
+those three names are deliberately NOT probed (there is no instance to probe), they open no
+capability row in `runPreflight`, and this form still writes a file describing the mutation rather
+than sending it. A stored credential is not a proven integration. Read "How it works", step 3, before assuming either behaves like the other two.
 
 **The forms are offered, then WAITED on. Silence is not a choice.** A conversation running this
 phase presents the list `offerForms` returns and stops — it does not default to a form, does not

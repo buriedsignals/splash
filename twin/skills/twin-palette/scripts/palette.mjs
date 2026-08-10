@@ -144,6 +144,32 @@ export function matchConvention(subject, conventions = SUBJECT_CONVENTIONS) {
   return hits.length === 1 ? hits[0] : null;
 }
 
+/**
+ * Every house accent a `NEWSROOM.md` records, primary first: `brandColor`, then whatever `accents`
+ * adds, de-duped, malformed entries refused by name.
+ *
+ * This is a DUPLICATE of `splash-twin/scripts/newsroom.mjs`'s `newsroomAccents`, deliberately: a
+ * skill stays copy-pasteable on its own, so helpers are duplicated rather than imported (the same
+ * rule the colour maths above follows). The two are held in step behaviourally, over a table of
+ * profiles, by `test/palette.test.ts` — the divergence that buys is the whole reason that test
+ * exists.
+ *
+ * It THROWS on a malformed accent rather than dropping it. `proposePalette` already throws on a
+ * malformed `brandColor` for the stated reason — a newsroom charter is validated input, and quietly
+ * ignoring a broken value there hides a typo in the one file the whole house style hangs off.
+ */
+function houseAccents(newsroom) {
+  const rest = String(newsroom.accents ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item !== "");
+  for (const accent of rest) {
+    if (!HEX.test(accent)) throw new Error(`newsroom.accents must each be #rrggbb, got ${JSON.stringify(accent)}`);
+  }
+  const all = [newsroom.brandColor, ...rest];
+  return all.filter((hex, index) => all.indexOf(hex) === index);
+}
+
 function scoreOption(option) {
   const ratio = contrast(option.accent, option.ground);
   const passes = ratio >= NON_TEXT_CONTRAST_MIN;
@@ -197,18 +223,33 @@ export function proposePalette({ newsroom, subject } = {}) {
         throw new Error(`newsroom.${field} must be #rrggbb, got ${JSON.stringify(newsroom[field])}`);
       }
     }
-    options.push(
-      scoreOption({
-        id: "house",
-        origin: "newsroom",
-        ground: newsroom.ground,
-        accent: newsroom.brandColor,
-        label: `${newsroom.name || "the newsroom"}'s house colours`,
-        reasoning:
-          "The chart reads as this newsroom's, beside everything else it publishes. This is what leads whenever the subject carries no convention of its own.",
-        provenance: `NEWSROOM.md — brandColor: ${newsroom.brandColor}, ground: ${newsroom.ground}`,
-      }),
-    );
+    // A newsroom's identity is rarely ONE accent on one ground, so `NEWSROOM.md` may record
+    // further ones in `accents`. Each becomes its OWN option and is scored exactly like the
+    // primary — which is the whole safeguard: a longer palette is not a way to get a colour past
+    // the 3:1 floor, because `recommended` below only ever names an option that passed, and a
+    // failing accent is shown failing, with its remedy beside it. Reported, never silently
+    // accepted, and never silently swapped either.
+    const accents = houseAccents(newsroom);
+    accents.forEach((accent, index) => {
+      const primary = index === 0;
+      options.push(
+        scoreOption({
+          id: primary ? "house" : `house-${index + 1}`,
+          origin: "newsroom",
+          ground: newsroom.ground,
+          accent,
+          label: primary
+            ? `${newsroom.name || "the newsroom"}'s house colours`
+            : `${newsroom.name || "the newsroom"}'s house accent ${index + 1}`,
+          reasoning: primary
+            ? "The chart reads as this newsroom's, beside everything else it publishes. This is what leads whenever the subject carries no convention of its own."
+            : "Also this newsroom's own, recorded beside the primary accent. It reads as the house without repeating the colour every other beat already uses.",
+          provenance: primary
+            ? `NEWSROOM.md — brandColor: ${accent}, ground: ${newsroom.ground}`
+            : `NEWSROOM.md — accents: ${accent}, ground: ${newsroom.ground}`,
+        }),
+      );
+    });
   }
 
   return {
@@ -224,8 +265,12 @@ export function proposePalette({ newsroom, subject } = {}) {
       : subject
         ? "No convention applies to this subject, so the newsroom's colours lead. The conventions this skill will propose are the few a reader can be expected to already hold — see references/subject-conventions.md for why the list is short and what it would take to add one."
         : "No subject was given to look a convention up by, so the newsroom's colours lead.",
-    // The SUBJECT option is recommended when it exists and passes; house second; any passing option
-    // third. It must never fall back to `options[0]` regardless of contrast — an earlier draft did,
+    // The SUBJECT option is recommended when it exists and passes; the PRIMARY house accent second;
+    // any passing option third — which, since a newsroom may record several accents, is how a
+    // further house accent gets recommended when the primary one misses the floor. That ordering is
+    // the guarantee a richer palette does not become a way past the floor: every accent is measured,
+    // and only a measured PASS is ever named here.
+    // It must never fall back to `options[0]` regardless of contrast — an earlier draft did,
     // which meant a brand colour measured at 1.61:1 was handed back marked "recommended" three
     // lines under the words "FAILS the 3:1 floor". Recommending a colour this skill has just
     // measured as unreadable is the one outcome worse than proposing nothing.

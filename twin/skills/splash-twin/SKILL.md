@@ -166,7 +166,7 @@ shared module, and this project follows the same shape rather than inventing a r
   question, whatever twin-newsroom-charter itself reports.
 - `declined` — the journalist was asked and said no, recorded in `NEWSROOM.md`'s own front matter
   as `decision: declined` (checked by `isDeclinedProfile` in `scripts/newsroom.mjs`, **before**
-  `validateNewsroom` ever runs, so a declined stub is never scored against the six fields it was
+  `validateNewsroom` ever runs, so a declined stub is never scored against the fields it was
   never meant to carry). This is the subtle part: **a declined theme is a recorded choice, not a
   silent default.** It behaves like `pass` for `ready` — a considered "no" is exactly as closed a
   question as a "yes" — but it is a genuinely different fact from `missing`, and a later reader must
@@ -175,14 +175,34 @@ shared module, and this project follows the same shape rather than inventing a r
   a default colour would be exactly the anti-fallback failure this whole design exists to prevent —
   a visual must never ship in a colour nobody chose, and an explicit refusal is not that.
 - `fail` — a file exists, was meant to answer the question, and does not: unparsable front matter,
-  or a profile short of one of the six required fields. This is the only newsroom outcome that
+  or a profile short of one of the required fields. This is the only newsroom outcome that
   blocks the session the same way `missing` does — the file is present and wrong, not merely unmade.
+
+**A newsroom is not monolingual, and its palette is not one colour.** `NEWSROOM.md` records
+`languages` (comma-separated, most-used first) and, beside the primary `brandColor`, an optional
+`accents` list. Both are read back by `newsroomLanguages` / `newsroomAccents` in
+`scripts/newsroom.mjs`, and both accept the older shape unchanged: a profile carrying the singular
+`language: fr` and no `accents` is exactly as valid as it ever was, and means one language and one
+accent. Two rules make the plural safe rather than merely wider:
+
+- A singular that names a language the plural does not hold is REFUSED as a contradiction, not
+  silently resolved — one of the two lines is stale, and picking either would publish in a language
+  the newsroom may not have chosen. The language of a visual follows the ARTICLE and is confirmed
+  with the journalist; the recorded list is what that confirmation chooses among, which is what a
+  single slot could never give it.
+- Every recorded accent is measured against the ground by twin-palette, exactly like the primary,
+  and `recommended` only ever names a measured pass. A longer palette is not a way past the 3:1
+  non-text contrast floor; a failing accent is shown failing, with the nearest passing variant
+  offered beside it and never applied.
 
 **Installing a fresh root leaves it at `missing` unless the installer answers it.** The root
 template ships `NEWSROOM.example.md`, never `NEWSROOM.md`, so a root created by hand reliably fails
 preflight on a file nobody was told to create. `installer/configure.mjs` closes that: the setup page
-collects the six fields and writes `NEWSROOM.md` itself, after validating it with this same reader.
-Leaving it blank there is also an answer — preflight then reports `missing`, which is the prompt to
+collects the fields and writes `NEWSROOM.md` itself, after validating it with this same reader — and
+it OFFERS the derivation rather than only naming it: `POST /derive` runs twin-newsroom-charter
+against the newsroom's own address and shows every proposed value beside the declaration it was read
+from, filling the empty fields and leaving each undeclared one as a named question. It proposes;
+only the form's own submit writes. Leaving it blank there is also an answer — preflight then reports `missing`, which is the prompt to
 invoke twin-newsroom-charter (derive from the newsroom's own website, or record a decline). Either
 path lands `NEWSROOM.md` in a resolved state; the example file left un-renamed is the one shape that
 never resolves.
@@ -224,7 +244,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
 | Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/genre/size/`reachable`/`chosen`) before ever reporting `production`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
 | Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
-| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces, or a recorded `decision: declined`), plus `OPTIONAL_FIELDS` — today `credit`, the house credit convention, optional so every profile written before it stays valid |
+| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents` |
 | Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
 
 ## How it works (the shape)
@@ -383,8 +403,11 @@ if (missing.length > 0) {
   ancestor declaring `#shared/*`. Duplicated byte-for-byte into every craft skill that reads a key
   (never imported across a boundary), and guarded by `test/the-key-has-one-home.test.ts`.
 - `../../installer/` — `install.sh` (one static, key-free script), `configure.mjs` (the 127.0.0.1
-  setup page: keys probed live, written at `0600`, never on a command line), `place-skills.mjs`
-  (the two doors), `doctor.mjs` (host wiring, then delegates to `runPreflight`).
+  setup page: keys probed live, written at `0600`, never on a command line; it also runs the charter
+  derivation with its evidence, REPORTS the doors rather than asking about them, and collects the
+  CMS credential), `place-skills.mjs` (the two doors — and the module `configure.mjs` reads `DOORS`,
+  `HOSTS`, `detectHosts` and `planPlacement` from, so the doors are written down once),
+  `doctor.mjs` (host wiring, then delegates to `runPreflight`).
 - `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its
   `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md`,
   `shared/`. The template is the *manifest half* of the install; `installer/` (below) is the rest.

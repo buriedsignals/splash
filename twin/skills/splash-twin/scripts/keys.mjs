@@ -25,12 +25,28 @@ import { join } from "node:path";
 // lies is worse than no row, so this key is recordable and never probed, and `substituteKeys` is
 // where its absence shows honestly (the placeholder travels through and the live layer never
 // boots).
+//
+// `CMS_KIND` / `CMS_ENDPOINT` / `CMS_TOKEN` are the newsroom's own CMS, and they are a home for an
+// answer rather than a capability. `twin-deliver/scripts/cms-insert.mjs` builds the We.Publish and
+// Livingdocs mutation SHAPES and sends neither — the `cms-insertion` delivery form writes a file
+// describing the mutation, because no instance of either CMS exists anywhere in this project. So
+// there was nowhere for a journalist's endpoint or token to go at all, and the first person to wire
+// a real CMS would have had to invent a convention on the spot.
+//
+// They have NO PROBE, for the same reason `MAPTILER_DELIVERY_KEY` has none and stated even more
+// plainly: there is no instance to probe. Every other key here is verified against its real service
+// before it is written, and a CMS credential cannot meet that standard today — so it is recorded on
+// trust, said out loud on the setup page, and given no capability row in `runPreflight`. A
+// capability row that lies is worse than no row.
 const KEY_ALIASES = {
   MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
   MAPTILER_DELIVERY_KEY: [],
   DATAWRAPPER_TOKEN: ["DATAWRAPPER_API_TOKEN"],
   CLOUDFLARE_API_TOKEN: [],
   CLOUDFLARE_ACCOUNT_ID: [],
+  CMS_KIND: [],
+  CMS_ENDPOINT: [],
+  CMS_TOKEN: [],
 };
 
 // Reads `canonical` from `env`, falling back to each of its aliases above in order. Never the

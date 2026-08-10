@@ -4,9 +4,14 @@
 // evidence) and rule 3 (say so, and ask, when nothing was found) rendered as text — it writes
 // nothing to disk, the same as `derive-charter.mjs` itself.
 
-const FIELD_ORDER = ["name", "url", "language", "brandColor", "ground", "typefaces"];
-const QUOTED_FIELDS = new Set(["brandColor", "ground", "typefaces"]);
+const FIELD_ORDER = ["name", "url", "languages", "brandColor", "accents", "ground", "typefaces"];
+const QUOTED_FIELDS = new Set(["brandColor", "accents", "ground", "typefaces"]);
 const UNRESOLVED_PLACEHOLDER = "# UNRESOLVED — ask the journalist";
+
+// A field whose absence is an ANSWER, not a gap. A newsroom with one accent colour has one accent
+// colour; printing `accents: # UNRESOLVED` next to it would turn a complete profile into one that
+// looks unfinished, and would invite somebody to invent a second house colour to fill it.
+const OPTIONAL_FIELDS = new Set(["accents"]);
 
 function frontMatterLine(field, value) {
   if (value === null || value === undefined) return `${field}: ${UNRESOLVED_PLACEHOLDER}`;
@@ -26,7 +31,14 @@ export function formatProposal(proposal) {
   }
 
   const { fields, unresolved, url, stylesheetsRead, stylesheetsFailed } = proposal;
-  const values = { ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v?.value ?? null])), url };
+  const values = {
+    ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v?.value ?? null])),
+    url,
+    // `languages` is what a profile records; `language` is what a profile written before it
+    // records. Either is read back by `newsroomLanguages`, so a proposal derived from a site that
+    // declares one language prints the plural with one item and stays exactly as valid.
+    languages: fields.languages?.value ?? fields.language?.value ?? null,
+  };
 
   const lines = [
     `# Charter proposal for ${url}`,
@@ -36,7 +48,9 @@ export function formatProposal(proposal) {
     "",
     "```yaml",
     "---",
-    ...FIELD_ORDER.map((field) => frontMatterLine(field, values[field])),
+    ...FIELD_ORDER.filter((field) => !(OPTIONAL_FIELDS.has(field) && values[field] === null)).map((field) =>
+      frontMatterLine(field, values[field]),
+    ),
     "---",
     "```",
     "",
@@ -45,8 +59,12 @@ export function formatProposal(proposal) {
 
   for (const field of FIELD_ORDER) {
     if (field === "url") continue;
-    const evidence = fields[field];
-    if (!evidence) {
+    const evidence = field === "languages" ? (fields.languages ?? fields.language) : fields[field];
+    if (!evidence && OPTIONAL_FIELDS.has(field)) {
+      lines.push(
+        `- **${field}** — this site declares one accent colour and no others. That is an answer, not a gap: add more only if the newsroom actually has them.`,
+      );
+    } else if (!evidence) {
       lines.push(`- **${field}** — not declared anywhere this skill reads. Ask the journalist directly.`);
     } else {
       lines.push(`- **${field}**: \`${evidence.value}\` — ${evidence.source} — \`${evidence.evidence}\``);

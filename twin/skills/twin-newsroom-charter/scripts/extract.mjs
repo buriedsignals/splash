@@ -84,6 +84,46 @@ export function extractLanguage(html) {
   return { value: match[1].split("-")[0].toLowerCase(), source: "<html lang>", evidence: compact(match[0]) };
 }
 
+/**
+ * Every OTHER language the document says it also publishes in — the `hreflang` of its own
+ * alternate links, and `og:locale:alternate`. Base subtag only, matching `extractLanguage`, and
+ * `x-default` dropped (it names a fallback URL, not a language).
+ *
+ * This is a real declaration and not an inference: a multilingual newsroom publishes these tags so
+ * that search engines can find its other editions, which means the newsroom itself has already
+ * written down the list this skill would otherwise have to ask for. A monolingual site emits none,
+ * and that absence is the honest answer "one language", not a gap — see `derive-charter.mjs`, which
+ * is why `languages` is never on its own a question.
+ */
+export function extractAlternateLanguages(html) {
+  const results = [];
+  const seen = new Set();
+  const add = (raw, evidence) => {
+    const tag = raw.split("-")[0].toLowerCase();
+    if (!/^[a-z]{2,3}$/.test(tag) || tag === "x" || seen.has(tag)) return;
+    seen.add(tag);
+    results.push({ value: tag, evidence: compact(evidence) });
+  };
+
+  const linkRe = /<link\b[^>]*>/gi;
+  let match;
+  while ((match = linkRe.exec(html))) {
+    const tag = match[0];
+    if (!/\brel\s*=\s*["'][^"']*\balternate\b[^"']*["']/i.test(tag)) continue;
+    const hreflang = /\bhreflang\s*=\s*["']([a-zA-Z-]+)["']/i.exec(tag);
+    if (hreflang) add(hreflang[1], tag);
+  }
+
+  const metaRe = /<meta\b[^>]*>/gi;
+  while ((match = metaRe.exec(html))) {
+    const tag = match[0];
+    if (!/\bproperty\s*=\s*["']og:locale:alternate["']/i.test(tag)) continue;
+    const content = /\bcontent\s*=\s*["']([^"']+)["']/i.exec(tag);
+    if (content) add(content[1].replace("_", "-"), tag);
+  }
+  return results;
+}
+
 /** Every `<link rel="stylesheet" href="…">`, resolved against `baseUrl`, in document order, deduplicated. */
 export function extractStylesheetHrefs(html, baseUrl) {
   const hrefs = [];
