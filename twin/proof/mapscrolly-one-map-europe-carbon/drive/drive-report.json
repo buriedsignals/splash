@@ -3,89 +3,113 @@
   "sweeps": [
     {
       "label": "1600x900 down",
-      "samples": 99,
-      "tallestPanelAsFractionOfPort": 0.192,
+      "samples": 126,
+      "tallestPanelAsFractionOfPort": 0.161,
       "portHeight": 820.5,
       "span": [
         0,
         3
       ],
-      "worstStepDrift": 0.493,
+      "worstStepDrift": 0.581,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 2670
+        "at": 360
       },
       "fluidity": {
-        "intraStepFrames": 92,
-        "paintChanged": 92,
-        "geometryChanged": 92,
+        "intraStepFrames": 113,
+        "paintChanged": 113,
+        "geometryChanged": 113,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 3
+        "signalHeldFrames": 9
       },
       "problems": []
     },
     {
       "label": "1600x900 up",
-      "samples": 99,
-      "tallestPanelAsFractionOfPort": 0.192,
+      "samples": 126,
+      "tallestPanelAsFractionOfPort": 0.161,
       "portHeight": 820.5,
       "span": [
         3,
         0
       ],
-      "worstStepDrift": 0.494,
+      "worstStepDrift": 0.581,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 463
+        "at": 3474
       },
       "fluidity": {
-        "intraStepFrames": 92,
-        "paintChanged": 92,
-        "geometryChanged": 92,
+        "intraStepFrames": 113,
+        "paintChanged": 113,
+        "geometryChanged": 113,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 3
+        "signalHeldFrames": 9
       },
       "problems": []
     },
     {
       "label": "1280x800 down",
-      "samples": 87,
-      "tallestPanelAsFractionOfPort": 0.254,
-      "portHeight": 720.5,
+      "samples": 109,
+      "tallestPanelAsFractionOfPort": 0.187,
+      "portHeight": 705.5,
       "span": [
         0,
         3
       ],
-      "worstStepDrift": 0.506,
+      "worstStepDrift": 0.56,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 1980
+        "at": 270
       },
       "fluidity": {
-        "intraStepFrames": 81,
-        "paintChanged": 81,
-        "geometryChanged": 81,
+        "intraStepFrames": 97,
+        "paintChanged": 97,
+        "geometryChanged": 97,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 2
+        "signalHeldFrames": 8
       },
       "problems": []
     },
     {
       "label": "1280x800 up",
-      "samples": 87,
-      "tallestPanelAsFractionOfPort": 0.254,
-      "portHeight": 720.5,
+      "samples": 109,
+      "tallestPanelAsFractionOfPort": 0.187,
+      "portHeight": 705.5,
       "span": [
         3,
         0
       ],
-      "worstStepDrift": 0.494,
+      "worstStepDrift": 0.561,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 1903
+        "at": 2915
+      },
+      "fluidity": {
+        "intraStepFrames": 97,
+        "paintChanged": 97,
+        "geometryChanged": 97,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 8
+      },
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "samples": 91,
+      "tallestPanelAsFractionOfPort": 0.268,
+      "portHeight": 587.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstStepDrift": 0.55,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 1860
       },
       "fluidity": {
         "intraStepFrames": 81,
@@ -93,69 +117,45 @@
         "geometryChanged": 81,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 2
-      },
-      "problems": []
-    },
-    {
-      "label": "375x812 down",
-      "samples": 31,
-      "tallestPanelAsFractionOfPort": 0.622,
-      "portHeight": 253.046875,
-      "span": [
-        0,
-        3
-      ],
-      "worstStepDrift": 0.486,
-      "progressDisagreement": {
-        "worst": 0.0004,
-        "at": 210
-      },
-      "fluidity": {
-        "intraStepFrames": 27,
-        "paintChanged": 27,
-        "geometryChanged": 27,
-        "fractionMoving": 1,
-        "alphaOnlyFrames": 0,
-        "signalHeldFrames": 0
+        "signalHeldFrames": 6
       },
       "problems": []
     },
     {
       "label": "375x812 up",
-      "samples": 31,
-      "tallestPanelAsFractionOfPort": 0.622,
-      "portHeight": 253.046875,
+      "samples": 91,
+      "tallestPanelAsFractionOfPort": 0.268,
+      "portHeight": 587.5,
       "span": [
         3,
         0
       ],
-      "worstStepDrift": 0.49,
+      "worstStepDrift": 0.557,
       "progressDisagreement": {
-        "worst": 0.0003,
-        "at": 847
+        "worst": 0.0005,
+        "at": 122
       },
       "fluidity": {
-        "intraStepFrames": 27,
-        "paintChanged": 27,
-        "geometryChanged": 27,
+        "intraStepFrames": 81,
+        "paintChanged": 81,
+        "geometryChanged": 81,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 0
+        "signalHeldFrames": 6
       },
       "problems": []
     }
   ],
   "reducedMotion": {
-    "samples": 99,
+    "samples": 126,
     "distinctStates": 4,
     "everySampleIsOneOfTheFourStates": true,
     "discrete": true
   },
   "camera": {
-    "framesMeasured": 434,
+    "framesMeasured": 652,
     "worstRasterPerPixel": 1,
-    "clampedFrames": 89
+    "clampedFrames": 158
   },
   "noJs": {
     "visual": true,
@@ -163,7 +163,7 @@
     "plateIsInlineData": true,
     "externalRequests": 0,
     "paragraphs": 4,
-    "credit": "Global Carbon Budget (2025) via Our World in Data · basemap: MapTiler, baked once",
+    "credit": "Global Carbon Budget (2025) via Our World in Data · basemap © MapTiler © OpenStreetMap",
     "visualVisible": 1
   }
 }

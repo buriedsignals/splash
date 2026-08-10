@@ -59,10 +59,24 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
+// genres read one copy. A population pyramid has no measured aspect range at a tall frame — its
+// argument is the SHAPE of two mirrored distributions, exactly the property the portrait probe
+// proved no counter here can see — so the two phone frames are refused by name.
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { PYRAMID_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1350 };
-const PAD = 64;
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "population-pyramid";
 
 /**
  * THE TWO MASK STOPS — physics, not palette, and named so that is legible at the use site.
@@ -76,18 +90,88 @@ const MASK_KEEP = "#FFFFFF";
 const MASK_ERASE = "#000000";
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 34, fontWeight: 700, lead: 42 };
-const SOURCE = { fontSize: 18, fontWeight: 400 };
-const NOTE = { fontSize: 18, fontWeight: 400 };
-const LEGEND = { fontSize: 20, fontWeight: 600 };
-const BAND_LABEL = { fontSize: 16, fontWeight: 500 };
-const BAND_LABEL_ACCENT = { fontSize: 16, fontWeight: 700 };
-const REFERENCE_LABEL = { fontSize: 16, fontWeight: 400 };
-const SUBJECT_LABEL = { fontSize: 24, fontWeight: 700 };
-const GUTTER_MARGIN = 12;
-const OUTLINE_PAD = 6;
-/** Breathing space above and below a band label's measured glyph band, where the spine gives way. */
-const SPINE_LABEL_CLEARANCE = 4;
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more — this beat carried 1080 x 1350, a fourth frame nobody's table
+ * has, so a journalist who pinned any of the three sizes got 4:5 whatever they chose. The frame is
+ * `sizeFor(size)`'s now, and `size` is the decision gate 2c took. The shipped values are divided so
+ * the SMALLEST token lands at 12 — the number every row's `typeScale` in
+ * `twin-chart-video/scripts/sizes.mjs` is derived from.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, including the centre gutter and the spine's own clearance:
+ * a clearance measured in 1080-frame pixels stops covering a label the moment the label grows.
+ * `PAD` is the one exception: a frame's margin is proportional to the CANVAS, not to the type.
+ */
+const BASE = {
+  TITLE: { fontSize: 26, fontWeight: 700, lead: 32 },
+  SOURCE: { fontSize: 13, fontWeight: 400 },
+  NOTE: { fontSize: 13, fontWeight: 400 },
+  LEGEND: { fontSize: 15, fontWeight: 600 },
+  BAND_LABEL: { fontSize: 12, fontWeight: 500 },
+  BAND_LABEL_ACCENT: { fontSize: 12, fontWeight: 700 },
+  REFERENCE_LABEL: { fontSize: 12, fontWeight: 400 },
+  SUBJECT_LABEL: { fontSize: 18, fontWeight: 700 },
+  GUTTER_MARGIN: 9,
+  OUTLINE_PAD: 4,
+  /** Breathing space above and below a band label's measured glyph band, where the spine gives way. */
+  SPINE_LABEL_CLEARANCE: 3,
+  /** Air under the last title line, before the note; and under the note, before the legend. */
+  TITLE_TO_NOTE: 26,
+  NOTE_TO_LEGEND: 29,
+  /** Air under the legend, before the plot. */
+  LEGEND_TO_PLOT: 30,
+  /** The drop from the plot's floor to the subject's conclusion label, and the block it reserves. */
+  SUBJECT_LABEL_DROP: 33,
+  SUBJECT_BLOCK: 48,
+  /** Air between that block and the credit's ink. */
+  BLOCK_TO_SOURCE: 7,
+  /** The lift of the spine's caption above the plot. */
+  CAPTION_LIFT: 10,
+  /** The subject's highlight wash, inset from the frame's own edges. */
+  HIGHLIGHT_INSET: 18,
+  /** Ink widths, and the spine's dash. */
+  SPINE_STROKE: 1.5,
+  SPINE_DASH: 6,
+  OUTLINE_STROKE: 2,
+};
+
+/**
+ * The base, at the size's own multiplier — one integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    LEGEND: f(BASE.LEGEND) as typeof BASE.LEGEND,
+    BAND_LABEL: f(BASE.BAND_LABEL) as typeof BASE.BAND_LABEL,
+    BAND_LABEL_ACCENT: f(BASE.BAND_LABEL_ACCENT) as typeof BASE.BAND_LABEL_ACCENT,
+    REFERENCE_LABEL: f(BASE.REFERENCE_LABEL) as typeof BASE.REFERENCE_LABEL,
+    SUBJECT_LABEL: f(BASE.SUBJECT_LABEL) as typeof BASE.SUBJECT_LABEL,
+    GUTTER_MARGIN: sp(BASE.GUTTER_MARGIN),
+    OUTLINE_PAD: sp(BASE.OUTLINE_PAD),
+    SPINE_LABEL_CLEARANCE: sp(BASE.SPINE_LABEL_CLEARANCE),
+    TITLE_TO_NOTE: sp(BASE.TITLE_TO_NOTE),
+    NOTE_TO_LEGEND: sp(BASE.NOTE_TO_LEGEND),
+    LEGEND_TO_PLOT: sp(BASE.LEGEND_TO_PLOT),
+    SUBJECT_LABEL_DROP: sp(BASE.SUBJECT_LABEL_DROP),
+    SUBJECT_BLOCK: sp(BASE.SUBJECT_BLOCK),
+    BLOCK_TO_SOURCE: sp(BASE.BLOCK_TO_SOURCE),
+    CAPTION_LIFT: sp(BASE.CAPTION_LIFT),
+    HIGHLIGHT_INSET: sp(BASE.HIGHLIGHT_INSET),
+    SPINE_STROKE: Math.max(1, sp(BASE.SPINE_STROKE)),
+    SPINE_DASH: `${sp(BASE.SPINE_DASH + 1)} ${sp(BASE.SPINE_DASH - 1)}`,
+    OUTLINE_STROKE: Math.max(1, sp(BASE.OUTLINE_STROKE)),
+  };
+}
 
 export type Band = { ageBand: string; male: number; female: number };
 
@@ -241,6 +325,8 @@ export type PyramidVideoProps = {
   legendLabels: [string, string]; // ["Male", "Female"]
   subjectBand: string; // "0-4"
   elderTotal: number; // sum of male+female across every band from 65-69 up
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -258,11 +344,32 @@ export function PyramidVideo({
   legendLabels,
   subjectBand,
   elderTotal,
+  size,
   timing = PYRAMID_TIMING,
 }: PyramidVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    NOTE,
+    LEGEND,
+    BAND_LABEL,
+    BAND_LABEL_ACCENT,
+    REFERENCE_LABEL,
+    SUBJECT_LABEL,
+    GUTTER_MARGIN,
+    OUTLINE_PAD,
+    SPINE_LABEL_CLEARANCE,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL, before anything is measured.
+  assertTypeMayEnter(TYPE, size, { what: "vidy-pyramid-niger-population" });
 
   if (data.length < 2)
     throw new Error(`need at least two age bands, got ${data.length}`);
@@ -281,18 +388,25 @@ export function PyramidVideo({
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits,
   // so nothing shifts when a band arrives late.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
+  const titleBaseline = contentTop + TITLE.fontSize;
   const noteBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 34;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_NOTE;
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD;
+  const sourceBaseline = sourceBottom;
   // The legend keeps the air it always had above it, measured from the LAST HEADER line (the
   // note) rather than from the source, which is no longer in the header.
-  const legendBaseline = noteBaseline + 38;
+  const legendBaseline = noteBaseline + T.NOTE_TO_LEGEND;
 
   const maxBandLabelWidth = Math.max(
     ...displayBands.map((b) =>
@@ -305,13 +419,37 @@ export function PyramidVideo({
   const gutter = maxBandLabelWidth / 2 + GUTTER_MARGIN;
 
   const padding = {
-    top: legendBaseline + 40,
+    top: legendBaseline + T.LEGEND_TO_PLOT,
     right: PAD,
     // Room for the subject's conclusion label, centred below the widest row, AND for the credit
-    // under it.
-    bottom: PAD + 64 + SOURCE.fontSize + 10,
+    // under it — measured DOWN FROM the credit's own baseline rather than up from the frame's foot,
+    // so the portrait stage moves the plot with it.
+    bottom:
+      height -
+      sourceBottom +
+      T.SUBJECT_BLOCK +
+      SOURCE.fontSize +
+      T.BLOCK_TO_SOURCE,
     left: PAD,
   };
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor.
+  assertTypeFloor(
+    [
+      TITLE.fontSize,
+      SOURCE.fontSize,
+      NOTE.fontSize,
+      LEGEND.fontSize,
+      BAND_LABEL.fontSize,
+      BAND_LABEL_ACCENT.fontSize,
+      REFERENCE_LABEL.fontSize,
+      SUBJECT_LABEL.fontSize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-pyramid-niger-population at ${size}` },
+  );
 
   const g = pyramidGeometry(displayBands, { width, height, padding, gutter });
 
@@ -392,7 +530,7 @@ export function PyramidVideo({
   });
 
   const bandLabelBaselineOffset = BAND_LABEL.fontSize * 0.32;
-  const subjectLabelY = g.plot.bottom + 44;
+  const subjectLabelY = g.plot.bottom + T.SUBJECT_LABEL_DROP;
 
   // The zero spine runs down the centre of the gutter, and the age-band labels are centred on that
   // same x — so without this the dashed rule STRUCK THROUGH all 21 of them: "85-89" read as "85+89",
@@ -401,6 +539,27 @@ export function PyramidVideo({
   // axis, so neither can move out of the other's way: the fix is that the spine YIELDS where a label
   // is drawn. Each band's clearance is its own glyphs' measured vertical extent (`measureTextBand`,
   // taking the taller of the plain and the accent weight) plus a breathing gap.
+  //
+  // HOW MANY BANDS CARRY A LABEL, MEASURED — the removal ladder's tick-thinning rung (R2), applied
+  // to the one axis a pyramid has. 21 bands in the table's landscape frame give each row about
+  // 24px, and a band label at this size's own legibility floor is taller than that: at one label
+  // per band the strip read as a single black column of overlapping type, which is what the first
+  // render of this migration produced. Nothing here makes the type smaller — the floor is never
+  // lowered — so the LABELS thin out instead, one every `labelStride` rows, and the bars all stay:
+  // the silhouette is the argument and it is untouched.
+  //
+  // The phase is chosen so the SUBJECT band always keeps its label (it is the band the headline is
+  // about, and it takes the bold form at `subject`), rather than falling wherever an offset lands.
+  const bandLabelBand = measureTextBand("00-00", BAND_LABEL_ACCENT);
+  const labelStride = Math.max(
+    1,
+    Math.ceil(
+      (bandLabelBand.ascent + bandLabelBand.descent + SPINE_LABEL_CLEARANCE * 2) /
+        g.rowHeight,
+    ),
+  );
+  const labelledRow = (i: number) => i % labelStride === subjectIndex % labelStride;
+
   const spineMaskId = "pyramid-spine-clearance";
   const labelClearances = g.rows.map((r) => {
     const plain = measureTextBand(r.ageBand, BAND_LABEL);
@@ -429,7 +588,11 @@ export function PyramidVideo({
   // round — a dashed rule that yields a frame early is not a misreading, and a rule drawn through
   // an age band is. It is NOT the alternative the first repair rejected (pre-cutting 21 gaps into a
   // rule drawn before any band arrives): a band that has not started still masks nothing.
-  const spineClearanceOn = rowReveal.map((progress) => (progress > 0 ? 1 : 0));
+  // …and it only yields where a label is actually DRAWN. A gap cut for a label the thinning rung
+  // removed is a gap in the rule with nothing in it.
+  const spineClearanceOn = rowReveal.map((progress, i) =>
+    progress > 0 && labelledRow(i) ? 1 : 0,
+  );
 
   return (
     <svg
@@ -549,13 +712,13 @@ export function PyramidVideo({
             y1={g.plot.top}
             y2={referenceY2}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.SPINE_STROKE}
+            strokeDasharray={T.SPINE_DASH}
             mask={`url(#${spineMaskId})`}
           />
           <text
             x={g.centreX}
-            y={g.plot.top - 14}
+            y={g.plot.top - T.CAPTION_LIFT}
             fill={muted}
             fontSize={REFERENCE_LABEL.fontSize}
             textAnchor="middle"
@@ -569,9 +732,9 @@ export function PyramidVideo({
       {/* The subject's highlight band, behind everything else in the row — a wash, not a mark. */}
       {highlightOpacity > 0 ? (
         <rect
-          x={24}
+          x={T.HIGHLIGHT_INSET}
           y={g.rows[subjectIndex].y - g.rowHeight / 2}
-          width={width - 48}
+          width={width - T.HIGHLIGHT_INSET * 2}
           height={g.rowHeight}
           fill={female}
           opacity={highlightOpacity}
@@ -619,21 +782,23 @@ export function PyramidVideo({
               fill={female}
               opacity={rowReveal[i]}
             />
-            <text
-              x={g.centreX}
-              y={r.y + bandLabelBaselineOffset}
-              fill={ink}
-              fontSize={
-                accented ? BAND_LABEL_ACCENT.fontSize : BAND_LABEL.fontSize
-              }
-              fontWeight={
-                accented ? BAND_LABEL_ACCENT.fontWeight : BAND_LABEL.fontWeight
-              }
-              textAnchor="middle"
-              opacity={labelOpacity}
-            >
-              {r.ageBand}
-            </text>
+            {labelledRow(i) ? (
+              <text
+                x={g.centreX}
+                y={r.y + bandLabelBaselineOffset}
+                fill={ink}
+                fontSize={
+                  accented ? BAND_LABEL_ACCENT.fontSize : BAND_LABEL.fontSize
+                }
+                fontWeight={
+                  accented ? BAND_LABEL_ACCENT.fontWeight : BAND_LABEL.fontWeight
+                }
+                textAnchor="middle"
+                opacity={labelOpacity}
+              >
+                {r.ageBand}
+              </text>
+            ) : null}
           </g>
         );
       })}
@@ -657,7 +822,7 @@ export function PyramidVideo({
             height={g.rowHeight * 0.62 + OUTLINE_PAD * 2}
             fill="none"
             stroke={female}
-            strokeWidth={3}
+            strokeWidth={T.OUTLINE_STROKE}
           />
           <rect
             x={g.rows[subjectIndex].femaleZeroX - OUTLINE_PAD}
@@ -670,7 +835,7 @@ export function PyramidVideo({
             height={g.rowHeight * 0.62 + OUTLINE_PAD * 2}
             fill="none"
             stroke={female}
-            strokeWidth={3}
+            strokeWidth={T.OUTLINE_STROKE}
           />
         </g>
       ) : null}

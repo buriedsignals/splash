@@ -23,11 +23,22 @@ import {
   deriveFurniture,
   readPalette,
 } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+// The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
+// question, which is craft-neutral and therefore has one copy for both genres.
+import {
+  assertDeliveredSize,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "vidz-bar-column-top-emitters";
+const BEAT_ID = "vidz-bar-column-top-emitters";
+/** The chart type, in `references/types/` vocabulary — what `assertTypeMayEnter` is asked about. */
+const TYPE = "column";
 
 /** How many columns the ranking draws. The conclusion sums a subset of them, computed below. */
 const RANK_COUNT = 10;
@@ -110,6 +121,34 @@ function remotion(args) {
   return Math.round((Date.now() - started) / 1000);
 }
 
+/**
+ * The DELIVERED mp4's own dimensions, read out of the container by `ffprobe`.
+ *
+ * The video analogue of `readPngSize`, and it exists for the same reason: the only reading the code
+ * that wrote the file cannot make agree with itself. `Root.tsx` sizes the composition and the
+ * component draws into it, both from the same table — so they agree by construction, and an encoder
+ * that letterboxed or a `--scale` left on a command line would arrive in the newsroom unnoticed.
+ */
+function mp4Size(path) {
+  const probe = spawnSync(
+    "ffprobe",
+    [
+      "-v", "error",
+      "-select_streams", "v:0",
+      "-show_entries", "stream=width,height",
+      "-of", "csv=p=0",
+      path,
+    ],
+    { encoding: "utf8" },
+  );
+  if (probe.status !== 0)
+    throw new Error(`ffprobe could not read ${path}: ${probe.stderr}`);
+  const [width, height] = probe.stdout.trim().split(",").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`ffprobe returned no dimensions for ${path}: ${probe.stdout}`);
+  return { width, height };
+}
+
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
   const at = argv.indexOf(name);
@@ -119,9 +158,30 @@ const flag = (name, fallback) => {
 // The story's own frozen series, committed beside it. Never re-fetched, and never read from /tmp:
 // a render that reads its data from outside its own folder cannot be audited at all.
 const dataPath = flag("--data", join(HERE, "data.csv"));
-// The artifact lands in the beat's own folder by default, which is where it is audited from.
-const outDir = flag("--out", HERE);
 const stillOnly = argv.includes("--still-only");
+
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size lived as two literals in `Root.tsx` and two more in the component,
+// which agreed by construction, so `size: portrait` on the slot produced 1080 x 1080 in silence.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers: the delivered file keeps the
+// beat's own name and the pinned size, and an override says so on stdout and writes elsewhere.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+// The artifact lands in the beat's own folder by default, which is where it is audited from.
+const outDir = flag("--out", sizeFlag === -1 ? HERE : join(HERE, "sizes"));
+const stem = sizeFlag === -1 ? "column-ranking" : `column-ranking-${size}`;
+if (sizeFlag !== -1)
+  console.log(`LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`);
+// …and whether this TYPE may enter that size at all. A column's category axis is nominal, so a tall
+// frame asks for its twin FORM (rows), not for a stretched version of this drawing — the refusal
+// names the rung and the size that works rather than drawing something no counter can fault.
+const form = assertTypeMayEnter(TYPE, size, { what: BEAT_ID });
+const COMPOSITION = `${BEAT_ID}-${size}`;
+const { width, height } = sizeFor(size);
+console.log(`pinned size: ${size} (${width}x${height}) — ${form.verdict}: ${form.reason}`);
 
 await mkdir(outDir, { recursive: true });
 
@@ -173,15 +233,16 @@ const props = {
   combinedLabel,
   ground,
   accent,
+  size,
   ...deriveFurniture(ground),
 };
-const propsPath = join(outDir, "column-ranking-props.json");
+const propsPath = join(outDir, `${stem}-props.json`);
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 await writeFile(join(outDir, "ALT.txt"), `${alt}\n`);
 
 // Rung 2a: the last frame, on its own. If the end state is not a complete, readable chart, the
 // video is wrong and nothing below is worth waiting for.
-const stillPath = join(outDir, "column-ranking-final-frame.png");
+const stillPath = join(outDir, `${stem}-final-frame.png`);
 const stillSeconds = remotion([
   "still",
   ENTRY,
@@ -191,12 +252,16 @@ const stillSeconds = remotion([
   `--props=${propsPath}`,
   "--timeout=120000",
 ]);
-console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
+// The still, measured from its own IHDR — not from the arguments that drew it.
+assertDeliveredSize(readPngSize(await readFile(stillPath)), size, {
+  what: stillPath,
+});
+console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s], verified from the file`);
 
 if (stillOnly) process.exit(0);
 
 // Rung 2b: the mp4. Concurrency 1 keeps the render deterministic and the machine usable.
-const videoPath = join(outDir, "column-ranking.mp4");
+const videoPath = join(outDir, `${stem}.mp4`);
 const videoSeconds = remotion([
   "render",
   ENTRY,
@@ -206,4 +271,7 @@ const videoSeconds = remotion([
   "--concurrency=1",
   "--timeout=120000",
 ]);
-console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+// And the DELIVERED mp4, out of the container itself. This is the assertion the whole size decision
+// rests on for the video genre: everything upstream of it agrees with itself by construction.
+assertDeliveredSize(mp4Size(videoPath), size, { what: videoPath });
+console.log(`video → ${videoPath}  [${videoSeconds}s], verified from the container`);

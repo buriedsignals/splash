@@ -52,6 +52,7 @@
   "combinedLabel": "The next five combined",
   "ground": "#FFFFFF",
   "accent": "#0B7A75",
+  "size": "landscape",
   "ink": "#000000",
   "muted": "#616161",
   "grid": "#d1d1d1"

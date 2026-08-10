@@ -22,11 +22,22 @@ import {
   deriveFurniture,
   readPalette,
 } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+// The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
+// question, which is craft-neutral and therefore has one copy for both genres.
+import {
+  assertDeliveredSize,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "vidz-bump-emitter-rank";
+const BEAT_ID = "vidz-bump-emitter-rank";
+/** The chart type, in `references/types/` vocabulary — what `assertTypeMayEnter` is asked about. */
+const TYPE = "bump";
 
 const FIRST_YEAR = 1990;
 const LAST_YEAR = 2024;
@@ -102,6 +113,25 @@ function remotion(args) {
   return Math.round((Date.now() - started) / 1000);
 }
 
+/**
+ * The DELIVERED mp4's own dimensions, read out of the container by `ffprobe` — the video analogue
+ * of `readPngSize`, and it exists for the same reason: `Root.tsx` sizes the composition and the
+ * component draws into it, both from the same table, so they agree by construction.
+ */
+function mp4Size(path) {
+  const probe = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", path],
+    { encoding: "utf8" },
+  );
+  if (probe.status !== 0)
+    throw new Error(`ffprobe could not read ${path}: ${probe.stderr}`);
+  const [width, height] = probe.stdout.trim().split(",").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`ffprobe returned no dimensions for ${path}: ${probe.stdout}`);
+  return { width, height };
+}
+
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
   const at = argv.indexOf(name);
@@ -110,8 +140,27 @@ const flag = (name, fallback) => {
 
 // Frozen beside the beat, never re-fetched and never read from /tmp.
 const dataPath = flag("--data", join(HERE, "data.csv"));
-const outDir = flag("--out", HERE);
 const stillOnly = argv.includes("--still-only");
+
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size lived as two literals in `Root.tsx` and two more in the component,
+// which agreed by construction, so `size: portrait` on the slot produced 1080 x 1080 in silence.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two into `sizes/` so all three can be opened and
+// compared. It is deliberately NOT a way to change what this beat DELIVERS.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+const outDir = flag("--out", sizeFlag === -1 ? HERE : join(HERE, "sizes"));
+const stem = sizeFlag === -1 ? "bump" : `bump-${size}`;
+if (sizeFlag !== -1)
+  console.log(`LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`);
+const form = assertTypeMayEnter(TYPE, size, { what: BEAT_ID });
+const COMPOSITION = `${BEAT_ID}-${size}`;
+const frameSize = sizeFor(size);
+console.log(
+  `pinned size: ${size} (${frameSize.width}x${frameSize.height}) — ${form.verdict}: ${form.reason}`,
+);
 
 await mkdir(outDir, { recursive: true });
 
@@ -237,6 +286,7 @@ const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
 console.log(`palette read from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
 const props = {
+  size,
   years,
   data: tracks,
   rankRows,
@@ -251,12 +301,12 @@ const props = {
   accent,
   ...deriveFurniture(ground),
 };
-const propsPath = join(outDir, "bump-props.json");
+const propsPath = join(outDir, `${stem}-props.json`);
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 await writeFile(join(outDir, "ALT.txt"), `${alt}\n`);
 
 // Rung 2a: the last frame, on its own.
-const stillPath = join(outDir, "bump-final-frame.png");
+const stillPath = join(outDir, `${stem}-final-frame.png`);
 const stillSeconds = remotion([
   "still",
   ENTRY,
@@ -266,12 +316,16 @@ const stillSeconds = remotion([
   `--props=${propsPath}`,
   "--timeout=120000",
 ]);
-console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
+// The still, measured from its own IHDR — not from the arguments that drew it.
+assertDeliveredSize(readPngSize(await readFile(stillPath)), size, {
+  what: stillPath,
+});
+console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s], verified from the file`);
 
 if (stillOnly) process.exit(0);
 
 // Rung 2b: the mp4.
-const videoPath = join(outDir, "bump.mp4");
+const videoPath = join(outDir, `${stem}.mp4`);
 const videoSeconds = remotion([
   "render",
   ENTRY,
@@ -281,4 +335,7 @@ const videoSeconds = remotion([
   "--concurrency=1",
   "--timeout=120000",
 ]);
-console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+// And the DELIVERED mp4, out of the container itself — the one reading the code that wrote the
+// file cannot make agree with itself.
+assertDeliveredSize(mp4Size(videoPath), size, { what: videoPath });
+console.log(`video → ${videoPath}  [${videoSeconds}s], verified from the container`);

@@ -1,6 +1,19 @@
-// This story's own Remotion root. One composition, because a story workspace holds one story —
-// the skill's root registers only its seed.
+// This story's own Remotion root.
+//
+// ONE COMPOSITION PER EXPORT SIZE, and that is the half of the size migration a component cannot do
+// on its own: this file used to register a single 1080 x 1080 composition with the two numbers typed
+// here, so a journalist who pinned `portrait` at gate 2c had no composition to render at all. The
+// list is built from the table's own row names, so a row added to `sizes.mjs` arrives here without
+// anybody widening a list, and the id carries the size because `remotion still` / `remotion render`
+// select a beat by composition id and nothing else.
+//
+// A size this TYPE cannot enter still gets a composition; it refuses inside the component, loudly,
+// naming the measurement that is missing and the sizes that do work.
 import { Composition } from "remotion";
+import {
+  EXPORT_SIZE_NAMES,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
 import { HistogramVideo, type HistogramVideoProps } from "./HistogramVideo";
 import { HISTOGRAM_TIMING } from "./timing-contract";
 
@@ -27,16 +40,25 @@ const PLACEHOLDER: HistogramVideoProps = {
   domainStart: 50,
   domainEnd: 90,
   subjectBinStart: 75,
+  size: "landscape",
 };
 
 export const RemotionRoot: React.FC = () => (
-  <Composition
-    id="vidy-histogram-life-expectancy"
-    component={HistogramVideo}
-    durationInFrames={HISTOGRAM_TIMING.total}
-    fps={HISTOGRAM_TIMING.fps}
-    width={1080}
-    height={1080}
-    defaultProps={PLACEHOLDER}
-  />
+  <>
+    {EXPORT_SIZE_NAMES.map((name: string) => {
+      const { width, height } = sizeFor(name);
+      return (
+        <Composition
+          key={name}
+          id={`vidy-histogram-life-expectancy-${name}`}
+          component={HistogramVideo}
+          durationInFrames={HISTOGRAM_TIMING.total}
+          fps={HISTOGRAM_TIMING.fps}
+          width={width}
+          height={height}
+          defaultProps={{ ...PLACEHOLDER, size: name }}
+        />
+      );
+    })}
+  </>
 );

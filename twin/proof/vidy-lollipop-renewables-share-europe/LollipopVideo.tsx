@@ -53,19 +53,98 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
+// genres read one copy. A lollipop's category axis is NOMINAL, so a tall frame asks for its twin
+// FORM — rows running down the frame — which is the form this beat already draws.
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { LOLLIPOP_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 20, fontWeight: 400 };
-const AXIS_TICK = { fontSize: 18, fontWeight: 500 };
-const ROW_LABEL = { fontSize: 22, fontWeight: 500 };
-const ROW_LABEL_ACCENT = { fontSize: 22, fontWeight: 700 };
-const VALUE_LABEL = { fontSize: 22, fontWeight: 600 };
-const DOT_R = 7;
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "lollipop";
+
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
+ * gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs` and carried onto the
+ * composition by `Root.tsx`. The shipped values were 1080-frame tuning; they are divided so the
+ * SMALLEST token lands at 12 — the number every row's `typeScale` in
+ * `twin-chart-video/scripts/sizes.mjs` is derived from (30 / 12 = 2.5 at landscape, 36 / 12 = 3.0
+ * at the two phone frames). The ramp flattens as a result: the floor binds the smallest token, and
+ * a title that grew by the same factor would take a third of the frame before a mark was drawn.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts. `PAD` is the one exception: a frame's
+ * margin is proportional to the CANVAS, not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 25, fontWeight: 700, lead: 32 },
+  SOURCE: { fontSize: 13, fontWeight: 400 },
+  AXIS_TICK: { fontSize: 12, fontWeight: 500 },
+  ROW_LABEL: { fontSize: 15, fontWeight: 500 },
+  ROW_LABEL_ACCENT: { fontSize: 15, fontWeight: 700 },
+  VALUE_LABEL: { fontSize: 15, fontWeight: 600 },
+  DOT_R: 5,
+  /** Air under the last title line, before the axis tick row. */
+  TITLE_TO_AXIS: 27,
+  /** Air under the axis tick row, before the first lollipop row. */
+  AXIS_TO_PLOT: 16,
+  /** The gutter between a row's dot and its value label, and between the plot and the frame. */
+  VALUE_GUTTER: 11,
+  /** The gutter between a row's category label and the zero baseline. */
+  LABEL_GUTTER: 9,
+  /** Air between the last row and the credit's ink. */
+  PLOT_TO_SOURCE: 7,
+  /** How far the subject's ring stands off its own dot. */
+  RING_STANDOFF: 4,
+  /** Ink widths. A stroke is proportional to the canvas the way a gap is, so it scales too. */
+  GRID_STROKE: 1,
+  BASELINE_STROKE: 1.3,
+  STEM_STROKE: 2.7,
+  RING_STROKE: 2,
+};
+
+/**
+ * The base, at the size's own multiplier — one integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS_TICK: f(BASE.AXIS_TICK) as typeof BASE.AXIS_TICK,
+    ROW_LABEL: f(BASE.ROW_LABEL) as typeof BASE.ROW_LABEL,
+    ROW_LABEL_ACCENT: f(BASE.ROW_LABEL_ACCENT) as typeof BASE.ROW_LABEL_ACCENT,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    DOT_R: sp(BASE.DOT_R),
+    TITLE_TO_AXIS: sp(BASE.TITLE_TO_AXIS),
+    AXIS_TO_PLOT: sp(BASE.AXIS_TO_PLOT),
+    VALUE_GUTTER: sp(BASE.VALUE_GUTTER),
+    LABEL_GUTTER: sp(BASE.LABEL_GUTTER),
+    PLOT_TO_SOURCE: sp(BASE.PLOT_TO_SOURCE),
+    RING_STANDOFF: sp(BASE.RING_STANDOFF),
+    GRID_STROKE: Math.max(1, sp(BASE.GRID_STROKE)),
+    BASELINE_STROKE: Math.max(1, sp(BASE.BASELINE_STROKE)),
+    STEM_STROKE: Math.max(1, sp(BASE.STEM_STROKE)),
+    RING_STROKE: Math.max(1, sp(BASE.RING_STROKE)),
+  };
+}
 
 export type Row = {
   country: string;
@@ -191,6 +270,8 @@ export type LollipopVideoProps = {
   grid: string;
   subjectCountry: string;
   compareCountry: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -205,11 +286,32 @@ export function LollipopVideo({
   grid,
   subjectCountry,
   compareCountry,
+  size,
   timing = LOLLIPOP_TIMING,
 }: LollipopVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    AXIS_TICK,
+    ROW_LABEL,
+    ROW_LABEL_ACCENT,
+    VALUE_LABEL,
+    DOT_R,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL, before anything is measured. A lollipop is
+  // row-driven already, so the twin form a tall frame asks for is the drawing this file makes —
+  // there is no aspect to distort and no clamp applies.
+  assertTypeMayEnter(TYPE, size, {
+    what: "vidy-lollipop-renewables-share-europe",
+  });
 
   if (data.length < 2)
     throw new Error(`need at least two rows, got ${data.length}`);
@@ -226,19 +328,26 @@ export function LollipopVideo({
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits,
   // so nothing shifts when a row arrives late.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
+  const titleBaseline = contentTop + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceLead = SOURCE.fontSize * 1.5;
+  const sourceLead = Math.round(SOURCE.fontSize * 1.5);
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   // The axis label keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const axisLabelBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_AXIS;
 
   const valueLabelFor = (r: Row) => `${en(r.value)}%`;
   const subjectRow = data[subjectIndex];
@@ -260,13 +369,39 @@ export function LollipopVideo({
   );
 
   const padding = {
-    top: axisLabelBaseline + 24,
-    right: PAD + 16 + maxRightWidth,
-    // Grown by the credit block's own height plus clear air.
+    top: axisLabelBaseline + T.AXIS_TO_PLOT,
+    right: PAD + T.VALUE_GUTTER + maxRightWidth,
+    // Grown by the credit block's own height plus clear air, and measured DOWN FROM the credit's
+    // own baseline rather than up from the frame's foot, so the portrait stage moves the plot with
+    // it instead of leaving the last rows under the platform's caption.
     bottom:
-      PAD + 16 + (sourceLines.length - 1) * sourceLead + SOURCE.fontSize + 10,
-    left: PAD + 14 + maxCategoryWidth,
+      height -
+      sourceBottom +
+      T.VALUE_GUTTER +
+      (sourceLines.length - 1) * sourceLead +
+      SOURCE.fontSize +
+      T.PLOT_TO_SOURCE,
+    left: PAD + T.LABEL_GUTTER + maxCategoryWidth,
   };
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor. The guard reads
+  // `font-size="…"` out of markup because that is what it reads on the static side; a video
+  // composition's markup only exists inside the browser Remotion drives, so the sizes are handed to
+  // it in the form they will be written in.
+  assertTypeFloor(
+    [
+      TITLE.fontSize,
+      SOURCE.fontSize,
+      AXIS_TICK.fontSize,
+      ROW_LABEL.fontSize,
+      ROW_LABEL_ACCENT.fontSize,
+      VALUE_LABEL.fontSize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-lollipop-renewables-share-europe at ${size}` },
+  );
 
   const g = lollipopGeometry(data, { width, height, padding });
 
@@ -347,7 +482,7 @@ export function LollipopVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + 6]);
+  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + T.RING_STANDOFF]);
   const ringOpacity = interpolate(subjectSpring, [0, 1], [0, 1]);
   const highlightOpacity = interpolate(subjectSpring, [0, 1], [0, 0.1]);
   // The stem/dot recolour (muted → accent) and the category label crossfade (ink → bold accent)
@@ -419,7 +554,7 @@ export function LollipopVideo({
                 y1={g.plot.top}
                 y2={g.plot.bottom}
                 stroke={grid}
-                strokeWidth={1}
+                strokeWidth={T.GRID_STROKE}
               />
               <text
                 x={scaledX}
@@ -446,7 +581,7 @@ export function LollipopVideo({
             y1={g.plot.top}
             y2={referenceY2}
             stroke={muted}
-            strokeWidth={2}
+            strokeWidth={T.BASELINE_STROKE}
             strokeDasharray="8 6"
           />
           <text
@@ -466,9 +601,9 @@ export function LollipopVideo({
       {/* The subject's highlight band, behind everything else in the row — a wash, not a mark. */}
       {highlightOpacity > 0 ? (
         <rect
-          x={36}
+          x={PAD / 2}
           y={g.points[subjectIndex].y - g.rowHeight / 2}
-          width={width - 72}
+          width={width - PAD}
           height={g.rowHeight}
           fill={accent}
           opacity={highlightOpacity}
@@ -504,7 +639,7 @@ export function LollipopVideo({
               y1={p.y}
               y2={p.y}
               stroke={accented ? accent : muted}
-              strokeWidth={4}
+              strokeWidth={T.STEM_STROKE}
               opacity={markOpacity[i]}
             />
             <circle
@@ -515,7 +650,7 @@ export function LollipopVideo({
               opacity={markOpacity[i]}
             />
             <text
-              x={g.plot.left - 14}
+              x={g.plot.left - T.LABEL_GUTTER}
               y={p.y + rowLabelBaselineOffset}
               fill={accented ? accent : ink}
               fontSize={accented ? ROW_LABEL_ACCENT.fontSize : ROW_LABEL.fontSize}
@@ -528,7 +663,7 @@ export function LollipopVideo({
               {p.country}
             </text>
             <text
-              x={tipX + 14}
+              x={tipX + T.VALUE_GUTTER}
               y={p.y + rowLabelBaselineOffset}
               fill={ink}
               fontSize={VALUE_LABEL.fontSize}
@@ -549,7 +684,7 @@ export function LollipopVideo({
           r={ringRadius}
           fill="none"
           stroke={accent}
-          strokeWidth={3}
+          strokeWidth={T.RING_STROKE}
           opacity={ringOpacity}
         />
       ) : null}

@@ -1,6 +1,15 @@
 // This story's own Remotion root. One composition, because a story workspace holds one story —
 // the skill's root registers only its seed.
+// ONE COMPOSITION PER EXPORT SIZE — the half of the size migration a component cannot do on its
+// own. This file used to register a single 1080 x 1080 composition with the two numbers typed here,
+// so a journalist who pinned `portrait` had no composition to render at all. The list is built from
+// the table's own row names, and the id carries the size because `remotion still` / `remotion
+// render` select a beat by composition id and nothing else.
 import { Composition } from "remotion";
+import {
+  EXPORT_SIZE_NAMES,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
 import { LollipopVideo, type LollipopVideoProps } from "./LollipopVideo";
 import { LOLLIPOP_TIMING } from "./timing-contract";
 
@@ -22,16 +31,25 @@ const PLACEHOLDER: LollipopVideoProps = {
   grid: "#D1D1D1",
   subjectCountry: "Switzerland",
   compareCountry: "Norway",
+  size: "landscape",
 };
 
 export const RemotionRoot: React.FC = () => (
-  <Composition
-    id="vidy-lollipop-renewables-share-europe"
-    component={LollipopVideo}
-    durationInFrames={LOLLIPOP_TIMING.total}
-    fps={LOLLIPOP_TIMING.fps}
-    width={1080}
-    height={1080}
-    defaultProps={PLACEHOLDER}
-  />
+  <>
+    {EXPORT_SIZE_NAMES.map((name: string) => {
+      const { width, height } = sizeFor(name);
+      return (
+        <Composition
+          key={name}
+          id={`vidy-lollipop-renewables-share-europe-${name}`}
+          component={LollipopVideo}
+          durationInFrames={LOLLIPOP_TIMING.total}
+          fps={LOLLIPOP_TIMING.fps}
+          width={width}
+          height={height}
+          defaultProps={{ ...PLACEHOLDER, size: name }}
+        />
+      );
+    })}
+  </>
 );

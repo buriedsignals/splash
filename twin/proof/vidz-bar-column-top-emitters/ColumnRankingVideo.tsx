@@ -50,20 +50,132 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column. Same
+// 12 CSS px rule, different reading distance; that split is exactly what the table is per-craft for.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size at all is a fact about the type, not about the craft, so
+// there is one copy of it and the video genre reads the same one the static genre does. Named here
+// rather than left implicit: `twin-chart-video` carries no `type-at-size.mjs` of its own, and
+// adding a second copy of a table whose contents are measured aspect ranges would be the drift the
+// carried-table discipline exists to prevent.
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { COLUMN_RANKING_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 20, fontWeight: 400 };
-const AXIS_TICK = { fontSize: 18, fontWeight: 500 };
-const AXIS_TITLE = { fontSize: 19, fontWeight: 500 };
-const VALUE_LABEL = { fontSize: 21, fontWeight: 600 };
-const CATEGORY_MAX = { fontSize: 19, fontWeight: 500 };
-const CATEGORY_MIN_SIZE = 13;
-const CONCLUSION = { fontSize: 22, fontWeight: 600, lead: 27 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "column";
+
+/**
+ * THE 900×560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point. The frame is `sizeFor(size)`'s,
+ * and `size` is the decision gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`
+ * and carried onto the composition by `Root.tsx`. Before this the size was stated three times as
+ * literals — here, in `Root.tsx`'s `width`/`height`, and in the prose of the brief — and all three
+ * agreed by construction, so a journalist who pinned `portrait` still got 1080 × 1080.
+ *
+ * The numbers below are the shipped 1080-frame values divided by that frame's own 1.20 over the
+ * 900-wide convention every other craft skill's base is written at, so the smallest token lands at
+ * 12 — the value `twin-chart-video/scripts/sizes.mjs` derives every row's `typeScale` from
+ * (30 / 12 = 2.5 at landscape, 36 / 12 = 3.0 at the two phone frames). `CATEGORY_MIN_SIZE` is that
+ * floor exactly: `fitCategorySize` may shrink a name down to it and no further, so a name that will
+ * not fit reaches the refusal below instead of being drawn under the legibility floor.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts — the probe's sharpest finding
+ * (`proof/static-carbon-footprint-spread/probe/VERDICT.md`): scaling the type and leaving the bare
+ * literals in the layout arithmetic collides the header into itself. `PAD` is the one exception,
+ * because a frame's margin is proportional to the CANVAS and not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 32, fontWeight: 700, lead: 40 },
+  SOURCE: { fontSize: 17, fontWeight: 400 },
+  AXIS_TICK: { fontSize: 15, fontWeight: 500 },
+  AXIS_TITLE: { fontSize: 16, fontWeight: 500 },
+  VALUE_LABEL: { fontSize: 18, fontWeight: 600 },
+  CATEGORY_MAX: { fontSize: 16, fontWeight: 500 },
+  CATEGORY_MIN_SIZE: 12,
+  CONCLUSION: { fontSize: 18, fontWeight: 600, lead: 23 },
+  /** Air under the last title line, before the axis title. */
+  TITLE_TO_AXIS_TITLE: 34,
+  /** Air between the axis title and the tallest column's value label. */
+  AXIS_TITLE_TO_PLOT: 14,
+  /** Air under the value label, before the plot's own top. */
+  VALUE_LABEL_TO_PLOT: 10,
+  /** Air under the baseline, before the category strip. */
+  BASELINE_TO_CATEGORY: 12,
+  /** Air under the category strip, before the credit block. */
+  CATEGORY_TO_SOURCE: 8,
+  /** The gap between a tick label and the plot's left edge. */
+  TICK_INSET: 10,
+  /** Added to the widest tick label to make the left gutter. */
+  TICK_GUTTER_AIR: 12,
+  /** The air a category name keeps inside its own band. */
+  CATEGORY_BAND_AIR: 5,
+  /** How far above its column's top a value label sits. */
+  VALUE_LABEL_DROP: 8,
+  /** How far the subject's highlight wash rises above the plot. */
+  HIGHLIGHT_RISE: 7,
+  /** The bracket's turned-down ends, and its clearance under the value label it must not strike. */
+  BRACKET_TICK: 8,
+  BRACKET_CLEARANCE: 12,
+  /** Where the conclusion's words start, right of the summed columns, and their lift off the rule. */
+  CONCLUSION_INSET: 14,
+  CONCLUSION_LIFT: 5,
+  /** Ink widths. A stroke is proportional to the canvas the way a gap is, so it scales too. */
+  GRID_STROKE: 1,
+  BASELINE_STROKE: 2,
+  BRACKET_STROKE: 1.6,
+  RULE_STROKE: 2,
+};
+
+/**
+ * The base, at the size's own multiplier. One integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS_TICK: f(BASE.AXIS_TICK) as typeof BASE.AXIS_TICK,
+    AXIS_TITLE: f(BASE.AXIS_TITLE) as typeof BASE.AXIS_TITLE,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    CATEGORY_MAX: f(BASE.CATEGORY_MAX) as typeof BASE.CATEGORY_MAX,
+    CATEGORY_MIN_SIZE: sp(BASE.CATEGORY_MIN_SIZE),
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    TITLE_TO_AXIS_TITLE: sp(BASE.TITLE_TO_AXIS_TITLE),
+    AXIS_TITLE_TO_PLOT: sp(BASE.AXIS_TITLE_TO_PLOT),
+    VALUE_LABEL_TO_PLOT: sp(BASE.VALUE_LABEL_TO_PLOT),
+    BASELINE_TO_CATEGORY: sp(BASE.BASELINE_TO_CATEGORY),
+    CATEGORY_TO_SOURCE: sp(BASE.CATEGORY_TO_SOURCE),
+    TICK_INSET: sp(BASE.TICK_INSET),
+    TICK_GUTTER_AIR: sp(BASE.TICK_GUTTER_AIR),
+    CATEGORY_BAND_AIR: sp(BASE.CATEGORY_BAND_AIR),
+    VALUE_LABEL_DROP: sp(BASE.VALUE_LABEL_DROP),
+    HIGHLIGHT_RISE: sp(BASE.HIGHLIGHT_RISE),
+    BRACKET_TICK: sp(BASE.BRACKET_TICK),
+    BRACKET_CLEARANCE: sp(BASE.BRACKET_CLEARANCE),
+    CONCLUSION_INSET: sp(BASE.CONCLUSION_INSET),
+    CONCLUSION_LIFT: sp(BASE.CONCLUSION_LIFT),
+    GRID_STROKE: Math.max(1, sp(BASE.GRID_STROKE)),
+    BASELINE_STROKE: Math.max(1, sp(BASE.BASELINE_STROKE)),
+    BRACKET_STROKE: Math.max(1, sp(BASE.BRACKET_STROKE)),
+    RULE_STROKE: Math.max(1, sp(BASE.RULE_STROKE)),
+  };
+}
 
 /** Share of the band a column occupies. The sheet asks for a gap of a fifth to a third of the
  *  band; 0.62 of the band leaves 0.38 as gap, inside that range on the generous side. */
@@ -127,17 +239,26 @@ export function en(value: number, decimals = 2): string {
 export function fitCategorySize(
   countries: string[],
   bandWidth: number,
+  {
+    max,
+    min,
+    air,
+    fontWeight,
+  }: { max: number; min: number; air: number; fontWeight: number },
 ): number {
-  for (let size = CATEGORY_MAX.fontSize; size > CATEGORY_MIN_SIZE; size--) {
-    const font = { fontSize: size, fontWeight: CATEGORY_MAX.fontWeight };
+  for (let size = max; size > min; size--) {
+    const font = { fontSize: size, fontWeight };
     const longestWord = Math.max(
       ...countries.flatMap((c) =>
         c.split(/\s+/).map((w) => measureText(w, font)),
       ),
     );
-    if (longestWord <= bandWidth - 6) return size;
+    if (longestWord <= bandWidth - air) return size;
   }
-  return CATEGORY_MIN_SIZE;
+  // The floor, not a smaller number. `min` is the size's own legibility floor scaled — a name that
+  // does not fit at it does not get drawn smaller, it reaches `assertTypeFloor` below, which is the
+  // whole reason the ladder in `type-at-size.mjs` contains no rung that shrinks type.
+  return min;
 }
 
 /**
@@ -219,6 +340,8 @@ export type ColumnRankingVideoProps = {
   ink: string;
   muted: string;
   grid: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -237,11 +360,40 @@ export function ColumnRankingVideo({
   ink,
   muted,
   grid,
+  size,
   timing = COLUMN_RANKING_TIMING,
 }: ColumnRankingVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  // `sizeFor` throws naming all three rather than defaulting, so a size nobody exports cannot draw.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE, AND IN WHAT FORM — before anything is measured.
+  //
+  // A column chart's category axis is nominal, so `formForSize` answers `transpose` at a tall or
+  // square frame: rows running down the frame, every name horizontal on one line. That is not a
+  // rescaling of what this file draws, it is a different drawing, and this beat does not carry it.
+  // So the composition EXISTS at all three sizes — a size with no composition cannot be rendered at
+  // all, whatever a component does — and the two it cannot draw refuse here, loudly, naming the
+  // rung and the size that works. A silent stretch is the failure the probe proved no counter in
+  // this project can see: zero clipped runs, zero collisions, and a destroyed shape.
+  const form = formForSize(TYPE, size);
+  if (form.verdict === "refuse")
+    throw new Error(
+      `vidz-bar-column-top-emitters: ${TYPE} cannot be drawn at ${size}. ${form.reason}`,
+    );
+  if (form.verdict === "transpose")
+    throw new Error(
+      `vidz-bar-column-top-emitters draws the COLUMN form, and ${size} asks for its twin form ` +
+        `instead — ladder rung R0. ${form.reason}\nCost of taking it: ${form.cost}\n` +
+        `Drawing ten vertical columns into a ${width}x${height} frame would stretch every one of ` +
+        `them without clipping anything or colliding with anything, which is the one defect no ` +
+        `counter here can see. This beat ships at landscape; the row form is a redraw, not a flag.`,
+    );
 
   if (data.length < 3)
     throw new Error(`need at least three columns, got ${data.length}`);
@@ -256,19 +408,31 @@ export function ColumnRankingVideo({
     );
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
-  const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceLead = SOURCE.fontSize * 1.5;
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on `height - PAD`, the
-  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
-  // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
+  // The top and bottom the content hangs off are the STAGE's where the platform reserves part of
+  // the frame (portrait today) and the frame's margin otherwise, so nothing here branches on size.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
+  const titleLines = wrap(title, width - PAD * 2, T.TITLE);
+  const titleBaseline = contentTop + T.TITLE.fontSize;
+  const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
+  const sourceLead = Math.round(T.SOURCE.fontSize * 1.5);
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
+  // hangs off at the top, on the same x. It stays inside the furniture opacity group, so no timing
+  // contract moves. See twin-chart-beat/references/static-discipline.md, "The source on the frame's
+  // bottom margin". At portrait that bottom is the stage's: below it sit the platform's caption and
+  // progress bar, and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   // The axis title keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const axisTitleBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
+    titleBaseline +
+    (titleLines.length - 1) * T.TITLE.lead +
+    T.TITLE_TO_AXIS_TITLE;
 
   // The left gutter is the widest tick label actually present, measured — never a constant.
   const provisionalTicks = scaleLinear()
@@ -276,36 +440,87 @@ export function ColumnRankingVideo({
     .nice()
     .ticks(6);
   const tickGutter =
-    Math.max(...provisionalTicks.map((t) => measureText(en(t, 0), AXIS_TICK))) +
-    14;
+    Math.max(
+      ...provisionalTicks.map((t) => measureText(en(t, 0), T.AXIS_TICK)),
+    ) + T.TICK_GUTTER_AIR;
 
   const provisionalBand = (width - PAD * 2 - tickGutter) / data.length;
   const categorySize = fitCategorySize(
     data.map((c) => c.country),
     provisionalBand,
+    {
+      max: T.CATEGORY_MAX.fontSize,
+      min: T.CATEGORY_MIN_SIZE,
+      air: T.CATEGORY_BAND_AIR,
+      fontWeight: T.CATEGORY_MAX.fontWeight,
+    },
   );
   const categoryFont = {
     fontSize: categorySize,
-    fontWeight: CATEGORY_MAX.fontWeight,
+    fontWeight: T.CATEGORY_MAX.fontWeight,
   };
+  // `fitCategorySize` stops AT the floor rather than below it, so a name that still does not fit is
+  // a name that would be drawn over its neighbour. Refused here with the ladder named, because the
+  // fix is fewer columns (rung R8) or the row form (rung R0) — never smaller type.
+  const widestWord = Math.max(
+    ...data.flatMap((c) =>
+      c.country.split(/\s+/).map((w) => measureText(w, categoryFont)),
+    ),
+  );
+  if (widestWord > provisionalBand - T.CATEGORY_BAND_AIR)
+    throw new Error(
+      `vidz-bar-column-top-emitters at ${size}: the widest category word measures ` +
+        `${widestWord.toFixed(0)}px at the ${categorySize}px legibility floor, and a band is only ` +
+        `${provisionalBand.toFixed(0)}px wide. Nothing here makes type smaller — run the ladder: ` +
+        `fewer columns (R8, and say so) or the row form (R0).`,
+    );
   const categoryLines = data.map((c) =>
-    wrap(c.country, provisionalBand - 6, categoryFont),
+    wrap(c.country, provisionalBand - T.CATEGORY_BAND_AIR, categoryFont),
   );
   const categoryRows = Math.max(...categoryLines.map((l) => l.length));
-  const categoryLead = categorySize * 1.25;
+  const categoryLead = Math.round(categorySize * 1.25);
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — including
+  // `categorySize`, which is measured rather than declared and is the one a multiplier check would
+  // miss. The guard reads `font-size="…"` out of markup because that is what it reads on the static
+  // side; a video composition's markup only exists inside the browser Remotion drives, so the sizes
+  // are handed to it in the same form they will be written in. It is the values that are checked,
+  // and they are the values the JSX below carries.
+  assertTypeFloor(
+    [
+      T.TITLE.fontSize,
+      T.SOURCE.fontSize,
+      T.AXIS_TICK.fontSize,
+      T.AXIS_TITLE.fontSize,
+      T.VALUE_LABEL.fontSize,
+      T.CONCLUSION.fontSize,
+      categorySize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidz-bar-column-top-emitters at ${size}` },
+  );
 
   const padding = {
     // Headroom for the value label that sits above the tallest column.
-    top: axisTitleBaseline + 16 + VALUE_LABEL.fontSize + 12,
+    top:
+      axisTitleBaseline +
+      T.AXIS_TITLE_TO_PLOT +
+      T.VALUE_LABEL.fontSize +
+      T.VALUE_LABEL_TO_PLOT,
     right: PAD,
     // Grown by the credit block's own height plus clear air, so the category strip ends above it.
+    // Measured DOWN FROM the credit's own baseline rather than up from the frame's foot, so the
+    // portrait stage moves the plot with it instead of leaving it under the platform's caption.
     bottom:
-      PAD +
-      14 +
+      height -
+      sourceBottom +
+      T.BASELINE_TO_CATEGORY +
       categoryRows * categoryLead +
       (sourceLines.length - 1) * sourceLead +
-      SOURCE.fontSize +
-      10,
+      T.SOURCE.fontSize +
+      T.CATEGORY_TO_SOURCE,
     left: PAD + tickGutter,
   };
 
@@ -320,11 +535,13 @@ export function ColumnRankingVideo({
   // occupies from `top - 10 - fontSize` to `top - 10`, so the bracket goes above all of it. Measured
   // against the label's own box, never a constant — the first render put it at −22 and the bracket
   // struck through "4.90".
-  const bracketY = summedTallest - (VALUE_LABEL.fontSize + 10 + 14);
+  const bracketY =
+    summedTallest -
+    (T.VALUE_LABEL.fontSize + T.VALUE_LABEL_DROP + T.BRACKET_CLEARANCE);
   const ruleY = g.y(combinedTotal);
-  const conclusionTextX = summedRight + 16;
+  const conclusionTextX = summedRight + T.CONCLUSION_INSET;
   const conclusionLines = [
-    ...wrap(combinedLabel, g.plot.right - conclusionTextX, CONCLUSION),
+    ...wrap(combinedLabel, g.plot.right - conclusionTextX, T.CONCLUSION),
     `${en(combinedTotal)} ${unit}`,
   ];
 
@@ -424,10 +641,10 @@ export function ColumnRankingVideo({
           <text
             key={text}
             x={PAD}
-            y={titleBaseline + i * TITLE.lead}
+            y={titleBaseline + i * T.TITLE.lead}
             fill={ink}
-            fontSize={TITLE.fontSize}
-            fontWeight={TITLE.fontWeight}
+            fontSize={T.TITLE.fontSize}
+            fontWeight={T.TITLE.fontWeight}
           >
             {text}
           </text>
@@ -438,7 +655,7 @@ export function ColumnRankingVideo({
             x={PAD}
             y={sourceBaseline + i * sourceLead}
             fill={muted}
-            fontSize={SOURCE.fontSize}
+            fontSize={T.SOURCE.fontSize}
           >
             {text}
           </text>
@@ -447,8 +664,8 @@ export function ColumnRankingVideo({
           x={PAD}
           y={axisTitleBaseline}
           fill={muted}
-          fontSize={AXIS_TITLE.fontSize}
-          fontWeight={AXIS_TITLE.fontWeight}
+          fontSize={T.AXIS_TITLE.fontSize}
+          fontWeight={T.AXIS_TITLE.fontWeight}
         >
           {axisTitle}
         </text>
@@ -467,14 +684,14 @@ export function ColumnRankingVideo({
                 y1={g.y(t)}
                 y2={g.y(t)}
                 stroke={grid}
-                strokeWidth={1}
+                strokeWidth={T.GRID_STROKE}
               />
               <text
-                x={g.plot.left - 12}
-                y={g.y(t) + AXIS_TICK.fontSize * 0.34}
+                x={g.plot.left - T.TICK_INSET}
+                y={g.y(t) + T.AXIS_TICK.fontSize * 0.34}
                 fill={muted}
-                fontSize={AXIS_TICK.fontSize}
-                fontWeight={AXIS_TICK.fontWeight}
+                fontSize={T.AXIS_TICK.fontSize}
+                fontWeight={T.AXIS_TICK.fontWeight}
                 textAnchor="end"
               >
                 {en(t, 0)}
@@ -492,14 +709,14 @@ export function ColumnRankingVideo({
             y1={g.plot.bottom}
             y2={g.plot.bottom}
             stroke={ink}
-            strokeWidth={2.5}
+            strokeWidth={T.BASELINE_STROKE}
           />
           <text
-            x={g.plot.left - 12}
-            y={g.plot.bottom + AXIS_TICK.fontSize * 0.34}
+            x={g.plot.left - T.TICK_INSET}
+            y={g.plot.bottom + T.AXIS_TICK.fontSize * 0.34}
             fill={muted}
-            fontSize={AXIS_TICK.fontSize}
-            fontWeight={AXIS_TICK.fontWeight}
+            fontSize={T.AXIS_TICK.fontSize}
+            fontWeight={T.AXIS_TICK.fontWeight}
             textAnchor="end"
             opacity={referenceProgress}
           >
@@ -512,9 +729,9 @@ export function ColumnRankingVideo({
       {highlightOpacity > 0 ? (
         <rect
           x={g.bars[subjectIndex].centre - g.band / 2}
-          y={g.plot.top - 8}
+          y={g.plot.top - T.HIGHLIGHT_RISE}
           width={g.band}
-          height={g.plot.bottom - g.plot.top + 8}
+          height={g.plot.bottom - g.plot.top + T.HIGHLIGHT_RISE}
           fill={accent}
           opacity={highlightOpacity}
         />
@@ -541,10 +758,10 @@ export function ColumnRankingVideo({
             />
             <text
               x={b.centre}
-              y={top - 10}
+              y={top - T.VALUE_LABEL_DROP}
               fill={ink}
-              fontSize={VALUE_LABEL.fontSize}
-              fontWeight={VALUE_LABEL.fontWeight}
+              fontSize={T.VALUE_LABEL.fontSize}
+              fontWeight={T.VALUE_LABEL.fontWeight}
               textAnchor="middle"
               opacity={valueOpacity[i]}
             >
@@ -560,7 +777,7 @@ export function ColumnRankingVideo({
               <text
                 key={text}
                 x={b.centre}
-                y={g.plot.bottom + 14 + categorySize + line * categoryLead}
+                y={g.plot.bottom + T.BASELINE_TO_CATEGORY + categorySize + line * categoryLead}
                 fill={isSubject && emphasis > 0.5 ? accent : ink}
                 fontSize={categorySize}
                 fontWeight={
@@ -582,10 +799,10 @@ export function ColumnRankingVideo({
       {bracketOpacity > 0 ? (
         <g opacity={bracketOpacity}>
           <path
-            d={`M ${summedLeft} ${bracketY + 10} L ${summedLeft} ${bracketY} L ${summedRight} ${bracketY} L ${summedRight} ${bracketY + 10}`}
+            d={`M ${summedLeft} ${bracketY + T.BRACKET_TICK} L ${summedLeft} ${bracketY} L ${summedRight} ${bracketY} L ${summedRight} ${bracketY + T.BRACKET_TICK}`}
             fill="none"
             stroke={muted}
-            strokeWidth={2}
+            strokeWidth={T.BRACKET_STROKE}
           />
           <line
             x1={(summedLeft + summedRight) / 2}
@@ -593,8 +810,8 @@ export function ColumnRankingVideo({
             y1={bracketY}
             y2={interpolate(ruleGrowth, [0, 1], [bracketY, ruleY])}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="6 6"
+            strokeWidth={T.BRACKET_STROKE}
+            strokeDasharray={`${T.BRACKET_TICK} ${T.BRACKET_TICK}`}
           />
         </g>
       ) : null}
@@ -610,8 +827,8 @@ export function ColumnRankingVideo({
           y1={ruleY}
           y2={ruleY}
           stroke={ink}
-          strokeWidth={2.5}
-          strokeDasharray="10 7"
+          strokeWidth={T.RULE_STROKE}
+          strokeDasharray={`${T.CONCLUSION_INSET} ${T.BRACKET_CLEARANCE}`}
           opacity={bracketOpacity}
         />
       ) : null}
@@ -620,10 +837,10 @@ export function ColumnRankingVideo({
             <text
               key={text}
               x={conclusionTextX}
-              y={ruleY - 6 + i * CONCLUSION.lead}
+              y={ruleY - T.CONCLUSION_LIFT + i * T.CONCLUSION.lead}
               fill={ink}
-              fontSize={CONCLUSION.fontSize}
-              fontWeight={CONCLUSION.fontWeight}
+              fontSize={T.CONCLUSION.fontSize}
+              fontWeight={T.CONCLUSION.fontWeight}
               opacity={conclusionTextOpacity}
             >
               {text}

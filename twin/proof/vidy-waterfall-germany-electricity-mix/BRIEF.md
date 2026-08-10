@@ -1,3 +1,8 @@
+---
+size: landscape
+type: waterfall
+---
+
 # Beat — Germany's electricity generation fell as coal and nuclear losses outpaced renewable growth, 2010–2023
 
 **Proves:** between 2010 and 2023, Germany's total electricity generation *fell* by 117.49 TWh

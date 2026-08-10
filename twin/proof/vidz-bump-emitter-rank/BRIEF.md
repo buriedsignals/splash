@@ -1,3 +1,8 @@
+---
+size: landscape
+type: bump
+---
+
 # Beat — India has risen from eighth to third among the world's biggest CO₂ emitters
 
 **Proves:** between 1990 and 2024 India moved from eighth to third in the world ranking of annual

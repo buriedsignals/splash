@@ -71,26 +71,127 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
+// genres read one copy. A histogram's x is a CONTINUUM, so it has no twin form to transpose into;
+// what it has is a measured aspect range, and outside it the distribution stops being a shape.
+import {
+  assertPlotAspect,
+  assertTypeMayEnter,
+} from "#shared/twin-chart-beat/type-at-size.mjs";
 import { HISTOGRAM_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 20, fontWeight: 400 };
-const AXIS_NOTE = { fontSize: 20, fontWeight: 600 };
-const TICK_LABEL = { fontSize: 19, fontWeight: 400 };
-export const NOTE = { fontSize: 20, fontWeight: 400 };
-const VALUE_LABEL = { fontSize: 26, fontWeight: 700 };
-const CONCLUSION_LABEL = { fontSize: 24, fontWeight: 600 };
-/** The median rule's weight and dash. Its INK is deliberately NOT here: it is derived from the
- *  marks the rule is drawn over, every render, which is the whole point of `annotation-ink.mjs`. */
-const MEDIAN_RULE = { width: 2, dash: "8 6" };
-/** The air between the median caption's baseline and the top of the plot. It is what keeps the
- *  caption on the page rather than on a bar, and the assertion below measures it rather than
- *  trusting it. */
-const MEDIAN_CAPTION_LIFT = 14;
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "histogram";
+
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
+ * gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs` and carried onto the
+ * composition by `Root.tsx`. The shipped values were 1080-frame tuning; they are divided by that
+ * frame's own 1.20 over the 900-wide convention, so the smallest token lands at 12 — the number
+ * every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts. `PAD` is the one exception: a frame's
+ * margin is proportional to the CANVAS, not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  SOURCE: { fontSize: 13, fontWeight: 400 },
+  AXIS_NOTE: { fontSize: 13, fontWeight: 600 },
+  TICK_LABEL: { fontSize: 12, fontWeight: 400 },
+  NOTE: { fontSize: 13, fontWeight: 400 },
+  VALUE_LABEL: { fontSize: 17, fontWeight: 700 },
+  CONCLUSION_LABEL: { fontSize: 15, fontWeight: 600 },
+  /** The median rule's weight and dash. Its INK is deliberately NOT here: it is derived from the
+   *  marks the rule is drawn over, every render, which is the whole point of `annotation-ink.mjs`. */
+  MEDIAN_RULE: { width: 1.5, dash: 5 },
+  /** The air between the median caption's baseline and the top of the plot. It is what keeps the
+   *  caption on the page rather than on a bar, and the assertion below measures it rather than
+   *  trusting it. */
+  MEDIAN_CAPTION_LIFT: 9,
+  /** Air under the last title line, before the axis note. */
+  TITLE_TO_AXIS_NOTE: 28,
+  /** Air under the axis note, before the plot. */
+  AXIS_NOTE_TO_PLOT: 26,
+  /** The plot's own side air, inside the frame margin. */
+  PLOT_SIDE_AIR: 5,
+  /** The band under the axis holding the tick row and the unit line. */
+  UNDER_AXIS_BAND: 35,
+  /** Air between that band and the credit's ink. */
+  BAND_TO_SOURCE: 17,
+  /** The drop from the axis to a tick label's own row. */
+  TICK_DROP: 5,
+  /** Air between the tick row and the unit line under it. */
+  TICK_TO_UNIT: 6,
+  /** How far above the subject bar its two labels sit. */
+  SUBJECT_LABEL_LIFT: 11,
+  /** Ink widths. A stroke is proportional to the canvas the way a gap is, so it scales too. */
+  AXIS_STROKE: 1.5,
+  TICK_STROKE: 1.2,
+  SUBJECT_STROKE: 2,
+};
+
+/**
+ * The base, at the size's own multiplier — one integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+export function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS_NOTE: f(BASE.AXIS_NOTE) as typeof BASE.AXIS_NOTE,
+    TICK_LABEL: f(BASE.TICK_LABEL) as typeof BASE.TICK_LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    CONCLUSION_LABEL: f(BASE.CONCLUSION_LABEL) as typeof BASE.CONCLUSION_LABEL,
+    MEDIAN_RULE: {
+      width: Math.max(1, sp(BASE.MEDIAN_RULE.width)),
+      dash: `${sp(BASE.MEDIAN_RULE.dash + 1)} ${sp(BASE.MEDIAN_RULE.dash - 1)}`,
+    },
+    MEDIAN_CAPTION_LIFT: sp(BASE.MEDIAN_CAPTION_LIFT),
+    TITLE_TO_AXIS_NOTE: sp(BASE.TITLE_TO_AXIS_NOTE),
+    AXIS_NOTE_TO_PLOT: sp(BASE.AXIS_NOTE_TO_PLOT),
+    PLOT_SIDE_AIR: sp(BASE.PLOT_SIDE_AIR),
+    UNDER_AXIS_BAND: sp(BASE.UNDER_AXIS_BAND),
+    BAND_TO_SOURCE: sp(BASE.BAND_TO_SOURCE),
+    TICK_DROP: sp(BASE.TICK_DROP),
+    TICK_TO_UNIT: sp(BASE.TICK_TO_UNIT),
+    SUBJECT_LABEL_LIFT: sp(BASE.SUBJECT_LABEL_LIFT),
+    AXIS_STROKE: Math.max(1, sp(BASE.AXIS_STROKE)),
+    TICK_STROKE: Math.max(1, sp(BASE.TICK_STROKE)),
+    SUBJECT_STROKE: Math.max(1, sp(BASE.SUBJECT_STROKE)),
+  };
+}
+
+/**
+ * The median caption's own font AT A GIVEN SIZE, for `render.mjs`'s contrast assertion.
+ *
+ * It used to export the bare `NOTE` constant, which was a 1080-frame number: the WCAG floor that
+ * `textContrastFloor` picks depends on the size the text is actually DRAWN at (1.4.3's large-text
+ * threshold), so a contrast claim made against an unscaled token is a claim about a render that no
+ * longer happens. The floor is now asked for at the size this beat ships at.
+ */
+export function noteFor(size: string) {
+  return tokens(sizeFor(size).typeScale).NOTE;
+}
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
@@ -236,6 +337,8 @@ export type HistogramVideoProps = {
   domainStart: number;
   domainEnd: number;
   subjectBinStart: number; // which bin's left edge is the finding, e.g. 75
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -256,38 +359,100 @@ export function HistogramVideo({
   domainStart,
   domainEnd,
   subjectBinStart,
+  size,
   timing = HISTOGRAM_TIMING,
 }: HistogramVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    AXIS_NOTE,
+    TICK_LABEL,
+    NOTE,
+    VALUE_LABEL,
+    CONCLUSION_LABEL,
+    MEDIAN_RULE,
+    MEDIAN_CAPTION_LIFT,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL, before anything is measured. A histogram has no
+  // twin form — transposing a continuum onto a band scale would lie about it — so an unmeasured
+  // frame is refused, and a measured one is clamped by `assertPlotAspect` further down.
+  const form = assertTypeMayEnter(TYPE, size, {
+    what: "vidy-histogram-life-expectancy",
+  });
 
   if (readings.length < 1) throw new Error("need at least one reading");
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits,
   // so nothing shifts when the reveal or the subject bin arrives.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
-  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
-  // opacity group, so no timing contract moves. See
+  const titleBaseline = contentTop + TITLE.fontSize;
+  // THE CREDIT WRAPS. It was one unwrapped `<text>` that happened to fit a 1080 frame at 20px; at
+  // the size table's own landscape scale it ran off the right edge and the last words of the source
+  // — "237 countries and territories" — left the frame. A credit that is partly outside the frame
+  // is an attribution failure, so it is measured and wrapped like every other run here.
+  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  const sourceLead = Math.round(SOURCE.fontSize * 1.5);
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the same edge the title hangs off at the top, on
+  // the same x. It stays inside the furniture opacity group, so no timing contract moves. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD;
+  // At portrait that bottom is the STAGE's: below it sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure rather than a cosmetic one.
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   // The axis note keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const axisNoteBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_AXIS_NOTE;
 
   const padding = {
-    top: axisNoteBaseline + 40,
-    right: PAD + 8,
-    // Room for tick labels + the unit line below the axis, AND for the credit under them. 26px of
-    // air rather than the family's 10: this beat draws TWO rows under the axis (ticks, then the
-    // unit line), and the first render left the unit line's descender about three pixels off the
-    // credit's ink.
-    bottom: PAD + 56 + SOURCE.fontSize + 26,
-    left: PAD + 8,
+    top: axisNoteBaseline + T.AXIS_NOTE_TO_PLOT,
+    right: PAD + T.PLOT_SIDE_AIR,
+    // Room for tick labels + the unit line below the axis, AND for the credit under them. Measured
+    // DOWN FROM the credit's own baseline rather than up from the frame's foot, so the portrait
+    // stage moves the plot with it instead of leaving it under the platform's caption.
+    bottom:
+      height -
+      sourceBottom +
+      T.UNDER_AXIS_BAND +
+      (sourceLines.length - 1) * sourceLead +
+      SOURCE.fontSize +
+      T.BAND_TO_SOURCE,
+    left: PAD + T.PLOT_SIDE_AIR,
   };
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor. The guard reads
+  // `font-size="…"` out of markup because that is what it reads on the static side; a video
+  // composition's markup only exists inside the browser Remotion drives, so the sizes are handed to
+  // it in the form they will be written in. It is the values that are checked.
+  assertTypeFloor(
+    [
+      TITLE.fontSize,
+      SOURCE.fontSize,
+      AXIS_NOTE.fontSize,
+      TICK_LABEL.fontSize,
+      NOTE.fontSize,
+      VALUE_LABEL.fontSize,
+      CONCLUSION_LABEL.fontSize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-histogram-life-expectancy at ${size}` },
+  );
 
   const g = histogramGeometry(readings, {
     width,
@@ -296,6 +461,13 @@ export function HistogramVideo({
     binWidth,
     domainStart,
     domainEnd,
+  });
+  // THE PLOT'S OWN SHAPE, refused before anything is drawn. `proof/portrait-aspect-probe/` took
+  // exactly this chart type from 2.35:1 to 0.54:1 and turned a right-skewed distribution into one
+  // enormous column beside nine slivers — with zero clipped runs and zero collisions. A
+  // distribution's argument IS a shape, and this is the only assertion in the project that sees it.
+  assertPlotAspect(g.plot, TYPE, size, {
+    what: `vidy-histogram-life-expectancy at ${size} (${form.verdict})`,
   });
 
   const subjectIndex = g.bars.findIndex((b) => b.start === subjectBinStart);
@@ -354,11 +526,41 @@ export function HistogramVideo({
         "beat's own ground, bar fill and accent, and the rule cannot be drawn in a colour nobody chose",
     );
 
+  // The subject bin's two labels — the short count during `subject`, the sentence during
+  // `conclusion` — share one baseline above the subject bar. Computed HERE, above the caption,
+  // because the caption's own placement now depends on this box.
+  const valueLabel = `${subjectBar.count}`;
+  const conclusionLabel = `${subjectBar.count} countries, ${subjectBar.start}–${subjectBar.end} years — the most of any span`;
+  const conclusionLabelWidth = measureText(conclusionLabel, CONCLUSION_LABEL);
+  const conclusionX = Math.min(
+    subjectBar.x1,
+    g.plot.right - conclusionLabelWidth,
+  );
+  const conclusionBaseline = subjectBar.yTop - T.SUBJECT_LABEL_LIFT;
+
   // The caption is a POSITION decision before it is a colour one. It is drawn ABOVE `plot.top`,
   // where the only thing under it is the page — which is what makes `muted` legitimate here while
   // the rule below it cannot use `muted` at all. If a future layout drops it into the plot, this
   // throws with the number that says so instead of quietly printing grey on grey.
-  const captionBaseline = g.plot.top - MEDIAN_CAPTION_LIFT;
+  //
+  // AND IT CLEARS THE SENTENCE. Both runs live in the strip above the subject bar, and how much
+  // strip there is depends on the plot's height — so at 1080 x 1080 they were 110px apart and at
+  // the table's landscape frame they overlapped, printing "Median: 75.3 years" through "65
+  // countries, 75–80 years". The clearance is derived from the two boxes rather than tuned: they
+  // are compared where they actually are, and the caption is lifted by the sentence's own line
+  // height only when its own x range meets the sentence's.
+  const captionWidth = measureText(referenceLabel, NOTE);
+  const captionMeetsSentence =
+    medianX + captionWidth / 2 > conclusionX &&
+    medianX - captionWidth / 2 < conclusionX + conclusionLabelWidth;
+  const captionBaseline = captionMeetsSentence
+    ? Math.min(
+        g.plot.top - MEDIAN_CAPTION_LIFT,
+        conclusionBaseline -
+          CONCLUSION_LABEL.fontSize -
+          MEDIAN_CAPTION_LIFT,
+      )
+    : g.plot.top - MEDIAN_CAPTION_LIFT;
   if (captionBaseline + NOTE.fontSize * 0.25 > g.plot.top)
     throw new Error(
       `the median caption's baseline (${captionBaseline.toFixed(1)}) puts its descender inside the ` +
@@ -396,14 +598,6 @@ export function HistogramVideo({
     easing: Easing.out(Easing.cubic),
   });
 
-  const valueLabel = `${subjectBar.count}`;
-  const conclusionLabel = `${subjectBar.count} countries, ${subjectBar.start}–${subjectBar.end} years — the most of any span`;
-  const conclusionLabelWidth = measureText(conclusionLabel, CONCLUSION_LABEL);
-  const conclusionX = Math.min(
-    subjectBar.x1,
-    g.plot.right - conclusionLabelWidth,
-  );
-
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -427,14 +621,17 @@ export function HistogramVideo({
             {text}
           </text>
         ))}
-        <text
-          x={PAD}
-          y={sourceBaseline}
-          fill={muted}
-          fontSize={SOURCE.fontSize}
-        >
-          {source}
-        </text>
+        {sourceLines.map((line, i) => (
+          <text
+            key={line}
+            x={PAD}
+            y={sourceBaseline + i * sourceLead}
+            fill={muted}
+            fontSize={SOURCE.fontSize}
+          >
+            {line}
+          </text>
+        ))}
         <text
           x={PAD}
           y={axisNoteBaseline}
@@ -457,7 +654,7 @@ export function HistogramVideo({
           y1={g.plot.bottom}
           y2={g.plot.bottom}
           stroke={muted}
-          strokeWidth={2}
+          strokeWidth={T.AXIS_STROKE}
         />
 
         {/* The bin-edge x-axis: ticks and labels at every bin boundary, in the variable's own
@@ -471,13 +668,13 @@ export function HistogramVideo({
               x1={g.x(b.start)}
               x2={g.x(b.start)}
               y1={g.plot.bottom}
-              y2={g.plot.bottom + 8}
+              y2={g.plot.bottom + T.TICK_DROP}
               stroke={muted}
-              strokeWidth={1.5}
+              strokeWidth={T.TICK_STROKE}
             />
             <text
               x={g.x(b.start)}
-              y={g.plot.bottom + 8 + TICK_LABEL.fontSize}
+              y={g.plot.bottom + T.TICK_DROP + TICK_LABEL.fontSize}
               fill={muted}
               fontSize={TICK_LABEL.fontSize}
               textAnchor="middle"
@@ -490,13 +687,13 @@ export function HistogramVideo({
           x1={g.x(domainEnd)}
           x2={g.x(domainEnd)}
           y1={g.plot.bottom}
-          y2={g.plot.bottom + 8}
+          y2={g.plot.bottom + T.TICK_DROP}
           stroke={muted}
-          strokeWidth={1.5}
+          strokeWidth={T.TICK_STROKE}
         />
         <text
           x={g.x(domainEnd)}
-          y={g.plot.bottom + 8 + TICK_LABEL.fontSize}
+          y={g.plot.bottom + T.TICK_DROP + TICK_LABEL.fontSize}
           fill={muted}
           fontSize={TICK_LABEL.fontSize}
           textAnchor="middle"
@@ -505,7 +702,7 @@ export function HistogramVideo({
         </text>
         <text
           x={(g.plot.left + g.plot.right) / 2}
-          y={g.plot.bottom + 8 + TICK_LABEL.fontSize * 2 + 10}
+          y={g.plot.bottom + T.TICK_DROP + TICK_LABEL.fontSize * 2 + T.TICK_TO_UNIT}
           fill={muted}
           fontSize={NOTE.fontSize}
           textAnchor="middle"
@@ -576,7 +773,7 @@ export function HistogramVideo({
           height={g.plot.bottom - subjectBar.yTop}
           fill="none"
           stroke={accent}
-          strokeWidth={3}
+          strokeWidth={T.SUBJECT_STROKE}
           opacity={subjectOutlineOpacity}
         />
       ) : null}
@@ -592,7 +789,7 @@ export function HistogramVideo({
       {conclusion > 0 ? (
         <text
           x={conclusionX}
-          y={subjectBar.yTop - 16}
+          y={conclusionBaseline}
           fill={ink}
           fontSize={CONCLUSION_LABEL.fontSize}
           fontWeight={CONCLUSION_LABEL.fontWeight}
@@ -603,7 +800,7 @@ export function HistogramVideo({
       ) : (
         <text
           x={(subjectBar.x1 + subjectBar.x2) / 2}
-          y={subjectBar.yTop - 16}
+          y={conclusionBaseline}
           fill={ink}
           fontSize={VALUE_LABEL.fontSize}
           fontWeight={VALUE_LABEL.fontWeight}

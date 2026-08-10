@@ -962,6 +962,7 @@
   "medianValue": 75.3128,
   "referenceLabel": "Median: 75.3 years",
   "medianRuleInk": "#000000",
+  "size": "landscape",
   "ink": "#000000",
   "muted": "#616161",
   "grid": "#d1d1d1"

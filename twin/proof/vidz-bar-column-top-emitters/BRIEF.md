@@ -1,4 +1,14 @@
+---
+size: landscape
+type: column
+---
+
 # Beat — China emits more CO₂ than the next five biggest emitters combined
+
+**Size:** landscape (1920 × 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize` and selects the composition of that name. The beat used to state
+1080 × 1080 in prose while `Root.tsx` and the component each carried the two literals separately,
+so the size gate 2c chose reached nothing.
 
 **Proves:** in 2024 China's territorial CO₂ emissions from fossil fuels and industry, 12.29 billion
 tonnes, exceed the combined emissions of the five countries directly behind it in the world ranking

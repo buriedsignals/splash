@@ -68,28 +68,112 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
+// genres read one copy. A waterfall has no measured aspect range at a tall frame and no twin form —
+// its bars sit on a RUNNING TOTAL, so rotating it would put a cumulative axis on a band scale — so
+// the two phone frames are refused by name rather than drawn at a shape nobody measured.
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { WATERFALL_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 32, fontWeight: 700, lead: 42 };
-const SOURCE = { fontSize: 18, fontWeight: 400 };
-const LEGEND = { fontSize: 19, fontWeight: 600 };
-const CATEGORY_LABEL = { fontSize: 16, fontWeight: 500 };
-const CATEGORY_LABEL_ACCENT = { fontSize: 16, fontWeight: 700 };
-const VALUE_LABEL = { fontSize: 18, fontWeight: 600 };
-const CONCLUSION_LABEL = { fontSize: 19, fontWeight: 700 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "waterfall";
+
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
+ * gate 2c took, read out of this beat's own `BRIEF.md` and carried onto the composition by
+ * `Root.tsx`. The shipped values were 1080-frame tuning, divided so the SMALLEST token lands at 12
+ * — the number every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, including the rotated label's own strip and its width
+ * cap: those are measured in pixels of a frame, and leaving them at 1080 values while the type grew
+ * is exactly how a rotated label starts truncating words it used to fit. `PAD` is the one
+ * exception: a frame's margin is proportional to the CANVAS, not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 21, fontWeight: 700, lead: 28 },
+  SOURCE: { fontSize: 12, fontWeight: 400 },
+  LEGEND: { fontSize: 13, fontWeight: 600 },
+  CATEGORY_LABEL: { fontSize: 12, fontWeight: 500 },
+  CATEGORY_LABEL_ACCENT: { fontSize: 12, fontWeight: 700 },
+  VALUE_LABEL: { fontSize: 12, fontWeight: 600 },
+  CONCLUSION_LABEL: { fontSize: 13, fontWeight: 700 },
+  MAX_CATEGORY_LABEL_WIDTH: 88,
+  CATEGORY_STRIP: 64,
+  LABEL_GAP: 7,
+  CONCLUSION_LEAD: 16,
+  /** Air under the last title line, before the legend. */
+  TITLE_TO_LEGEND: 25,
+  /** Air under the legend, before the plot. */
+  LEGEND_TO_PLOT: 40,
+  /** Air between the category strip and the credit's ink. */
+  STRIP_TO_SOURCE: 7,
+  /** The legend's own dot radius, its gap to the label, and the gap between entries. */
+  LEGEND_DOT_R: 5,
+  LEGEND_DOT_GAP: 15,
+  LEGEND_ENTRY_GAP: 23,
+  /** The drop from the plot's floor to the rotated category strip. */
+  CATEGORY_DROP: 13,
+  /** How far the closing total's outline stands off its own bar. */
+  OUTLINE_STANDOFF: 9,
+  /** Ink widths. A stroke is proportional to the canvas the way a gap is, so it scales too. */
+  CONNECTOR_STROKE: 1.3,
+  OUTLINE_STROKE: 2,
+};
+
+/**
+ * The base, at the size's own multiplier — one integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    LEGEND: f(BASE.LEGEND) as typeof BASE.LEGEND,
+    CATEGORY_LABEL: f(BASE.CATEGORY_LABEL) as typeof BASE.CATEGORY_LABEL,
+    CATEGORY_LABEL_ACCENT: f(
+      BASE.CATEGORY_LABEL_ACCENT,
+    ) as typeof BASE.CATEGORY_LABEL_ACCENT,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    CONCLUSION_LABEL: f(BASE.CONCLUSION_LABEL) as typeof BASE.CONCLUSION_LABEL,
+    MAX_CATEGORY_LABEL_WIDTH: sp(BASE.MAX_CATEGORY_LABEL_WIDTH),
+    CATEGORY_STRIP: sp(BASE.CATEGORY_STRIP),
+    LABEL_GAP: sp(BASE.LABEL_GAP),
+    CONCLUSION_LEAD: sp(BASE.CONCLUSION_LEAD),
+    TITLE_TO_LEGEND: sp(BASE.TITLE_TO_LEGEND),
+    LEGEND_TO_PLOT: sp(BASE.LEGEND_TO_PLOT),
+    STRIP_TO_SOURCE: sp(BASE.STRIP_TO_SOURCE),
+    LEGEND_DOT_R: sp(BASE.LEGEND_DOT_R),
+    LEGEND_DOT_GAP: sp(BASE.LEGEND_DOT_GAP),
+    LEGEND_ENTRY_GAP: sp(BASE.LEGEND_ENTRY_GAP),
+    CATEGORY_DROP: sp(BASE.CATEGORY_DROP),
+    OUTLINE_STANDOFF: sp(BASE.OUTLINE_STANDOFF),
+    CONNECTOR_STROKE: Math.max(1, sp(BASE.CONNECTOR_STROKE)),
+    OUTLINE_STROKE: Math.max(1, sp(BASE.OUTLINE_STROKE)),
+  };
+}
 
 /** Category labels rotate to fit ten bars in the available width — the type doctrine's own
  *  guidance ("truncate from the end... give the rotated label a bounded strip of vertical room"). */
 const ROTATION_DEG = -34;
-const MAX_CATEGORY_LABEL_WIDTH = 132;
-const CATEGORY_STRIP = 96;
-const LABEL_GAP = 10;
-/** Leading between the conclusion's two lines. */
-const CONCLUSION_LEAD = 24;
 /** Where inside the `conclusion` window the base value label has finished leaving and the
  *  conclusion block starts arriving — they never share a frame. */
 const CONCLUSION_HANDOVER = 0.5;
@@ -254,6 +338,8 @@ export type WaterfallVideoProps = {
   /** ["Increase", "Decrease", "Total"] — a waterfall needs three swatches, a dumbbell only two. */
   legendLabels: [string, string, string];
   unit: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -269,11 +355,34 @@ export function WaterfallVideo({
   total,
   legendLabels,
   unit,
+  size,
   timing = WATERFALL_TIMING,
 }: WaterfallVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    LEGEND,
+    CATEGORY_LABEL,
+    CATEGORY_LABEL_ACCENT,
+    VALUE_LABEL,
+    CONCLUSION_LABEL,
+    MAX_CATEGORY_LABEL_WIDTH,
+    CATEGORY_STRIP,
+    LABEL_GAP,
+    CONCLUSION_LEAD,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL, before anything is measured.
+  assertTypeMayEnter(TYPE, size, {
+    what: "vidy-waterfall-germany-electricity-mix",
+  });
 
   if (data.length < 3)
     throw new Error(
@@ -292,17 +401,24 @@ export function WaterfallVideo({
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where anything
   // sits, so nothing shifts when a bar arrives late.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
+  const titleBaseline = contentTop + TITLE.fontSize;
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD;
+  const sourceBaseline = sourceBottom;
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const legendBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 38;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_LEGEND;
 
   // The opening and closing bars sit at the very edges of the plot — their centre-anchored value
   // labels can be wider than the bar itself, and the closing total's CONCLUSION label ("506.72 TWh
@@ -344,12 +460,31 @@ export function WaterfallVideo({
   );
 
   const padding = {
-    top: legendBaseline + 60,
+    top: legendBaseline + T.LEGEND_TO_PLOT,
     right: Math.max(PAD, rightGutter),
-    // Grown by the credit's own height plus clear air.
-    bottom: PAD + CATEGORY_STRIP + SOURCE.fontSize + 10,
+    // Grown by the credit's own height plus clear air, and measured DOWN FROM the credit's own
+    // baseline rather than up from the frame's foot, so the portrait stage moves the plot with it.
+    bottom:
+      height - sourceBottom + CATEGORY_STRIP + SOURCE.fontSize + T.STRIP_TO_SOURCE,
     left: Math.max(PAD, leftGutter),
   };
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor.
+  assertTypeFloor(
+    [
+      TITLE.fontSize,
+      SOURCE.fontSize,
+      LEGEND.fontSize,
+      CATEGORY_LABEL.fontSize,
+      CATEGORY_LABEL_ACCENT.fontSize,
+      VALUE_LABEL.fontSize,
+      CONCLUSION_LABEL.fontSize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidy-waterfall-germany-electricity-mix at ${size}` },
+  );
 
   const g = waterfallGeometry(data, { width, height, padding });
 
@@ -496,13 +631,13 @@ export function WaterfallVideo({
           ];
           let cursor = PAD;
           return swatches.map(([label, colour]) => {
-            const cx = cursor + 7;
-            const textX = cursor + 22;
+            const cx = cursor + T.LEGEND_DOT_R;
+            const textX = cursor + T.LEGEND_DOT_GAP + T.LEGEND_DOT_R;
             const labelWidth = measureText(label, LEGEND);
-            cursor = textX + labelWidth + 34;
+            cursor = textX + labelWidth + T.LEGEND_ENTRY_GAP;
             return (
               <g key={label}>
-                <circle cx={cx} cy={legendBaseline - 7} r={7} fill={colour} />
+                <circle cx={cx} cy={legendBaseline - T.LEGEND_DOT_R} r={T.LEGEND_DOT_R} fill={colour} />
                 <text
                   x={textX}
                   y={legendBaseline}
@@ -544,7 +679,7 @@ export function WaterfallVideo({
             y1={c.y}
             y2={c.y}
             stroke={muted}
-            strokeWidth={2}
+            strokeWidth={T.CONNECTOR_STROKE}
             strokeDasharray="5 5"
             opacity={laterOpacity}
           />
@@ -578,12 +713,12 @@ export function WaterfallVideo({
           </text>
           <text
             x={g.bars[0].centerX}
-            y={g.plot.bottom + 20}
+            y={g.plot.bottom + T.CATEGORY_DROP}
             fill={ink}
             fontSize={CATEGORY_LABEL.fontSize}
             fontWeight={CATEGORY_LABEL.fontWeight}
             textAnchor="end"
-            transform={`rotate(${ROTATION_DEG} ${g.bars[0].centerX} ${g.plot.bottom + 20})`}
+            transform={`rotate(${ROTATION_DEG} ${g.bars[0].centerX} ${g.plot.bottom + T.CATEGORY_DROP})`}
             opacity={interpolate(referenceProgress, [0, 0.3], [0, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
@@ -643,12 +778,12 @@ export function WaterfallVideo({
             </text>
             <text
               x={g.bars[i + 1].centerX}
-              y={g.plot.bottom + 20}
+              y={g.plot.bottom + T.CATEGORY_DROP}
               fill={ink}
               fontSize={CATEGORY_LABEL.fontSize}
               fontWeight={CATEGORY_LABEL.fontWeight}
               textAnchor="end"
-              transform={`rotate(${ROTATION_DEG} ${g.bars[i + 1].centerX} ${g.plot.bottom + 20})`}
+              transform={`rotate(${ROTATION_DEG} ${g.bars[i + 1].centerX} ${g.plot.bottom + T.CATEGORY_DROP})`}
               opacity={categoryOpacity}
             >
               {truncateToWidth(
@@ -669,9 +804,9 @@ export function WaterfallVideo({
           {/* The subject's wash, behind the bar — a third channel, never a third hue. */}
           {washOpacity > 0 ? (
             <rect
-              x={g.bars[g.bars.length - 1].x - 14}
+              x={g.bars[g.bars.length - 1].x - T.OUTLINE_STANDOFF}
               y={g.plot.top}
-              width={g.bars[g.bars.length - 1].width + 28}
+              width={g.bars[g.bars.length - 1].width + T.OUTLINE_STANDOFF * 2}
               height={g.plot.bottom - g.plot.top}
               fill={total}
               opacity={washOpacity}
@@ -692,7 +827,7 @@ export function WaterfallVideo({
               height={g.plot.bottom - closeCurrent}
               fill="none"
               stroke={ink}
-              strokeWidth={3}
+              strokeWidth={T.OUTLINE_STROKE}
               opacity={outlineOpacity}
             />
           ) : null}
@@ -756,12 +891,12 @@ export function WaterfallVideo({
           ))}
           <text
             x={g.bars[g.bars.length - 1].centerX}
-            y={g.plot.bottom + 20}
+            y={g.plot.bottom + T.CATEGORY_DROP}
             fill={ink}
             fontSize={CATEGORY_LABEL_ACCENT.fontSize}
             fontWeight={CATEGORY_LABEL_ACCENT.fontWeight}
             textAnchor="end"
-            transform={`rotate(${ROTATION_DEG} ${g.bars[g.bars.length - 1].centerX} ${g.plot.bottom + 20})`}
+            transform={`rotate(${ROTATION_DEG} ${g.bars[g.bars.length - 1].centerX} ${g.plot.bottom + T.CATEGORY_DROP})`}
             opacity={interpolate(subjectProgress, [0, 0.3], [0, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",

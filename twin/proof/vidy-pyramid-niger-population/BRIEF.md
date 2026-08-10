@@ -1,3 +1,8 @@
+---
+size: landscape
+type: population-pyramid
+---
+
 # Beat — Niger's youngest age band dwarfs its entire population aged 65+
 
 **Proves:** Niger's 0-4 age band (4,667,150 people) is nearly seven times the size of Niger's

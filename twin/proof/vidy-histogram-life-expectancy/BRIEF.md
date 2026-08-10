@@ -1,8 +1,16 @@
+---
+size: landscape
+type: histogram
+---
+
 # Beat — In 2023, more countries reach 75-to-80 years of life expectancy than any other span
 
 **Proves:** in 2023, the single most common five-year band of life expectancy at birth across the
 world's countries and territories is 75-to-80 years (65 of 237), immediately past the halfway
 point of the whole distribution (the median country, Morocco, sits at 75.3 years).
+
+**Size:** landscape (1920 x 1080) — the front matter above is the record that counts; `render.mjs`
+reads it with `readPinnedSize` and selects the composition of that name.
 
 **Medium / genre:** chart / video. **Type:** histogram — one continuous variable (life expectancy
 at birth, one reading per country/territory, 2023) binned into eight contiguous five-year bands,

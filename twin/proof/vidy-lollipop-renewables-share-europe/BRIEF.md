@@ -1,3 +1,8 @@
+---
+size: landscape
+type: lollipop
+---
+
 # Beat — Switzerland's share of renewable electricity trails Norway's by more than 31 points
 
 **Proves:** among fourteen European countries, Switzerland's share of electricity generated from

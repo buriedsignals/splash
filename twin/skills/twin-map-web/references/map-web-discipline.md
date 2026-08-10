@@ -775,10 +775,30 @@ and `maxBounds` then stops a reader panning to it. It is not the fit's arithmeti
 should choose **−0.865**. The map sits at **−0.16**, and `log2(461 / 512) = −0.151` — MapLibre
 refuses to zoom out past the point where the world still fills the canvas VERTICALLY, and a tall
 narrow canvas hits that before it has room for 360° of longitude. The fallback plate has no such
-constraint and draws the whole planet. Recorded with the derivation rather than fixed, because the
-only fix is to stop giving a planet-extent beat the whole stage height on a phone — letterboxing the
-live canvas back to the plate's own aspect for world-extent beats — which is a design decision about
-what a world map is worth on a phone, not a bug to patch.
+constraint and draws the whole planet.
+
+**DECIDED 2026-08-11, under B4.1 — the design decision this paragraph deferred has been taken, and it
+is `geo-discipline.md` rule 12's third clause:** *a map is never given more stage height than its own
+geography can fill; where a frame is taller than the geography admits, the map takes the height the
+geography demands and the leftover goes to FURNITURE — never to a wider camera, and never to a crop.*
+The general form of the arithmetic above, with the canvas as the only input:
+`maxStageHeightPx = width × 360 / lonSpan`, because Web Mercator's world is a square. Driven at the
+portrait export size both ways: a planet camera handed the whole 1080×1920 frame shows **202.5°** and
+the model predicts **202.5°**; letterboxed to the 1080×1080 stage its geography can fill it shows
+**359.8°** and hands **840 px** back to furniture — `twin-map-beat/output-proof/extent-range/`, both
+captures committed and looked at. It bites only above 202.5° of longitude at that frame, so no beat
+in this tree except the four planet ones is affected at any export size.
+
+**What that leaves for THIS genre, and it is not free.** On the web there is no export size: the
+container is whatever a CMS gives, so the letterbox has to be applied at runtime — `#mw-map` capped
+to `min(containerWidth × 360 / lonSpan, containerHeight)` for a world-extent beat, with the freed
+height going to the beat's own furniture rather than to the canvas. That is a change to the live
+layer's box, in this skill, and it has NOT been made: the code that would carry it is under active
+work by another chantier as this is written, and a doctrine file asserting a layout the components do
+not have is the exact failure this project has already been burnt by. So: **the decision is taken and
+recorded, the derivation is implemented and guarded in `twin-map-beat/assets/geo.ts`
+(`maxStageHeightPx` / `stageBoxFor` / `assertStageServesGeography`), and the web genre's own
+application of it is open.**
 
 **And one rule per mark type that only shows up at the bottom end.** A `radius: "ground"` layer — a
 dot standing for a fixed number of people in a fixed piece of ground — must keep its GROUND area, so

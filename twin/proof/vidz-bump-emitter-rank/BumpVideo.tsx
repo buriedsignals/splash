@@ -43,20 +43,111 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
+// phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+// Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
+// genres read one copy. A bump chart has no measured aspect range and no twin form — its x is
+// TIME, which resists rotation for the same reason a line's does — so the two phone frames are
+// refused here, by name, rather than drawn at a shape nobody measured.
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { BUMP_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 20, fontWeight: 400 };
-const CAVEAT = { fontSize: 18, fontWeight: 400, lead: 24 };
-const AXIS_TICK = { fontSize: 18, fontWeight: 500 };
-const END_LABEL = { fontSize: 21, fontWeight: 500 };
-const END_LABEL_ACCENT = { fontSize: 21, fontWeight: 700 };
-const CONCLUSION = { fontSize: 22, fontWeight: 600, lead: 28 };
-const DOT_R = 6;
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+export const TYPE = "bump";
+
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
+ * gate 2c took, read out of this beat's own `BRIEF.md` and carried onto the composition by
+ * `Root.tsx`. The shipped values were 1080-frame tuning, divided so the SMALLEST token lands at 12
+ * — the number every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`. `PAD` is the one exception: a frame's margin is
+ * proportional to the CANVAS, not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 25, fontWeight: 700, lead: 32 },
+  SOURCE: { fontSize: 13, fontWeight: 400 },
+  CAVEAT: { fontSize: 12, fontWeight: 400, lead: 16 },
+  AXIS_TICK: { fontSize: 12, fontWeight: 500 },
+  END_LABEL: { fontSize: 14, fontWeight: 500 },
+  END_LABEL_ACCENT: { fontSize: 14, fontWeight: 700 },
+  CONCLUSION: { fontSize: 15, fontWeight: 600, lead: 19 },
+  DOT_R: 4,
+  /** Air under the last title line, before the caveat. A title carrying a subscript (CO₂) hangs
+   *  below its own baseline, so this is the gap that has to clear a descender, not a cap height:
+   *  at 40px the caveat ran through the ₂ at the table's landscape scale. */
+  TITLE_TO_CAVEAT: 24,
+  /** Air under the caveat, before the axis title. */
+  CAVEAT_TO_AXIS_TITLE: 18,
+  /** Air under the axis title, before the plot. */
+  AXIS_TITLE_TO_PLOT: 14,
+  /** Added to the widest rank tick and to the widest end label to make the two gutters. */
+  RANK_GUTTER_AIR: 11,
+  END_GUTTER_AIR: 13,
+  /** The inset of a rank tick from the plot's left edge. */
+  RANK_TICK_INSET: 9,
+  /** The drop from the plot's floor to the year label row. */
+  YEAR_LABEL_DROP: 12,
+  /** The gap between the year row and the conclusion's first line. */
+  CONCLUSION_GAP: 16,
+  /** Air between the conclusion block and the credit's ink. */
+  BLOCK_TO_SOURCE: 7,
+  /** How far the subject's ring stands off its own dot, and the halo behind a passing dot. */
+  RING_STANDOFF: 5,
+  DOT_HALO: 1.5,
+  /** Ink widths. A stroke is proportional to the canvas the way a gap is, so it scales too. */
+  GRID_STROKE: 1,
+  TRACK_STROKE: 2,
+  SUBJECT_STROKE: 3.5,
+};
+
+/**
+ * The base, at the size's own multiplier — one integer-rounding helper for every number, so
+ * `measureText`'s cache keys stay stable and no half-pixel arrives anywhere.
+ */
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    CAVEAT: f(BASE.CAVEAT) as typeof BASE.CAVEAT,
+    AXIS_TICK: f(BASE.AXIS_TICK) as typeof BASE.AXIS_TICK,
+    END_LABEL: f(BASE.END_LABEL) as typeof BASE.END_LABEL,
+    END_LABEL_ACCENT: f(BASE.END_LABEL_ACCENT) as typeof BASE.END_LABEL_ACCENT,
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    DOT_R: sp(BASE.DOT_R),
+    TITLE_TO_CAVEAT: sp(BASE.TITLE_TO_CAVEAT),
+    CAVEAT_TO_AXIS_TITLE: sp(BASE.CAVEAT_TO_AXIS_TITLE),
+    AXIS_TITLE_TO_PLOT: sp(BASE.AXIS_TITLE_TO_PLOT),
+    RANK_GUTTER_AIR: sp(BASE.RANK_GUTTER_AIR),
+    END_GUTTER_AIR: sp(BASE.END_GUTTER_AIR),
+    RANK_TICK_INSET: sp(BASE.RANK_TICK_INSET),
+    YEAR_LABEL_DROP: sp(BASE.YEAR_LABEL_DROP),
+    CONCLUSION_GAP: sp(BASE.CONCLUSION_GAP),
+    BLOCK_TO_SOURCE: sp(BASE.BLOCK_TO_SOURCE),
+    RING_STANDOFF: sp(BASE.RING_STANDOFF),
+    DOT_HALO: sp(BASE.DOT_HALO),
+    GRID_STROKE: Math.max(1, sp(BASE.GRID_STROKE)),
+    TRACK_STROKE: Math.max(1, sp(BASE.TRACK_STROKE)),
+    SUBJECT_STROKE: Math.max(1, sp(BASE.SUBJECT_STROKE)),
+  };
+}
 
 export type Track = {
   country: string;
@@ -196,6 +287,8 @@ export type BumpVideoProps = {
   ink: string;
   muted: string;
   grid: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -215,11 +308,31 @@ export function BumpVideo({
   ink,
   muted,
   grid,
+  size,
   timing = BUMP_TIMING,
 }: BumpVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    CAVEAT,
+    AXIS_TICK,
+    END_LABEL,
+    END_LABEL_ACCENT,
+    CONCLUSION,
+    DOT_R,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL, before anything is measured. `bump` has no
+  // measured aspect range at a tall frame and no twin form, so `assertTypeMayEnter` refuses
+  // portrait and square by name and offers the size that works.
+  assertTypeMayEnter(TYPE, size, { what: "vidz-bump-emitter-rank" });
 
   if (years.length < 3)
     throw new Error(
@@ -237,22 +350,29 @@ export function BumpVideo({
     throw new Error(`no track for subject ${JSON.stringify(subjectCountry)}`);
 
   // ── Layout. Identical at every frame.
+  const contentTop = stage.reserved ? stage.top : PAD;
+  // Named `sourceBottom` rather than something generic because it IS the credit's own anchor, and
+  // `credit-anchors-to-the-frame-bottom.test.ts` follows that name through the chain: the credit has
+  // to resolve to the frame's own height minus something, never to a header rung. At portrait the
+  // bottom it names is the STAGE's — below that band sit the platform's caption and progress bar,
+  // and a covered credit is an attribution failure, not a cosmetic one.
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
+  const titleBaseline = contentTop + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceLead = SOURCE.fontSize * 1.5;
+  const sourceLead = Math.round(SOURCE.fontSize * 1.5);
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
   // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
   // the furniture opacity group, so no timing contract moves. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   const caveatLines = wrap(caveat, width - PAD * 2, CAVEAT);
   // The caveat keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const caveatBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 32;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_CAVEAT;
   const axisTitleBaseline =
-    caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 34;
+    caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + T.CAVEAT_TO_AXIS_TITLE;
 
   // Gutters measured against the strings that will actually be drawn in them — never constants.
   const rankGutter =
@@ -261,7 +381,7 @@ export function BumpVideo({
         measureText(en(i + 1), AXIS_TICK),
       ),
       measureText(axisTitle, AXIS_TICK),
-    ) + 16;
+    ) + T.RANK_GUTTER_AIR;
   const endGutter =
     Math.max(
       ...data.map((t) =>
@@ -270,31 +390,50 @@ export function BumpVideo({
           measureText(t.country, END_LABEL_ACCENT),
         ),
       ),
-    ) + 20;
+    ) + T.END_GUTTER_AIR;
 
   const conclusionLines = wrap(conclusion, width - PAD * 2, CONCLUSION);
   const conclusionBlock = conclusionLines.length * CONCLUSION.lead;
   // The gap between the year-tick row and the first line of the conclusion. It is part of the
   // reserved bottom padding, not an offset added on top of it — adding it only at draw time pushed
   // the last line past the frame's own margin.
-  const conclusionGap = 34;
-  const yearLabelBlock = AXIS_TICK.fontSize + 18;
+  const conclusionGap = T.CONCLUSION_GAP;
+  const yearLabelBlock = AXIS_TICK.fontSize + T.YEAR_LABEL_DROP;
 
   const padding = {
-    top: axisTitleBaseline + 26,
+    top: axisTitleBaseline + T.AXIS_TITLE_TO_PLOT,
     right: PAD + endGutter,
-    // Grown by the credit block's own height plus clear air, so the conclusion line ends above
-    // the credit's ink.
+    // Grown by the credit block's own height plus clear air, so the conclusion line ends above the
+    // credit's ink — and measured DOWN FROM the credit's own baseline rather than up from the
+    // frame's foot, so the portrait stage moves the plot with it.
     bottom:
-      PAD +
+      height -
+      sourceBottom +
       yearLabelBlock +
       conclusionGap +
       conclusionBlock +
       (sourceLines.length - 1) * sourceLead +
       SOURCE.fontSize +
-      10,
+      T.BLOCK_TO_SOURCE,
     left: PAD + rankGutter,
   };
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor.
+  assertTypeFloor(
+    [
+      TITLE.fontSize,
+      SOURCE.fontSize,
+      CAVEAT.fontSize,
+      AXIS_TICK.fontSize,
+      END_LABEL.fontSize,
+      END_LABEL_ACCENT.fontSize,
+      CONCLUSION.fontSize,
+    ]
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidz-bump-emitter-rank at ${size}` },
+  );
 
   const g = bumpGeometry(data, years, rankRows, { width, height, padding });
 
@@ -340,7 +479,7 @@ export function BumpVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + 7]);
+  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + T.RING_STANDOFF]);
 
   // End labels arrive with the line that earns them: each one gates on ITS OWN line reaching the
   // last year, not on the master clock — `motion-grammar.md`'s rule, and here all six happen to
@@ -438,10 +577,10 @@ export function BumpVideo({
               y1={g.yOfRank(rank)}
               y2={g.yOfRank(rank)}
               stroke={grid}
-              strokeWidth={1}
+              strokeWidth={T.GRID_STROKE}
             />
             <text
-              x={g.plot.left - 14}
+              x={g.plot.left - T.RANK_TICK_INSET}
               y={g.yOfRank(rank) + AXIS_TICK.fontSize * 0.34}
               fill={muted}
               fontSize={AXIS_TICK.fontSize}
@@ -456,7 +595,7 @@ export function BumpVideo({
           <text
             key={`year-${year}`}
             x={g.xOfIndex(i)}
-            y={g.plot.bottom + 18 + AXIS_TICK.fontSize}
+            y={g.plot.bottom + T.YEAR_LABEL_DROP + AXIS_TICK.fontSize}
             fill={muted}
             fontSize={AXIS_TICK.fontSize}
             fontWeight={AXIS_TICK.fontWeight}
@@ -496,7 +635,7 @@ export function BumpVideo({
                 d={drawnSoFar(l.points, head)}
                 fill="none"
                 stroke={muted}
-                strokeWidth={3}
+                strokeWidth={T.TRACK_STROKE}
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
@@ -514,7 +653,7 @@ export function BumpVideo({
           d={drawnSoFar(subjectTrack.points, head)}
           fill="none"
           stroke={accent}
-          strokeWidth={5}
+          strokeWidth={T.SUBJECT_STROKE}
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -529,7 +668,7 @@ export function BumpVideo({
             r={ringRadius}
             fill="none"
             stroke={accent}
-            strokeWidth={3}
+            strokeWidth={T.TRACK_STROKE}
           />
           <circle
             cx={subjectTrack.points[subjectTrack.points.length - 1].x}
@@ -537,7 +676,7 @@ export function BumpVideo({
             r={ringRadius}
             fill="none"
             stroke={accent}
-            strokeWidth={3}
+            strokeWidth={T.TRACK_STROKE}
           />
         </g>
       ) : null}
@@ -552,10 +691,10 @@ export function BumpVideo({
                 <circle
                   cx={subjectTrack.points[at].x}
                   cy={subjectTrack.points[at].y}
-                  r={DOT_R + 2}
+                  r={DOT_R + T.DOT_HALO}
                   fill={ground}
                   stroke={accent}
-                  strokeWidth={3}
+                  strokeWidth={T.TRACK_STROKE}
                 />
               </g>
             );
