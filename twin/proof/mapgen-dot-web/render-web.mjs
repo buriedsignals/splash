@@ -372,6 +372,54 @@ export function livePlan({
  * self-contained HTML file and writes it. Generic across map-web beats: it knows nothing of this
  * story's own countries.
  */
+/** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
+ *  genre's — `discloseTable` refuses to invent one. */
+const TABLE_ROW_NOUN = "countries";
+
+/**
+ * RULING B5.2 (2026-08-10, the owner): *"Pour toutes les cartes on n'affiche pas le tableau de
+ * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
+ * table is COLLAPSED by default on every map page, without exception.
+ *
+ * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
+ * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
+ * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
+ * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
+ * data reachable.
+ *
+ * A NATIVE `<details>`/`<summary>`, never a scripted accordion and never `display: none`. It opens
+ * with the page's script disabled, it is keyboard-operable and announced as a disclosure with zero
+ * authoring, and a screen-reader user can open it — none of which a hand-built widget or a hidden
+ * block gives for free. This is the one thing that keeps the ruling from being the `sr-only` failure
+ * the discipline file already names: the content is one keystroke away, not gone.
+ *
+ * The summary says WHAT it holds and HOW MANY rows, so a reader knows what opening it costs. The
+ * count is read off the rendered table's own `<tbody>` rather than passed in beside it — a second
+ * number for the same fact is how a caption comes to disagree with the rows under it.
+ */
+export function discloseTable(tableHtml, rowNoun) {
+  if (!tableHtml) return "";
+  if (typeof rowNoun !== "string" || rowNoun.trim() === "")
+    throw new Error(
+      "this beat renders a value table but named no `tableRowNoun`: the disclosure summary has to " +
+        "say what it holds (\"41 countries\", \"156 cells\"), and nothing here can invent that word",
+    );
+  const body = tableHtml.slice(tableHtml.indexOf("<tbody"));
+  const rows = (body.match(/<tr[\s>]/g) ?? []).length;
+  if (rows === 0)
+    throw new Error(
+      "the value table rendered no <tbody> rows: refusing to label a disclosure with a count " +
+        "nobody can check",
+    );
+  return (
+    `<details class="mw-table-disclosure">` +
+    `<summary>${escapeHtml(`Table of values — ${rows} ${rowNoun}`)}</summary>\n` +
+    `${tableHtml}\n</details>`
+  );
+}
+
 async function renderMapWeb({
   component,
   table,
@@ -385,7 +433,10 @@ async function renderMapWeb({
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable
-    ? renderToStaticMarkup(createElement(table, { countries: props.countries, ...furniture }))
+    ? discloseTable(
+        renderToStaticMarkup(createElement(table, { countries: props.countries, ...furniture })),
+        TABLE_ROW_NOUN,
+      )
     : "";
 
   const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
@@ -544,10 +595,17 @@ svg.map { display: block; width: 100%; height: 100%; }
 }
 /* The interaction layer: a real <button>, fixed-CSS-pixel diameter — a legitimate touch and pointer
    target at every width, unlike an SVG hit circle sized in frame units. */
+/* ONE SIZE, AND THE SECOND AXIS COMES FROM 'aspect-ratio', NEVER FROM A SECOND PERCENTAGE (B6.20).
+   A percentage WIDTH resolves against the container's width and a percentage HEIGHT against its
+   height, so the same fraction is two different numbers the moment the overlay stops being the
+   plate's own square box — which is exactly what the live swap did. Measured on the committed
+   symbol beat at 1600x900 (container 1566x591): the M9.1 button was 140.9 x 53.2 px, a wide flat
+   grey ellipse painted behind a 60 px disc. 'aspect-ratio' is what makes the painted highlight a
+   circle in SCREEN pixels at every container shape, in the live layer and in the fallback alike. */
 .pt {
   position: absolute;
   width: 28px;
-  height: 28px;
+  aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: transparent;
@@ -598,6 +656,25 @@ svg.map { display: block; width: 100%; height: 100%; }
 }
 .region-table td { font-variant-numeric: tabular-nums; }
 .region-table tr.subject th, .region-table tr.subject td { color: var(--accent); font-weight: 700; }
+/* B5.2 (ruling, 2026-08-10): the value table is COLLAPSED on every map page, without exception —
+   see references/map-web-discipline.md, "The table is collapsed, and why it is not deleted". A
+   native disclosure element (details/summary — written without its angle brackets here, because
+   this comment ships inside the delivered page and a guard that scans for the tag would find it),
+   so it opens with the page's script off, is announced as a disclosure and is keyboard-operable
+   with nothing authored here. The summary is the whole control, so it is given a
+   real target height and a visible focus ring rather than the browser's 15px default line. The
+   native marker is KEPT: it is the affordance that says open/closed, and replacing it with a drawn
+   one would be inventing a control a reader already knows. */
+.mw-table-disclosure { margin-top: 10px; }
+.mw-table-disclosure > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 9px 0;
+  border-top: 1px solid var(--muted);
+}
+.mw-table-disclosure > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 `.trim();
 }
 

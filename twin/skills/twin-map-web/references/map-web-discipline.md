@@ -251,13 +251,12 @@ deciding.**
 Two choices the table still deliberately makes when a beat DOES turn it on, each closing a way the
 same idea goes wrong in practice:
 
-- **Rendered plainly and visibly, never behind a toggle or `sr-only` CSS.** A disclosure widget
-  ("show data table") adds an extra interaction step for the one reader who most needs the fallback
-  not to be optional, and screen-reader-only CSS has a well-known failure mode: a positioning bug, a
-  CSS reset that strips it, an author who "cleans up" a rule they do not recognise the purpose of,
-  and the content silently stops reaching anyone. Visible-to-everyone is what makes it un-losable.
-  Opt-in at BUILD time by an author who read this section is a different thing entirely from
-  opt-in at READ time by the reader who needs it.
+- **Collapsed by default, in a native disclosure — see "The table is collapsed" below, which
+  OVERTURNS what stood here.** This bullet used to read *"Rendered plainly and visibly, never behind
+  a toggle or `sr-only` CSS"*, on the reasoning that a disclosure widget adds an extra interaction
+  step for the one reader who most needs the fallback not to be optional. That cost is real and is
+  still the cost; the ruling below accepts it, and the mechanism it accepts is a NATIVE
+  `<details>`/`<summary>`, which is not the same object the sentence above was warning about.
 - **A `<table>`, not an SVG text grid.** `role="table"`/`role="row"`/`role="cell"` on SVG nodes is
   unreliable across screen readers in exactly the way a real `<table>`, `<tr>`, `<th>`, `<td>` is
   not — this genre's own SVG carries no text at ALL now (see "Text is HTML, not SVG"), so this
@@ -269,6 +268,65 @@ same idea goes wrong in practice:
   directly rather than re-deriving a second phrasing, so a hovering reader and a table-reading
   reader are never told two different numbers for the same city because someone edited one
   formatter and not the other.
+
+### The table is collapsed, and why it is not deleted — RULING B5.2, 2026-08-10
+
+**The owner's words, verbatim:** *"Pour toutes les cartes on n'affiche pas le tableau de valeurs qui
+se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value table is
+**collapsed by default on every map page, without exception**. He offered two ways — remove it, or
+hide it in an accordion.
+
+**This genre takes the accordion, and the REASON is the load-bearing half of this section.** Read the
+two sections above before touching it: the table is the map's own accessible alternative. A map is a
+spatial medium; a screen-reader user has no spatial access to it; the ordered list of readings is the
+only honest answer this genre found, and "Two channels, not one" below says why the `.pt` buttons are
+not a substitute for it. **Deleting the table would trade a page-height problem for an accessibility
+regression.** Collapsing satisfies what was asked and keeps every reading one keystroke away. A later
+reader who meets a collapsed table and "fixes" it back open is undoing a ruling; a later reader who
+deletes it is undoing the accessibility answer.
+
+**What it costs, stated rather than glossed.** The bullet above, now overturned, was right that a
+disclosure adds an interaction step for the reader who most needs the fallback. That step is the
+price of the ruling. What makes it payable is that a native `<details>` is *announced as a
+disclosure* and opens from the keyboard — it is a step, not a barrier — where `display: none`,
+`hidden` or `sr-only` CSS would be the silent-loss failure mode the old bullet warned about, and a
+hand-built widget would be an invented control with none of that for free.
+
+**The mechanism: `<details>`/`<summary>`, native, no JavaScript.** `discloseTable` in each beat's own
+`render-web.mjs` wraps the SSR'd table; the summary reads `Table of values — <n> <noun>`, where the
+count is read off the rendered table's own `<tbody>` (never passed in beside it, so the label cannot
+disagree with the rows) and the noun is the beat's word — `discloseTable` throws rather than invent
+one. Four properties this buys and a scripted accordion does not: it opens with the page's script
+disabled; it is keyboard-operable and focus-visible with nothing authored; a screen reader announces
+it as a disclosure and can open it; and the native marker already says open/closed, so no control had
+to be drawn.
+
+**What it did to the page, measured in a real browser on the delivered files** — the page below the
+beat WAS the table, so this is the whole of the change:
+
+| Beat | Rows | Page @1600×900 | Page @375×812 |
+|---|---|---|---|
+| `mapgen-symbol-web` | 17 earthquakes | 1417 → **944** px | 1936 → **856** px |
+| `mapgen-choropleth-web` | 41 countries | 2085 → **944** px | 2044 → **856** px |
+| `mapgen-dot-web` | 42 countries | 2092 → **944** px | 2051 → **856** px |
+| `mapgen-hexgrid-web` | 156 cells | 5186 → **944** px | 12855 → **856** px |
+| `mapgen-locator-web` | 11 organisations | 900 → **900** px | 812 → **812** px |
+| `twin-map-web` seed | none (`regionTable: false`) | 900 px, unchanged | 812 px, unchanged |
+
+**And the composition consequence, because it is real and a reader meets it before anyone reads this
+file.** Every one of these beats is already sized to fit one window ("Fit the window" above), so a
+collapsed page is the beat plus one 34 px summary line — and below that, nothing. At 1600×900 that
+lands at **944 px against a 900 px window**: the summary sits 44 px past the fold, so the page keeps
+a scrollbar for a single line of text. At 375×812 it is **856 against 812**, the same 44 px. That is
+the honest cost of the ruling on these four beats, and it is a smaller cost than four thousand pixels
+of table.
+
+`mapgen-locator-web` is the exception in both directions, and it is the one to copy: its table
+already lived inside a bounded, internally-scrolling reading pane, so its page height does not change
+at all — **its map takes the height that frees instead**. Measured at 1600×900, its live canvas goes
+from 1566 × 428 to **1566 × 655**, and at 375×812 from 341 × 305 to **341 × 346**. A beat that wants
+the freed height to reach the map, rather than to become white space under it, gives its reading
+pane a bound the way this one does.
 
 ## Two channels, not one
 
@@ -487,16 +545,74 @@ put back.
 
 ### The class: one mark, two halves, two mechanisms
 
-This has now happened twice, so it is written as a rule rather than as two incidents. **The live swap
-split every mark in two** — a MapLibre layer for the circle, an HTML overlay for its label and its
-hit target — and anything that governed the mark when both halves were SVG now has to govern them
-BOTH, through two different mechanisms. Where it does not, nothing goes red and the map quietly
+This has now happened three times, so it is written as a rule rather than as three incidents. **The
+live swap split every mark in two** — a MapLibre layer for the circle, an HTML overlay for its label
+and its hit target — and anything that governed the mark when both halves were SVG now has to govern
+them BOTH, through two different mechanisms. Where it does not, nothing goes red and the map quietly
 disagrees with itself.
 
 | What governs a mark | The overlay half | The live half | Found by |
 |---|---|---|---|
 | size | CSS + the SVG viewBox | `circle-radius`, from the camera | the owner: a 36px circle on cartography 1.57× bigger |
 | membership of a filter | CSS `:has()` + `:checked` | `map.setFilter` | the owner: 6 of 13 labels hidden, 13 of 13 circles painted |
+| the PAINTED HIGHLIGHT's own size | two inline percentages on `.pt` | nothing at all, until B6.20 | the owner: *"le rond du hover est trop large, c'est chelou"* |
+
+### The painted highlight is a circle in SCREEN pixels — B6.20, 2026-08-10
+
+**What the owner saw:** hovering the M9.1 disc on `proof/mapgen-symbol-web` painted a wide flattened
+grey ellipse far larger than the mark, extending well past it horizontally and barely past it
+vertically.
+
+**What it actually was, measured before anything was changed** — because the obvious diagnosis was
+wrong, and this is worth recording. The natural reading is a radius expressed in DEGREES: a circle
+defined in longitude/latitude renders as an ellipse, because at Japan's latitude a degree of
+longitude is much shorter than a degree of latitude. That is a real class and it has appeared twice
+elsewhere in this tree. **It is not what this was.** The `.pt` button's size was stated as TWO inline
+percentages — `width: max(28px, w%)` and `height: max(28px, h%)`, both derived from the mark's own
+diameter in frame units. A percentage width resolves against the container's WIDTH and a percentage
+height against its HEIGHT, so the two are the same number only while the overlay keeps the plate's
+own aspect. The fallback layer does keep it. **The live layer does not** — `html.mw-live
+.mw-viewport` sets `aspect-ratio: auto`, so the overlay becomes the stage: 1566 × 591 at 1600×900, a
+ratio of 2.65. Measured on the committed pages before the fix, at 1600×900:
+
+| Beat | Container | Painted highlight | Ratio |
+|---|---|---|---|
+| `mapgen-symbol-web` (M9.1) | 1566 × 591 | 140.9 × 53.2 px | 2.65 |
+| `twin-map-web` seed (Paris) | 1566 × 583 | 194.2 × 72.3 px | 2.69 |
+| `mapgen-hexgrid-web` | 1566 × 715 | 86.8 × 73.6 px | 1.18 |
+| `mapgen-choropleth-web` / `-dot-` / `-locator-` | — | 28 × 28 px | 1.00 |
+
+The three unaffected beats are unaffected only because their marks are small enough that the 28 px
+floor wins on both axes — not because they were built differently. The hexgrid's 1.18 is the same
+defect at a milder ratio, and it was elliptical in the FALLBACK too, since its plate is 836 × 520.
+
+**The rule, in two parts, because they come apart independently.**
+
+1. **A `.pt` states ONE dimension; the other comes from `.pt { aspect-ratio: 1 }`.** Never two
+   percentages, in any beat, in either layer. This is what makes the highlight round at every
+   container shape, and it is the part that also fixes the fallback.
+2. **Where a mark is camera-scaled, the highlight is the MARK's own drawn size plus a small
+   constant.** The `.pt` carries `data-r`, the mark's radius in the bake's frame units — the same
+   number `livePlan` puts on the circle layer's features — and `live-map.mjs`'s `reposition` sets its
+   screen diameter to `max(28, 2·r·cameraScale + 10)` on every camera move. One number seen once,
+   which is what the row added to the table above asks for.
+
+**What this is NOT.** The painted highlight is not the hit region. Live, `.pt` has
+`pointer-events: none` and the pointer is answered by `queryRenderedFeatures` on the rendered mark
+itself — which may legitimately be generous, and on a choropleth is the whole country. The halo is
+what a reader sees; the hit area is what answers them; conflating them is how a 28 px button came to
+sit under a 90 px disc (B6.18a).
+
+**The residue, named rather than left to be discovered.** A beat whose marks are not camera-scaled
+circles — the hex grid's bins, a choropleth's fills — has no `data-r`, so its highlight is round but
+does NOT track the camera: the SSR'd percentage is a percentage of a box the live layer has changed
+the shape of. It is a bounded wrongness (one size, not an ellipse) where it used to be an unbounded
+one, and closing it properly means giving those types a live-side size the way the symbol types have.
+
+**Guarded by `scripts/verify-live-map.mjs`**, which now measures the `.pt` box on screen at both
+container aspects and asserts two things separately: `|width − height| ≤ 1 px`, and — where the beat
+declares `data-r` — that the diameter equals `max(28, 2·r + 10)` with `r` derived independently from
+the plan's own `degreesPerPixel` and the live zoom, never read back from the page's own style.
 
 **So: anything the CSS filter governs today needs a live counterpart, and the two are asserted equal
 rather than each asserted to have changed.** "The filter did something" passes while only one half

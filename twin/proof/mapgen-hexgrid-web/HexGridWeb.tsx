@@ -227,12 +227,11 @@ export function HexGridWeb({
   if (!ranked.some((c) => c.key === subjectKey))
     throw new Error(`no cell for the subject ${subjectKey}`);
 
-  // The hexagon actually drawn, and its own bounding box, in the bake's own frame units. A
-  // pointy-top hexagon of side `size` is `√3·size` wide and `2·size` tall — the two numbers the
-  // overlay's own buttons are sized from, and the same shape `livePlan` unprojects into geographic
-  // polygons.
+  // The hexagon actually drawn, in the bake's own frame units. A pointy-top hexagon of side `size`
+  // is `√3·size` wide and `2·size` tall, and it is the TALLER extent the overlay's own buttons are
+  // sized from — one number, so the button is a circle that covers the cell rather than an ellipse
+  // built from two (B6.20). The same shape `livePlan` unprojects into geographic polygons.
   const drawnSize = hexSize * HEX_DRAW_SHRINK;
-  const cellWidth = Math.sqrt(3) * drawnSize;
   const cellHeight = 2 * drawnSize;
 
   return (
@@ -321,8 +320,18 @@ export function HexGridWeb({
                   style={{
                     left: `${(cell.cx / frame.width) * 100}%`,
                     top: `${(cell.cy / frame.height) * 100}%`,
-                    width: `max(${HIT_TARGET_PX}px, ${(cellWidth / frame.width) * 100}%)`,
-                    height: `max(${HIT_TARGET_PX}px, ${(cellHeight / frame.height) * 100}%)`,
+                    // ONE dimension. The height comes from `.pt { aspect-ratio: 1 }`, never from a
+                    // second percentage: a percentage height resolves against the CONTAINER's
+                    // height while a percentage width resolves against its width, so the same
+                    // fraction is two different numbers whenever the overlay is not square — which
+                    // this beat's own 836 x 520 plate never is. Measured before the fix, at
+                    // 1600x900: 86.8 x 73.6 px of painted halo where one number was intended
+                    // (B6.20). The ONE extent it is stated in is the hexagon's TALLER one
+                    // (`cellHeight`, 2·size against √3·size), so the circle covers the cell rather
+                    // than sitting inside it; `frame.width` is the basis for both axes because the
+                    // overlay preserves the plate's own aspect, so one frame unit is the same
+                    // number of screen pixels either way.
+                    width: `max(${HIT_TARGET_PX}px, ${(cellHeight / frame.width) * 100}%)`,
                   }}
                   aria-label={detail}
                   // The native, no-JS tooltip: this string is readable on hover with the inline

@@ -368,8 +368,11 @@ export function ChoroplethWeb({
                   style={{
                     left: `${(ax / frame.width) * 100}%`,
                     top: `${(ay / frame.height) * 100}%`,
+                    // ONE dimension; the height comes from `.pt { aspect-ratio: 1 }` (B6.20). This
+                    // beat was never anisotropic — both numbers were already fixed pixels — but the
+                    // rule is stated once for the genre, so nothing here can drift back into two
+                    // numbers describing one circle.
                     width: `${HIT_TARGET_PX}px`,
-                    height: `${HIT_TARGET_PX}px`,
                   }}
                   aria-label={detail}
                   title={detail}

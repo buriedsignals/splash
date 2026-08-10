@@ -302,7 +302,8 @@ export function QuakeSymbolWeb({
               const detail = quakeDetail(point);
               // The target is the MARK, with a floor — the circle's own drawn diameter as the same
               // fraction of the frame the circle is drawn at. Never a second radius constant.
-              const hitDiameter = radiusOf(point.mag) * 2;
+              const markRadius = radiusOf(point.mag);
+              const hitDiameter = markRadius * 2;
               return (
                 <button
                   key={point.key}
@@ -311,13 +312,24 @@ export function QuakeSymbolWeb({
                   style={{
                     left: `${(point.px / frame.width) * 100}%`,
                     top: `${(point.py / frame.height) * 100}%`,
+                    // ONE dimension. The height comes from `.pt { aspect-ratio: 1 }`, never from a
+                    // second percentage: a percentage height resolves against the CONTAINER's
+                    // height while a percentage width resolves against its width, so the same
+                    // fraction is two different numbers as soon as the overlay stops being the
+                    // plate's own square — which is what the live swap did. Measured here at
+                    // 1600x900: the M9.1 button was 140.9 x 53.2 px, a wide flat grey ellipse
+                    // painted behind a 60 px disc (B6.20, the owner's "c'est chelou").
                     width: `max(${HIT_TARGET_PX}px, ${(hitDiameter / frame.width) * 100}%)`,
-                    height: `max(${HIT_TARGET_PX}px, ${(hitDiameter / frame.height) * 100}%)`,
                   }}
                   aria-label={detail}
                   title={detail}
                   data-key={point.key}
                   data-detail={detail}
+                  // The mark's OWN radius, in the bake's frame units — the same number `livePlan`
+                  // hands the circle layer as `r`. `live-map.mjs`'s `reposition` multiplies it by
+                  // the camera scale to size the painted halo, so the halo and the circle under it
+                  // are one number seen once, not two that can drift.
+                  data-r={markRadius}
                   data-group={slugOf(point.arc)}
                 />
               );

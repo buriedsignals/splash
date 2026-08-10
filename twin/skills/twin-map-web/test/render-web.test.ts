@@ -5,11 +5,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "../scripts/render-still.mjs";
-import {
-  MapWebSeed,
-  RegionTable,
-  pointDetail,
-} from "../assets/MapWebSeed.tsx";
+import { MapWebSeed, RegionTable, pointDetail } from "../assets/MapWebSeed.tsx";
 import { renderMapWeb, separationHeadroom } from "../scripts/render-web.mjs";
 import {
   radiusScale,
@@ -78,9 +74,7 @@ const BASE = {
   accent: "#0B7A75",
 };
 
-function renderSeed(
-  overrides: Partial<typeof BASE> = {},
-) {
+function renderSeed(overrides: Partial<typeof BASE> = {}) {
   const furniture = deriveFurniture(
     (overrides.ground ?? BASE.ground) as string,
   );
@@ -227,8 +221,11 @@ describe("MapWebSeed", () => {
 
   it("should tag every point button, decorative circle and point label with its own data-group", () => {
     const html = renderSeed();
-    expect(html).toContain(
-      'data-key="paris" data-detail="Alpha City : 11,0 million inhabitants" data-group="west"',
+    // `data-r` sits between the detail and the group since B6.20: it is the mark's own radius in
+    // frame units, and the live layer sizes the painted highlight from it. Asserted here in the
+    // attribute run rather than separately, so removing it fails a test that already exists.
+    expect(html).toMatch(
+      /data-key="paris" data-detail="Alpha City : 11,0 million inhabitants" data-r="[\d.]+" data-group="west"/,
     );
     // The decorative SVG mark too — not just the interactive button and the label — or a filtered
     // view leaves unlabelled ghost circles on the map (caught by screenshotting the filtered
@@ -328,7 +325,10 @@ describe("MapWebSeed", () => {
     const html = renderSeed();
     const fallbackStart = html.indexOf('id="mw-fallback"');
     const overlayStart = html.indexOf('class="mw-overlay"');
-    expect([fallbackStart >= 0, overlayStart > fallbackStart]).toEqual([true, true]);
+    expect([fallbackStart >= 0, overlayStart > fallbackStart]).toEqual([
+      true,
+      true,
+    ]);
     expect(html.slice(fallbackStart, overlayStart)).not.toContain('class="pt"');
   });
 
@@ -448,13 +448,27 @@ describe("renderMapWeb", () => {
     expect(html).not.toContain('class="region-table"');
     // What a reader without the table still has, and what the discipline file weighs the choice
     // against: every point is still a labelled, focusable button.
-    expect(html).toContain('aria-label="Alpha City : 11,0 million inhabitants"');
+    expect(html).toContain(
+      'aria-label="Alpha City : 11,0 million inhabitants"',
+    );
   });
 
   it("should render the table when the beat asks for it, with one row per point", async () => {
-    const html = await build({ regionTable: true });
+    // `tableRowNoun` is required alongside `regionTable` since B5.2: the table now ships inside a
+    // disclosure whose summary has to say what it holds, and nothing in the genre can invent that
+    // word. `the-value-table-is-collapsed.test.ts` owns the disclosure's own assertions.
+    const html = await build({
+      regionTable: true,
+      tableRowNoun: "metro areas",
+    });
     expect(html).toContain('class="region-table"');
     expect((html.match(/<th scope="row">/g) ?? []).length).toBe(POINTS.length);
+  });
+
+  it("should refuse to render a table the beat gave no word for", async () => {
+    // The invariant this genre keeps everywhere: nothing renders in a value nobody chose. A summary
+    // reading "Table of values — 3 undefined" would be worse than the throw.
+    await expect(build({ regionTable: true })).rejects.toThrow(/tableRowNoun/);
   });
 
   it("should generate a filter selector quoting the SLUG, never an HTML-escaped group name", async () => {
@@ -477,7 +491,9 @@ describe("renderMapWeb", () => {
       group: i === 0 ? "Nord-Ost" : "Nord/Ost",
     }));
     await expect(
-      build({ props: { ...PROPS, geometry: { ...GEOMETRY, points: collide } } }),
+      build({
+        props: { ...PROPS, geometry: { ...GEOMETRY, points: collide } },
+      }),
     ).rejects.toThrow("both slug to");
   });
 
@@ -487,7 +503,9 @@ describe("renderMapWeb", () => {
       group: i === 0 ? "All" : "East",
     }));
     await expect(
-      build({ props: { ...PROPS, geometry: { ...GEOMETRY, points: reserved } } }),
+      build({
+        props: { ...PROPS, geometry: { ...GEOMETRY, points: reserved } },
+      }),
     ).rejects.toThrow('slugs to "all"');
   });
 

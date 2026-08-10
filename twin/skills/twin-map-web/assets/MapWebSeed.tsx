@@ -367,9 +367,9 @@ export function MapWebSeed({
               // diameter written as the same fraction of the frame the circle is drawn at, so the
               // two scale together however wide the container is; `max()` keeps HIT_TARGET_PX as
               // the floor for a mark too small to hit. Never a second radius constant.
-              const hitDiameter = radiusOf(point.value) * 2;
+              const markRadius = radiusOf(point.value);
+              const hitDiameter = markRadius * 2;
               const wPct = (hitDiameter / frame.width) * 100;
-              const hPct = (hitDiameter / frame.height) * 100;
               return (
                 <button
                   key={point.key}
@@ -378,13 +378,23 @@ export function MapWebSeed({
                   style={{
                     left: `${xPct}%`,
                     top: `${yPct}%`,
+                    // ONE dimension. The height comes from `.pt { aspect-ratio: 1 }`, never from a
+                    // second percentage: a percentage height resolves against the CONTAINER's
+                    // height while a percentage width resolves against its width, so the same
+                    // fraction is two different numbers as soon as the overlay stops being the
+                    // plate's own square — which is what the live swap did (B6.20: 194 x 72 px of
+                    // painted halo behind a circle a fraction of that size).
                     width: `max(${HIT_TARGET_PX}px, ${wPct}%)`,
-                    height: `max(${HIT_TARGET_PX}px, ${hPct}%)`,
                   }}
                   aria-label={detail}
                   title={detail}
                   data-key={point.key}
                   data-detail={detail}
+                  // The mark's OWN radius, in the bake's frame units — the same number `livePlan`
+                  // hands the circle layer as `r`. `live-map.mjs`'s `reposition` multiplies it by
+                  // the camera scale to size the painted halo, so the halo and the circle under it
+                  // are one number seen once, not two that can drift.
+                  data-r={markRadius}
                   data-group={slugOf(point.group)}
                 />
               );

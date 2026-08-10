@@ -46,6 +46,26 @@
 //      filtered away — a name floating over a mark that is not on the map"*, in three of the four
 //      arc states.
 //
+//   5. B6.20 — THE PAINTED HIGHLIGHT IS A CIRCLE, IN SCREEN PIXELS, AND IT IS THE MARK'S OWN SIZE.
+//      The owner's report: *"le rond du hover est trop large, c'est chelou"* — hovering the M9.1
+//      disc on `proof/mapgen-symbol-web` painted a 140.9 x 53.2 px grey ellipse. Not degrees of
+//      longitude, which is the usual way this class arrives: a size stated as TWO percentages, one
+//      resolving against the container's width and one against its height, in an overlay the live
+//      swap had stopped keeping square. Asserted as two independent claims, because they come apart
+//      independently — the halo is ROUND, and (where the beat declares `data-r`) the halo is
+//      `max(28, 2·r + 10)` with `r` derived here from the plan's own `degreesPerPixel` and the live
+//      zoom, never read back from the page's own style.
+//
+//      MUTATIONS, run in an rsync copy outside the tree (`/tmp/mut-halo/twin`), re-rendering the
+//      seed each time:
+//        A. the second percentage put back on `.pt` + the live sizing disabled →
+//           *"the highlight on paris is 194.2 x 72.3px — an ellipse, not a circle"* AND
+//           *"… is 194.2px across but its mark is drawn at 87.4px, so the halo should be 97.4px"*,
+//           both at both container aspects, for all thirteen marks.
+//        B. `HALO_PAD_PX` 10 → 40, which keeps the halo perfectly ROUND and stops it being the
+//           mark's size → **0 "ellipse" failures** and thirteen size failures. The two claims are
+//           genuinely separate, and that is what B proves.
+//
 // AT TWO CONTAINER ASPECTS, and that is the point rather than thoroughness for its own sake: the
 // defect is invisible when the container's aspect matches the plate's, because then the box-derived
 // scale and the camera-derived one agree. A square-ish container would have passed the whole time.
@@ -81,6 +101,24 @@ export const SCALE_TOLERANCE = 0.01;
  *  at a time and the circle's own edge is antialiased across about one more, so three pixels is the
  *  measurement's noise. A hit target that had gone back to a fixed 28px button would miss by tens. */
 export const POINTER_TOLERANCE_PX = 3;
+
+/** How far the painted highlight's own width may sit from its height before it reads as an ellipse
+ *  rather than a circle (B6.20). One pixel: a box laid out at a fractional CSS size can round its
+ *  two axes to either side of the same number, and nothing wider than that is rounding. The defect
+ *  this exists to catch missed by 87.7px (140.9 x 53.2). */
+export const HALO_ROUNDNESS_TOLERANCE_PX = 1;
+
+/** The halo's own arithmetic, duplicated from `assets/live-map.mjs` ON PURPOSE. A verifier that
+ *  imported the constants it checks would agree with the implementation by construction — the same
+ *  vacuity this script's own header records it having shipped once already. These two numbers are
+ *  the contract; if they change there, this line has to be changed here, deliberately. */
+export const HALO_PAD_PX = 10;
+export const HALO_FLOOR_PX = 28;
+
+/** How far the measured halo may sit from the size the camera implies, in CSS pixels. One pixel,
+ *  for the same rounding reason as the roundness tolerance — the quantity itself is a derived
+ *  length, not a ratio, so a pixel budget is the honest unit here. */
+export const HALO_SIZE_TOLERANCE_PX = 1;
 
 export function resolveChrome() {
   const candidates = [];
@@ -164,6 +202,21 @@ export async function measureShape(browser, keyedPath, shape) {
           // A mark whose whole disc is inside the canvas. The beat's title claims every point, so a
           // mark that is not here is a cropped claim, not a measurement that happens to be missing.
           onScreen: at.x - drawn > 0 && at.y - drawn > 0 && at.x + drawn < box.width && at.y + drawn < box.height,
+        };
+      }),
+      // B6.20 — the PAINTED HIGHLIGHT, measured as a screen box rather than read out of a style
+      // string. `.pt` is what carries the hover/focus/active background, so its own rendered
+      // rectangle IS the halo the reader sees, whatever the CSS that produced it says.
+      halos: Array.from(document.querySelectorAll(".pt")).map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          key: node.getAttribute("data-key"),
+          width: rect.width,
+          height: rect.height,
+          // The mark's own radius in the bake's frame units, when the beat declares one. Absent on
+          // a beat whose marks are not camera-scaled circles (a choropleth fill, a hex bin), where
+          // the only claim below is roundness.
+          frameRadius: Number(node.getAttribute("data-r") || 0),
         };
       }),
     };
@@ -285,6 +338,37 @@ export async function verifyLiveMap({ htmlPath, key }) {
             `${result.shape}: ${mark.key} is drawn at ${mark.drawn.toFixed(1)}px but this camera implies ` +
               `${expected.toFixed(1)}px (${(off * 100).toFixed(0)}% out) — the mark is being sized by ` +
               `something other than the camera, which is what the plate's own box does`,
+          );
+      }
+      // 1b. THE PAINTED HIGHLIGHT IS A CIRCLE, IN SCREEN PIXELS, AND IT IS THE MARK'S OWN SIZE.
+      //
+      // The defect this closes, reported by the owner on `proof/mapgen-symbol-web` and then
+      // measured: hovering the M9.1 disc painted a wide flattened grey ellipse, 140.9 x 53.2 px
+      // around a circle a fraction of that across ("le rond du hover est trop large, c'est chelou").
+      // The cause was not degrees-of-longitude, which is the usual way this class arrives — it was a
+      // size stated as TWO percentages, one resolving against the container's width and one against
+      // its height, in an overlay the live swap had stopped keeping square (1566 x 591 = 2.65,
+      // exactly the ratio measured).
+      //
+      // Two claims, and they come apart independently, so they are asserted separately: the halo is
+      // ROUND, and the halo is the MARK's size plus a small constant. The second is derived from the
+      // plan and the live zoom — the same independent second opinion `expectedRadiusPx` gives the
+      // mark itself — never from the number the page wrote into its own style.
+      for (const halo of result.halos) {
+        if (Math.abs(halo.width - halo.height) > HALO_ROUNDNESS_TOLERANCE_PX)
+          failures.push(
+            `${result.shape}: the highlight on ${halo.key} is ${halo.width.toFixed(1)} x ` +
+              `${halo.height.toFixed(1)}px — an ellipse, not a circle. A size stated in a ` +
+              `coordinate space whose two axes are not the same length is how this arrives.`,
+          );
+        if (!(halo.frameRadius > 0)) continue;
+        const drawn = expectedRadiusPx(halo.frameRadius, plan.degreesPerPixel, result.zoom);
+        const expected = Math.max(HALO_FLOOR_PX, drawn * 2 + HALO_PAD_PX);
+        if (Math.abs(halo.width - expected) > HALO_SIZE_TOLERANCE_PX)
+          failures.push(
+            `${result.shape}: the highlight on ${halo.key} is ${halo.width.toFixed(1)}px across but ` +
+              `its mark is drawn at ${(drawn * 2).toFixed(1)}px, so the halo should be ` +
+              `${expected.toFixed(1)}px — the painted highlight is not derived from the mark it belongs to`,
           );
       }
       // 2. every mark the beat claims is on screen

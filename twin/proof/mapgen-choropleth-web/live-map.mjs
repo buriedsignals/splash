@@ -477,8 +477,25 @@ export function applyMarkScale(map, doc, plan) {
   return scale;
 }
 
+/**
+ * The painted halo's own arithmetic, and the two numbers it is allowed to be made of (B6.20).
+ *
+ * `HALO_PAD_PX` is the small constant that makes the halo read as a RING around the mark rather
+ * than as the mark: 10 px of diameter, so 5 px of grey either side of the circle's own edge.
+ * `HALO_FLOOR_PX` is `HIT_TARGET_PX`, the same 28 px floor the SSR'd markup uses, so a mark drawn
+ * at two pixels still has a focus indicator a keyboard reader can see.
+ *
+ * There is deliberately no third number here. A halo derived from anything other than the mark's
+ * own drawn radius is the "two numbers describing one circle" defect this genre has now paid for
+ * twice — see `references/map-web-discipline.md`, "The class: one mark, two halves, two mechanisms".
+ */
+const HALO_PAD_PX = 10;
+const HALO_FLOOR_PX = 28;
+
 /** Every `.pt` button and `.point-label` follows the camera. They were percentages of a fixed
- *  plate; live, `map.project` is what puts them where their point actually is. */
+ *  plate; live, `map.project` is what puts them where their point actually is — and a `.pt` that
+ *  carries its mark's own radius (`data-r`) is SIZED here too, in screen pixels, because the
+ *  percentage it was SSR'd with is a percentage of a box that is no longer the plate's. */
 export function reposition(map, doc, plan, scale) {
   const anchors = plan.anchors || {};
   if (!(scale > 0)) scale = cameraScale(plan, map);
@@ -488,6 +505,17 @@ export function reposition(map, doc, plan, scale) {
     const coords = anchors[node.getAttribute("data-key")];
     if (!coords) continue;
     const at = map.project(coords);
+    // THE HALO IS THE MARK'S OWN SIZE, IN SCREEN PIXELS. `data-r` is the radius the mark is drawn
+    // at in the bake's frame units — the very number `livePlan` puts on the circle layer's own
+    // features — so `r * scale` is exactly what MapLibre paints, and the halo is that plus the pad.
+    // Set on BOTH axes explicitly rather than left to `aspect-ratio`, because this is the one place
+    // that knows the number in pixels and a circle stated once cannot come apart.
+    const markRadius = Number(node.getAttribute("data-r") || 0);
+    if (markRadius > 0 && node.classList.contains("pt")) {
+      const diameter = Math.max(HALO_FLOOR_PX, markRadius * scale * 2 + HALO_PAD_PX);
+      node.style.width = diameter + "px";
+      node.style.height = diameter + "px";
+    }
     // A hit target sits ON its point; a label sits BESIDE it, on the side and at the gap
     // `labelPlacement` chose at bake time, scaled into the box the live map is drawn in. Both
     // numbers travel on the node itself rather than being recomputed here, so the live label and
