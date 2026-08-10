@@ -13,11 +13,15 @@ import {
   deriveFurniture,
   readPalette,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  readPinnedSize,
+  readPngSize,
+} from "#shared/twin-chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "small-multiples-co2";
 
 const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
   stopAt: join(HERE, ".."),
@@ -84,7 +88,18 @@ const dataPath = flag("--data", join(HERE, "data.csv"));
 // is audited from. It used to default to a scratch directory, so running this script the obvious way
 // — no arguments — produced a fresh video nobody looks at, printed a path, exited zero, and left the
 // committed one stale: the presence of a file mistaken for the existence of a result.
-const outDir = flag("--out", HERE);
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size lived in `Root.tsx` and in the component, as the same two literals.
+const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. It is deliberately not a way to change what this beat DELIVERS.
+const asked = flag("--size", null);
+const size = asked ?? pinned;
+const COMPOSITION = `small-multiples-co2-${size}`;
+const outDir = flag("--out", asked ? join(HERE, "sizes") : HERE);
+const stem = asked ? `small-multiples-co2-${size}` : "small-multiples-co2";
+if (asked) console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
 const stillOnly = argv.includes("--still-only");
 
 await mkdir(outDir, { recursive: true });
@@ -125,11 +140,11 @@ const props = {
   subjectIndex: 3, // Poland
   ...deriveFurniture(BEAT.ground),
 };
-const propsPath = join(outDir, "small-multiples-co2-props.json");
+const propsPath = join(outDir, `${stem}-props.json`);
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 
 // Rung 2a: the last frame, on its own, first.
-const stillPath = join(outDir, "small-multiples-co2-final-frame.png");
+const stillPath = join(outDir, `${stem}-final-frame.png`);
 const stillSeconds = remotion([
   "still",
   ENTRY,
@@ -139,12 +154,16 @@ const stillSeconds = remotion([
   `--props=${propsPath}`,
   "--timeout=120000",
 ]);
-console.log(`still (--frame=-1) -> ${stillPath}  [${stillSeconds}s]`);
+// THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES.
+assertDeliveredSize(readPngSize(await readFile(stillPath)), size, {
+  what: stillPath,
+});
+console.log(`still (--frame=-1) -> ${stillPath}  [${stillSeconds}s], verified from the file`);
 
 if (stillOnly) process.exit(0);
 
 // Rung 2b: the mp4. Concurrency 1 keeps the render deterministic.
-const videoPath = join(outDir, "small-multiples-co2.mp4");
+const videoPath = join(outDir, `${stem}.mp4`);
 const videoSeconds = remotion([
   "render",
   ENTRY,
@@ -154,4 +173,22 @@ const videoSeconds = remotion([
   "--concurrency=1",
   "--timeout=120000",
 ]);
-console.log(`video -> ${videoPath}  [${videoSeconds}s]`);
+// THE MP4'S OWN DIMENSIONS, out of the container rather than out of the arguments.
+const probed = spawnSync(
+  "ffprobe",
+  [
+    "-v", "error",
+    "-select_streams", "v:0",
+    "-show_entries", "stream=width,height",
+    "-of", "csv=p=0",
+    videoPath,
+  ],
+  { encoding: "utf8" },
+);
+if (probed.status !== 0)
+  throw new Error(`ffprobe could not read ${videoPath}: ${probed.stderr ?? ""}`);
+const [probedWidth, probedHeight] = probed.stdout.trim().split(",").map(Number);
+assertDeliveredSize({ width: probedWidth, height: probedHeight }, size, {
+  what: videoPath,
+});
+console.log(`video -> ${videoPath}  [${videoSeconds}s], ${probedWidth}x${probedHeight} from ffprobe`);

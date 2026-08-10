@@ -1,7 +1,16 @@
+---
+size: landscape
+type: small-multiples
+---
+
 # Beat — Poland's per-capita emissions have overtaken Germany's
 
-**Type:** small multiples (four line panels). **Medium/genre:** chart / video. **Channel:**
-1080×1080, 11s at 30fps.
+**Type:** small multiples (four line panels). **Medium/genre:** chart / video.
+**Size:** landscape (1920 × 1080), 11 s at 30 fps.
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize` and renders the composition of that name.
+`Root.tsx` registers one composition per row of the table.
 
 ## Claim
 
@@ -57,3 +66,39 @@ evidence (the full curve) was already visible. Frame 265: the conclusion sentenc
 faint. Frame 329, the true last frame (0-indexed, `durationInFrames - 1`, not the deliberately-empty
 first frame): matches the standalone `--frame=-1` still exactly — the hold frame a viewer actually
 reads.
+
+## The three export sizes — and why the pin MOVED from square to landscape
+
+`Root.tsx` registers **one composition per row of the table** (`small-multiples-co2-landscape` /
+`-square` / `-portrait`); `render.mjs` reads the pin out of the front matter above, renders that
+composition, and reads the artifact's own dimensions back — the PNG from its IHDR, the mp4 from
+**`ffprobe`** (1920 x 1080, confirmed).
+
+| size | grid | per-panel height | verdict |
+|---|---|---|---|
+| **landscape (pinned)** | 4 x 1 | 313 px | **ships** — mp4 measured 1920 x 1080 from ffprobe |
+| square | 2 x 2 | **−185 px** | refused |
+| portrait | 2 x 2 | **−163 px** | refused |
+
+**This beat carried the smallest type in the corpus, and it was the beat least able to afford
+fixing it.** Its tick labels were **16 px on a 1080 x 1080 frame** — **5.3 CSS px** on the phone a
+square video is watched on, less than half the 11–12 px floor. Rebasing off that smallest token
+(16 → 12) grows everything by **2.25x**, and at that size the header alone is 468 px of a 1080 px
+square: rendered and opened, the four panels were **drawn on top of the title, the standfirst and
+the conclusion**, with every existing counter green. The picture is the argument for the guard.
+
+**So the frame moved, not the type.** Four panels in a 16:9 frame are ONE ROW, and the packing is
+now asked of the frame rather than typed (`gridColumns` — `SIZES` must not learn how many columns a
+four-panel grid takes, or it stops being a table). The landscape render is a better drawing than the
+square one it replaces: four countries read left to right in the order the claim names them, on one
+shared zero-based scale, with the tick values stated once at the grid's left edge and the years once
+along its foot.
+
+**The refusal at square and portrait is mechanical**, not a note: `panelHeight` is measured against
+the floor a panel's own furniture needs — the country's name above it, the year labels below it, and
+a plot at least two lines of type tall — and the message names the ladder (R3/R7 the standfirst,
+then R8 fewer panels *and say so*) before it names the alternative size.
+
+**Also fixed, and only visible at the honest type size:** the credit and the standfirst both ran off
+the frame (one line at 18 px is three at 40 px), so both wrap and the grid's own top and bottom are
+derived from where those blocks actually end rather than from literals.
