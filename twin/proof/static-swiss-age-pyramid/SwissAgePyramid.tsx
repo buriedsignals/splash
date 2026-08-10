@@ -21,6 +21,11 @@ import {
   measureTextBand,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  inkBox,
+  inkThatReadsOver,
+  textContrastFloor,
+} from "#shared/twin-chart-beat/annotation-ink.mjs";
 
 export type Band = { ageBand: string; male: number; female: number };
 
@@ -41,6 +46,8 @@ const NOTE = { fontSize: 12, fontWeight: 700 };
  *  accessibility note. The mirrored position already carries the group distinction; colour here
  *  is reinforcing it, not carrying it alone. */
 const COLOURS = { male: "#0072B2", female: "#D55E00" };
+/** The air between the peak band's bar tip and the start of the callout drawn inside it. */
+const PEAK_NOTE_INSET = 10;
 const BAND_GUTTER = 64;
 const X_TICK_HINT = 4;
 
@@ -201,6 +208,58 @@ export function SwissAgePyramid({
 
   const peak = bars.find((b) => b.ageBand === peakBand);
 
+  // THE PEAK CALLOUT SITS ON THE BAND IT NAMES, INKED AGAINST THAT BAND.
+  //
+  // It used to park at `x={plot.left}` and run a dashed leader out to the bar's tip. For the WIDEST
+  // band — by definition the bar with the least margin left of it — that leader measured 13.2px in
+  // the committed SVG (`x1="48" x2="61.16"`), which is three dashes, and the label itself lay across
+  // the `#0072B2` bar with **57 % of its ink box on it, at 4.05:1** — under SC 1.4.3's 4.5:1 for a
+  // 12px note, and NOT fixable by recolouring: black is 4.05:1 on the bar and white is 1.00:1 on the
+  // page, so a label straddling both has no ink at all (`annotation-ink.mjs` says so by throwing).
+  //
+  // The row leaves nowhere else to go. 21 bands across a 390px plot at `paddingInner(0.15)` is a
+  // ~3px gap between rows, so there is no clear air above or below the band, and the margin left of
+  // the widest bar is the 13px the old leader was measuring. So the callout goes INSIDE its own bar,
+  // white at 5.19:1, vertically centred on the band's own ink. The leader goes with it — a leader
+  // exists to bridge a distance, and the label now stands on the thing it names.
+  //
+  // Measured, not assumed: the bar is 23.3px tall against an 11.2px ink band and 337px wide against
+  // a 183px label. If a longer callout or a shorter bar ever breaks that, this THROWS with both
+  // numbers rather than drawing a sentence over the edge of its own mark.
+  const peakNote = (() => {
+    if (!peak) return null;
+    const width = measureText(peakLabel, NOTE);
+    const band = measureTextBand(peakLabel, NOTE);
+    const baseline =
+      peak.y + peak.height / 2 + (band.ascent - band.descent) / 2;
+    const box = inkBox({
+      x: peak.male_.x + PEAK_NOTE_INSET,
+      y: baseline,
+      anchor: "start",
+      width,
+      ascent: band.ascent,
+      descent: band.descent,
+    });
+    const insideTheBar =
+      box.x >= peak.male_.x &&
+      box.x + box.width <= peak.male_.x + peak.male_.width &&
+      box.y >= peak.y &&
+      box.y + box.height <= peak.y + peak.height;
+    if (!insideTheBar) {
+      throw new Error(
+        `"${peakLabel}" measures ${width.toFixed(1)}x${(band.ascent + band.descent).toFixed(1)}px and does not fit inside ` +
+          `the ${peakBand} bar (${peak.male_.width.toFixed(1)}x${peak.height.toFixed(1)}px, inset ${PEAK_NOTE_INSET}px). ` +
+          `A callout that overhangs its own mark has no ink that reads on both — shorten it, or give ` +
+          `the frame more height per band.`,
+      );
+    }
+    return {
+      x: box.x,
+      baseline,
+      ink: inkThatReadsOver([COLOURS.male], textContrastFloor(NOTE)),
+    };
+  })();
+
   // The gaps the zero spine leaves for the band labels, and the segments that remain. Each gap is
   // the label's own measured ink extent above and below its baseline, plus SPINE_LABEL_CLEARANCE
   // of air on each side. Sorted and walked once, so a future band order or a taller label changes
@@ -218,7 +277,8 @@ export function SwissAgePyramid({
   const spineSegments: { y1: number; y2: number }[] = [];
   let spineCursor = plot.top;
   for (const gap of spineGaps) {
-    if (gap.top > spineCursor) spineSegments.push({ y1: spineCursor, y2: gap.top });
+    if (gap.top > spineCursor)
+      spineSegments.push({ y1: spineCursor, y2: gap.top });
     spineCursor = Math.max(spineCursor, gap.bottom);
   }
   if (plot.bottom > spineCursor)
@@ -398,21 +458,12 @@ export function SwissAgePyramid({
         </g>
       ))}
 
-      {peak && (
+      {peakNote && (
         <g>
-          <line
-            x1={plot.left}
-            x2={peak.male_.x}
-            y1={peak.centerLabelY}
-            y2={peak.centerLabelY}
-            stroke={ink}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
           <text
-            x={plot.left}
-            y={peak.centerLabelY - 8}
-            fill={ink}
+            x={peakNote.x}
+            y={peakNote.baseline}
+            fill={peakNote.ink}
             fontSize={NOTE.fontSize}
             fontWeight={NOTE.fontWeight}
           >
