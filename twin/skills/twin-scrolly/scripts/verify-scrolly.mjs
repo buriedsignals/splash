@@ -56,12 +56,30 @@
 //   E. AT MOST TWO PANELS SHARE THE LANE. Two are on screen through every boundary — that is what
 //      travelling prose looks like — but three would mean the steps are shorter than the prose in
 //      them, and the reader is being handed a wall rather than a sequence.
-//   F. NO PANEL IS EVER PAINTED OVER THE GRAPHIC. The VISIBLE part of every panel (its box
-//      intersected with the prose column's own clip rect) is measured against the graphic's box, and
-//      the two must never meet. This is the structural claim of the eighth correction: the prose has
-//      its own space, so a collision is impossible by construction rather than avoided by a
-//      reservation. Under the model this replaced the two layers shared one box and this assertion
-//      cannot hold at all.
+//   F. THE CARD IS CENTRED, OVER THE VISUAL, OPAQUE, AND ONE OF TWO WIDTHS. This is the NINTH
+//      correction, and it is assertion F pointed the other way: the eighth required that no panel
+//      ever touch the graphic, which is exactly the side column the owner rejected — "le panel avec
+//      le texte ne doit pas être sur le côté mais centré et par dessus le contenu visuel." Four
+//      sub-assertions, because the form only works if all four hold at once:
+//        F1 CENTRED — every painted card's horizontal centre is the graphic's own, within 2px, at
+//           every recorded animation frame. A card that drifts to a side is the column returning.
+//        F2 OVER — every painted card's box lies inside the graphic's, and at some recorded frame a
+//           card overlaps the graphic's own vertical middle. A card that only ever meets the edge of
+//           the visual is beside it in all but name.
+//        F3 OPAQUE, IN THE RENDER'S OWN GROUND — read off `getComputedStyle` in the driven browser,
+//           not off the stylesheet: the card's background is fully opaque (alpha 1), there is
+//           exactly ONE background colour across the whole pass, and ink-on-that-background measures
+//           at least 4.5:1 by the WCAG formula. This is what makes an opaque card a legitimate
+//           answer to the collision problem at all — a translucent card's effective colour is a
+//           blend with whatever the graphic shows behind it, which is not a value anyone can
+//           measure. `renderScrolly` asserts the same pairing at build time; this asserts what the
+//           browser actually painted.
+//        F4 ONE OF TWO WIDTHS — the card is at most 70% of the graphic's width, or the whole of it.
+//           The in-between shape is the one that reads as a bug: a label the card's own VERTICAL
+//           edge cuts down the middle is broken text for every frame the card spends at that row,
+//           and frames keep their margin furniture in their outer ~15%. Measured at 375px, the
+//           in-between shape sliced the seed's own y-axis labels for 42 consecutive frames; edge to
+//           edge it slices nothing.
 //   G. THE PROSE TRAVELS, and this is the assertion that was missing. Every earlier check on this
 //      vehicle asked WHICH step was painted and none of them asked whether the words MOVE, so a
 //      panel parked motionless for the whole of its step passed everything. For each panel, over
@@ -81,12 +99,17 @@
 //      never more than half a step away from where the progress says the reader is, which is what
 //      keeps a scrubbed drawing and the caption beside it describing the same moment.
 //
-// WHAT IS REPORTED BUT NOT ASSERTED, and why: the census of prose-over-annotation collisions, kept
-// from the round before this one. F now makes it structurally empty at every width, so a non-zero
-// count is a fact about a beat whose own frame paints outside the graphic box, and the vehicle
-// cannot move a beat's marks. Also reported: whether the tallest panel FITS the band it travels in
-// — a panel taller than its own band is legible on the way through and never all at once, which is
-// a fact about that beat's prose and not something this file may assert away.
+// WHAT IS REPORTED BUT NOT ASSERTED, and why. THE CENSUS OF WHAT THE CARD COVERS: how many
+// animation frames of the pass a card sat over one of the active frame's own labels, how many it sat
+// over nothing at all, and — the number that matters — the longest RUN of consecutive frames on
+// which a label was SLICED across its width by the card's own vertical edge. A label fully behind
+// the card reads as absent, which is what a card over a picture means; a label cut down the middle
+// reads as broken, which is the defect the owner reported the last time a card was centred ("the
+// 'flood day' label reduced to 'flo…'"). F4 is the vehicle's own lever against it and it closes the
+// narrow-viewport case outright; what is left on a desktop is the beat's own composition — where a
+// beat puts a label, against a stripe whose footprint in the frame's own coordinates changes with
+// the viewport — and the vehicle cannot move a beat's marks. Also reported: whether the tallest card
+// FITS the frame it travels over.
 //
 // Usage: bun skills/twin-scrolly/scripts/verify-scrolly.mjs <file.html> [more.html...] [--width=W]
 
@@ -193,10 +216,9 @@ function recorder() {
   window.__recording = true;
   (function tick() {
     if (!window.__recording) return;
-    // THE LANE IS THE PROSE COLUMN ITSELF — its whole box, not a band inside a shared one. Since
-    // the eighth correction the prose has its own space (a column beside the graphic on a wide
-    // viewport, a band below it on a phone), so "in the lane" and "inside the element that
-    // scrolls" are the same fact, read off the same rect.
+    // THE LANE IS THE SCROLLPORT ITSELF — which, since the ninth correction, covers the graphic edge
+    // to edge again. "In the lane" and "inside the element that scrolls" are the same fact, read off
+    // the same rect.
     const port = scroller.getBoundingClientRect();
     const graphicBox = graphic.getBoundingClientRect();
     const progressAttr = root.getAttribute("data-progress");
@@ -218,8 +240,7 @@ function recorder() {
       // and a check that only looked at painted panels would be blind to a panel hidden while it
       // moves, which is exactly the shape a "fix" for this could take.
       panels: [],
-      painted: [],
-      overGraphic: [],
+      cards: [],
       collisions: [],
     };
     const visible = [];
@@ -235,9 +256,9 @@ function recorder() {
       });
       if (o <= PAINTED) continue;
       if (r.width === 0 || r.bottom <= port.top || r.top >= port.bottom) continue;
-      // The panel as a READER sees it: its own box clipped by the column that scrolls it. A panel
-      // riding out of a phone's band has a rect that reaches into the graphic's box while nothing
-      // of it is painted there, so the raw rect would report a collision the reader never sees.
+      // The card as a READER sees it: its own box clipped by the layer that scrolls it. A card
+      // riding out past the top of the frame has a rect that reaches above the graphic while
+      // nothing of it is painted there.
       const clipped = {
         left: Math.max(r.left, port.left),
         right: Math.min(r.right, port.right),
@@ -245,21 +266,20 @@ function recorder() {
         bottom: Math.min(r.bottom, port.bottom),
       };
       if (clipped.right <= clipped.left || clipped.bottom <= clipped.top) continue;
-      sample.painted.push({
+      const style = getComputedStyle(p);
+      sample.cards.push({
         id: id,
-        top: Math.round(r.top),
-        bottom: Math.round(r.bottom),
+        box: [
+          Math.round(clipped.left),
+          Math.round(clipped.top),
+          Math.round(clipped.right),
+          Math.round(clipped.bottom),
+        ],
+        // WHAT THE BROWSER PAINTED, not what the stylesheet asked for. A card declaring an opaque
+        // colour is not proof it was painted opaque at the moment its text crosses the graphic.
+        bg: style.backgroundColor,
+        ink: style.color,
       });
-      if (hits(clipped, graphicBox))
-        sample.overGraphic.push({
-          id: id,
-          box: [
-            Math.round(clipped.left),
-            Math.round(clipped.top),
-            Math.round(clipped.right),
-            Math.round(clipped.bottom),
-          ],
-        });
       visible.push(clipped);
     }
     for (const f of frames) {
@@ -267,10 +287,9 @@ function recorder() {
       for (const el of labels.get(f)) {
         const raw = el.getBoundingClientRect();
         if (raw.width === 0 || raw.height === 0) continue;
-        // Clipped by the GRAPHIC's own cell, for the same reason the panel is clipped by the prose
-        // column's: a label whose box runs past the cell is cut at that edge and painted nowhere.
-        // Measuring the raw rect reported four beats' photo credits as colliding with prose that
-        // was two hundred pixels away from anything the reader could see.
+        // Clipped by the GRAPHIC's own box: a label whose box runs past it is cut at that edge and
+        // painted nowhere. Measuring the raw rect reported four beats' photo credits as colliding
+        // with prose that was two hundred pixels away from anything the reader could see.
         const r = {
           left: Math.max(raw.left, graphicBox.left),
           right: Math.min(raw.right, graphicBox.right),
@@ -278,11 +297,18 @@ function recorder() {
           bottom: Math.min(raw.bottom, graphicBox.bottom),
         };
         if (r.right <= r.left || r.bottom <= r.top) continue;
-        if (visible.some((v) => hits(r, v)))
+        for (const v of visible) {
+          if (!hits(r, v)) continue;
+          const ix = Math.min(r.right, v.right) - Math.max(r.left, v.left);
           sample.collisions.push({
             frame: f.getAttribute("data-step"),
             text: (el.textContent || "").trim().slice(0, 30),
+            // The share of the label's WIDTH the card covers. Strictly between 0 and 1 means the
+            // card's own vertical edge is cutting the label in two — the run of frames that stays
+            // true is the census number that matters.
+            shareX: (ix / (r.right - r.left)).toFixed(3),
           });
+        }
       }
     }
     window.__rec.push(sample);
@@ -314,6 +340,42 @@ async function scrollThrough(page, framesPerStep) {
 
 const same = (a, b) => a.every((v, i) => v === b[i]);
 
+/** `rgb(r, g, b)` / `rgba(r, g, b, a)` — what `getComputedStyle` hands back — to `[r, g, b, a]`.
+ *  Anything unparseable is treated as translucent, so an unrecognised colour FAILS loudly rather
+ *  than passing by default. */
+function parseCss(colour) {
+  const m = String(colour).match(
+    /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+))?\s*\)$/,
+  );
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3]), m[4] === undefined ? 1 : Number(m[4])];
+}
+
+function isOpaque(colour) {
+  const c = parseCss(colour);
+  return c !== null && c[3] >= 1;
+}
+
+/** WCAG 2.x relative-luminance contrast between two CSS colours. A DUPLICATE of the `contrast`
+ *  `scripts/render-still.mjs` exports — that one takes hex and runs at build time; this one takes
+ *  what a browser reports and runs against what was actually painted. A skill's own scripts stay
+ *  copy-pasteable, so the formula is written out rather than imported across the seam. */
+function contrastOfCss(a, b) {
+  const lum = (colour) => {
+    const c = parseCss(colour);
+    if (!c) return null;
+    const [r, g, bl] = c.slice(0, 3).map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const la = lum(a);
+  const lb = lum(b);
+  if (la === null || lb === null) return 0;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
 /**
  * Drives one file at one size through a full continuous scroll and returns its findings.
  * `failures` are assertion breaches; `notes` are measured facts a person should read.
@@ -337,11 +399,12 @@ export async function verifyOne(page, file, { w, h }) {
       docScrollable: doc.scrollHeight - doc.clientHeight,
       horizontalOverflow: doc.scrollWidth - doc.clientWidth,
       lane: Math.round(port.height),
-      laneWidth: Math.round(port.width),
       graphicBox: [Math.round(g.width), Math.round(g.height)],
-      // Side by side, or stacked? Read off the two rects rather than off the media query, so the
-      // report says what the browser actually laid out.
-      split: g.right <= port.left + 1 ? "columns" : "rows",
+      // Which of the two width regimes the browser actually chose — read off the rendered card, not
+      // off the media query, so the report says what was laid out rather than what was intended.
+      cardWidth: Math.round(
+        Math.max(...panels.map((p) => p.getBoundingClientRect().width)),
+      ),
       tallestPanel: Math.round(
         Math.max(...panels.map((p) => p.getBoundingClientRect().height)),
       ),
@@ -429,15 +492,91 @@ export async function verifyOne(page, file, { w, h }) {
         `a step must be taller than the prose in it`,
     );
 
-  // F — no panel is ever painted over the graphic. The eighth correction's whole claim.
-  const over = rec.filter((s) => s.overGraphic.length);
-  if (over.length)
+  // F — the card is centred, over the visual, opaque in the render's own ground, and one of two
+  // widths. The ninth correction's whole claim, and the exact reverse of the eighth's.
+  const [gx, gy, gw, gh] = rec[0].graphic;
+  const graphicCentre = gx + gw / 2;
+  const cardFrames = rec.filter((s) => s.cards.length);
+  if (!cardFrames.length)
     failures.push(
-      `${where}: prose was painted OVER the graphic at ${over.length}/${rec.length} animation ` +
-        `frames (first at scroll ${over[0].y}, panel ${over[0].overGraphic[0].id} at ` +
-        `${JSON.stringify(over[0].overGraphic[0].box)} against a graphic at ` +
-        `${JSON.stringify(rec[0].graphic)}) — the prose has its own space; the two may never meet`,
+      `${where}: no card was painted on any of ${rec.length} animation frames — the prose is meant ` +
+        `to travel over the visual, and a reader saw none of it`,
     );
+
+  // F1 — centred.
+  const offCentre = rec
+    .flatMap((s) => s.cards.map((c) => ({ y: s.y, c })))
+    .find(({ c }) => Math.abs((c.box[0] + c.box[2]) / 2 - graphicCentre) > 2);
+  if (offCentre)
+    failures.push(
+      `${where}: card ${offCentre.c.id} sat at x ${offCentre.c.box[0]}..${offCentre.c.box[2]} ` +
+        `(centre ${((offCentre.c.box[0] + offCentre.c.box[2]) / 2).toFixed(1)}) against a graphic ` +
+        `centred on ${graphicCentre} at scroll ${offCentre.y} — the card is centred over the ` +
+        `visual, never off to a side`,
+    );
+
+  // F2 — over the visual, and over its MIDDLE at some point, not only its edge.
+  const outside = rec
+    .flatMap((s) => s.cards.map((c) => ({ y: s.y, c })))
+    .find(
+      ({ c }) =>
+        c.box[0] < gx - 1 ||
+        c.box[2] > gx + gw + 1 ||
+        c.box[1] < gy - 1 ||
+        c.box[3] > gy + gh + 1,
+    );
+  if (outside)
+    failures.push(
+      `${where}: card ${outside.c.id} was painted at ${JSON.stringify(outside.c.box)}, outside the ` +
+        `graphic's own ${JSON.stringify(rec[0].graphic)} at scroll ${outside.y} — the card travels ` +
+        `over the visual, not beside it`,
+    );
+  const crossedMiddle = rec.some((s) =>
+    s.cards.some((c) => c.box[1] < gy + gh / 2 && c.box[3] > gy + gh / 2),
+  );
+  if (cardFrames.length && !crossedMiddle)
+    failures.push(
+      `${where}: no card ever reached the graphic's own vertical middle — a card that only meets ` +
+        `the edge of the visual is beside it in all but name`,
+    );
+
+  // F3 — opaque, one colour, and legible against it. Read off the live computed styles.
+  const bgs = [...new Set(rec.flatMap((s) => s.cards.map((c) => c.bg)))];
+  const translucent = bgs.filter((b) => !isOpaque(b));
+  if (translucent.length)
+    failures.push(
+      `${where}: the card was painted ${translucent.join(", ")} — a translucent card's effective ` +
+        `colour is a blend with whatever the graphic shows behind it, which is not a value anyone ` +
+        `can measure; the card is opaque or the contrast claim is empty`,
+    );
+  if (bgs.length > 1)
+    failures.push(
+      `${where}: the card was painted in ${bgs.length} different backgrounds — ${bgs.join(", ")}; ` +
+        `one render, one ground`,
+    );
+  const inks = [...new Set(rec.flatMap((s) => s.cards.map((c) => c.ink)))];
+  for (const bg of bgs)
+    for (const ink of inks) {
+      const ratio = contrastOfCss(ink, bg);
+      if (ratio < 4.5)
+        failures.push(
+          `${where}: the card painted ${ink} on ${bg} — ${ratio.toFixed(2)}:1, under the 4.5:1 ` +
+            `floor the whole opaque-card answer rests on`,
+        );
+    }
+
+  // F4 — one of two widths, never the in-between shape that slices a label down its side.
+  const widths = [...new Set(rec.flatMap((s) => s.cards.map((c) => c.box[2] - c.box[0])))];
+  for (const w of widths) {
+    const share = w / gw;
+    if (share > 0.7 && w < gw - 2)
+      failures.push(
+        `${where}: the card rendered ${w}px against a ${gw}px graphic — ${Math.round(share * 100)}%, ` +
+          `the in-between shape: its own vertical edges land in the outer band where a frame keeps ` +
+          `its axis furniture, and a label cut down the middle reads as broken text for every frame ` +
+          `the card spends at that row. At most 70% of the frame, or the whole of it`,
+      );
+  }
 
   // G — the prose TRAVELS. Measured only over the frames where the reader could see it, and only
   // across scroll-advancing frames, so the recorder's own aliasing (two ticks at one scrollTop)
@@ -496,9 +635,12 @@ export async function verifyOne(page, file, { w, h }) {
           `top edge, it vanished`,
       );
   }
+  const clearFrames = rec.filter((s) => s.cards.length === 0).length;
   notes.push(
-    `${where}: ${shape.split} split — graphic ${shape.graphicBox.join("x")}, prose column ` +
-      `${shape.laneWidth}x${shape.lane}; travel per panel ` +
+    `${where}: graphic ${shape.graphicBox.join("x")}, card ${shape.cardWidth}x${shape.tallestPanel} ` +
+      `(${Math.round((shape.cardWidth / shape.graphicBox[0]) * 100)}% of the frame's width, ` +
+      `${Math.round((shape.tallestPanel / shape.graphicBox[1]) * 100)}% of its height); the visual ` +
+      `stood entirely clear on ${clearFrames}/${rec.length} frames; travel per card ` +
       travel.map((t) => `${t.id} ${t.swept}px`).join(", "),
   );
   // H — the continuous signal. Read off the root exactly as a consumer reads it.
@@ -581,19 +723,39 @@ export async function verifyOne(page, file, { w, h }) {
 
   if (shape.tallestPanel > shape.lane)
     notes.push(
-      `${where}: the tallest panel (${shape.tallestPanel}px) is taller than the ${shape.lane}px ` +
-        `column it travels in, so it is legible on the way through and never all at once`,
+      `${where}: the tallest card (${shape.tallestPanel}px) is taller than the ${shape.lane}px ` +
+        `frame it travels over, so it is legible on the way through and never all at once`,
     );
 
-  // Reported, never asserted — see this file's own header.
+  // THE CENSUS OF WHAT THE CARD COVERS — reported, never asserted; see this file's own header for
+  // why the SLICED run is the number that matters and the total is only context.
   const collided = rec.filter((s) => s.collisions.length);
-  if (collided.length)
+  if (collided.length) {
+    const runs = new Map();
+    const open = new Map();
+    for (const s of rec) {
+      const cutNow = new Set();
+      for (const c of s.collisions) {
+        const share = Number(c.shareX);
+        if (!(share > 0.04 && share < 0.96)) continue;
+        const key = `${c.frame}:${c.text}`;
+        cutNow.add(key);
+        const run = (open.get(key) || 0) + 1;
+        open.set(key, run);
+        if (run > (runs.get(key) || 0)) runs.set(key, run);
+      }
+      for (const key of [...open.keys()]) if (!cutNow.has(key)) open.delete(key);
+    }
+    const sliced = [...runs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
     notes.push(
-      `${where}: prose covered a frame's own label at ${collided.length}/${rec.length} frames — ` +
-        JSON.stringify([
-          ...new Set(collided.flatMap((s) => s.collisions.map((c) => `${c.frame}:${c.text}`))),
-        ].slice(0, 6)),
+      `${where}: the card covered a frame's own label on ${collided.length}/${rec.length} frames — ` +
+        JSON.stringify(
+          [...new Set(collided.flatMap((s) => s.collisions.map((c) => `${c.frame}:${c.text}`)))].slice(0, 6),
+        ) +
+        `; longest SLICED run ` +
+        (sliced.length ? sliced.map(([k, n]) => `${k} ${n}f`).join(", ") : "none"),
     );
+  }
 
   return { where, failures, notes, frames: rec.length, arrival: [...arrival.entries()] };
 }

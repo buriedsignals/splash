@@ -75,9 +75,10 @@ export type ScrollyStepMeta = {
   frameKind: "image" | "drawn" | "map" | "chart";
   /** This step's own words, as a FUNCTION of the beat's own derived facts — see this file's own
    *  doc-comment. Rendered as plain `<p>` text in ordinary document flow, never gated behind the
-   *  graphic or the inline script. Keep each paragraph short enough to fit the prose lane
-   *  (`PROSE_LANE`, below): the panel is pinned in a reserved band, and a paragraph that outgrows
-   *  that band is the one thing that can push prose back over the graphic's own annotations. */
+   *  graphic or the inline script. Keep each paragraph short: the card travels OVER the visual, so
+   *  its own height is the share of the frame it hides while it passes — measured at 16-22% of the
+   *  graphic's height on a desktop and 25-31% on a phone for the beats on disk. A paragraph twice
+   *  that long is a card that never gets out of the visual's way. */
   prose: (facts: SeedFacts) => string[];
 };
 
@@ -120,26 +121,27 @@ export const STEPS_META: ScrollyStepMeta[] = [
 // =========================================
 
 /**
- * **The prose lane.** The fraction of the sticky graphic's own height, measured from its BOTTOM,
- * that the scroll scaffold reserves for the pinned prose panel — and that no frame may place
- * anything meaningful inside.
+ * **THE LANE IS GONE, and this note is what stands where it was.** Three rounds of this seed
+ * reserved `PROSE_LANE` — 28% of every frame's own height, at the bottom — for a prose panel to
+ * park in. The ninth correction puts the card back over the graphic and lets it TRAVEL, so:
  *
- * This is the constant that fixes the defect five earlier rounds of this element did not: the panel
- * used to be centred in the viewport and to TRAVEL with the scroll, so it crossed every part of the
- * graphic at some offset, and any "safe area" a frame respected would be covered sooner or later.
- * Two changes make the lane real, and both are needed:
+ *   - it crosses the whole height of the frame once per step, at the reader's own uniform rate, and
+ *     rests nowhere. Measured on a continuous scroll at three widths, no band is preferred;
+ *   - at the one position that IS editorially load-bearing — `data-progress = i`, the moment step
+ *     `i`'s own sentence sits on the lane's centre line — the card is DEAD CENTRE of the frame, the
+ *     furthest possible point from the band the frames used to reserve.
  *
- *   1. `scripts/render-scrolly.mjs`'s own `buildCss` pins the panel (`position: sticky`, anchored
- *      to the BOTTOM) so its screen position no longer depends on where inside a step the reader
- *      happens to be. It parks in the lane and stays there.
- *   2. Every frame below keeps everything it annotates OUT of that lane, by construction —
- *      `safeBand` for the frames that are COVER-cropped, `CONTENT_TOP` for the ones that are not.
+ * So the reservation protected the one place the card never dwells, and cost this seed's own chart
+ * roughly 230px of its 821px box at 1600x900 — visible as bare ground under the plot. It is
+ * reclaimed here: `safeBand` no longer takes a lane, `CONTENT_TOP` is gone, and `CHART_LAYOUT` uses
+ * the frame's full height. What replaces it is not another band but a COMPOSITION RULE, stated in
+ * `references/scrolly-discipline.md`: nothing whose only copy a reader needs may sit alone in the
+ * card's own stripe down the middle of the frame.
  *
- * The scaffold's own CSS carries the same number (`--prose-lane`), and `test/render-scrolly.test.ts`
- * asserts the two agree — a lane the CSS reserves and the frames do not respect, or the reverse, is
- * exactly the collision this constant exists to make impossible.
+ * `renderScrolly` still ACCEPTS a `proseLane` and still emits it as `--prose-lane`/`data-prose-lane`
+ * — beats whose own camera or plot box is derived from their own copy of the constant still pass
+ * one, and the number stays readable off the delivered file. This seed passes none.
  */
-export const PROSE_LANE = 0.28;
 
 /**
  * The box-aspect-ratio range a full-bleed graphic is guaranteed to be readable across. A frame
@@ -150,21 +152,21 @@ export const PROSE_LANE = 0.28;
 export const ASPECT_ENVELOPE = { min: 0.42, max: 2.4 } as const; // tall phone .. 21:9 ultrawide
 
 /**
- * The sub-rectangle of a COVER-cropped frame's own viewBox that is guaranteed to be BOTH on screen
- * (never cropped away, at any aspect in `ASPECT_ENVELOPE`) AND above the prose lane. One function,
- * two guarantees, because they are the same measurement made from opposite edges.
+ * The sub-rectangle of a COVER-cropped frame's own viewBox that is guaranteed to be on screen —
+ * never cropped away, at any aspect in `ASPECT_ENVELOPE`.
  *
  * The math. For a box `W × H`, COVER's scale is `s = max(W/fw, H/fh)`, and the slice of the viewBox
  * that stays visible is `W/s` wide by `H/s` tall, centred on the viewBox's own centre. Substituting
  * `a = W/H` gives `W/s = min(fw, a·fh)` and `H/s = min(fw/a, fh)` — so the NARROWEST aspect sets
  * how narrow the visible width ever gets, and the WIDEST sets how short the visible height ever
- * gets. The lane then takes `lane × H` off the bottom of the box, which is `lane × (H/s)` in viewBox
- * units. `margin` is slack for text metrics: these are anchor points, not measured glyph boxes.
+ * gets. `margin` is slack for text metrics: these are anchor points, not measured glyph boxes.
+ *
+ * It used to take a third argument, the prose lane, and shave that off the bottom. The card travels
+ * the whole frame now and no band survives it — see the note where `PROSE_LANE` used to be.
  */
 export function safeBand(
   frame: { width: number; height: number },
   envelope: { min: number; max: number } = ASPECT_ENVELOPE,
-  lane: number = PROSE_LANE,
   margin = 12,
 ): { x: [number, number]; y: [number, number] } {
   const visibleWidth = Math.min(frame.width, envelope.min * frame.height);
@@ -173,24 +175,9 @@ export function safeBand(
   const cy = frame.height / 2;
   return {
     x: [cx - visibleWidth / 2 + margin, cx + visibleWidth / 2 - margin],
-    y: [
-      cy - visibleHeight / 2 + margin,
-      cy + visibleHeight * (0.5 - lane) - margin,
-    ],
+    y: [cy - visibleHeight / 2 + margin, cy + visibleHeight / 2 - margin],
   };
 }
-
-/**
- * The fraction of a CONTAINED frame's own height its content may occupy, measured from the top.
- *
- * A frame that is FITTED rather than cropped (`preserveAspectRatio="xMidYMid meet"`, or an HTML box
- * laid out in percentages) needs no aspect envelope at all, and this is why: fitted height `f` is
- * always `≤ H`, the fitted box is centred, so content ending at `CONTENT_TOP × fh` in viewBox units
- * lands at `H/2 + f·(CONTENT_TOP − 0.5)` on screen, which is at most `H · CONTENT_TOP` — clear of
- * the lane for EVERY aspect ratio, with nothing to compute per box. Anything data-bearing (the
- * chart) is fitted rather than cropped for the more basic reason that cropping an axis is a lie.
- */
-export const CONTENT_TOP = 1 - PROSE_LANE;
 
 /** The DRAWN frame's own design canvas — not the size it renders at in the page, where it fills
  *  whatever box the sticky graphic gives it. */
@@ -200,11 +187,14 @@ export const FRAME = { width: 640, height: 900 };
  *  envelope and the lane they are supposed to come from. */
 export const SAFE_AREA = safeBand(FRAME);
 
-/** The CHART frame's own layout, in fractions of the frame box it fills. The plot's own bottom edge
- *  plus the strip of x-axis labels below it stay above `CONTENT_TOP` — the one rule that keeps the
- *  chart clear of the prose lane at every viewport. */
+/** The CHART frame's own layout, in fractions of the frame box it fills. `bottom` is 0.90, not the
+ *  0.63 three rounds of this seed carried: that was `CONTENT_TOP - 0.09`, the plot stopping short so
+ *  a parked panel could have the bottom 28% of the frame. Nothing parks there any more, and the band
+ *  it left was bare ground — 230px of an 821px box at 1600x900. The 0.10 that remains below the plot
+ *  is the strip the x-axis labels actually occupy (8px under `plot.bottom`, at 15px), and it is
+ *  measured by `test/seed-tracks.test.ts` rather than reserved by a constant. */
 export const CHART_LAYOUT = {
-  plot: { left: 0.13, right: 0.96, top: 0.17, bottom: CONTENT_TOP - 0.09 },
+  plot: { left: 0.13, right: 0.96, top: 0.17, bottom: 0.9 },
   /** The geometry-only viewBox the plot's own SVG stretches across (`preserveAspectRatio="none"`):
    *  geometry stretches with the box, type does not — every word on this frame is HTML at a fixed
    *  pixel size, the separation the web genres in this project already ship. */
@@ -361,14 +351,32 @@ export function DrawnGraphicFrame({
         </text>
       )}
 
-      {/* Flow direction — fixed inside the safe band's own lower-right corner, its label ABOVE the
-          arrow rather than below it, because below is where the band ends. */}
-      <text x={380} y={474} fill={muted} fontSize={16}>
+      {/* Flow direction — its label ABOVE the arrow rather than below it, and BOTH pulled in to
+          x 286..400 by the ninth correction, which is this seed's own worked example of the one
+          composition rule a card travelling over a frame imposes.
+
+          The card is centred and 410px wide, so its own vertical edges cut a fixed pair of columns
+          down the frame; a label straddling one of them is broken text for every animation frame
+          the card spends at that row, and "the 'flood day' label reduced to 'flo…'" is the owner's
+          own report of exactly that. At x 380 this label straddled the RIGHT edge at 1600x900 — 10
+          consecutive frames of "flo", measured, and visible in a screenshot taken at the moment the
+          step is narrated.
+
+          There is NO placement that is outside the stripe at every width, and that is the finding
+          rather than a limitation of this drawing: a COVER-cropped frame's scale changes with the
+          viewport, so the stripe's footprint in viewBox units grows as the viewport narrows —
+          410px is 164 units at 1600 and 437 at 600, nearly the whole canvas. So a label on a
+          cropped frame is placed INSIDE the stripe, where the card hides it whole while it passes
+          and leaves it whole the rest of the time — never across an edge. (A FITTED frame escapes
+          this: `CHART_LAYOUT` keeps its y-axis furniture in the left gutter, which is outside the
+          stripe at every width by construction.) The arrow itself is a plain line and could be cut
+          without costing a reader anything; it moves with its label to stay a pair. */}
+      <text x={286} y={474} fill={muted} fontSize={16}>
         flow
       </text>
       <line
-        x1={380}
-        x2={460}
+        x1={330}
+        x2={400}
         y1={490}
         y2={490}
         stroke={ink}
@@ -487,8 +495,12 @@ export function MapFrame({
  *      a fixed pixel size, positioned in percentages over the same box — so the line reflows with
  *      the viewport and the type never scales with it. Cropping an axis label would not be a
  *      cosmetic loss the way cropping scenery is; it would be a chart that reads wrong.
- *   2. **Everything sits above `CONTENT_TOP`** — the plot, its labels and its annotation — so the
- *      pinned prose panel never covers any of it, at any viewport.
+ *   2. **Everything sits inside the frame's own box** — the plot, its labels and its annotation.
+ *      Nothing is reserved for the prose any more: the card travels over the whole frame, so a band
+ *      kept clear at the bottom would only be bare ground (see the note where `PROSE_LANE` used to
+ *      be). What the chart owes the card instead is a COMPOSITION rule — its y-axis furniture is on
+ *      the LEFT, outside the card's own centred stripe, which is why the card never slices a tick
+ *      label at any desktop width.
  *
  * A LINEAR y axis, deliberately, though hydrology usually reaches for a log one: the claim this
  * step makes is that the highest day is dozens of times the lowest, and a linear axis is the only

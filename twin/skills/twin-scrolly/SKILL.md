@@ -1,6 +1,6 @@
 ---
 name: twin-scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame behind, with narrative prose stepping over it as the reader scrolls the prose column (the page itself does not scroll). A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
 ---
 
 # twin-scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
@@ -63,29 +63,34 @@ every scrolly on disk.**
 
 **THE GRAPHIC IS FIXED AND THE PAGE DOES NOT SCROLL.** `.scrolly` is a two-row grid exactly one
 frame tall, `html, body` are `overflow: hidden`, the header is row 1 (outside the scroller, so it
-cannot slide away), and inside row 2 the graphic and the prose column are two absolutely-positioned
+cannot slide away), and inside row 2 the graphic and the card layer are two absolutely-positioned
 layers filling the same box. **The only element in the document with scroll distance is
 `.scrolly-steps`.** There is no `position: sticky` on the graphic, no `--graphic-h`, and no negative
 margin: nothing is positioned from the scroll, so nothing can lag behind it — and the component
 never steals its host article's scroll, which is what an embed must not do. The deliberate overlap
 is unchanged; it is expressed as a stack rather than as a reservation being cancelled.
 
-**THE PROSE HAS ITS OWN SPACE, AND THAT IS WHAT LETS IT TRAVEL.** The round before this one closed
-the last prose-over-graphic collision by PINNING each panel in a reserved band, and every guard here
-stayed green while the words stopped moving. The owner needed one sentence: *le panel avec le texte
-ne bouge plus alors que l'effet c'est vraiment de les faire défiler au scroll vers le haut.* Measured
-on the shipped artifacts, the middle panels held ONE screen offset for 42-45% of every
-scroll-advancing animation frame and the last for 78%, sweeping 187px of an 821px track.
+**THE CARD IS CENTRED OVER THE VISUAL, AND IT TRAVELS.** Two corrections landed here in order. The
+first: a panel PINNED in a reserved band kept every guard green while the words stopped moving — *le
+panel avec le texte ne bouge plus alors que l'effet c'est vraiment de les faire défiler au scroll
+vers le haut* — measured at 42-78% of every scroll-advancing frame held at one offset. The second:
+the un-pinned panel was given its own CELL of a two-cell grid so it could travel without ever
+meeting the graphic, and that is a side column — *le panel avec le texte ne doit pas être sur le côté
+mais centré et par dessus le contenu visuel.*
 
-The fix is not to un-pin it back into a shared box — a travelling OPAQUE panel crosses every part of
-a graphic it shares a box with, which is the defect the pin existed to close. `.scrolly-track` is a
-**two-cell grid** and each cell clips its own content: the graphic in one, the prose column in the
-other, side by side above 860px and stacked below it. `.step` is `align-items: center` and 15% taller
-than the column it scrolls inside, so **the panel enters at the column's bottom edge, passes the
-middle and leaves past the top, moving by the reader's own scroll on every animation frame** — and a
-collision is impossible by construction rather than avoided by a reservation. Measured after: 544px,
-992px, 992px and 553px of travel per panel on the same beat, held share 0%. The cost is that the
-graphic spans the viewport minus the prose column, not the whole viewport.
+What ships is both corrections at once. `.scrolly-track` is ONE box; the card is an ordinary flow
+box, `align-items: center` in a step **140%** of the frame, so it enters at the bottom edge, passes
+the middle and leaves past the top, moving by the reader's own scroll on every animation frame.
+Measured: 627/931/931/639px of travel per card on the seed at 1600x900, **0% held, in both scroll
+directions**. The collision the cell avoided is answered instead by the card being OPAQUE and
+MEASURED (below). **The card has exactly two widths and nothing between them** — at most 70% of the
+frame (the reading measure, 409px) or the whole of it (below 600px) — because a label the card's own
+vertical edge cuts down the middle is broken text for as long as the card is at that row, and that
+is the *"flo…"* the owner reported the last time a card was centred. At 375px the in-between shape
+sliced the seed's own y-axis labels for 48 consecutive frames; edge to edge it slices none.
+**140% rather than 115%** because at 115% the visual is never once unobstructed (0 clear frames of
+217, driven); at 140% it stands entirely clear on 26-35 of ~240 and two cards are never on screen at
+once, while the step/progress drift stays at 0.58 against a 0.65 ceiling.
 
 **AND THE VEHICLE NOW PUBLISHES A CONTINUOUS SIGNAL, not only a step.** With the prose travelling
 again the owner drove the two single-visual beats: *faut que ce soit fluide et que l'élément évolue
@@ -101,35 +106,47 @@ step, across the seed and six beats at three widths, is 0.50-0.54 — the crosso
 a beat that inlines a script of its own shares that scope — adding `measureProgress` silently
 overwrote both single-visual beats' own function of that name until it was scoped.
 
-`pickLanePanel`, the `in-lane` class and `.scrolly--live` went with the pin — with the prose clipped
-inside its own cell there is nothing to withhold paint from, and fading a panel mid-travel would be
-the owner's own defect wearing a different costume. **Two panels on screen through a boundary is what
-a boundary looks like.** `PROSE_LANE` still reserves the bottom 28% of every FRAME (`safeBand()` /
-`CONTENT_TOP`), for a panel that no longer goes there: dead space, named as residue in the doctrine,
-and reclaiming it is a change to every beat's own frames.
+`pickLanePanel`, the `in-lane` class and `.scrolly--live` went with the pin and have not come back:
+a card mid-fade is a TRANSLUCENT box over the visual, which is the one thing the contrast rule below
+forbids, and a reader watching the words they are reading dissolve is the owner's own defect wearing
+a different costume.
 
-**Legibility is measured, not assumed from an opaque-looking panel.** Every panel is painted fully
-OPAQUE with the render's own `ground` — never a translucent scrim, whose effective colour would
-drift with whatever part of the graphic sits behind it — so ink-on-ground is exactly what a reader
-sees. `renderScrolly` asserts that contrast at build time and the tests assert it again; on this
-seed's own light ground it is **21.00:1**, confirmed a second way by reading `getComputedStyle` in a
-driven browser.
+**Legibility is measured, not assumed from an opaque-looking card — and it is the whole reason a
+card may sit over a visual at all.** A translucent card's effective colour is a blend with whatever
+the graphic shows behind it at a given scroll position, which is not a value anyone can measure. An
+opaque card painted with the render's own `ground` has no such ambiguity, so the only contrast
+question left is ink-on-ground. `renderScrolly` asserts it at build time, the tests assert it again,
+and `verify-scrolly.mjs`'s **F3** asserts it a third time off `getComputedStyle` in a driven browser
+— what the browser painted, not what the stylesheet asked for. On this seed's own light ground:
+**21.00:1**, read as `rgb(0, 0, 0)` on `rgb(255, 255, 255)`.
+
+**WHAT THE CARD COVERS, stated because it cannot be reserved away.** Driven on a continuous scroll in
+both directions at three widths, the card sits over one of the active frame's own labels on 44-175
+animation frames of ~240, and the visual stands entirely clear on 12-35. No band can be kept for it:
+the card crosses every row equally often, and at the one editorially load-bearing position —
+`data-progress = i` — it is dead centre by the definition of that signal. So the seed **reclaimed**
+the bottom 28% every frame used to reserve (`PROSE_LANE` and `CONTENT_TOP` are gone; the chart's plot
+runs to 0.90 of the frame instead of 0.63, which is 230px of an 821px box given back), and what
+replaces the reservation is a composition rule: *nothing whose only copy a reader needs may sit alone
+in the card's stripe down the middle of the frame, and nothing may straddle its edge.* Four beats
+still carry their own copy of the constant — two derive a camera from it — and that is the named
+residue.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/scrolly-discipline.md` | The fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the prose lane and the two halves that must agree; the sticky model kept as history because five rounds of corrections are only legible against it; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
-| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (the beat's four-step arc: id, `frameKind`, prose-as-a-function), the four frame components (`ImageFrame`, `DrawnGraphicFrame`, `MapFrame`, `ChartFrame`), and the placement constants: `PROSE_LANE`, `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `CONTENT_TOP`, `FRAME`, `CHART_LAYOUT` |
+| Doctrine | `references/scrolly-discipline.md` | What the card covers and the three things that follow from measuring it; the fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the sticky model and the two-cell split kept as history because nine rounds of corrections are only legible against them; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
+| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (the beat's four-step arc: id, `frameKind`, prose-as-a-function), the four frame components (`ImageFrame`, `DrawnGraphicFrame`, `MapFrame`, `ChartFrame`), and the placement constants: `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `FRAME`, `CHART_LAYOUT` |
 | Seed data | `assets/gauge-data.ts` | `parseRdb`, `parseReadings`, `readStation`, `deriveFacts`, `group`, `dayAndMonth` — the beat's own reading layer. Nothing here draws; nothing that draws computes a fact |
-| Interaction | `assets/interaction.mjs` | `pickActiveStep` and `measureProgress` (both pure, both unit-tested) + `initScrolly` (on every scroll of the prose column, measures every panel against the lane — which since the eighth correction IS the column's own scrollport — toggles `.active` on the winning step and frame, and publishes `data-progress` — the continuous fractional index a consumer scrubs a visual against). Nothing hides a panel any more. No `IntersectionObserver` — see the file's own header. `initAll` runs it |
+| Interaction | `assets/interaction.mjs` | `pickActiveStep` and `measureProgress` (both pure, both unit-tested) + `initScrolly` (on every scroll of the card layer, measures every panel against the lane — which IS that layer's own scrollport, covering the graphic edge to edge — toggles `.active` on the winning step and frame, and publishes `data-progress` — the continuous fractional index a consumer scrubs a visual against). Nothing hides a panel any more. No `IntersectionObserver` — see the file's own header. `initAll` runs it |
 | Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name, proseLane })` — the genre's MEDIA-AGNOSTIC machinery. It SSRs each `frame`, wraps it generically, builds the overlap scaffold and the lane, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `DRAWN_VARIANT`, `buildFrame` (the ONE place that reads `frameKind`), `render` (this seed's own runner) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one basemap capture, one projected pixel — run once, committed; the delivered HTML carries no key and makes no request |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
 | Verify | `scripts/verify-scrolly.mjs` | The guard that watches a CONTINUOUS scroll: a `requestAnimationFrame` recorder installed before anything moves, then assertions A-G (the page never scrolls; the graphic and header never move; every step's frame is painted, in order; each step is handed `active` once; the graphic settles; at most two panels share the lane; **no panel is ever painted over the graphic**; **the prose TRAVELS** — a real sweep per panel and no held offset; and **the visual EVOLVES** — `data-progress` present, monotonic, spanning the piece, moving on the frames where the step does not, and in lock-step with it) plus reduced motion and JS-off. Runnable by hand on any rendered scrolly |
 | Test | `test/scroll-integrity.test.ts` | Walks `verify-scrolly.mjs` over the seed and every scrolly on disk at three widths; names the three mutations that redden it — including which sub-assertions each one leaves green — and what it provably does not catch |
-| Test | `test/render-scrolly.test.ts` | The generic scaffold: media-agnostic by source-scan, panel contrast, the two-cell split, the fixed graphic and the one scroller, the travelling (never pinned) panel, no rule that hides a word, well-formed markup at 4/6/8 steps, and the drawn frame's own safe placement parsed out of the rendered SVG. Every CSS assertion slices the RULE out first — a grep of the whole stylesheet passed for six builds on a doc-comment describing a deleted rule |
-| Test | `test/seed-tracks.test.ts` | The four tracks: `safeBand` checked against real box aspect ratios, `CONTENT_TOP` against fitted boxes, `MapFrame`/`ChartFrame` SSR, the data layer, and every figure the rendered beat says out loud recomputed from the frozen CSV |
+| Test | `test/render-scrolly.test.ts` | The generic scaffold: media-agnostic by source-scan, panel contrast, the card over the visual in one box, its two widths, the fixed graphic and the one scroller, the travelling (never pinned) panel, no rule that hides a word, well-formed markup at 4/6/8 steps, and the drawn frame's own safe placement parsed out of the rendered SVG. Every CSS assertion slices the RULE out first — a grep of the whole stylesheet passed for six builds on a doc-comment describing a deleted rule |
+| Test | `test/seed-tracks.test.ts` | The four tracks: `safeBand` checked against real box aspect ratios, the reclaimed band and the strip the x-axis labels actually need, `MapFrame`/`ChartFrame` SSR, the data layer, and every figure the rendered beat says out loud recomputed from the frozen CSV |
 | Test | `test/canon.test.ts` | The canon's shape: `REPLACE ME` wording, the frozen files are real, the seed renders standalone into an empty directory, the seed still carries a map and a chart track, no registry/dispatcher, preview current |
 
 **Why the title and source live in the HTML `<header>`, in their own grid row.** The header is the
@@ -153,11 +170,13 @@ identical treatment from the scaffold's point of view.
    `ink`/`muted`/`grid` are props, derived once in node by whoever calls it. No frame knows about
    `.step-frame`, `active` or `aria-hidden`; those belong to the scaffold.
 3. **Decide, per frame, whether it is scenery or evidence.** Scenery (a photograph, a basemap) is
-   COVER-cropped and fills its own cell; anything it annotates goes inside `safeBand()`. Evidence (a
-   chart) is FITTED and never cropped, with its content inside `CONTENT_TOP` and its type at a fixed
-   pixel size over stretched geometry. The graphic's cell is narrower than the viewport on a desktop
-   and shorter than the track on a phone — COVER crops LESS in a narrower box, not more, and
-   `ASPECT_ENVELOPE` already spans every cell shape the split produces.
+   COVER-cropped and fills the frame; anything it annotates goes inside `safeBand()`. Evidence (a
+   chart) is FITTED and never cropped, its type at a fixed pixel size over stretched geometry.
+   **Then place its labels against the CARD's own stripe**, which is the composition rule a card
+   travelling over the frame imposes: on a FITTED frame keep the axis furniture in the gutters,
+   which are outside the stripe at every width; on a CROPPED frame no placement is outside the
+   stripe at every width (the scale changes with the viewport), so put a label INSIDE it and let the
+   card hide it whole rather than cut it in half.
 4. **Freeze the data beside the beat and compute every figure from it.** `prose` is a function of
    derived facts, not a string with numbers typed into it — one beat in four in this project once
    carried a hand-typed figure its own data contradicted.
@@ -174,17 +193,19 @@ identical treatment from the scaffold's point of view.
    - **THE ELEMENT EVOLVES BETWEEN BOUNDARIES.** Read `data-progress` off the root on every frame:
      it must change on the frames where the active step does not. A visual that only reads the step
      class can only ever catch up at the handover, which reads as a slideshow with a fade;
-   - **EVERY PANEL MOVES.** Its top must change on every scroll-advancing animation frame, and it
-     must enter the prose column at the bottom edge and leave past the top. A guard that only asks
+   - **EVERY CARD MOVES.** Its top must change on every scroll-advancing animation frame, and it
+     must enter the frame at the bottom edge and leave past the top. A guard that only asks
      which step is showing stays green on a page whose words have stopped — that is exactly what
      shipped once, and the owner is who found it;
-   - **no visible prose ever touches the graphic's box** — clip each panel by the column that
-     scrolls it and each label by the cell that holds it, then test the two for intersection;
-   - no annotation falls outside its own cell;
-   - the graphic fills its own CELL (the viewport minus the prose column on a desktop, the track
-     minus the prose band on a phone), and its box is IDENTICAL at every recorded frame;
-   - the document itself has no scroll distance, and the prose column has all of it;
-   - the panel's own computed background and colour, and the contrast between them;
+   - **the card is CENTRED on the graphic and OVER it** — its horizontal centre is the graphic's
+     own at every frame, its box lies inside the graphic's, and it reaches the graphic's vertical
+     middle at some point. A card that drifts to a side is a column in disguise;
+   - **the card is ONE OF TWO WIDTHS** — at most 70% of the frame, or the whole of it. The shape
+     between them puts a vertical edge where a frame keeps its axis furniture;
+   - the graphic fills the frame and its box is IDENTICAL at every recorded frame;
+   - the document itself has no scroll distance, and the card layer has all of it;
+   - the card's own computed background and colour, read live: fully opaque, one colour for the
+     whole pass, and at least 4.5:1 between them;
    - JavaScript disabled: the default frame and EVERY step's prose survive;
    - `prefers-reduced-motion: reduce`: every sampled opacity is exactly 0 or 1;
    - ~375px: nothing clips, the page never scrolls horizontally.
@@ -216,24 +237,24 @@ real beat writes its own runner in that same shape — never editing this skill'
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| The band every FRAME keeps clear at its own bottom. Declared, no longer placed against: the prose moved into its own cell and nothing occupies this band now (residue — see the doctrine) | `0.28` | `PROSE_LANE`, `ScrollySeed.tsx` (emitted as `--prose-lane` / `data-prose-lane` by `render-scrolly.mjs`) |
-| How much of a FITTED frame's own height its content may use, derived from the lane | `1 - PROSE_LANE` | `CONTENT_TOP`, `ScrollySeed.tsx` |
+| The band a BEAT's frames keep clear at their own bottom. The seed keeps none (the card travels the whole frame and rests nowhere); a beat that derives a camera or a plot box from its own copy still passes one, and the scaffold records it without placing anything against it | `0` (seed) | `proseLane`, `renderScrolly` (emitted as `--prose-lane` / `data-prose-lane`) |
+| How much of the FITTED chart frame's own height the plot uses, now that nothing is reserved below it | `0.90` | `CHART_LAYOUT.plot.bottom`, `ScrollySeed.tsx` |
+| The frame width below which the card goes edge to edge instead of taking the reading measure — 410px stops being 70% of the frame at 586 | `600px` | the `min-width` media query, `buildCss`, `render-scrolly.mjs` |
 | The box-aspect range a COVER-cropped frame's annotations are guaranteed to survive | `{ min: 0.42, max: 2.4 }` | `ASPECT_ENVELOPE`, `ScrollySeed.tsx` |
 | How many narrative steps the seed carries | `4` | `STEPS_META`, `ScrollySeed.tsx` — any count ≥ 2 works, with at least three distinct `frameKind`s including a map and a chart (canon-enforced) |
 | The drawn frame's own design canvas | `640 × 900` | `FRAME`, `ScrollySeed.tsx` |
 | The chart's plot box and its geometry-only viewBox | `plot` / `viewBox` | `CHART_LAYOUT`, `ScrollySeed.tsx` |
 | The map plate's size and camera | `--width 1000 --height 640`, zoom `9` | `CAMERA`, `bake-plate.mjs` |
 | The frame the graphic fills — the component's own height, minus the fixed header's row | `100%` of `.scrolly`, `grid-template-rows: auto minmax(0, 1fr)` | `.scrolly`, `buildCss`, `render-scrolly.mjs` |
-| How long a reader scrolls through one step — the same for every step, including the last, as a fraction of the TRACK (not the viewport) | `115%` | `.step` min-height, `buildCss`, `render-scrolly.mjs` |
-| The prose COLUMN's own width, side by side with the graphic | `clamp(300px, 30%, 440px)` | `--prose-col`, `buildCss`, `render-scrolly.mjs` |
-| The prose BAND's own height when the two stack | `clamp(150px, 42%, 340px)` | `--prose-band`, `buildCss`, `render-scrolly.mjs` |
-| Where the two stop sitting side by side and stack instead — the prose column's 300px floor plus the 477px a FITTED chart frame's `max(62px, 13%)` gutter needs before it stops scaling | `860px` | the one `@media` in `buildCss`, `render-scrolly.mjs` |
-| The prose panel's own max width | `min(46ch, 100%)` | `.step-panel`, `buildCss`, `render-scrolly.mjs` |
+| How long a reader scrolls through one step — the same for every step, including the last, as a fraction of the TRACK (not the viewport). Raising it buys clear air between two cards and costs step/progress lock-step | `140%` | `.step` min-height, `buildCss`, `render-scrolly.mjs` |
+| The card's own max width, above the regime change | `min(46ch, 100%)` — 409px rendered | `.step-panel` inside `@media (min-width: 600px)`, `buildCss`, `render-scrolly.mjs` |
+| The card's own max width, below it | `100%` of the frame, edge to edge | `.step-panel`, `buildCss`, `render-scrolly.mjs` |
 | The header's own reading measure (the graphic does NOT share it) | `640px` | `.scrolly-header` max-width, `buildCss`, `render-scrolly.mjs` |
 | The header's own side gutter | `clamp(16px, 6vw, 56px)` | `.scrolly-header`, `buildCss`, `render-scrolly.mjs` |
-| The step's own side gutter inside the prose column | `clamp(16px, 6vw, 32px)` | `--prose-gutter`, `buildCss`, `render-scrolly.mjs` |
+| The card's own side gutter, on the viewports that have one | `clamp(16px, 6vw, 56px)` | `--prose-gutter`, `buildCss`, `render-scrolly.mjs` |
+| The share of the frame's width above which a card must go edge to edge instead — frames keep their axis furniture in the outer ~15%, so a card's own vertical edge must land inside the middle 70% or nowhere | `0.70` | assertion F4, `verify-scrolly.mjs` |
 | The step-boundary swap's transition — the ONLY animated property, and only at a boundary | `0.3s` | `buildCss`, `render-scrolly.mjs` |
-| The band the interaction layer measures every panel against | the prose column's own scrollport rect — nothing to configure, and nothing read off the markup | `initScrolly`, `interaction.mjs` |
+| The band the interaction layer measures every panel against | the card layer's own scrollport rect, which covers the graphic edge to edge — nothing to configure, and nothing read off the markup | `initScrolly`, `interaction.mjs` |
 | The continuous signal a consumer scrubs on, and where the reference line sits | the fractional index of the panel on the LANE's centre line, published as `data-progress` on the root | `measureProgress`, `interaction.mjs` |
 | How far the active step may drift from the progress before the guard calls it a desync | `0.65` of a step (the crossover itself measures 0.50-0.54) | assertion H, `verify-scrolly.mjs` |
 | How long a reader dwells on one step while the guard drives, in animation frames — derived from each beat's own step height so a phone and a desktop get the same dwell, never the same pixel rate | `60` | `FRAMES_PER_STEP`, `verify-scrolly.mjs` |
@@ -242,17 +263,17 @@ real beat writes its own runner in that same shape — never editing this skill'
 
 ## Files
 
-- `references/scrolly-discipline.md` — the doctrine: the prose's own space and the two measured
-  numbers that decide the split; the sticky-reservation fact and the deliberate
-  overlap; the prose lane and the `bottom`-sticky trap; scenery cropped vs evidence fitted; a map
-  track without a live map; the reading measure on the prose and never on `.scrolly`; how
-  prose-over-graphic contrast is measured; what survives with JS off; reduced motion; what this
-  genre does not attempt; verification.
+- `references/scrolly-discipline.md` — the doctrine: what the card covers, measured, and the three
+  things that follow (no band can be reserved, the card has two widths, some frames must be composed
+  differently); the step height and what raising it buys and costs; the sticky-reservation fact and
+  the deliberate overlap; the `bottom`-sticky trap and the two-cell split, both kept as history;
+  scenery cropped vs evidence fitted; a map track without a live map; the reading measure on the
+  prose and never on `.scrolly`; how prose-over-graphic contrast is measured; what survives with JS
+  off; reduced motion; what this genre does not attempt; verification.
 - `assets/ScrollySeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat. `STEPS_META` is its four-step arc; `ImageFrame`, `DrawnGraphicFrame`, `MapFrame`
-  and `ChartFrame` are its four frame components; `PROSE_LANE`, `ASPECT_ENVELOPE`, `safeBand`,
-  `SAFE_AREA`, `CONTENT_TOP`, `FRAME` and `CHART_LAYOUT` are the placement constants every frame is
-  built against.
+  and `ChartFrame` are its four frame components; `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `FRAME`
+  and `CHART_LAYOUT` are the placement constants every frame is built against.
 - `assets/gauge-data.ts` — the beat's own reading layer: `parseRdb`, `parseReadings`, `readStation`,
   `deriveFacts`, `group`, `dayAndMonth`. Every figure the beat says out loud comes from here.
 - `assets/sample-data/potomac-2024.csv` — 366 daily mean discharge readings, USGS site 01638500,
@@ -265,7 +286,7 @@ real beat writes its own runner in that same shape — never editing this skill'
 - `assets/sample-data/basin-photo.png` — the seed's illustrated scene, authored by
   `scripts/build-sample-photo.mjs` from flat shapes (nothing fetched, nothing to credit).
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim. `pickActiveStep`
-  (pure, unit-tested) backs `initScrolly`, which measures every panel against the prose column's own
+  (pure, unit-tested) backs `initScrolly`, which measures every panel against the card layer's own
   scrollport on every scroll of it. Its header carries the measurement that removed the
   `IntersectionObserver`, and the one that removed the second decision.
 - `assets/preview.png` — the seed's `DrawnGraphicFrame` rendered standalone: the one frame this
@@ -284,12 +305,17 @@ real beat writes its own runner in that same shape — never editing this skill'
 - `output-proof/preview.png` — the drawn frame, rendered from this skill's own data.
 - `output-proof/track-1-image.png`, `output-proof/track-2-drawn.png`, `output-proof/track-3-map.png`,
   `output-proof/track-4-chart.png`, `output-proof/track-4-chart-375.png` — the four tracks as a real
-  browser rendered them at 1600×900, plus the chart at 375px: the evidence that this vehicle carries
-  different media, taken from a driven page rather than described.
-- `test/render-scrolly.test.ts` — the generic scaffold, the fixed graphic, the pinned lane, both
-  pure decision functions, and the drawn frame's own placement parsed out of the rendered SVG.
+  browser rendered them at 1600×900, plus the chart at 375px, each captured at the scroll position
+  where `data-progress` reaches that step: the evidence that this vehicle carries different media,
+  and that the card sits centred and opaque over each of them — taken from a driven page rather than
+  described.
+- `test/render-scrolly.test.ts` — the generic scaffold, the fixed graphic, the card over the visual
+  and its two widths, both pure decision functions, and the drawn frame's own placement parsed out
+  of the rendered SVG.
 - `test/scroll-integrity.test.ts` — the walking guard: `verify-scrolly.mjs` over the seed and every
-  scrolly on disk, at three widths, with its three mutations and its blind spots named.
-- `test/seed-tracks.test.ts` — the four tracks, both placement rules against real boxes, the data
-  layer, and the rendered beat's own claims recomputed from the frozen file.
+  scrolly on disk, at three widths, with every mutation that reddens it pasted into its header and
+  its blind spots named.
+- `test/seed-tracks.test.ts` — the four tracks, `safeBand` against real boxes, the reclaimed band
+  and what the x-axis strip actually needs, the data layer, and the rendered beat's own claims
+  recomputed from the frozen file.
 - `test/canon.test.ts` — the canon's shape, including that the seed still carries a map and a chart.

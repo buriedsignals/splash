@@ -13,11 +13,13 @@
  * plate is fitted (`preserveAspectRatio="xMidYMid meet"`), which is also what
  * `mapmore-scrolly-danube` chose, for the same reason, after its own last badge was cropped off.
  *
- * **2. It is fitted into the CONTENT BAND, not the whole frame.** The box the map is fitted into is
- * the top `CONTENT_TOP` of the graphic, so the entire plate — every dot, every hexagon, every
- * symbol — is above the prose lane by construction, at every viewport. That is stronger than the
- * seed's `safeBand`, which clamps a marker that would fall in the lane: nothing here needs clamping,
- * because nothing is ever drawn there.
+ * **2. It is fitted into the WHOLE frame.** It used to be fitted into the top `CONTENT_TOP` of the
+ * graphic, so that every dot, hexagon and symbol sat above a band reserved for a prose panel parked
+ * at the bottom. The ninth correction of the vehicle puts the prose card back OVER the visual and
+ * lets it travel the whole height, so no band can be reserved from it (see
+ * `twin-scrolly/references/scrolly-discipline.md`, "What the card covers") — and a band reserved
+ * from nothing is 28% of every frame spent on bare ground. Fitted into the frame, the plate is
+ * larger at every viewport and still whole, because FIT never crops.
  *
  * **No text is drawn on the map.** Type inside the SVG would scale with the plate — 15px on a
  * desktop is 6px on a phone — so every word on these frames is HTML at a fixed pixel size, and the
@@ -31,12 +33,6 @@ import type { ReactNode } from "react";
 import { hexCorners } from "./geo-hex.ts";
 import type { QuakeCell, QuakeFacts } from "./quake-encodings.ts";
 import { classOf, energyRadius } from "./quake-encodings.ts";
-
-/** The fraction of the graphic reserved at the bottom for the pinned prose panel. `render.mjs`
- *  hands this same number to `renderScrolly`, so the lane the CSS reserves and the band the map is
- *  fitted into are one number. */
-export const PROSE_LANE = 0.28;
-export const CONTENT_TOP = 1 - PROSE_LANE;
 
 const FONT = "Helvetica, Arial, sans-serif";
 const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
@@ -87,10 +83,7 @@ function PlateFrame({
       <div
         style={{
           position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          height: pct(CONTENT_TOP),
+          inset: 0,
         }}
       >
         <svg
@@ -119,11 +112,12 @@ function PlateFrame({
  * the plate, whose position inside the band depends on the viewport's aspect and is not knowable at
  * render time.
  *
- * **Top-left, because bottom-left collided.** Sitting just above the prose lane, it was inside the
- * pinned panel's own box at 375×812, where a long paragraph makes the panel taller than the lane
- * reserved for it — measured, 36 collisions across the sampled positions. Top-left is bare ground
- * at narrow widths (the fitted plate is letterboxed vertically) and the Bering Sea and the Arctic
- * at wide ones, which is the emptiest corner this camera has.
+ * **Top-left, because bottom-left collided.** Sitting just above what used to be the prose lane, it
+ * was inside the pinned panel's own box at 375×812 — measured, 36 collisions across the sampled
+ * positions. Top-left is bare ground at narrow widths (the fitted plate is letterboxed vertically)
+ * and the Bering Sea and the Arctic at wide ones, which is the emptiest corner this camera has —
+ * and it is also OUTSIDE the travelling card's own centred stripe at every width, which is the
+ * placement rule the ninth correction replaced the lane with.
  */
 function Legend({
   title,

@@ -18,10 +18,15 @@
  *      in percentages over the same box. A 15px tick label is 15px at 375px and at 1600px.
  *      **And so is every DOT**: the dot strip's marks are HTML too, not SVG circles — a circle in a
  *      `preserveAspectRatio="none"` SVG is an ellipse at every viewport but one.
- *   3. **Everything sits above `CONTENT_TOP`** — plot, axis labels and annotations — so the pinned
- *      prose panel parked in the bottom `PROSE_LANE` of the graphic never covers any of it, at any
- *      viewport. That is the vehicle's one collision rule and it is kept by construction here, not
- *      checked afterwards.
+ *   3. **Everything sits inside the frame, and the axis furniture stays in the GUTTERS.** Plot,
+ *      axis labels and annotations used to be squeezed above `CONTENT_TOP` so a prose panel parked
+ *      in the bottom 28% could never cover them. The vehicle's ninth correction puts the card back
+ *      over the visual and lets it travel the whole height, so nothing can be reserved from it and
+ *      that band was 28% of every frame spent on bare ground. What the card asks of a frame instead
+ *      is a COMPOSITION rule: its own vertical edges cut a centred stripe out of the middle, so a
+ *      FITTED frame keeps its axis furniture in the left and right gutters, which are outside that
+ *      stripe at every width. See `twin-scrolly/references/scrolly-discipline.md`, "What the card
+ *      covers."
  *
  * No component here imports a rasteriser: `ink`, `muted`, `grid`, `accent` and `ground` are props,
  * derived once in node by `render.mjs`, the same invariant every seed in this project keeps.
@@ -33,24 +38,15 @@ import { t } from "./carbon-data.ts";
 
 // ===== The placement constants every frame is built against =====
 
-/**
- * The fraction of the graphic's own height reserved at the BOTTOM for the pinned prose panel.
- * `render.mjs` hands this same number to `renderScrolly` as `proseLane`, so the CSS that reserves
- * the lane and the frames that keep out of it read ONE value — a lane the scaffold reserves and the
- * frames ignore is the collision this constant exists to make impossible.
- */
-export const PROSE_LANE = 0.28;
-
-/** How much of a FITTED frame's own height its content may use, measured from the top. */
-export const CONTENT_TOP = 1 - PROSE_LANE;
-
 /** The plot box, in fractions of the frame. Its floor leaves 9% of the frame for the strip of
- *  x-axis labels that sits below it, and that strip still ends above `CONTENT_TOP`. */
+ *  x-axis labels that sits below it — and nothing else, since the ninth correction of the vehicle
+ *  reclaimed the 28% that used to be held for a parked prose panel. `bottom` was 0.63 and is 0.91:
+ *  230px of an 821px frame given back to the chart at 1600x900. */
 export const PLOT = {
   left: 0.13,
   right: 0.96,
   top: 0.15,
-  bottom: CONTENT_TOP - 0.09,
+  bottom: 0.91,
 } as const;
 
 /** The geometry-only viewBox every plot's own SVG stretches across. */

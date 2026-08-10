@@ -1,15 +1,17 @@
 /**
- * The four TRACKS, and the lane that keeps the prose off all of them.
+ * The four TRACKS, and the placement rule that keeps each one on screen.
  *
  * `render-scrolly.test.ts` covers the generic scaffold and the seed's two original frames. This
- * file covers what the vehicle gained when it learned to carry a MAP and a CHART, and the two
- * mechanisms that made carrying them safe:
+ * file covers what the vehicle gained when it learned to carry a MAP and a CHART, and the mechanism
+ * that made carrying them safe: `safeBand`, for frames that are COVER-cropped, exercised against
+ * real box aspect ratios rather than against its own formula.
  *
- *   - `safeBand`, for frames that are COVER-cropped, exercised against real box aspect ratios
- *     rather than against its own formula;
- *   - `CONTENT_TOP`, for frames that are fitted rather than cropped;
- *   - and the agreement between the lane the frames respect and the lane the scaffold's CSS
- *     actually reserves, which is the one place these two halves could silently drift apart.
+ * IT USED TO COVER A SECOND ONE, `CONTENT_TOP`, and the agreement between the band the frames kept
+ * clear at their bottom and the band the scaffold's CSS reserved. The ninth correction removed the
+ * band: the card travels over the whole frame and rests nowhere, so a reservation at the bottom
+ * protected the one place it never dwells and cost this seed's chart 230px of an 821px box. What
+ * replaced those assertions is below, on `CHART_LAYOUT` — the plot uses the frame's own height, and
+ * the strip under it is measured against what the x-axis labels actually occupy.
  *
  * Plus the thing this project has been wrong about more often than anything else: every number the
  * beat says out loud is checked back against the frozen file it came from.
@@ -23,9 +25,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "../scripts/render-still.mjs";
 import {
   STEPS_META,
-  PROSE_LANE,
   ASPECT_ENVELOPE,
-  CONTENT_TOP,
   CHART_LAYOUT,
   FRAME,
   SAFE_AREA,
@@ -92,10 +92,10 @@ describe("the seed's tracks", () => {
 });
 
 // ---------------------------------------------------------------------------
-// safeBand / CONTENT_TOP — the two placement rules, checked against real boxes.
+// safeBand — the placement rule, checked against real boxes.
 // ---------------------------------------------------------------------------
 
-describe("safeBand — a COVER-cropped frame's own visible, lane-free rectangle", () => {
+describe("safeBand — a COVER-cropped frame's own visible rectangle", () => {
   /** What COVER actually does to a viewBox in a box of `width x height`, computed independently of
    *  `safeBand` itself: the visible slice, in viewBox coordinates. */
   function coverSlice(
@@ -125,7 +125,7 @@ describe("safeBand — a COVER-cropped frame's own visible, lane-free rectangle"
   for (const frame of [FRAME, plateGeometry.frame]) {
     const band = safeBand(frame);
     for (const box of boxes) {
-      it(`should stay visible AND above the lane for a ${frame.width}x${frame.height} frame in a ${box.width}x${box.height} box`, () => {
+      it(`should stay visible for a ${frame.width}x${frame.height} frame in a ${box.width}x${box.height} box`, () => {
         const aspect = box.width / box.height;
         expect(aspect).toBeGreaterThanOrEqual(ASPECT_ENVELOPE.min - 0.001);
         expect(aspect).toBeLessThanOrEqual(ASPECT_ENVELOPE.max + 0.001);
@@ -137,43 +137,47 @@ describe("safeBand — a COVER-cropped frame's own visible, lane-free rectangle"
         expect(band.y[0]).toBeGreaterThanOrEqual(slice.y[0]);
         expect(band.y[1]).toBeLessThanOrEqual(slice.y[1]);
 
-        // Lane-free: the band's own bottom edge, converted to a screen position, sits above the
-        // top of the reserved lane.
-        const bottomOnScreen = (band.y[1] - slice.y[0]) / slice.unitsPerPx;
-        expect(bottomOnScreen).toBeLessThanOrEqual(
-          box.height * (1 - PROSE_LANE),
-        );
+        // And it is a REAL band, not a degenerate one: the crop leaves something to place inside.
+        expect(band.x[1] - band.x[0]).toBeGreaterThan(0);
+        expect(band.y[1] - band.y[0]).toBeGreaterThan(0);
       });
     }
   }
 });
 
-describe("CONTENT_TOP — a FITTED frame needs no envelope at all", () => {
-  // The claim the constant's own doc-comment makes, exercised rather than asserted: content ending
-  // at CONTENT_TOP of a centred, fitted box lands above the lane for every aspect ratio, including
-  // ones far outside the envelope a cropped frame is limited to.
-  for (const box of [
-    { width: 1600, height: 900 },
-    { width: 375, height: 812 },
-    { width: 3000, height: 600 },
-    { width: 300, height: 1400 },
-  ]) {
-    it(`should keep fitted content above the lane in a ${box.width}x${box.height} box`, () => {
-      const vb = CHART_LAYOUT.viewBox;
-      const fitted =
-        Math.min(box.width / vb.width, box.height / vb.height) * vb.height;
-      const bottomOnScreen = box.height / 2 + fitted * (CONTENT_TOP - 0.5);
-      expect(bottomOnScreen).toBeLessThanOrEqual(
-        box.height * (1 - PROSE_LANE) + 0.001,
-      );
+describe("CHART_LAYOUT — the reclaimed band, and what the strip below the plot is for", () => {
+  // THE RECLAIM, asserted so re-reserving the band goes red here. `bottom` was `CONTENT_TOP - 0.09`
+  // = 0.63 for three rounds, which left 37% of every frame — 230px of an 821px box at 1600x900 —
+  // as bare ground under the plot, for a panel that has not parked there since the eighth
+  // correction and cannot park anywhere since the ninth.
+  it("should give the plot the frame's own height rather than a band of it", () => {
+    expect(CHART_LAYOUT.plot.bottom).toBeGreaterThan(0.85);
+    expect(CHART_LAYOUT.plot.bottom).toBeLessThan(1);
+  });
+
+  // What remains below the plot is not a reservation: it is the strip the x-axis labels occupy —
+  // 8px under `plot.bottom` at a 15px type size, so roughly 25px of whatever box the frame fills.
+  // At the shortest track this genre is checked at (573px, the Grinnell beat at 375x812) that is
+  // 4.4%, and the layout leaves 10%.
+  for (const trackHeight of [821, 721, 573]) {
+    it(`should leave the x-axis label strip room in a ${trackHeight}px-tall frame`, () => {
+      const below = (1 - CHART_LAYOUT.plot.bottom) * trackHeight;
+      expect(below).toBeGreaterThanOrEqual(8 + 15 + 2);
     });
   }
 
-  it("should keep the chart's own plot and its axis labels inside CONTENT_TOP", () => {
-    // The plot's bottom edge plus the strip of x-axis labels beneath it — the actual layout, not
-    // the rule in the abstract.
-    expect(CHART_LAYOUT.plot.bottom).toBeLessThan(CONTENT_TOP);
-    expect(CONTENT_TOP - CHART_LAYOUT.plot.bottom).toBeGreaterThanOrEqual(0.05);
+  // The y-axis furniture stays in the LEFT gutter, which is the composition rule a card travelling
+  // over the frame imposes: the card is centred, so its own vertical edges cut a pair of columns
+  // out of the middle, and a label straddling one of them is broken text for as long as the card is
+  // at that row. A fitted frame can obey this at every width; a cropped one cannot (see
+  // `DrawnGraphicFrame`'s own flow label). 0.13 of the frame, floored at 62px, is well outside a
+  // 410px card centred in any box this genre is checked at.
+  it("should keep the y-axis gutter outside a centred card's own stripe", () => {
+    for (const frameWidth of [1600, 1280, 600]) {
+      const cardLeftEdge = (frameWidth - 410) / 2;
+      const gutter = Math.max(62, 0.13 * frameWidth);
+      expect(gutter).toBeLessThan(cardLeftEdge);
+    }
   });
 });
 
@@ -295,15 +299,17 @@ describe("ChartFrame", () => {
     expect(html).toContain(`median day ${group(gauge.median)}`);
   });
 
-  it("should place every vertical position above CONTENT_TOP", () => {
+  it("should place every vertical position inside the frame", () => {
     // Percentages parsed out of the rendered markup, not re-derived from the layout constant — a
-    // typo'd literal in the component fails here exactly as a wrong formula would.
+    // typo'd literal in the component fails here exactly as a wrong formula would. The ceiling
+    // used to be `CONTENT_TOP`, the top 72% of the frame; the band below it is reclaimed, so what
+    // is left to assert is that nothing is placed off the frame altogether.
     const html = renderToStaticMarkup(createElement(ChartFrame, props));
     const tops = [...html.matchAll(/top:\s*(?:calc\()?([\d.]+)%/g)].map(
       (m) => Number(m[1]) / 100,
     );
     expect(tops.length).toBeGreaterThan(3);
-    for (const top of tops) expect(top).toBeLessThan(CONTENT_TOP);
+    for (const top of tops) expect(top).toBeLessThanOrEqual(CHART_LAYOUT.plot.bottom);
   });
 
   it("should never assign the scaffold's own wrapper classes", () => {

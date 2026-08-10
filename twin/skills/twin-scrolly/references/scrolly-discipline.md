@@ -29,10 +29,15 @@ against that crop — see "Nothing annotated can be cropped," below, for the geo
 mechanically-enforced `SAFE_AREA` that fixes it. REWRITTEN AN EIGHTH TIME against the round that reversed the SEVENTH's
 own prose-panel pin: the seventh correction stopped the panel travelling in order to stop it crossing
 the graphic's labels, and stopping it travelling is the defect the owner reported next — a scrolly
-whose prose does not scroll. The answer was not to un-pin it back into a shared box but to give the
-prose its OWN cell of the track, where it can travel the full height without ever meeting a label
-(see "The prose has its own space," at the top of this file, for the measurements, the two numbers
-that decide the split, and the band the frames now reserve for nothing). Every rule below is either a
+whose prose does not scroll. That round's answer was to give the prose its OWN cell of the track,
+where it could travel the full height without ever meeting a label. AND REWRITTEN A NINTH TIME
+against the round that reversed THAT: a cell of its own is a side column, and the owner's next
+correction names the form outright — *"Le panel avec le texte ne doit pas être sur le côté mais
+centré et par dessus le contenu visuel."* The card is back over the visual, centred, and the
+collision it re-opens is answered by the card being OPAQUE and measured rather than by the two
+things never meeting (see "What the card covers," at the top of this file, for what was measured on
+a continuous scroll in both directions at three widths, the two width regimes, the step height, and
+the band the frames used to reserve — now reclaimed in the seed). Every rule below is either a
 decision this genre needed and the others did not, or an explicit inheritance from `twin-doctrine`
 stated so it is not silently assumed. Every section below describes the CURRENT code, not a remedy it once used and no
 longer does — a stale section here is what this file's own corrections exist to stop being ("The one
@@ -71,12 +76,164 @@ fall outside the visible slice; a graphic that fills a 1600px-wide viewport does
 a defect can EXPOSE the next one; that is not a reason to distrust the fix, it is a reason to look
 again at the picture the fix produces before calling the round closed.
 
-## The prose has its own space, and that is what lets it travel (the eighth correction)
+## What the card covers, and what was done about it (the ninth correction)
 
-**Read this before every section below it.** The seventh correction, one section down, made the
-graphic fixed and took the scroll off the document — both of those ship, unchanged. What it ALSO did
-was pin each prose panel with a `bottom` sticky offset so it PARKED in a reserved band for the whole
-of its step. That is what this correction reverses, and the reversal is not a revert.
+**Read this before every section below it, including the eighth's.** The section under this one
+describes the two-cell split, in full, because it is only legible against what replaced it. That
+split is gone. What follows here is what ships.
+
+**The owner's correction, after driving the beats the eighth correction shipped:** *"Le panel avec
+le texte ne doit pas être sur le côté mais centré et par dessus le contenu visuel."*
+
+**What the eighth correction got right, and it is kept in full.** The prose TRAVELS — an ordinary
+flow box centred in a step taller than the box it scrolls in, moving by the reader's own scroll on
+every animation frame, nothing pinned and nothing parked. The page does not scroll, the header does
+not move, the active step is decided from every panel measured against the lane, and
+`data-progress` is published on every scroll with the same meaning it was given there. Measured
+after this round, on the seed at 1600x900: 627, 931, 931 and 639px of travel per card, **0% held**,
+in both scroll directions. Every one of those properties was re-measured rather than assumed.
+
+**What it got wrong is the shape.** Two cells make a prose/graphic collision impossible by never
+letting the two things occupy the same space — which is exactly the dead end this file's own "one
+gotcha" section already records the owner rejecting once: *"you solved the sticky-overlap bug by
+splitting into two columns, that avoids the problem rather than solving it, and it produces the
+wrong form."* The eighth correction's cell was not the third build's narrow-graphic column — the
+graphic did fill its own cell — but it is a side column, and a scrollytelling piece's whole grammar
+is that the graphic is the ground the prose reads AGAINST.
+
+**So the collision is answered the other way, and this is the only answer that is measurable.** The
+card is fully OPAQUE, painted with the exact `ground` this render's furniture was derived from. A
+translucent card's EFFECTIVE colour is a blend of the card and whatever part of the graphic sits
+behind it at a given scroll position — not a single value, changing frame to frame and pixel to
+pixel. An opaque card has no such ambiguity: wherever it sits, over the photograph or the plot or
+the basemap, the colour a reader's eye meets is `ground`, so the only contrast question left is
+ink-on-ground, which `deriveFurniture` already guarantees, `renderScrolly` asserts before it writes
+a byte, and `scripts/verify-scrolly.mjs`'s assertion F3 asserts AGAIN off the live computed styles
+of a driven browser — 21.00:1 on this seed's own white, read as `rgb(0, 0, 0)` on `rgb(255, 255,
+255)` from the DOM rather than from the stylesheet.
+
+### What it covers — measured before it was decided
+
+A continuous scroll, a per-frame recorder installed before the scroll was touched, **both
+directions**, three widths, the seed and all six beats on disk:
+
+| | 1600x900 | 1280x800 | 375x812 |
+|---|---|---|---|
+| card | 409 x 132-183 | 409 x 132-183 | 375 x 132-183 |
+| as a share of the frame | 26% wide, 16-22% tall | 32% wide, 18-26% tall | 100% wide, 21-31% tall |
+| frames the card sat over a label | 44-129 of ~241 | 44-125 of ~240 | 16-175 of ~240 |
+| frames the visual stood entirely clear | 26-35 | 21-33 | 12-27 |
+| longest run a label was SLICED down its side | 0-9 | 0-12 | **0** |
+
+**Three things follow from those numbers, and none of them is "reserve a band."**
+
+1. **No band can be reserved, and that is arithmetic rather than opinion.** The card crosses the
+   whole height of the frame once per step, at the reader's own uniform rate, so every row is
+   crossed equally often. And at the one position that is editorially load-bearing —
+   `data-progress = i`, the moment step `i`'s own sentence sits on the lane's centre line — the card
+   is DEAD CENTRE of the frame, by the definition of that signal. A band at the bottom protects the
+   one place the card never dwells.
+2. **The card's WIDTH is the vehicle's one real lever, and it has two settings.** A label sitting
+   under the card reads as absent, which is what a card over a picture means. A label the card's own
+   VERTICAL edge cuts down the middle reads as broken text, and stays broken for every frame the
+   card spends at that row — *"the 'flood day' label reduced to 'flo…'"* is the owner's own report
+   of exactly that, from the last round a card was centred. So: the card is either comfortably
+   narrower than the frame, its edges landing in the middle where a frame does not put its axis
+   furniture, or exactly as wide as the frame, with no edge inside it at all. **Never in between.**
+   Frames keep their margin content in the outer ~15% (`CHART_LAYOUT`'s y-axis gutter is
+   `max(62px, 13%)`), so "comfortably narrower" is at most 70%; the reading measure renders at
+   410px and 410 / 0.7 = 586, which is where the regimes change — `600px` in the stylesheet.
+   Measured at 375px: the in-between shape (a 330px card, 88% of the frame) cut the seed's own
+   y-axis labels for **48, 41, 12 and 12 consecutive animation frames**; edge to edge it cuts
+   nothing, on any beat, at that width. Asserted by F4.
+3. **Some frames must be composed differently, and the seed now shows how.** On a desktop the card
+   HAS vertical edges inside the frame, and whether a label straddles one is the beat's own
+   composition. The seed's `flow` label sat at x 380 and straddled the right edge at 1600x900 — 10
+   consecutive frames of "flo", measured, and visible in a screenshot taken at the moment the step
+   is narrated. **There is no placement that is outside the stripe at every width**, and that is the
+   finding rather than a limitation of one drawing: a COVER-cropped frame's scale changes with the
+   viewport, so 410px is 164 viewBox units at 1600 and 437 at 600, nearly the whole canvas. So a
+   label on a CROPPED frame is placed INSIDE the stripe — hidden whole while the card passes, whole
+   the rest of the time, never across an edge. A FITTED frame escapes this entirely: its layout is
+   in fractions of its own box, so a left gutter is on the left at every width, which is why the
+   chart's tick labels are never sliced on a desktop. `flow` and its arrow moved to x 286..400 and
+   the sliced run went to 0.
+
+### The step is 140% of the frame, and the number is measured
+
+A step is the distance between two consecutive card centres, so the share of a pass on which no card
+is over the graphic is `1 - (L + p) / S` — track height `L`, card height `p`, step `S`. Raising `S`
+buys clear air and costs LOCK-STEP, because the active step flips when the incoming card enters the
+bottom edge, at `progress = i + 1 - (L + p) / (2S)`, and the guard's ceiling is 0.65 of a step.
+Driven on the seed at three heights:
+
+| step | frames the visual stood clear | worst step/progress drift | two cards on screen |
+|---|---|---|---|
+| 115% (the eighth correction's) | **0 of 217**, at every width | 0.50 | 1-14 frames |
+| **140%** | 28-31 of ~230 | 0.58 | **0** |
+| 170% | 48-58 of ~235 | 0.64-0.66 — at or over the ceiling | 0 |
+
+115% was chosen when the card lived beside the graphic and covering it was impossible; over the
+graphic it means a reader never once sees the visual unobstructed. 140% is the largest step with
+real margin on both numbers, and it also happens to be where two opaque cards are never on screen at
+once — beside a visual that is what a boundary looks like, ON it, it is a wall. The frame swap now
+happens in the clear gap, as the next card enters at the bottom edge: `pickActiveStep` returns null
+while no card is in the lane and the last frame is held, so the reader sees the visual change with
+nothing over it, then the card arrives to narrate it.
+
+### The band the frames reserved: it became WRONG, and the seed has reclaimed it
+
+The eighth correction left this residue and named it: every frame reserved `PROSE_LANE`, 28% of its
+own height, at the bottom, for a panel that no longer parked there — about 230px of bare ground under
+the seed's chart at 1600x900. Of the three things it could have become, it is **wrong**: it is not
+"right again" (the card rests nowhere, and where it is at the narrated moment is the CENTRE, the
+furthest point from that band), and it is not "the card's clear path" (the card's path is the entire
+height, at a uniform rate, so a clear path is the whole frame). So in the seed, `PROSE_LANE` and
+`CONTENT_TOP` are gone, `safeBand` no longer takes a lane, and `CHART_LAYOUT.plot.bottom` is 0.90
+instead of 0.63 — the plot uses the frame's own height and what is left below it is the strip the
+x-axis labels actually occupy, asserted against that rather than reserved by a constant.
+
+`renderScrolly` still ACCEPTS a `proseLane` (now `>= 0`, defaulting to 0) and still emits
+`--prose-lane`/`data-prose-lane`, because **four beats on disk still carry their own copy of the
+constant** and two of them derive a CAMERA from it rather than only a plot box. Reclaiming there is
+a re-composition of those beats, not a constant edited, and it is deliberately not smuggled into
+this round — named residue, again, but named smaller.
+
+### One consequence to state rather than discover later
+
+The card layer is `position: absolute; inset: 0` OVER the graphic, so it takes every pointer event
+in the frame — which is right (a reader's wheel and finger belong to the scroll) and means **a beat
+whose graphic wants hover cannot have it through this scaffold**. That was equally true under the
+seventh correction's stack and untrue for the one round the two had separate cells; no beat on disk
+relies on it (the only `pointerEvents` in any scrolly frame component is a `none`), and a beat that
+did would need the card layer to pass events through everything except the card itself. Named, not
+built.
+
+### What replaces the reservation is a composition rule, not another band
+
+> Nothing whose only copy a reader needs may sit alone in the card's own stripe down the middle of
+> the frame — and nothing may straddle its edge. On a FITTED frame, keep the axis furniture in the
+> gutters, which are outside the stripe at every width. On a CROPPED frame, no placement is outside
+> the stripe at every width, so place a label INSIDE it and let the card hide it whole.
+
+**And the one instance of that rule this round did NOT close, because it is a BAKE rather than a
+placement.** The seed's own map track has exactly one mark — the station's dot and its
+`Point of Rocks, MD` label — and `scripts/bake-plate.mjs` centres the camera on the station, so the
+mark lands dead centre of the plate and therefore dead centre of the frame, which is where the card
+rests at the narrated moment. Screenshot-confirmed in `output-proof/track-3-map.png`: the marker is
+behind the card at `data-progress = 2`, and reappears as the card travels on. The prose names the
+station in words at that exact moment, so nothing a reader needs is lost, but the picture would be
+better if the camera were offset so the subject sat clear of the middle. **A single-subject frame
+should be BAKED off-centre** — that is a change to the bake and its committed geometry file, needs a
+live MapTiler key, and is named here rather than smuggled in.
+
+## The prose has its own space (the eighth correction — REVERSED in part by the ninth, above)
+
+**Read the ninth correction first.** What this section describes that STILL SHIPS is the TRAVEL: an
+un-pinned card centred in a step taller than the box it scrolls in, and the measurements that
+condemned the pin. What it describes that no longer ships is the two-cell SPLIT, `--prose-col`,
+`--prose-band` and the 860px breakpoint — all removed. The seventh correction, one section down,
+made the graphic fixed and took the scroll off the document; both of those ship, unchanged.
 
 **The owner's report, after driving the three beats the seventh correction shipped:** *le panel avec
 le texte ne bouge plus alors que l'effet c'est vraiment de les faire défiler au scroll vers le haut.*
@@ -163,15 +320,11 @@ would watch the words they are reading DISSOLVE halfway up the column instead of
 which is the same defect the owner named wearing a different costume. **Two panels on screen through
 a boundary is not a bug in a scroll-driven piece; it is what a boundary looks like.**
 
-**The residue this correction does NOT close, and it is visible.** Every frame still reserves
-`PROSE_LANE` — 28% of its own height — at the bottom, through `safeBand()` and `CONTENT_TOP`, for a
-panel that no longer goes there. Nothing occupies that band any more: on the seed's own chart step at
-1600×900 it is roughly 230px of empty ground under the plot. Reclaiming it means changing
-`PROSE_LANE`/`CONTENT_TOP` and the chart layouts derived from them in the seed **and in every beat's
-own copy of those constants** — a per-beat change with its own guard to write, not a scaffold change,
-and deliberately not smuggled into this round. The scaffold still emits `--prose-lane` and
-`data-prose-lane` so the number a beat's frames computed from stays readable off the delivered file;
-no CSS rule reads it any more, and `assets/interaction.mjs` no longer reads it at all.
+**The residue this correction did NOT close — closed for the seed by the ninth, above.** Every frame
+reserved `PROSE_LANE`, 28% of its own height, at the bottom, for a panel that no longer went there;
+on the seed's own chart step at 1600×900 that was roughly 230px of empty ground under the plot. The
+seed has reclaimed it (`safeBand` takes no lane, `CONTENT_TOP` is gone, `CHART_LAYOUT.plot.bottom` is
+0.90); four beats still carry their own copy, and two of them derive a camera from it.
 
 **And the guard that was missing is the point of the round.** `scripts/verify-scrolly.mjs` gained two
 assertions and lost none: **F**, no panel is ever painted over the graphic (the visible part of every

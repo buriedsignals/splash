@@ -30,7 +30,6 @@ import {
   RankedBarFrame,
   SlopeFrame,
   DotStripFrame,
-  PROSE_LANE,
 } from "./ChartFrames.tsx";
 import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
 
@@ -147,7 +146,6 @@ async function render() {
     ground,
     outDir,
     name: "eu-carbon-four-charts.html",
-    proseLane: PROSE_LANE,
   });
 
   console.log(

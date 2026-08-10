@@ -39,7 +39,6 @@ import {
   HexCountFrame,
   SymbolFrame,
   HexStrengthFrame,
-  PROSE_LANE,
 } from "./MapFrames.tsx";
 import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
 
@@ -216,7 +215,6 @@ async function render() {
     ground,
     outDir,
     name: "quakes-four-maps.html",
-    proseLane: PROSE_LANE,
   });
 
   const busiestAt = cellLonLat(busiest, geometry.frameCorners, geometry.frame);

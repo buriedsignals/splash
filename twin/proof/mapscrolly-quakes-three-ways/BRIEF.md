@@ -91,11 +91,14 @@ this beat a re-bin could move, and it is written down here rather than discovere
 
 **Three craft decisions worth copying.**
 
-1. **The map is FITTED into the content band, not COVER-cropped.** `scrolly-discipline.md` files a
-   basemap under scenery and crops it; that is right for a locator and wrong for a plate carrying
-   14,057 marks from Chile to Kamchatka — COVER at a phone's aspect would show about a quarter of the
-   world's width. Fitting it into the top `1 − PROSE_LANE` of the graphic makes "nothing is ever
-   drawn in the prose lane" true by construction rather than by clamping.
+1. **The map is FITTED into the frame, not COVER-cropped.** `scrolly-discipline.md` files a basemap
+   under scenery and crops it; that is right for a locator and wrong for a plate carrying 14,057
+   marks from Chile to Kamchatka — COVER at a phone's aspect would show about a quarter of the
+   world's width. It used to be fitted into the top `1 − PROSE_LANE` so that nothing was ever drawn
+   in the band a prose panel parked in; the vehicle's ninth correction puts the card back over the
+   visual and lets it travel the whole height, so that band was 28% of every frame spent on bare
+   ground and is reclaimed. What the card asks instead is that the LEGEND stay out of its centred
+   stripe, which top-left already does.
 2. **The symbol radius is rooted in ENERGY, not in the magnitude number.** Equal-area on the
    magnitude number would vary the radius by 4% across a 6.5–7.5 window and draw a 7.5 as if it were
    a 6.5; energy goes as `10^(1.5·m)`, so an equal-area encoding of it is `r ∝ 10^(0.75·m)` — a 5.6×

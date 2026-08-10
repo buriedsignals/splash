@@ -9,7 +9,6 @@ import {
   STEPS_META,
   FRAME,
   SAFE_AREA,
-  PROSE_LANE,
   ImageFrame,
   DrawnGraphicFrame,
   type ScrollyStepMeta,
@@ -109,6 +108,16 @@ function rule(html: string, selector: string): string {
   const open = html.indexOf("{", at);
   const close = html.indexOf("}", open);
   return html.slice(open + 1, close);
+}
+
+/** A rule with its own COMMENTS stripped — the declarations, and nothing else. This file already
+ *  learned once that a CSS assertion greping a whole stylesheet cannot tell a rule from a comment
+ *  about a rule (`margin-top: calc(-1 * var(--graphic-h))` passed for six builds after the rule was
+ *  deleted, because the string survived in the doc-comment explaining its removal). `rule` fixed
+ *  that for the stylesheet; this fixes it INSIDE a rule, where every declaration in this scaffold
+ *  is now surrounded by the paragraphs that justify it. */
+function declarations(html: string, selector: string): string {
+  return rule(html, selector).replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
 describe("pickActiveStep — which FRAME the graphic shows", () => {
@@ -570,7 +579,7 @@ describe("renderScrolly — the full self-contained page", () => {
   // rule was deleted — because the string survived in a doc-comment explaining its removal. A CSS
   // assertion that greps the whole stylesheet cannot tell a rule from a comment about a rule, so
   // every assertion below slices the RULE out first.
-  it("should give the prose its own cell of the track, never a band inside the graphic's", async () => {
+  it("should put the card back over the visual, in one shared box, with nothing painted between them", async () => {
     const steps = [makeStep("a", ["a"]), makeStep("b", ["b"])];
     const { outPath } = await renderScrolly({
       steps,
@@ -581,21 +590,23 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    const trackRule = rule(html, ".scrolly-track");
-    // Stacked is the DEFAULT — the arrangement with the least room to spare is the one that does
-    // not depend on a media query being understood.
-    expect(trackRule).toContain("display: grid");
-    expect(trackRule).toContain("grid-template-rows: minmax(0, 1fr) var(--prose-band)");
-    // Side by side once there is room, and only there.
-    expect(html).toContain("@media (min-width: 860px)");
-    expect(html).toContain("grid-template-columns: minmax(0, 1fr) var(--prose-col)");
-    // Nothing shares a box any more: neither cell is absolutely positioned over the other.
-    expect(rule(html, ".scrolly-graphic")).not.toContain("position: absolute");
-    expect(rule(html, ".scrolly-steps")).not.toContain("position: absolute");
-    // Each cell clips its own content — that is what makes "the prose never reaches the graphic" a
-    // fact about the box model rather than an intention.
-    expect(rule(html, ".scrolly-graphic")).toContain("overflow: hidden");
+    // ONE box, two layers, the graphic underneath: no second cell, no column, no band.
+    expect(rule(html, ".scrolly-track")).not.toContain("grid-template-columns");
+    expect(rule(html, ".scrolly-track")).not.toContain("grid-template-rows");
+    expect(html).not.toContain("--prose-col");
+    expect(html).not.toContain("--prose-band");
+    expect(html).not.toContain("@media (min-width: 860px)");
+    expect(rule(html, ".scrolly-graphic")).toContain("position: absolute");
+    expect(rule(html, ".scrolly-steps")).toContain("position: absolute");
+    expect(rule(html, ".scrolly-graphic")).toContain("z-index: 0");
+    expect(rule(html, ".scrolly-steps")).toContain("z-index: 1");
     expect(rule(html, ".scrolly-steps")).toContain("overflow-y: auto");
+    // AND THE LAYER OVER THE VISUAL PAINTS NOTHING OF ITS OWN. The eighth correction gave
+    // `.scrolly-steps` a `background` and a border because it was a column beside the graphic;
+    // over the graphic either one is a scrim across the whole visual. The only opaque thing in
+    // this layer is the card.
+    expect(declarations(html, ".scrolly-steps")).not.toContain("background");
+    expect(declarations(html, ".scrolly-steps")).not.toContain("border");
   });
 
   // Correction 3: "the prose panel centred over the graphic rather than pinned left" — `.step`'s
@@ -638,31 +649,68 @@ describe("renderScrolly — the full self-contained page", () => {
     const stepRule = rule(html, ".step");
     expect(stepRule).toContain("align-items: center");
     expect(stepRule).not.toContain("align-items: flex-end");
-    // The step is taller than the column it scrolls inside, which is what gives the panel a full
-    // column's worth of travel per step.
-    expect(stepRule).toContain("min-height: 115%");
+    // The step is taller than the frame it scrolls over, which is what gives the card a full
+    // frame's worth of travel per step — and 140% rather than 115% is what leaves the visual
+    // standing entirely clear between two cards. See `.step`'s own comment in `buildCss` for the
+    // three heights that were driven and what each one measured.
+    expect(stepRule).toContain("min-height: 140%");
   });
 
-  it("should reserve exactly the lane the seed's own frames keep clear", async () => {
+  // THE NINTH CORRECTION'S OWN GEOMETRY, in the stylesheet rather than in a driven browser (which
+  // `scripts/verify-scrolly.mjs`'s assertion F does independently). Two regimes and nothing
+  // between them: a card whose vertical edge lands in the outer band of the frame slices whatever
+  // label is there for as long as it stays at that row.
+  it("should give the card one of two widths and never the shape between them", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
       source: "s",
       ground: "#FFFFFF",
-      proseLane: PROSE_LANE,
-      outDir: "/tmp/twin-scrolly-test-lane-value",
+      outDir: "/tmp/twin-scrolly-test-card-width",
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    // WHAT THIS NUMBER STILL MEANS, AND WHAT IT NO LONGER DOES. It is the band a beat's own frames
-    // keep clear at the bottom (`safeBand`/`CONTENT_TOP` in `assets/ScrollySeed.tsx`, and a copy of
-    // the same constant in every beat's own frame file). Until the eighth correction the scaffold
-    // PLACED the panel against it; the prose now has its own cell and places nothing against it, so
-    // the value is carried as a declaration of what the frames reserve rather than as a rule the
-    // CSS enforces. It is emitted, unchanged, because a beat's frames still compute from it — and
-    // because reclaiming that band is a change to every beat's own frames, not to this scaffold.
-    expect(html).toContain(`--prose-lane: ${(PROSE_LANE * 100).toFixed(0)}%`);
-    expect(html).toContain(`data-prose-lane="${Math.round(PROSE_LANE * 100)}"`);
+    // NARROW is the default: edge to edge, no gutter to leave an edge inside the frame.
+    expect(declarations(html, ".step-panel")).toContain("max-width: 100%");
+    expect(declarations(html, ".step")).toContain("padding: 0;");
+    // The reading measure is the override, at the width where 410px stops being 70% of the frame.
+    expect(html).toContain("@media (min-width: 600px)");
+    const wide = html.slice(html.indexOf("@media (min-width: 600px)"));
+    expect(wide).toContain("max-width: min(46ch, 100%)");
+    expect(wide).toContain("padding: 0 var(--prose-gutter)");
+  });
+
+  it("should carry a beat's own reserved band as a declaration, and reserve none of its own", async () => {
+    const declared = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      // What a beat that still derives a camera or a plot box from its own copy of the constant
+      // passes. The scaffold records it; it places nothing against it.
+      proseLane: 0.36,
+      outDir: "/tmp/twin-scrolly-test-lane-value",
+      name: "x.html",
+    });
+    const withLane = await readFile(declared.outPath, "utf8");
+    expect(withLane).toContain("--prose-lane: 36%");
+    expect(withLane).toContain('data-prose-lane="36"');
+
+    // AND THE SEED PASSES NONE, which is the ninth correction's own residue closed rather than
+    // named: the card travels the whole frame and rests nowhere, so a band at the bottom protected
+    // the one place it never dwells. The default is 0 and nothing in the CSS reads the value.
+    const none = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-lane-none",
+      name: "x.html",
+    });
+    const withoutLane = await readFile(none.outPath, "utf8");
+    expect(withoutLane).toContain("--prose-lane: 0%");
+    expect(withoutLane).toContain('data-prose-lane="0"');
+    expect(withoutLane).not.toMatch(/var\(--prose-lane\)/);
   });
 
   it("should refuse a lane that is not a usable fraction of the graphic", async () => {
@@ -725,10 +773,10 @@ describe("renderScrolly — the full self-contained page", () => {
     });
     const html = await readFile(outPath, "utf8");
     expect(html).toMatch(/body\s*\{[^}]*overflow: hidden/);
-    // The graphic is a grid CELL now, not a layer over the prose — see "should give the prose its
-    // own cell", above, for the eighth correction that moved it. What is unchanged, and is what
-    // this test is for, is that nothing positions it from the scroll.
-    expect(rule(html, ".scrolly-graphic")).toContain("position: relative");
+    // The graphic is the bottom LAYER of the track again — see "should put the card back over the
+    // visual", above. What is unchanged across the eighth and ninth corrections, and is what this
+    // test is for, is that nothing positions it from the scroll.
+    expect(rule(html, ".scrolly-graphic")).toContain("inset: 0");
     expect(rule(html, ".scrolly-steps")).toContain("overflow-y: auto");
     // The reader's keyboard follows the scroll: taking it off the document takes Page Down with
     // it unless the new scroller can be focused.
@@ -765,9 +813,11 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).not.toMatch(/\.scrolly-header\s*\{[^}]*max-width/);
     // The gutter is what survives the reversal: full bleed, but never touching the edge.
     expect(html).toMatch(/\.scrolly-header\s*\{[^}]*clamp\(16px, 6vw, 56px\)/);
-    // And the panel — prose over the graphic, not furniture beside it — still has its measure.
-    expect(html).toMatch(
-      /\.step-panel\s*\{[^}]*max-width:\s*min\(46ch, 100%\)/,
+    // And the card — prose over the graphic, not furniture beside it — still has its measure on
+    // the viewports wide enough to carry one. It is in the `min-width: 600px` block now, not in
+    // `.step-panel`'s own rule; see "should give the card one of two widths", above.
+    expect(html.slice(html.indexOf("@media (min-width: 600px)"))).toMatch(
+      /max-width:\s*min\(46ch, 100%\)/,
     );
   });
 

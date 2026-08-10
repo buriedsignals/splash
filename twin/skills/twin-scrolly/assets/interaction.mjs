@@ -20,10 +20,12 @@
 // which FRAME the graphic shows, and which PANEL may be painted (`pickLanePanel`, the `in-lane`
 // class, `.scrolly--live`). The second existed because a `bottom`-sticky panel un-pinned one
 // panel-height before the next one parked and spent that gap opaque and climbing over the graphic's
-// own labels. The prose now travels in its own cell of the track's grid, clipped at that cell's own
-// edge, so it cannot reach the graphic at any offset and there is nothing left to withhold paint
-// from. The lane is no longer a band inside a shared box either: it is the scrollport itself, so
-// nothing here reads `data-prose-lane` or a panel's own `bottom` offset any more.
+// own labels. Nothing withholds paint any more: the NINTH correction puts the card back over the
+// graphic on purpose — "le panel avec le texte ne doit pas être sur le côté mais centré et par
+// dessus le contenu visuel" — and answers the collision by making the card OPAQUE and its
+// ink-on-ground contrast measurable, not by hiding it. The lane is the scrollport itself, which is
+// now the whole frame again, so nothing here reads `data-prose-lane` or a panel's own `bottom`
+// offset.
 //
 // WHY THERE IS NO INTERSECTIONOBSERVER ANY MORE, and this is the correction this file exists to
 // carry. Every build up to the sixth used one, and picked the winner out of the entries of the
@@ -143,11 +145,11 @@ export function measureProgress(panels, lane) {
 }
 
 /**
- * Wires one `.scrolly` root's steps to its frames by measuring THE PROSE COLUMN — the cell of the
- * track's own grid that the prose travels in, beside the graphic on a wide viewport and below it on
- * a phone (`scripts/render-scrolly.mjs`'s own `buildCss`). The column IS the lane: since the eighth
- * correction the prose has its own space, so "in the lane" and "inside the element that scrolls"
- * are the same rect, and there is no fraction to read off the markup and no offset to subtract.
+ * Wires one `.scrolly` root's steps to its frames by measuring THE SCROLLPORT — `.scrolly-steps`,
+ * the transparent layer the cards travel in, which since the ninth correction covers the graphic
+ * edge to edge (`scripts/render-scrolly.mjs`'s own `buildCss`). The scrollport IS the lane: "in the
+ * lane" and "inside the element that scrolls" are the same rect, so there is no fraction to read off
+ * the markup and no offset to subtract.
  *
  * **What is measured is the PANEL, not the section.** An earlier build watched the `.step` sections
  * through a thin band at the middle of the screen, which asked "whose 115%-tall section crosses the
@@ -155,7 +157,7 @@ export function measureProgress(panels, lane) {
  * actually beside", with a different answer for a large fraction of every step. Measuring the panel
  * makes the active step and the visible prose the same fact by construction.
  *
- * **The scroller is the prose column, never the document.** The page itself does not scroll (see
+ * **The scroller is the card layer, never the document.** The page itself does not scroll (see
  * `references/scrolly-discipline.md`, "The graphic is fixed and the page does not scroll"), so the
  * event this listens to is `.scrolly-steps`'s own.
  *
@@ -181,9 +183,12 @@ export function initScrolly(root) {
     return;
 
   let currentFrame = null;
-  /** Which frame the graphic shows. Held across the gap between two steps — the graphic is fixed,
-   *  so it holds the last thing the reader was told about until the next prose arrives. Two
-   *  panels are on screen through a boundary and neither is hidden; only ONE decision is left. */
+  /** Which frame the graphic shows. HELD across the gap between two steps, and since the ninth
+   *  correction that gap is real and deliberate: a step is 140% of the frame, so the outgoing card
+   *  leaves past the top before the incoming one enters at the bottom, and for 12-15% of a pass no
+   *  card is over the graphic at all. `pickActiveStep` returns null through that gap and the last
+   *  frame stays — the reader looks at the visual, uncovered, and the frame swaps as the next card
+   *  arrives to narrate it. */
   function activate(stepId) {
     if (stepId === currentFrame) return;
     currentFrame = stepId;
@@ -197,9 +202,9 @@ export function initScrolly(root) {
 
   function update() {
     const port = scroller.getBoundingClientRect();
-    // The lane is the scrollport itself — read live rather than cached, because a resize changes
-    // it and because on a phone it is a band whose height comes from a `clamp()` nobody here
-    // should be re-deriving.
+    // The lane is the scrollport itself — read live rather than cached, because a resize changes it
+    // and because the card's own regime changes with the width (edge to edge on a phone, a measured
+    // stripe on a desktop), which nobody here should be re-deriving.
     const lane = { top: port.top, bottom: port.bottom };
     const measured = panels.map(function (p) {
       const r = p.getBoundingClientRect();
