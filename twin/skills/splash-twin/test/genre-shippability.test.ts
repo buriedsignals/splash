@@ -12,8 +12,35 @@
 // medium/genre pair does not by itself catch that: `twin-chart-web` and `twin-map-web` BOTH exist
 // on disk, so a `"map/web" -> twin-chart-web` row still satisfies "the directory exists". What
 // catches it is reading the producer's own SKILL.md front matter and requiring that it names
-// ITSELF as that skill and NAMES THE MEDIUM it is being claimed for. Delete that assertion and
-// this task's central claim ships unguarded.
+// ITSELF as that skill, NAMES THE MEDIUM it is being claimed for, AND NAMES THE GENRE. Delete
+// either half of that and this task's central claim ships unguarded.
+//
+// THE GENRE HALF WAS MISSING, AND THE HOLE WAS SYMMETRIC WITH THE ONE THE PAIR KEY CLOSED.
+// The key is a pair; only one of its two terms was ever checked. Measured: pointing `"map/web"` at
+// `twin-map-beat` and `"chart/web"` at `twin-chart-video` left this file completely green, 34 pass
+// / 0 fail. With the genre assertion, the same mutation in a copy under /tmp:
+//
+//   Expected: "twin-chart-video names the web genre: true"
+//   Received: "twin-chart-video names the web genre: false"
+//   (fail) … should find, in twin-chart-video's own SKILL.md, a skill that names itself, names the
+//          chart medium and names the web genre
+//   Expected: "twin-map-beat names the web genre: true"
+//   Received: "twin-map-beat names the web genre: false"
+//   (fail) … names the map medium and names the web genre
+//    32 pass · 2 fail
+//
+// Both rows name a producer of the RIGHT MEDIUM and the WRONG GENRE, which is the same
+// class of defect as naming the wrong medium, and it reached the dispatch table `splash-twin`'s
+// SKILL.md publishes. The genre word is now required in the same front matter, word-bounded, with
+// `scrolly` also matching `scrollytelling` because that is how that skill's own description says it.
+//
+// WHAT THIS SUBSTRING TEST DOES NOT SEPARATE, disclosed rather than over-built: a description that
+// mentions a genre it does NOT produce still satisfies the test for that genre. Two do —
+// `twin-chart-web` says "degrades to that same static frame", `twin-map-web` says "maps shipped
+// only static/video until this skill" — so `chart/static -> twin-chart-web` would pass. Closing
+// that means the front matter carrying a genre list as data rather than as prose, which is a change
+// to seven SKILL.md files owned by other chantiers. The pair of wrong-genre rows that were actually
+// reachable, and that the journey audit demonstrated, both redden.
 import { describe, it, expect } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -37,11 +64,20 @@ describe("twin-storyboard's genre catalog agrees with what actually ships", () =
       expect(existsSync(join(SKILLS, row.producerSkill))).toBe(true);
     });
 
-    it(`should find, in ${row.producerSkill}'s own SKILL.md, a skill that names itself and names the ${medium} medium`, () => {
+    it(`should find, in ${row.producerSkill}'s own SKILL.md, a skill that names itself, names the ${medium} medium and names the ${genre} genre`, () => {
       const meta = frontMatter(row.producerSkill);
       expect(meta).toContain(`name: ${row.producerSkill}`);
       const description = /^description:\s*([\s\S]*)$/m.exec(meta)?.[1] ?? "";
       expect(description.toLowerCase()).toContain(medium);
+      // `scrolly` is written `scrollytelling` in that skill's own description, so the tail is open;
+      // every other genre word is closed on both sides so `video` does not match `videographer`.
+      const genreWord = new RegExp(
+        `\\b${genre}${genre === "scrolly" ? "" : "\\b"}`,
+        "i",
+      );
+      expect(
+        `${row.producerSkill} names the ${genre} genre: ${genreWord.test(description)}`,
+      ).toBe(`${row.producerSkill} names the ${genre} genre: true`);
     });
 
     if (row.delivered) {
