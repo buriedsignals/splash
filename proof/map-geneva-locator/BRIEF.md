@@ -1,7 +1,66 @@
+---
+size: landscape
+type: locator
+---
+
 # Beat — eleven international organisations, three tiers, inside 4.4 km of central Geneva
 
-**Type:** locator. **Medium/genre:** map / static. **Channel:** article web, 900 × 560, over a
+**Type:** locator. **Medium/genre:** map / static. **Size:** landscape (1920 × 1080), over a
 496 × 496 baked plate (`bake.mjs --size 496`, bounds `[6.09, 46.165] → [6.225, 46.26]`).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. It used to say "article web, 900 × 560",
+checked by nothing, while the component carried its own `const FRAME` and the render script repeated
+the same two literals.
+
+## What each size does with this geography
+
+The plate is SQUARE (496 × 496 over 0.137° of longitude), and the map is drawn at the plate's own
+aspect at every size — never stretched, never cropped. What changes is where the leftover goes.
+
+| size | delivered | arrangement | the map | leftover |
+| --- | --- | --- | --- | --- |
+| landscape 1920 × 1080 | **yes**, measured 1920 × 1080 from the PNG's own IHDR | plate right, column left | 910 × 910 | 765 px of column |
+| square 1080 × 1080 | refused | — | — | — |
+| portrait 1080 × 1920 | refused | — | — | — |
+
+Nothing is letterboxed at landscape: a square plate in a 1750 × 910 content box is bound by HEIGHT,
+so the map takes 910 × 910 and the 765 px left on the other axis is the text column. The map is
+never given more than its own geography can fill and it is never stretched — `mapStageBox`.
+
+Both refusals are the same refusal, and it is the type floor's, not the geography's:
+
+- **square** — the column beside a 936 × 936 plate is **−105 px**, under the 473 px this beat's own
+  longest title word and legend rows need, so the plate has to go above the column; stacked, the
+  furniture takes **1277 px of the 936 px band**.
+- **portrait** — the same, inside Meta's 979 px safe band rather than the whole frame: the column
+  beside an 835 × 835 plate is −4 px, and the furniture takes 1277 px of 835.
+
+1277 px is what a 36 px floor costs this beat: a 3-line title, a 3-row legend, a 7-line caveat and a
+3-line credit. Nothing in the removal ladder makes type smaller, and the caveat is the sentence that
+keeps the claim honest ("2 stand apart from that cluster…"), so it is not a line to drop.
+`render.mjs --still --size square` reproduces the refusal with these numbers in it.
+
+## What the bigger frame showed, and what it cost
+
+Two defects that 900 × 560 was hiding, both found by opening the render and neither visible to any
+counter:
+
+1. **`labelSide`'s flip margin is a typed 170 px**, tuned against a 496 px plate. At a 910 px plate
+   the World Economic Forum kept its right-hand label and the plate's own clip cut it to "World
+   Economic". The `mustLabel` guard passed — the label was *shown*, and nothing here measured
+   whether a shown label is *whole*. The margin is now the label's own measured width plus its gap,
+   the fix `proof/mapgen-locator-web/LocatorWeb.tsx` had already made on the web sibling.
+2. **Flipping it left then laid its halo across two other markers.** A left/right model has nowhere
+   else to go, so it trades a clipped label for an occluded mark and reports success. The label
+   model is now the web sibling's ladder — right, left, above, below — and the first candidate that
+   is both on the plate and clear of every other marker wins. A label with no clear candidate is not
+   drawn at all rather than drawn in the least-bad place, which is what dropped the World
+   Intellectual Property Organization's 500 px name from the middle of the cluster.
+
+The legend also moved: it used to be anchored upward off the caveat, so the whole column was laid
+out from its two ends and the slack landed between the title and the key — 250 px of hole at
+1920 × 1080, with the legend floating under nothing. It is part of the header and is anchored there.
 
 ## Claim
 

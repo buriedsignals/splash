@@ -57,7 +57,7 @@ const PROOF = join(TWIN, "proof");
  * migrating in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const UNPINNED_BEATS = 43;
+const UNPINNED_BEATS = 42;
 
 function beatDirs(): string[] {
   if (!existsSync(PROOF)) return [];
@@ -113,6 +113,18 @@ describe("a beat that pins an export size delivers a file that measures it", () 
     // `sizes/` is a beat's LOOKING directory: the other two sizes rendered side by side so a person
     // can compare them. Those are named after the size they carry and are excluded here by that
     // name, not by a path exemption, so a deliverable can never hide in one.
+    //
+    // A BAKED PLATE IS AN INPUT, NOT A DELIVERABLE, and the map genre is the first to bring one.
+    // `proof/<beat>/plate*/plate.png` is a frozen basemap capture committed beside the beat's own
+    // `data.csv` for exactly the reason the CSV is: a render reading its basemap from `/tmp` cannot
+    // be reproduced or audited, and MapTiler restyles. It is drawn INTO the delivered frame at
+    // whatever size the geography and the frame agree on, so its own dimensions are the bake's
+    // business and have nothing to do with the pin. The test is structural rather than a name or a
+    // path: a PNG that sits beside a `geometry.json` is a plate, because a plate is precisely the
+    // pair of files a bake writes. A delivered artifact cannot hide there without somebody also
+    // writing a camera record next to it.
+    const isBakedPlate = (png: string) =>
+      existsSync(join(png.slice(0, png.lastIndexOf("/")), "geometry.json"));
     const wrong: string[] = [];
     for (const beat of pinned) {
       const row = SIZES[beat.pinned as keyof typeof SIZES];
@@ -120,6 +132,7 @@ describe("a beat that pins an export size delivers a file that measures it", () 
         const name = png.slice(png.lastIndexOf("/") + 1);
         if (Object.keys(SIZES).some((s) => name.includes(s))) continue;
         if (png.includes("/probe/")) continue;
+        if (isBakedPlate(png)) continue;
         const got = readPngSize(readFileSync(png));
         if (got.width !== row.width || got.height !== row.height)
           wrong.push(
