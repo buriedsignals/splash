@@ -36,6 +36,7 @@ import {
   deliveryClosed,
   PRODUCIBLE_GENRES,
 } from "../scripts/another-genre.mjs";
+import { recordSubjectAnswer } from "../scripts/other-subjects.mjs";
 import { materialise, exportDirFor } from "../scripts/deliver.mjs";
 import { GENRE_CATALOG } from "../../twin-storyboard/scripts/genre-catalog.mjs";
 
@@ -230,7 +231,9 @@ afterEach(async () => {
 describe("a delivered beat is not a finished one until the offer is answered", () => {
   it("should report a delivered beat as not closed, naming what never happened", async () => {
     // THE FIXTURE. Nothing here asks a question — this is exactly the shape of the run: the beat is
-    // delivered, the hand-over is written, and the journalist was never offered another genre.
+    // delivered, the hand-over is written, and the journalist was never offered another genre. The
+    // article's other subjects are the other half of the same closing offer, and they were not
+    // offered either (see other-subjects.test.ts) — `missing` names both.
     const exportDir = exportDirFor(storyDir, "1-rainfall");
     await materialise({
       form: "owned-file",
@@ -244,8 +247,9 @@ describe("a delivered beat is not a finished one until the offer is answered", (
     expect(state.closed).toBe(false);
     expect(state.missing).toEqual([
       "this beat was delivered and never offered in another genre",
+      "this beat was delivered and the article's other subjects were never offered",
     ]);
-    expect(state.answer).toBe("pending");
+    expect(state.answer).toBeNull();
   });
 
   it("should close when the journalist declines", async () => {
@@ -258,6 +262,8 @@ describe("a delivered beat is not a finished one until the offer is answered", (
       handover,
     });
     await recordGenreAnswer({ exportDir, answer: "declined" });
+    // Both halves close a delivery: this test is about the genre one, so the other is answered too.
+    await recordSubjectAnswer({ exportDir, answer: "none" });
 
     const state = await deliveryClosed(exportDir);
     expect(state.closed).toBe(true);
@@ -274,6 +280,7 @@ describe("a delivered beat is not a finished one until the offer is answered", (
       handover,
     });
     await recordGenreAnswer({ exportDir, answer: "taken", genre: "video" });
+    await recordSubjectAnswer({ exportDir, answer: "none" });
 
     expect(await deliveryClosed(exportDir)).toMatchObject({
       closed: true,

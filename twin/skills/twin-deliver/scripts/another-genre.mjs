@@ -34,6 +34,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 
 // Every genre a medium can actually be walked to — a producer that renders it AND a delivery form
 // for it. Mirrors `GENRE_CATALOG`'s pairs. `image` reaching only static and scrolly is the point of
@@ -219,22 +220,39 @@ export async function recordGenreAnswer({ exportDir, answer, genre }) {
   );
 }
 
+async function answerIn(exportDir, receipt) {
+  const text = await readFile(join(exportDir, receipt), "utf8").catch(() => null);
+  const answer = text?.trim() ?? "";
+  return answer === "" || answer === PENDING ? null : answer;
+}
+
 /**
- * Has this delivery closed? A delivered beat is not finished until the journalist has been offered
- * the other forms and has ANSWERED — taking one or declining, both clean.
+ * Has this delivery closed? A delivered beat is not finished until BOTH halves of the closing offer
+ * have been made and answered:
+ *
+ *   - the same beat in another genre (`.another-genre`);
+ *   - the other subjects in the same article (`.other-subjects`), for which "the article carried
+ *     nothing else" is itself an answer (`none`).
+ *
+ * Both are separate facts — a journalist can want this beat as a video and want nothing else from
+ * the article, or the reverse — so both are recorded, and `missing` names whichever never happened.
  *
  * Returns `{closed, missing}` in the same shape `whereIs` reports a phase, so the story-level gate
  * can consult it without learning a second vocabulary.
  */
 export async function deliveryClosed(exportDir) {
-  const receipt = await readFile(join(exportDir, GENRE_OFFER_RECEIPT), "utf8").catch(() => null);
-  const answer = receipt?.trim() ?? "";
-  if (answer === "" || answer === PENDING) {
-    return {
-      closed: false,
-      missing: ["this beat was delivered and never offered in another genre"],
-      answer: answer === PENDING ? PENDING : null,
-    };
-  }
-  return { closed: true, missing: [], answer };
+  const genre = await answerIn(exportDir, GENRE_OFFER_RECEIPT);
+  const subjects = await answerIn(exportDir, SUBJECT_OFFER_RECEIPT);
+
+  const missing = [];
+  if (genre === null) missing.push("this beat was delivered and never offered in another genre");
+  if (subjects === null)
+    missing.push("this beat was delivered and the article's other subjects were never offered");
+
+  return {
+    closed: missing.length === 0,
+    missing,
+    answer: genre,
+    subjects,
+  };
 }

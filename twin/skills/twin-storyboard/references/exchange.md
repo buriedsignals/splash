@@ -222,6 +222,18 @@ Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly 
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate
 2 has not actually closed no matter what the conversation implied.
 
+**And what the journalist DROPPED is written down too, before this movement ends.** The angles this
+survey found and the storyboard did not keep are the article's other sub-subjects — already found,
+already grounded, already checked reachable — and they used to live in this conversation and die
+with it. `recordSurveyedSubjects({storyDir, subjects})`
+(`skills/twin-deliver/scripts/other-subjects.mjs`) writes every angle ④ turned up, kept or dropped,
+into `stories/<slug>/SUBJECTS.md`: an `id` that could name a beat directory, the `medium` and
+`genre` it would take, and `learns` — what the READER would learn from it, in a sentence, because a
+type name is not a reason to draw something. It is read back at the very end of the run, re-checked
+against the story as it then stands, and offered: *"Ou même le relancer sur des sous-sujets de son
+article qui seraient intéressants à transformer en visuel"* (the owner, 2026-08-10). Nothing here is
+invented for the record — an article that yielded one angle records one.
+
 Then `BRIEF.md`, before any code: evidence hierarchy, reveal order, single accent, source, the
 anti-patterns of this case. Derived from the nine previous movements, so never conjured from nowhere.
 

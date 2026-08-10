@@ -11,6 +11,7 @@ import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
 import { GENRE_OFFER_RECEIPT, PENDING } from "./another-genre.mjs";
+import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -485,6 +486,9 @@ export async function materialise({
   // on disk rather than a habit that can be forgotten. `deliveryClosed` reads it; `recordGenreAnswer`
   // replaces it with the answer. A dotfile, for the same reason as the receipt above.
   await writeFile(join(exportDir, GENRE_OFFER_RECEIPT), `${PENDING}\n`);
+  // The other half of the same closing offer: the article's own other subjects. Pending for the
+  // same reason and answered the same way — including `none`, when the article carried nothing else.
+  await writeFile(join(exportDir, SUBJECT_OFFER_RECEIPT), `${PENDING}\n`);
   const written = [];
   // One `mapKeyState` per HTML file this delivery writes — read for the hand-over, never for a
   // verdict. Nothing in this function refuses over a key.
