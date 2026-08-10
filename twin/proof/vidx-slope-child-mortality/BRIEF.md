@@ -1,4 +1,22 @@
+---
+size: landscape
+type: slope
+---
+
 # Beat — Rwanda cut its child mortality rate by three-quarters since 1990
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and why the other two refuse.** A slope has no twin form — its two ends are fixed
+points in time — and no aspect range has ever been MEASURED for it at a tall or square frame, so
+`type-at-size.mjs` refuses by default and names the measurement that is missing. That default is
+not timidity: a slope's argument IS the angle of its lines, and changing the frame's shape changes
+every angle while clipping nothing and colliding with nothing — the one defect the portrait probe
+proved no counter in this project can see. The 1080 x 1080 this beat used to draw at was not a
+decision, it was a default.
 
 **Proves:** between 1990 and 2023, Rwanda's under-five mortality rate fell from 15.1% to 3.9% — a
 drop of three-quarters — even as the country recovered from the 1994 genocide and civil war, one of

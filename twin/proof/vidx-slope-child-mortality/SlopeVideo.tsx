@@ -34,18 +34,129 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { SLOPE_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const TITLE = { fontSize: 40, fontWeight: 700, lead: 52 };
-const SOURCE = { fontSize: 21, fontWeight: 400, lead: 27 };
-const AXIS = { fontSize: 22, fontWeight: 400 };
-const CATEGORY = { fontSize: 23, fontWeight: 600 };
-const CAPTION = { fontSize: 24, fontWeight: 700 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "slope";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts. Two font sizes were not tokens at all
+ * — `fontSize={20}` at the reference label and `fontSize={26}` at the conclusion, written bare at
+ * the mark, which is the static seed's GAP_NOTE defect exactly.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: the credit
+ * was 21px on a 1080 frame, 7 CSS px on the phone a square post is read on.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 31 },
+  SOURCE: { fontSize: 13, fontWeight: 400, lead: 16 },
+  // AT the floor, not above it, and that is this beat's budget showing. Six countries whose 2023
+  // values cluster in the bottom fifth need four deconflicted labels stacked at the plot's foot;
+  // every extra pixel of label height pushes that stack further down, towards the credit. 12 x the
+  // row's scale IS the row's legibility floor exactly (30 at landscape, 36 at the tall frames), so
+  // this is the smallest the type is allowed to be and nothing here goes under it.
+  CATEGORY: { fontSize: 12, fontWeight: 600 },
+  CAPTION: { fontSize: 14, fontWeight: 700 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  CONCLUSION: { fontSize: 16, fontWeight: 700 },
+  TITLE_TO_CAPTION: 26,
+  CONCLUSION_RESERVE: 24,
+  CAPTION_TO_PLOT: 18,
+  GUTTER_AIR: 12,
+  X_LABEL_BAND: 18,
+  SOURCE_AIR: 6,
+  LABEL_INSET: 8,
+  LABEL_BASELINE_NUDGE: 4,
+  REFERENCE_LABEL_INSET: 7,
+  REFERENCE_LABEL_LIFT: 7,
+  DOT_R: 3,
+  RING_R: 5,
+  DASH_REFERENCE: [4, 3],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = { axis: 0.6, reference: 0.8, ring: 0.8, line: 1.2 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    CATEGORY: f(BASE.CATEGORY) as typeof BASE.CATEGORY,
+    CAPTION: f(BASE.CAPTION) as typeof BASE.CAPTION,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    TITLE_TO_CAPTION: sp(BASE.TITLE_TO_CAPTION),
+    CONCLUSION_RESERVE: sp(BASE.CONCLUSION_RESERVE),
+    CAPTION_TO_PLOT: sp(BASE.CAPTION_TO_PLOT),
+    GUTTER_AIR: sp(BASE.GUTTER_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    LABEL_INSET: sp(BASE.LABEL_INSET),
+    LABEL_BASELINE_NUDGE: sp(BASE.LABEL_BASELINE_NUDGE),
+    REFERENCE_LABEL_INSET: sp(BASE.REFERENCE_LABEL_INSET),
+    REFERENCE_LABEL_LIFT: sp(BASE.REFERENCE_LABEL_LIFT),
+    DOT_R: sp(BASE.DOT_R),
+    RING_R: sp(BASE.RING_R),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      axis: st(BASE_STROKE.axis),
+      reference: st(BASE_STROKE.reference),
+      ring: st(BASE_STROKE.ring),
+      line: st(BASE_STROKE.line),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark
+ * — which this beat had two of. The still path reads the rendered SVG's `font-size` attributes; a
+ * video composition's markup only exists inside the browser Remotion drives, so the equivalent
+ * reading is the element tree, walked rather than listed.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const LABEL_MIN_GAP = 26; // px — the collision floor for the side-gutter category labels.
+/**
+ * The collision floor between two side-gutter category labels, DERIVED from the label's own drawn
+ * size rather than typed. It was `26` against a 23px label — 1.13 of it — so the ratio was the fact
+ * and the pixel was a coincidence: at landscape the label is 35px and two labels 26px apart overlap
+ * while a guard reading that literal calls them clear.
+ */
+export function labelMinGapFor(categoryFontSize: number): number {
+  return Math.round(categoryFontSize * 1.13);
+}
 
 export type CountryRow = { country: string; v1990: number; v2023: number };
 
@@ -79,11 +190,15 @@ export function slopeGeometry(
     height,
     padding,
     reference,
+    labelMinGap,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
     reference: number;
+    /** The side-gutter label collision floor, derived from the drawn label size — travels with the
+     *  call so the geometry and the drawing cannot disagree about it. */
+    labelMinGap: number;
   },
 ) {
   const plot = {
@@ -116,11 +231,11 @@ export function slopeGeometry(
 
   const left1990 = deconflictLabels(
     lines.map((l) => ({ key: l.country, y: l.y1990 })),
-    LABEL_MIN_GAP,
+    labelMinGap,
   );
   const left2023 = deconflictLabels(
     lines.map((l) => ({ key: l.country, y: l.y2023 })),
-    LABEL_MIN_GAP,
+    labelMinGap,
   );
 
   return {
@@ -191,6 +306,8 @@ export type SlopeVideoProps = {
   referenceLabel: string;
   periodLabels: [string, string]; // ["1990", "2023"]
   subjectCountry: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -207,11 +324,31 @@ export function SlopeVideo({
   referenceLabel,
   periodLabels,
   subjectCountry,
+  size,
   timing = SLOPE_TIMING,
 }: SlopeVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const { TITLE, SOURCE, CATEGORY, CAPTION } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL — before anything is measured.
+  //
+  // A slope's value axis is a continuum and its two ends are fixed points in time, so it has no
+  // twin form; and no aspect range has ever been MEASURED for it at a tall or square frame. The
+  // default in `type-at-size.mjs` is refusal for exactly that reason — a slope's argument IS the
+  // angle of its lines, and stretching the frame changes every angle while clipping nothing and
+  // colliding with nothing. The composition exists at all three sizes so the refusal is a sentence
+  // rather than a missing id.
+  const form = formForSize(TYPE, size);
+  if (form.verdict !== "as-is")
+    throw new Error(
+      `vidx-slope-child-mortality: ${TYPE} cannot be drawn at ${size}. ${form.reason}\n` +
+        `It ships at landscape.`,
+    );
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
@@ -224,22 +361,32 @@ export function SlopeVideo({
   // The caption keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const captionBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_CAPTION;
 
-  const CONCLUSION_RESERVE = 40;
+  const CONCLUSION_RESERVE = T.CONCLUSION_RESERVE;
   const longestLabel = Math.max(
     ...data.map((d) => measureText(d.country, CATEGORY)),
   );
   const padding = {
-    top: captionBaseline + CONCLUSION_RESERVE + 30,
-    right: PAD + 20 + longestLabel,
+    top: captionBaseline + CONCLUSION_RESERVE + T.CAPTION_TO_PLOT,
+    right: PAD + T.GUTTER_AIR + longestLabel,
     // Grown by the credit block's own height plus clear air.
     bottom:
-      PAD + 30 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
-    left: PAD + 20 + longestLabel,
+      PAD +
+      T.X_LABEL_BAND +
+      (sourceLines.length - 1) * SOURCE.lead +
+      SOURCE.fontSize +
+      T.SOURCE_AIR,
+    left: PAD + T.GUTTER_AIR + longestLabel,
   };
 
-  const g = slopeGeometry(data, { width, height, padding, reference });
+  const g = slopeGeometry(data, {
+    width,
+    height,
+    padding,
+    reference,
+    labelMinGap: labelMinGapFor(CATEGORY.fontSize),
+  });
   const subjectIndex = data.findIndex((d) => d.country === subjectCountry);
   const subjectLine = g.lines[subjectIndex];
 
@@ -290,7 +437,7 @@ export function SlopeVideo({
   const conclusionLabel = `${subjectCountry}: ${fmt(subjectLine.v1990)} → ${fmt(subjectLine.v2023)} — a ${Math.round(dropPct)}% fall`;
   const conclusionBaseline = captionBaseline + CONCLUSION_RESERVE;
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -356,7 +503,7 @@ export function SlopeVideo({
           y1={g.plot.top}
           y2={g.plot.bottom}
           stroke={grid}
-          strokeWidth={1.5}
+          strokeWidth={T.STROKE.axis}
         />
         <line
           x1={g.plot.right}
@@ -364,7 +511,7 @@ export function SlopeVideo({
           y1={g.plot.top}
           y2={g.plot.bottom}
           stroke={grid}
-          strokeWidth={1.5}
+          strokeWidth={T.STROKE.axis}
         />
       </g>
 
@@ -377,8 +524,8 @@ export function SlopeVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.STROKE.reference}
+            strokeDasharray={T.DASH_REFERENCE}
           />
           {/* Left-anchored, not centred: Brazil's own connector crosses the 2.5% target around
               78% of the way across the plot (`BRIEF.md`'s exact values put the crossing near the
@@ -386,10 +533,10 @@ export function SlopeVideo({
               through. The left fifth of the plot is clear: every line is still well above or
               below 2.5% there. */}
           <text
-            x={g.plot.left + 12}
-            y={g.referenceY - 12}
+            x={g.plot.left + T.REFERENCE_LABEL_INSET}
+            y={g.referenceY - T.REFERENCE_LABEL_LIFT}
             fill={muted}
-            fontSize={20}
+            fontSize={T.NOTE.fontSize}
             textAnchor="start"
             opacity={referenceLabelOpacity}
           >
@@ -429,7 +576,9 @@ export function SlopeVideo({
           extrapolateRight: "clamp",
         });
         const stroke = isSubject ? accent : muted;
-        const strokeWidth = isSubject ? 4 : 2.5;
+        const strokeWidth = isSubject
+          ? T.STROKE.line * 2.5
+          : T.STROKE.line * 1.56;
         const labelColor = isSubject && subjectProgress > 0.5 ? accent : ink;
         const labelWeight =
           isSubject && subjectProgress > 0.5 ? 700 : CATEGORY.fontWeight;
@@ -452,7 +601,7 @@ export function SlopeVideo({
               <circle
                 cx={g.plot.left}
                 cy={line.y1990}
-                r={5}
+                r={T.DOT_R}
                 fill={stroke}
                 opacity={leftDotOpacity}
               />
@@ -461,7 +610,7 @@ export function SlopeVideo({
               <circle
                 cx={g.plot.right}
                 cy={line.y2023}
-                r={5}
+                r={T.DOT_R}
                 fill={stroke}
                 opacity={rightDotOpacity}
               />
@@ -471,26 +620,26 @@ export function SlopeVideo({
                 <circle
                   cx={g.plot.left}
                   cy={line.y1990}
-                  r={9}
+                  r={T.RING_R}
                   fill="none"
                   stroke={ink}
-                  strokeWidth={2}
+                  strokeWidth={T.STROKE.ring}
                   opacity={subjectSpring}
                 />
                 <circle
                   cx={g.plot.right}
                   cy={line.y2023}
-                  r={9}
+                  r={T.RING_R}
                   fill="none"
                   stroke={ink}
-                  strokeWidth={2}
+                  strokeWidth={T.STROKE.ring}
                   opacity={subjectSpring}
                 />
               </>
             ) : null}
             <text
-              x={g.plot.left - 14}
-              y={ly1990 + 6}
+              x={g.plot.left - T.LABEL_INSET}
+              y={ly1990 + T.LABEL_BASELINE_NUDGE}
               fill={labelColor}
               fontWeight={labelWeight}
               fontSize={CATEGORY.fontSize}
@@ -500,8 +649,8 @@ export function SlopeVideo({
               {line.country}
             </text>
             <text
-              x={g.plot.right + 14}
-              y={ly2023 + 6}
+              x={g.plot.right + T.LABEL_INSET}
+              y={ly2023 + T.LABEL_BASELINE_NUDGE}
               fill={labelColor}
               fontWeight={labelWeight}
               fontSize={CATEGORY.fontSize}
@@ -520,7 +669,7 @@ export function SlopeVideo({
         x={PAD}
         y={conclusionBaseline}
         fill={ink}
-        fontSize={26}
+        fontSize={T.CONCLUSION.fontSize}
         fontWeight={700}
         textAnchor="start"
         opacity={conclusionOpacity}
@@ -529,4 +678,17 @@ export function SlopeVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it. This beat
+  // had two.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidx-slope-child-mortality at ${size}` },
+  );
+
+  return drawing;
 }

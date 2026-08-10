@@ -56,7 +56,7 @@ const PROOF = join(TWIN, "proof");
  * migrating in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const UNPINNED_BEATS = 55;
+const UNPINNED_BEATS = 53;
 
 function beatDirs(): string[] {
   if (!existsSync(PROOF)) return [];
