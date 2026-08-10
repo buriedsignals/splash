@@ -29,6 +29,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   waterfallGeometry,
   formatNumber,
   formatSigned,
@@ -151,6 +160,113 @@ export function WaterfallWeb({
   const levelY = (b: (typeof bars)[number]) =>
     b.kind === "total" || b.value >= 0 ? b.top : b.bottom;
 
+  // ── THE ENTRANCE, carried from `proof/vidy-waterfall-germany-electricity-mix` — the VIDEO of this
+  // exact claim, which already answered the question I had left open: a waterfall's baseline is a
+  // running total, so what does a bar grow from?
+  //
+  // THE VIDEO'S ANSWER, four events, unchanged here:
+  //   - THE OPENING TOTAL lands first, a full bar from zero, and DOUBLES AS THE REFERENCE — the
+  //     level the whole bridge is read against. That is why this beat's `reference` is a bar and not
+  //     a rule.
+  //   - EACH SIGNED STEP then floats in one at a time, left to right, GROWING FROM EXACTLY WHERE THE
+  //     PREVIOUS BAR ENDED. Its own baseline is the running total before it — the bar's own
+  //     running-level edge, which is its BOTTOM when the step rises and its TOP when it falls. The
+  //     connector that makes the carry literal arrives with the step it leads into, not with the one
+  //     it leaves.
+  //   - THE CLOSING TOTAL is the SUBJECT, again a full bar from zero, so its height can be read
+  //     directly against the opening bar's.
+  //   - THE CONCLUSION is that closing figure, stated once its bar is standing.
+  //
+  // ONE THING THE WEB CANNOT CARRY, and the video names it as a defect so it is argued rather than
+  // waved through. There, a value label fades in within the first QUARTER of its own bar's window
+  // and then RIDES the growing tip; `waterfall.md` calls gating on the last slice "a label that's
+  // absent for most of the time the bar is on screen". CSS is handed ONE delay up front and cannot
+  // move a label along a growing edge, so the choice is a label printed at the final tip while the
+  // bar is still short — a number naming a height the bar has not reached, which is the label rule's
+  // own prohibition and which `verify-entrance.mjs` drives — or a label that waits. It waits, and
+  // the video's objection does not transfer: THERE the bar is on screen for eight seconds and the
+  // label would be missing for 0.9 of them; HERE the bar is on screen for the rest of the page's
+  // life and the label is missing for at most 460ms of a two-second entrance. "Most of the time the
+  // bar is on screen" is false in this medium by construction.
+  const middle = bars.slice(1, -1);
+  const opening = bars[0];
+  const closing = bars[bars.length - 1];
+  /** The level a bar GROWS FROM: zero for a total, the running total before it for a step — which
+   *  is the bar's bottom edge when it rises and its top edge when it falls. */
+  const baselineOf = (b: (typeof bars)[number]) =>
+    b.value >= 0 ? b.bottom : b.top;
+  const windowFor = (labelName: string) => {
+    if (labelName === opening.label) return WEB_ENTRANCE.reference;
+    if (labelName === closing.label) return WEB_ENTRANCE.subject;
+    return markEvent(
+      WEB_ENTRANCE.reveal,
+      middle.findIndex((b) => b.label === labelName),
+      middle.length,
+    );
+  };
+  const eventFor = (labelName: string) =>
+    labelName === opening.label
+      ? ("reference" as const)
+      : labelName === closing.label
+        ? ("subject" as const)
+        : ("reveal" as const);
+  const barLayer = (b: (typeof bars)[number]) => {
+    const own = windowFor(b.label);
+    return entranceLayer(eventFor(b.label), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "y", origin: { x: 0, y: baselineOf(b) } },
+      mark: b.label,
+    });
+  };
+  /** The dashed carry from bar `i` to bar `i+1`. It belongs to the step it leads INTO and arrives
+   *  AS that step starts growing, which is what makes the carry literal: the line says "this next
+   *  bar starts here" while the bar is starting there.
+   *
+   *  It deliberately does NOT declare `names`. That attribute means "this layer may not be painted
+   *  until the mark it names has arrived", and a connector is the opposite — it is furniture that
+   *  introduces the step. Declared as a label it went red on the first drive, correctly: *"the label
+   *  for Renewables was painted while its own mark was at 0.299"*. The guard was right about the
+   *  vocabulary and the vocabulary was being misused. */
+  const connectorLayer = (i: number) => {
+    const next = bars[i + 1];
+    const own = windowFor(next.label);
+    return entranceLayer(eventFor(next.label), "fade", {
+      delay: own.start,
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  };
+  const valueLabelLayer = (b: (typeof bars)[number]) =>
+    b.label === closing.label
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: b.label,
+        })
+      : entranceLayer(eventFor(b.label), "fade", {
+          delay: atProgress(windowFor(b.label), 1),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: b.label,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const lastStepEnd = Math.max(
+    ...middle.map((b) => atProgress(windowFor(b.label), 1) + LABEL_FADE_MS),
+  );
+  if (lastStepEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last step's value label ends at ${lastStepEnd}ms, after the closing total lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms — the bridge would still be building under its own answer`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -169,7 +285,11 @@ export function WaterfallWeb({
         ["--note-size" as string]: `${frame.category.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -179,7 +299,9 @@ export function WaterfallWeb({
           off the edge of a frame nobody re-measured. */}
       <div
         className="chart-legend"
+        {...furnitureLayer().attrs}
         style={{
+          ...furnitureLayer().vars,
           flex: "0 0 auto",
           display: "flex",
           flexWrap: "wrap",
@@ -221,7 +343,11 @@ export function WaterfallWeb({
           aspectRatio: `${yGutterPx + frame.width} / ${frame.height + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksY.map((tick, i) => (
             <span
               key={tick.value}
@@ -258,24 +384,29 @@ export function WaterfallWeb({
             fill={ground}
           />
 
-          {ticksY.map((tick) => (
-            <line
-              key={tick.value}
-              x1={0}
-              x2={frame.width}
-              y1={tick.y}
-              y2={tick.y}
-              stroke={tick.value === 0 ? muted : grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* Gridlines are FURNITURE and come up on one clock with the labels beside them. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticksY.map((tick) => (
+              <line
+                key={tick.value}
+                x1={0}
+                x2={frame.width}
+                y1={tick.y}
+                y2={tick.y}
+                stroke={tick.value === 0 ? muted : grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
 
           {/* Thin connectors carry the running level from each bar's end to the next bar's start —
               see `levelY` above for the level they are drawn at and why it is not `top`. */}
           {bars.slice(0, -1).map((b, i) => (
             <line
               key={b.label}
+              {...connectorLayer(i).attrs}
+              style={connectorLayer(i).vars}
               x1={b.x + b.width}
               x2={bars[i + 1].x}
               y1={levelY(b)}
@@ -290,6 +421,8 @@ export function WaterfallWeb({
           {bars.map((b) => (
             <g key={b.label}>
               <rect
+                {...barLayer(b).attrs}
+                style={barLayer(b).vars}
                 x={b.x}
                 y={b.top}
                 width={b.width}
@@ -328,7 +461,9 @@ export function WaterfallWeb({
           {bars.map((b) => (
             <span
               key={`value-${b.label}`}
+              {...valueLabelLayer(b).attrs}
               style={{
+                ...valueLabelLayer(b).vars,
                 position: "absolute",
                 left: `${pct(b.center, frame.width)}%`,
                 top: `${pct(b.top, frame.height)}%`,
@@ -362,7 +497,11 @@ export function WaterfallWeb({
             the names fit at all: at 12px the widest lines of two neighbouring names ("generation",
             56px, and "Renewables", 66px) leave 1px between them across a 62px column pitch — no
             overlap a script can see, and a collision to any eye. At 11px they clear by 7px. */}
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {bars.map((b) => (
             <span
               key={`name-${b.label}`}
@@ -383,7 +522,13 @@ export function WaterfallWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
