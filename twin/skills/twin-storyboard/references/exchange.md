@@ -45,12 +45,17 @@ Whichever verdict lands, say what the check could and could not see — `resolve
 both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as
 one.
 
-## ③ The journalist's hand — four questions, each with a destination
+## ③ The journalist's hand — five questions, each with a destination
 
 Every one of these harvests something the data cannot supply on its own, and every answer has a
-named place it lands in the storyboard. That destination is what stops the four questions from
+named place it lands in the storyboard. That destination is what stops the five questions from
 being disguised parameter collection: nothing is asked "because the form has a field for it" —
 each question exists because a specific downstream decision cannot be made without it.
+
+**Five questions, six fields**: credit yields both `credit` and `effectiveDate`, which is why the
+hand has six destinations and this movement has five turns. An earlier draft of this file counted
+four in its heading and listed five in its table — a model asking four and leaving one field empty
+is refused by both gates with no explanation of which question it skipped.
 
 **These questions come before the medium is chosen, so none of their destinations may presume one.**
 `subject` is what the survey at ④ and the palette at ⑨ are *of*, so the hand has to stay early — but
@@ -104,8 +109,8 @@ Per question, on absence:
   or corrects rather than dictating both from nothing.
 
 None of this is a re-ask. The question was asked once; what follows an "I don't know" is a proposal
-the journalist disposes of in one move, exactly as movement ⑧ already does for slots and candidates
-— the same discipline, applied to all four questions, not only the last movement.
+the journalist disposes of in one move, exactly as movement ⑩ already does for slots and candidates
+— the same discipline, applied to all five questions, not only the last movement.
 
 ## ④ The survey — everything that could be made of this data
 
@@ -157,8 +162,20 @@ wrote.
 
 ## ⑦ The size — G2c
 
-*Portrait, square, or landscape* for a static or a video; **fluid** for a web or a scrolly page,
-which fills whatever container the CMS gives it and is not a fourth size.
+*Portrait, square, or landscape* for a static or a video. **A web or a scrolly page takes NO size
+at all** — it fills whatever container the CMS gives it, so nothing is asked here and the slot
+carries no `size:` field. Never record a fluid size: both Gate-2 readings refuse that value
+(*"a web beat takes no size — it fills the container it is given, so leave the field out; there is
+no 'fluid' size"*), and this very line used to name it as the value for web and scrolly — a refusal
+a model earned mid-journey by following the instructions it was given.
+
+The set, exactly as `proposeSizes(genre)` computes it and `sizeGap` enforces it — `exchange-shape.test.ts`
+compares this line against both, so it cannot drift into naming a value the gate refuses again:
+
+    static: landscape, square, portrait
+    video: landscape, square, portrait
+    web: none
+    scrolly: none
 
 `proposeSizes(genre)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
 state it and say so** — "this ships landscape; portrait and square are not built yet" — rather than
@@ -216,7 +233,7 @@ anti-patterns of this case. Derived from the nine previous movements, so never c
   extracting fields from them; the decision is always theirs; when they hand the choice back, it
   proposes the most suitable option and explains why, with the trade-offs.
 - **A recommendation may not be DRAWN as a chart before a chart has been chosen.** The run illustrated
-  three hand questions with ASCII bar charts, at movement ③, four questions before any medium existed
+  three hand questions with ASCII bar charts, at movement ③, a whole movement before any medium existed
   — so the journalist was shown bars five times before being asked whether this was a chart at all.
   A recommendation before ⑤ is a sentence.
 - **Never ask twice.** Repetition is a bug, not caution.

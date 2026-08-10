@@ -10,6 +10,8 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { sizeGap } from "../scripts/storyboard.mjs";
+import { proposeSizes } from "../scripts/propose.mjs";
 
 const EXCHANGE = readFileSync(
   join(import.meta.dirname, "..", "references", "exchange.md"),
@@ -46,6 +48,48 @@ describe("the exchange keeps its documented order", () => {
       .filter((line) => /^## [①-⑩]/.test(line))
       .map((line) => MOVEMENTS.indexOf(line.slice(3, 4)));
     expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  // The heading counted FOUR over a table of five, for as long as the five-row table existed. A
+  // model reading the heading, asking four and leaving one field empty is refused by both gates
+  // with no explanation of which question it skipped -- so the number in the prose is checked
+  // against the number of rows, not typed twice and hoped over.
+  //
+  // RED, in a copy of the tree under /tmp, with the heading restored to "four questions":
+  //   error: expect(received).toBe(expected)   Expected: 5   Received: 4
+  //   (fail) should count its own hand questions correctly in its heading
+  it("should count its own hand questions correctly in its heading", () => {
+    const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven"];
+    const heading = EXCHANGE.split(/\r?\n/).find((line) => /^## ③/.test(line))!;
+    const spelled = WORDS.findIndex((w) => new RegExp(`\\b${w}\\b`, "i").test(heading));
+    expect(spelled).toBe(handTable().length);
+  });
+
+  // A size value this file tells a model to record must be one the gate ACCEPTS. Movement ⑦ named
+  // `fluid` for web and scrolly while `sizeGap` refused exactly that value and refused it without
+  // ever naming it -- live, reachable, and it failed in the middle of the journey. So movement ⑦
+  // now carries the set as an indented block, and this compares it against `proposeSizes` (what may
+  // be offered) AND `sizeGap` (what closes the gate), genre by genre. Prose greps could not do this
+  // job: the original defect never wrote the string `size: fluid` at all, it wrote a sentence.
+  //
+  // RED, in a copy of the tree under /tmp, with `fluid` restored as movement ⑦'s value for web:
+  //
+  //   error: expect(received).toEqual(expected)
+  //   Expected: []            Received: [ "fluid" ]
+  //   (fail) should state the same size set the gate enforces, genre by genre
+  it("should state the same size set the gate enforces, genre by genre", () => {
+    const stated = new Map(
+      [...EXCHANGE.matchAll(/^ {4}(static|video|web|scrolly): (.+)$/gm)].map((m) => [
+        m[1],
+        m[2].trim() === "none" ? [] : m[2].split(",").map((v) => v.trim()),
+      ]),
+    );
+    expect([...stated.keys()].sort()).toEqual(["scrolly", "static", "video", "web"]);
+    for (const [genre, sizes] of stated) {
+      expect(sizes).toEqual(proposeSizes(genre));
+      for (const size of sizes) expect(sizeGap(genre, size, 1)).toBeNull();
+      if (sizes.length === 0) expect(sizeGap(genre, undefined, 1)).toBeNull();
+    }
   });
 
   it("should ask five hand questions and no more, all of them medium-neutral", () => {

@@ -7,6 +7,7 @@ import {
   readFile,
   readdir,
 } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import {
@@ -277,7 +278,7 @@ describe("runPreflight — capabilities, not a verdict", () => {
     expect(report.capabilities.datawrapper.available).toBe(true);
   });
 
-  it("should report the hosted-embed capability permanently closed, never probing the environment for it", async () => {
+  it("should report the hosted-embed capability closed when only one of its two credentials is set", async () => {
     await installEverything();
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({
@@ -286,6 +287,61 @@ describe("runPreflight — capabilities, not a verdict", () => {
       fetchFn: okFetch,
     });
     expect(report.capabilities.hostedEmbed.available).toBe(false);
+    expect(report.capabilities.hostedEmbed.reason).toContain(
+      "CLOUDFLARE_ACCOUNT_ID",
+    );
+  });
+
+  // `SKILL.md`'s capability table said this row was "hardcoded closed, never probed" and "not yet
+  // built", while `runPreflight` probed it for real and `offerForms` offers the `embed` form the
+  // moment both credentials resolve. A model reading that row told a journalist a hosted embed was
+  // unavailable while delivery would have offered it -- a delivery constraint that came from
+  // nowhere, which is the one absolute in that same file's never-list. Two assertions, because the
+  // sentence was false in two different ways.
+  it("should open the hosted-embed capability when both credentials probe green — it IS probed", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: {
+        CLOUDFLARE_ACCOUNT_ID: "acct",
+        CLOUDFLARE_API_TOKEN: "tok",
+      },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.hostedEmbed.available).toBe(true);
+  });
+
+  it("should carry a probed capability's own rejection, rather than a fixed sentence", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn: rejectingFetch,
+    });
+    expect(report.capabilities.hostedEmbed.available).toBe(false);
+    expect(report.capabilities.hostedEmbed.reason).toContain("403");
+  });
+
+  // And the prose that describes it, held to what the code does. This is the guard that would have
+  // caught the row itself, not merely its behaviour.
+  //
+  // RED, in a copy of the tree under /tmp, with the old row restored:
+  //   error: expect(received).not.toMatch(expected)
+  //   Expected substring: not /never probed|not yet built|hardcoded closed/
+  //   Received: "| Cloudflare Pages | the hosted embed delivery form | never — optional, and not
+  //              yet built: this row is hardcoded closed, never probed |"
+  //   (fail) should not claim in prose that a capability it probes is never probed
+  it("should not claim in prose that a capability it probes is never probed", async () => {
+    const skill = readFileSync(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
+    const rows = skill
+      .split(/\r?\n/)
+      .filter((line) => /^\| *(`MAPTILER_KEY`|`DATAWRAPPER_TOKEN`|Cloudflare Pages)/.test(line));
+    expect(rows.length).toBe(3);
+    for (const row of rows) {
+      expect(row).not.toMatch(/never probed|not yet built|hardcoded closed/);
+    }
   });
 
   // MUTATION PROOF 3: an engine-style .env must be recognised. A working engine `.env` uses

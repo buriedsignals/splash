@@ -62,7 +62,7 @@ export const SIZED_GENRES = ["static", "video"];
 export function sizeGap(genre, size, id) {
   const takesASize = SIZED_GENRES.includes(genre);
   if (!takesASize && size)
-    return `slot ${id}: a ${genre} beat takes no size — it fills the container it is given`;
+    return `slot ${id}: a ${genre} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
   if (!takesASize) return null;
   if (!size) return `slot ${id}: size is missing — gate 2c never closed`;
   if (!EXPORT_SIZES.includes(size))

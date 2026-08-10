@@ -124,7 +124,14 @@ offer a medium or a delivery form.
 | --- | --- | --- |
 | `MAPTILER_KEY` | map beats | only if the story has a map |
 | `DATAWRAPPER_TOKEN` | Datawrapper beats | only if the story uses one |
-| Cloudflare Pages | the hosted embed delivery form | never — optional, and not yet built: this row is hardcoded closed, never probed |
+| Cloudflare Pages | the hosted embed delivery form | never blocks the session — but it IS probed, like the other two, and it opens a real delivery form |
+
+That third row used to read *"not yet built: this row is hardcoded closed, never probed"*, and it was
+false in both halves: `runPreflight` calls `probeCloudflare` with both credentials
+(`scripts/preflight.mjs`), and `twin-deliver`'s `offerForms` lists the `embed` form for a web or
+scrolly beat whenever they resolve. A model reading that row told a journalist a hosted embed was
+unavailable while `offerForms` would have offered it — **a delivery constraint that did not come from
+`offerForms`, which is the one absolute in this file's own never-list.**
 
 `runPreflight({root, env, fetchFn})` returns `{ready, blockers, checks, capabilities}`:
 
