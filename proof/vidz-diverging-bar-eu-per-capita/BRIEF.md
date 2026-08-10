@@ -119,3 +119,34 @@ blank-poster-frame finding.
 ## Alt text
 
 Computed by `render.mjs` and written to `ALT.txt` beside the render.
+
+## Size — REFUSED, with the numbers, 2026-08-10
+
+**This beat still pins no size, and that is a decision rather than an omission.** The full
+measurement is `probe/VERDICT.md`; re-run it with
+`bun proof/vidz-diverging-bar-eu-per-capita/probe/size-budget.mjs`.
+
+Two arms were offered and both were measured against the beat's real strings, the real frozen data
+and the video size table. Neither survives:
+
+- **A two-column redraw at landscape** — what `proof/static-diverging-bar-eu-per-capita` does, and it
+  works there. It fails here because **columns buy height and this beat runs out of height before
+  the rows are reached**: at landscape the video type floor is 30 px, not 26, and with the whole
+  ladder spent (axis title gone, caveat gone) the plot is 260 px of a 1080 px frame. Two columns
+  give 18.6 px a row against a 46 px lane. Three clear the lane at 40.1 px and lose the panel — 145
+  px of bars against 439 px of gutter, which puts Croatia's +0.03 at a fifth of a pixel.
+- **A taller frame for a video that is not a story** — reading portrait's full 1920 px, on the
+  argument that Meta's band exists for Reels. It fails twice: it does not work (391 px of plot
+  against 27 rows needing 54 px each — the same phone floor that opens the band takes four lines for
+  this headline and five for the credit), and it is not ours to take (`stage` is a fact about the
+  FRAME, guarded across all seven carried copies of the table, and `sizes.mjs` records that a fourth
+  row "is a decision nobody has taken").
+
+**The beat fits exactly one frame, 1080 × 1350, and that frame is not in the table.** It was chosen
+for the content, the way every frame here was chosen before R2 pinned three.
+
+The binding constraint is the one the static lot already wrote down: **the ladder has no rung for a
+TITLE, and on these beats the title is the claim.** 27 rows is that finding at its most extreme,
+because the rows are a MEMBERSHIP LIST — R8 (reclassify, and say so) does not shorten this beat's
+sentence, it destroys it, which is why `render.mjs` already throws on a partial field. So the beat
+stays refused and `BEATS_OWING_A_PIN` keeps counting it.
