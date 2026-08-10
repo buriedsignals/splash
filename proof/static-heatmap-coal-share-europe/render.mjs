@@ -12,7 +12,21 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
-import { CoalShareHeatmap, formatCell } from "./CoalShareHeatmap.tsx";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
+import {
+  TYPE,
+  CoalShareHeatmap,
+  formatCell,
+  ladderFor,
+} from "./CoalShareHeatmap.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIRST_YEAR = 2010;
@@ -173,24 +187,79 @@ async function main() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  const credit =
+    "Source: Ember, via Our World in Data · annual data to 2024, extracted 9 August 2026";
+
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this the size was two literals — one here and one in the component — and
+  // `renderStill` compared them against each other, so they agreed by construction and the
+  // delivered PNG measured 1800x1520, a size nobody chose.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "static-heatmap-coal-share-europe-still"
+      : `static-heatmap-coal-share-europe-${size}`;
+  if (flag !== -1) console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A heatmap has no measured aspect range and
+  // no twin form to transpose into — it is a grid, already row-driven — so a tall frame is refused
+  // here, by name, rather than discovered in the render.
+  const form = assertTypeMayEnter(TYPE, size, { what: "static-heatmap-coal-share-europe" });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+  // THE LADDER, RUN AND REPORTED BEFORE A CELL IS DRAWN. It is the same call the component makes,
+  // on the same inputs, so what is printed here is what the artifact carries in `data-ladder` —
+  // and a dropped sentence is a decision, which invariant 1 says does not happen silently.
+  const { rungs, standfirst } = ladderFor({
+    size,
+    title,
+    subtitle,
+    source: credit,
+    rows: ordered,
+  });
+  console.log(
+    rungs.length
+      ? `removal ladder at ${size}: ${rungs.join("; ")}`
+      : `removal ladder at ${size}: no rung fires`,
+  );
+  if (standfirst !== subtitle) console.log(`standfirst as drawn: ${standfirst}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(CoalShareHeatmap, {
       rows: ordered,
       title,
       subtitle,
-      source:
-        "Source: Ember, via Our World in Data · annual data to 2024, extracted 9 August 2026",
+      source: credit,
       alt,
       ground,
       accent,
       unit: "%",
+      size,
     }),
-    width: 900,
-    height: 760,
-    outDir: HERE,
-    name: "static-heatmap-coal-share-europe-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath} — now open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, { what: `${pngPath}` });
+  const svg = await readFile(svgPath, "utf8");
+  console.log(`ladder in the artifact: ${/data-ladder="([^"]*)"/.exec(svg)?.[1] ?? "(absent)"}`);
+  assertTypeFloor(svg, size, { what: "static-heatmap-coal-share-europe" });
+  assertWithinStage(svg, size, { what: "static-heatmap-coal-share-europe" });
+  console.log(
+    `rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`,
+  );
 }
 
 main();

@@ -1,8 +1,13 @@
+---
+size: landscape
+type: heatmap
+---
+
 # Beat — coal's retreat across Europe's most coal-dependent power systems
 
 **Type:** heatmap (matrix). **Medium/genre:** chart / static. **Channel:** article web,
-900 x 760 (taller than the 560 default — twelve rows of near-square cells plus a colour legend do
-not fit the default frame without the cells reading as a smear).
+1920 x 1080 — landscape, the one row of the export table this type can enter. It was tuned at
+900 x 760, a frame nobody chose and nothing exported; see "Size" at the foot.
 
 ## Claim
 
@@ -123,3 +128,62 @@ not a pale one, and that is the 3:1 floor's price on a white ground: "very littl
 look like "almost nothing". The beat pays it rather than quietly lowering the floor, and the alt
 text says "mid-grey", not "pale grey", so a reader who cannot see the grid is not told something
 the grid does not show.
+
+## Size — 2026-08-10
+
+**Pinned: landscape (1920 x 1080)**, in the front matter, read by `readPinnedSize`, verified from
+the delivered PNG's own IHDR. It shipped 1800 x 1520 before — a 900 x 760 element rasterised at
+`fitTo: width x 2`, at a frame height (760) that is not in the table at all.
+
+**Square and portrait are refused by `type-at-size.mjs` itself.** A heatmap is a GRID: it is
+row-driven already, so there is no twin form to transpose into, and no aspect range has been
+measured for the type. The runner refuses both by name before a cell is drawn. Reversing that is
+one sweep in `proof/aspect-range-probe/`, not an argument — and for a 15-column grid a phone frame
+is unlikely to survive it.
+
+**Two base tokens rose from 11 to 12**, and it is not a taste change. `sizes.mjs` calibrates
+landscape's 2.2 multiplier so the SEED's smallest token, 12, lands exactly on the 26px floor that a
+1920px frame read in a 900px article column implies. 11 scales to 24.2px and `assertTypeFloor`
+refuses it — correctly, and loudly. The floor is never lowered, so the year label and the cell
+value label rose.
+
+### What the frame cost, stated rather than absorbed
+
+The landscape frame is SHORTER in type units than the one this beat was tuned at: 1080 / 2.2 = 491
+against 760 / 1 = 760. Twelve rows of country names do not fit under a four-line standfirst, and
+what runs out is not room for a shape — it is PITCH. Measured, and the ladder is run rather than
+declared (`ladderFor`, which the runner and the component call on the same inputs):
+
+| standfirst | lines | grid | row pitch | needs | fits |
+|---|---|---|---|---|---|
+| all four sentences | 4 | 284px | 23.7px | 33.1px | no |
+| three | 4 | 284px | 23.7px | 33.1px | no — **and it recovers nothing** |
+| two | 3 | 328px | 27.3px | 33.1px | no |
+| one | 1 | 416px | 34.7px | 33.1px | yes |
+
+`33.1px` is 1.2x the row labels' own MEASURED ink (ascent plus descender, so "Hungary" is budgeted
+for its `g` and `y`), not a font size. The 1.2 is a knob with a measurement behind it:
+`type-at-size.mjs` records the population pyramid's break at a pitch/type ratio of about 1.1 —
+"the band labels touch" — so 1.0 is provably too little and 1.1 is the failure.
+
+**So R3 fires and takes three sentences.** What the reader loses, named rather than absorbed:
+
+- *"not a picture of Europe, which uses far less coal than this grid alone would suggest"* — the
+  caveat this brief has its own section for. It is the one R3's own `loses` field describes as
+  "context the title mostly implies", and here that is nearly true: the headline says **Europe's
+  most coal-dependent countries**, which is the selection rule in the reader's first line.
+- *the square-root colour scale, disclosed in prose.* This one is a real loss, and it now rests
+  entirely on the legend's visibly uneven tick spacing (0 · 5 · 10 · 25 · 50 · 87%), which is drawn
+  and which the render was designed to make carry it.
+- *"Only 2010 and 2024 carry printed values"* — the grid shows this.
+
+**The rung that recovers nothing does not fire, and finding that out cost a refusal.** Dropping only
+the last sentence re-wraps to the same four lines and frees zero pixels. A ladder that stepped down
+one rung at a time read that as "the ladder is spent" and refused a frame two removals fit
+comfortably. `ladderFor` searches for the FEWEST removals that fit instead, so a rung is only
+reported when the standfirst it produces is the one actually drawn.
+
+**The refusal is real, not decorative.** With the ladder disabled in a copy under `/tmp`, the render
+stops with `the grid gives 12 rows 23.7px each, against 27.6px of row-label ink … R9: this beat does
+not ship landscape` — the picture it would otherwise have delivered clips nothing and collides with
+nothing by any counter in this project.

@@ -7,7 +7,16 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
-import { WorldPopulationArea } from "./WorldPopulationArea.tsx";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
+import { TYPE, WorldPopulationArea, rungsFor } from "./WorldPopulationArea.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -52,7 +61,34 @@ async function main() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this the size was two literals — one here and one in the component — and
+  // `renderStill` compared them against each other, so they agreed by construction and the
+  // delivered PNG measured 1800x1120, a size nobody chose.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1 ? "static-world-population-still" : `static-world-population-${size}`;
+  if (flag !== -1) console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. An area's x is a continuum, so it has no
+  // twin form to transpose into, and no aspect range has been measured for it — so a tall frame is
+  // refused here, by name, rather than discovered in the render.
+  const form = assertTypeMayEnter(TYPE, size, { what: "static-world-population" });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+  const rungs = rungsFor(size);
+  console.log(
+    rungs.length
+      ? `removal ladder at ${size}: ${rungs.join("; ")}`
+      : `removal ladder at ${size}: no rung fires`,
+  );
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(WorldPopulationArea, {
       data,
       title: `World population passed 8 billion in ${eightBillion.year} — more than eight times its 1800 level`,
@@ -62,13 +98,27 @@ async function main() {
       ground,
       accent,
       crossing: { year: crossing.year, population: crossing.population, label: `1 billion (${crossing.year})` },
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "static-world-population-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, { what: `${pngPath}` });
+  const svg = await readFile(svgPath, "utf8");
+  console.log(`ladder in the artifact: ${/data-ladder="([^"]*)"/.exec(svg)?.[1] ?? "(absent)"}`);
+  assertTypeFloor(svg, size, { what: "static-world-population" });
+  assertWithinStage(svg, size, { what: "static-world-population" });
+  console.log(
+    `rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`,
+  );
 }
 
 main();

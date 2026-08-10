@@ -27,27 +27,75 @@ import {
   contrast,
   deriveFurniture,
   measureText,
+  measureTextBand,
   FONT_FAMILY,
 } from "#shared/chart-beat/render-still.mjs";
+import { frameInsetFor, sizeFor, stageFor } from "#shared/chart-beat/sizes.mjs";
 
 export type Row = {
   country: string;
   readings: { year: number; value: number }[];
 };
 
-const FRAME = { width: 900, height: 760 };
-const PAD = 40;
-const TITLE = { fontSize: 24, fontWeight: 700, lead: 30 };
-const SUBTITLE = { fontSize: 15, fontWeight: 400, lead: 20 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const ROW_LABEL = { fontSize: 13, fontWeight: 400 };
-const YEAR_LABEL = { fontSize: 11, fontWeight: 400 };
-const CELL_LABEL = { fontSize: 11, fontWeight: 700 };
-const LEGEND = { fontSize: 12, fontWeight: 400, width: 320, height: 12 };
+/** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
+ *  a size it refuses is refused by the runner before a cell is drawn. */
+export const TYPE = "heatmap";
+
+/**
+ * THE 900-WIDE TUNING, KEPT AS THE BASE, WITH THE SIZE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: the frame is `sizeFor(size)`'s,
+ * and `size` is the decision gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`.
+ * Before this the size was stated TWICE as literals — once here and once in the render script — and
+ * `renderStill` compared them against each other, so they agreed by construction and the delivered
+ * PNG measured 1800x1520, a size nobody chose.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts: ten bare literals lived in the layout
+ * arithmetic below, and scaling the type while leaving them is measured to collide the header
+ * (`proof/static-carbon-footprint-spread/probe/VERDICT.md`). `PAD` is the one that does NOT go
+ * through it — a frame's margin is proportional to the CANVAS, not to the type, and `frameInsetFor`
+ * in `sizes.mjs` states the split and argues it.
+ *
+ * TWO TOKENS ROSE FROM 11 TO 12, and it is not a taste change. `sizes.mjs` calibrates landscape's
+ * 2.2 multiplier so that the SEED's smallest token, 12, lands on the 26px floor a 1920px frame read
+ * in a 900px article column implies. A base token of 11 scales to 24.2px and is refused by
+ * `assertTypeFloor` — correctly, and loudly. The floor is never lowered, so the token rose.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  SUBTITLE: { fontSize: 15, fontWeight: 400, lead: 20 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  ROW_LABEL: { fontSize: 13, fontWeight: 400 },
+  YEAR_LABEL: { fontSize: 12, fontWeight: 400 },
+  CELL_LABEL: { fontSize: 12, fontWeight: 700 },
+  LEGEND: { fontSize: 12, fontWeight: 400, width: 320, height: 12 },
+  TITLE_TO_SUBTITLE: 26,
+  HEADER_TO_LEGEND: 22,
+  LEGEND_TO_LABELS: 15,
+  LEGEND_TICK: 4,
+  LABELS_TO_YEARS: 30,
+  YEARS_TO_GRID: 10,
+  ROW_LABEL_GUTTER: 12,
+  ROW_LABEL_INSET: 10,
+  GRID_TO_SOURCE: 12,
+  LABEL_BASELINE_NUDGE: 4,
+  /** The hairline of ground left between cells, so the eye reads discrete cells, not a smear. */
+  CELL_GAP: 1.5,
+} as const;
+
 /** WCAG 2.2 SC 1.4.11: a cell is a shape, not prose, so the floor is the non-text one. */
 const NON_TEXT_CONTRAST_MIN = 3;
-/** The hairline of ground left between cells, so the eye reads discrete cells, not a smear. */
-const CELL_GAP = 1.5;
+
+/**
+ * HOW MUCH TALLER THAN ITS OWN INK A ROW HAS TO BE.
+ *
+ * A knob, and a measured one rather than a taste: `type-at-size.mjs` records the population
+ * pyramid's break at a pitch/type ratio of about 1.1 — "28.6px pitch and the band labels touch" at
+ * a 26px token — so 1.0 is provably too little and 1.1 is the failure. 1.2 leaves a visible lane
+ * between one country's word and the next, and it is applied to the ROW LABEL'S OWN MEASURED INK
+ * (ascent plus descender, so "Hungary" is budgeted for its `g` and `y`), not to a font size.
+ */
+const ROW_AIR_RATIO = 1.2;
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -191,6 +239,208 @@ function wrap(
   return line ? [...lines, line] : lines;
 }
 
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = (tok: { fontSize: number; fontWeight: number; lead?: number }) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SUBTITLE: f(BASE.SUBTITLE) as typeof BASE.SUBTITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    ROW_LABEL: f(BASE.ROW_LABEL) as typeof BASE.ROW_LABEL,
+    YEAR_LABEL: f(BASE.YEAR_LABEL) as typeof BASE.YEAR_LABEL,
+    CELL_LABEL: f(BASE.CELL_LABEL) as typeof BASE.CELL_LABEL,
+    LEGEND: {
+      ...BASE.LEGEND,
+      fontSize: sp(BASE.LEGEND.fontSize),
+      width: sp(BASE.LEGEND.width),
+      height: sp(BASE.LEGEND.height),
+    },
+    TITLE_TO_SUBTITLE: sp(BASE.TITLE_TO_SUBTITLE),
+    HEADER_TO_LEGEND: sp(BASE.HEADER_TO_LEGEND),
+    LEGEND_TO_LABELS: sp(BASE.LEGEND_TO_LABELS),
+    LEGEND_TICK: sp(BASE.LEGEND_TICK),
+    LABELS_TO_YEARS: sp(BASE.LABELS_TO_YEARS),
+    YEARS_TO_GRID: sp(BASE.YEARS_TO_GRID),
+    ROW_LABEL_GUTTER: sp(BASE.ROW_LABEL_GUTTER),
+    ROW_LABEL_INSET: sp(BASE.ROW_LABEL_INSET),
+    GRID_TO_SOURCE: sp(BASE.GRID_TO_SOURCE),
+    LABEL_BASELINE_NUDGE: sp(BASE.LABEL_BASELINE_NUDGE),
+    CELL_GAP: Math.max(1, sp(BASE.CELL_GAP)),
+  };
+}
+
+/** The standfirst's sentences, in order. Splitting on a full stop followed by a space keeps "%.",
+ *  "2010." and the em-dashed clause intact, which a naive `split(".")` would not. */
+export function sentences(text: string): string[] {
+  return text
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * THE WHOLE LAYOUT, DERIVED FROM THE FRAME IT IS GIVEN, FOR ONE CANDIDATE STANDFIRST.
+ *
+ * Pure and re-runnable, which is what makes the removal ladder a MEASUREMENT rather than advice:
+ * `ladderFor` calls this once per rung and keeps the rung only if the row pitch actually improved.
+ */
+export function layoutFor({
+  size,
+  title,
+  standfirst,
+  source,
+  rows,
+}: {
+  size: string;
+  title: string;
+  standfirst: string;
+  source: string;
+  rows: Row[];
+}) {
+  const { width, height, typeScale } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
+
+  const titleLines = wrap(title, width - PAD * 2, T.TITLE);
+  const titleBaseline = contentTop + T.TITLE.fontSize;
+  const subtitleLines = wrap(standfirst, width - PAD * 2, T.SUBTITLE);
+  const subtitleTop =
+    titleBaseline +
+    (titleLines.length - 1) * T.TITLE.lead +
+    T.TITLE_TO_SUBTITLE;
+
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md, "The
+  // source on the frame's bottom margin". At portrait that bottom is the STAGE's, not the frame's.
+  const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
+  const sourceBaseline =
+    sourceBottom - (sourceLines.length - 1) * T.SUBTITLE.lead;
+
+  // The legend keeps the air it always had above it, measured from the LAST HEADER line rather
+  // than from the source, which is not in the header.
+  const legendTop =
+    subtitleTop +
+    (subtitleLines.length - 1) * T.SUBTITLE.lead +
+    T.HEADER_TO_LEGEND;
+  const legendLabelBaseline = legendTop + T.LEGEND.height + T.LEGEND_TO_LABELS;
+  const yearLabelBaseline = legendLabelBaseline + T.LABELS_TO_YEARS;
+
+  // Measured from the widest country name that will really be drawn, never a constant — a fixed
+  // gutter is how "United Kingdom" becomes "United Kingdo…" the day the dataset changes.
+  const rowLabelGutter =
+    Math.max(...rows.map((r) => measureText(r.country, T.ROW_LABEL))) +
+    T.ROW_LABEL_GUTTER;
+
+  const gridBox = {
+    left: PAD + rowLabelGutter,
+    top: yearLabelBaseline + T.YEARS_TO_GRID,
+    right: width - PAD,
+    // The grid used to run to the frame's floor. The credit owns that margin, so the grid's last
+    // row ends above the credit's ink instead.
+    bottom:
+      sourceBaseline -
+      (sourceLines.length - 1) * T.SUBTITLE.lead -
+      T.SOURCE.fontSize -
+      T.GRID_TO_SOURCE,
+  };
+
+  // WHAT THE LADDER IS ACTUALLY MEASURED ON: how tall one row gets, against how tall the ink in it
+  // is. The row label is the taller of the two things drawn in a row, and it is measured on the
+  // real strings — "Hungary" is budgeted for its descenders.
+  const rowPitch = (gridBox.bottom - gridBox.top) / rows.length;
+  const labelBand = Math.max(
+    ...rows.map((r) => {
+      const band = measureTextBand(r.country, T.ROW_LABEL);
+      return band.ascent + band.descent;
+    }),
+  );
+
+  return {
+    width,
+    height,
+    stage,
+    PAD,
+    T,
+    titleLines,
+    titleBaseline,
+    subtitleLines,
+    subtitleTop,
+    sourceLines,
+    sourceBaseline,
+    legendTop,
+    legendLabelBaseline,
+    yearLabelBaseline,
+    gridBox,
+    rowPitch,
+    labelBand,
+    fits: rowPitch >= labelBand * ROW_AIR_RATIO,
+  };
+}
+
+/**
+ * THE REMOVAL LADDER, RUN AND MEASURED RATHER THAN DECLARED.
+ *
+ * A heatmap has no value axis to thin (R2) and no annotations to drop (R4); what it has is a
+ * standfirst, and R3 takes its LAST SENTENCE, repeatedly, down to one.
+ *
+ * IT SEARCHES FOR THE FEWEST REMOVALS THAT FIT rather than stepping down one at a time, and that is
+ * `type-at-size.mjs`'s own finding made mechanical: "a rung that recovers nothing does not fire".
+ * Stepping would have stopped dead here — this beat's last sentence is short enough that dropping
+ * it re-wraps to the same number of lines and recovers ZERO pixels, and the first version of this
+ * loop read that as "the ladder is spent" and refused a frame that two removals fit comfortably.
+ * A rung is only reported when the standfirst it produces is the one actually drawn.
+ *
+ * Returns the rungs that fired and the standfirst that survived them. It never throws: a size the
+ * ladder cannot rescue is R9, and the component states it with the numbers.
+ */
+export function ladderFor({
+  size,
+  title,
+  subtitle,
+  source,
+  rows,
+}: {
+  size: string;
+  title: string;
+  subtitle: string;
+  source: string;
+  rows: Row[];
+}): { rungs: string[]; standfirst: string } {
+  const all = sentences(subtitle);
+  const standfirstOf = (kept: number) => all.slice(0, kept).join(" ");
+  const fitsAt = (kept: number) =>
+    layoutFor({ size, title, standfirst: standfirstOf(kept), source, rows })
+      .fits;
+
+  if (fitsAt(all.length)) return { rungs: [], standfirst: subtitle };
+  for (let kept = all.length - 1; kept >= 1; kept--) {
+    if (!fitsAt(kept)) continue;
+    const gone = all.length - kept;
+    return {
+      rungs: [
+        `R3: the standfirst drops its last ${gone === 1 ? "sentence" : `${gone} sentences`} ` +
+          `(${kept} of ${all.length} kept)`,
+      ],
+      standfirst: standfirstOf(kept),
+    };
+  }
+  // Nothing fits. The standfirst returned is the most reduced one, so the component's R9 refusal
+  // reports the pitch the ladder's LAST rung actually reached rather than the untouched one.
+  return {
+    rungs: [
+      `R3: the standfirst is down to its first sentence (1 of ${all.length} kept) and it is not enough`,
+    ],
+    standfirst: standfirstOf(1),
+  };
+}
+
 /**
  * Where a value sits on the ramp, 0 to 1 — the **square root** of its share of the maximum, not
  * the share itself.
@@ -228,6 +478,7 @@ export function CoalShareHeatmap({
   ground,
   accent,
   unit,
+  size,
 }: {
   /** Already ordered by the caller — `heatmap.md` asks for rows ordered deliberately so real
    *  clusters read as blocks instead of scattering across a randomly-ordered grid. */
@@ -240,6 +491,8 @@ export function CoalShareHeatmap({
   accent: string;
   /** Printed once, on the legend's top end — not on 180 cells. */
   unit: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 }) {
   if (rows.length < 3)
     throw new Error(
@@ -254,11 +507,35 @@ export function CoalShareHeatmap({
     );
 
   const { ink, muted } = deriveFurniture(ground);
-  const { width, height } = FRAME;
   const years = rows[0].readings.map((r) => r.year);
   const maxValue = Math.max(
     ...rows.flatMap((r) => r.readings.map((x) => x.value)),
   );
+
+  const { rungs, standfirst } = ladderFor({
+    size,
+    title,
+    subtitle,
+    source,
+    rows,
+  });
+  const L = layoutFor({ size, title, standfirst, source, rows });
+  const { width, height, PAD, T, gridBox } = L;
+
+  // THE LAST RUNG, FIRED RATHER THAN DESCRIBED. A heatmap has no measured aspect range and no twin
+  // form, so nothing clamps it and `assertTypeFloor` measures the TYPE rather than the room it has.
+  // What bounds this type is a COUNT — twelve rows down the frame — and what it runs out of is
+  // pitch: at the point where two countries' names touch, the picture clips nothing, collides with
+  // nothing by any counter in this project, and cannot be read.
+  if (!L.fits)
+    throw new Error(
+      `static-heatmap-coal-share-europe: at ${size} the grid gives ${rows.length} rows ` +
+        `${L.rowPitch.toFixed(1)}px each, against ${L.labelBand.toFixed(1)}px of row-label ink — ` +
+        `under the ${ROW_AIR_RATIO}x lane the labels need, so "${rows[rows.length - 1].country}" ` +
+        `would touch the row above it.\n` +
+        `The ladder is spent: ${rungs.join("; ") || "no rung fires at this size"}.\n` +
+        `R9: this beat does not ship ${size}.`,
+    );
 
   const pale = paleStop(ground, accent);
   // ONE ramp function, used by the cells and by the legend gradient alike. Two interpolators —
@@ -279,34 +556,6 @@ export function CoalShareHeatmap({
   const colourAt = (value: number) => ramp(rampPosition(value, maxValue));
   assertRampIsReadable(ramp, ground);
 
-  const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
-  const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
-  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
-  // "The source on the frame's bottom margin".
-  const sourceBaseline = height - PAD;
-
-  // The legend keeps the air it always had above it, measured from the LAST HEADER line rather
-  // than from the source, which is no longer in the header.
-  const legendTop = subtitleTop + (subtitleLines.length - 1) * SUBTITLE.lead + 22;
-  const legendLabelBaseline = legendTop + LEGEND.height + 15;
-  const yearLabelBaseline = legendLabelBaseline + 30;
-
-  // Measured from the widest country name that will really be drawn, never a constant — a fixed
-  // gutter is how "United Kingdom" becomes "United Kingdo…" the day the dataset changes.
-  const rowLabelGutter =
-    Math.max(...rows.map((r) => measureText(r.country, ROW_LABEL))) + 12;
-
-  const gridBox = {
-    left: PAD + rowLabelGutter,
-    top: yearLabelBaseline + 10,
-    right: width - PAD,
-    // The grid used to run to the frame's floor. The credit owns that margin now, so the grid's
-    // last row ends above the credit's ink instead.
-    bottom: sourceBaseline - SOURCE.fontSize - 12,
-  };
   const { cells, cellWidth, rowCentres } = heatmapGeometry(
     rows,
     years,
@@ -336,7 +585,7 @@ export function CoalShareHeatmap({
     .filter((v) => v < maxValue)
     .concat([maxValue]);
   const legendX = (value: number) =>
-    PAD + rampPosition(value, maxValue) * LEGEND.width;
+    PAD + rampPosition(value, maxValue) * T.LEGEND.width;
 
   return (
     <svg
@@ -346,6 +595,7 @@ export function CoalShareHeatmap({
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       fontFamily={FONT_FAMILY}
+      data-ladder={rungs.join("; ") || "none"}
     >
       <desc>{alt}</desc>
       <defs>
@@ -357,40 +607,48 @@ export function CoalShareHeatmap({
       </defs>
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      {titleLines.map((line, i) => (
+      {L.titleLines.map((line, i) => (
         <text
           key={line}
           x={PAD}
-          y={titleBaseline + i * TITLE.lead}
+          y={L.titleBaseline + i * T.TITLE.lead}
           fill={ink}
-          fontSize={TITLE.fontSize}
-          fontWeight={TITLE.fontWeight}
+          fontSize={T.TITLE.fontSize}
+          fontWeight={T.TITLE.fontWeight}
         >
           {line}
         </text>
       ))}
-      {subtitleLines.map((line, i) => (
+      {L.subtitleLines.map((line, i) => (
         <text
           key={line}
           x={PAD}
-          y={subtitleTop + i * SUBTITLE.lead}
+          y={L.subtitleTop + i * T.SUBTITLE.lead}
           fill={muted}
-          fontSize={SUBTITLE.fontSize}
+          fontSize={T.SUBTITLE.fontSize}
         >
           {line}
         </text>
       ))}
-      <text x={PAD} y={sourceBaseline} fill={muted} fontSize={SOURCE.fontSize}>
-        {source}
-      </text>
+      {L.sourceLines.map((line, i) => (
+        <text
+          key={line}
+          x={PAD}
+          y={L.sourceBaseline + i * T.SUBTITLE.lead}
+          fill={muted}
+          fontSize={T.SOURCE.fontSize}
+        >
+          {line}
+        </text>
+      ))}
 
       {/* Colour without a key is not decoded, it is admired (`heatmap.md`). The legend states both
           ends of the ramp and the unit, once. */}
       <rect
         x={PAD}
-        y={legendTop}
-        width={LEGEND.width}
-        height={LEGEND.height}
+        y={L.legendTop}
+        width={T.LEGEND.width}
+        height={T.LEGEND.height}
         fill="url(#coal-ramp)"
       />
       {legendTicks.map((tick) => (
@@ -398,8 +656,8 @@ export function CoalShareHeatmap({
           key={`tick-${tick}`}
           x1={legendX(tick)}
           x2={legendX(tick)}
-          y1={legendTop + LEGEND.height}
-          y2={legendTop + LEGEND.height + 4}
+          y1={L.legendTop + T.LEGEND.height}
+          y2={L.legendTop + T.LEGEND.height + T.LEGEND_TICK}
           stroke={muted}
           strokeWidth={1}
         />
@@ -408,9 +666,9 @@ export function CoalShareHeatmap({
         <text
           key={tick}
           x={legendX(tick)}
-          y={legendLabelBaseline}
+          y={L.legendLabelBaseline}
           fill={muted}
-          fontSize={LEGEND.fontSize}
+          fontSize={T.LEGEND.fontSize}
           textAnchor={
             i === 0 ? "start" : i === legendTicks.length - 1 ? "end" : "middle"
           }
@@ -426,9 +684,9 @@ export function CoalShareHeatmap({
           <text
             key={year}
             x={gridBox.left + (years.indexOf(year) + 0.5) * cellWidth}
-            y={yearLabelBaseline}
+            y={L.yearLabelBaseline}
             fill={ink}
-            fontSize={YEAR_LABEL.fontSize}
+            fontSize={T.YEAR_LABEL.fontSize}
             fontWeight={700}
             textAnchor="middle"
           >
@@ -438,9 +696,9 @@ export function CoalShareHeatmap({
           <text
             key={year}
             x={gridBox.left + (years.indexOf(year) + 0.5) * cellWidth}
-            y={yearLabelBaseline}
+            y={L.yearLabelBaseline}
             fill={muted}
-            fontSize={YEAR_LABEL.fontSize}
+            fontSize={T.YEAR_LABEL.fontSize}
             textAnchor="middle"
           >
             {String(year).slice(2)}
@@ -451,10 +709,10 @@ export function CoalShareHeatmap({
       {rows.map((row, r) => (
         <text
           key={row.country}
-          x={gridBox.left - 10}
-          y={rowCentres[r] + 4}
+          x={gridBox.left - T.ROW_LABEL_INSET}
+          y={rowCentres[r] + T.LABEL_BASELINE_NUDGE}
           fill={ink}
-          fontSize={ROW_LABEL.fontSize}
+          fontSize={T.ROW_LABEL.fontSize}
           textAnchor="end"
         >
           {row.country}
@@ -466,19 +724,19 @@ export function CoalShareHeatmap({
         return (
           <g key={`${cell.country}-${cell.year}`}>
             <rect
-              x={cell.x + CELL_GAP / 2}
-              y={cell.y + CELL_GAP / 2}
-              width={cell.width - CELL_GAP}
-              height={cell.height - CELL_GAP}
+              x={cell.x + T.CELL_GAP / 2}
+              y={cell.y + T.CELL_GAP / 2}
+              width={cell.width - T.CELL_GAP}
+              height={cell.height - T.CELL_GAP}
               fill={fill}
             />
             {labelledYears.has(cell.year) && (
               <text
                 x={cell.x + cell.width / 2}
-                y={cell.y + cell.height / 2 + 4}
+                y={cell.y + cell.height / 2 + T.LABEL_BASELINE_NUDGE}
                 fill={labelOn(fill)}
-                fontSize={CELL_LABEL.fontSize}
-                fontWeight={CELL_LABEL.fontWeight}
+                fontSize={T.CELL_LABEL.fontSize}
+                fontWeight={T.CELL_LABEL.fontWeight}
                 textAnchor="middle"
               >
                 {formatCell(cell.value)}
