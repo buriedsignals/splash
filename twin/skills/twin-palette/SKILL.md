@@ -124,19 +124,33 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    nothing **throws, naming every directory it looked in**. A render that fell back to
    black-on-white would publish in a colour nobody chose, and it would look deliberate.
 
-   Measured 2026-08-10, and the number is stated rather than rounded up to "every":
+   Measured by `scripts/palette-reach.mjs`, re-run rather than typed — this table has drifted from
+   the tree twice already, which is why it is now a script's output:
 
-   | population | reads a recorded palette |
-   |---|---|
-   | craft-skill seed runners | **12 of 12** |
-   | `render-still.mjs` copies carrying `readPalette` | 9 of 22 (the 13 `proof/` map copies reach the shared one through `#shared/…`) |
-   | beats under `proof/` | **16 of 70** |
+   | population | reads a recorded palette | names nothing else of its own |
+   |---|---|---|
+   | craft-skill seed runners | **12 of 12** | — |
+   | `render-still.mjs` copies carrying `readPalette` | 9 of 22 (the 13 `proof/` map copies reach the shared one through `#shared/…`) | — |
+   | beats under `proof/` | **76 of 76** | **58 of 76** |
 
-   The seed row is the one that decides the trend: until 2026-08-10 it read **0 of 12**, and eleven
+   The seed row is the one that decided the trend: until 2026-08-10 it read **0 of 12**, and eleven
    runners named `#FFFFFF`/`#0B7A75` as literals — the defect this whole skill exists to remove,
    sitting inside the files a new beat is copied from. `splash-twin/test/seed-reads-a-recorded-palette.test.ts`
-   walks for those runners and keeps the row at 12. The beat row is a backlog that stops growing
-   here; it does not shrink here.
+   walks for those runners and keeps the row at 12.
+
+   The beat row went from 21 to 76 the same day, genre by genre. The **second** column is the honest
+   half: 18 beats still name a colour of their own beyond the two contrast poles, and every one of
+   them is a map — the basemap's own water and land paint baked into its plate, the no-data grey,
+   and the territory cycle the three flow beats hold in `geo-flow.ts`. Whether a journalist should
+   be able to change those is a judgement about what a basemap IS, so the script reports them rather
+   than scoring them.
+
+8. **The reach is proved on the PIXELS, not on the source.** `scripts/two-palette-proof.mjs` renders
+   every beat twice under two recorded answers that share a ground — so all the furniture is
+   byte-identical and every pixel that moves is the accent's — and counts what moved. That is the
+   measurement a static scan cannot make: the walking guard above proves a runner MENTIONS
+   `readPalette`, and a decoy call beside a laundered literal defeats it (the audit mutated it and
+   watched it stay green). The mutation for the pixel proof is in its own header, with its RED.
 
 ## Quick start
 
@@ -219,3 +233,7 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 - `test/palette.test.ts` — the proposal, the conventions, the scoring, the remedy, and the reader's
   refusal to default.
 - `test/format-proposal.test.ts` — the rendered question, in each of its three shapes.
+- `../../scripts/palette-reach.mjs` — how far the recorded answer reaches, counted per genre and
+  per beat, with what each beat still names of its own.
+- `../../scripts/two-palette-proof.mjs` — the same question answered on the rendered pixels: every
+  beat drawn twice under two palettes, with the count of beats whose data ink actually moved.

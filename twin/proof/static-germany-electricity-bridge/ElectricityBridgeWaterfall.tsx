@@ -18,6 +18,7 @@ import {
   deriveFurniture,
   measureText,
   contrast,
+  assertLegible,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
 
@@ -66,10 +67,20 @@ function wrap(
   return line ? [...lines, line] : lines;
 }
 
+/** Whichever ink pole reads higher against a given fill, MEASURED against the text floor rather
+ *  than trusted. A pure pole clears 4.5:1 on every possible fill — the worst fill for the better
+ *  pole sits at relative luminance 0.179, where the pole still measures 4.58:1 — so this can only
+ *  fire if the poles ever stop being pure, and that is exactly the change that would break a label
+ *  silently. The floor named is SC 1.4.3's 4.5:1 for TEXT, not the 3:1 SC 1.4.11 sets for the mark
+ *  underneath it; `assertLegible` makes the caller say which of the two it is asking about. */
 function inkOn(fill: string): string {
-  return contrast("#000000", fill) >= contrast("#FFFFFF", fill)
-    ? "#000000"
-    : "#FFFFFF";
+  const pole =
+    contrast("#000000", fill) >= contrast("#FFFFFF", fill) ? "#000000" : "#FFFFFF";
+  assertLegible(pole, fill, {
+    role: "text",
+    where: "the value label drawn inside its own bar",
+  });
+  return pole;
 }
 
 /**

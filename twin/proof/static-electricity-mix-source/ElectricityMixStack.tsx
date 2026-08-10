@@ -14,6 +14,7 @@ import {
   deriveFurniture,
   measureText,
   contrast,
+  assertLegible,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
 
@@ -67,11 +68,22 @@ function wrap(
 
 /** Whichever ink pole reads higher against a given fill — the same escalation
  *  `deriveFurniture` runs against the page ground, run here against a data mark instead, because
- *  visual-system.md's own rule is that a label's ink is never inherited from the mark it names. */
+ *  visual-system.md's own rule is that a label's ink is never inherited from the mark it names.
+ *
+ *  It MEASURES the choice against the text floor rather than trusting it. A pure pole clears 4.5:1
+ *  on every possible fill — the worst fill for the better pole sits at relative luminance 0.179,
+ *  where the pole still measures 4.58:1 — so this can only fire if the poles ever stop being pure,
+ *  and that is exactly the change that would break it silently. The floor named here is SC 1.4.3's
+ *  4.5:1 for TEXT, not the 3:1 SC 1.4.11 sets for the mark underneath it; the two coincide at no
+ *  number and `assertLegible` makes the caller say which one it is asking about. */
 function inkOn(fill: string): string {
-  return contrast("#000000", fill) >= contrast("#FFFFFF", fill)
-    ? "#000000"
-    : "#FFFFFF";
+  const pole =
+    contrast("#000000", fill) >= contrast("#FFFFFF", fill) ? "#000000" : "#FFFFFF";
+  assertLegible(pole, fill, {
+    role: "text",
+    where: "the value label drawn inside its own band",
+  });
+  return pole;
 }
 
 /**

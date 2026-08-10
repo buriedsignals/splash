@@ -1,4 +1,21 @@
+---
+size: landscape
+type: area
+---
+
 # Beat — more than half of Switzerland's all-time CO2 has been emitted since 1986
+
+**Size:** landscape (1920 × 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape and not the square this beat used to draw at.** An area's x axis is a continuum and
+its argument is the shape of an accumulation, so it has no twin form to transpose into
+(`type-at-size.mjs`) and no aspect range has ever been measured for it at a tall or square frame.
+The old 1080 × 1080 was not a decision, it was a default; `formForSize` refuses square and portrait
+by name, and the composition still exists at both so the refusal is a sentence a journalist can read
+rather than a missing id.
 
 **Proves:** more than half of every tonne of CO2 Switzerland has ever emitted (since records begin
 in 1858) has been released since 1986.

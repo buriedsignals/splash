@@ -40,11 +40,40 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { CUMULATIVE_CO2_AREA_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "area";
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark.
+ *
+ * The still path measures the rendered SVG's own `font-size` attributes (`assertTypeFloor` in
+ * `sizes.mjs`). A video beat writes no SVG to disk — Remotion hands back a PNG or an mp4 — so the
+ * equivalent reading is the element tree this component is about to return. It is the same
+ * property being measured, one step earlier: a token that was scaled correctly and a literal that
+ * was left at its 1080-square value are indistinguishable to the scale and distinguishable here.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 
 /**
  * The rendered width of a string in the font it will really be drawn in. Chromium's own text
@@ -113,11 +142,94 @@ export function drawnSoFar<T extends { x: number; y: number }>(
   ];
 }
 
-const TITLE = { fontSize: 40, fontWeight: 700, lead: 52 };
-const SOURCE = { fontSize: 22, fontWeight: 400 };
-const AXIS = { fontSize: 22, fontWeight: 400 };
-const LABEL = { fontSize: 28, fontWeight: 600 };
-const NOTE = { fontSize: 22, fontWeight: 400 };
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * These were seven named constants and thirteen further bare literals, all tuned at 1080x1080 —
+ * `+ 60` between the header and the plot, `+ 14` at the tick inset, `- 20` above the subject's
+ * label, and so on. `specs/W4-export-sizes.md` §2 is explicit that those literals are as much
+ * 900x560 tuning as the font sizes are: scaling the type and leaving them is what collided the
+ * title into the subtitle on the static probe's first run. So every spacing number in this file
+ * goes through `sp`, and none is written at a mark.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's own multiplier (2.5 landscape,
+ * 3.0 square and portrait in `twin-chart-video`'s copy) lands the smallest drawn type exactly on
+ * that row's legibility floor (30 and 36). The old values did NOT clear it: this beat drew its
+ * axis at 22px on a 1080 frame, which is 7.3 CSS px on the phone a square post is read on, against
+ * a 12 CSS px floor three independent sources converge on. The type is bigger now because it was
+ * illegible, not because the frame grew.
+ *
+ * `PAD` is the one number that does NOT come from here: a frame's margin is proportional to the
+ * CANVAS, not to the type, and `frameInsetFor` states that split.
+ */
+const BASE = {
+  TITLE: { fontSize: 22, fontWeight: 700, lead: 28 },
+  SOURCE: { fontSize: 12, fontWeight: 400 },
+  AXIS: { fontSize: 12, fontWeight: 400 },
+  LABEL: { fontSize: 15, fontWeight: 600 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  HEADER_TO_PLOT: 33,
+  END_LABEL_AIR: 9,
+  X_LABEL_BAND: 24,
+  SOURCE_AIR: 5,
+  Y_TICK_INSET: 8,
+  Y_TICK_BASELINE_NUDGE: 4,
+  X_TICK_DROP: 21,
+  REFERENCE_LABEL_INSET: 2,
+  REFERENCE_LABEL_DROP: 19,
+  SUBJECT_LABEL_DX: 9,
+  SUBJECT_LABEL_DY: 11,
+  SUBJECT_RADIUS: 6,
+  CONCLUSION_DX: 9,
+  CONCLUSION_DY: 5,
+  DASH_REFERENCE: [4, 3],
+  DASH_DROP: [2, 2],
+};
+
+/** Strokes are scaled but NOT rounded: a hairline that rounds to 2px stops being a hairline, and
+ *  SVG takes a sub-pixel width perfectly well. The base is the drawn width at landscape. */
+const BASE_STROKE = { grid: 0.6, reference: 0.8, edge: 1.2, drop: 0.6 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    LABEL: f(BASE.LABEL) as typeof BASE.LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    HEADER_TO_PLOT: sp(BASE.HEADER_TO_PLOT),
+    END_LABEL_AIR: sp(BASE.END_LABEL_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    Y_TICK_BASELINE_NUDGE: sp(BASE.Y_TICK_BASELINE_NUDGE),
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    REFERENCE_LABEL_INSET: sp(BASE.REFERENCE_LABEL_INSET),
+    REFERENCE_LABEL_DROP: sp(BASE.REFERENCE_LABEL_DROP),
+    SUBJECT_LABEL_DX: sp(BASE.SUBJECT_LABEL_DX),
+    SUBJECT_LABEL_DY: sp(BASE.SUBJECT_LABEL_DY),
+    SUBJECT_RADIUS: sp(BASE.SUBJECT_RADIUS),
+    CONCLUSION_DX: sp(BASE.CONCLUSION_DX),
+    CONCLUSION_DY: sp(BASE.CONCLUSION_DY),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    DASH_DROP: BASE.DASH_DROP.map(sp).join(" "),
+    STROKE: {
+      grid: st(BASE_STROKE.grid),
+      reference: st(BASE_STROKE.reference),
+      edge: st(BASE_STROKE.edge),
+      drop: st(BASE_STROKE.drop),
+    },
+  };
+}
+
 const UNIT = "Mt";
 
 export type Reading = { year: number; mt: number };
@@ -229,6 +341,9 @@ export type CumulativeCo2AreaVideoProps = {
   reference: number;
   referenceLabel: string;
   subjectYear: number;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter and read
+   *  back by `render.mjs`. Not a default: `sizeFor` throws naming all three. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -244,11 +359,55 @@ export function CumulativeCo2AreaVideo({
   reference,
   referenceLabel,
   subjectYear,
+  size,
   timing = CUMULATIVE_CO2_AREA_TIMING,
 }: CumulativeCo2AreaVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  // `sizeFor` throws naming all three rather than defaulting, so a size nobody exports cannot draw.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL — before anything is measured.
+  //
+  // An area's x axis is a CONTINUUM and its argument is the shape of an accumulation, so it has no
+  // twin form to transpose into and no measured aspect range at a tall or square frame. The probe
+  // proved that drawing it there anyway is the one defect no counter in this project can see: zero
+  // clipped runs, zero collisions, and a destroyed shape (`portrait-aspect-probe/PORTRAIT-VERDICT.md`).
+  // The composition still EXISTS at all three sizes — a size with no composition cannot be rendered
+  // at all, whatever a component does — and the two this type cannot draw refuse here, loudly,
+  // naming the measurement that is missing and the size that works.
+  const form = formForSize(TYPE, size);
+  if (form.verdict === "refuse")
+    throw new Error(
+      `video-cumulative-co2-area: ${TYPE} cannot be drawn at ${size}. ${form.reason}\n` +
+        `It ships at landscape.`,
+    );
+  const {
+    TITLE,
+    SOURCE,
+    AXIS,
+    LABEL,
+    NOTE,
+    HEADER_TO_PLOT,
+    END_LABEL_AIR,
+    X_LABEL_BAND,
+    SOURCE_AIR,
+    Y_TICK_INSET,
+    Y_TICK_BASELINE_NUDGE,
+    X_TICK_DROP,
+    REFERENCE_LABEL_INSET,
+    REFERENCE_LABEL_DROP,
+    SUBJECT_LABEL_DX,
+    SUBJECT_LABEL_DY,
+    SUBJECT_RADIUS,
+    CONCLUSION_DX,
+    CONCLUSION_DY,
+    DASH_REFERENCE,
+    DASH_DROP,
+    STROKE,
+  } = tokens(typeScale);
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
@@ -280,12 +439,14 @@ export function CumulativeCo2AreaVideo({
   );
   const padding = {
     // The plot starts below the LAST TITLE LINE, never below the source.
-    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
-    right: PAD + 16 + measureText(endLabel, LABEL),
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + HEADER_TO_PLOT,
+    right: PAD + END_LABEL_AIR + measureText(endLabel, LABEL),
     // Grown by the credit's own height plus clear air, so the x-axis label band ends above it.
-    bottom: PAD + 44 + SOURCE.fontSize + 10,
+    bottom: PAD + X_LABEL_BAND + SOURCE.fontSize + SOURCE_AIR,
     left:
-      PAD + 14 + Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
+      PAD +
+      Y_TICK_INSET +
+      Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
   };
 
   const g = cumulativeAreaGeometry(data, {
@@ -350,7 +511,7 @@ export function CumulativeCo2AreaVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const subjectRadius = interpolate(subjectSpring, [0, 1], [0, 10]);
+  const subjectRadius = interpolate(subjectSpring, [0, 1], [0, SUBJECT_RADIUS]);
   // The drop: from the reference height down to 1986's own point on the fill — the same device
   // `life-expectancy` uses to make "right at this level" legible as a distance, not just a colour.
   const dropOpacity = interpolate(subjectSpring, [0, 1], [0, 1]);
@@ -363,7 +524,7 @@ export function CumulativeCo2AreaVideo({
     easing: Easing.out(Easing.cubic),
   });
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -410,12 +571,12 @@ export function CumulativeCo2AreaVideo({
                 y1={tick.y}
                 y2={tick.y}
                 stroke={grid}
-                strokeWidth={1.5}
+                strokeWidth={STROKE.grid}
               />
             )}
             <text
-              x={g.plot.left - 14}
-              y={tick.y + 7}
+              x={g.plot.left - Y_TICK_INSET}
+              y={tick.y + Y_TICK_BASELINE_NUDGE}
               fill={muted}
               fontSize={AXIS.fontSize}
               textAnchor="end"
@@ -428,7 +589,7 @@ export function CumulativeCo2AreaVideo({
           <text
             key={tick.year}
             x={tick.x}
-            y={g.plot.bottom + 38}
+            y={g.plot.bottom + X_TICK_DROP}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="middle"
@@ -455,12 +616,12 @@ export function CumulativeCo2AreaVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={STROKE.reference}
+            strokeDasharray={DASH_REFERENCE}
           />
           <text
-            x={g.plot.left + 4}
-            y={g.referenceY + 34}
+            x={g.plot.left + REFERENCE_LABEL_INSET}
+            y={g.referenceY + REFERENCE_LABEL_DROP}
             fill={muted}
             fontSize={NOTE.fontSize}
             textAnchor="start"
@@ -483,7 +644,7 @@ export function CumulativeCo2AreaVideo({
           d={edgePath}
           fill="none"
           stroke={accent}
-          strokeWidth={3}
+          strokeWidth={STROKE.edge}
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -498,8 +659,8 @@ export function CumulativeCo2AreaVideo({
           y1={g.referenceY}
           y2={g.subject.y}
           stroke={muted}
-          strokeWidth={1.5}
-          strokeDasharray="4 4"
+          strokeWidth={STROKE.drop}
+          strokeDasharray={DASH_DROP}
           opacity={dropOpacity * 0.7}
         />
       ) : null}
@@ -520,8 +681,8 @@ export function CumulativeCo2AreaVideo({
           crosses" means — so a label at the dot's height would sit on top of the dashed rule and
           crowd the reference label's own text right beside it; 20px above clears both. */}
       <text
-        x={g.subject.x - 16}
-        y={g.subject.y - 20}
+        x={g.subject.x - SUBJECT_LABEL_DX}
+        y={g.subject.y - SUBJECT_LABEL_DY}
         fill={accent}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}
@@ -533,8 +694,8 @@ export function CumulativeCo2AreaVideo({
 
       {/* The conclusion: the 2024 total, stated once the point carrying it has landed. */}
       <text
-        x={endPoint.x + 16}
-        y={endPoint.y + 10}
+        x={endPoint.x + CONCLUSION_DX}
+        y={endPoint.y + CONCLUSION_DY}
         fill={accent}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}
@@ -544,4 +705,21 @@ export function CumulativeCo2AreaVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor.
+  //
+  // The still path hands `assertTypeFloor` the rendered SVG's own `font-size` attributes. A video
+  // composition's markup only exists inside the browser Remotion drives, so the equivalent reading
+  // is the element tree above — walked, not listed, because a list re-states the tokens and the
+  // defect this closes is a token that was never listed: the static seed's `GAP_NOTE` was
+  // `fontSize={12}` written bare at a mark, unscaled, and no assertion saw it. The walk sees it.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `video-cumulative-co2-area at ${size}` },
+  );
+
+  return drawing;
 }
