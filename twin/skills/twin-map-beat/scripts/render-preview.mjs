@@ -19,6 +19,9 @@ import {
   deriveFurniture,
   readPalette,
   renderStill,
+  readTypeface,
+  useTypeface,
+  assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
 import {
@@ -102,6 +105,12 @@ console.log(
 // Derive furniture and ramp. The colours are READ, not typed —
 // see `PALETTE.md` at this skill's own root.
 const { ground, accent } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force
+// before anything is laid out — `FONT_FAMILY` is a live binding, so the seed draws in
+// whatever this resolves, and `measureText` measures in the same thing. A face that does
+// not resolve on this machine refuses here rather than being silently substituted.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
 const furniture = deriveFurniture(ground);
 const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1, 0.1, 0.78);
 
@@ -135,6 +144,10 @@ const svg = renderToStaticMarkup(
     comparisonValue: meanValue,
   }),
 );
+// Nothing renders in a typeface nobody chose: if the element declared a family other
+// than the one in force, every gutter in it was measured against a font nobody is
+// looking at, and it would clip in the PNG rather than say so.
+assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
 const png = new Resvg(svg, { fitTo: { mode: "width", value: 900 } })
   .render()

@@ -26,10 +26,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   deriveFurniture,
   readPalette,
   renderStill,
+  readTypeface,
+  useTypeface,
+  assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
 import {
@@ -52,6 +56,12 @@ const COMPOSITION = "co2-europe";
 // The colours are the one thing in `BEAT` that is not the journalist's words: they are READ back
 // from this skill's own `PALETTE.md`, exactly as a beat reads its story's answer.
 const PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force
+// before anything is laid out — `FONT_FAMILY` is a live binding, so the seed draws in
+// whatever this resolves, and `measureText` measures in the same thing. A face that does
+// not resolve on this machine refuses here rather than being silently substituted.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
 
 /** The story's own constants: the journalist's words, their source, their caveat, their subject. */
 const BEAT = {
@@ -162,8 +172,18 @@ await mkdir(outDir, { recursive: true });
 // ── Rung 1: the still ──────────────────────────────────────────────────────────────────────────
 if (wantStill) {
   const { geometry, plate } = await plateOf(stillPlate);
+  // Nothing renders in a typeface nobody chose. `renderStill` takes the ELEMENT, so the
+  // markup is laid out here first and checked against the family in force before the same
+  // element is handed over — a second `renderToStaticMarkup` of a pure component, which is
+  // deterministic and costs microseconds against the rasterise that follows it. The check
+  // cannot live inside `renderStill` itself: that is a SHARED function body, and
+  // `render-still-parity.test.ts` would then require the change in all 22 copies at once.
+  const element = createElement(Co2MapStill, { ...shared, geometry, plate });
+  assertDrawnInActiveTypeface(renderToStaticMarkup(element), {
+    where: "the map seed",
+  });
   const { pngPath } = await renderStill({
-    element: createElement(Co2MapStill, { ...shared, geometry, plate }),
+    element,
     width: 900,
     height: 560,
     outDir,

@@ -21,9 +21,39 @@ import { Resvg } from "@resvg/resvg-js";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-/** The one font stack. The seed draws with it and `measureText` measures with it — if the two
- *  ever disagree, every gutter in the chart is measured against a font nobody is looking at. */
-export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+/**
+ * THE FONT STACK IN FORCE. The seed draws with it and `measureText` measures with it — if the two
+ * ever disagree, every gutter in the chart is measured against a font nobody is looking at.
+ *
+ * It was a hard literal until 2026-08-10, in all 22 copies of this file, while
+ * `twin-newsroom-charter` MEASURED a newsroom's typefaces off its own site, `NEWSROOM.md` recorded
+ * them and preflight read them back. That is exactly the failure `readPalette`'s own header names —
+ * "an instruction to copy by eye, which is exactly how a newsroom's identity gets collected and
+ * then never used" — left standing for type after it was removed for colour, in this same file.
+ *
+ * It is now a `let` that `useTypeface` reassigns from a recorded `TYPEFACE.md`, and ES module
+ * exports are live bindings, so a component reading `FONT_FAMILY` inside its own render sees what
+ * the runner resolved. Until a runner calls `useTypeface` this is the built-in default and
+ * `activeTypeface().origin` says `default` — the honest word for "nobody chose this".
+ *
+ * WHY BOTH RESVG CALL SITES BELOW STILL SAY `loadSystemFonts: true`, and why that is the safe
+ * shape rather than an oversight. The measured defect is not a missed COPY, it is a missed CALL
+ * SITE inside one copy: the `measureText` probe and the rasteriser, and when they disagree the
+ * paint gets the house face while every gutter was measured in the fallback — three static beats
+ * clipped in ten places when that was simulated (`survey/typeface-feasibility.md` §4-B). Neither
+ * site is parameterised, so the two cannot disagree. The price is stated in `useTypeface`: this
+ * version resolves a face that is INSTALLED on the rendering machine. Handing resvg a font FILE
+ * (`fontFiles`, measured working in §1) needs both call sites parameterised, which means vendoring
+ * a changed `measureText` and `rasterise` into all 22 copies, and that is the next step rather
+ * than this one.
+ */
+const DEFAULT_FONT_FAMILY = "Helvetica, Arial, sans-serif";
+export let FONT_FAMILY = DEFAULT_FONT_FAMILY;
+let ACTIVE_TYPEFACE = {
+  family: DEFAULT_FONT_FAMILY,
+  origin: "default",
+  source: "(the built-in default stack — nobody chose it)",
+};
 
 function channels(hex) {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
@@ -144,6 +174,150 @@ export function parsePalette(text, source = "PALETTE.md") {
     );
   }
   return { ground: record.ground, accent: record.accent, origin: record.origin, source };
+}
+
+/**
+ * THE RECORDED ANSWER FOR THE TYPEFACE — the same shape `PALETTE.md` has, for the same reason, and
+ * read by the same kind of upward walk.
+ *
+ * `origin` records WHO chose, and it is the field that makes the collected-versus-imposed
+ * distinction real. A newsroom's measured typefaces are collected in order to be PROPOSED to the
+ * journalist, who chooses whether to use them; `newsroom` and `journalist` are choices, `default`
+ * is the substrate's own stack, so "nobody chose this" is written down rather than looking like a
+ * decision somebody made.
+ */
+export function readTypeface(dir, { stopAt } = {}) {
+  const start = resolve(dir);
+  const limit = stopAt ? resolve(stopAt) : null;
+  const searched = [];
+  let current = start;
+  for (;;) {
+    const candidate = join(current, "TYPEFACE.md");
+    searched.push(candidate);
+    if (existsSync(candidate)) return parseTypeface(readFileSync(candidate, "utf8"), candidate);
+    if (limit && current === limit) break;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  throw new Error(
+    `No TYPEFACE.md found for ${start}. Propose the newsroom's measured typefaces, let the ` +
+      `journalist choose, and record the answer. Looked in:\n  ${searched.join("\n  ")}`,
+  );
+}
+
+export function parseTypeface(text, source = "TYPEFACE.md") {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  if (!match) throw new Error(`${source} has no front matter`);
+  const record = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line.trim());
+    if (!pair) continue;
+    record[pair[1]] = pair[2].replace(/^["']|["']$/g, "").trim();
+  }
+  if (!record.family) throw new Error(`${source} is missing family`);
+  if (!["newsroom", "journalist", "default"].includes(record.origin)) {
+    throw new Error(
+      `${source}: origin must be newsroom, journalist or default — got ${JSON.stringify(record.origin)}. ` +
+        `It records WHO chose this typeface, and "default" is the honest word for nobody.`,
+    );
+  }
+  return { family: record.family, origin: record.origin, source };
+}
+
+/** The first family in a stack — the one a render is actually asking for. */
+export function requestedFamily(stack) {
+  return stack.split(",")[0].replace(/^["']|["']$/g, "").trim();
+}
+
+/**
+ * DOES THIS MACHINE ACTUALLY HAVE THE FACE? Measured, not assumed
+ * (`survey/typeface-feasibility.md` §1): resvg NEVER errors on a family it cannot find. It renders
+ * happily in whatever it does have and there is no return value that says so. Chrome falls back
+ * silently, and Canvas `measureText` falls back silently. No substrate will ever tell us.
+ *
+ * So the resolution is measured the only way it can be: lay the same string out in the requested
+ * family and in a family that certainly exists nowhere, and compare the ink. Identical ink means
+ * the requested family resolved to the same fallback the nonsense one did — it did not resolve.
+ *
+ * Its blind spot, stated: a face whose metrics are IDENTICAL to the fallback's at every character
+ * of the probe string would read as unresolved. The string below is long and mixed precisely to
+ * make that improbable, and the failure direction is the safe one — a false refusal is loud, a
+ * false acceptance is a PNG in a face nobody chose.
+ */
+const RESOLUTION_PROBE = "Handgloves 0123456789 — MWmw il1 %";
+export function familyResolves(family) {
+  const ink = (name) => {
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
+      `<text x="0" y="300" font-family="${name}" font-size="120">${RESOLUTION_PROBE}</text></svg>`;
+    const box = new Resvg(svg, { font: { loadSystemFonts: true } }).getBBox();
+    return box ? `${box.x}|${box.y}|${box.width}|${box.height}` : "none";
+  };
+  return ink(requestedFamily(family)) !== ink("NoSuchFaceExistsAnywhere-ZZQX");
+}
+
+/**
+ * Put a recorded typeface in force, or REFUSE. Nothing renders in a value nobody chose: a face
+ * that does not resolve is named, with where it was recorded, rather than silently substituted.
+ *
+ * A journalist told "we cannot get Marr Sans on this machine; your charts will be set in the
+ * fallback — accept, or install it" has CHOSEN. A silent stack has not.
+ */
+export function useTypeface(typeface) {
+  if (!typeface || typeof typeface !== "object" || !typeface.family) {
+    throw new Error(`useTypeface needs a parsed TYPEFACE record, got ${JSON.stringify(typeface)}`);
+  }
+  if (typeface.origin !== "default" && !familyResolves(typeface.family)) {
+    throw new Error(
+      `the typeface recorded in ${typeface.source} does not resolve on this machine: nothing here ` +
+        `answers to ${JSON.stringify(requestedFamily(typeface.family))}, and resvg would have ` +
+        `rendered the fallback and said nothing. Install the face, or record one this machine has, ` +
+        `or record origin: default and accept the fallback as a choice.`,
+    );
+  }
+  ACTIVE_TYPEFACE = {
+    family: typeface.family,
+    origin: typeface.origin,
+    source: typeface.source,
+  };
+  FONT_FAMILY = typeface.family;
+  measured.clear();
+  return ACTIVE_TYPEFACE;
+}
+
+export function activeTypeface() {
+  return ACTIVE_TYPEFACE;
+}
+
+/** Every `font-family` an SVG declares. */
+export function declaredFontFamilies(svg) {
+  return [...new Set([...svg.matchAll(/font-family="([^"]*)"/g)].map((m) => m[1]))];
+}
+
+/**
+ * REFUSE AN ELEMENT DRAWN IN A FAMILY THAT IS NOT THE ONE IN FORCE. The two resvg call sites in
+ * this file cannot disagree with each other, but a COMPONENT can still disagree with both — by
+ * snapshotting `FONT_FAMILY` into a module-level constant of its own, for instance, so that the
+ * paint gets the old value while every gutter was measured in the new one. That is the §4-B defect
+ * and it clips silently in the PNG, so it refuses here instead.
+ *
+ * It lives outside `renderStill` deliberately: `render-still-parity.test.ts` compares every copy of
+ * a SHARED function body across all 22 copies of this file, and a copy that gained a changed
+ * `renderStill` while its siblings did not would be drift. A new function is a superset, which that
+ * guard permits. `seed-reads-a-recorded-typeface.test.ts` is what makes sure the runners call it.
+ */
+export function assertDrawnInActiveTypeface(svg, { where = "the element" } = {}) {
+  const wrong = declaredFontFamilies(svg).filter((f) => f !== ACTIVE_TYPEFACE.family);
+  if (wrong.length > 0) {
+    throw new Error(
+      `${where} draws in ${JSON.stringify(wrong)} while the typeface in force is ` +
+        `${JSON.stringify(ACTIVE_TYPEFACE.family)} (${ACTIVE_TYPEFACE.origin}, from ` +
+        `${ACTIVE_TYPEFACE.source}). Every gutter in this frame was measured in the second, so the ` +
+        `first would clip. Read FONT_FAMILY at render time rather than snapshotting it.`,
+    );
+  }
+  return svg;
 }
 
 const measured = new Map();
