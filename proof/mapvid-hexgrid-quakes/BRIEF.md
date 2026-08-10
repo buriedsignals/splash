@@ -132,3 +132,33 @@ beside it.
 ## Source line
 
 `Source: USGS Earthquake Catalog (earthquake.usgs.gov), magnitude 4.0+, worldwide, 2024 · basemap © MapTiler, © OpenStreetMap`
+
+## Size — REFUSED, with the numbers, and R6 declined — 2026-08-11
+
+**This beat pins no size, and that is a decision rather than an omission.** The full measurement is
+`probe/VERDICT.md`; re-run it with `bun proof/mapvid-hexgrid-quakes/probe/size-budget.mjs`.
+
+The removal ladder gained **R6, a rung for the title**, because the ledger had recorded the title as
+the binding constraint on this beat and its two siblings. Applied here, **R6 declines**: a shorter
+form was written that keeps the Ring of Fire, the densest cell, and 360 of 2024's 366 days — 80
+characters against 85 — and it still wraps to the same number of lines at every candidate frame. A
+rung that frees no budget does not fire, so this beat's own sentence stays.
+
+What the frames leave for the plate, with the caveat kept:
+
+- **landscape 1920 × 1080** — 58 px, a 100 × 58 map, **5% of the frame's width**. Spending the
+  conclusion line and the caveat's last sentence reaches 173 px, 16%.
+- **square 1080 × 1080** — the words alone overrun the band by **776 px**.
+- **portrait 1080 × 1920** — by **733 px**.
+
+**The refusal does not rest on the caveat.** With the caveat gone entirely, landscape leaves 300 px
+(a 522 × 300 map, 27% of the frame) and square and portrait still have no room at all. So the
+honesty line is kept and the beat still refuses — which is the stronger of the two statements.
+
+The delivered mp4 already measures 1080 × 1080, which is the square row's own dimensions. That is
+not a pin: at square the row's floor is 36 px against this beat's smallest token of 16, and the type
+scale that follows is what puts the words 776 px over the band.
+
+What would close it is named in the verdict and is not a rung: this genre lays its furniture in one
+column, and a landscape frame gives 1750 px of width against 910 px of band. A layout that puts the
+plate beside its words rather than between them is a redraw, and a person's decision.
