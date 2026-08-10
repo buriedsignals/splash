@@ -1,8 +1,18 @@
+---
+size: square
+type: line
+---
+
 # Beat — twice since 1991, more people left Switzerland than arrived
 
-**Type:** line (single series, crossing a reference). **Medium/genre:** chart / video. **Channel:**
-`migration.mp4`, 1080 × 1080, 30 fps, **240 frames = 8.0 s**, plus `migration-still.png` as the
-frame a reader actually reads.
+**Type:** line (single series, crossing a reference). **Medium/genre:** chart / video.
+**Size:** square (1080 × 1080), 30 fps, **240 frames = 8.0 s**.
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize` and renders the composition of that name.
+`Root.tsx` registers one composition per row of the table — before this it registered one, carrying
+`width={1080} height={1080}` as literals, and the component carried the same two numbers again as
+its own `const FRAME`.
 
 ## Claim
 
@@ -80,3 +90,48 @@ pointed at the file that had already been paid.
 ## Source line
 
 `Source: Federal Statistical Office · data 2024`
+
+## The three export sizes — all three render, and one is delivered
+
+`Root.tsx` registers **one composition per row of the table** (`migration-landscape` / `-square` /
+`-portrait`); `render.mjs` reads the pin out of the front matter above, renders that composition,
+and then reads the artifact's own dimensions back — the PNG from its IHDR, the mp4 from **`ffprobe`**.
+That check holds for all three sizes.
+
+| size | still (`--frame=-1`), from the file | mp4, from ffprobe |
+|---|---|---|
+| **square (pinned)** | **1080 x 1080** | **1080 x 1080** |
+| portrait | 1080 x 1920 (`sizes/`) | not rendered — a looking arm, not a deliverable |
+| landscape | 1920 x 1080 (`sizes/`) | not rendered — a looking arm, not a deliverable |
+
+## What the type floor forced — the callout had nowhere to stand
+
+**The shipped tokens were 40 / 26 / 22 px on a 1080 x 1080 frame**, and a square video is watched
+full-bleed on a phone: a 22 px axis label is **7.3 CSS px** at 360 dp. The base is set from the
+smallest token (22 → 12) with every other token keeping its ratio to it, so the axis lands on 36 px
+at the square row's 3.0. Everything grew 1.64x, and two things broke.
+
+**The credit wrapped** (one line at 22 px is two at 36 px), so the x-axis label band is now derived
+from where the credit's first line of ink sits rather than from a literal.
+
+**The callout block landed on the x-axis labels and then on the credit** — and the fix is the one
+worth recording, because it is a property of this beat's own claim rather than of its type. The
+callout names the two years the balance went NEGATIVE, and it hung a fixed distance below the zero
+rule. Those two points sit **8 % of the plot's height above the domain floor**, so "below the pair"
+had 37 px of room for a block that is 94 px tall at the phone's floor. Moving it ABOVE the pair
+instead put it straight through the rising curve — rendered, looked at, rejected. What it needed was
+ground of its own, so `migrationGeometry` gained a **`bottomReserve`**: pixels of the plot's bottom
+edge the data curve may not draw into, sized from the block that will stand there. It is the exact
+mirror of the sibling beat's `topReserve`
+(`../life-expectancy/LifeExpectancyVideo.tsx`), at the other end of the frame and for the same
+reason — an annotation whose room is reserved out of the plotted range cannot be crowded out by what
+the data happens to do.
+
+Two smaller derivations came with it: the callout's x is clamped into the frame by its **own
+measured half-width** (`g.plot.right - 20` reserved twenty pixels for a block ~280 px wide), and the
+right gutter reserves **half** the last x-tick label rather than all of it, because that label is
+centred on the plot's right edge and only its right half hangs outside.
+
+**Portrait renders and is not refused**, and the empty band at its foot is correct: the content sits
+inside Meta's published safe band (269–1248), and the 672 px below it is where the platform's
+caption, buttons and progress bar go.

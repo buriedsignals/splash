@@ -15,11 +15,15 @@ import {
   deriveFurniture,
   readPalette,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  readPinnedSize,
+  readPngSize,
+} from "#shared/twin-chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "migration";
 
 const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
   stopAt: join(HERE, ".."),
@@ -90,7 +94,18 @@ const dataPath = flag("--data", join(HERE, "data.csv"));
 // Defaults BESIDE THE BEAT, not to /tmp. It used to default to a scratch directory, so running
 // this script the obvious way produced a fresh artifact nobody looks at, printed a path, exited
 // zero, and left the committed mp4 stale. An explicit --out still overrides.
-const outDir = flag("--out", HERE);
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size lived in `Root.tsx` and in the component, as the same two literals.
+const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. It is deliberately not a way to change what this beat DELIVERS.
+const asked = flag("--size", null);
+const size = asked ?? pinned;
+const COMPOSITION = `migration-${size}`;
+const outDir = flag("--out", asked ? join(HERE, "sizes") : HERE);
+const stem = asked ? `migration-${size}` : "migration";
+if (asked) console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
 const stillOnly = argv.includes("--still-only");
 
 await mkdir(outDir, { recursive: true });
@@ -98,13 +113,13 @@ await mkdir(outDir, { recursive: true });
 const data = readingsFromCsv(await readFile(dataPath, "utf8"));
 if (data.length < 2) throw new Error(`need at least two readings, got ${data.length}`);
 
-const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
-const propsPath = join(outDir, "migration-props.json");
+const props = { ...BEAT, data, size, ...deriveFurniture(BEAT.ground) };
+const propsPath = join(outDir, `${stem}-props.json`);
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 
 // Rung 2a: the last frame, on its own. If the end state is not a complete, readable chart, the
 // video is wrong and nothing below is worth waiting for.
-const stillPath = join(outDir, "migration-final-frame.png");
+const stillPath = join(outDir, `${stem}-final-frame.png`);
 const stillSeconds = remotion([
   "still",
   ENTRY,
@@ -114,12 +129,17 @@ const stillSeconds = remotion([
   `--props=${propsPath}`,
   "--timeout=120000",
 ]);
-console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
+// THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES — the one reading the code that wrote it cannot
+// make agree with itself.
+assertDeliveredSize(readPngSize(await readFile(stillPath)), size, {
+  what: stillPath,
+});
+console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s], verified from the file`);
 
 if (stillOnly) process.exit(0);
 
 // Rung 2b: the mp4. Concurrency 1 keeps the render deterministic and the machine usable.
-const videoPath = join(outDir, "migration.mp4");
+const videoPath = join(outDir, `${stem}.mp4`);
 const videoSeconds = remotion([
   "render",
   ENTRY,
@@ -129,4 +149,23 @@ const videoSeconds = remotion([
   "--concurrency=1",
   "--timeout=120000",
 ]);
-console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+// THE MP4'S OWN DIMENSIONS, out of the container rather than out of the arguments — the video
+// path's `assertDeliveredSize`, and it holds for all three sizes.
+const probed = spawnSync(
+  "ffprobe",
+  [
+    "-v", "error",
+    "-select_streams", "v:0",
+    "-show_entries", "stream=width,height",
+    "-of", "csv=p=0",
+    videoPath,
+  ],
+  { encoding: "utf8" },
+);
+if (probed.status !== 0)
+  throw new Error(`ffprobe could not read ${videoPath}: ${probed.stderr ?? ""}`);
+const [probedWidth, probedHeight] = probed.stdout.trim().split(",").map(Number);
+assertDeliveredSize({ width: probedWidth, height: probedHeight }, size, {
+  what: videoPath,
+});
+console.log(`video → ${videoPath}  [${videoSeconds}s], ${probedWidth}x${probedHeight} from ffprobe`);

@@ -35,6 +35,11 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-video/sizes.mjs";
 import { MIGRATION_TIMING } from "./timing-contract";
 
 // Video-canvas helpers duplicated from EmissionsVideo.tsx — not shared because they are
@@ -95,14 +100,90 @@ function drawnSoFar<T extends { x: number; y: number }>(
   ];
 }
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const TITLE = { fontSize: 40, fontWeight: 700, lead: 52 };
-const SOURCE = { fontSize: 22, fontWeight: 400 };
-const AXIS = { fontSize: 22, fontWeight: 400 };
-const LABEL = { fontSize: 26, fontWeight: 600 };
-const NOTE = { fontSize: 22, fontWeight: 400 };
+/**
+ * THE TUNING THIS BEAT WAS DRAWN AT, REBASED, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more: the frame is Remotion's own (`useVideoConfig`), which comes
+ * from the `<Composition>` this beat is rendered through, and `size` names the row that composition
+ * was registered from. Before this the frame was two literals here and the same two again in
+ * `Root.tsx`, and nothing downstream of gate 2c read what the journalist chose.
+ *
+ * THE NUMBERS BELOW ARE THE OLD ONES DIVIDED BY THE SQUARE ROW'S SCALE, AND THAT IS THE DEFECT THIS
+ * FILE WAS CARRYING. The shipped tokens were 40 / 26 / 22 on a 1080x1080 frame. A square video is
+ * watched full-bleed on a phone — 360 dp — so one frame pixel is one third of a CSS pixel and a
+ * 22 px axis label is **7.3 CSS px**, against the 11–12 px floor three independent sources converge
+ * on (`sizes.mjs`; `proof/portrait-aspect-probe/MOBILE-FIRST-WIREFRAME.md` §1.1). The base is set
+ * from the SMALLEST token — 22 -> 12 — and every other token keeps its ratio to it.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`: the gaps, the tick drops, the callout's own offsets, the
+ * mark radii, the stroke widths and the dash pattern.
+ *
+ * `PAD` is the one that does NOT go through it — a frame's margin is proportional to the CANVAS,
+ * not to the type (`frameInsetFor` states the split).
+ */
+const BASE = {
+  TITLE: { fontSize: 22, fontWeight: 700, lead: 28 },
+  SOURCE: { fontSize: 12, fontWeight: 400, lead: 17 },
+  AXIS: { fontSize: 12, fontWeight: 400 },
+  LABEL: { fontSize: 14, fontWeight: 600 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  TITLE_TO_PLOT: 20,
+  PLOT_RIGHT_AIR: 5,
+  X_LABEL_BAND: 30,
+  AXIS_TO_SOURCE: 3,
+  Y_TICK_INSET: 5,
+  Y_TICK_BASELINE_NUDGE: 2,
+  X_TICK_DROP: 13,
+  REFERENCE_LABEL_RISE: 5,
+  /** How far the callout block sits to the right of, and below, the pair it names. */
+  CALLOUT_OUT: 30,
+  CALLOUT_EDGE_AIR: 7,
+  CALLOUT_DROP: 25,
+  CALLOUT_LEADER_GAP: 11,
+  CALLOUT_LEAD: 10,
+  DOT_RADIUS: 2.3,
+  GRID_STROKE: 0.5,
+  REFERENCE_STROKE: 0.67,
+  LINE_STROKE: 1.33,
+  LEADER_STROKE: 0.5,
+  REFERENCE_DASH: [2.7, 2],
+};
 const UNIT = "k";
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    LABEL: f(BASE.LABEL) as typeof BASE.LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    TITLE_TO_PLOT: sp(BASE.TITLE_TO_PLOT),
+    PLOT_RIGHT_AIR: sp(BASE.PLOT_RIGHT_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    AXIS_TO_SOURCE: sp(BASE.AXIS_TO_SOURCE),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    Y_TICK_BASELINE_NUDGE: sp(BASE.Y_TICK_BASELINE_NUDGE),
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    REFERENCE_LABEL_RISE: sp(BASE.REFERENCE_LABEL_RISE),
+    CALLOUT_OUT: sp(BASE.CALLOUT_OUT),
+    CALLOUT_EDGE_AIR: sp(BASE.CALLOUT_EDGE_AIR),
+    CALLOUT_DROP: sp(BASE.CALLOUT_DROP),
+    CALLOUT_LEADER_GAP: sp(BASE.CALLOUT_LEADER_GAP),
+    CALLOUT_LEAD: sp(BASE.CALLOUT_LEAD),
+    DOT_RADIUS: BASE.DOT_RADIUS * typeScale,
+    GRID_STROKE: BASE.GRID_STROKE * typeScale,
+    REFERENCE_STROKE: BASE.REFERENCE_STROKE * typeScale,
+    LINE_STROKE: BASE.LINE_STROKE * typeScale,
+    LEADER_STROKE: BASE.LEADER_STROKE * typeScale,
+    REFERENCE_DASH: BASE.REFERENCE_DASH.map((v) => (v * typeScale).toFixed(1)).join(" "),
+  };
+}
 
 export type Reading = { year: number; value: number };
 
@@ -143,12 +224,23 @@ export function migrationGeometry(
     padding,
     reference,
     subjectYears,
+    bottomReserve = 0,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
     reference: number;
     subjectYears: number[];
+    /** Pixels of the plot's own bottom edge the DATA CURVE never draws into — reserved for the
+     *  callout block that names the two sub-zero years. The mirror of the sibling beat's
+     *  `topReserve` (`../life-expectancy/LifeExpectancyVideo.tsx`) and it exists for the same
+     *  reason, at the other end of the frame: this beat's subject is the two years the balance
+     *  goes NEGATIVE, so the pair sits within 8% of the plot's height of the domain floor, and
+     *  "put the callout under the pair" had nowhere to put it. Without the reserve the block was
+     *  drawn over the x-axis labels and the credit at the phone's type floor, and over the rising
+     *  curve when it was moved above the pair instead. Reserved out of the plotted range, so the
+     *  strip is empty by construction whatever the data does. */
+    bottomReserve?: number;
   },
 ) {
   const plot = {
@@ -170,7 +262,7 @@ export function migrationGeometry(
   const ticksY = [ticks[0], reference, ticks[1]];
 
   const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
-  const y = yDomain.range([plot.bottom, plot.top]);
+  const y = yDomain.range([plot.bottom - bottomReserve, plot.top]);
 
   const points: Point[] = data.map((d) => ({
     ...d,
@@ -234,6 +326,9 @@ export type MigrationVideoProps = {
   referenceLabel: string;
   subjectYears: number[];
   timing?: BeatTiming;
+  /** The size row this beat's composition was registered from — `Root.tsx` passes it, one
+   *  composition per row. Not a default. */
+  size: string;
 };
 
 export function MigrationVideo({
@@ -249,20 +344,64 @@ export function MigrationVideo({
   referenceLabel,
   subjectYears,
   timing = MIGRATION_TIMING,
+  size,
 }: MigrationVideoProps) {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  const { fps, width, height } = useVideoConfig();
+  // THE TWO STATEMENTS OF THE FRAME, CHECKED AGAINST EACH OTHER. Remotion's is what will actually
+  // be encoded; the row is what gate 2c pinned. They come from different places — the
+  // `<Composition>` registration and `sizes.mjs` — so this is the one reading the code that drew
+  // the frame cannot make agree with itself.
+  const row = sizeFor(size);
+  if (row.width !== width || row.height !== height)
+    throw new Error(
+      `this composition renders at ${width}x${height}, but the size it names — ` +
+        `${JSON.stringify(size)} — is ${row.width}x${row.height}. Root.tsx registers one ` +
+        `composition per row and passes that row's name; the two have come apart.`,
+    );
+  const { typeScale } = row;
+  // The band this beat may draw in. At portrait the platform reserves 14% at the top and 35% at the
+  // foot; content there is at RISK OF BEING COVERED, which no frame counter can see.
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const {
+    TITLE,
+    SOURCE,
+    AXIS,
+    LABEL,
+    NOTE,
+    TITLE_TO_PLOT,
+    PLOT_RIGHT_AIR,
+    X_LABEL_BAND,
+    AXIS_TO_SOURCE,
+    Y_TICK_INSET,
+    Y_TICK_BASELINE_NUDGE,
+    X_TICK_DROP,
+    REFERENCE_LABEL_RISE,
+    CALLOUT_OUT,
+    CALLOUT_EDGE_AIR,
+    CALLOUT_DROP,
+    CALLOUT_LEADER_GAP,
+    CALLOUT_LEAD,
+    DOT_RADIUS,
+    GRID_STROKE,
+    REFERENCE_STROKE,
+    LINE_STROKE,
+    LEADER_STROKE,
+    REFERENCE_DASH,
+  } = tokens(typeScale);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
-  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
-  // opacity group, so no timing contract moves: it fades in with the title and is still there at
-  // the last frame. See twin-chart-beat/references/static-discipline.md, "The source on the
-  // frame's bottom margin".
-  const sourceBaseline = height - PAD;
+  const titleBaseline = contentTop + TITLE.fontSize;
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND, not under the title — the same edge the title hangs
+  // off at the top, on the same x. It stays inside the furniture opacity group, so no timing
+  // contract moves. See twin-chart-beat/references/static-discipline.md, "The source on the frame's
+  // bottom margin". It WRAPS now: one line at 22px is three at 36px.
+  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
 
   const tickLabelsFor = (values: number[]) =>
     values.map((v, i, all) =>
@@ -286,20 +425,37 @@ export function MigrationVideo({
   );
   const padding = {
     // The plot starts below the LAST TITLE LINE, never below the source.
-    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
-    right: PAD + 16 + measureText(`${data[data.length - 1].year}`, AXIS),
-    // Grown by the credit's own height plus clear air, so the x-axis label band ends above it.
-    bottom: PAD + 90 + SOURCE.fontSize + 10,
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + TITLE_TO_PLOT,
+    // The last x-tick label is centred on the plot's right edge, so half of it hangs outside —
+    // reserve that half, measured, plus air. It used to reserve the WHOLE label.
+    right:
+      PAD +
+      PLOT_RIGHT_AIR +
+      measureText(`${data[data.length - 1].year}`, AXIS) / 2,
+    // Derived from where the credit now sits, not from a constant, so the x-axis label band ends
+    // above the credit's first line of ink however many lines the credit wraps to.
+    bottom:
+      height -
+      (sourceBaseline - SOURCE.fontSize - AXIS_TO_SOURCE) +
+      X_LABEL_BAND,
     left:
-      PAD + 14 + Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
+      PAD +
+      Y_TICK_INSET +
+      Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
   };
 
+  // The strip the curve may not enter, sized from the block that will stand in it — two lines of
+  // the callout's own type plus the drop below the pair.
+  const calloutBlockHeight =
+    calloutLines.length * LABEL.fontSize +
+    (calloutLines.length - 1) * CALLOUT_LEAD;
   const g = migrationGeometry(data, {
     width,
     height,
     padding,
     reference,
     subjectYears,
+    bottomReserve: calloutBlockHeight + CALLOUT_DROP,
   });
   const tickLabels = tickLabelsFor(g.ticksY.map((t) => t.value));
 
@@ -350,7 +506,7 @@ export function MigrationVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const dotRadius = interpolate(dotSpring, [0, 1], [0, 7]);
+  const dotRadius = interpolate(dotSpring, [0, 1], [0, DOT_RADIUS]);
 
   const bandPath = `M ${g.dipStartX} ${g.referenceY} L ${g.subjects
     .map((p) => `${p.x} ${p.y}`)
@@ -364,8 +520,20 @@ export function MigrationVideo({
   });
   const midX = (g.subjects[0].x + g.subjects[g.subjects.length - 1].x) / 2;
   const midY = (g.subjects[0].y + g.subjects[g.subjects.length - 1].y) / 2;
-  const calloutX = Math.min(midX + 90, g.plot.right - 20);
-  const calloutY = g.referenceY + 76;
+  // THE CALLOUT BLOCK IS KEPT INSIDE THE FRAME BY ITS OWN MEASURED WIDTH, not by a literal inset.
+  // `g.plot.right - 20` reserved twenty pixels for a centred two-line block that is ~200px wide at
+  // the shipped type and ~280px at the phone's floor, so its right half hung outside the frame.
+  const calloutHalf =
+    Math.max(...calloutLines.map((l) => measureText(l, LABEL))) / 2;
+  const calloutX = Math.min(
+    Math.max(midX + CALLOUT_OUT, PAD + calloutHalf),
+    width - PAD - calloutHalf,
+  );
+  // The callout hangs below the lowest of the two named points, in the strip the geometry reserves
+  // for it (`bottomReserve`) — so it is inside the plot, under the pair it names, and standing on
+  // ground the curve is not allowed to enter.
+  const lowestSubject = Math.max(...g.subjects.map((p) => p.y));
+  const calloutY = lowestSubject + CALLOUT_DROP + LABEL.fontSize;
 
   return (
     <svg
@@ -397,14 +565,17 @@ export function MigrationVideo({
             {text}
           </text>
         ))}
-        <text
-          x={PAD}
-          y={sourceBaseline}
-          fill={muted}
-          fontSize={SOURCE.fontSize}
-        >
-          {source}
-        </text>
+        {sourceLines.map((text, i) => (
+          <text
+            key={text}
+            x={PAD}
+            y={sourceBaseline + i * SOURCE.lead}
+            fill={muted}
+            fontSize={SOURCE.fontSize}
+          >
+            {text}
+          </text>
+        ))}
       </g>
 
       <g opacity={axisOpacity}>
@@ -417,12 +588,12 @@ export function MigrationVideo({
                 y1={tick.y}
                 y2={tick.y}
                 stroke={grid}
-                strokeWidth={1.5}
+                strokeWidth={GRID_STROKE}
               />
             )}
             <text
-              x={g.plot.left - 14}
-              y={tick.y + 7}
+              x={g.plot.left - Y_TICK_INSET}
+              y={tick.y + Y_TICK_BASELINE_NUDGE}
               fill={muted}
               fontSize={AXIS.fontSize}
               textAnchor="end"
@@ -435,7 +606,7 @@ export function MigrationVideo({
           <text
             key={tick.year}
             x={tick.x}
-            y={g.plot.bottom + 38}
+            y={g.plot.bottom + X_TICK_DROP}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="middle"
@@ -455,12 +626,12 @@ export function MigrationVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={REFERENCE_STROKE}
+            strokeDasharray={REFERENCE_DASH}
           />
           <text
             x={(g.plot.left + g.plot.right) / 2}
-            y={g.referenceY - 14}
+            y={g.referenceY - REFERENCE_LABEL_RISE}
             fill={muted}
             fontSize={NOTE.fontSize}
             textAnchor="middle"
@@ -476,7 +647,7 @@ export function MigrationVideo({
           d={path}
           fill="none"
           stroke={accent}
-          strokeWidth={4}
+          strokeWidth={LINE_STROKE}
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -505,15 +676,15 @@ export function MigrationVideo({
           x1={midX}
           x2={calloutX}
           y1={midY}
-          y2={calloutY - 34}
+          y2={calloutY - LABEL.fontSize - CALLOUT_LEADER_GAP}
           stroke={muted}
-          strokeWidth={1.5}
+          strokeWidth={LEADER_STROKE}
         />
         {calloutLines.map((textLine, i) => (
           <text
             key={textLine}
             x={calloutX}
-            y={calloutY + i * 30}
+            y={calloutY + i * (LABEL.fontSize + CALLOUT_LEAD)}
             fill={accent}
             fontSize={LABEL.fontSize}
             fontWeight={LABEL.fontWeight}
