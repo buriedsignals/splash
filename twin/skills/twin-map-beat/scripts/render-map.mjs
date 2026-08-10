@@ -44,6 +44,8 @@ import {
   claimViolations,
   fr,
   joinValues,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
   valuesFromCsv,
 } from "../assets/geo.ts";
@@ -138,7 +140,16 @@ else
   );
 
 const furniture = deriveFurniture(BEAT.ground);
-const ramp = sequentialRamp(BEAT.ground, furniture.ink, CO2_BREAKS.length + 1, 0.1, 0.78);
+// THE SHADING IS THE DATA, so it is drawn in the colour the newsroom recorded. Until 2026-08-10
+// this ramp ran ground -> furniture.ink: computed between the background and the ink, it never
+// touched the accent, and a newsroom could change its house colour and its choropleth stayed grey.
+// `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then measures
+// the finished classes — monotone, separated, top class above the 3:1 mark floor.
+const ramp = assertRampReads(
+  sequentialRamp(BEAT.ground, dataRampEnd(BEAT.accent, BEAT.ground), CO2_BREAKS.length + 1, 0.1, 0.78),
+  BEAT.ground,
+  "the CO2 choropleth ramp",
+);
 
 async function plateOf(dir) {
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));

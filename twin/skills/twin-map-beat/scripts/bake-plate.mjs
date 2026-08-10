@@ -23,7 +23,14 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer";
 import { splashEnvPath } from "./splash-root.mjs";
-import { CO2_STUDY, keepRing, simplifyRing } from "../assets/geo.ts";
+import {
+  CO2_STUDY,
+  assertStageServesGeography,
+  extentFacts,
+  keepRing,
+  simplifyRing,
+  studyExtentOf,
+} from "../assets/geo.ts";
 
 /** The beat's camera and its anchors — the journalist's frame, not a default. */
 const BEAT = {
@@ -195,6 +202,14 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
   );
 }
 
+// B4.1's stage decision, taken BEFORE the camera because it is an input to it and not a report on
+// it. Web Mercator's world is square: a frame taller than `width * 360 / lonSpan` never gets the
+// longitude it asked for, whatever `fitBounds` is told, because MapLibre will not zoom out past the
+// point where the world still fills the canvas vertically. This bake is square, so at 59° it costs
+// nothing — it is here so that the day this beat is asked for a 1080x1920 story the refusal names
+// the stage that works instead of silently delivering 203° of world.
+assertStageServesGeography(size, size, BEAT.bounds[1][0] - BEAT.bounds[0][0]);
+
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
 if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
@@ -345,12 +360,36 @@ let ringsOut = 0;
 let pointsIn = 0;
 let pointsOut = 0;
 
-const shapes = projected.map((shape) => {
+// The study set's own footprint, in lon/lat. NOT `BEAT.bounds` — that is a box somebody typed and
+// tuned by eye until the fit matched it, which is why all eleven point beats in this tree report an
+// admitted ratio of ~1.00 against their own bounds and x1.15 to x2.46 against their own data.
+//
+// WHICH VERTICES, and why this beat answers it differently from a point beat. A point beat measures
+// its WHOLE catalogue, so a ratio below 1 is a crop it must disclose (`map-quake-density`: x0.718,
+// its 104 poleward events). A polygon beat cannot: Natural Earth's Russia reaches Kamchatka and its
+// France reaches French Guiana, and rule 11 culls both — measured here, taking every vertex of every
+// kept ring gives x0.164, a number dominated entirely by territory this beat has never claimed to
+// show. So this bake measures the footprint the frame DRAWS, and the ratio answers the question a
+// journalist actually asks of a choropleth: how much of what I am showing is not my subject.
+const drawnVertices = [];
+const insideFrame = (lon, lat) => {
+  const wrapped = lon < frameCorners.west ? lon + 360 : lon;
+  return (
+    wrapped >= frameCorners.west &&
+    wrapped <= frameCorners.east &&
+    lat >= frameCorners.south &&
+    lat <= frameCorners.north
+  );
+};
+
+const shapes = projected.map((shape, shapeIndex) => {
   const rings = [];
-  for (const ring of shape.rings) {
+  for (const [ringIndex, ring] of shape.rings.entries()) {
     ringsIn++;
     pointsIn += ring.length;
     if (!keepRing(ring, frame)) continue;
+    for (const [lon, lat] of payload[shapeIndex].rings[ringIndex])
+      if (insideFrame(lon, lat)) drawnVertices.push({ lon, lat });
     const thin = simplifyRing(ring, minGap);
     ringsOut++;
     pointsOut += thin.length;
@@ -359,7 +398,21 @@ const shapes = projected.map((shape) => {
   return { key: shape.key, name: shape.name, rings };
 });
 
+// A DECLARED shape with nothing left to draw is the camera cropping the study set, and until now
+// this bake counted it into a `console.log` and carried on — the same shape as the four bakes that
+// count their off-frame points and never assert on them, which is how `map-quake-density` ships a
+// green bake that drops 104 events. `assertCameraReachesBounds` cannot see it: it compares the frame
+// against `BEAT.bounds`, a box somebody typed, and a box that already excludes a country passes by
+// construction. This is the same question asked of the STUDY SET, which is what `CO2_STUDY` is.
 const empty = shapes.filter((s) => s.rings.length === 0).map((s) => s.key);
+if (empty.length > 0)
+  throw new Error(
+    `this camera crops ${empty.length} of the ${CO2_STUDY.length} shapes this beat declares, entirely: ` +
+      `${empty.join(", ")}. The frame shows ${frameCorners.west.toFixed(2)}°..${frameCorners.east.toFixed(2)}° / ` +
+      `${frameCorners.south.toFixed(2)}°..${frameCorners.north.toFixed(2)}°. Either widen the camera, or drop them ` +
+      `from the study set and say so — a declared shape that renders as nothing looks exactly like a shape ` +
+      `the source is silent about.`,
+  );
 
 const geometry = {
   frame,
@@ -371,6 +424,11 @@ const geometry = {
   worldWidthPx: camera.worldWidthPx,
   degreesPerPixel: camera.degreesPerPixel,
   metresPerPixel: camera.metresPerPixel,
+  // B4.1: which rung of the ladder this camera sits on, how much ground it covers, how much
+  // Mercator distorts inside it, and how much more geography the fit admitted than the subject
+  // occupies. Every one of these was already implied by numbers the plate recorded and none of them
+  // was ever written down, so every downstream size decision re-guessed it as a pixel constant.
+  extent: extentFacts(frameCorners, studyExtentOf(drawnVertices, frameCorners.west)),
   anchors,
   shapes,
 };
@@ -379,6 +437,9 @@ await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
   `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+    `extent   → ${geometry.extent.band} (${Math.round(geometry.extent.groundWidthKm)} km across), admitted ` +
+    `x${geometry.extent.admittedLonRatio} lon / x${geometry.extent.admittedLatRatio} lat beyond the drawn ` +
+    `subject, Mercator area bias x${geometry.extent.mercatorAreaBias}\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${ringsOut}/${ringsIn} rings, ${pointsOut}/${pointsIn} points\n` +
     `off-frame entirely: ${empty.length ? empty.join(", ") : "none"}`,

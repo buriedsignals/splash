@@ -16,6 +16,18 @@ import {
   sequentialRamp,
   simplifyRing,
   valuesFromCsv,
+  EARTH_CIRCUMFERENCE_KM,
+  admittedRatios,
+  assertAreaEncodingIsHonest,
+  assertStageServesGeography,
+  binsCrossedByProjection,
+  extentBand,
+  groundWidthKm,
+  markRadiusCeilingPx,
+  mercatorAreaBias,
+  nearestNeighbourPx,
+  stageBoxFor,
+  studyExtentOf,
   type Ring,
 } from "../assets/geo";
 
@@ -418,3 +430,229 @@ describe("the beat's declared no-data set", () => {
     expect(CO2_EXPECTED_NO_DATA).not.toContain("KOS");
   });
 });
+
+// ── The camera, at any scale ───────────────────────────────────────────────────────────────────
+//
+// Every number asserted below was READ OFF THE TREE before it was written here — the sixteen
+// committed `plate/geometry.json`, and the four beats whose own frozen CSV gives a study extent.
+// A test whose expected values came from running the code it tests proves the code agrees with
+// itself; these came from the artifacts.
+
+describe("groundWidthKm and extentBand — the six rungs of B4.1", () => {
+  // Straight out of the committed geometry files.
+  const PLANET = { west: -20, east: 340, north: 78.22313, south: -60.53717 }; // map-quake-density
+  const HEMISPHERE = { west: -26, east: 33, north: 68.2186, south: 33.36922 }; // mapgen-choropleth-web
+  const CONTINENT = { west: 6.3, east: 30, north: 50.15432, south: 42.53759 }; // mapmore-flow-danube
+  const CITY = { west: 6.057228, east: 6.229172, north: 46.2639, south: 46.1449 }; // mapvid-locator-geneva
+
+  it("should measure ground, not degrees", () => {
+    // 59° across Europe is not 59° across the equator, and the render decisions are about ground.
+    expect(Math.round(groundWidthKm(HEMISPHERE))).toBe(4152);
+    expect(Math.round(groundWidthKm({ ...HEMISPHERE, north: 29.5, south: -29.5 }))).toBe(6568);
+  });
+
+  it("should put each committed camera on the rung a reader would name", () => {
+    expect(extentBand(PLANET)).toBe("planet");
+    expect(extentBand(HEMISPHERE)).toBe("hemisphere");
+    expect(extentBand(CONTINENT)).toBe("continent");
+    expect(extentBand(CITY)).toBe("city");
+  });
+
+  it("should place its boundaries at powers of four of the Earth's circumference", () => {
+    // The ladder has one anchor and no free parameter: each rung is exactly two zoom levels.
+    const atEquator = (km: number) => ({
+      west: 0,
+      east: (km / EARTH_CIRCUMFERENCE_KM) * 360,
+      north: 0.0001,
+      south: -0.0001,
+    });
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 + 1))).toBe("planet");
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 - 1))).toBe("hemisphere");
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 64 - 1))).toBe("country");
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 1024 - 1))).toBe("city");
+  });
+});
+
+describe("admittedRatios — what the fit added, and what it took away", () => {
+  it("should report the Geneva locator showing 2.5x the city its claim names", () => {
+    // proof/mapvid-locator-geneva: 11 organisations spanning 0.070° x 0.040°, in a frame showing
+    // 0.172° x 0.120°. Nothing in the tree recorded this.
+    const corners = { west: 6.057228, east: 6.229172, north: 46.2639, south: 46.1449 };
+    const study = { west: 6.121882, east: 6.191689, south: 46.191865, north: 46.233535 };
+    const admitted = admittedRatios(corners, study);
+    expect(admitted.lon).toBeCloseTo(2.46, 1);
+    expect(admitted.lat).toBeCloseTo(2.86, 1);
+  });
+
+  it("should go BELOW one when the frame crops what the study set is about", () => {
+    // proof/map-quake-density: the catalogue spans 151.91° of latitude, the frame 138.76°, and the
+    // 104 poleward events that fall outside are exactly this ratio's shortfall.
+    const corners = { west: -20, east: 340, north: 78.223, south: -60.537 };
+    const study = { west: -19.7276, east: 339.8246, north: 86.6053, south: -65.3009 };
+    const admitted = admittedRatios(corners, study);
+    expect(admitted.lon).toBeCloseTo(1.0, 2);
+    expect(admitted.lat).toBeLessThan(1);
+    expect(admitted.lat).toBeCloseTo(0.718, 2);
+  });
+
+  it("should compare latitude in Mercator units, not in degrees", () => {
+    // Same degree span north and south of the equator is not the same amount of frame. A degree
+    // comparison would report 1.00 for both of these; only one of them fills the frame.
+    const near = admittedRatios(
+      { west: 0, east: 10, north: 5, south: -5 },
+      { west: 0, east: 10, north: 5, south: -5 },
+    );
+    const far = admittedRatios(
+      { west: 0, east: 10, north: 65, south: 55 },
+      { west: 0, east: 10, north: 60, south: 55 },
+    );
+    expect(near.lat).toBeCloseTo(1, 3);
+    expect(far.lat).toBeGreaterThan(1.9);
+  });
+});
+
+describe("the world-map-in-portrait limit", () => {
+  it("should predict the crop the delivered planet beat actually shows on a phone", () => {
+    // proof/mapgen-hexgrid-web at 375x812 draws into a 343x461 canvas and shows 266° of its 359.8°.
+    // The model: Web Mercator's world is square, so 343px of width caps the world at 343px of
+    // height; a 461px frame is clamped, and shows 360 * 343 / 461 = 267.8°. The 1.8° is the fit's
+    // own padding. This is the whole reason a planet beat may not have the full stage height.
+    const stage = stageBoxFor(343, 461, 359.8);
+    expect(stage.letterboxed).toBe(true);
+    expect(stage.height).toBe(343);
+    expect(stage.degreesIfForced).toBeCloseTo(267.8, 0);
+  });
+
+  it("should letterbox a planet beat in a 1080x1920 portrait export and hand the rest to furniture", () => {
+    const stage = stageBoxFor(1080, 1920, 360);
+    expect([stage.width, stage.height, stage.spareHeightPx]).toEqual([1080, 1080, 840]);
+  });
+
+  it("should leave every narrower geography alone, at every export size", () => {
+    // The limit bites only where the frame's aspect exceeds 360/lonSpan — at 1080x1920 that is any
+    // study set wider than 202.5°. Europe, the Danube and Geneva are untouched, which is why this
+    // rule costs nothing anywhere except the rung it exists for.
+    for (const lon of [83, 59, 23.7, 0.137])
+      expect(stageBoxFor(1080, 1920, lon).letterboxed).toBe(false);
+  });
+
+  it("should refuse with the numbers and the two honest options", () => {
+    let message = "";
+    try {
+      assertStageServesGeography(1080, 1920, 360);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain("1080x1080");
+    expect(message).toContain("840px");
+    expect(message).toContain("202.5°");
+    expect(message).toContain("Stretching is not one of them");
+  });
+});
+
+describe("mercatorAreaBias and binsCrossedByProjection — B4.2's hardest half", () => {
+  it("should reproduce the two figures the audit measured by hand", () => {
+    expect(mercatorAreaBias({ west: 0, east: 1, north: 71.5, south: 34.5 })).toBeCloseTo(6.75, 2);
+    expect(mercatorAreaBias({ west: 0, east: 1, north: 78.223, south: -60.537 })).toBeCloseTo(24.0, 1);
+  });
+
+  it("should read a frame straddling the equator against the equator itself", () => {
+    // The least-distorted latitude inside such a frame is 0, not the nearer edge — a symmetric
+    // frame would otherwise report x1.00 and call Mercator honest at every latitude.
+    expect(mercatorAreaBias({ west: 0, east: 1, north: 45, south: -45 })).toBeCloseTo(2.0, 2);
+  });
+
+  it("should count how many of the beat's OWN legend bins the projection can move a cell", () => {
+    // map-quake-density's published breaks: 51/13 = x3.92, 284/51 = x5.57, 663/284 = x2.33, so the
+    // smallest adjacent step is x2.33 and a bias of x24.0 is log(24)/log(2.33) = 3.8 of them.
+    const breaks = [13, 51, 284, 663];
+    expect(binsCrossedByProjection(24.0, breaks)).toBe(3);
+    expect(binsCrossedByProjection(1.32, breaks)).toBe(0);
+  });
+
+  it("should let an area encoding ship only if the reader is told", () => {
+    const planet = { west: -20, east: 340, north: 78.223, south: -60.537 };
+    const breaks = [13, 51, 284, 663];
+    expect(() =>
+      assertAreaEncodingIsHonest(planet, breaks, "104 of the 14 175 events fall outside the frame"),
+    ).toThrow(/24.0x/);
+    expect(() =>
+      assertAreaEncodingIsHonest(
+        planet,
+        breaks,
+        "Mercator inflates area with latitude: a polar cell covers a twenty-fourth of the ground an equatorial one does",
+      ),
+    ).not.toThrow();
+    // And it costs nothing at the continent rung, where the projection cannot move a cell at all.
+    expect(() =>
+      assertAreaEncodingIsHonest({ west: 8, east: 32, north: 49.4, south: 41.8 }, breaks, ""),
+    ).not.toThrow();
+  });
+});
+
+describe("markRadiusCeilingPx — the size a mark may be at THIS camera", () => {
+  it("should be driven by the median gap, never by the one pathological pair", () => {
+    // proof/map-geneva-locator: two organisations 0.57px apart on the plate, median gap 12.89px.
+    const gaps = nearestNeighbourPx([
+      { px: 100, py: 100 },
+      { px: 100.4, py: 100.4 },
+      { px: 130, py: 100 },
+      { px: 100, py: 140 },
+      { px: 300, py: 300 },
+    ]);
+    expect(gaps[0]).toBeCloseTo(0.57, 2);
+    expect(markRadiusCeilingPx(gaps[Math.floor(gaps.length / 2)]!, 30)).toBeGreaterThan(10);
+  });
+
+  it("should say today's continent-extent symbols are 2.3x too big", () => {
+    // proof/mapgen-symbol-web: median nearest neighbour 26.06px, typed MAX_RADIUS 30.
+    expect(markRadiusCeilingPx(26.06, 30)).toBeCloseTo(13.03, 2);
+  });
+
+  it("should never exceed the ceiling the beat already draws at", () => {
+    expect(markRadiusCeilingPx(400, 30)).toBe(30);
+  });
+});
+
+describe("studyExtentOf", () => {
+  it("should read a point west of the camera one turn on", () => {
+    const extent = studyExtentOf(
+      [
+        { lon: -170, lat: 10 },
+        { lon: 100, lat: -10 },
+      ],
+      -20,
+    );
+    expect([extent.west, extent.east]).toEqual([100, 190]);
+  });
+
+  it("should refuse to measure nothing", () => {
+    expect(() => studyExtentOf([], 0)).toThrow(/camera nobody chose/);
+  });
+});
+
+/**
+ * THE MUTATIONS THAT REDDEN THE CAMERA HALF, run in a copy under /tmp on 2026-08-11, never here.
+ * Baseline in the copy: 58 pass, 0 fail.
+ *
+ *   M4  `maxStageHeightPx` loses Web Mercator's square — `frameWidthPx * 360` -> `* 180`, which is
+ *       what someone would write if they thought the world's height were half a turn of longitude:
+ *         (fail) should predict the crop the delivered planet beat actually shows on a phone
+ *         (fail) should letterbox a planet beat in a 1080x1920 portrait export …
+ *         (fail) should refuse with the numbers and the two honest options
+ *          55 pass · 3 fail
+ *
+ *   M5  the mark ceiling driven by the MINIMUM nearest-neighbour gap instead of the median — the
+ *       obvious reading of "no two marks overlap", and the one that collapses a whole city map
+ *       because two organisations share a building:
+ *         Expected: > 10   Received: 0.28284271247462306
+ *         (fail) should be driven by the median gap, never by the one pathological pair
+ *          57 pass · 1 fail
+ *
+ *   M6  `mercatorAreaBias` compares the frame's two edges instead of its worst edge against its
+ *       least-distorted latitude, so a frame straddling the equator reports x1.00:
+ *         (fail) should reproduce the two figures the audit measured by hand
+ *         (fail) should read a frame straddling the equator against the equator itself
+ *         (fail) should let an area encoding ship only if the reader is told
+ *          55 pass · 3 fail
+ */

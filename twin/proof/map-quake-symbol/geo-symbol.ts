@@ -263,6 +263,116 @@ export function energyRatio(subjectMag: number, comparisonMag: number): number {
 }
 
 /**
+ * THE SIZE CHANNEL, ROOTED IN THE QUANTITY THE CIRCLES ACTUALLY STAND FOR (B6.17).
+ *
+ * `radiusScale` above is right about the shape of the rule — radius goes as the square root of the
+ * value, rooted at zero, because the eye compares AREA — and it was pointed at the wrong value.
+ * Measured on the committed still before this existed: over an M7.8→M9.1 span it drew every circle
+ * on the map between **27.77 px and 30.00 px, a ratio of 1.080**. Seventeen marks, one apparent
+ * size. The beat's own alt text said so out loud — *"It is the largest circle, but only just …
+ * The accent outline, not the size, is what identifies it"* — which is a symbol map admitting its
+ * one encoded channel encodes nothing.
+ *
+ * The cause is not the square root, it is the ROOT. Moment magnitude is a logarithm; M0 is not
+ * "no earthquake", so zero on that axis is not a real zero, and a zero-rooted area scale over a
+ * window that never comes near it flattens everything. Energy IS a ratio quantity with a true
+ * zero, and magnitude is defined as its logarithm: E ∝ 10^(1.5 M). Encoding AREA ∝ ENERGY is the
+ * type sheet's own rule applied to the variable that can carry it, and the same M7.8→M9.1 span
+ * becomes a radius ratio of **9.44×** — 89 times the energy, drawn as 89 times the area, which is
+ * what the caveat was previously reduced to explaining in words because the picture would not.
+ *
+ * THE MAXIMUM RADIUS IS DERIVED, NOT TYPED. It was three constants — 30 in the still, 46 in the
+ * video, 30 in the runner — none of which knew the frame it was drawn into. Here the largest mark
+ * is a fraction of the plate's own width, RAISED if that would drop the smallest mark below the
+ * size a reader can still resolve, and the whole thing THROWS if holding the smallest legible
+ * makes the largest swallow the map. Every number that decides a size is either measured from the
+ * frame or refused.
+ *
+ *  @parity */
+export function energyOfMagnitude(magnitude: number): number {
+  return 10 ** (1.5 * magnitude);
+}
+
+/** @parity */
+export function energyRadiusScale(
+  magnitudes: number[],
+  {
+    frameWidth,
+    maxRadiusFraction,
+    minLegibleRadiusPx,
+    maxRadiusCeilingFraction,
+  }: {
+    frameWidth: number;
+    maxRadiusFraction: number;
+    minLegibleRadiusPx: number;
+    maxRadiusCeilingFraction: number;
+  },
+): {
+  radiusOf: (magnitude: number) => number;
+  maxRadiusPx: number;
+  minRadiusPx: number;
+} {
+  if (magnitudes.length === 0)
+    throw new Error("no magnitudes to build a size scale from");
+  const energies = magnitudes.map(energyOfMagnitude);
+  const maxEnergy = Math.max(...energies);
+  const minEnergy = Math.min(...energies);
+  // What the smallest mark is worth as a share of the largest, once area carries energy.
+  const smallestShare = Math.sqrt(minEnergy / maxEnergy);
+  let maxRadiusPx = frameWidth * maxRadiusFraction;
+  if (maxRadiusPx * smallestShare < minLegibleRadiusPx)
+    maxRadiusPx = minLegibleRadiusPx / smallestShare;
+  if (maxRadiusPx > frameWidth * maxRadiusCeilingFraction)
+    throw new Error(
+      `keeping the smallest mark at ${minLegibleRadiusPx}px forces the largest to ` +
+        `${maxRadiusPx.toFixed(1)}px, which is over ${(maxRadiusCeilingFraction * 100).toFixed(0)}% of an ` +
+        `${frameWidth}px plate. This value set spans ${(1 / smallestShare).toFixed(1)}x in radius — too much ` +
+        `for one frame. Split the story, or key the legend to a bracket and say what is off it.`,
+    );
+  return {
+    radiusOf: (magnitude: number) =>
+      maxRadiusPx * Math.sqrt(energyOfMagnitude(magnitude) / maxEnergy),
+    maxRadiusPx,
+    minRadiusPx: maxRadiusPx * smallestShare,
+  };
+}
+
+/**
+ * How much of this point set draws on top of itself. Counted rather than felt: the owner's report
+ * was "watch overlap and the size of symbols close together — it becomes unreadable fast", and
+ * before the scale above was fixed **21 of 136 pairs sat closer than two radii and 15 of the 17
+ * marks shared ink with at least one neighbour**.
+ *
+ * Some of it is irreducible and the number is the honest way to say so: two of these events are
+ * catalogued 1.8 px apart at this camera, so no radius makes them two marks. The type sheet's
+ * answer to that is draw order (smaller on top, which `drawOrder` already does); this function's
+ * answer is that the beat COUNTS what remains and puts the count in its own caveat, the way the
+ * hex beat states the events its frame crops.
+ *
+ *  @parity */
+export function overlapReport<T extends { key: string; mag: number; px: number; py: number }>(
+  points: T[],
+  radiusOf: (magnitude: number) => number,
+): { pairs: number; overlappingPairs: number; marksTouched: number } {
+  let pairs = 0;
+  let overlappingPairs = 0;
+  const touched = new Set<string>();
+  for (let i = 0; i < points.length; i++)
+    for (let j = i + 1; j < points.length; j++) {
+      const a = points[i]!;
+      const b = points[j]!;
+      pairs++;
+      const distance = Math.hypot(a.px - b.px, a.py - b.py);
+      if (distance < radiusOf(a.mag) + radiusOf(b.mag)) {
+        overlappingPairs++;
+        touched.add(a.key);
+        touched.add(b.key);
+      }
+    }
+  return { pairs, overlappingPairs, marksTouched: touched.size };
+}
+
+/**
  * Check the confirmed superlative against the source: the subject must exceed every other point in
  * the study set, or the claim check throws naming which one it does not exceed.
  

@@ -277,6 +277,99 @@ export function sequentialRamp(
   );
 }
 
+/** WCAG 2.x relative luminance — exported so a test can assert a ramp actually darkens, and so
+ *  `dataRampEnd` and `assertRampReads` below can measure without importing anything. @parity */
+export function luminanceOf(hex: string): number {
+  const [r, g, b] = channels(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+}
+
+/** WCAG contrast ratio, 1..21 — the same arithmetic `render-still.mjs` measures furniture with,
+ *  duplicated here because a geometry core imports nothing. @parity */
+export function contrastOf(a: string, b: string): number {
+  const [hi, lo] = [luminanceOf(a), luminanceOf(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+
+/** THE FAR END OF A RAMP THAT CARRIES THE NEWSROOM'S OWN COLOUR INTO THE DATA.
+ *
+ *  A choropleth's shading IS the data — it is the only thing on the plate the reader reads a
+ *  quantity from. Running it ground→ink meant the one mark a reader actually looks at was the one
+ *  place the house accent never reached. This walks the ACCENT 40% of the way to the pole the
+ *  ground is not, so the ramp keeps the newsroom's hue all the way up and still ends somewhere
+ *  clearly darker (on a light ground) or clearly lighter (on a dark one) than where it started.
+ *
+ *  The pole is chosen the way `deriveFurniture` chooses `ink` — by which one MEASURES higher
+ *  against this ground, not by the obvious luminance-over-0.5 rule, which picks wrong on the
+ *  mid-grey band. The two are the same test: black wins exactly when the ground's relative
+ *  luminance is at or above 0.179.
+ *
+ *  It does not check anything. `assertRampReads` does, on the finished ramp, because a ramp is
+ *  only legible as a whole. @parity */
+export function dataRampEnd(accent: string, ground: string): string {
+  return mixHex(
+    accent,
+    luminanceOf(ground) >= 0.179 ? "#000000" : "#FFFFFF",
+    0.4,
+  );
+}
+
+/** CAN THIS RAMP BE READ AS A QUANTITY? Three things, measured on the finished classes.
+ *
+ *  1. It never folds back. A ramp derived between two arbitrary colours can rise and then fall —
+ *     two classes at the same lightness read as the same class, and the reader's ordering is gone.
+ *  2. No two neighbours sit closer than 0.02 relative luminance, which is the separation
+ *     `geo.test.ts` has held this family to since it was written.
+ *  3. The TOP class — the one the argument is made with — clears 3:1 against the ground, the floor
+ *     WCAG 2.2 SC 1.4.11 sets for a graphical object. The low classes deliberately do NOT carry
+ *     that floor: they are read against their neighbours and the legend, and holding a choropleth's
+ *     lightest class to 3:1 would mean starting the ramp in the middle of its own range.
+ *
+ *  The case this catches in practice is a DARK ground: a ramp toward a house accent that is itself
+ *  dark has nowhere to go, and the low end disappears into the plate. `parsePalette` refuses an
+ *  accent under 3:1 against its ground before this is ever reached; this is the second half of the
+ *  same guarantee, for the colours DERIVED from it. @parity */
+export function assertRampReads(
+  ramp: string[],
+  ground: string,
+  where = "the ramp",
+): string[] {
+  if (ramp.length < 2)
+    throw new Error(
+      `${where}: a ramp needs at least two classes, got ${ramp.length}`,
+    );
+  const lightness = ramp.map(luminanceOf);
+  const rising = lightness[lightness.length - 1]! > lightness[0]!;
+  for (let i = 1; i < ramp.length; i++) {
+    const step = lightness[i]! - lightness[i - 1]!;
+    if (rising !== step > 0)
+      throw new Error(
+        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}) — ` +
+          `the ramp runs ${rising ? "lighter" : "darker"} everywhere else, so a reader has no ` +
+          `ordering here. Derive the far end from a colour that sits on the other side of the ground.`,
+      );
+    if (Math.abs(step) < 0.02)
+      throw new Error(
+        `${where}: classes ${i} (${ramp[i - 1]}) and ${i + 1} (${ramp[i]}) are ` +
+          `${Math.abs(step).toFixed(4)} apart in relative luminance, under the 0.02 this family ` +
+          `holds two classes apart by. They will read as one class.`,
+      );
+  }
+  const top = ramp[ramp.length - 1]!;
+  const ratio = contrastOf(top, ground);
+  if (ratio < 3)
+    throw new Error(
+      `${where}: the ramp's top class ${top} measures ${ratio.toFixed(2)}:1 against the ground ` +
+        `${ground} — under the 3:1 floor WCAG 2.2 SC 1.4.11 Non-text Contrast sets for a graphical ` +
+        `object. The class carrying this map's argument cannot be seen. Record an accent with more ` +
+        `room against this ground, or change the ground.`,
+    );
+  return ramp;
+}
+
 // ── Where a cell IS, read out of the file rather than typed ──────────────────────────────────────
 
 /**

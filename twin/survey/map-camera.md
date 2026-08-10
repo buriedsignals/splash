@@ -301,6 +301,14 @@ camera must be a **function of (geography, study set, target aspect)** — three
 the third input did not exist when rule 12 was written. That is the single largest conceptual change
 this axis implies.
 
+> **Answered 2026-08-11.** Rule 12 gained its third clause and `geo-discipline.md` gained rule 13.
+> Three of B4.2's four knobs are arithmetic now — the mark ceiling from the plate's own median
+> nearest-neighbour gap (×12.7 across the ladder), the projection's honesty against the beat's own
+> legend bins (×1.01 → ×131.7), and the stage itself, where a frame taller than
+> `width × 360 / lonSpan` is letterboxed and the freed height goes to furniture. The fourth, the
+> label layer, stays open and is named as such. All six rungs were driven at real MapTiler and the
+> captures committed: `skills/twin-map-beat/output-proof/extent-range/RANGE.md`.
+
 ---
 
 ## 3. The recorded failures: which are camera-generality, which were one-off

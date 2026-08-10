@@ -30,6 +30,8 @@ import {
   CO2_EXPECTED_NO_DATA,
   CO2_STUDY,
   joinValues,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
 } from "../assets/geo.ts";
 
@@ -112,7 +114,13 @@ const { ground, accent } = readPalette(join(HERE, "..", "assets"), { stopAt: joi
 // not resolve on this machine refuses here rather than being silently substituted.
 useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
 const furniture = deriveFurniture(ground);
-const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1, 0.1, 0.78);
+// The shading IS the data — see the same block in `render-map.mjs`. The ramp carries the recorded
+// accent rather than the ink pole, and is measured before it is drawn.
+const ramp = assertRampReads(
+  sequentialRamp(ground, dataRampEnd(accent, ground), CO2_BREAKS.length + 1, 0.1, 0.78),
+  ground,
+  "the seed's choropleth ramp",
+);
 
 // Compute the mean of all sample values for the comparison mark
 const allValues = Array.from(values.values());

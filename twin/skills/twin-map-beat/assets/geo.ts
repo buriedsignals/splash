@@ -204,7 +204,10 @@ export function joinValues(
  *  `breaks[i]`. That is what this beat's own legend prints — the tick row `[0, ...breaks]` labels
  *  each break as the foot of the class above it. The hex family bins the other way and says so in
  *  its own name. @parity */
-export function binIndexLowerInclusive(value: number, breaks: number[]): number {
+export function binIndexLowerInclusive(
+  value: number,
+  breaks: number[],
+): number {
   let index = 0;
   while (index < breaks.length && value >= breaks[index]!) index++;
   return index;
@@ -256,7 +259,8 @@ function channels(hex: string): number[] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
-/** WCAG 2.x relative luminance — exported so a test can assert a ramp actually darkens. */
+/** WCAG 2.x relative luminance — exported so a test can assert a ramp actually darkens, and so
+ *  `dataRampEnd` and `assertRampReads` below can measure without importing anything. @parity */
 export function luminanceOf(hex: string): number {
   const [r, g, b] = channels(hex).map((v) => {
     const c = v / 255;
@@ -280,11 +284,19 @@ export function mixHex(from: string, to: string, ratio: number): string {
   );
 }
 
-/** A sequential ramp of `steps` colours from the newsroom's own ground toward its ink — the one
+/** A sequential ramp of `steps` colours from the newsroom's own ground toward `far` — the one
  *  legitimate gradient on a map (geo-discipline rule 8), derived rather than picked so it works on
  *  any ground.
  *
- *  `from` and `to` are the ramp's own ends as a fraction of ground→ink, and they are ARGUMENTS
+ *  `far` was the ink pole and nothing else until 2026-08-10, and that is the defect the owner
+ *  reported: a choropleth ramp computed between the BACKGROUND and the INK never touches the house
+ *  accent, so a newsroom could change its colour and its maps stayed grey (`AUDIT-W2-palette-credits.md`
+ *  H3, seen in `assets/preview.png` — a grey Europe with one teal word on it). It is still the ink
+ *  pole for a beat that wants a neutral quantity; a beat that wants the house hue in its DATA
+ *  passes `dataRampEnd(accent, ground)` below. The parameter's meaning is "the far end", and the
+ *  arithmetic never changed — which is why this docstring moved and the body did not.
+ *
+ *  `from` and `to` are the ramp's own ends as a fraction of ground→far, and they are ARGUMENTS
  *  rather than constants because two beat families measurably need different ends and this function
  *  used to carry one family's numbers under a docstring claiming they were the other's. Measured
  *  against white ground and #1A1A1A ink: at 0.10 the low end sits 5.24 ΔE76 from bare land and
@@ -303,9 +315,92 @@ export function sequentialRamp(
   );
 }
 
+/** WCAG contrast ratio, 1..21 — the same arithmetic `render-still.mjs` measures furniture with,
+ *  duplicated here because a geometry core imports nothing. @parity */
+export function contrastOf(a: string, b: string): number {
+  const [hi, lo] = [luminanceOf(a), luminanceOf(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+
+/** THE FAR END OF A RAMP THAT CARRIES THE NEWSROOM'S OWN COLOUR INTO THE DATA.
+ *
+ *  A choropleth's shading IS the data — it is the only thing on the plate the reader reads a
+ *  quantity from. Running it ground→ink meant the one mark a reader actually looks at was the one
+ *  place the house accent never reached. This walks the ACCENT 40% of the way to the pole the
+ *  ground is not, so the ramp keeps the newsroom's hue all the way up and still ends somewhere
+ *  clearly darker (on a light ground) or clearly lighter (on a dark one) than where it started.
+ *
+ *  The pole is chosen the way `deriveFurniture` chooses `ink` — by which one MEASURES higher
+ *  against this ground, not by the obvious luminance-over-0.5 rule, which picks wrong on the
+ *  mid-grey band. The two are the same test: black wins exactly when the ground's relative
+ *  luminance is at or above 0.179.
+ *
+ *  It does not check anything. `assertRampReads` does, on the finished ramp, because a ramp is
+ *  only legible as a whole. @parity */
+export function dataRampEnd(accent: string, ground: string): string {
+  return mixHex(
+    accent,
+    luminanceOf(ground) >= 0.179 ? "#000000" : "#FFFFFF",
+    0.4,
+  );
+}
+
+/** CAN THIS RAMP BE READ AS A QUANTITY? Three things, measured on the finished classes.
+ *
+ *  1. It never folds back. A ramp derived between two arbitrary colours can rise and then fall —
+ *     two classes at the same lightness read as the same class, and the reader's ordering is gone.
+ *  2. No two neighbours sit closer than 0.02 relative luminance, which is the separation
+ *     `geo.test.ts` has held this family to since it was written.
+ *  3. The TOP class — the one the argument is made with — clears 3:1 against the ground, the floor
+ *     WCAG 2.2 SC 1.4.11 sets for a graphical object. The low classes deliberately do NOT carry
+ *     that floor: they are read against their neighbours and the legend, and holding a choropleth's
+ *     lightest class to 3:1 would mean starting the ramp in the middle of its own range.
+ *
+ *  The case this catches in practice is a DARK ground: a ramp toward a house accent that is itself
+ *  dark has nowhere to go, and the low end disappears into the plate. `parsePalette` refuses an
+ *  accent under 3:1 against its ground before this is ever reached; this is the second half of the
+ *  same guarantee, for the colours DERIVED from it. @parity */
+export function assertRampReads(
+  ramp: string[],
+  ground: string,
+  where = "the ramp",
+): string[] {
+  if (ramp.length < 2)
+    throw new Error(
+      `${where}: a ramp needs at least two classes, got ${ramp.length}`,
+    );
+  const lightness = ramp.map(luminanceOf);
+  const rising = lightness[lightness.length - 1]! > lightness[0]!;
+  for (let i = 1; i < ramp.length; i++) {
+    const step = lightness[i]! - lightness[i - 1]!;
+    if (rising !== step > 0)
+      throw new Error(
+        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}) — ` +
+          `the ramp runs ${rising ? "lighter" : "darker"} everywhere else, so a reader has no ` +
+          `ordering here. Derive the far end from a colour that sits on the other side of the ground.`,
+      );
+    if (Math.abs(step) < 0.02)
+      throw new Error(
+        `${where}: classes ${i} (${ramp[i - 1]}) and ${i + 1} (${ramp[i]}) are ` +
+          `${Math.abs(step).toFixed(4)} apart in relative luminance, under the 0.02 this family ` +
+          `holds two classes apart by. They will read as one class.`,
+      );
+  }
+  const top = ramp[ramp.length - 1]!;
+  const ratio = contrastOf(top, ground);
+  if (ratio < 3)
+    throw new Error(
+      `${where}: the ramp's top class ${top} measures ${ratio.toFixed(2)}:1 against the ground ` +
+        `${ground} — under the 3:1 floor WCAG 2.2 SC 1.4.11 Non-text Contrast sets for a graphical ` +
+        `object. The class carrying this map's argument cannot be seen. Record an accent with more ` +
+        `room against this ground, or change the ground.`,
+    );
+  return ramp;
+}
+
 // ── Geometry: baked pixel rings become one path ────────────────────────────────────────────────
 
-/** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out. 
+/** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out.
  *  @parity */
 export function pathFromRings(rings: Ring[]): string {
   return rings
@@ -370,6 +465,412 @@ export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
   );
 }
 
+// ── The camera, at any scale ───────────────────────────────────────────────────────────────────
+//
+// B4.1: "la production doit fonctionner pour N'IMPORTE QUELLE zone de cadrage — la planète entière,
+// plusieurs continents ou pays, un continent, un pays, une région, une ville." B4.2: "une zone plus
+// large demande un rendu différent."
+//
+// WHAT WAS MEASURED FIRST, because every choice below answers a number.
+//
+// Sixteen committed `plate/geometry.json` on 2026-08-11, sorted by the ground actually in frame:
+//
+//     39 693 km  planet      4 beats   quake hex ×4                 area bias 24.0-32.2
+//      8 839 km  hemisphere  6 beats   quake symbol, Europe ×5      area bias  2.8- 6.8
+//      1 873 km  continent   3 beats   the Danube corridor ×3       area bias  1.32
+//          -     country     0 beats   ---- nothing has ever been produced here ----
+//          -     region      0 beats   ---- nothing has ever been produced here ----
+//         13 km  city        3 beats   the Geneva locator ×3        area bias  1.00
+//
+// So the tree spans 2 628x in longitude with a 138x hole in the middle of it, and the two rungs a
+// local newsroom asks for most — one country, one region — had never been produced at all.
+//
+// And the fit is not neutral at either end. Measured against each beat's OWN STUDY SET (the frozen
+// data's footprint, not the hand-typed `BEAT.bounds` box, which was tuned by eye until it matched
+// and therefore reports ~1.00 by construction at 11 of 11 beats):
+//
+//     mapvid-locator-geneva   admits x2.46 of longitude and x2.86 of latitude
+//     mapgen-symbol-web       admits x1.20              and x1.27
+//     mapmore-flow-danube     admits x1.15              and x1.42
+//     map-quake-density       admits x1.00              and x0.72   <- BELOW one: a crop, 104 events
+//
+// A ratio above 1 is ground the reader is shown that the sentence is not about; a ratio below 1 is
+// ground the sentence is about that the reader is not shown. One number, both directions, and NO
+// BEAT RECORDED IT — the W5 audit's T12, specified and never landed.
+
+/** The Earth's equatorial circumference in kilometres — WGS84, the same figure `cameraFacts`
+ *  divides to get `metresPerPixel`. The one physical constant this section is anchored on. */
+export const EARTH_CIRCUMFERENCE_KM = 40075.016686;
+
+/** Web-Mercator northing for a latitude, in world units where a full turn of longitude is 2π.
+ *  A DUPLICATE of the bake's own `mercY` (`scripts/bake-plate.mjs`), not an import: a bake is a
+ *  script and this is the pure half, and the pure half is what a test and a component can reach.
+ *  @parity */
+export function mercY(latDeg: number): number {
+  return Math.log(Math.tan(Math.PI / 4 + (latDeg * Math.PI) / 360));
+}
+
+/** The extent ACTUALLY shown, as `geometry.json` records it. */
+export type FrameCorners = {
+  west: number;
+  north: number;
+  east: number;
+  south: number;
+};
+
+/**
+ * How much ground the frame's width covers, in kilometres, at the frame's own centre latitude.
+ *
+ * Degrees of longitude are not a scale: 59° across Europe is 4 152 km and 59° across the equator is
+ * 6 568 km, and the render decisions below are about ground, not about degrees. This is the number
+ * `metresPerPixel` has been recorded by twenty bakes and consumed by nothing — the same arithmetic,
+ * expressed once so a caller does not need the pixel count. @parity
+ */
+export function groundWidthKm(corners: FrameCorners): number {
+  const centreLat = (corners.north + corners.south) / 2;
+  return (
+    ((corners.east - corners.west) / 360) *
+    EARTH_CIRCUMFERENCE_KM *
+    Math.cos((centreLat * Math.PI) / 180)
+  );
+}
+
+/** The six rungs of B4.1's own list, widest first. */
+export type ExtentBand =
+  "planet" | "hemisphere" | "continent" | "country" | "region" | "city";
+
+/**
+ * The rung this camera sits on, and the floor of each rung — **powers of four of the Earth's own
+ * circumference**, so every rung is exactly two zoom levels wide and the ladder has one anchor
+ * (the planet) and no free parameter.
+ *
+ *     planet      >= C/4    = 10 019 km
+ *     hemisphere  >= C/16   =  2 505 km
+ *     continent   >= C/64   =    626 km
+ *     country     >= C/256  =    156 km
+ *     region      >= C/1024 =     39 km
+ *     city                    below that
+ *
+ * THE NAMES ARE GROUND WIDTHS, NOT POLITICAL UNITS, and that has to be said plainly because it
+ * reads as a mistake otherwise. Switzerland is 345 km across and lands in `country`; France is
+ * 950 km and lands in `continent`; both are countries. A band is a statement about how much ground
+ * a reader is looking at — which is what decides the label density, the mark size and whether
+ * Mercator is lying — and not about what the ground is called. The names are B4.1's own vocabulary,
+ * mapped onto the ladder at the rung where its examples actually fall. @parity
+ */
+export function extentBand(corners: FrameCorners): ExtentBand {
+  const km = groundWidthKm(corners);
+  if (km >= EARTH_CIRCUMFERENCE_KM / 4) return "planet";
+  if (km >= EARTH_CIRCUMFERENCE_KM / 16) return "hemisphere";
+  if (km >= EARTH_CIRCUMFERENCE_KM / 64) return "continent";
+  if (km >= EARTH_CIRCUMFERENCE_KM / 256) return "country";
+  if (km >= EARTH_CIRCUMFERENCE_KM / 1024) return "region";
+  return "city";
+}
+
+/** The bounding box of everything the beat says it is about — the STUDY SET, in the frame's own
+ *  wrapped longitude. Not `BEAT.bounds`, which is a box somebody typed. */
+export type StudyExtent = {
+  west: number;
+  north: number;
+  east: number;
+  south: number;
+};
+
+/**
+ * How much MORE geography the fit admitted than the study set asked for, on each axis.
+ *
+ * `fitBounds` fits on whichever axis binds first and lets the other overshoot, silently. Longitude
+ * is compared in degrees and latitude in MERCATOR units, because a degree of latitude is not a
+ * constant amount of frame and comparing degrees would report a ratio the picture does not have.
+ *
+ * Above 1: ground the reader is shown that the sentence is not about. Below 1: ground the sentence
+ * IS about, cropped away — `map-quake-density`'s 0.716 is its 104 poleward events. Recording one
+ * number that answers both directions is the point; a beat that only counted the crop would have
+ * reported the Geneva locator as perfect while it showed 2.5x the city its claim names. @parity
+ */
+export function admittedRatios(
+  corners: FrameCorners,
+  study: StudyExtent,
+): { lon: number; lat: number } {
+  const studyLon = study.east - study.west;
+  const studyLat = mercY(study.north) - mercY(study.south);
+  return {
+    lon: studyLon > 0 ? (corners.east - corners.west) / studyLon : 1,
+    lat:
+      studyLat > 0
+        ? (mercY(corners.north) - mercY(corners.south)) / studyLat
+        : 1,
+  };
+}
+
+/**
+ * THE WORLD-MAP-IN-PORTRAIT LIMIT, derived rather than discovered.
+ *
+ * Web Mercator's world is a SQUARE: a full turn of longitude and the whole ±85.05° of latitude are
+ * the same length. So a camera showing `lonSpan` degrees across a frame `width` px wide draws the
+ * world `S = 360 * width / lonSpan` px on a side, and that same S is the world's HEIGHT. MapLibre
+ * refuses to zoom out past `S = frameHeight` — under it the canvas would show ground that does not
+ * exist — so a frame taller than S never gets the longitude it asked for, however the fit is
+ * called. It is not the fit's arithmetic and it cannot be patched in the fit.
+ *
+ * Measured, and this derivation predicts it to 0.7%: `proof/mapgen-hexgrid-web` at 375x812 draws
+ * into a 343x461 canvas and shows **266°** of its 359.8°. The model says the world clamps at
+ * S = 461 px, so the frame shows 360 * 343 / 461 = **267.8°** — the 1.8° difference is the fit's
+ * own padding. The two axes wanting z_lon −0.865 against a map sitting at −0.16 = log2(461/512) is
+ * the same fact read off the zoom (`map-web-discipline.md`).
+ *
+ * @parity
+ */
+export function maxStageHeightPx(
+  frameWidthPx: number,
+  studyLonSpanDeg: number,
+): number {
+  if (studyLonSpanDeg <= 0) return Infinity;
+  return (frameWidthPx * 360) / studyLonSpanDeg;
+}
+
+/** What a frame can honestly give this geography, and what is left over. */
+export type StageBox = {
+  width: number;
+  height: number;
+  letterboxed: boolean;
+  spareHeightPx: number;
+  degreesIfForced: number;
+};
+
+/**
+ * THE DECISION, stated once so every genre inherits it:
+ *
+ *   **A map is never given more stage height than its own geography can fill. Where a frame is
+ *   taller than the geography admits, the map takes the height the geography demands and the
+ *   leftover goes to FURNITURE — never to a wider camera, and never to a crop.**
+ *
+ * This is `geo-discipline.md` rule 12's "text beside a square plate" clause read in the one
+ * direction it had never been read: a planet-extent beat in a 1080x1920 portrait frame gets a
+ * 1080x1080 stage and 840 px of furniture, instead of the 203° of world MapLibre would clamp it to.
+ * The alternative — hand the beat the whole height — is what ships today, and what it ships is a
+ * quarter of the planet missing with `maxBounds` then stopping the reader panning to it.
+ *
+ * `degreesIfForced` is what the reader would have been shown had the whole frame height been used;
+ * it is carried so the refusal and the record can both name it instead of re-deriving it. @parity
+ */
+export function stageBoxFor(
+  frameWidthPx: number,
+  frameHeightPx: number,
+  studyLonSpanDeg: number,
+): StageBox {
+  const ceiling = maxStageHeightPx(frameWidthPx, studyLonSpanDeg);
+  const letterboxed = frameHeightPx > ceiling + 0.5;
+  const height = letterboxed ? Math.floor(ceiling) : frameHeightPx;
+  return {
+    width: frameWidthPx,
+    height,
+    letterboxed,
+    spareHeightPx: frameHeightPx - height,
+    degreesIfForced: (360 * frameWidthPx) / frameHeightPx,
+  };
+}
+
+/**
+ * Refuse a frame that cannot show the study set, LOUDLY and with the two honest options — the shape
+ * `assertCameraReachesBounds` already has, asked of the axis that one cannot see.
+ *
+ * The message names the stage that WOULD work, because a refusal a caller cannot act on is a
+ * complaint. Stretching is not among the options: `map-web-discipline.md` rules a non-uniform scale
+ * out in writing — this genre would rather draw a smaller true map than a larger false one. @parity
+ */
+export function assertStageServesGeography(
+  frameWidthPx: number,
+  frameHeightPx: number,
+  studyLonSpanDeg: number,
+): void {
+  const stage = stageBoxFor(frameWidthPx, frameHeightPx, studyLonSpanDeg);
+  if (!stage.letterboxed) return;
+  throw new Error(
+    `this frame cannot hold ${studyLonSpanDeg.toFixed(1)}° of longitude: Web Mercator's world is ` +
+      `square, so ${frameWidthPx}px of width caps the world at ${Math.round(maxStageHeightPx(frameWidthPx, studyLonSpanDeg))}px ` +
+      `of height and a ${frameHeightPx}px frame would be clamped to ${stage.degreesIfForced.toFixed(1)}°. ` +
+      `Two honest options: letterbox the stage to ${stage.width}x${stage.height} and give the ` +
+      `remaining ${stage.spareHeightPx}px to furniture, or narrow the study set to ` +
+      `${stage.degreesIfForced.toFixed(1)}° and say in the beat what was left out. Stretching is not one of them.`,
+  );
+}
+
+/**
+ * How much more ground one drawn pixel covers at the frame's most-distorted edge than at its
+ * least-distorted one — Mercator's own area lie, as a number.
+ *
+ * Web Mercator's area scale is sec²(latitude). Within one frame the worst ratio is between the edge
+ * furthest from the equator and the edge nearest it; a frame that STRADDLES the equator contains
+ * latitude 0 itself, so its floor is 1. Measured against the tree and it reproduces the audit's
+ * hand figures exactly: `mapgen-dot-web` at 34.5-71.5°N gives **6.75x**, `map-quake-density` at
+ * −60.5..78.2° gives **24.0x**. @parity
+ */
+export function mercatorAreaBias(corners: FrameCorners): number {
+  const clamp = (lat: number) => Math.min(Math.abs(lat), 85);
+  const far = Math.max(clamp(corners.north), clamp(corners.south));
+  const near =
+    corners.north * corners.south <= 0
+      ? 0
+      : Math.min(clamp(corners.north), clamp(corners.south));
+  const sec2 = (lat: number) => 1 / Math.cos((lat * Math.PI) / 180) ** 2;
+  return sec2(far) / sec2(near);
+}
+
+/**
+ * B4.2, made arithmetic for the one family where a wider extent does not merely look different but
+ * says something FALSE: an AREA encoding — a dot standing for a fixed number of people in a fixed
+ * piece of ground, a hex cell counting events per cell.
+ *
+ * How many of the beat's OWN legend bins the projection alone can move a cell, given its measured
+ * area bias. No budget is typed: the budget is the beat's own scale. If two cells with identical
+ * ground density can land in different bins because one is further from the equator, the legend is
+ * comparing them as equals and the reader cannot tell.
+ *
+ * Measured on `map-quake-density`'s own breaks (1-13 / 14-51 / 52-284 / 285-663 / 664+): the
+ * smallest step between adjacent breaks is x2.32, and the frame's bias is x24.0, so **the
+ * projection alone moves a cell up to two bins**. Which is why the answer at that extent is not a
+ * tuning knob but a caveat or a correction — see `assertAreaEncodingIsHonest`. @parity
+ */
+export function binsCrossedByProjection(
+  areaBias: number,
+  breaks: readonly number[],
+): number {
+  const positive = breaks.filter((b) => b > 0);
+  if (positive.length < 2) return areaBias > 1 ? 1 : 0;
+  let smallestStep = Infinity;
+  for (let i = 1; i < positive.length; i++) {
+    const step = positive[i]! / positive[i - 1]!;
+    if (step > 1 && step < smallestStep) smallestStep = step;
+  }
+  if (!Number.isFinite(smallestStep)) return areaBias > 1 ? 1 : 0;
+  return Math.floor(Math.log(areaBias) / Math.log(smallestStep));
+}
+
+/**
+ * An area-encoding beat must either correct for the projection or SAY SO — the converse of
+ * `geo-discipline.md`'s own rule that a reader must not be left to infer whether a sparse region
+ * holds few people or was drawn small by the projection.
+ *
+ * `disclosed` is the beat's own caveat text. The check is not that the beat is undistorted — at
+ * planet extent nothing can be — it is that the number is in front of the reader. @parity
+ */
+export function assertAreaEncodingIsHonest(
+  corners: FrameCorners,
+  breaks: readonly number[],
+  disclosed: string,
+): void {
+  const bias = mercatorAreaBias(corners);
+  const bins = binsCrossedByProjection(bias, breaks);
+  if (bins < 1) return;
+  const said = /mercator|projection|latitude/i.test(disclosed);
+  if (said) return;
+  throw new Error(
+    `this camera spans ${extentBand(corners)} extent, where one drawn pixel covers ${bias.toFixed(1)}x ` +
+      `more ground at ${corners.north.toFixed(1)}° than at the frame's least-distorted latitude — enough ` +
+      `for the projection ALONE to move a cell ${bins} bin${bins === 1 ? "" : "s"} of this beat's own legend. ` +
+      `An area encoding at this extent either carries a latitude correction or says so in its caveat; ` +
+      `this beat's caveat mentions neither Mercator, the projection nor latitude.`,
+  );
+}
+
+/**
+ * The biggest a proportional mark may be drawn before the field stops reading as marks.
+ *
+ * Derived from the plate's own MEDIAN nearest-neighbour distance, not its minimum: one pathological
+ * pair — the Geneva locator's is **0.57 px apart**, two organisations in the same building — would
+ * otherwise shrink every mark on the map to nothing. At `medianNearestNeighbourPx / 2` the typical
+ * pair of marks exactly TOUCHES and does not overlap; half the pairs are closer than the median by
+ * construction, and those are the declutter step's business, disclosed with a count.
+ *
+ * The existing typed constant stays as the CEILING, so nothing gets bigger than it is today.
+ * Measured: `mapgen-symbol-web`'s median nearest neighbour is 26.06 px, so the ceiling this returns
+ * is 13.0 px against the 30 px the beat draws — **today's marks are 2.3x the size at which the
+ * typical pair stops overlapping.** @parity
+ */
+export function markRadiusCeilingPx(
+  medianNearestNeighbourPx: number,
+  typedCeilingPx: number,
+): number {
+  if (!(medianNearestNeighbourPx > 0)) return typedCeilingPx;
+  return Math.min(typedCeilingPx, medianNearestNeighbourPx / 2);
+}
+
+/** Distances from every point to its nearest other point, in drawn pixels, sorted ascending —
+ *  the input `markRadiusCeilingPx` and every overlap question needs, measured on the plate rather
+ *  than guessed from the frame width. @parity */
+export function nearestNeighbourPx(
+  points: readonly { px: number; py: number }[],
+): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < points.length; i++) {
+    let best = Infinity;
+    for (let j = 0; j < points.length; j++) {
+      if (i === j) continue;
+      const d = Math.hypot(
+        points[i]!.px - points[j]!.px,
+        points[i]!.py - points[j]!.py,
+      );
+      if (d < best) best = d;
+    }
+    if (Number.isFinite(best)) out.push(best);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/** What the camera knows about its own scale, recorded on the plate so nothing downstream has to
+ *  re-guess it — the four keys `geometry.json` gained under T1, plus the four B4.1 needed. */
+export type ExtentFacts = {
+  band: ExtentBand;
+  groundWidthKm: number;
+  mercatorAreaBias: number;
+  admittedLonRatio: number;
+  admittedLatRatio: number;
+  studyExtent: StudyExtent;
+};
+
+/** Everything the extent decides, in one record a bake writes into `geometry.json` and a guard
+ *  recomputes from the same two committed files. @parity */
+export function extentFacts(
+  corners: FrameCorners,
+  study: StudyExtent,
+): ExtentFacts {
+  const admitted = admittedRatios(corners, study);
+  return {
+    band: extentBand(corners),
+    groundWidthKm: Number(groundWidthKm(corners).toPrecision(6)),
+    mercatorAreaBias: Number(mercatorAreaBias(corners).toPrecision(4)),
+    admittedLonRatio: Number(admitted.lon.toPrecision(4)),
+    admittedLatRatio: Number(admitted.lat.toPrecision(4)),
+    studyExtent: study,
+  };
+}
+
+/** The study set's own footprint, in the frame's wrapped longitude — a Pacific-centred camera runs
+ *  from −20° to 340°, so a point at 170°W is read one turn on before it is compared. @parity */
+export function studyExtentOf(
+  points: readonly { lon: number; lat: number }[],
+  west: number,
+): StudyExtent {
+  if (points.length === 0)
+    throw new Error(
+      "cannot measure a study extent from no points — a camera fitted to nothing is a camera nobody chose",
+    );
+  let w = Infinity,
+    e = -Infinity,
+    s = Infinity,
+    n = -Infinity;
+  for (const { lon, lat } of points) {
+    const wrapped = lon < west ? lon + 360 : lon;
+    if (wrapped < w) w = wrapped;
+    if (wrapped > e) e = wrapped;
+    if (lat < s) s = lat;
+    if (lat > n) n = lat;
+  }
+  return { west: w, east: e, south: s, north: n };
+}
+
 // ── The claim ──────────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -429,7 +930,7 @@ export function claimViolations({
 
 // ── Language ───────────────────────────────────────────────────────────────────────────────────
 
-/** The newsroom's readers write a decimal comma. Furniture speaks the beat's language too. 
+/** The newsroom's readers write a decimal comma. Furniture speaks the beat's language too.
  *  @parity */
 export function fr(value: number, decimals = 1): string {
   return new Intl.NumberFormat("fr-FR", {

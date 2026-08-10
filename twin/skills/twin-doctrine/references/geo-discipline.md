@@ -239,7 +239,119 @@ So a camera that takes an aspect owes two recorded numbers — how much longitud
 it ADMITTED beyond the study set — and a leash that answers the second case: the twin's map × web
 plans carry `minZoomHeadroom`, a derived floor under how far a reader can come in, because a fit that
 lands tight is a map you cannot move through. `admittedLonRatio`/`admittedLatRatio` are named here
-and **not yet recorded by any bake** — that is the open half of this clause, not a claim.
+and were **recorded by no bake for a fortnight** — closed 2026-08-11 by `admittedRatios` and
+`extentFacts` (`twin-map-beat/assets/geo.ts`), which the seed's bake now writes into every
+`geometry.json` under an `extent` key. Measured against each beat's own study set rather than its
+hand-typed `BEAT.bounds` — which reports ~1.00 at 11 of 11 beats because it was tuned by eye until
+it matched — the tree's worst offender is the **city** rung, not the wide one:
+`mapvid-locator-geneva` admits **×2.46 of longitude and ×2.86 of latitude**, so a beat titled "All 11
+of these international organisations sit inside 4.4 km" shows two and a half times the city its claim
+is about. One number answers both directions: above 1 is ground the reader is shown that the sentence
+is not about, below 1 is ground the sentence is about that the reader is not shown
+(`map-quake-density`: ×0.72, which is its 104 poleward events).
+
+**Third clause, added 2026-08-11 under B4.1 — the camera has to hold a city and a planet, so the
+ladder is stated and the frame that cannot serve a rung REFUSES.**
+
+The rung is derived from the frame's own ground width at its own centre latitude, with floors at
+powers of four of the Earth's equatorial circumference — each rung exactly two zoom levels wide, one
+anchor (the planet), no free parameter: `planet` ≥ 10 019 km · `hemisphere` ≥ 2 505 · `continent`
+≥ 626 · `country` ≥ 156 · `region` ≥ 39 · `city` below that. **The names are ground widths, not
+political units**, and that has to be said plainly because it reads as a mistake otherwise:
+Switzerland is 345 km across and lands in `country`, France is 950 km and lands in `continent`, and
+both are countries. What decides the render is how much ground is in frame, not what the ground is
+called.
+
+> **A map is never given more stage height than its own geography can fill. Where a frame is taller
+> than the geography admits, the map takes the height the geography demands and the leftover goes to
+> FURNITURE — never to a wider camera, and never to a crop.**
+
+This is the first clause's "text beside a square plate" read in the direction it had never been read,
+and it is forced by the projection rather than chosen. Web Mercator's world is a **square**: showing
+`lonSpan` degrees across a `width`-px frame draws the world `S = 360 × width / lonSpan` px on a side,
+and that same S is its height. MapLibre will not zoom out past `S = frameHeight` — under it the canvas
+would show ground that does not exist — so a frame taller than S never gets the longitude it asked
+for, whatever `fitBounds` is told. It is not the fit's arithmetic and it cannot be patched in the fit.
+
+*Measured, twice, and the model predicts both:* `proof/mapgen-hexgrid-web` at 375×812 draws into a
+343×461 canvas and shows **266° of its 359.8°** — a quarter of the world gone, with `maxBounds` then
+stopping the reader panning to it; the model says 360 × 343 / 461 = **267.8°**, and the 1.8° is the
+fit's own padding. Driven at the export size, a planet camera handed the whole 1080×1920 frame shows
+**202.5°** and the model predicts **202.5°** exactly; letterboxed to the 1080×1080 stage its geography
+can fill, it shows **359.8°** and hands **840 px** back to furniture
+(`twin-map-beat/output-proof/extent-range/`, both pictures committed).
+
+`stageBoxFor` returns the stage; `assertStageServesGeography` refuses the frame that ignores it and
+names the two honest options — letterbox, or narrow the study set and say what was left out.
+Stretching is not among them (`map-web-discipline.md` rules a non-uniform scale out in writing). The
+rule bites only where the frame's aspect exceeds 360 / lonSpan, which at 1080×1920 is any study set
+wider than 202.5°: Europe, the Danube and Geneva are untouched at all three export sizes, so it costs
+nothing anywhere except the rung it exists for.
+
+## 13. A wider extent is a different render, and three of its four knobs are arithmetic
+
+B4.2: *"une zone plus large demande un rendu différent"*, so that everything stays visible and
+reachable inside the map. Measured across six rungs of one frozen catalogue — 40 053 km of ground
+down to 20 km, 2 047× in metres per pixel, through one `fitBounds`, one style and one capture gate
+(`twin-map-beat/output-proof/extent-range/RANGE.md`) — **nothing in the machinery is per-rung. What
+changes is what the numbers say.**
+
+**The mark size is measured on the plate, never taken as a fraction of the frame.**
+`markRadiusCeilingPx` caps the biggest mark at half the plate's own **median** nearest-neighbour
+distance, so the typical pair exactly touches. The median and not the minimum: `map-geneva-locator`
+holds two organisations **0.57 px apart** — the same building — and a minimum-driven rule collapses
+every mark on the map to nothing. Across the six rungs that is **1.5 px to 19.1 px on an identical
+900 px frame from an identical catalogue**, and the existing typed constant stays as the ceiling so
+nothing grows. Applied to `mapgen-symbol-web`'s committed plate (median gap 26.06 px) the ceiling is
+13.0 px against the 30 px it draws: **today's marks are 2.3× the size at which the typical pair stops
+overlapping.** Note it is not monotone in extent — the `country` rung's median gap (3.61 px) is
+smaller than the `continent` rung's (4.63 px) because that camera lands on an aftershock sequence.
+Density is local; a rule of the form "radius = fraction of frame width" is wrong at every rung by a
+different amount.
+
+**The same derivation says when a type stops working at all, and it agrees with the beats.** At the
+planet and hemisphere rungs the median gap is 0.45 px and 1.49 px, so the ceiling falls under the
+1.5 px floor at which a circle stops being a circle: a catalogue this dense **cannot be drawn as
+separable marks above the continent rung**. That is why every planet beat in this tree is a hex grid
+rather than a symbol map, and it is the first time the tree can say so with a number rather than by
+taste.
+
+**Whether the projection is lying is the beat's own legend's question.** `mercatorAreaBias` is how
+much more ground one drawn pixel covers at the frame's most-distorted edge than at its
+least-distorted one — sec²(lat), floored at the equator when the frame straddles it. Measured ×1.01
+at city and ×131.7 at a pole-to-pole planet frame, and it reproduces the two figures this project had
+only ever worked out by hand (×6.75 for `mapgen-dot-web`'s 34.5–71.5°N band, ×24.0 for
+`map-quake-density`). For an AREA encoding — a dot standing for a fixed number of people in a fixed
+piece of ground, a hex cell counting events per cell — `binsCrossedByProjection` turns that into the
+only budget that carries no free parameter: **how many of the beat's own legend bins the projection
+alone can move a cell.** On `map-quake-density`'s published breaks the smallest adjacent step is
+×2.33 and its bias is ×24.0, so the answer is **three bins** — two cells of identical ground density
+painted three classes apart while the legend compares them as equals. `assertAreaEncodingIsHonest`
+refuses such a beat whose caveat mentions neither Mercator, the projection nor latitude. It is a
+DISCLOSURE rule and not a correction rule: at planet extent nothing can be undistorted, and the
+converse of rule 7's own no-data clause applies — a reader must not be left to infer whether a sparse
+region holds few events or was drawn small by the projection.
+
+**The basemap's detail level follows the camera for free, and no style is switched.** The same style
+URL at zoom 0.8 and at zoom 11.4 carries coastline at the planet rung, motorways and regional
+boundaries at the country rung and individual tracks at the city rung — the provider's vector tiles
+do it. A second style at wide extents would be a second cartography, and a beat whose plate and live
+map disagreed about the ground would break the swap the web genre depends on. Measured by looking at
+`basemap-planet.png`, `basemap-country.png` and `basemap-city.png`; this was the cheapest of the four
+questions and it needed no code.
+
+**The fourth knob is open, and it is the label layer.** How many labels an extent can carry is not
+derived anywhere: `map-geneva-locator` draws 5 labels for 11 markers at 496 px, `mapgen-locator-web`
+3 for 11 at 420 px, and nothing counts it. Recorded as open rather than approximated, because the
+existing answer — one candidate position, drop on collision — degrades worst at exactly the rung
+where a local newsroom works.
+
+**And one rule per mark type that only appears at the bottom of the ladder, stated and not
+implemented.** A `radius: "ground"` mark — a dot standing for a fixed number of people in a fixed
+piece of ground — must keep its GROUND area, so its screen radius halves for every zoom level a
+reader pulls back; a proportional symbol encodes a value and not an area, so it keeps its SCREEN
+size. **The two rules are opposites**, and a leash derived from "when marks stop merging" is right
+for the second and wrong for the first.
 
 ## An open problem this beat did not close: a legend can still clip a long unit word
 

@@ -1,0 +1,260 @@
+{
+ "size": 900,
+ "style": "dataviz-light",
+ "dataPath": "proof/map-quake-density/quakes-density.csv",
+ "rungs": [
+  {
+   "band": "planet",
+   "targetKm": 20038,
+   "bounds": [
+    [
+     -179.9,
+     -85
+    ],
+    [
+     179.9,
+     85
+    ]
+   ],
+   "zoom": 0.815,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": -179.89999999999935,
+    "north": 85.04249460152823,
+    "east": 179.9000000000005,
+    "south": -85.0424946015283
+   },
+   "measuredBand": "planet",
+   "groundWidthKm": 40053,
+   "lonSpan": 359.8,
+   "rowsInFrame": 14094,
+   "admittedLonRatio": 1,
+   "admittedLatRatio": 1.353,
+   "mercatorAreaBias": 131.65,
+   "medianGapPx": 0.45,
+   "minGapPx": 0,
+   "markRadiusPx": 1.5,
+   "metresPerPixel": 44503.1,
+   "portrait": {
+    "letterboxed": true,
+    "stage": "1080x1080",
+    "spareHeightPx": 840,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 1081
+   },
+   "portraitMeasured": {
+    "forcedLonSpan": 202.5,
+    "forcedZoom": 1.907,
+    "letterboxedLonSpan": 359.8,
+    "letterboxedZoom": 1.078,
+    "predictedForcedLonSpan": 202.5
+   }
+  },
+  {
+   "band": "hemisphere",
+   "targetKm": 5009,
+   "bounds": [
+    [
+     115.8493358027669,
+     -11.574187353676436
+    ],
+    [
+     161.7248641972331,
+     32.35161429750663
+    ]
+   ],
+   "zoom": 3.786,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": 115.84933580276993,
+    "north": 32.35161429750572,
+    "east": 161.72486419723566,
+    "south": -11.57418735367797
+   },
+   "measuredBand": "hemisphere",
+   "groundWidthKm": 5023,
+   "lonSpan": 45.8755,
+   "rowsInFrame": 4165,
+   "admittedLonRatio": 1.002,
+   "admittedLatRatio": 1.001,
+   "mercatorAreaBias": 1.4,
+   "medianGapPx": 1.49,
+   "minGapPx": 0,
+   "markRadiusPx": 1.5,
+   "metresPerPixel": 5581.25,
+   "portrait": {
+    "letterboxed": false,
+    "stage": "1080x1920",
+    "spareHeightPx": 0,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 8475
+   }
+  },
+  {
+   "band": "continent",
+   "targetKm": 1252,
+   "bounds": [
+    [
+     -179.9,
+     -25.81517220898651
+    ],
+    [
+     -171.4952997654538,
+     -14.580748972905582
+    ]
+   ],
+   "zoom": 5.721,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": -181.69515011727307,
+    "north": -14.580748972905539,
+    "east": -169.70014964818077,
+    "south": -25.81517220898668
+   },
+   "measuredBand": "continent",
+   "groundWidthKm": 1253,
+   "lonSpan": 11.995,
+   "rowsInFrame": 1317,
+   "admittedLonRatio": 1.46,
+   "admittedLatRatio": 1.009,
+   "mercatorAreaBias": 1.16,
+   "medianGapPx": 4.63,
+   "minGapPx": 0.1,
+   "markRadiusPx": 2.31,
+   "metresPerPixel": 1392.41,
+   "portrait": {
+    "letterboxed": false,
+    "stage": "1080x1920",
+    "spareHeightPx": 0,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 32414
+   }
+  },
+  {
+   "band": "country",
+   "targetKm": 313,
+   "bounds": [
+    [
+     120.42739699353346,
+     22.758418897912037
+    ],
+    [
+     123.51020300646654,
+     25.57069342334016
+    ]
+   ],
+   "zoom": 7.681,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": 120.42739699353587,
+    "north": 25.570693423340387,
+    "east": 123.5102030064682,
+    "south": 22.75841889791191
+   },
+   "measuredBand": "country",
+   "groundWidthKm": 313,
+   "lonSpan": 3.0828,
+   "rowsInFrame": 446,
+   "admittedLonRatio": 1.005,
+   "admittedLatRatio": 1.044,
+   "mercatorAreaBias": 1.05,
+   "medianGapPx": 3.61,
+   "minGapPx": 0.1,
+   "markRadiusPx": 1.8,
+   "metresPerPixel": 347.895,
+   "portrait": {
+    "letterboxed": false,
+    "stage": "1080x1920",
+    "spareHeightPx": 0,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 126119
+   }
+  },
+  {
+   "band": "region",
+   "targetKm": 78,
+   "bounds": [
+    [
+     121.30492817774713,
+     23.59396028082807
+    ],
+    [
+     122.07427182225287,
+     24.297081738949984
+    ]
+   ],
+   "zoom": 9.684,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": 121.30492817774552,
+    "north": 24.297081738948904,
+    "east": 122.07427182225058,
+    "south": 23.593960280826693
+   },
+   "measuredBand": "region",
+   "groundWidthKm": 78,
+   "lonSpan": 0.7693,
+   "rowsInFrame": 365,
+   "admittedLonRatio": 1.067,
+   "admittedLatRatio": 1.011,
+   "mercatorAreaBias": 1.01,
+   "medianGapPx": 13.22,
+   "minGapPx": 0.4,
+   "markRadiusPx": 6.61,
+   "metresPerPixel": 86.9687,
+   "portrait": {
+    "letterboxed": false,
+    "stage": "1080x1920",
+    "spareHeightPx": 0,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 505366
+   }
+  },
+  {
+   "band": "city",
+   "targetKm": 20,
+   "bounds": [
+    [
+     78.52697344453249,
+     41.12055035131695
+    ],
+    [
+     78.76062655546751,
+     41.29633158524342
+    ]
+   ],
+   "zoom": 11.403,
+   "gatedBy": "idle",
+   "hidden": 15,
+   "corners": {
+    "west": 78.52697344453253,
+    "north": 41.29633158524379,
+    "east": 78.76062655546804,
+    "south": 41.12055035131743
+   },
+   "measuredBand": "city",
+   "groundWidthKm": 20,
+   "lonSpan": 0.2337,
+   "rowsInFrame": 108,
+   "admittedLonRatio": 1.032,
+   "admittedLatRatio": 1.007,
+   "mercatorAreaBias": 1.01,
+   "medianGapPx": 38.24,
+   "minGapPx": 0.64,
+   "markRadiusPx": 19.12,
+   "metresPerPixel": 21.7421,
+   "portrait": {
+    "letterboxed": false,
+    "stage": "1080x1920",
+    "spareHeightPx": 0,
+    "degreesIfForced": 202.5,
+    "maxStageHeightPx": 1664005
+   }
+  }
+ ]
+}
