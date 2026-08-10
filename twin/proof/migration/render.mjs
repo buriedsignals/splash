@@ -19,6 +19,7 @@ import {
   assertDeliveredSize,
   readPinnedSize,
   readPngSize,
+  sizeFor,
 } from "#shared/twin-chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -113,7 +114,18 @@ await mkdir(outDir, { recursive: true });
 const data = readingsFromCsv(await readFile(dataPath, "utf8"));
 if (data.length < 2) throw new Error(`need at least two readings, got ${data.length}`);
 
-const props = { ...BEAT, data, size, ...deriveFurniture(BEAT.ground) };
+// `size` travels with the props so the composition and the component agree on which row this is;
+// `width`/`height` travel with it so anything replaying these props OUTSIDE Remotion — the suites
+// that server-render a beat at a chosen frame — sees the frame it was rendered at rather than
+// falling back to a default. The component still reads the frame from `useVideoConfig`.
+const props = {
+  ...BEAT,
+  data,
+  size,
+  width: sizeFor(size).width,
+  height: sizeFor(size).height,
+  ...deriveFurniture(BEAT.ground),
+};
 const propsPath = join(outDir, `${stem}-props.json`);
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 

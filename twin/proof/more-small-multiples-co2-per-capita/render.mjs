@@ -17,6 +17,7 @@ import {
   assertDeliveredSize,
   readPinnedSize,
   readPngSize,
+  sizeFor,
 } from "#shared/twin-chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -133,11 +134,18 @@ console.log(
 );
 
 const countries = COUNTRIES_ORDER.map((name) => ({ name, data: byCountry.get(name) }));
+// `size` travels with the props so the composition and the component agree on which row this is;
+// `width`/`height` travel with it so anything replaying these props OUTSIDE Remotion — the suites
+// that server-render a beat at a chosen frame — sees the frame it was rendered at rather than
+// falling back to a default. The component still reads the frame from `useVideoConfig`.
 const props = {
   ...BEAT,
   countries,
   order: [0, 1, 2, 3], // reading order == the array order above (already ascending final value)
   subjectIndex: 3, // Poland
+  size,
+  width: sizeFor(size).width,
+  height: sizeFor(size).height,
   ...deriveFurniture(BEAT.ground),
 };
 const propsPath = join(outDir, `${stem}-props.json`);
