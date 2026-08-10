@@ -4,6 +4,7 @@
 //
 // Usage:
 //   bun proof/mapgen-flowmap-video/render-map.mjs --still
+//   bun proof/mapgen-flowmap-video/render-map.mjs --still --size square   # LOOKING, into sizes/
 //   bun proof/mapgen-flowmap-video/render-map.mjs --final-frame
 //   bun proof/mapgen-flowmap-video/render-map.mjs --video
 
@@ -17,6 +18,24 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+// The STATIC genre's size table — the same one every static beat reads, and deliberately not a
+// fourth copy of it. A static map sits in the same ~900px article column a static chart does.
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+// The VIDEO genre reads its OWN table: a landscape video is watched on a phone turned sideways, so
+// its floor is 30 where the static's is 26. Two genres, two reading distances, two answers — and
+// the video's delivery is asserted against the video's own row, never against the static's, even
+// where the two rows happen to carry the same two numbers today.
+import {
+  assertDeliveredSize as assertVideoSize,
+  sizeFor as videoSizeFor,
+} from "#shared/chart-video/sizes.mjs";
 import { FlowMapStill } from "./FlowMapStill.tsx";
 import {
   assertTerritoryFillsReadAsLand,
@@ -34,7 +53,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 assertTerritoryFillsReadAsLand();
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "flowmap-video";
+const BEAT_ID = "mapgen-flowmap-video";
 
 // The colours are READ, not typed — see `PALETTE.md` beside this file.
 const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
@@ -91,7 +110,28 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const outDir = flag("--out", join(HERE, "render"));
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size was two literals in each component and two more below, compared
+// against each other by `renderStill` — so they agreed by construction and the pin reached nothing.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+const { width: FRAME_WIDTH, height: FRAME_HEIGHT } = sizeFor(size);
+if (sizeFlag !== -1)
+  console.log(`LOOKING at ${size}; the pinned size stays ${pinnedSize}`);
+console.log(
+  `pinned size: ${size} — still ${FRAME_WIDTH}x${FRAME_HEIGHT}, ` +
+    `video ${videoSizeFor(size).width}x${videoSizeFor(size).height}`,
+);
+
+const outDir = flag(
+  "--out",
+  sizeFlag === -1 ? join(HERE, "render") : join(HERE, "sizes"),
+);
+const stem = sizeFlag === -1 ? "static" : `static-${size}`;
 // The plate is frozen BESIDE THE BEAT, exactly as the csv is: `/tmp` cannot be committed, so a
 // render reading its basemap from there leaves an mp4 nobody can reproduce or audit — and MapTiler
 // restyles, so a re-bake months later is a different picture under the same route.
@@ -178,7 +218,7 @@ if (wantStill) {
     };
   });
 
-  const { pngPath } = await renderStill({
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(FlowMapStill, {
       geometry,
       plate,
@@ -192,13 +232,30 @@ if (wantStill) {
       alt: BEAT.alt,
       ground: BEAT.ground,
       ...furniture,
+      size,
+      // A ladder rung that fires SILENTLY is a decision nobody took.
+      onRemoval: (note) => console.log(`removal ladder — ${note}`),
     }),
-    width: 1080,
-    height: 900,
+    width: FRAME_WIDTH,
+    height: FRAME_HEIGHT,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
     outDir,
-    name: "static",
+    name: stem,
   });
-  console.log(`still → ${pngPath}\nNow open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: pngPath,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "mapgen-flowmap-video (still)" });
+  assertWithinStage(svg, size, { what: "mapgen-flowmap-video (still)" });
+  console.log(
+    `still → ${pngPath} at ${FRAME_WIDTH}x${FRAME_HEIGHT}, verified from the file\nNow open it and look at it.`,
+  );
 }
 
 // ── Rungs 2 and 3: the video ───────────────────────────────────────────────────────────────────
@@ -208,6 +265,27 @@ function remotion(args) {
   const result = spawnSync(binary, args, { cwd: PACKAGE_ROOT, stdio: "inherit" });
   if (result.status !== 0) throw new Error(`remotion ${args[0]} exited with ${result.status}`);
   return Math.round((Date.now() - started) / 1000);
+}
+
+/**
+ * The DELIVERED mp4's own dimensions, read out of the container by `ffprobe`.
+ *
+ * The video analogue of `readPngSize`, and it exists for the same reason: the only reading the code
+ * that wrote the file cannot make agree with itself. `Root.tsx` sizes the composition and the
+ * component draws into it, both from the same table — so they agree by construction, and an encoder
+ * that letterboxed, or a `--scale` left on a command line, would arrive in the newsroom unnoticed.
+ */
+function mp4Size(path) {
+  const probe = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", path],
+    { encoding: "utf8" },
+  );
+  if (probe.status !== 0) throw new Error(`ffprobe could not read ${path}: ${probe.stderr}`);
+  const [width, height] = probe.stdout.trim().split(",").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`ffprobe returned no dimensions for ${path}: ${probe.stdout}`);
+  return { width, height };
 }
 
 if (wantFinalFrame || wantVideo) {
@@ -239,7 +317,14 @@ if (wantFinalFrame || wantVideo) {
   });
 
   const props = {
-    geometry: { frame: geometry.frame, route: geometry.route },
+    geometry: {
+      frame: geometry.frame,
+      // `mapStageBox` reads the longitude the camera actually showed off `frameCorners`, never the
+      // bounds somebody typed — so the video's stage decision rests on the same record the still's
+      // does, and neither is handed a number.
+      frameCorners: geometry.frameCorners,
+      route: geometry.route,
+    },
     crossings,
     cumKm,
     plate,
@@ -250,12 +335,18 @@ if (wantFinalFrame || wantVideo) {
     ground: BEAT.ground,
     accent: BEAT.accent,
     ...furniture,
+    size,
   };
 
-  const propsPath = join(outDir, "video-props.json");
+  // `remotion still` / `remotion render` select a beat by composition ID and nothing else, and
+  // `Root.tsx` now registers one per row of the video table.
+  const COMPOSITION = `${BEAT_ID}-${size}`;
+  const propsPath = join(outDir, `video-props-${size}.json`);
   await writeFile(propsPath, JSON.stringify(props));
 
-  const framePath = join(outDir, "final-frame.png");
+  // THE FINAL FRAME FIRST, and its size asserted, before an mp4 is spent. `--frame=-1` is the last
+  // frame of the hold — the state the beat ends in, which is the one a reviewer reads.
+  const framePath = join(outDir, `final-frame-${size}.png`);
   const stillSeconds = remotion([
     "still",
     ENTRY,
@@ -265,10 +356,15 @@ if (wantFinalFrame || wantVideo) {
     `--props=${propsPath}`,
     "--timeout=180000",
   ]);
-  console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s]`);
+  assertVideoSize(readPngSize(await readFile(framePath)), size, {
+    what: framePath,
+  });
+  console.log(
+    `final frame (--frame=-1) → ${framePath}  [${stillSeconds}s], verified from the file`,
+  );
 
   if (wantVideo) {
-    const videoPath = join(outDir, "flowmap.mp4");
+    const videoPath = join(outDir, `flowmap-${size}.mp4`);
     const videoSeconds = remotion([
       "render",
       ENTRY,
@@ -278,7 +374,11 @@ if (wantFinalFrame || wantVideo) {
       "--concurrency=1",
       "--timeout=180000",
     ]);
-    console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+    // THE DELIVERED CONTAINER, MEASURED. Not the composition's arguments — the mp4 on disk.
+    assertVideoSize(mp4Size(videoPath), size, { what: videoPath });
+    console.log(
+      `video → ${videoPath}  [${videoSeconds}s], verified from the container`,
+    );
   }
 }
 
