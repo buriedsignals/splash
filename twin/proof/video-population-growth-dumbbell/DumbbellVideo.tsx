@@ -58,20 +58,121 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { DUMBBELL_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 20, fontWeight: 400 };
-const LEGEND = { fontSize: 22, fontWeight: 600 };
-const ROW_LABEL = { fontSize: 24, fontWeight: 500 };
-const ROW_LABEL_ACCENT = { fontSize: 24, fontWeight: 700 };
-const VALUE_LABEL = { fontSize: 24, fontWeight: 600 };
-const NOTE = { fontSize: 20, fontWeight: 400 };
-const DOT_R = 7;
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "dumbbell";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: it said `1080 x 1080` here
+ * while `Root.tsx` said `width={1080} height={1080}` two files away, with nothing between them, so
+ * `size: portrait` on the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts — the legend's own gaps, the air under
+ * the header, the inset of a row label from the plot. Scaling the type and leaving those at their
+ * 1080-square value is what collided the title into the subtitle on the static probe's first run.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: this beat's
+ * credit was 20px on a 1080 frame, 6.7 CSS px on the phone a square post is read on.
+ *
+ * `PAD` is the one number that is NOT from here: a frame's margin is proportional to the CANVAS.
+ */
+const BASE = {
+  TITLE: { fontSize: 23, fontWeight: 700, lead: 29 },
+  SOURCE: { fontSize: 12, fontWeight: 400 },
+  LEGEND: { fontSize: 13, fontWeight: 600 },
+  ROW_LABEL: { fontSize: 14, fontWeight: 500 },
+  ROW_LABEL_ACCENT: { fontSize: 14, fontWeight: 700 },
+  VALUE_LABEL: { fontSize: 14, fontWeight: 600 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  DOT_R: 4,
+  RING_AIR: 4,
+  TITLE_TO_LEGEND: 24,
+  LEGEND_TO_PLOT: 34,
+  LEGEND_DOT_GAP: 13,
+  LEGEND_ITEM_GAP: 21,
+  LEGEND_ITEM_TEXT: 30,
+  SOURCE_BAND: 10,
+  SOURCE_AIR: 6,
+  ROW_LABEL_AIR: 4,
+  VALUE_LABEL_GAP: 4,
+  REFERENCE_LABEL_LIFT: 8,
+  DASH_REFERENCE: [5, 4],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline, and SVG
+ *  takes a sub-pixel width. The base is the width drawn at landscape. */
+const BASE_STROKE = { connector: 1.2, reference: 0.8, ring: 1.2 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    LEGEND: f(BASE.LEGEND) as typeof BASE.LEGEND,
+    ROW_LABEL: f(BASE.ROW_LABEL) as typeof BASE.ROW_LABEL,
+    ROW_LABEL_ACCENT: f(BASE.ROW_LABEL_ACCENT) as typeof BASE.ROW_LABEL_ACCENT,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    DOT_R: sp(BASE.DOT_R),
+    RING_AIR: sp(BASE.RING_AIR),
+    TITLE_TO_LEGEND: sp(BASE.TITLE_TO_LEGEND),
+    LEGEND_TO_PLOT: sp(BASE.LEGEND_TO_PLOT),
+    LEGEND_DOT_GAP: sp(BASE.LEGEND_DOT_GAP),
+    LEGEND_ITEM_GAP: sp(BASE.LEGEND_ITEM_GAP),
+    LEGEND_ITEM_TEXT: sp(BASE.LEGEND_ITEM_TEXT),
+    SOURCE_BAND: sp(BASE.SOURCE_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    ROW_LABEL_AIR: sp(BASE.ROW_LABEL_AIR),
+    VALUE_LABEL_GAP: sp(BASE.VALUE_LABEL_GAP),
+    REFERENCE_LABEL_LIFT: sp(BASE.REFERENCE_LABEL_LIFT),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      connector: st(BASE_STROKE.connector),
+      reference: st(BASE_STROKE.reference),
+      ring: st(BASE_STROKE.ring),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark.
+ *
+ * The still path hands `assertTypeFloor` the rendered SVG's own `font-size` attributes. A video
+ * composition's markup only exists inside the browser Remotion drives, so the equivalent reading is
+ * the element tree — walked, not listed, because a list re-states the tokens and the defect this
+ * closes is a token nobody listed.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 
 export type Row = {
   country: string;
@@ -198,6 +299,9 @@ export type DumbbellVideoProps = {
   referenceLabel: string;
   legendLabels: [string, string]; // ["2000", "2023"]
   subjectCountry: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter and read
+   *  back by `render.mjs`. Not a default: `sizeFor` throws naming all three. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -212,11 +316,38 @@ export function DumbbellVideo({
   referenceLabel,
   legendLabels,
   subjectCountry,
+  size,
   timing = DUMBBELL_TIMING,
 }: DumbbellVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const {
+    TITLE,
+    SOURCE,
+    LEGEND,
+    ROW_LABEL,
+    ROW_LABEL_ACCENT,
+    VALUE_LABEL,
+    NOTE,
+    DOT_R,
+  } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE, AND IN WHAT FORM — before anything is measured.
+  //
+  // A dumbbell's category axis is NOMINAL, so `formForSize` answers `transpose` at a tall or square
+  // frame: rows running down the frame, every name horizontal on one line. This beat already draws
+  // that form — it is row-driven, one country per row — so the twin form costs it nothing and all
+  // three sizes are drawable. The verdict is still consulted rather than assumed, because it is the
+  // thing that would refuse if this type ever stopped being row-driven.
+  const form = formForSize(TYPE, size);
+  if (form.verdict === "refuse")
+    throw new Error(
+      `video-population-growth-dumbbell: ${TYPE} cannot be drawn at ${size}. ${form.reason}`,
+    );
 
   if (data.length < 2)
     throw new Error(`need at least two rows, got ${data.length}`);
@@ -239,7 +370,7 @@ export function DumbbellVideo({
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const legendBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_LEGEND;
 
   const valueLabelFor = (r: Row) => en(r.index2023, 1);
   const conclusionLabelFor = (r: Row) =>
@@ -254,17 +385,26 @@ export function DumbbellVideo({
       ),
     ),
   );
+  // The value label clears the largest mark its row can carry — the subject's RING, not the plain
+  // dot — so one gap serves every row and the labels stay aligned with each other. It was a bare
+  // `+ 14` against a 7px dot and a 13px ring, which left the subject's label one pixel clear of its
+  // own ring at 1080 and would have landed ON it at any other scale. Derived, so it cannot.
+  const valueLabelGap = T.DOT_R + T.RING_AIR + T.VALUE_LABEL_GAP;
+  // Same derivation on the left: the subject's ring is drawn around its 2000 dot as well, and
+  // the category label used to end exactly on its edge. One gap for every row, so the names
+  // stay right-aligned with each other.
+  const rowLabelGap = T.DOT_R + T.RING_AIR + T.ROW_LABEL_AIR;
   const maxRightWidth = Math.max(
     ...data.map((r) => measureText(valueLabelFor(r), VALUE_LABEL)),
     measureText(conclusionLabelFor(subjectRow), VALUE_LABEL),
   );
 
   const padding = {
-    top: legendBaseline + 56,
-    right: PAD + 16 + maxRightWidth,
+    top: legendBaseline + T.LEGEND_TO_PLOT,
+    right: PAD + valueLabelGap + maxRightWidth,
     // Grown by the credit's own height plus clear air.
-    bottom: PAD + 16 + SOURCE.fontSize + 10,
-    left: PAD + 14 + maxCategoryWidth,
+    bottom: PAD + T.SOURCE_BAND + SOURCE.fontSize + T.SOURCE_AIR,
+    left: PAD + rowLabelGap + maxCategoryWidth,
   };
 
   const g = dumbbellGeometry(data, { width, height, padding });
@@ -330,7 +470,7 @@ export function DumbbellVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + 6]);
+  const ringRadius = interpolate(subjectSpring, [0, 1], [0, DOT_R + T.RING_AIR]);
   const ringOpacity = interpolate(subjectSpring, [0, 1], [0, 1]);
   const highlightOpacity = interpolate(subjectSpring, [0, 1], [0, 0.1]);
   // The category label crossfades from ink to bold accent, gated on the SUBJECT event's own
@@ -349,7 +489,7 @@ export function DumbbellVideo({
 
   const rowLabelBaselineOffset = ROW_LABEL.fontSize * 0.32;
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -386,9 +526,14 @@ export function DumbbellVideo({
           load-bearing, not decorative (`dumbbell.md`'s accessibility trap). Faded in over
           `establish` with the rest of the mark furniture, not present at frame 0. */}
       <g opacity={axisOpacity}>
-        <circle cx={PAD + 7} cy={legendBaseline - 7} r={7} fill={muted} />
+        <circle
+          cx={PAD + DOT_R}
+          cy={legendBaseline - DOT_R}
+          r={DOT_R}
+          fill={muted}
+        />
         <text
-          x={PAD + 22}
+          x={PAD + T.LEGEND_DOT_GAP}
           y={legendBaseline}
           fill={ink}
           fontSize={LEGEND.fontSize}
@@ -397,13 +542,23 @@ export function DumbbellVideo({
           {legendLabels[0]}
         </text>
         <circle
-          cx={PAD + 22 + measureText(legendLabels[0], LEGEND) + 35}
-          cy={legendBaseline - 7}
-          r={7}
+          cx={
+            PAD +
+            T.LEGEND_DOT_GAP +
+            measureText(legendLabels[0], LEGEND) +
+            T.LEGEND_ITEM_GAP
+          }
+          cy={legendBaseline - DOT_R}
+          r={DOT_R}
           fill={accent}
         />
         <text
-          x={PAD + 22 + measureText(legendLabels[0], LEGEND) + 50}
+          x={
+            PAD +
+            T.LEGEND_DOT_GAP +
+            measureText(legendLabels[0], LEGEND) +
+            T.LEGEND_ITEM_TEXT
+          }
           y={legendBaseline}
           fill={ink}
           fontSize={LEGEND.fontSize}
@@ -424,12 +579,12 @@ export function DumbbellVideo({
             y1={g.plot.top}
             y2={referenceY2}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.STROKE.reference}
+            strokeDasharray={T.DASH_REFERENCE}
           />
           <text
             x={g.ruleX}
-            y={g.plot.top - 14}
+            y={g.plot.top - T.REFERENCE_LABEL_LIFT}
             fill={muted}
             fontSize={NOTE.fontSize}
             textAnchor="middle"
@@ -443,9 +598,9 @@ export function DumbbellVideo({
       {/* The subject's highlight band, behind everything else in the row — a wash, not a mark. */}
       {highlightOpacity > 0 ? (
         <rect
-          x={36}
+          x={Math.round(PAD / 2)}
           y={g.points[subjectIndex].y - g.rowHeight / 2}
-          width={width - 72}
+          width={width - 2 * Math.round(PAD / 2)}
           height={g.rowHeight}
           fill={accent}
           opacity={highlightOpacity}
@@ -491,7 +646,7 @@ export function DumbbellVideo({
               y1={p.y}
               y2={p.y}
               stroke={muted}
-              strokeWidth={3}
+              strokeWidth={T.STROKE.connector}
               opacity={rowOpacity[i]}
             />
             <circle
@@ -502,7 +657,7 @@ export function DumbbellVideo({
               opacity={rowOpacity[i]}
             />
             <text
-              x={g.plot.left - 14}
+              x={g.plot.left - rowLabelGap}
               y={p.y + rowLabelBaselineOffset}
               fill={accented ? accent : ink}
               fontSize={accented ? ROW_LABEL_ACCENT.fontSize : ROW_LABEL.fontSize}
@@ -515,7 +670,7 @@ export function DumbbellVideo({
               {p.country}
             </text>
             <text
-              x={p.xRight + 14}
+              x={p.xRight + valueLabelGap}
               y={p.y + rowLabelBaselineOffset}
               fill={ink}
               fontSize={VALUE_LABEL.fontSize}
@@ -537,7 +692,7 @@ export function DumbbellVideo({
             r={ringRadius}
             fill="none"
             stroke={accent}
-            strokeWidth={3}
+            strokeWidth={T.STROKE.ring}
           />
           <circle
             cx={g.points[subjectIndex].xRight}
@@ -545,11 +700,23 @@ export function DumbbellVideo({
             r={ringRadius}
             fill="none"
             stroke={accent}
-            strokeWidth={3}
+            strokeWidth={T.STROKE.ring}
           />
         </g>
       ) : null}
 
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `video-population-growth-dumbbell at ${size}` },
+  );
+
+  return drawing;
 }

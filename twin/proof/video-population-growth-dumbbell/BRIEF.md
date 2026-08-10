@@ -1,4 +1,21 @@
+---
+size: landscape
+type: dumbbell
+---
+
 # Beat — Switzerland's population grew fastest of ten European countries since 2000
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and what the other two sizes would cost.** A dumbbell's category axis is nominal,
+so `formForSize` answers `transpose` at a square or tall frame — and this beat already draws that
+twin form, one country per row, so all three sizes are genuinely reachable for it. Landscape is
+pinned because it is the row R2 names for video, and because ten rows at the 30 px landscape floor
+fit its 1080 px of height with air to spare; the 1080 x 1080 this beat used to draw at was not a
+decision, it was a default.
 
 **Proves:** since 2000, Switzerland's population has grown faster than any of nine other European
 countries' — while Germany's and Poland's have barely moved.
