@@ -1,5 +1,5 @@
 {
-  "file": "/private/tmp/danube-r3/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "file": "/private/tmp/danube-r4/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
   "sweeps": [
     {
       "label": "1600x900 down",
@@ -260,19 +260,7 @@
     ]
   },
   "revealShape": {
-    "problems": [
-      "1600x900 step 2: a reader can only follow the river in 2 separate pieces — [[0,0.44],[0.515,0.725]] of its own length, the rest behind the prose card; the first piece stops 75px from badge 4 — the subject of the beat may be covered in part, never severed",
-      "1600x900 step 3: a reader can only follow the river in 2 separate pieces — [[0,0.435],[0.525,0.98]] of its own length, the rest behind the prose card; the first piece stops 85px from badge 4 — the subject of the beat may be covered in part, never severed",
-      "1600x900 step 4: a reader can only follow the river in 2 separate pieces — [[0,0.42],[0.52,1]] of its own length, the rest behind the prose card; the first piece stops 88px from badge 3 — the subject of the beat may be covered in part, never severed",
-      "1280x800 step 1: a reader can only follow the river in 3 separate pieces — [[0,0.1],[0.12,0.27],[0.29,0.36]] of its own length, the rest behind the prose card; the first piece stops 20px from badge 1 — the subject of the beat may be covered in part, never severed",
-      "1280x800 step 2: a reader can only follow the river in 4 separate pieces — [[0,0.1],[0.12,0.27],[0.29,0.44],[0.545,0.725]] of its own length, the rest behind the prose card; the first piece stops 20px from badge 1 — the subject of the beat may be covered in part, never severed",
-      "1280x800 step 3: a reader can only follow the river in 4 separate pieces — [[0,0.1],[0.12,0.27],[0.29,0.425],[0.545,0.98]] of its own length, the rest behind the prose card; the first piece stops 20px from badge 1 — the subject of the beat may be covered in part, never severed",
-      "1280x800 step 4: a reader can only follow the river in 5 separate pieces — [[0,0.1],[0.12,0.27],[0.29,0.365],[0.405,0.41],[0.55,1]] of its own length, the rest behind the prose card; the first piece stops 20px from badge 1 — the subject of the beat may be covered in part, never severed",
-      "375x812 step 1: a reader can only follow the river in 3 separate pieces — [[0,0.075],[0.15,0.245],[0.32,0.345]] of its own length, the rest behind the prose card; the first piece stops 17px from badge 1 — the subject of the beat may be covered in part, never severed",
-      "375x812 step 2: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces",
-      "375x812 step 3: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces",
-      "375x812 step 4: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces"
-    ],
+    "problems": [],
     "shape": [
       {
         "label": "1600x900 step 1",
@@ -285,7 +273,7 @@
           ]
         ],
         "absent": 0.532,
-        "hiddenByFurniture": 0.114
+        "unobservable": 0.114
       },
       {
         "label": "1600x900 step 2",
@@ -298,7 +286,7 @@
           ]
         ],
         "absent": 0.274,
-        "hiddenByFurniture": 0.08
+        "unobservable": 0.08
       },
       {
         "label": "1600x900 step 3",
@@ -311,7 +299,7 @@
           ]
         ],
         "absent": 0.02,
-        "hiddenByFurniture": 0.095
+        "unobservable": 0.095
       },
       {
         "label": "1600x900 step 4",
@@ -324,7 +312,7 @@
           ]
         ],
         "absent": 0,
-        "hiddenByFurniture": 0.104
+        "unobservable": 0.104
       },
       {
         "label": "1280x800 step 1",
@@ -337,7 +325,7 @@
           ]
         ],
         "absent": 0.502,
-        "hiddenByFurniture": 0.164
+        "unobservable": 0.164
       },
       {
         "label": "1280x800 step 2",
@@ -350,7 +338,7 @@
           ]
         ],
         "absent": 0.274,
-        "hiddenByFurniture": 0.129
+        "unobservable": 0.129
       },
       {
         "label": "1280x800 step 3",
@@ -363,7 +351,7 @@
           ]
         ],
         "absent": 0.02,
-        "hiddenByFurniture": 0.144
+        "unobservable": 0.144
       },
       {
         "label": "1280x800 step 4",
@@ -376,7 +364,7 @@
           ]
         ],
         "absent": 0,
-        "hiddenByFurniture": 0.204
+        "unobservable": 0.204
       },
       {
         "label": "375x812 step 1",
@@ -389,7 +377,7 @@
           ]
         ],
         "absent": 0.448,
-        "hiddenByFurniture": 0.343
+        "unobservable": 0.343
       },
       {
         "label": "375x812 step 2",
@@ -397,7 +385,7 @@
         "fragments": 0,
         "runs": [],
         "absent": 0,
-        "hiddenByFurniture": 1
+        "unobservable": 1
       },
       {
         "label": "375x812 step 3",
@@ -405,7 +393,7 @@
         "fragments": 0,
         "runs": [],
         "absent": 0,
-        "hiddenByFurniture": 1
+        "unobservable": 1
       },
       {
         "label": "375x812 step 4",
@@ -413,7 +401,7 @@
         "fragments": 0,
         "runs": [],
         "absent": 0,
-        "hiddenByFurniture": 1
+        "unobservable": 1
       }
     ]
   },

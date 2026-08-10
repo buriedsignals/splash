@@ -227,6 +227,42 @@ better if the camera were offset so the subject sat clear of the middle. **A sin
 should be BAKED off-centre** — that is a change to the bake and its committed geometry file, needs a
 live MapTiler key, and is named here rather than smuggled in.
 
+### The card is an overlay: it enters NO measurement of the visual (the tenth correction)
+
+> **A visual's own state, and every assertion made about it, are independent of the prose layer
+> travelling over it.** The card is an element above. It does not alter what the graphic draws, and
+> it may not be subtracted from what the graphic is measured to have drawn. No guard, at any width,
+> may report a defect whose cause is the card being in front of something.
+
+*"Le text panel du scrolly ne doit pas impacter le déroulé de la map. C'est un élément au-dessus, il
+n'a pas d'incidence."* — the owner, ruling on the Danube beat, 2026-08-10.
+
+**Why this needs writing down rather than leaving to sense.** The rule above about what the card
+covers is a COMPOSITION rule — it constrains where a beat puts its furniture. It is easy, and wrong,
+to read it as also licensing a *measurement*: if the card must not cover a label, then surely a
+guard should check what the card covers. The Danube beat built exactly that. Its reveal probe reads
+the painted pixels along the route, so it has to know where the card is — otherwise the card's white
+fill reads as unpainted river and the guard invents a hole every time the card crosses the line. From
+there it is one short step to counting *how much* the card takes away, and then to failing on it, and
+the beat shipped a red that said the river could only be followed in two pieces at 1600 × 900, three
+at 1280 × 800, and none at all on a phone. Every one of those numbers was correct about the
+composited picture and none of them was about the river, which is drawn whole underneath at every
+width.
+
+**The distinction that survives, and it is the useful half.** Knowing where the card is remains
+necessary — as an INSTRUMENT concern, never a subject one. A pixel the card is in front of is
+*unobservable*: it supports no claim in either direction. It may not count as a hole in the reveal,
+and it may not be aggregated into a defect of its own. Where an assertion needs the pixel it cannot
+read (Danube's "does the reveal reach the end of the river?"), the assertion is made against what
+*could* be read, or it is made somewhere else entirely — on the geometry, or on the state the driver
+publishes. Danube's `routeGeometry` is the model: it reads the delivered path against the beat's own
+last badge, sees a truncated or holed river with no browser at all, and cannot be confused by an
+overlay because it never looks at a composited pixel.
+
+**The practical test for a new guard.** Ask whether the same visual, rendered with the prose layer
+deleted, would produce a different verdict. If it would, the guard is measuring the overlay and does
+not belong.
+
 ## The prose has its own space (the eighth correction — REVERSED in part by the ninth, above)
 
 **Read the ninth correction first.** What this section describes that STILL SHIPS is the TRAVEL: an

@@ -131,24 +131,33 @@ strictly 0…910. A truncated route cannot even reach the delivered file: `borde
 route. And the input path is not it either — a **real wheel**, 40 notches, from a pointer over the
 map and over the card, at all three widths, takes progress 0 → 3 and reveal 371 → 910.
 
-**What IS happening, measured, is occlusion — and it is not phone-only.** The travelling prose card
-lies across the corridor and **severs the river**, which the first version of this guard explicitly
-excused: it ruled that a hidden sample may not break a painted run, because the vehicle's ninth
-correction allows covering. That rule is right about labels and wrong about the subject, and it is
-why the guard reported "one continuous prefix" on the very frame the owner was looking at.
+**What was left is the prose card passing in front of the river — and it is NOT a measurement this
+beat makes.** Following the line at 1600 × 900, it runs from the Black Forest and disappears behind
+the card around badges 3–4, then reappears in Hungary and carries on to 9: the reported picture,
+produced by the overlay rather than by the dash. The owner ruled on it directly:
 
-| Frame | What a reader can follow, at the last step |
-| --- | --- |
-| 1600 × 900 | **2 pieces**, `[0, 0.42]` and `[0.52, 1]`; the first stops 88 px from badge 3 |
-| 1280 × 800 | pieces from `[0, 0.1]` to `[0.55, 1]`; the dominant break is the card, over Slovakia |
-| 375 × 812 | the card hides **1.00** of the river at steps 2, 3 and 4 — no river at all |
+> *"Le text panel du scrolly ne doit pas impacter le déroulé de la map. C'est un élément au-dessus,
+> il n'a pas d'incidence."*
 
-Follow it from the Black Forest at 1600 and the line stops where the card starts, by badges 3–4, and
-resumes in Hungary: *"le trait s'arrête à 4 au lieu d'aller au bout jusqu'à 9."* Same reported
-picture, different mechanism from the dash. **This is a real open defect and it is not fixed here** —
-an opaque card that travels the whole height of a frame whose subject is a continuous line spanning
-it will sever that line, and the card is the vehicle's, not this beat's. It is asserted rather than
-recorded, so it stays loud: `drive.mjs` is RED on this beat until it is answered.
+So the river is drawn whole and the card travels over it, and **nothing here counts what the card
+takes away**. For one round this file did: a "what a reader can follow" measurement that subtracted
+the card and went red at all three widths. It is gone, and the rule now lives at the vehicle's level
+as the **tenth correction** in `twin-scrolly`'s `references/scrolly-discipline.md` — *a visual's own
+state, and every assertion about it, are independent of the prose layer travelling over it* — so that
+no later beat rebuilds it. What survives is the distinction that instrument and subject are not the
+same thing: this probe reads composited pixels, so it must still know where the card is, or the
+card's white fill reads as missing river. A pixel behind the card is **unobservable** — it supports
+no claim either way, it is recorded as a confidence figure (0.08–0.20 at the desktop widths, 1.00 at
+375 × 812 on steps 2–4) and asserted on never. Completeness at the last step is judged against how
+far the probe could actually read, so a card in front of the tail cannot be mistaken for a journey
+that stops short.
+
+**One observation, recorded and deliberately not a guard.** At 375 × 812 the card is in front of the
+entire river on three of the four steps — the geometry that causes it is this beat's 2.14 : 1 plate
+contained into a 0.61 : 1 frame, which leaves every mark inside a 175 px band of a 617 px graphic.
+The river is drawn correctly underneath; whether a phone reader is well served by a step whose
+sentence names a river they cannot see at that moment is a composition question for the
+portrait/mobile work, not a defect of this beat, and it is stated here once rather than made red.
 
 **The leaders were reported as arrows across the frame and are not in this artifact**: over the same
 1508 frames the leader path is EMPTY at 1600 × 900, 1280 × 800, 375 × 812 and 1512 × 850 — no badge

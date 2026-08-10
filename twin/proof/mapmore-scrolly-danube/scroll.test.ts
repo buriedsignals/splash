@@ -902,7 +902,8 @@ describe("the painted reveal is one piece that starts at the source and finishes
       firstPainted: 0,
       firstAbsent: 0.365,
       absent: 0.63,
-      hidden: 0.02,
+      lastObservable: 1,
+      unobservable: 0.02,
       ...over,
     },
   });
@@ -946,7 +947,8 @@ describe("the painted reveal is one piece that starts at the source and finishes
           firstPainted: 0,
           firstAbsent: 0.825,
           absent: 0.17,
-          hidden: 0.01,
+          lastObservable: 1,
+          unobservable: 0.01,
         },
       },
     ]);
@@ -967,7 +969,8 @@ describe("the painted reveal is one piece that starts at the source and finishes
             firstPainted: 0,
             firstAbsent: null,
             absent: 0,
-            hidden: 0.18,
+            lastObservable: 1,
+            unobservable: 0.18,
           },
         },
       ]).problems,
@@ -975,8 +978,8 @@ describe("the painted reveal is one piece that starts at the source and finishes
   });
 
   it("does NOT call a river the prose card partly lies across two pieces", () => {
-    // The point of the third state. Covering is what the vehicle's ninth correction allows; a
-    // hidden sample may neither bridge two runs nor stand in for a hole.
+    // The point of the third state. The card is an overlay above the visual, so a sample behind it
+    // may neither bridge two runs nor stand in for a hole.
     expect(
       revealShape([
         {
@@ -989,108 +992,85 @@ describe("the painted reveal is one piece that starts at the source and finishes
             firstPainted: 0,
             firstAbsent: null,
             absent: 0,
-            hidden: 0.53,
+            lastObservable: 1,
+            unobservable: 0.53,
           },
         },
       ]).problems,
     ).toEqual([]);
   });
 
-  it("catches the river SEVERED by the card, in the reader's own vocabulary", () => {
-    // The frame the owner re-opened: at 1600x900 at the last step nothing is unpainted — the dash
-    // asked for the whole river — and an opaque 409px card sits across the corridor, so a reader
-    // following the line from the Black Forest watches it stop. *"le trait s'arrête à 4 au lieu
-    // d'aller au bout jusqu'à 9."* The first version of this file called that state clean.
+  it("reports nothing about the card, at any width, including when it is in front of everything", () => {
+    // THE OWNER'S RULING, as a test. *"Le text panel du scrolly ne doit pas impacter le déroulé de
+    // la map. C'est un élément au-dessus, il n'a pas d'incidence."* At 375x812 on this build the
+    // card is in front of the whole river at steps 2, 3 and 4 — the probe reads nothing — and that
+    // is not a defect of the river, which is drawn whole underneath. A previous round made this red
+    // twice over (once as "hides 100%", once as "severed in 2 pieces"); both are gone.
+    expect(
+      revealShape([
+        {
+          label: "375x812 step 2",
+          step: 2,
+          steps: 4,
+          reveal: {
+            fragments: 0,
+            runs: [],
+            firstPainted: null,
+            firstAbsent: null,
+            absent: 0,
+            lastObservable: null,
+            unobservable: 1,
+          },
+        },
+      ]).problems,
+    ).toEqual([]);
+  });
+
+  it("does not call a river it could not read one that never finishes", () => {
+    // The same state at the LAST step, where completeness is judged. With no observable sample there
+    // is nothing to judge it against, so it is not judged — `routeGeometry` and `revealSpan` carry
+    // the assertion that the river is drawn whole and revealed to its end.
+    expect(
+      revealShape([
+        {
+          label: "375x812 step 4",
+          step: 4,
+          steps: 4,
+          reveal: {
+            fragments: 0,
+            runs: [],
+            firstPainted: null,
+            firstAbsent: null,
+            absent: 0,
+            lastObservable: null,
+            unobservable: 1,
+          },
+        },
+      ]).problems,
+    ).toEqual([]);
+  });
+
+  it("still catches a reveal that stops short of what COULD be read", () => {
+    // The card being in front of the tail is not an excuse for the dash stopping in the middle of
+    // what is plainly visible: the river was readable to 92% and painted to 60%.
     const verdict = revealShape([
       {
-        label: "1600x900 step 4",
+        label: "1280x800 step 4",
         step: 4,
         steps: 4,
         reveal: {
           fragments: 1,
-          runs: [[0, 1]],
-          visiblePieces: 2,
-          pieces: [
-            [0, 0.34],
-            [0.46, 1],
-          ],
-          stopsNear: { badge: "4", px: 31 },
+          runs: [[0, 0.6]],
           firstPainted: 0,
-          firstAbsent: null,
-          absent: 0,
-          hidden: 0.1,
+          firstAbsent: 0.61,
+          absent: 0.3,
+          lastObservable: 0.92,
+          unobservable: 0.08,
         },
       },
     ]);
-    expect(verdict.problems).toHaveLength(1);
-    expect(verdict.problems[0]).toContain("in 2 separate pieces");
-    expect(verdict.problems[0]).toContain("stops 31px from badge 4");
-    expect(verdict.problems[0]).toContain("never severed");
-  });
-
-  it("lets a badge sitting on the line pass — a small interruption is not a severing", () => {
-    expect(
-      revealShape([
-        {
-          label: "1600x900 step 4",
-          step: 4,
-          steps: 4,
-          reveal: {
-            fragments: 1,
-            runs: [[0, 1]],
-            visiblePieces: 1,
-            pieces: [[0, 1]],
-            stopsNear: null,
-            firstPainted: 0,
-            firstAbsent: null,
-            absent: 0,
-            hidden: 0.06,
-          },
-        },
-      ]).problems,
-    ).toEqual([]);
-  });
-
-  it("catches the card hiding the SUBJECT whole, which is what the owner actually saw", () => {
-    // Measured on this build at 375x812, steps 2, 3 and 4: hidden 1.00.
-    const verdict = revealShape([
-      {
-        label: "375x812 step 2",
-        step: 2,
-        steps: 4,
-        reveal: {
-          fragments: 0,
-          runs: [],
-          firstPainted: null,
-          firstAbsent: null,
-          absent: 0,
-          hidden: 1,
-        },
-      },
-    ]);
-    expect(verdict.problems).toHaveLength(1);
-    expect(verdict.problems[0]).toContain("hide 100% of the river");
-    expect(verdict.problems[0]).toContain("two disconnected pieces");
-  });
-
-  it("does not also accuse a hidden river of never finishing — that would name the wrong defect", () => {
-    const verdict = revealShape([
-      {
-        label: "375x812 step 4",
-        step: 4,
-        steps: 4,
-        reveal: {
-          fragments: 0,
-          runs: [],
-          firstPainted: null,
-          firstAbsent: null,
-          absent: 0,
-          hidden: 1,
-        },
-      },
-    ]);
-    expect(verdict.problems).toHaveLength(1);
-    expect(verdict.problems.join()).not.toContain("never finishes");
+    expect(verdict.problems.join("\n")).toContain("the journey never finishes");
+    expect(verdict.problems.join("\n")).toContain("92% of it could be read");
   });
 
   it("says so rather than passing when nothing was measured", () => {
@@ -1100,11 +1080,7 @@ describe("the painted reveal is one piece that starts at the source and finishes
   });
 
   it("states its own thresholds", () => {
-    expect(REVEAL_SHAPE).toEqual({
-      completeAt: 0.98,
-      headWithin: 0.02,
-      hiddenAtMost: 0.95,
-    });
+    expect(REVEAL_SHAPE).toEqual({ completeAt: 0.98, headWithin: 0.02 });
   });
 });
 

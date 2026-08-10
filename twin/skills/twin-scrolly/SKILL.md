@@ -92,6 +92,16 @@ sliced the seed's own y-axis labels for 48 consecutive frames; edge to edge it s
 217, driven); at 140% it stands entirely clear on 26-35 of ~240 and two cards are never on screen at
 once, while the step/progress drift stays at 0.58 against a 0.65 ceiling.
 
+**AND THE CARD ENTERS NO MEASUREMENT OF THE VISUAL.** *"Le text panel du scrolly ne doit pas
+impacter le déroulé de la map. C'est un élément au-dessus, il n'a pas d'incidence."* A visual's own
+state, and every assertion about it, are independent of the prose layer travelling over it — no
+guard, at any width, may report a defect whose cause is the card being in front of something. A
+probe that reads composited pixels still has to know where the card is, or the card's fill reads as
+missing subject; that is an INSTRUMENT concern, and a pixel behind the card is *unobservable* rather
+than evidence of anything. The test for a new guard: would the same visual with the prose layer
+deleted produce a different verdict? Then it is measuring the overlay. Full reasoning, and the beat
+that got this wrong first, in `references/scrolly-discipline.md` (the tenth correction).
+
 **AND THE VEHICLE NOW PUBLISHES A CONTINUOUS SIGNAL, not only a step.** With the prose travelling
 again the owner drove the two single-visual beats: *faut que ce soit fluide et que l'élément évolue
 au fur et à mesure du temps.* Right, and structural: the vehicle published a step class and a 0.3s
@@ -136,7 +146,7 @@ residue.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/scrolly-discipline.md` | What the card covers and the three things that follow from measuring it; the fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the sticky model and the two-cell split kept as history because nine rounds of corrections are only legible against them; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
+| Doctrine | `references/scrolly-discipline.md` | What the card covers and the three things that follow from measuring it; why the card is an overlay that enters no measurement of the visual (the tenth correction); the fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the sticky model and the two-cell split kept as history because nine rounds of corrections are only legible against them; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
 | Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (the beat's four-step arc: id, `frameKind`, prose-as-a-function), the four frame components (`ImageFrame`, `DrawnGraphicFrame`, `MapFrame`, `ChartFrame`), and the placement constants: `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `FRAME`, `CHART_LAYOUT` |
 | Seed data | `assets/gauge-data.ts` | `parseRdb`, `parseReadings`, `readStation`, `deriveFacts`, `group`, `dayAndMonth` — the beat's own reading layer. Nothing here draws; nothing that draws computes a fact |
 | Interaction | `assets/interaction.mjs` | `pickActiveStep` and `measureProgress` (both pure, both unit-tested) + `initScrolly` (on every scroll of the card layer, measures every panel against the lane — which IS that layer's own scrollport, covering the graphic edge to edge — toggles `.active` on the winning step and frame, and publishes `data-progress` — the continuous fractional index a consumer scrubs a visual against). Nothing hides a panel any more. No `IntersectionObserver` — see the file's own header. `initAll` runs it |

@@ -218,29 +218,31 @@ export function lineWeight(measured, band = DRAWN_LINE_PX) {
 // reveal that stops short would all have passed. The two states this file could not tell apart are
 // the two the owner is describing, so they are now separated by measurement.
 //
-// THE THIRD STATE IS WHY THIS IS NOT NAIVE. A sample can be PAINTED, ABSENT, or hidden — under the
-// travelling prose card or a badge. Covering is explicitly ALLOWED by the vehicle's ninth
-// correction, so a hidden sample may neither bridge two painted runs nor count as a hole. It is
-// reported as `hidden` instead, because a card lying across the middle of the river is the one
-// mechanism in this beat that makes a single line LOOK like two pieces — measured on this build at
-// up to 0.53 of the river's length on a phone.
+// THE THIRD STATE IS WHY THIS IS NOT NAIVE, AND IT IS NOT A MEASUREMENT OF THE CARD. A sample can
+// be PAINTED, ABSENT, or UNOBSERVABLE — behind the travelling prose card or a badge. The card is an
+// overlay above the visual and has no incidence on it: *"Le text panel du scrolly ne doit pas
+// impacter le déroulé de la map. C'est un élément au-dessus, il n'a pas d'incidence."* So an
+// unobservable sample makes no claim in either direction. It may not count as a hole — the river
+// under the card is drawn, and treating a covering as a hole would invent a defect every time the
+// card crosses the line. And it may not produce a defect of its own: a reading of how much the card
+// takes away is a reading of the overlay, not of the river.
+//
+// This file carried such a reading for one round — a count of "what a reader can follow", which
+// subtracted the card and went red at all three widths — and it is gone. The rule now lives at the
+// vehicle's level, in `twin-scrolly`'s doctrine, so that no later beat rebuilds it: a visual's own
+// state, and every assertion about it, are independent of the prose layer travelling over it.
+//
+// What survives from that round is the assertion that was genuinely missing, and it is about the
+// GEOMETRY rather than the paint — see `routeGeometry` below. An arc-length measurement is blind to
+// a path that is short or holed, and that blindness was real.
 
-// AND THE THIRD STATE IS WHERE THE REAL DEFECT TURNED OUT TO BE. Running this guard for the first
-// time measured, at 375 × 812, that the travelling prose card hides **the whole river — 1.00 of its
-// length — at the settled position of steps 2, 3 and 4**, against 0.08–0.20 at 1600 × 900 and
-// 1280 × 800. On a phone a reader at three of the four steps sees no river at all: a sliver of
-// Germany above the card and a sliver of Croatia and Serbia below it, with an opaque white block
-// between them. That is the owner's *"un bout … et un second bout … avec rien entre les deux"*,
-// produced by OCCLUSION and not by the dash. Covering a label is allowed; covering the SUBJECT
-// whole, at the position a step settles on, is not — so it is asserted rather than recorded.
-
-/** How complete the river must be by the last step, how far it may start from the source, and how
- *  much of it the furniture may hide at a settled step. */
-export const REVEAL_SHAPE = { completeAt: 0.98, headWithin: 0.02, hiddenAtMost: 0.95 };
+/** How complete the river must be by the last step, and how far it may start from the source. */
+export const REVEAL_SHAPE = { completeAt: 0.98, headWithin: 0.02 };
 
 /**
  * The verdict on the painted shape of the reveal, one entry per measured position:
- * `{ label, step, steps, reveal: { fragments, runs, firstPainted, firstAbsent, absent, hidden } }`.
+ * `{ label, step, steps, reveal: { fragments, runs, firstPainted, firstAbsent, absent,
+ * lastObservable, unobservable } }`.
  */
 export function revealShape(measured, band = REVEAL_SHAPE) {
   const problems = [];
@@ -255,41 +257,27 @@ export function revealShape(measured, band = REVEAL_SHAPE) {
         `${m.label}: the river is painted in ${r.fragments} pieces — ${JSON.stringify(r.runs)} of its own ` +
           `length, with real gaps between them, where a progressive reveal must paint ONE prefix`,
       );
-    // WHAT THE READER FOLLOWS. Separate from the count above and not a duplicate of it: that one
-    // asks what the reveal ASKED to be drawn, this one asks what a reader can actually trace. A
-    // card lying across the corridor severs the river without leaving a single unpainted sample,
-    // and the first version of this file ruled that state clean — on the exact frame the owner was
-    // looking at when he said *"le trait s'arrête à 4."*
-    if ((r.visiblePieces ?? 1) > 1)
-      problems.push(
-        `${m.label}: a reader can only follow the river in ${r.visiblePieces} separate pieces — ` +
-          `${JSON.stringify(r.pieces)} of its own length, the rest behind the prose card` +
-          (r.stopsNear ? `; the first piece stops ${r.stopsNear.px}px from badge ${r.stopsNear.badge}` : "") +
-          ` — the subject of the beat may be covered in part, never severed`,
-      );
     // A reveal that starts away from the source. `firstPainted` null means nothing was painted at
     // all, which only the last step can be judged on (early steps legitimately paint little and a
-    // card can hide all of it on a phone).
+    // card can be in front of all of it on a phone).
     if (r.firstPainted !== null && r.firstAbsent !== null && r.firstAbsent < r.firstPainted)
       problems.push(
         `${m.label}: the river's first ${(r.firstPainted * 100).toFixed(0)}% is absent while later ` +
           `stretches are painted — the reveal is not starting at the source`,
       );
-    // THE SUBJECT MUST BE VISIBLE WHERE A STEP SETTLES. Checked before completeness, because a
-    // river the furniture hides whole cannot be measured for completeness and reporting "it never
-    // finishes" there would name the wrong defect.
-    if (r.hidden > band.hiddenAtMost)
-      problems.push(
-        `${m.label}: the prose card and badges hide ${(r.hidden * 100).toFixed(0)}% of the river at the ` +
-          `position this step settles on — a reader here sees no river at all, only what shows above and ` +
-          `below the card, which reads as two disconnected pieces`,
-      );
-    else if (m.step === m.steps) {
+    if (m.step === m.steps) {
+      // COMPLETENESS IS JUDGED AGAINST WHAT THE PROBE COULD SEE, not against the whole length. Where
+      // the card is in front of the river's tail there is no pixel to read, and turning that into
+      // "the journey never finishes" would be making a claim about the visual out of a limitation of
+      // the instrument — which is exactly the confusion the owner's ruling forbids. `lastObservable`
+      // is null when nothing at all could be read, and then completeness is simply not measurable
+      // here: `routeGeometry` and `revealSpan` carry the assertion instead.
+      const reach = r.lastObservable ?? null;
       const end = r.runs.length ? r.runs[r.runs.length - 1][1] : 0;
-      if (end < band.completeAt)
+      if (reach !== null && end < Math.min(band.completeAt, reach - 0.02))
         problems.push(
           `${m.label}: at the last step the river reaches only ${(end * 100).toFixed(1)}% of its own ` +
-            `length — the journey never finishes`,
+            `length, where ${(reach * 100).toFixed(0)}% of it could be read — the journey never finishes`,
         );
       if (r.absent > 0.005)
         problems.push(
@@ -305,7 +293,8 @@ export function revealShape(measured, band = REVEAL_SHAPE) {
       fragments: m.reveal ? m.reveal.fragments : null,
       runs: m.reveal ? m.reveal.runs : null,
       absent: m.reveal ? Number(m.reveal.absent.toFixed(3)) : null,
-      hiddenByFurniture: m.reveal ? Number(m.reveal.hidden.toFixed(3)) : null,
+      // Instrument confidence. Not a property of the visual — see the note above the band.
+      unobservable: m.reveal ? Number((m.reveal.unobservable ?? 0).toFixed(3)) : null,
     })),
   };
 }

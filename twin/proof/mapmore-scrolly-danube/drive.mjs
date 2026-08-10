@@ -272,23 +272,26 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   // covers the whole river and every measurement below reads "hidden". Found by running this guard
   // for the first time: it reported 100% of the river hidden at 375px and a journey that never
   // finishes, on a page whose river is drawn correctly.
-  // The two are kept APART, and the distinction is load-bearing below: a badge is this beat's own
-  // label sitting on the place it names, and an eye reads a river straight through a 22px disc. The
-  // prose card is foreign furniture 409px wide. Only the second can sever a river.
+  //
+  // THE PROSE CARD IS NOT PART OF THE VISUAL, and this list exists only so the probe does not
+  // mistake it for one. *"Le text panel du scrolly ne doit pas impacter le déroulé de la map. C'est
+  // un élément au-dessus, il n'a pas d'incidence."* — the owner, ruling on exactly this beat. The
+  // river is drawn whole and the card passes in front of it; where it does, this probe cannot read
+  // the pixel underneath, so those samples are marked UNOBSERVABLE and no assertion is made from
+  // them either way. Nothing here counts what the card takes away, and nothing downstream may:
+  // `twin-scrolly`'s doctrine carries the rule.
   const boxOf = (el) => {
     const r = el.getBoundingClientRect();
     return { left: r.left * ratio - 4, right: r.right * ratio + 4, top: r.top * ratio - 4, bottom: r.bottom * ratio + 4 };
   };
   const onScreen = (el) =>
     Number(getComputedStyle(el).opacity) > 0.05 && getComputedStyle(el).visibility !== "hidden";
-  // The card the reader is reading, not the ones mid-fade behind it: the scaffold cross-fades four
-  // panels and a neighbour at opacity 0.1 takes nothing away from a river, but it did add two
-  // phantom "pieces" per width to the first run of this measurement.
-  const cards = Array.from(document.querySelectorAll(".step-panel"))
-    .filter((el) => Number(getComputedStyle(el).opacity) > 0.5)
+  const occluders = [
+    ...Array.from(document.querySelectorAll(".step-panel")),
+    ...Array.from(root.querySelectorAll("[data-badge]")),
+  ]
+    .filter(onScreen)
     .map(boxOf);
-  const discs = Array.from(root.querySelectorAll("[data-badge]")).filter(onScreen).map(boxOf);
-  const occluders = [...cards, ...discs];
 
   const widths = [];
   let rejected = 0;
@@ -344,19 +347,18 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   // can reappear at the far end), and it is what the owner described. Measured on the paint rather
   // than on the dash attribute, because the attribute is what would be believed.
   //
-  // Three states per sample, and the third one matters: PAINTED, ABSENT, and UNKNOWN — occluded by
-  // the travelling prose card or a badge, or off the frame. **An unknown may not bridge two painted
-  // runs**, and it may not stand in for an absent one either: a card lying across the river hides
-  // it, which is a covering and not a hole, and counting it as a hole would invent this defect
-  // every time the card crosses the line.
+  // Three states per sample, and the third one matters: PAINTED, ABSENT, and UNOBSERVABLE — behind
+  // the travelling prose card or a badge, or off the frame. An unobservable sample makes no claim in
+  // either direction: it may not stand in for an absent one, because the card lying across the river
+  // is a covering and not a hole and counting it as a hole would invent this defect every time the
+  // card crosses the line; and it does not break a painted run, because the river under it is drawn.
+  // `unobservable` is recorded as a confidence figure for THIS INSTRUMENT — how much of the path the
+  // probe could not read — and never as a fact about the visual.
   const REVEAL_N = 200;
   const inside = (o, p) => p.x >= o.left && p.x <= o.right && p.y >= o.top && p.y <= o.bottom;
   const state = [];
-  /** Which samples the CARD in particular takes away — the only occluder that can sever. */
-  const behindCard = [];
   for (let k = 0; k <= REVEAL_N; k++) {
     const here = toScreen(line.getPointAtLength((total * k) / REVEAL_N));
-    behindCard.push(cards.some((o) => inside(o, here)));
     if (here.x < 0 || here.y < 0 || here.x >= width || here.y >= height) {
       state.push(-1);
       continue;
@@ -374,7 +376,7 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
     state.push(best > 0.4 ? 1 : 0);
   }
   // Painted runs, where a run ends only at a REAL absent sample. This is the DASH's own shape —
-  // what the reveal asks to be drawn — and a hidden sample deliberately does not break it.
+  // what the reveal asks to be drawn — and an unobservable sample deliberately does not break it.
   const runs = [];
   let open = null;
   for (let k = 0; k <= REVEAL_N; k++) {
@@ -388,59 +390,16 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   const firstAbsent = state.indexOf(0);
   const firstPainted = state.indexOf(1);
 
-  // ── AND WHAT THE READER'S EYE FOLLOWS, which is a different count ─────────────────────────────
-  //
-  // The first version of this measurement ruled that a hidden sample may not break a painted run,
-  // on the grounds that the vehicle's ninth correction allows the card to COVER things. That rule
-  // is right about labels and wrong about the subject, and ruling it that way is what made this
-  // guard report "one continuous prefix" on the very frame the owner was looking at when he said
-  // *"le trait s'arrête à 4 au lieu d'aller au bout jusqu'à 9."* A reader following a river does
-  // not care whether the missing middle is unpainted or covered: the line stops.
-  //
-  // So a VISIBLE piece ends where the CARD takes the line away — and only there. A sample lost to
-  // a badge is read straight through: this beat's own numbered disc sitting on the place it names
-  // is not a severed river, and counting it as one produced five "pieces" at 1280x800 on a build
-  // whose only real break is the card. Being unpainted does not break a piece either — that is the
-  // reveal not having got there yet, which the `runs` count above is for.
-  // Runs of samples the reader can actually see, then merged back across any gap the card had no
-  // part in — which is what makes a badge on the line a non-event and the card a severing.
-  const visible = [];
-  let open = null;
-  for (let k = 0; k <= REVEAL_N; k++) {
-    if (state[k] === 1 && open === null) open = k;
-    if (state[k] !== 1 && open !== null) {
-      visible.push([open, k - 1]);
-      open = null;
+  // HOW FAR THE PROBE COULD STILL SEE. Completeness is judged against this rather than against the
+  // whole length: where the card is in front of the river's tail there is no pixel to read, and
+  // asserting "the journey never finishes" from that would be making a claim about the visual out of
+  // a limitation of the instrument. `null` when nothing at all was observable.
+  let lastObservable = null;
+  for (let k = REVEAL_N; k >= 0; k--)
+    if (state[k] !== -1) {
+      lastObservable = k / REVEAL_N;
+      break;
     }
-  }
-  if (open !== null) visible.push([open, REVEAL_N]);
-  // A break counts when the card takes away at least `BREAK_MIN` samples — 2% of the river. Below
-  // that the line only grazes a corner of the card, which an eye reads through; counting those gave
-  // "5 pieces" at 1280x800 on a frame that visibly has two.
-  const BREAK_MIN = 4;
-  const pieces = [];
-  for (const run of visible) {
-    const last = pieces[pieces.length - 1];
-    const cardSamples = last ? behindCard.slice(last[1] + 1, run[0]).filter(Boolean).length : 0;
-    if (last && cardSamples < BREAK_MIN) last[1] = run[1];
-    else pieces.push([...run]);
-  }
-  // Where the FIRST visible piece stops, and which of this beat's own badges is nearest to that
-  // point — so the report can say "it stops at 4" in the reader's own vocabulary rather than in
-  // arc-length fractions.
-  let stopsNear = null;
-  if (pieces.length > 1) {
-    const end = line.getPointAtLength((total * pieces[0][1]) / REVEAL_N);
-    const p = toScreen(end);
-    let best = null;
-    for (const el of root.querySelectorAll("[data-badge]")) {
-      if (Number(getComputedStyle(el).opacity) <= 0.05) continue;
-      const r = el.getBoundingClientRect();
-      const d = Math.hypot(p.x / ratio - (r.left + r.width / 2), p.y / ratio - (r.top + r.height / 2));
-      if (!best || d < best.d) best = { d, text: el.textContent.trim() };
-    }
-    stopsNear = best ? { badge: best.text, px: Number(best.d.toFixed(0)) } : null;
-  }
 
   return {
     samples: widths.length,
@@ -453,19 +412,18 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
     reveal: {
       fragments: runs.length,
       runs: runs.map((r) => [Number(r[0].toFixed(3)), Number(r[1].toFixed(3))]),
-      // What a reader's eye follows: covered counts as broken.
-      visiblePieces: pieces.length,
-      pieces: pieces.map((r) => [Number((r[0] / REVEAL_N).toFixed(3)), Number((r[1] / REVEAL_N).toFixed(3))]),
-      stopsNear,
       // Painted before anything is absent = the reveal starts at the source. `-1` for either means
       // the state never occurs, which the verdict reads rather than guesses at.
       firstPainted: firstPainted < 0 ? null : firstPainted / REVEAL_N,
       firstAbsent: firstAbsent < 0 ? null : firstAbsent / REVEAL_N,
       absent: state.filter((s) => s === 0).length / (REVEAL_N + 1),
-      // How much of the river the travelling card and the badges hide at this position. Recorded,
-      // not failed on: the vehicle's ninth correction rules that covering is allowed. It is here
-      // because it is the one mechanism in this beat that can make the river LOOK like two pieces.
-      hidden: state.filter((s) => s === -1).length / (REVEAL_N + 1),
+      lastObservable,
+      // INSTRUMENT CONFIDENCE, NOT A FACT ABOUT THE VISUAL. The share of the path this probe could
+      // not read a pixel for, because the prose card or a badge was in front of it. The card is an
+      // overlay and has no incidence on the river's own state, so nothing is asserted from this
+      // number and nothing downstream may derive a defect from it — it is here so that a run of
+      // "the probe saw nothing" is legible as such instead of being mistaken for evidence.
+      unobservable: state.filter((s) => s === -1).length / (REVEAL_N + 1),
     },
   };
 };
