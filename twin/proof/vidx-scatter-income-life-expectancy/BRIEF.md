@@ -1,4 +1,21 @@
+---
+size: landscape
+type: scatter
+---
+
 # Beat — among twenty wealthy countries, the United States has the lowest life expectancy
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and why the other two refuse by name.** `type-at-size.mjs` carries a NAMED
+refusal for a scatter rather than an unmeasured one: rotating it violates conventions of reading
+direction (Horak et al. §2.4.2), so it has no twin form, and what a phone frame runs out of budget
+on here is DENSITY — twenty labelled points in a cloud — not aspect. Neither has been measured.
+Both refuse loudly instead of returning a cloud squeezed into a column with nothing clipped and
+nothing colliding. The 1080 x 1080 this beat used to draw at was not a decision, it was a default.
 
 **Proves:** across twenty high-income countries in 2022, the United States has the lowest life
 expectancy at birth (78.0 years) of any of them — below every single peer, including several with

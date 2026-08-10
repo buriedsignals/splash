@@ -33,15 +33,122 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { SCATTER_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 21, fontWeight: 400, lead: 27 };
-const AXIS = { fontSize: 20, fontWeight: 400 };
-const AXIS_TITLE = { fontSize: 21, fontWeight: 600 };
-const LABEL = { fontSize: 25, fontWeight: 700 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "scatter";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts. And two font sizes were not tokens at
+ * all — `fontSize={20}` at the reference label and `fontSize={24}` at the conclusion, written bare
+ * at the mark, which is the static seed's GAP_NOTE defect exactly.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: the axis was
+ * 20px on a 1080 frame, 6.7 CSS px on the phone a square post is read on.
+ */
+const BASE = {
+  TITLE: { fontSize: 23, fontWeight: 700, lead: 29 },
+  SOURCE: { fontSize: 13, fontWeight: 400, lead: 16 },
+  AXIS: { fontSize: 12, fontWeight: 400 },
+  AXIS_TITLE: { fontSize: 13, fontWeight: 600 },
+  LABEL: { fontSize: 15, fontWeight: 700 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  CONCLUSION: { fontSize: 14, fontWeight: 700 },
+  CONCLUSION_RESERVE: 24,
+  TITLE_TO_CONCLUSION: 22,
+  PLOT_RIGHT_AIR: 6,
+  X_LABEL_BAND: 34,
+  SOURCE_AIR: 6,
+  Y_GUTTER_AIR: 16,
+  Y_TICK_INSET: 8,
+  TICK_BASELINE_NUDGE: 4,
+  X_TICK_DROP: 19,
+  X_AXIS_TITLE_DROP: 35,
+  REFERENCE_LABEL_INSET: 7,
+  REFERENCE_LABEL_LIFT: 7,
+  DOT_R: 4,
+  SUBJECT_DOT_R: 5,
+  SUBJECT_RING_R: 10,
+  SUBJECT_LABEL_LIFT: 16,
+  DASH_REFERENCE: [4, 3],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = { grid: 0.6, reference: 0.8, ring: 1.0 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    AXIS_TITLE: f(BASE.AXIS_TITLE) as typeof BASE.AXIS_TITLE,
+    LABEL: f(BASE.LABEL) as typeof BASE.LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    CONCLUSION_RESERVE: sp(BASE.CONCLUSION_RESERVE),
+    TITLE_TO_CONCLUSION: sp(BASE.TITLE_TO_CONCLUSION),
+    PLOT_RIGHT_AIR: sp(BASE.PLOT_RIGHT_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_GUTTER_AIR: sp(BASE.Y_GUTTER_AIR),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    TICK_BASELINE_NUDGE: sp(BASE.TICK_BASELINE_NUDGE),
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    X_AXIS_TITLE_DROP: sp(BASE.X_AXIS_TITLE_DROP),
+    REFERENCE_LABEL_INSET: sp(BASE.REFERENCE_LABEL_INSET),
+    REFERENCE_LABEL_LIFT: sp(BASE.REFERENCE_LABEL_LIFT),
+    DOT_R: sp(BASE.DOT_R),
+    SUBJECT_DOT_R: sp(BASE.SUBJECT_DOT_R),
+    SUBJECT_RING_R: sp(BASE.SUBJECT_RING_R),
+    SUBJECT_LABEL_LIFT: sp(BASE.SUBJECT_LABEL_LIFT),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      grid: st(BASE_STROKE.grid),
+      reference: st(BASE_STROKE.reference),
+      ring: st(BASE_STROKE.ring),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark
+ * — which this beat had two of. The still path reads the rendered SVG's `font-size` attributes; a
+ * video composition's markup only exists inside the browser Remotion drives, so the equivalent
+ * reading is the element tree, walked rather than listed.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 export type Point = { country: string; gdp: number; lifeExpectancy: number };
@@ -165,6 +272,8 @@ export type ScatterVideoProps = {
   subjectCountry: string;
   xAxisLabel: string;
   yAxisLabel: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -182,11 +291,31 @@ export function ScatterVideo({
   subjectCountry,
   xAxisLabel,
   yAxisLabel,
+  size,
   timing = SCATTER_TIMING,
 }: ScatterVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const { TITLE, SOURCE, AXIS, AXIS_TITLE, LABEL } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE AT ALL — before anything is measured.
+  //
+  // A scatter has a NAMED refusal in `type-at-size.mjs`, not merely an unmeasured one: rotating it
+  // violates conventions of reading direction (Horak et al. §2.4.2), so it has no twin form; and
+  // what a phone frame runs out of budget on here is DENSITY, not aspect — twenty labelled points
+  // in a cloud. Neither has been measured. The composition still exists at all three sizes, and the
+  // two this type cannot draw refuse here, loudly, rather than returning a cloud squeezed into a
+  // column with nothing clipped and nothing colliding.
+  const form = formForSize(TYPE, size);
+  if (form.verdict !== "as-is")
+    throw new Error(
+      `vidx-scatter-income-life-expectancy: ${TYPE} cannot be drawn at ${size}. ${form.reason}\n` +
+        `It ships at landscape.`,
+    );
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
@@ -200,11 +329,11 @@ export function ScatterVideo({
   // CONCLUSION_RESERVE: the conclusion's own banner row, reserved from frame 0 — same fix the
   // grouped-bar and stacked-bar beats needed: a crowded cloud leaves no guaranteed clear space
   // beside the subject's own point for a two-fact sentence.
-  const CONCLUSION_RESERVE = 40;
+  const CONCLUSION_RESERVE = T.CONCLUSION_RESERVE;
   // The conclusion banner keeps the air it always had above it, measured from the LAST TITLE
   // line rather than from the source, which is no longer in the header.
   const conclusionBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 36;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_CONCLUSION;
 
   const yTickWidth = Math.max(
     ...scatterGeometry(data, {
@@ -217,13 +346,23 @@ export function ScatterVideo({
 
   const padding = {
     top: conclusionBaseline + CONCLUSION_RESERVE,
-    right: PAD + 10,
+    right: PAD + T.PLOT_RIGHT_AIR,
     // Grown by the credit block's own height plus clear air.
     bottom:
-      PAD + 56 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
-    left: PAD + 26 + yTickWidth,
+      PAD +
+      T.X_LABEL_BAND +
+      (sourceLines.length - 1) * SOURCE.lead +
+      SOURCE.fontSize +
+      T.SOURCE_AIR,
+    left: PAD + T.Y_GUTTER_AIR + yTickWidth,
   };
 
+  // The rotated y-axis title's own baseline, one em from the frame's left edge rather than a
+  // literal inset from PAD. It was `PAD - 44`, which cleared a 21px title on a 72px margin by 12px
+  // and CLIPPED a 33px title on an 85px margin — measured on the render, the cap heights ran off
+  // the left edge. A rotated run's ink reaches its cap height to the left of its baseline, so the
+  // baseline has to be at least that far in, and the type size is the only thing that knows it.
+  const yAxisTitleX = T.AXIS_TITLE.fontSize;
   const g = scatterGeometry(data, { width, height, padding, reference });
   const subjectIndex = data.findIndex((d) => d.country === subjectCountry);
   const subject = g.points[subjectIndex];
@@ -266,14 +405,18 @@ export function ScatterVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const subjectRingRadius = interpolate(subjectSpring, [0, 1], [0, 16]);
+  const subjectRingRadius = interpolate(
+    subjectSpring,
+    [0, 1],
+    [0, T.SUBJECT_RING_R],
+  );
   const conclusionOpacity = interpolate(conclusion, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
 
   const conclusionLabel = `${subjectCountry}: ${fmtYears(subject.lifeExpectancy)} years — the lowest of the twenty, despite the 5th-highest income`;
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -320,11 +463,11 @@ export function ScatterVideo({
               y1={g.yScale(tick)}
               y2={g.yScale(tick)}
               stroke={grid}
-              strokeWidth={1.5}
+              strokeWidth={T.STROKE.grid}
             />
             <text
-              x={g.plot.left - 14}
-              y={g.yScale(tick) + 6}
+              x={g.plot.left - T.Y_TICK_INSET}
+              y={g.yScale(tick) + T.TICK_BASELINE_NUDGE}
               fill={muted}
               fontSize={AXIS.fontSize}
               textAnchor="end"
@@ -337,7 +480,7 @@ export function ScatterVideo({
           <text
             key={tick}
             x={g.xScale(tick)}
-            y={g.plot.bottom + 32}
+            y={g.plot.bottom + T.X_TICK_DROP}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="middle"
@@ -349,7 +492,7 @@ export function ScatterVideo({
         {/* Axis titles — a bare number axis on a scatter is close to unreadable (`scatter.md`). */}
         <text
           x={(g.plot.left + g.plot.right) / 2}
-          y={g.plot.bottom + 58}
+          y={g.plot.bottom + T.X_AXIS_TITLE_DROP}
           fill={ink}
           fontSize={AXIS_TITLE.fontSize}
           fontWeight={AXIS_TITLE.fontWeight}
@@ -364,7 +507,7 @@ export function ScatterVideo({
           fontSize={AXIS_TITLE.fontSize}
           fontWeight={AXIS_TITLE.fontWeight}
           textAnchor="middle"
-          transform={`translate(${PAD - 44}, ${(g.plot.top + g.plot.bottom) / 2}) rotate(-90)`}
+          transform={`translate(${yAxisTitleX}, ${(g.plot.top + g.plot.bottom) / 2}) rotate(-90)`}
         >
           {yAxisLabel}
         </text>
@@ -379,14 +522,14 @@ export function ScatterVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.STROKE.reference}
+            strokeDasharray={T.DASH_REFERENCE}
           />
           <text
-            x={g.plot.left + 12}
-            y={g.referenceY - 12}
+            x={g.plot.left + T.REFERENCE_LABEL_INSET}
+            y={g.referenceY - T.REFERENCE_LABEL_LIFT}
             fill={muted}
-            fontSize={20}
+            fontSize={T.NOTE.fontSize}
             textAnchor="start"
             opacity={referenceLabelOpacity}
           >
@@ -407,7 +550,7 @@ export function ScatterVideo({
         const radius = interpolate(
           pointProgress,
           [0, 1],
-          [0, isSubject ? 8 : 6],
+          [0, isSubject ? T.SUBJECT_DOT_R : T.DOT_R],
         );
         if (radius <= 0) return null;
         return (
@@ -430,13 +573,13 @@ export function ScatterVideo({
           r={subjectRingRadius}
           fill="none"
           stroke={ink}
-          strokeWidth={2.5}
+          strokeWidth={T.STROKE.ring}
           opacity={subjectSpring}
         />
       ) : null}
       <text
         x={subject.x}
-        y={subject.y - 26}
+        y={subject.y - T.SUBJECT_LABEL_LIFT}
         fill={ink}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}
@@ -453,8 +596,8 @@ export function ScatterVideo({
         x={PAD}
         y={conclusionBaseline}
         fill={ink}
-        fontSize={24}
-        fontWeight={700}
+        fontSize={T.CONCLUSION.fontSize}
+        fontWeight={T.CONCLUSION.fontWeight}
         textAnchor="start"
         opacity={conclusionOpacity}
       >
@@ -462,4 +605,17 @@ export function ScatterVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it. This beat
+  // had two.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidx-scatter-income-life-expectancy at ${size}` },
+  );
+
+  return drawing;
 }
