@@ -210,7 +210,8 @@ describe("the renderer puts the live map into the file it writes", () => {
     });
     expect(plan.degreesPerPixel).toBeGreaterThan(0);
     // One vocabulary: the slug the radio's id carries, the CSS selector quotes and `setFilter` reads.
-    const groups = plan.marks.source.features.map(
+    const marks = plan.layers.find((layer: { id: string }) => layer.id === "mw-marks");
+    const groups = marks.data.features.map(
       (f: { properties: { group: string } }) => f.properties.group,
     );
     expect(new Set(groups)).toEqual(new Set(["west", "east"]));

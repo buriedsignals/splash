@@ -146,6 +146,15 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   const lats = geometry.points.map((p) => p.lat);
   const studyLonSpan = Math.max(...lons) - Math.min(...lons);
   const maxValue = Math.max(...geometry.points.map((p) => p.value));
+  const marks = markLayers(geometry.points, {
+    maxValue,
+    maxRadiusFrameUnits: geometry.frame.width * 0.062,
+    subjectKey,
+    accent,
+    muted,
+  });
+  const anchors = {};
+  for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
     waterFill,
@@ -157,22 +166,42 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
     // draft came to size its marks against the plate's box instead.
     degreesPerPixel: geometry.degreesPerPixel,
     metresPerPixel: geometry.metresPerPixel,
-    maxBounds: corners,
-    minZoom: geometry.zoom,
-    maxZoom: maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan),
+    // The camera the plate was baked at. A layer whose marks stand for a fixed piece of GROUND
+    // (dot density) interpolates its radius from this; a proportional symbol does not use it.
+    bakeZoom: geometry.zoom,
     studyBounds: {
       west: Math.min(...lons),
       east: Math.max(...lons),
       south: Math.min(...lats),
       north: Math.max(...lats),
     },
-    marks: markLayers(geometry.points, {
-      maxValue,
-      maxRadiusFrameUnits: geometry.frame.width * 0.062,
-      subjectKey,
-      accent,
-      muted,
-    }),
+    // How far in the reader may go, at minimum, whatever the container's shape does to the fit.
+    // Derived: the headroom this plate's own frame had over its study set, which is the leash the
+    // beat was designed with. Without a floor, a tall narrow container can fit so tightly that the
+    // derived headroom is a fifth of a zoom level — a map you cannot move through, which is the one
+    // outcome ruling R1 exists to forbid.
+    minZoomHeadroom: Math.max(
+      0,
+      maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan) -
+        geometry.zoom,
+    ),
+    // Where each `.pt` hit target and `.point-label` follows the camera to. Keyed exactly as the
+    // markup's own `data-key`, so the live label and the fallback label are one placement seen at
+    // two sizes rather than two placements that can drift.
+    anchors,
+    layers: [
+      {
+        id: "mw-marks",
+        type: "circle",
+        data: marks.source,
+        paint: marks.paint,
+        // A circle encodes a VALUE, so it is sized from the camera once at the fit and then held —
+        // growing it with zoom would make the same number mean two things at two zooms.
+        radius: "camera",
+        filterProperty: "group",
+        hover: true,
+      },
+    ],
   };
 }
 

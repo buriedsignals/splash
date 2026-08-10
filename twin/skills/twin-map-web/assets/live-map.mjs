@@ -16,7 +16,7 @@
 // layers:
 //
 //   1. `#mw-fallback` — the SSR'd beat exactly as it rendered before: the baked plate as a data
-//      URI, the circles, the labels, the legend. Complete, script-free, request-free.
+//      URI, the marks, the labels, the legend. Complete, script-free, request-free.
 //   2. `#mw-map` — an empty box that this file fills with a live map, and which is shown ONLY on
 //      `map.on("load")`. A style failure, a tile failure, a rotated key or no network at all leaves
 //      layer 1 exactly where it is.
@@ -25,12 +25,28 @@
 // spending limit (documented), so the failure mode is every published article's map going blank at
 // once. Layer 1 is what stands between that and an article with a hole in it.
 //
+// ONE FILE, FIVE MAP TYPES. This is a byte-identical copy in every map × web beat (the twin
+// duplicates helpers rather than importing across skills), so it may not know what a beat draws.
+// Everything type-specific travels in the PLAN the renderer writes into the page — a list of
+// LAYERS, each declaring how its own marks answer three questions this file cannot answer for them:
+//
+//   - `radius: "camera"` — a circle whose size encodes a VALUE (proportional symbol). Derived from
+//     the camera at the fit, then held constant in screen pixels as the reader zooms, because the
+//     same number must not mean two things at two zooms.
+//   - `radius: "ground"` — a dot standing for a fixed number of people in a fixed piece of ground
+//     (dot density). Its GROUND area must be constant, so its screen radius doubles per zoom level
+//     — a `["interpolate", ["exponential", 2], ["zoom"], …]` expression, not a number.
+//   - `radius: "fixed"` — a locator marker, which is a pin rather than a measurement: the same
+//     screen size at every zoom, exactly as the plate drew it.
+//   - no `radius` at all — `fill` and `line` layers (choropleth regions, hex bins, routes). They
+//     are geographic polygons and reproject on their own; only their strokes are screen-sized.
+//
 // Inlined verbatim as a classic script by `scripts/render-web.mjs`, which strips `export` from each
 // top-level declaration — the same treatment `interaction.mjs` gets, and for the same reason: no
 // module script, so a CMS iframe or a sandboxed embed cannot refuse it.
 
 /** The plan the renderer wrote into the page: the style URL with its key, the camera's own bounds
- *  and zoom range, and the marks as GeoJSON. Returns null when the page carries no plan, which is
+ *  and zoom range, and the beat's own layers. Returns null when the page carries no plan, which is
  *  the shape a beat that opted out of live tiles takes. */
 export function readLivePlan(doc) {
   const el = doc.getElementById("mw-live-plan");
@@ -67,7 +83,7 @@ export function planIsUnkeyed(plan) {
  * so it fits by its tighter axis.
  *
  * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
- * this file's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
+ * this genre's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
  * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
  * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
  * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
@@ -83,30 +99,40 @@ export function planIsUnkeyed(plan) {
  * which is exactly `2 ** (liveZoom − bakeZoom)`, since `degreesPerPixel = 360 / (512 · 2**zoom)`.
  * A camera zoomed one level further in than the plate's draws its marks twice as wide, and the
  * symbols keep their relationship to the coastlines under them at every container shape.
- *
- * WHICH RULE EACH MARK TYPE TAKES, because they are not the same and getting them the same way
- * round is the whole point:
- *
- *  - **Proportional symbol** (this seed): ground-derived AT THE FIT, then CONSTANT IN SCREEN PIXELS
- *    as the reader zooms. A circle encodes a VALUE, not a ground area — growing it with zoom would
- *    make the same number mean two different things at two zooms. So this is called on load and on
- *    resize, both of which re-fit the camera, and never on `move`.
- *  - **Choropleth**: the same. A region's fill is the geometry itself and reprojects on its own; the
- *    only screen-sized things are strokes and labels.
- *  - **Dot density**: THE OPPOSITE, and it is not shipped live yet for exactly this reason. A dot
- *    stands for a fixed number of people in a fixed piece of ground, so its GROUND area must be
- *    constant at every zoom or a reader watching the field thin out reads a change that did not
- *    happen. Its radius has to interpolate exponentially with zoom (base 2), which is a
- *    `["interpolate", ["exponential", 2], ["zoom"], …]` expression rather than the plain number
- *    below.
- *  - **Hex grid**: bins are emitted as geographic polygons, so they reproject correctly and need no
- *    scale at all.
  */
 export function cameraScale(plan, map) {
   const liveDegreesPerPixel = 360 / (512 * Math.pow(2, map.getZoom()));
   if (!(plan.degreesPerPixel > 0))
     throw new Error("this plate predates the camera facts: re-bake it, or a mark has no scale to be drawn at");
   return plan.degreesPerPixel / liveDegreesPerPixel;
+}
+
+/**
+ * The radius expression for a layer whose marks stand for a fixed piece of GROUND — a dot-density
+ * dot. Its screen radius has to double for every zoom level the reader comes in, or the field
+ * visibly thins out and a reader watching it reads a change in density that did not happen.
+ *
+ * `["exponential", 2]` between two stops one on each side of the bake's own zoom is exactly
+ * `r · 2 ** (zoom − bakeZoom)`, so at the baked camera a dot is drawn at the size the plate drew it.
+ * Written as an interpolation rather than computed per frame because it has to be true DURING a
+ * zoom gesture, not only after it settles.
+ */
+export function groundRadiusExpression(bakeZoom) {
+  const span = 6;
+  return [
+    "interpolate",
+    ["exponential", 2],
+    ["zoom"],
+    bakeZoom - span,
+    ["/", ["get", "r"], Math.pow(2, span)],
+    bakeZoom + span,
+    ["*", ["get", "r"], Math.pow(2, span)],
+  ];
+}
+
+/** Every layer the plan declares, defaulted so a beat only says what is true of its own marks. */
+export function planLayers(plan) {
+  return (plan && plan.layers) || [];
 }
 
 /**
@@ -145,12 +171,14 @@ export function initLiveMap(win) {
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
-    fitBoundsOptions: { padding: 48, animate: false },
+    fitBoundsOptions: { padding: FIT_PADDING_PX, animate: false },
     maxZoom: 22,
     attributionControl: false,
   });
   win.__mwMap = map;
 
+  // B5.3, and the owner's instruction by name: MapTiler's OWN zoom and pan controls, not a button
+  // beside the map. The compass is off because no beat in this genre rotates.
   map.addControl(new win.maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   map.on("style.load", function () {
@@ -160,21 +188,27 @@ export function initLiveMap(win) {
     const ids = ["Water", "Water shadow"];
     for (let i = 0; i < ids.length; i++)
       if (map.getLayer(ids[i])) map.setPaintProperty(ids[i], "fill-color", plan.waterFill);
-    // Rule 9: the beat draws the only labels. The provider's place names compete with the point
-    // labels this beat positions itself, so they go, live exactly as baked.
+    // Rule 9: the beat draws the only labels. The provider's place names compete with the labels
+    // this beat positions itself, so they go, live exactly as baked.
     const layers = map.getStyle().layers;
     for (let i = 0; i < layers.length; i++)
       if (layers[i].type === "symbol" || /border|boundary|admin/i.test(layers[i].id))
         map.setLayoutProperty(layers[i].id, "visibility", "none");
 
-    map.addSource("mw-marks", { type: "geojson", data: plan.marks.source });
-    const paint = {};
-    for (const key in plan.marks.paint) paint[key] = plan.marks.paint[key];
-    // Placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is what
-    // sets the real number. Adding the layer with no radius at all would draw MapLibre's own
-    // default 5px for one frame, which is a visible flash of the wrong circle.
-    paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
-    map.addLayer({ id: "mw-marks", type: "circle", source: "mw-marks", paint: paint });
+    const declared = planLayers(plan);
+    for (let i = 0; i < declared.length; i++) {
+      const layer = declared[i];
+      map.addSource(layer.id, { type: "geojson", data: layer.data });
+      const paint = {};
+      for (const key in layer.paint) paint[key] = layer.paint[key];
+      // Placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is what
+      // sets the real number. Adding a circle layer with no radius at all would draw MapLibre's own
+      // default 5px for one frame, which is a visible flash of the wrong circle.
+      if (layer.radius === "camera") paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
+      else if (layer.radius === "ground") paint["circle-radius"] = groundRadiusExpression(plan.bakeZoom);
+      else if (layer.radius === "fixed") paint["circle-radius"] = ["get", "r"];
+      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: paint });
+    }
   });
 
   map.on("load", function () {
@@ -183,35 +217,39 @@ export function initLiveMap(win) {
     map.resize();
     leash(map, plan);
     applyMarkScale(map, doc, plan);
-    applyFilter(map, doc);
+    applyFilter(map, doc, plan);
   });
 
   // One listener on the document rather than one per radio: the chips are a real `<fieldset>` of
   // real radios, so `change` bubbles, and nothing here has to know how many groups a beat has.
   doc.addEventListener("change", function (event) {
     if (!event.target || event.target.name !== "mw-filter") return;
-    applyFilter(map, doc);
+    applyFilter(map, doc, plan);
     // A mark that has just been filtered away must not keep the tooltip it was showing.
     const tooltip = doc.getElementById("tooltip");
     if (tooltip) tooltip.hidden = true;
     markActive(doc, null);
   });
 
-  // The camera moved, not the container: the marks keep the pixel size they were fitted at (a
-  // circle encodes a value, not a ground area) and only their labels and hit targets follow.
+  // The camera moved, not the container: value-encoding marks keep the pixel size they were fitted
+  // at (a circle encodes a value, not a ground area) and only their labels and hit targets follow.
   map.on("move", function () {
     reposition(map, doc, plan, map.__mwScale);
   });
   // The container changed shape, so the camera re-fits and the marks are re-derived from it.
   map.on("resize", function () {
-    if (!map.getLayer("mw-marks") || !doc.documentElement.classList.contains("mw-live")) return;
+    if (!doc.documentElement.classList.contains("mw-live")) return;
     fitToStudy(map, plan);
     applyMarkScale(map, doc, plan);
   });
 
-  wireHover(map, doc, win);
+  wireHover(map, doc, win, plan);
   return map;
 }
+
+/** The room left around the study set when the camera fits it. ONE constant, read by the first fit
+ *  and by every re-fit — they must stay equal or a container resize makes the map jump. */
+export const FIT_PADDING_PX = 48;
 
 /**
  * The reader's leash, set once the camera has actually been fitted.
@@ -220,19 +258,22 @@ export function initLiveMap(win) {
  * its claim about, and because the fit happened in THIS container it is the right number for THIS
  * shape rather than for the square frame the plate was baked at.
  *
- * `maxZoom` is `maxZoomForStudySet`'s rule, evaluated on the view that actually resulted: for a
- * proportional symbol the marks keep their pixel size, so the honest bound is where the study set
- * stops filling the frame — past it the reader is looking at basemap with two circles on it. It is
- * derived, so a camera already tight on its subject gets a correspondingly short leash. That is the
- * intended behaviour and not a bug: the alternative is a free parameter.
+ * `maxZoom` is the zoom at which the study set stops filling the frame, evaluated on the view that
+ * actually resulted — past it the reader is looking at basemap with two marks on it. It is derived,
+ * so a camera already tight on its subject gets a correspondingly short leash. `minHeadroom` is the
+ * one number a beat may raise: at a tall narrow container `fitBounds` can land already tight enough
+ * that the derived headroom is a fifth of a zoom level, which is not "moving through the map" in any
+ * sense the ruling meant.
  */
 export function leash(map, plan) {
   const fitted = map.getZoom();
   const visible = map.getBounds();
   const visibleLonSpan = Math.abs(visible.getEast() - visible.getWest());
   const studyLonSpan = Math.abs(plan.studyBounds.east - plan.studyBounds.west);
+  const headroom = Math.log2(visibleLonSpan / Math.max(studyLonSpan, 1e-6));
+  const minHeadroom = plan.minZoomHeadroom > 0 ? plan.minZoomHeadroom : 0;
   map.setMinZoom(fitted);
-  map.setMaxZoom(Math.max(fitted, fitted + Math.log2(visibleLonSpan / Math.max(studyLonSpan, 1e-6))));
+  map.setMaxZoom(fitted + Math.max(headroom, minHeadroom, 0));
   // The pan bound is the view the camera FITTED TO, not the box the plate was baked in. At the
   // minimum zoom that is the whole claim and there is nothing to pan to, which is correct; zoomed
   // in, a reader moves within the subject's own area and no further. Set after the fit, because a
@@ -257,30 +298,39 @@ export function fitToStudy(map, plan) {
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
-    { padding: 48, animate: false },
+    { padding: FIT_PADDING_PX, animate: false },
   );
   leash(map, plan);
 }
 
-function wireHover(map, doc, win) {
-  // B6.18a and B6.14a, closed by construction rather than by tuning: the hit area IS the rendered
-  // mark, at every size and every zoom. There is no fixed 28px button under a 90px disc any more,
-  // and no country whose hover only fires over its capital. The `.pt` buttons stay in the DOM for
-  // keyboard reach and for their `aria-label`; CSS drops their pointer-events while live, so the
-  // canvas is what a pointer talks to.
+/**
+ * B6.18a and B6.14a, closed by construction rather than by tuning: the hit area IS the rendered
+ * mark, at every size and every zoom. There is no fixed 28px button under a 90px disc any more, and
+ * no country whose hover only fires over its capital — a `fill` layer answers anywhere inside the
+ * polygon, which is what "as soon as you enter the country" means. The `.pt` buttons stay in the DOM
+ * for keyboard reach and for their `aria-label`; CSS drops their pointer-events while live, so the
+ * canvas is what a pointer talks to.
+ */
+function wireHover(map, doc, win, plan) {
   const tooltip = doc.getElementById("tooltip");
-  map.on("mousemove", "mw-marks", function (event) {
-    const feature = event.features && event.features[0];
-    if (!feature || !tooltip) return;
-    map.getCanvas().style.cursor = "pointer";
-    showTooltip(win, tooltip, feature.properties, event.originalEvent);
-    markActive(doc, feature.properties.key);
+  const layers = planLayers(plan).filter(function (layer) {
+    return layer.hover !== false;
   });
-  map.on("mouseleave", "mw-marks", function () {
-    map.getCanvas().style.cursor = "";
-    if (tooltip) tooltip.hidden = true;
-    markActive(doc, null);
-  });
+  for (let i = 0; i < layers.length; i++) {
+    const id = layers[i].id;
+    map.on("mousemove", id, function (event) {
+      const feature = event.features && event.features[0];
+      if (!feature || !tooltip) return;
+      map.getCanvas().style.cursor = "pointer";
+      showTooltip(win, tooltip, feature.properties, event.originalEvent);
+      markActive(doc, feature.properties.key);
+    });
+    map.on("mouseleave", id, function () {
+      map.getCanvas().style.cursor = "";
+      if (tooltip) tooltip.hidden = true;
+      markActive(doc, null);
+    });
+  }
 }
 
 /**
@@ -288,7 +338,7 @@ function wireHover(map, doc, win) {
  *
  * The filter is pure CSS — `:checked` + `:has()` — and that is deliberate: it is what makes the
  * filter work with JavaScript disabled, and it is not being replaced. But CSS can only reach the
- * HTML overlay. Once the circles became a MapLibre layer, a stylesheet had no way to speak to them,
+ * HTML overlay. Once the marks became a MapLibre layer, a stylesheet had no way to speak to them,
  * and the one rule that used to govern both halves governed one. Measured on the seed, clicking
  * "Western Europe" in a real browser: 6 of 13 labels left, 6 of 13 hit targets left, and **all 13
  * circles still painted**. Same shape as the mark radius — two halves of one mark driven by two
@@ -305,33 +355,42 @@ export function selectedGroup(doc) {
 }
 
 /**
- * Makes the live layer obey the same selection the CSS obeys. The features carry `group` as the
- * SAME slug the radio's own id carries and the CSS selector quotes — one vocabulary, three readers,
- * which is what `slugOf` and `assertDistinctSlugs` exist to keep true.
+ * Makes the live layer obey the same selection the CSS obeys. The features carry the filter
+ * property as the SAME slug the radio's own id carries and the CSS selector quotes — one
+ * vocabulary, three readers, which is what `slugOf` and `assertDistinctSlugs` exist to keep true.
  *
  * WITH JAVASCRIPT OFF none of this runs, and that state is coherent rather than broken: the CSS
  * still narrows the labels, the hit targets and the accessible table, and the fallback plate shows
- * every circle because a baked raster cannot be filtered. A static picture under a filtered label
- * set is a defensible degraded state — the reader sees every mark and is told about a subset — and
- * it is chosen here deliberately, not inherited.
+ * every mark because a baked raster cannot be filtered. A static picture under a filtered label set
+ * is a defensible degraded state — the reader sees every mark and is told about a subset — and it is
+ * chosen here deliberately, not inherited.
  */
-export function applyFilter(map, doc) {
-  if (!map.getLayer("mw-marks")) return null;
+export function applyFilter(map, doc, plan) {
   const group = selectedGroup(doc);
-  map.setFilter("mw-marks", group === null ? null : ["==", ["get", "group"], group]);
+  const layers = planLayers(plan);
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    if (!layer.filterProperty || !map.getLayer(layer.id)) continue;
+    map.setFilter(layer.id, group === null ? null : ["==", ["get", layer.filterProperty], group]);
+  }
   return group;
 }
 
 /**
  * Sets the drawn radius from the camera and remembers the number, so the label gutters and the hit
- * targets are placed against the SAME scale the circles are drawn at. Two numbers describing one
+ * targets are placed against the SAME scale the marks are drawn at. Two numbers describing one
  * circle living apart is precisely the defect this function exists to make impossible: there is one
  * place the scale is computed and one place it is stored.
  */
 export function applyMarkScale(map, doc, plan) {
   const scale = cameraScale(plan, map);
   map.__mwScale = scale;
-  if (map.getLayer("mw-marks")) map.setPaintProperty("mw-marks", "circle-radius", ["*", ["get", "r"], scale]);
+  const layers = planLayers(plan);
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    if (layer.radius !== "camera" || !map.getLayer(layer.id)) continue;
+    map.setPaintProperty(layer.id, "circle-radius", ["*", ["get", "r"], scale]);
+  }
   reposition(map, doc, plan, scale);
   return scale;
 }
@@ -339,13 +398,12 @@ export function applyMarkScale(map, doc, plan) {
 /** Every `.pt` button and `.point-label` follows the camera. They were percentages of a fixed
  *  plate; live, `map.project` is what puts them where their point actually is. */
 export function reposition(map, doc, plan, scale) {
-  const byKey = {};
-  for (const feature of plan.marks.source.features) byKey[feature.properties.key] = feature.geometry.coordinates;
+  const anchors = plan.anchors || {};
   if (!(scale > 0)) scale = cameraScale(plan, map);
   const nodes = doc.querySelectorAll(".pt, .point-label");
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    const coords = byKey[node.getAttribute("data-key")];
+    const coords = anchors[node.getAttribute("data-key")];
     if (!coords) continue;
     const at = map.project(coords);
     // A hit target sits ON its point; a label sits BESIDE it, on the side and at the gap
@@ -375,8 +433,11 @@ function markActive(doc, key) {
 function showTooltip(win, tooltip, properties, event) {
   const node = win.document.querySelector('.pt[data-key="' + properties.key + '"]');
   // The detail string is the one the SSR'd markup already carries, never a second formatting of
-  // the same number in a second place.
-  tooltip.textContent = node ? node.getAttribute("data-detail") : properties.name;
+  // the same number in a second place. A feature with no button of its own (a hex bin, a region a
+  // beat draws no hit target for) carries its own `detail` instead.
+  tooltip.textContent = node
+    ? node.getAttribute("data-detail")
+    : properties.detail || properties.name;
   tooltip.hidden = false;
   const tw = tooltip.offsetWidth || 160;
   const th = tooltip.offsetHeight || 28;
