@@ -255,6 +255,18 @@ export function revealShape(measured, band = REVEAL_SHAPE) {
         `${m.label}: the river is painted in ${r.fragments} pieces — ${JSON.stringify(r.runs)} of its own ` +
           `length, with real gaps between them, where a progressive reveal must paint ONE prefix`,
       );
+    // WHAT THE READER FOLLOWS. Separate from the count above and not a duplicate of it: that one
+    // asks what the reveal ASKED to be drawn, this one asks what a reader can actually trace. A
+    // card lying across the corridor severs the river without leaving a single unpainted sample,
+    // and the first version of this file ruled that state clean — on the exact frame the owner was
+    // looking at when he said *"le trait s'arrête à 4."*
+    if ((r.visiblePieces ?? 1) > 1)
+      problems.push(
+        `${m.label}: a reader can only follow the river in ${r.visiblePieces} separate pieces — ` +
+          `${JSON.stringify(r.pieces)} of its own length, the rest behind the prose card` +
+          (r.stopsNear ? `; the first piece stops ${r.stopsNear.px}px from badge ${r.stopsNear.badge}` : "") +
+          ` — the subject of the beat may be covered in part, never severed`,
+      );
     // A reveal that starts away from the source. `firstPainted` null means nothing was painted at
     // all, which only the last step can be judged on (early steps legitimately paint little and a
     // card can hide all of it on a phone).
@@ -295,6 +307,68 @@ export function revealShape(measured, band = REVEAL_SHAPE) {
       absent: m.reveal ? Number(m.reveal.absent.toFixed(3)) : null,
       hiddenByFurniture: m.reveal ? Number(m.reveal.hidden.toFixed(3)) : null,
     })),
+  };
+}
+
+// ── THE GEOGRAPHY, WHICH IS UPSTREAM OF EVERY REVEAL QUESTION ────────────────────────────────
+//
+// `revealShape` above measures the painted fraction ALONG THE PATH'S OWN ARC LENGTH, and that
+// assertion is structurally blind to a path whose GEOMETRY is short or holed: if `d` stopped after
+// Slovakia, "100% of its own length is painted" would stay true while the Danube ended in the
+// middle of Europe. The two statements are independent and both were missing, so this one is about
+// the `d` attribute and not about the paint.
+//
+// MEASURED on the delivered file, and the geometry is sound: ONE subpath, **911 points**, first
+// (71.4, 119.6) — the Black Forest — last (852.4, 278.1), which is **13.8 plate units from badge
+// 9's own anchor** (850.6, 264.4). Median step 0.922 plate units; the largest is 18.82 at index
+// 115, a sparse stretch of the 1:10m source in Germany, 20× the median and about 33px at 1600 —
+// visible as a straighter run, not as a hole. In degrees the frozen `danube-route.csv` runs
+// 8.179E 48.094N to 28.747E 45.231N, 2567 km, `seq` strictly 0…910.
+
+/** How far the path's end may sit from the last badge's anchor, and how big a single step may be,
+ *  both as multiples of the route's own median step. */
+export const ROUTE_GEOMETRY = { endWithinSteps: 30, gapAtMostSteps: 40 };
+
+/**
+ * `route` is `{ points, subpaths }` read off the delivered `d`; `lastAnchor` is the beat's own last
+ * badge anchor, in the same plate units. Both come from committed files, so this can run in
+ * `bun test` without a browser.
+ */
+export function routeGeometry(route, lastAnchor, band = ROUTE_GEOMETRY) {
+  const problems = [];
+  const { points, subpaths } = route;
+  if (subpaths !== 1)
+    problems.push(`the route is drawn as ${subpaths} subpaths — it is one river and must be one path`);
+  if (points.length < 2) return { problems: [...problems, "the route carries fewer than two points"], steps: null };
+  const steps = [];
+  for (let i = 1; i < points.length; i++)
+    steps.push(Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]));
+  const sorted = [...steps].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const worst = steps.reduce((a, s, i) => (s > steps[a] ? i : a), 0);
+  if (steps[worst] > median * band.gapAtMostSteps)
+    problems.push(
+      `the route jumps ${steps[worst].toFixed(2)} plate units between points ${worst} and ${worst + 1}, ` +
+        `${(steps[worst] / median).toFixed(0)}× its own median step of ${median.toFixed(3)} — that is a hole in ` +
+        `the source, and it draws as two pieces joined by a straight line across the map`,
+    );
+  const end = points[points.length - 1];
+  const reach = Math.hypot(end[0] - lastAnchor[0], end[1] - lastAnchor[1]);
+  if (reach > median * band.endWithinSteps)
+    problems.push(
+      `the route ends ${reach.toFixed(1)} plate units from the last badge's own anchor ` +
+        `(${lastAnchor.join(", ")}) — the river does not reach the place the beat's last badge marks`,
+    );
+  return {
+    problems,
+    steps: {
+      points: points.length,
+      subpaths,
+      medianStep: Number(median.toFixed(3)),
+      largestStep: Number(steps[worst].toFixed(2)),
+      largestStepAt: worst,
+      endToLastAnchor: Number(reach.toFixed(1)),
+    },
   };
 }
 

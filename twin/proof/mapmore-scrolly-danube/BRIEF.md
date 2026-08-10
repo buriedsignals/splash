@@ -121,16 +121,34 @@ plus painted-pixel readings at DPR 1 and 2 and under `prefers-reduced-motion`: e
 painted run starting at the source. The painted prefix at 1600 × 900 is `[0, 0.36] → [0, 0.725] →
 [0, 0.98] → [0, 1]`, complete at the last step.
 
-**What IS happening, measured, is occlusion.** At **375 × 812 the travelling prose card hides the
-whole river — 1.00 of its length — at the settled position of steps 2, 3 and 4**, against 0.08–0.20
-at 1600 × 900 and 1280 × 800. A reader on a phone, at the position where the step's sentence lands,
-sees a sliver of Germany above the card and a sliver of Croatia and Serbia below it with an opaque
-white block between: *"un bout … et un second bout … avec rien entre les deux."* Same reported
-picture, different mechanism. **This is a real open defect and it is not fixed here** — the cause is
-the beat's 2.14 : 1 plate letterboxed into a 0.61 : 1 frame (a 175 px band of marks in a 617 px
-graphic) under a card that travels the whole height, which is the portrait/aspect chantier's
-territory and `twin-scrolly`'s, not this beat's. It is asserted rather than recorded, so it stays
-loud: `drive.mjs` is RED on this beat at 375 × 812 until it is answered.
+**Nor is the GEOGRAPHY short or holed**, which is the other thing an arc-length measurement cannot
+see: the delivered path is ONE subpath of **911 points**, first (71.4, 119.6) in the Black Forest,
+last (852.4, 278.1) — **13.8 plate units from badge 9's own anchor** — median step 0.922, largest
+18.82 at index 115 (a sparse stretch of the 1:10m source in Germany, ~33 px at 1600, a straighter
+run and not a hole). The frozen CSV runs 8.179 E 48.094 N → 28.747 E 45.231 N, 2567 km, `seq`
+strictly 0…910. A truncated route cannot even reach the delivered file: `borderZoneKm` throws
+*"route never carries label ROU"* at render, because this beat's prose is derived from its own
+route. And the input path is not it either — a **real wheel**, 40 notches, from a pointer over the
+map and over the card, at all three widths, takes progress 0 → 3 and reveal 371 → 910.
+
+**What IS happening, measured, is occlusion — and it is not phone-only.** The travelling prose card
+lies across the corridor and **severs the river**, which the first version of this guard explicitly
+excused: it ruled that a hidden sample may not break a painted run, because the vehicle's ninth
+correction allows covering. That rule is right about labels and wrong about the subject, and it is
+why the guard reported "one continuous prefix" on the very frame the owner was looking at.
+
+| Frame | What a reader can follow, at the last step |
+| --- | --- |
+| 1600 × 900 | **2 pieces**, `[0, 0.42]` and `[0.52, 1]`; the first stops 88 px from badge 3 |
+| 1280 × 800 | pieces from `[0, 0.1]` to `[0.55, 1]`; the dominant break is the card, over Slovakia |
+| 375 × 812 | the card hides **1.00** of the river at steps 2, 3 and 4 — no river at all |
+
+Follow it from the Black Forest at 1600 and the line stops where the card starts, by badges 3–4, and
+resumes in Hungary: *"le trait s'arrête à 4 au lieu d'aller au bout jusqu'à 9."* Same reported
+picture, different mechanism from the dash. **This is a real open defect and it is not fixed here** —
+an opaque card that travels the whole height of a frame whose subject is a continuous line spanning
+it will sever that line, and the card is the vehicle's, not this beat's. It is asserted rather than
+recorded, so it stays loud: `drive.mjs` is RED on this beat until it is answered.
 
 **The leaders were reported as arrows across the frame and are not in this artifact**: over the same
 1508 frames the leader path is EMPTY at 1600 × 900, 1280 × 800, 375 × 812 and 1512 × 850 — no badge

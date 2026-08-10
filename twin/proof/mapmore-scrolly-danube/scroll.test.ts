@@ -209,6 +209,25 @@
 //       side — reddened only the unit test and left `drive.mjs` green, because no badge straddles a
 //       card edge at any driven width and the leader path is empty. Recorded because it is the
 //       shape of a mutation that looks sufficient and is not.
+//
+// M14 — the delivered route `d` is TRUNCATED after badge 4, i.e. the Danube ends in Hungary. It has
+//       to be applied to the delivered file rather than to `danube-route.csv`, because truncating
+//       the frozen data makes `borderZoneKm` throw "route never carries label ROU" at render — this
+//       beat's prose is derived from its own route, so a short route cannot be shipped.
+//
+//       IT IS ALSO THE PROOF THAT THE ARC-LENGTH GUARDS WERE MEASURING THE WRONG THING. Under M14
+//       `lineWeight` is clean, all six scroll sweeps are clean, `leaderLength` is clean, and
+//       `revealShape`'s dash-shape still reports [[0, 1]] — one prefix, complete at the last step —
+//       while the river ends in the middle of Europe. Only this block goes red:
+//
+//        error: expect(received).toHaveLength(expected)
+//        Expected length: 911   Received length: 480
+//        (fail) the drawn river is the whole river > carries the whole route as ONE path, from the
+//               Black Forest to the delta
+//        (fail) … > reaches the place its own last badge marks
+//          "the route ends 398.8 plate units from the last badge's own anchor (850.6, 264.4) — the
+//           river does not reach the place the beat's last badge marks"
+//        73 pass, 3 fail
 
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -236,6 +255,7 @@ import {
   DRAWN_LINE_PX,
   LEADER_MAX_OF_DIAGONAL,
   REVEAL_SHAPE,
+  ROUTE_GEOMETRY,
   fluidity,
   leaderLength,
   lineWeight,
@@ -243,6 +263,7 @@ import {
   report,
   revealShape,
   revealSpan,
+  routeGeometry,
 } from "./scroll-report.mjs";
 
 const HERE = import.meta.dirname;
@@ -975,6 +996,61 @@ describe("the painted reveal is one piece that starts at the source and finishes
     ).toEqual([]);
   });
 
+  it("catches the river SEVERED by the card, in the reader's own vocabulary", () => {
+    // The frame the owner re-opened: at 1600x900 at the last step nothing is unpainted — the dash
+    // asked for the whole river — and an opaque 409px card sits across the corridor, so a reader
+    // following the line from the Black Forest watches it stop. *"le trait s'arrête à 4 au lieu
+    // d'aller au bout jusqu'à 9."* The first version of this file called that state clean.
+    const verdict = revealShape([
+      {
+        label: "1600x900 step 4",
+        step: 4,
+        steps: 4,
+        reveal: {
+          fragments: 1,
+          runs: [[0, 1]],
+          visiblePieces: 2,
+          pieces: [
+            [0, 0.34],
+            [0.46, 1],
+          ],
+          stopsNear: { badge: "4", px: 31 },
+          firstPainted: 0,
+          firstAbsent: null,
+          absent: 0,
+          hidden: 0.1,
+        },
+      },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("in 2 separate pieces");
+    expect(verdict.problems[0]).toContain("stops 31px from badge 4");
+    expect(verdict.problems[0]).toContain("never severed");
+  });
+
+  it("lets a badge sitting on the line pass — a small interruption is not a severing", () => {
+    expect(
+      revealShape([
+        {
+          label: "1600x900 step 4",
+          step: 4,
+          steps: 4,
+          reveal: {
+            fragments: 1,
+            runs: [[0, 1]],
+            visiblePieces: 1,
+            pieces: [[0, 1]],
+            stopsNear: null,
+            firstPainted: 0,
+            firstAbsent: null,
+            absent: 0,
+            hidden: 0.06,
+          },
+        },
+      ]).problems,
+    ).toEqual([]);
+  });
+
   it("catches the card hiding the SUBJECT whole, which is what the owner actually saw", () => {
     // Measured on this build at 375x812, steps 2, 3 and 4: hidden 1.00.
     const verdict = revealShape([
@@ -1085,6 +1161,81 @@ describe("a leader is a pointer, not an arrow across the map", () => {
 
   it("states its own bound", () => {
     expect(LEADER_MAX_OF_DIAGONAL).toBe(0.25);
+  });
+});
+
+/**
+ * THE GEOGRAPHY — upstream of every reveal question, and the assertion that was missing.
+ *
+ * `revealShape` measures the painted share ALONG THE PATH'S OWN ARC LENGTH, which is structurally
+ * blind to a `d` that is short or holed: a route truncated after Slovakia would still report "100%
+ * of its own length is painted" while the Danube ended in the middle of Europe. This reads the
+ * delivered path and the beat's own last badge anchor, so it can go red without a browser.
+ */
+describe("the drawn river is the whole river", () => {
+  const html = readFileSync(
+    join(HERE, "render", "danube-scrolly.html"),
+    "utf8",
+  );
+  const geometry = JSON.parse(
+    readFileSync(join(HERE, "plate", "geometry.json"), "utf8"),
+  );
+  const d = html.match(/data-part="route"[^>]*?\sd="([^"]+)"/)?.[1] ?? "";
+  const route = {
+    subpaths: (d.match(/M/g) ?? []).length,
+    points: d
+      .slice(1)
+      .split("L")
+      .map((p) => p.trim().split(/\s+/).map(Number) as [number, number]),
+  };
+  /** The last badge in the beat's own crossing order — badge 9, Ukraine, the delta. */
+  const lastAnchor =
+    geometry.anchors[geometry.crossings[geometry.crossings.length - 1]];
+
+  it("carries the whole route as ONE path, from the Black Forest to the delta", () => {
+    expect(route.subpaths).toBe(1);
+    expect(route.points).toHaveLength(911);
+  });
+
+  it("reaches the place its own last badge marks", () => {
+    expect(routeGeometry(route, lastAnchor).problems).toEqual([]);
+    // Stated as a number rather than left to the verdict: the path ends 13.8 plate units from
+    // badge 9's anchor, against a median step of 0.922.
+    expect(routeGeometry(route, lastAnchor).steps.endToLastAnchor).toBeLessThan(
+      20,
+    );
+  });
+
+  it("has no hole in it — the largest step is a sparse stretch, not a gap", () => {
+    const { steps } = routeGeometry(route, lastAnchor);
+    expect(steps.largestStep / steps.medianStep).toBeLessThan(
+      ROUTE_GEOMETRY.gapAtMostSteps,
+    );
+  });
+
+  it("catches a route truncated after badge 4 — the shape the owner described", () => {
+    const truncated = { subpaths: 1, points: route.points.slice(0, 480) };
+    const verdict = routeGeometry(truncated, lastAnchor);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain(
+      "does not reach the place the beat's last badge marks",
+    );
+  });
+
+  it("catches a hole in the middle, which draws as two pieces joined by a straight line", () => {
+    const holed = {
+      subpaths: 1,
+      points: [...route.points.slice(0, 400), ...route.points.slice(700)],
+    };
+    expect(routeGeometry(holed, lastAnchor).problems.join("\n")).toContain(
+      "that is a hole in the source",
+    );
+  });
+
+  it("catches a route broken into several subpaths", () => {
+    expect(
+      routeGeometry({ ...route, subpaths: 2 }, lastAnchor).problems.join("\n"),
+    ).toContain("it is one river and must be one path");
   });
 });
 
