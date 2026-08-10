@@ -14,19 +14,26 @@
  * by walking `skills/**&#47;*.tsx`; a craft skill added tomorrow is covered the moment its component
  * lands, with nobody remembering to wire it up.
  *
- * WHY IT STOPS AT `skills/` — the residue, stated rather than hidden.
+ * IT NOW COVERS THE BEATS TOO — and how the population is defined matters.
  *
- * 55 of the 60 are beats under `proof/`, and as of 2026-08-10 only three of them have been
- * migrated. Pointing this walk at `proof/` today would turn the suite red on ~52 beats that
- * already shipped. **That is a migration, not a guard** — the same argument
- * `seed-reads-a-recorded-palette.test.ts` makes for its own boundary, and the same reason
- * `PLAN-2026-08-10.md` orders seeds before beats: fixing beats while leaving seeds regenerates the
- * defect on the next beat written, whereas fixing seeds first means the backlog stops growing even
- * while it has not yet shrunk.
+ * When this guard was written it stopped at `skills/`, because 55 of the 60 anchors were beats
+ * under `proof/` and pointing the walk there would have turned the suite red on ~52 shipped beats:
+ * a migration, not a guard. That migration has since happened, genre by genre — static chart,
+ * chart video, map static, map video — so the walk covers the beats as well.
  *
- * The scope is a DIRECTORY, never a list of exempted files. When the beats are migrated, `ROOTS`
- * below gains `proof` and nothing else changes — no exemption list to prune, which is the
- * `helper-parity.test.ts` failure mode this branch has already paid for twice.
+ * A BEAT is a directory holding a `BRIEF.md`. That is the tree's own marker, the same one
+ * `claims-grounded-in-data.test.ts` and Guard C below use, and it is a RULE rather than a list: a
+ * beat added tomorrow is covered the moment its brief lands, and nobody maintains an allowlist. A
+ * PROBE workspace — a directory that ships measurements and verdicts rather than a beat, such as
+ * `proof/portrait-aspect-probe/` — carries no brief and is therefore outside the population by
+ * that rule, not by anyone remembering to skip it.
+ *
+ * THE RESIDUE, stated rather than hidden. Measured 2026-08-10: `PortraitHistogram.tsx` and
+ * `PortraitRanking.tsx` in that probe workspace still anchor their credit to a header rung
+ * (`PortraitLine.tsx`, written after the seeds moved, already anchors to `height - PAD` without
+ * anyone asking). They are the last two of the sixty-odd, and they are outside this walk. And a
+ * component sitting at the `proof/` ROOT rather than inside a beat folder — `proof/RankBars.tsx`
+ * is the only one — is outside it too, though it is migrated.
  *
  * WHAT IT PROVABLY DOES NOT CATCH.
  *
@@ -37,7 +44,29 @@
  *    beats that ship an SVG beside their PNG.
  * 2. **A component that draws the source at a literal `y` with no named const.** Nothing here can
  *    see it, because there is no definition to read.
- * 3. **The 52 un-migrated beats**, per the boundary above.
+ * 3. **The two probe components and the one `proof/`-root component**, per the boundary above.
+ *
+ * THE MUTATIONS THAT REDDEN IT, run in a copy of the tree at /tmp/twinmut, never in this one.
+ * Baseline in the copy: 86 pass, 0 fail.
+ *
+ *   M-A1  a SHIPPED beat re-anchored to a header rung (`static-wind-vs-solar`, back to
+ *         `limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22`):
+ *           (fail) … proof/static-wind-vs-solar/WindVsSolarBar.tsx should anchor its source …
+ *           "sourceBaseline does not resolve to the frame's height with a subtraction: …"
+ *           "sourceBaseline resolves to the header rung limitsBaseline"
+ *           85 pass, 1 fail
+ *
+ *   M-A2  a NEW beat lands carrying the defect — `proof/fake-new-beat/{BRIEF.md,FakeBeat.tsx}`
+ *         with `const sourceBaseline = titleBaseline + 26;`. This is the exact mutation the W2
+ *         audit ran against the first draft of this guard and watched STAY GREEN, because the
+ *         walk stopped at `skills/`. It now goes red:
+ *           (fail) … proof/fake-new-beat/FakeBeat.tsx should anchor its source …
+ *           "sourceBaseline resolves to the header rung titleBaseline"
+ *
+ *   M-A3  every `BRIEF.md` renamed, so the walk finds no beats and the whole block would
+ *         otherwise go vacuously green:
+ *           Expected: >= 50   Received: 5
+ *           (fail) … should find every craft-skill component that positions a source line
  */
 import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -46,8 +75,10 @@ import { join, relative } from "node:path";
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = join(SKILLS, "..");
 
-/** The populations this guard covers. A directory, never a file list — see the header. */
-const ROOTS = ["skills"];
+/** The craft skills, walked whole. */
+const SKILL_ROOT = "skills";
+/** A beat is a directory that holds a `BRIEF.md`. Discovered, never listed — see the header. */
+const BEAT_MARKER = "BRIEF.md";
 
 /** The header rungs a source anchor may never be derived from: naming any of them means the credit
  *  hangs under the header, which is the defect. */
@@ -89,7 +120,19 @@ function sourceAnchors(src: string): { name: string; expression: string }[] {
   return found;
 }
 
-const COMPONENTS = ROOTS.flatMap((root) => [...tsxFiles(join(TWIN, root))])
+function beatDirs(): string[] {
+  const proof = join(TWIN, "proof");
+  if (!existsSync(proof)) return [];
+  return readdirSync(proof, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => join(proof, e.name))
+    .filter((d) => existsSync(join(d, BEAT_MARKER)));
+}
+
+const COMPONENTS = [
+  ...tsxFiles(join(TWIN, SKILL_ROOT)),
+  ...beatDirs().flatMap((d) => [...tsxFiles(d)]),
+]
   .map((path) => ({ path, label: relative(TWIN, path) }))
   .filter(({ path }) => sourceAnchors(readFileSync(path, "utf8")).length > 0)
   .sort((a, b) => a.label.localeCompare(b.label));
@@ -97,8 +140,8 @@ const COMPONENTS = ROOTS.flatMap((root) => [...tsxFiles(join(TWIN, root))])
 describe("the credit is anchored to the frame's bottom, discovered rather than listed", () => {
   it("should find every craft-skill component that positions a source line", () => {
     // If the walk breaks, every assertion below goes vacuously green. Measured 2026-08-10: five
-    // components across three craft skills carry a source anchor.
-    expect(COMPONENTS.length).toBeGreaterThanOrEqual(5);
+    // components across three craft skills, plus 54 beat components under `proof/`.
+    expect(COMPONENTS.length).toBeGreaterThanOrEqual(50);
     const labels = COMPONENTS.map((c) => c.label);
     for (const expected of [
       "skills/twin-chart-beat/assets/ChartSeed.tsx",
@@ -106,6 +149,11 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
       "skills/twin-chart-web/assets/ChartWebSeed.tsx",
       "skills/twin-map-beat/assets/Co2MapStill.tsx",
       "skills/twin-map-beat/assets/Co2MapVideo.tsx",
+      // and one beat per genre, so a walk that silently stopped covering `proof/` is caught
+      "proof/static-wind-vs-solar/WindVsSolarBar.tsx",
+      "proof/vidz-bump-emitter-rank/BumpVideo.tsx",
+      "proof/map-quake-symbol/QuakeSymbolStill.tsx",
+      "proof/mapvid-locator-geneva/LocatorVideo.tsx",
     ]) {
       expect([expected, labels.includes(expected)]).toEqual([expected, true]);
     }
