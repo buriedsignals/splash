@@ -149,7 +149,12 @@ if (wantStill) {
       subjectKey: subject.key,
     }),
     width: 900,
-    height: stillFrameHeight({ plateHeight: geometry.frame.height, caveat }),
+    height: stillFrameHeight({
+      plateHeight: geometry.frame.height,
+      caveat,
+      source: BEAT.source,
+      basemapCredit: BEAT.basemapCredit,
+    }),
     outDir,
     name: "static",
   });

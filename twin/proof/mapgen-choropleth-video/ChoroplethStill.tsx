@@ -135,10 +135,17 @@ export function ChoroplethStill({
   // anchored to different things: the title hangs off the top, and the caveat is the last line
   // before the bottom margin.
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 30;
-  const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
-
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
+  const titleBottom = titleTop + (titleLines.length - 1) * TITLE.lead;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
+  // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
+  // source block's own height; the plate is a fixed square and does not move. See
+  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
   const noDataY = caveatTop - NOTE.fontSize - 24;
   const barBottom = (anyNoData ? noDataY : caveatTop) - 34;
   const barTop = barBottom - LEGEND.barHeight;
@@ -149,10 +156,12 @@ export function ChoroplethStill({
 
   // Loud, not silent: if the two halves meet, something overlaps, and an overlap in a static frame
   // is the defect a reader sees first.
-  if (captionY - 14 < sourceBottom)
+  // RE-POINTED when the source moved to the bottom, exactly as the seed's own guard was: a
+  // comparison against `sourceBottom` cannot go red once the source sits on the frame's floor.
+  if (captionY - 14 < titleBottom)
     throw new Error(
-      `the column does not fit: the source ends at ${sourceBottom} and the legend starts at ${captionY}. ` +
-        `Shorten the title or the source, or lower LEGEND.barHeight (${LEGEND.barHeight}).`,
+      `the column does not fit: the title ends at ${titleBottom} and the legend starts at ${captionY}. ` +
+        `Shorten the title, the source or the caveat, or lower LEGEND.barHeight (${LEGEND.barHeight}).`,
     );
 
   // ── The subject, in the plate's coordinate space, scaled once into the drawn one.

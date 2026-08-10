@@ -104,7 +104,16 @@ export function DotDensityStill({
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
 
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 24;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
+  // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
+  // source block's own height; the plate is a fixed square and does not move. See
+  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
 
   const MAP = {
     x: MAP_X,
@@ -118,7 +127,6 @@ export function DotDensityStill({
   const dotKeyText = `● 1 dot = ${dotValue.toLocaleString("en-US")} people  —  ${totalDots.toLocaleString("en-US")} dots drawn for ${totalPopulation.toLocaleString("en-US")} people`;
   const dotKeyLines = wrap(dotKeyText, FRAME.width - PAD * 2, DOT_KEY);
 
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
 
   const studyKeyY = dotKeyY + (dotKeyLines.length - 1) * 20 + 26;
   if (studyKeyY + 6 > caveatTop - NOTE.fontSize - 10)

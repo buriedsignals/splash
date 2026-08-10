@@ -98,13 +98,25 @@ export function LocatorStill({
   const legendLines = wrap(legendCaption, COLUMN.width, CAPTION);
 
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 30;
-  const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
+  const titleBottom = titleTop + (titleLines.length - 1) * TITLE.lead;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
+  // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
+  // source block's own height; the plate is a fixed square and does not move. See
+  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
   const legendTop = caveatTop - NOTE.fontSize - 34 - CATEGORY_ORDER.length * 22;
-  if (legendTop - 16 < sourceBottom)
+  // RE-POINTED when the source moved to the bottom. It used to compare the legend against
+  // `sourceBottom`; with the source down at the frame's floor that comparison is either always
+  // true or always false, which is a guard that cannot go red. The two halves that can now meet
+  // are the TITLE block and the top of the bottom stack.
+  if (legendTop - 16 < titleBottom)
     throw new Error(
-      `the column does not fit: source ends at ${sourceBottom}, legend starts at ${legendTop}.`,
+      `the column does not fit: the title ends at ${titleBottom}, the legend starts at ${legendTop}.`,
     );
 
   // Markers first, in the DRAWN (scaled) frame: two organisations whose real-world coordinates are

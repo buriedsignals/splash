@@ -64,6 +64,7 @@ export function wrap(
 const LEGEND_SWATCH = 16;
 const LEGEND_GAP = 30; // clear air between the map's bottom edge and the legend
 const CAVEAT_GAP = 26; // and between the legend and the caveat block
+const SOURCE_GAP = 12; // and between the caveat block and the credit at the frame's foot
 
 /**
  * How tall the frame must be for THIS plate and THIS caveat. The plate is drawn 1:1 — never scaled,
@@ -76,11 +77,24 @@ const CAVEAT_GAP = 26; // and between the legend and the caveat block
 export function stillFrameHeight({
   plateHeight,
   caveat,
+  source,
+  basemapCredit,
 }: {
   plateHeight: number;
   caveat: string;
+  source: string;
+  basemapCredit: string;
 }): number {
   const caveatLines = wrap(caveat, FRAME_WIDTH - PAD * 2, NOTE).length;
+  // The SOURCE joined the bottom stack when the credit moved to the frame's own bottom margin, so
+  // the frame's height has to account for it — this beat derives its height from what it contains
+  // rather than pinning one, and the credit is now one of the things it contains. Leaving it out
+  // is what made the beat's own fit guard throw: the stack had grown and the frame had not.
+  const sourceLines = wrap(
+    `${source} · ${basemapCredit}`,
+    FRAME_WIDTH - PAD * 2,
+    SOURCE,
+  ).length;
   return (
     MAP_Y +
     plateHeight +
@@ -89,6 +103,9 @@ export function stillFrameHeight({
     CAVEAT_GAP +
     NOTE.fontSize +
     (caveatLines - 1) * NOTE.lead +
+    SOURCE_GAP +
+    SOURCE.fontSize +
+    (sourceLines - 1) * SOURCE.lead +
     PAD
   );
 }
@@ -124,7 +141,12 @@ export function HexGridStill({
 }: HexGridStillProps) {
   const FRAME = {
     width: FRAME_WIDTH,
-    height: stillFrameHeight({ plateHeight: geometry.frame.height, caveat }),
+    height: stillFrameHeight({
+      plateHeight: geometry.frame.height,
+      caveat,
+      source,
+      basemapCredit,
+    }),
   };
   const titleLines = wrap(title, FRAME.width - PAD * 2, TITLE);
   const sourceLines = wrap(
@@ -135,8 +157,16 @@ export function HexGridStill({
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
 
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 26;
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
+  // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
+  // source block's own height; the plate is a fixed square and does not move. See
+  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - SOURCE_GAP;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
 
   const subject = cells.find((c) => c.key === subjectKey);
   if (!subject) throw new Error(`no cell for the subject ${subjectKey}`);

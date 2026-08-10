@@ -115,7 +115,16 @@ export function FlowMapStill({
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
 
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
+  // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
+  // source block's own height; the plate is a fixed square and does not move. See
+  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
 
   const MAP = {
     x: MAP_X,
@@ -124,7 +133,6 @@ export function FlowMapStill({
     height: geometry.frame.height,
   };
 
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
 
   // The legend: one numbered chip per territory, wrapped left to right, as many rows as it takes —
   // measured, never assumed to fit one row, because nine territory names is more than a small
