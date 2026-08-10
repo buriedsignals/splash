@@ -55,7 +55,9 @@ const typeName = (s) =>
 
 export function readBeats() {
   const beats = [];
-  for (const name of readdirSync(PROOF)) {
+  // Directory iteration order is filesystem-specific. Keep the generated rows and multi-beat
+  // cells identical on APFS and Linux rather than letting checkout order rewrite MATRIX.md in CI.
+  for (const name of readdirSync(PROOF).sort()) {
     const dir = join(PROOF, name);
     if (!statSync(dir).isDirectory() || NOT_A_BEAT.has(name)) continue;
 

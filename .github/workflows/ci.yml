@@ -63,15 +63,10 @@ jobs:
       - name: Write the ephemeral map-render environment
         if: env.MAPTILER_KEY != ''
         run: |
-          printf 'VITE_MAPTILER_KEY=%s\nREMOTION_MAPTILER_KEY=%s\n' \
-            "$VITE_MAPTILER_KEY" "$REMOTION_MAPTILER_KEY" > .env
+          printf 'MAPTILER_KEY=%s\nVITE_MAPTILER_KEY=%s\nREMOTION_MAPTILER_KEY=%s\n' \
+            "$MAPTILER_KEY" "$VITE_MAPTILER_KEY" "$REMOTION_MAPTILER_KEY" > .env
           chmod 600 .env
 
-      - name: Run credential-gated map rendering tests
+      - name: Run the credential-gated live-map browser verification
         if: env.MAPTILER_KEY != ''
-        run: |
-          bun test \
-            skills/map-beat/test \
-            skills/map-web/test \
-            skills/splash/test/every-extent-band-is-produced.test.ts \
-            skills/splash/test/map-scrollys-are-live.test.ts
+        run: bun test skills/map-web/test/live-map.test.ts

@@ -52,5 +52,5 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 
 ## Beats with no `BRIEF.md`
 
-`portrait-aspect-probe`, `co2-suisse`, `scrolly-one-chart-swiss-life-expectancy` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
+`co2-suisse`, `portrait-aspect-probe`, `scrolly-one-chart-swiss-life-expectancy` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
 
