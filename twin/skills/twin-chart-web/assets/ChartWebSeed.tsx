@@ -277,6 +277,69 @@ function pct(value: number, total: number): number {
   return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
 }
 
+/**
+ * ── THE HOVERABLE LINE ─────────────────────────────────────────────────────────────────────────
+ * The component-side half of this genre's line primitive. Its other two halves live in the skill
+ * too: `initLines` in `assets/interaction.mjs` wires it, and `buildCss`'s `.line-hit` rule in
+ * `scripts/render-web.mjs` carries the one load-bearing declaration, `pointer-events: stroke`.
+ *
+ * WHAT IT IS FOR. A reading that belongs to a LINE rather than to a point — what links its two
+ * ends. A slope's connector says "Germany fell from 12.4 t to 5.7 t, −6.7 t, −54 %", which no
+ * per-endpoint tooltip can say however many endpoints it answers; a route's segment says which
+ * territory it crosses and how far along the journey it is. Both were asked for by name and both
+ * need the same thing, so it is written once here and duplicated into the beats that draw one
+ * (`hoverable-line-parity.test.ts` walks every copy and fails if two bodies disagree).
+ *
+ * HOW IT WORKS. A TRANSPARENT STROKED TWIN of the visible path, drawn immediately after it, with
+ * `pointer-events: stroke` so the hit region is the stroke and not the bounding box — the bounding
+ * box of a diagonal is mostly empty space, and a reader aiming at the line they can see would
+ * otherwise be answered by a rectangle covering everything between the line and the frame.
+ * `vectorEffect="non-scaling-stroke"` is not decoration either: under this genre's
+ * `preserveAspectRatio="none"` a stroke stated in user units becomes an ellipse of the container's
+ * own aspect ratio, so the twin would be 60px wide on an ultrawide frame and 8px on a phone.
+ *
+ * KEYBOARD PARITY IS BAKED, not scripted: the twin carries `tabIndex` and its own `aria-label` at
+ * build time, so Tab reaches every line and a screen reader names it with the script absent.
+ *
+ * THE SEED ITSELF DRAWS NO HOVERABLE LINE, and that is a property of the seed rather than of the
+ * primitive: this composition resolves a pointer to the nearest reading by x over one `.hit-area`
+ * rect drawn LAST, i.e. on top of everything, so a twin beneath it could never receive an event.
+ * A beat whose targets are discrete (a slope's twenty endpoints, a route's segments) has no such
+ * rect, and the twin is the top-most thing over the line it belongs to.
+ */
+/** The transparent twin's stroke width, in CSS pixels. A knob, and it is one number: 24 is the
+ *  24px touch-target floor this project holds elsewhere, applied to a target a reader aims at along
+ *  its length rather than at a point — half of it either side of a line they can see. */
+export const LINE_HIT_WIDTH = 24;
+
+/** Every attribute the transparent twin needs, from the visible path's own `d` and the beat's own
+ *  frozen reading. Returns props rather than markup so a component composes it into its own
+ *  element and this helper never decides where in the paint order the twin lands. */
+export function hoverableLineProps({
+  d,
+  detail,
+  label,
+}: {
+  d: string;
+  detail: string;
+  label: string;
+}) {
+  return {
+    className: "line-hit",
+    d,
+    fill: "none",
+    stroke: "transparent",
+    strokeWidth: LINE_HIT_WIDTH,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    vectorEffect: "non-scaling-stroke" as const,
+    tabIndex: 0,
+    role: "img" as const,
+    "aria-label": label,
+    "data-detail": detail,
+  };
+}
+
 export function ChartWebSeed({
   data,
   title,

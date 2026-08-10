@@ -413,6 +413,16 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 .chart-figure:has(#period-late:checked) .seg[data-period="early"],
 .chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
 
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);

@@ -24,6 +24,9 @@ import {
   deriveFurniture,
   measureText,
   readPalette,
+  readTypeface,
+  useTypeface,
+  assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
 import { ChartWebPreviewSvg } from "../assets/ChartWebSeed.tsx";
 
@@ -47,6 +50,12 @@ const data = JSON.parse(
 const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
   stopAt: join(HERE, ".."),
 });
+
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force
+// before anything is laid out — `FONT_FAMILY` is a live binding, so the seed draws in
+// whatever this resolves, and `measureText` measures in the same thing. A face that does
+// not resolve on this machine refuses here rather than being silently substituted.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
@@ -62,6 +71,10 @@ const svg = renderToStaticMarkup(
     measure: measureText,
   }),
 );
+// Nothing renders in a typeface nobody chose: if the element declared a family other
+// than the one in force, every gutter in it was measured against a font nobody is
+// looking at, and it would clip in the PNG rather than say so.
+assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
 const widthMatch = svg.match(/\bwidth="(\d+(?:\.\d+)?)"/);
 const previewWidth = widthMatch ? Number(widthMatch[1]) : 900;

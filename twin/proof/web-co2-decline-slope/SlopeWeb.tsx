@@ -185,6 +185,103 @@ function pct(value: number, total: number): number {
   return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
 }
 
+/**
+ * ── THE HOVERABLE LINE ─────────────────────────────────────────────────────────────────────────
+ * The component-side half of this genre's line primitive. Its other two halves live in the skill
+ * too: `initLines` in `assets/interaction.mjs` wires it, and `buildCss`'s `.line-hit` rule in
+ * `scripts/render-web.mjs` carries the one load-bearing declaration, `pointer-events: stroke`.
+ *
+ * WHAT IT IS FOR. A reading that belongs to a LINE rather than to a point — what links its two
+ * ends. A slope's connector says "Germany fell from 12.4 t to 5.7 t, −6.7 t, −54 %", which no
+ * per-endpoint tooltip can say however many endpoints it answers; a route's segment says which
+ * territory it crosses and how far along the journey it is. Both were asked for by name and both
+ * need the same thing, so it is written once here and duplicated into the beats that draw one
+ * (`hoverable-line-parity.test.ts` walks every copy and fails if two bodies disagree).
+ *
+ * HOW IT WORKS. A TRANSPARENT STROKED TWIN of the visible path, drawn immediately after it, with
+ * `pointer-events: stroke` so the hit region is the stroke and not the bounding box — the bounding
+ * box of a diagonal is mostly empty space, and a reader aiming at the line they can see would
+ * otherwise be answered by a rectangle covering everything between the line and the frame.
+ * `vectorEffect="non-scaling-stroke"` is not decoration either: under this genre's
+ * `preserveAspectRatio="none"` a stroke stated in user units becomes an ellipse of the container's
+ * own aspect ratio, so the twin would be 60px wide on an ultrawide frame and 8px on a phone.
+ *
+ * KEYBOARD PARITY IS BAKED, not scripted: the twin carries `tabIndex` and its own `aria-label` at
+ * build time, so Tab reaches every line and a screen reader names it with the script absent.
+ *
+ * WHERE THIS BEAT PUTS IT IN THE PAINT ORDER. Before the twenty endpoint bands, so a pointer over
+ * an endpoint gets the endpoint's own reading and a pointer anywhere ELSE along the line gets the
+ * line's. This composition has no shared `.hit-area` rect — the seed's copy of this comment
+ * explains why the seed cannot carry a twin at all — so nothing sits above the twin except the
+ * targets that should win over it.
+ */
+/** The transparent twin's stroke width, in CSS pixels. A knob, and it is one number: 24 is the
+ *  24px touch-target floor this project holds elsewhere, applied to a target a reader aims at along
+ *  its length rather than at a point — half of it either side of a line they can see. */
+export const LINE_HIT_WIDTH = 24;
+
+/** Every attribute the transparent twin needs, from the visible path's own `d` and the beat's own
+ *  frozen reading. Returns props rather than markup so a component composes it into its own
+ *  element and this helper never decides where in the paint order the twin lands. */
+export function hoverableLineProps({
+  d,
+  detail,
+  label,
+}: {
+  d: string;
+  detail: string;
+  label: string;
+}) {
+  return {
+    className: "line-hit",
+    d,
+    fill: "none",
+    stroke: "transparent",
+    strokeWidth: LINE_HIT_WIDTH,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    vectorEffect: "non-scaling-stroke" as const,
+    tabIndex: 0,
+    role: "img" as const,
+    "aria-label": label,
+    "data-detail": detail,
+  };
+}
+
+/**
+ * WHAT A CONNECTING LINE SAYS, and it is the one reading this beat could not previously give.
+ *
+ * The owner asked for "a full hover tooltip on the connecting line, giving the information that
+ * links the two ends". That is not either endpoint's reading and it is not both of them printed
+ * together: it is the CHANGE — how far this category fell, in the unit and as a share of where it
+ * started — which is the whole reason a slope chart joins two points with a line at all. Derived
+ * here from the same two values the endpoints print, never a third number from anywhere else.
+ */
+export function lineReading(
+  line: { name: string; v1990: number; v2024: number },
+  periodLabels: { p1990: string; p2024: string },
+  highlighted: string,
+): { d: string; detail: string; label: string } {
+  const delta = line.v2024 - line.v1990;
+  const pctChange = (delta / line.v1990) * 100;
+  const direction = delta < 0 ? "down" : delta > 0 ? "up" : "unchanged";
+  const magnitude =
+    delta === 0
+      ? "no change"
+      : `${direction} ${fmt(Math.abs(delta))} ${UNIT} (${fmt(Math.abs(pctChange))}%)`;
+  const detail =
+    `${line.name} · ${periodLabels.p1990} ${fmt(line.v1990)} ${UNIT} → ` +
+    `${periodLabels.p2024} ${fmt(line.v2024)} ${UNIT} · ${magnitude}`;
+  return {
+    d: "",
+    detail,
+    label:
+      `${line.name}${line.name === highlighted ? ", the line this chart is about" : ""}: ` +
+      `${fmt(line.v1990)} ${UNIT} in ${periodLabels.p1990}, ${fmt(line.v2024)} ${UNIT} in ` +
+      `${periodLabels.p2024}, ${magnitude}`,
+  };
+}
+
 export function SlopeWeb({
   data,
   title,
@@ -195,6 +292,7 @@ export function SlopeWeb({
   accent,
   ink,
   muted,
+  grid,
   highlighted,
   periodLabels,
   frame,
@@ -211,6 +309,9 @@ export function SlopeWeb({
   accent: string;
   ink: string;
   muted: string;
+  /** Derived from `ground` by `deriveFurniture` in `renderWeb`, like `ink`/`muted`. The two period
+   *  axes are drawn in it. */
+  grid: string;
   /** The one line this beat accents — Germany, per `BRIEF.md`. At most one hue total
    *  (`references/types/slope.md`): the United Kingdom, the claim's own comparison, stays plain
    *  muted like the other eight, and the end labels carry the comparison instead. */
@@ -395,6 +496,29 @@ export function SlopeWeb({
             fill={ground}
           />
 
+          {/* THE TWO VERTICAL AXES, one per period — `references/types/slope.md` requires them by
+              name ("Two vertical axes — one per period — with each category's two values plotted as
+              points and joined by a straight line between them") and this beat did not draw them.
+              What looked like axes in the delivered HTML were the two LABEL GUTTERS, which are CSS
+              grid tracks and carry no rule at all; the owner read the result as "the axis lines and
+              the connecting lines between the two axes are not all drawn", and the half he could
+              name was right. They sit exactly on the two columns the geometry puts the points on,
+              in the grid ink, one pixel wide at every stretch. The video sibling
+              (`vidx-slope-child-mortality`) has drawn them since it was built; this is the static
+              and web pair catching up. */}
+          {[0, frame.width].map((x) => (
+            <line
+              key={`axis-${x}`}
+              x1={x}
+              x2={x}
+              y1={0}
+              y2={frame.height}
+              stroke={grid}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+
           {ordered.map((l) => {
             const isAccent = l.name === highlighted;
             const stroke = isAccent ? accent : muted;
@@ -413,6 +537,15 @@ export function SlopeWeb({
                   }
                   strokeLinecap="round"
                   vectorEffect="non-scaling-stroke"
+                />
+                {/* THE HOVERABLE LINE — the connector's own transparent twin, immediately after it.
+                    It carries the reading a per-endpoint tooltip cannot give: both ends AND the
+                    change between them, which is the thing the two ends are joined to say. */}
+                <path
+                  {...hoverableLineProps({
+                    ...lineReading(l, periodLabels, highlighted),
+                    d: `M ${l.x1990} ${l.y1990} L ${l.x2024} ${l.y2024}`,
+                  })}
                 />
                 {/* A short leader only where the de-collision pass actually moved a label away from
                     its own true point, so a nudged label never reads as ambiguous about which point

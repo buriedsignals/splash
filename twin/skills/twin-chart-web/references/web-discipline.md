@@ -169,6 +169,24 @@ extended here to a chart. That is the "adapt cheaply" this genre requires, and i
 claim from "adapt without a client-side layout engine recomputing gutters and tick counts," which
 this file continues to reject exactly as its first build did.
 
+**A reading that belongs to a LINE is reachable on the line.** Until B6.9 every hit surface in this
+genre was a point or a shared `.hit-area` rect resolved by nearest-x, and a slope chart's connector
+— which exists precisely to say what LINKS its two ends — could not be pointed at. The primitive is
+three pieces, all in this skill: a transparent stroked twin drawn immediately after the visible path
+(`hoverableLineProps` in `assets/ChartWebSeed.tsx`, duplicated into the beats that draw one and
+walked by `hoverable-line-parity.test.ts`), the `.line-hit` rule in `buildCss` whose
+`pointer-events: stroke` makes the STROKE the hit region instead of the bounding box, and `initLines`
+in `assets/interaction.mjs`.
+
+Three things about it that were measured rather than assumed. **The twin is `non-scaling-stroke`**:
+under `preserveAspectRatio="none"` a stroke stated in user units would be 60px wide on an ultrawide
+frame and 8px on a phone. **The reading must link the two ends** — both values and the change — or
+it is a second copy of an endpoint's own tooltip. And **the pointer resolves to the NEAREST line's
+stroke, not to whichever twin caught the event**: the twin is deliberately wide, so on a chart whose
+lines converge it covers its neighbours, and 21 of 60 probes taken ON a line answered with a
+different line at 375px before the nearest rule was added. The residue is a true crossing, where the
+two distances are equal and the answer between them is arbitrary.
+
 **An annotation is placed by the shape it annotates, and it moves with the width.** A label parked
 at a typed corner is the second form of the same mistake: `weby-population-pyramid-switzerland`'s
 peak annotation sat at `left: 0%, top: 0%`, twelve rows above the band it named, with a 600px dashed
