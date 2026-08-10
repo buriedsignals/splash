@@ -47,6 +47,11 @@ recursive replacement scope.
 - Concurrent `materialise` calls for one output.
 - Render mutation after approval and QA receipt mismatch.
 - Cloudflare timeout, response loss, and remote-success/local-failure cases.
+- The credential-gated MapTiler browser smoke remains manual. On the 2026-08-10
+  Ubuntu hosted runner it reached the keyed temporary page but timed out waiting
+  for the page's `mw-live` readiness marker. Diagnose the external map/style load
+  before promoting that smoke to an every-push release gate; do not treat the
+  secretless contract lane as evidence that the live map was driven.
 
 The broader evidence-package, context-acquisition, claim-trace, production-plan,
 and per-output state work remains tracked by
