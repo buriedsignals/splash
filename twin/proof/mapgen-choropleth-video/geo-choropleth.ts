@@ -392,6 +392,102 @@ export function ratioClaimViolations({
       ];
 }
 
+// ── Where a subject's own label belongs ────────────────────────────────────────────────────────
+//
+// B6.10: "Poland" was placed by two typed degrees in `bake.mjs` — `label: [20.3, 52.2]`, under a
+// comment that called it "inside Poland's own landmass … nudged east and north" — projected to
+// (389.2, 277.6) and then consumed under `text-anchor="end"`, so the string GREW LEFT from a point
+// that had itself been nudged right to compensate. Measured against the shape the bake also
+// records: Poland's own box centre is (379.3, 280.0), and the drawn label's centre landed at
+// 364.2 — **15.1 px west of the country's centre on an 83.7 px-wide shape**, which is what a
+// reader sees as a name sitting on Poland's western lobe.
+//
+// The whole class is worth stating because the audit swept it: eight live sites in this tree place
+// a label by a typed number, including the seed every map beat is scaffolded from, while the
+// derivations that would place it correctly already exist in six places and none of the eight
+// calls one. This is that call, for this beat: the anchor comes from the SHAPE, in the same pixel
+// space the shape is drawn in, every render.
+
+export type BBox = { minX: number; maxX: number; minY: number; maxY: number };
+
+/** The bounding box across every ring of a shape — used only to decide whether a shape's own
+ *  filled path is a fair pointer target, never to decide outer-vs-hole (see `keepRing`'s own
+ *  doc-comment for that distinction). */
+export function boundingBoxOf(rings: Ring[]): BBox {
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  for (const ring of rings)
+    for (const [x, y] of ring) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  return { minX, maxX, minY, maxY };
+}
+
+export function bboxCenter(box: BBox): [number, number] {
+  return [(box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2];
+}
+
+/** @parity */
+export function pointInRing(point: [number, number], ring: Ring): boolean {
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]!;
+    const [xj, yj] = ring[j]!;
+    const crosses = yi > y !== yj > y;
+    if (crosses && x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-15) + xi)
+      inside = !inside;
+  }
+  return inside;
+}
+
+/** `rings[0]` is the outer boundary, `rings[1..]` are holes to cut back out — the same convention
+ *  every other beat in this twin uses for a baked polygon's ring list.
+ *  @parity */
+export function pointInRings(point: [number, number], rings: Ring[]): boolean {
+  const [outer, ...holes] = rings;
+  if (!outer || !pointInRing(point, outer)) return false;
+  return !holes.some((hole) => pointInRing(point, hole));
+}
+
+/**
+ * The point a subject's own name should be centred on, in the plate's pixel space: the box centre
+ * of the shape's LARGEST part, so an exclave or an offshore island cannot drag the name into the
+ * sea (Denmark's Bornholm, Italy's Sardinia, Greece's Crete are all in this beat's study set).
+ *
+ * A box centre, not a pole of inaccessibility, and the difference is stated rather than hidden: for
+ * a compact subject the two agree to a pixel or two, and for a crescent-shaped one the box centre
+ * can fall OUTSIDE the country. So it is not trusted — the result is tested against the part's own
+ * rings and this THROWS when it lands outside, naming the shape. A subject whose box centre is not
+ * inside itself needs a visual centre (`pointOnFeature`, which three flow beats already carry), and
+ * finding that out at render time is the point; a silently mis-anchored name is what B6.10 was.
+ *
+ *  @parity */
+export function subjectLabelAnchor(shape: BakedShape): [number, number] {
+  if (shape.parts.length === 0)
+    throw new Error(`${shape.key} has no parts to anchor a label on`);
+  let best: { rings: Ring[]; area: number } | null = null;
+  for (const part of shape.parts) {
+    const box = boundingBoxOf(part);
+    const area = (box.maxX - box.minX) * (box.maxY - box.minY);
+    if (!best || area > best.area) best = { rings: part, area };
+  }
+  const rings = best!.rings;
+  const centre = bboxCenter(boundingBoxOf(rings));
+  if (!pointInRings(centre, rings))
+    throw new Error(
+      `the box centre of ${shape.key}'s largest part, (${centre[0].toFixed(1)}, ${centre[1].toFixed(1)}), ` +
+        `is not inside the shape — this subject is concave enough that its name needs a visual ` +
+        `centre (pole of inaccessibility), not a box centre`,
+    );
+  return centre;
+}
+
 // ── Language ───────────────────────────────────────────────────────────────────────────────────
 
 /** This beat's readers write a decimal point. English only, project-wide, this branch. 

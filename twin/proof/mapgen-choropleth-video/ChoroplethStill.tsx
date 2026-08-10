@@ -18,6 +18,7 @@ import {
   en,
   pathFromParts,
   scalePosition,
+  subjectLabelAnchor,
   type BakedShape,
   type JoinedRow,
 } from "./geo-choropleth.ts";
@@ -37,6 +38,14 @@ const TICK = { fontSize: 12, fontWeight: 400 };
 const MARKER = { fontSize: 12.5, fontWeight: 600 };
 const NOTE = { fontSize: 11.5, fontWeight: 400, lead: 15 };
 const SUBJECT_LABEL = { fontSize: 15, fontWeight: 700 };
+/**
+ * Helvetica's cap height, 717/1000 em, from Adobe's own AFM for the face this beat draws in (Arial,
+ * the substitute, is 716). It puts a name's OPTICAL centre on a point rather than its baseline.
+ * `dominant-baseline="central"` would say the same thing declaratively and is not used, because the
+ * still rasterises through resvg and the video through Chrome, and a name that centred differently
+ * in the two would be a defect nobody could see in either one alone.
+ */
+const CAP_HEIGHT_EM = 0.717;
 
 /** The legend: a vertical class bar, value increasing upward, so "more than" is literal. */
 const LEGEND = { barWidth: 22, barHeight: 200, labelGap: 10, markerGap: 12 };
@@ -167,8 +176,10 @@ export function ChoroplethStill({
   // ── The subject, in the plate's coordinate space, scaled once into the drawn one.
   const subjectShape = geometry.shapes.find((shape) => shape.key === subject);
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
-  const labelAt = geometry.anchors.label;
-  if (!labelAt) throw new Error("the bake projected no label anchor");
+  // The subject's name is centred on the subject's own shape (B6.10). `geometry.anchors.label` —
+  // two degrees typed into `bake.mjs` and hand-nudged east — is no longer read: see
+  // `subjectLabelAnchor`'s own doc-comment for what it measured and why.
+  const labelAt = subjectLabelAnchor(subjectShape);
 
   return (
     <svg
@@ -243,11 +254,15 @@ export function ChoroplethStill({
             strokeLinejoin="round"
           />
         </g>
-        {/* The label is an overlay at a PROJECTED anchor (rule 4), in the beat's own typeface —
-            not a symbol handed to the basemap, which would arrive in the provider's font. */}
-        <g transform={`translate(${labelAt[0] * scale},${labelAt[1] * scale})`}>
+        {/* The label is an overlay at a DERIVED anchor (rule 4), in the beat's own typeface — not a
+            symbol handed to the basemap, which would arrive in the provider's font. Centred on the
+            anchor in both directions: `text-anchor="middle"` horizontally, and the baseline lifted
+            by half a cap height vertically, so the name's optical centre is the shape's centre. */}
+        <g
+          transform={`translate(${labelAt[0] * scale},${labelAt[1] * scale + (SUBJECT_LABEL.fontSize * CAP_HEIGHT_EM) / 2})`}
+        >
           <text
-            textAnchor="end"
+            textAnchor="middle"
             fontSize={SUBJECT_LABEL.fontSize}
             fontWeight={SUBJECT_LABEL.fontWeight}
             stroke={ground}
@@ -258,7 +273,7 @@ export function ChoroplethStill({
             {subjectLabel}
           </text>
           <text
-            textAnchor="end"
+            textAnchor="middle"
             fontSize={SUBJECT_LABEL.fontSize}
             fontWeight={SUBJECT_LABEL.fontWeight}
             fill={accent}

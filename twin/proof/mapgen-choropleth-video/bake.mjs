@@ -39,12 +39,19 @@ const BEAT = {
     [33, 67],
   ],
   style: "dataviz-light",
-  anchors: {
-    // Inside Poland's own landmass (centroid ~19.1, 51.4), nudged east and north so the
-    // right-anchored label text ("Poland", drawn growing LEFT from this point) lands centred over
-    // the country rather than spilling west into Germany.
-    label: [20.3, 52.2],
-  },
+  // NO LABEL ANCHOR IS TYPED HERE ANY MORE (B6.10). It used to read
+  //
+  //     label: [20.3, 52.2],   // "nudged east and north so the right-anchored label … lands centred"
+  //
+  // and it did not: projected to (389.2, 277.6) and consumed under `text-anchor="end"`, the drawn
+  // name's centre landed 15.1 px WEST of Poland's own centre (379.3, 280.0) on an 83.7 px shape.
+  // A number nudged by eye against one camera cannot stay right when the camera, the frame size or
+  // the typeface moves, and all three do here (the still bakes at 496, the video at 620).
+  // `geo-choropleth.ts`'s `subjectLabelAnchor` now derives it from the shape the bake already
+  // records, in the pixel space the label is drawn in, and throws if the result is not inside the
+  // country. The `anchors` mechanism below stays — it is the general facility (rule 4, "a projected
+  // anchor"), and this beat simply has nothing left to hand it.
+  anchors: {},
 };
 
 const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";

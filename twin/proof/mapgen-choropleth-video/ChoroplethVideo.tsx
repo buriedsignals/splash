@@ -28,6 +28,7 @@ import {
   pathFromParts,
   revealOrder,
   scalePosition,
+  subjectLabelAnchor,
   type BakedShape,
   type JoinedRow,
 } from "./geo-choropleth.ts";
@@ -52,6 +53,14 @@ const MARKER = { fontSize: 17, fontWeight: 600 };
 const MARKER_VALUE = { fontSize: 21, fontWeight: 700 };
 const NOTE = { fontSize: 17, fontWeight: 400, lead: 22 };
 const SUBJECT_LABEL = { fontSize: 22, fontWeight: 700 };
+/**
+ * Helvetica's cap height, 717/1000 em, from Adobe's own AFM for the face this beat draws in (Arial,
+ * the substitute, is 716). It puts a name's OPTICAL centre on a point rather than its baseline.
+ * `dominant-baseline="central"` would say the same thing declaratively and is not used, because the
+ * still sibling rasterises through resvg and this one through Chrome, and a name that centred
+ * differently in the two would be a defect nobody could see in either one alone.
+ */
+const CAP_HEIGHT_EM = 0.717;
 const LEGEND = {
   barWidth: 26,
   barHeight: 300,
@@ -210,8 +219,10 @@ export function ChoroplethVideo({
 
   const subjectShape = geometry.shapes.find((shape) => shape.key === subject);
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
-  const labelAt = geometry.anchors.label;
-  if (!labelAt) throw new Error("the bake projected no label anchor");
+  // The subject's name is centred on the subject's own shape (B6.10). `geometry.anchors.label` —
+  // two degrees typed into `bake.mjs` and hand-nudged east — is no longer read: see
+  // `subjectLabelAnchor`'s own doc-comment for what it measured and why.
+  const labelAt = subjectLabelAnchor(subjectShape);
 
   // ── The edit. Six windows, every one read off the contract.
   const establish = progressOf(frame, timing.establish);
@@ -397,11 +408,11 @@ export function ChoroplethVideo({
 
           {subjectSpring > 0 ? (
             <g
-              transform={`translate(${PAD + labelAt[0] * scale},${MAP_Y + labelAt[1] * scale})`}
+              transform={`translate(${PAD + labelAt[0] * scale},${MAP_Y + labelAt[1] * scale + (SUBJECT_LABEL.fontSize * CAP_HEIGHT_EM) / 2})`}
               opacity={subjectSpring}
             >
               <text
-                textAnchor="end"
+                textAnchor="middle"
                 fontSize={SUBJECT_LABEL.fontSize}
                 fontWeight={SUBJECT_LABEL.fontWeight}
                 stroke={ground}
@@ -412,7 +423,7 @@ export function ChoroplethVideo({
                 {subjectLabel}
               </text>
               <text
-                textAnchor="end"
+                textAnchor="middle"
                 fontSize={SUBJECT_LABEL.fontSize}
                 fontWeight={SUBJECT_LABEL.fontWeight}
                 fill={accent}
