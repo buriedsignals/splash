@@ -38,8 +38,20 @@
 // ── WHY THE DEFAULT IS REFUSAL ────────────────────────────────────────────────────────────────
 //
 // A type with no twin form needs its plot clamped into an aspect range, and that range has to be
-// MEASURED — the probe's own method, rendering the type's stretch arm at the frames already
-// accepted and taking the extremes. Three types have been measured. Thirty-two type sheets exist.
+// MEASURED. Seven types have been measured. Thirty-two type sheets exist.
+//
+// THE METHOD CHANGED, 2026-08-11, and the change is the point. `portrait-aspect-probe` derived a
+// range from THREE points — the type's stretch arm at 900x560, 1920x1080 and 1080x1080, extremes
+// rounded outward — and that method produced one bound this file already distrusted in writing (the
+// line's 0.8 floor, learned from a square render "itself already stretched") and one it should have
+// (a 1.8 ceiling below this corpus's own accepted landscape line at 1.94:1). Three accepted frames
+// cannot bracket a bound they never straddle.
+//
+// `proof/aspect-range-probe/` SWEEPS instead: the plot's width and the type size are held constant
+// and its height varied, so aspect is the only quantity differing between two arms; every arm is
+// written out and a person opens it (`ASPECT-VERDICT.md`, arm by arm). A bound is recorded only
+// where two arms bracket it — one that reads and one that does not — and each range below carries
+// where it was measured and what the break was.
 //
 // So every unmeasured type REFUSES portrait and square, naming the measurement that is missing.
 // That is invariant 1 applied to a shape instead of a colour: a chart drawn at an aspect nobody
@@ -95,6 +107,63 @@ export const MEASURED_ASPECT = {
     min: 1.3,
     max: 3.4,
     from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
+  },
+
+  // ── THE SWEPT RANGES, 2026-08-11 ────────────────────────────────────────────────────────────
+  //
+  // Four types this file refused for want of a measurement, now measured the way §"why the default
+  // is refusal" describes. Each bound is BRACKETED: the arm named in `reads` was opened and reads,
+  // the arm named in `breaks` was opened and does not, and the reason is what broke rather than a
+  // ratio that looked wrong.
+  //
+  // `countedOn` is not decoration either. Three of these four break because a COUNT of things stops
+  // fitting down the frame — five waterfall steps' value axis, ten bump rank rows, six
+  // small-multiples panels — so the range is a fact about the type AT THAT COUNT. A beat drawing
+  // twenty-seven rows is a different measurement, and `assertRowsFit` (not this file) is the
+  // instrument that reads a count.
+  waterfall: {
+    min: 0.35,
+    max: 4.6,
+    from: "proof/aspect-range-probe/ASPECT-VERDICT.md — arms 0.35 through 6.0, 900px plot, 26px type",
+    countedOn: "5 steps, a 5-tick value axis",
+    reads: "arms/waterfall-4p6.png — value-axis labels 39px apart at 26px, every step still a bar",
+    breaks:
+      "arms/waterfall-6.png — the value-axis labels touch at 30px pitch, and the two smallest steps " +
+      "(17 and 22px against a 159px bar width) stop being comparable slabs. No floor was reached: " +
+      "0.35 reads, with dead space rather than a defect, and no frame this toolchain exports goes flatter.",
+  },
+  slope: {
+    min: 0.35,
+    max: 1.8,
+    from: "proof/aspect-range-probe/ASPECT-VERDICT.md — arms 0.35 through 3.6, 900px plot, 26px type",
+    countedOn: "6 series, both ends directly labelled",
+    reads: "arms/slope-1p8.png — the Poland/France crossing still reads mid-plot",
+    breaks:
+      "arms/slope-2.png and 2p2 — a slope chart states WHICH LINES CROSS, and by 2.0 the crossing " +
+      "has been squeezed against the left rail; by 2.2 five of six end labels have been pushed off " +
+      "their own value by the de-collider, so the label column stops encoding position at all.",
+  },
+  "small-multiples": {
+    min: 0.5,
+    max: 1.3,
+    from: "proof/aspect-range-probe/ASPECT-VERDICT.md — arms 0.5 through 3.6, 900px grid, 26px type",
+    countedOn:
+      "6 panels, packed by the beat's own columnsFor rule (1x6 at 0.5, 2x3 in the middle, 3x2 flat)",
+    reads: "arms/small-multiples-1p3.png — panels 429x152, the shared value labels 38px apart",
+    breaks:
+      "arms/small-multiples-1p5.png — panels 152px -> 121px tall and the five shared value labels " +
+      "touch; by 3.6 they are an unreadable smear. The packing rule absorbs the tall side (one " +
+      "column of six at 0.5 reads perfectly) and runs out of columns on the flat side.",
+  },
+  bump: {
+    min: 0.5,
+    max: 2.9,
+    from: "proof/aspect-range-probe/ASPECT-VERDICT.md — arms 0.5 through 3.6, 900px plot, 26px type",
+    countedOn: "6 tracks over 10 rank rows, names drawn at both ends",
+    reads: "arms/bump-2p9.png — rank rows 34.4px apart against a 28px name",
+    breaks:
+      "arms/bump-3p2.png — the row pitch falls to 31.2px, under the name's own line, and the name " +
+      "column at each end becomes one solid stack. The crossings survive far longer than the names do.",
   },
 };
 

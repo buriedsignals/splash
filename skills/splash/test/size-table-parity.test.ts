@@ -431,3 +431,57 @@ describe("the export-size table — every copy in the tree, discovered rather th
     expect(canonical!.SIZES.square.width).toBe(1080);
   });
 });
+
+/**
+ * THE OTHER CARRIED TABLE IN THE SAME DIRECTORY, AND WHY IT IS GUARDED HERE.
+ *
+ * `type-at-size.mjs` answers a different question from `sizes.mjs` — which TYPE may enter which
+ * size, not how big a size is — and this file's header argues at length that the two must not
+ * become one table. That argument is about their CONTENT. Their CARRIAGE is identical: three
+ * physical copies (the skill's own `scripts/`, the live `shared/` mirror a proof beat imports
+ * through `#shared/*`, and the vendored copy a `cp -r root-template/` install puts in a newsroom's
+ * root), any of which can be edited while the others are not.
+ *
+ * Two of the three pairs already have a guard: `root-template-tells-the-truth.test.ts` mirrors
+ * `twin/shared` against `root-template/shared` byte for byte. **The pair that had none is the one
+ * that matters most** — the skill's canonical script against the mirror every beat under `proof/`
+ * actually loads. A range measured in one and not the other is a beat rendering against a table
+ * nobody edited.
+ *
+ * It WALKS rather than lists, for the reason stated at the top of this file: a copy landing in a
+ * fourth place is guarded the moment it lands.
+ *
+ * THE MUTATIONS, in an rsync of the tree under `/tmp/w4-aspect-mut/`, never in this working tree.
+ * Baseline 3 pass / 0 fail.
+ *
+ *   `MEASURED_ASPECT.bump.max` 2.9 -> 3.4 in the shared/ copy only    RED — names both files
+ *   `population-pyramid` added to BAND_SCALE_TYPES in one copy only   RED
+ *   the canonical `type-at-size.mjs` renamed                          RED on the premise, not
+ *                                                                          silently green
+ */
+const typeAtSizePaths = findAll(TWIN, "type-at-size.mjs");
+const CANONICAL_TYPE_AT_SIZE = join(
+  TWIN,
+  "skills",
+  "chart-beat",
+  "scripts",
+  "type-at-size.mjs",
+);
+
+describe("type-at-size.mjs — every carried copy, discovered rather than listed", () => {
+  it("should find the canonical copy and at least the live shared mirror beside it", () => {
+    // Without this the byte comparison below goes vacuously green on a renamed canonical file.
+    expect(typeAtSizePaths).toContain(CANONICAL_TYPE_AT_SIZE);
+    expect(typeAtSizePaths.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("should be byte-identical in every copy", () => {
+    const canonicalText = readFileSync(CANONICAL_TYPE_AT_SIZE, "utf8");
+    for (const path of typeAtSizePaths) {
+      expect([
+        relative(TWIN, path),
+        readFileSync(path, "utf8") === canonicalText,
+      ]).toEqual([relative(TWIN, path), true]);
+    }
+  });
+});

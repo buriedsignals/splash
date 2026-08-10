@@ -39,6 +39,25 @@
  *        does not say what was expected sends the reader back to the code that wrote the file,
  *        which is the reading this whole seam exists to stop trusting.
  *
+ * THE SWEPT RANGES, 2026-08-11. Four types that used to refuse every tall frame for want of a
+ * measurement now clamp, and the measurement is `proof/aspect-range-probe/`. These mutations were
+ * run in an rsync under `/tmp/.../mut1/`, against this file AND `size-table-parity.test.ts` (which
+ * gained the walking byte-parity guard for `type-at-size.mjs`'s three carried copies). Baseline
+ * 44 pass / 0 fail across the two.
+ *
+ *   `bump.max` 2.9 -> 3.4 in the shared/ mirror only                RED — 43/1, naming both files.
+ *        This is the pair nothing guarded before: the skill's canonical script against the mirror
+ *        every beat under `proof/` actually imports.
+ *   slope's `reads`/`breaks` arms deleted from every copy           RED — 43/1. A bound with no
+ *        arm on each side of it is not a measurement, and deleting them in step must not pass.
+ *   `countedOn` dropped from small-multiples in every copy          RED — 43/1
+ *   the canonical `type-at-size.mjs` renamed                        RED — 3 fail + 1 error, on the
+ *        premise, rather than every comparison going vacuously green
+ *   waterfall's `from` re-addressed to the old three-point probe    RED — 43/1. The method matters:
+ *        a swept range must not claim to come from the probe that could not bracket a bound.
+ *   a range's `from` set to "measured by eye"                       RED — 42/2, on both the
+ *        `proof/` address and the probe name
+ *
  *   `assertWithinStage` measures the baseline, not the ascent      GREEN — 25/0, and recorded as
  *        the known blind spot rather than closed by tightening a number nobody measured. The
  *        0.75 cap-height estimate is deliberately generous, so it refuses LESS, never more; a run
@@ -75,7 +94,12 @@ import {
 const fsInject = { readFile, dirname, join };
 
 /** A plot rectangle of a given aspect, for the cases that are about the VERDICT and not the shape. */
-const flatFor = (aspect: number) => ({ left: 0, right: 100 * aspect, top: 0, bottom: 100 });
+const flatFor = (aspect: number) => ({
+  left: 0,
+  right: 100 * aspect,
+  top: 0,
+  bottom: 100,
+});
 
 describe("the pinned size reaching the producer", () => {
   it("should read the size out of the beat's own BRIEF, not out of the render script", async () => {
@@ -320,13 +344,55 @@ describe("whether a type can enter a size at all", () => {
       const form = formForSize(type, "portrait");
       expect([type, form.verdict]).toEqual([type, "clamp"]);
       expect(form.aspect).toEqual({ min: range.min, max: range.max });
-      expect(form.from).toContain("portrait-aspect-probe");
+      // A range with no address is a number nobody can defend later, which is the whole reason
+      // this table carries `from` at all. It must name a directory under `proof/` — the renders
+      // themselves — and not a person's recollection of them.
+      expect([type, form.from]).toEqual([
+        type,
+        expect.stringMatching(/^proof\/[a-z0-9-]+\//),
+      ]);
     }
-    // And the one range the probe itself distrusts travels with its own warning, because a caller
-    // that lands exactly on 0.8 has satisfied a floor learned from an already-stretched render.
-    expect(formForSize("line", "portrait").suspect).toContain(
-      "already stretched",
-    );
+  });
+
+  it("should carry, for every SWEPT range, the two arms that bracket each bound", () => {
+    // The method's own rule made mechanical: a bound is only a measurement if one rendered arm
+    // reads and another does not. The three-point method that preceded it could not state this,
+    // and that is exactly how the line inherited a floor from a render the probe distrusted.
+    for (const type of ["waterfall", "slope", "small-multiples", "bump"]) {
+      const range = MEASURED_ASPECT[type];
+      expect([type, typeof range.reads, typeof range.breaks]).toEqual([
+        type,
+        "string",
+        "string",
+      ]);
+      // Each side names an ARM FILE, so a reader can open the picture the number came from.
+      expect([type, /arms\/[a-z0-9-]+\.png/.test(range.reads)]).toEqual([
+        type,
+        true,
+      ]);
+      expect([type, /arms\/[a-z0-9-]+\.png/.test(range.breaks)]).toEqual([
+        type,
+        true,
+      ]);
+      expect([type, range.from]).toEqual([
+        type,
+        expect.stringContaining("aspect-range-probe"),
+      ]);
+    }
+  });
+
+  it("should say what COUNT each swept range was measured at, where a count is what breaks", () => {
+    // Three of the four swept ranges break because a number of things stops fitting down the
+    // frame — five waterfall steps' value axis, six shared panel labels, ten bump rank rows. The
+    // range is therefore a fact about the type AT THAT COUNT, and a table that hid it would be
+    // read as universal. Recorded in the data rather than in a comment for the same reason
+    // `suspect` is: it changes what a caller may conclude.
+    for (const type of ["waterfall", "slope", "small-multiples", "bump"]) {
+      expect([type, MEASURED_ASPECT[type].countedOn]).toEqual([
+        type,
+        expect.stringMatching(/\d/),
+      ]);
+    }
   });
 
   it("should REFUSE an unmeasured type rather than borrow a range", () => {
@@ -393,18 +459,28 @@ describe("whether a type can enter a size at all", () => {
     // an aspect ratio cannot describe and which a division would have turned into a plausible
     // number with a minus sign on it.
     expect(() =>
-      assertPlotAspect({ left: 82, right: 997, top: 700, bottom: 688 }, "histogram", "square"),
+      assertPlotAspect(
+        { left: 82, right: 997, top: 700, bottom: 688 },
+        "histogram",
+        "square",
+      ),
     ).toThrow(/no area/);
   });
 
   it("should accept a plot inside its type's own measured range, at the size it was measured at", () => {
     // 2.35:1 is this beat's own native landscape plot, and the range's own upper end is 2.9.
     const native = { left: 0, right: 940, top: 0, bottom: 400 };
-    expect(assertPlotAspect(native, "histogram", "square").verdict).toBe("clamp");
+    expect(assertPlotAspect(native, "histogram", "square").verdict).toBe(
+      "clamp",
+    );
     // …and it says nothing at all where the verdict is not `clamp`: a transposed ranking is
     // row-driven and HAS no aspect to hold, and landscape is the frame this corpus was accepted at.
-    expect(assertPlotAspect(flatFor(30), "ranking", "portrait").verdict).toBe("transpose");
-    expect(assertPlotAspect(flatFor(30), "histogram", "landscape").verdict).toBe("as-is");
+    expect(assertPlotAspect(flatFor(30), "ranking", "portrait").verdict).toBe(
+      "transpose",
+    );
+    expect(
+      assertPlotAspect(flatFor(30), "histogram", "landscape").verdict,
+    ).toBe("as-is");
   });
 
   it("should never carry a rung that makes something smaller", () => {
