@@ -1,0 +1,95 @@
+{
+  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html",
+  "sweeps": [
+    {
+      "label": "1600x900 down",
+      "samples": 99,
+      "tallestPanelAsFractionOfPort": 0.161,
+      "portHeight": 820.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 0.982,
+      "problems": []
+    },
+    {
+      "label": "1600x900 up",
+      "samples": 99,
+      "tallestPanelAsFractionOfPort": 0.161,
+      "portHeight": 820.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0,
+      "problems": []
+    },
+    {
+      "label": "1280x800 down",
+      "samples": 87,
+      "tallestPanelAsFractionOfPort": 0.183,
+      "portHeight": 720.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 0.826,
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "samples": 87,
+      "tallestPanelAsFractionOfPort": 0.183,
+      "portHeight": 720.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0.069,
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "samples": 73,
+      "tallestPanelAsFractionOfPort": 0.261,
+      "portHeight": 602.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 0.294,
+      "problems": []
+    },
+    {
+      "label": "375x812 up",
+      "samples": 73,
+      "tallestPanelAsFractionOfPort": 0.261,
+      "portHeight": 602.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0.67,
+      "problems": []
+    }
+  ],
+  "reducedMotion": {
+    "samples": 99,
+    "distinctStates": 4,
+    "everySampleIsOneOfTheFourStates": true,
+    "discrete": true
+  },
+  "camera": {
+    "worstRasterPerPixel": null
+  },
+  "noJs": {
+    "visual": true,
+    "shapes": 41,
+    "plateIsInlineData": true,
+    "externalRequests": 0,
+    "paragraphs": 4,
+    "credit": "Global Carbon Budget (2025) via Our World in Data · basemap: MapTiler, baked once",
+    "visualVisible": 1
+  }
+}

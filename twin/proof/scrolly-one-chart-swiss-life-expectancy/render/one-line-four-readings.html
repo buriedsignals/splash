@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One line, four readings: life expectancy in Switzerland, 1876–2023</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+  /* THE PROSE LANE — the band at the BOTTOM of the sticky graphic that belongs to the pinned prose
+     panel, and that no frame may place anything meaningful inside. The same fraction the seed's own
+     frames compute their safe bands from (assets/ScrollySeed.tsx, `PROSE_LANE`), passed in rather
+     than written twice: a lane the CSS reserves and the frames do not respect (or the reverse) is
+     precisely the panel-over-annotation collision this constant exists to make impossible. */
+  --prose-lane: 36%;
+}
+* { box-sizing: border-box; }
+/* THE PAGE DOES NOT SCROLL, and that is the whole model this genre now runs on. The component is
+   exactly one frame tall; the ONLY thing in the document with scroll distance is
+   `.scrolly-steps`, the prose column. See references/scrolly-discipline.md, "The graphic is fixed
+   and the page does not scroll," for the seventh correction that replaced the sticky model and for
+   the measurement that condemned it. This is also what makes the file safe to embed in a CMS
+   article: a component that scrolls its own prose never steals the host page's scroll. */
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+/* `.scrolly` itself carries NO width constraint — a sixth correction. The fourth build's fix
+   constrained THIS element to a 640px reading measure, which centred it correctly but also capped
+   every child inside it, including the GRAPHIC, to that same narrow column — a visual meant to
+   fill the frame it sits in, stranded in the middle of a wide page instead. The reading measure now
+   belongs to the two things that are actually PROSE — `.scrolly-header`, below, and
+   `.step-panel` (`.step`'s own `justify-content: center` already centres it, see "Measuring prose
+   over the graphic") — never to `.scrolly-track`/`.scrolly-graphic`, which are left to size
+   themselves to their parent's own full width, all the way out to `body`. See
+   references/scrolly-discipline.md, "The graphic fills the width it is given."
+
+   The HEIGHT rule is the SEVENTH correction, and it is a change of model rather than of a number.
+   `.scrolly` is a two-row grid exactly one frame tall: the header takes what it needs, and the
+   track takes everything left (`minmax(0, 1fr)` — never `1fr` alone, whose `auto` minimum
+   would let a tall track push the component past the frame and put the document back in the
+   scrolling business). Nothing in this grid ever moves. */
+.scrolly {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* The header takes the same width as the graphic beneath it — no reading-measure cap. It used to
+   sit in a centred 640px column, and that was the mismatch the owner named: a title stopping at
+   640px above a full-bleed graphic reads as a broken box (see references/scrolly-discipline.md,
+   "The reading measure belongs to the prose"). What survives the reversal is the GUTTER: the side
+   padding SCALES with the viewport (`clamp`) rather than sitting at a fixed 16px, so the header
+   never touches the frame's own edge at any width, on a maximised desktop or a phone. The header
+   states the beat's own argument in full, unconditional and ahead of every step's own reveal — and,
+   deliberately, ahead of the sticky graphic too: it sits in plain document flow, scrolled past once,
+   so it is never the thing a step's prose panel has to be measured against. The STEP PANEL keeps
+   its own measure (`.step-panel`, below): that is prose travelling OVER the graphic, not
+   furniture beside it, and the reversal does not reach it.
+
+   THE HEADER NEVER MOVES — a seventh correction, and the owner's own words: "on scroll d'abord
+   dans la page, ce qui fait disparaître le titre, alors que ça devrait être fixe." Under the
+   sticky model the header was the first casualty of the reader's first gesture: the DOCUMENT
+   scrolled, so the title slid away before the graphic had even finished arriving. It is now row 1
+   of `.scrolly`'s own grid, OUTSIDE the one element that scrolls, so it is fixed by construction
+   rather than by a `position` keyword that has to be got right. `margin-bottom` is gone with it:
+   the gap now belongs to the header's own padding, because a margin between two grid rows would
+   show the page's ground where the frame should start. */
+.scrolly-header {
+  padding: 4px clamp(16px, 6vw, 56px) 14px;
+}
+.scrolly-header h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; }
+.scrolly-header .source { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* THE GRAPHIC IS FIXED. It does not stick, it does not catch up, and it does not unpin — it is
+   absolutely positioned to fill the track, and the track is a grid row that never moves. This is
+   the SEVENTH correction and it removes a mechanism rather than tuning one.
+
+   What it replaced, and why the replacement was not a tuning: every build up to the sixth pinned
+   the graphic with `position: sticky; top: 0` inside a track that began BELOW the header, and
+   pulled the prose column back over it with `margin-top: calc(-1 * var(--graphic-h))`. That is a
+   correct use of sticky and it produced three defects that no value of `--graphic-h` could fix:
+   the graphic spent the reader's first gesture CLIMBING to `top: 0` (so a FITTED frame's own
+   content hung below the fold, into the pinned panel's lane, measured at 90px of a 3330px track at
+   1600x900 and 177px of 3100 at 375x812); the header scrolled away with the document, which the
+   owner named directly; and the whole component fought the host page for the scroll, which a CMS
+   embed must never do. A graphic that is never positioned FROM the scroll cannot lag behind it.
+
+   `.scrolly-graphic` and `.scrolly-steps` are now two absolutely-positioned layers filling the
+   same track box — the deliberate overlap this genre is built on, expressed as a stack rather than
+   as a negative margin cancelling a reservation. `--graphic-h` is gone: the graphic's height is
+   the track's height, so there is no second number to keep in step with the first.
+
+   Filling the track does not distort anything: every frame this genre ships paints with
+   `object-fit: cover` (`ImageFrame`) or `preserveAspectRatio` (`DrawnGraphicFrame`) — cropping
+   to whatever box it is given, never stretching. See references/scrolly-discipline.md, "The graphic
+   is fixed and the page does not scroll." */
+.scrolly-track {
+  position: relative;
+  overflow: hidden;
+}
+.scrolly-graphic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.frame-stack { position: absolute; inset: 0; }
+/* Every step's own frame is SSR'd and stacked in the SAME box (an `<img>` and an `<svg>` sit in
+   an identical wrapper — this scaffold does not know which is which). Exactly one wrapper carries
+   `.active` at build time (this file's own `renderScrolly`, never the frame component) — that is
+   the ENTIRE no-JS contract: with the inline script absent, the CSS below is what keeps that one
+   frame visible and every other one invisible, permanently. */
+/* Exactly ONE frame is ever visible at a time — opacity 0 or 1, never anything between. The step
+   this is pinned to (this file's own `renderScrolly`, the `active` class in the SSR'd markup) is
+   the SOLE thing that changes which one that is: nothing here writes an intermediate opacity from
+   scroll position. A reader must be able to perceive a STILL image with the prose travelling over
+   it — not a graphic that visibly blends between two unrelated frames for the whole of a step's own
+   scroll distance, which is what this file's own third build shipped and the fourth correction
+   removed (see references/scrolly-discipline.md, "The graphic is fixed; only the text moves," for
+   the measurement that caught it: the two frames sampled at ELEVEN scroll positions spanning the
+   full track, and at every single one — including the very last, nowhere near settled — both were
+   still a blend, never once a clean 0/1). */
+.step-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.step-frame.active { opacity: 1; }
+.step-frame img,
+.step-frame svg { display: block; width: 100%; height: 100%; }
+/* Reduced motion: a reader who asks for no animation gets no animation — the swap becomes an
+   instant cut instead of a fade. This is the ONLY animated property this genre ships, and it only
+   ever plays at a STEP BOUNDARY (when `assets/interaction.mjs`'s `initScrolly` moves the `active`
+   class) — never continuously from scroll position, which is what made the graphic itself, not just
+   its swap, look like it was still in motion the whole time a reader scrolled through a step. */
+@media (prefers-reduced-motion: no-preference) {
+  .step-frame { transition: opacity 0.3s ease; }
+}
+
+/* THE ONE SCROLLER IN THE DOCUMENT. Nothing else in the page has scroll distance — `body` is
+   `overflow: hidden` and exactly one frame tall — so the reader's wheel, finger and arrow keys
+   move THIS column and nothing else. The prose travels; the graphic and the header do not.
+
+   `tabindex="0"` on this element (written in the markup, not here) is not decoration and it is not
+   optional: taking the scroll off the document takes the reader's default keyboard scrolling with
+   it, and a scroll container that cannot be focused cannot be driven by a keyboard at all in every
+   browser. Focusing it restores Page Down / arrow / space over the prose — the same reach the
+   document used to give for free. See references/scrolly-discipline.md, "Keyboard and screen
+   readers reach every step." */
+.scrolly-steps {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+/* Prose is ALWAYS in normal document flow — nothing here is display:none or visibility:hidden, and
+   nothing removes a paragraph from the accessibility tree. A screen reader or keyboard user reaches
+   every step's own text by reading or tabbing through the page exactly like any other paragraph;
+   scrolling is only what changes the GRAPHIC and which panel is PAINTED, never what puts the words
+   in the document.
+
+   `.step`'s own horizontal padding carries the gutter: `.step` spans the full sticky graphic's
+   own width, so without this the panel would sit 1px from the true screen edge on a narrow phone.
+
+   `align-items: flex-end` is not a taste decision, it is what makes the sticky panel below work at
+   all, and getting it wrong was the first thing driving a browser caught. A `bottom` sticky offset
+   only ever shifts a box UP — it clamps a box that would otherwise sit BELOW the offset line, and
+   it can never push one down. A panel placed at the TOP of its step therefore has nowhere to be
+   shifted to and travels with the scroll exactly as if `position: sticky` were not there: measured
+   at 1600x900, the panel moved from y=768 to y=-32 across one step, and the annotation collisions
+   this whole correction exists to remove were all still present. Placed at the BOTTOM of a 115vh
+   box, the same offset pins it: it enters below the fold, is pulled up to the lane, and holds there
+   for 100vh of the step's own 115vh. `justify-content: center` still centres it horizontally, which
+   is the correction that first put it over the middle of the graphic rather than flush left.
+
+   Every step is the same height, INCLUDING the last: a shorter final step ends the document while
+   its own panel has already un-pinned and started riding up the screen, which puts the last step's
+   prose back over the last step's graphic at the one scroll position a reader is guaranteed to
+   stop at. Measured: with a 96vh last step the final panel settled at y=35 of a 900px viewport.
+
+   `115%`, not `115vh` — a seventh correction, and the same fact stated for the new model: a step's
+   scroll distance is a multiple of the SCROLLPORT the prose scrolls inside, which is the track,
+   which is the viewport minus the fixed header. Under the sticky model those two were the same
+   number and the difference never showed; they are not the same number now, and `vh` here would
+   make every step slightly taller than the box it is read in — a drift that grows with the
+   header. */
+.step {
+  min-height: 115%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 clamp(16px, 6vw, 56px);
+}
+
+/* THE PANEL IS PINNED IN THE LANE, and this is the correction that ends five rounds of collision
+   patching. Every earlier build let the panel TRAVEL with the scroll — centred in its step, moving
+   from the bottom of the screen to the top across that step's own scroll distance. A travelling
+   opaque panel crosses every part of the graphic at SOME offset, so no safe area a frame could
+   respect was ever safe for the whole of a step: the measured symptom was this seed's own "flood
+   day" label reduced to "flo…" at 1600x900, 55% of the way through a step.
+
+   `position: sticky` with a BOTTOM offset parks the panel at a fixed distance from the viewport's
+   own bottom edge for the whole of its step, inside `--prose-lane`. Bottom-anchored, not
+   top-anchored, so a panel that needs an extra line grows UPWARD into the lane instead of
+   overflowing past the fold. The frames keep everything they annotate above the lane
+   (assets/ScrollySeed.tsx, `safeBand`/`CONTENT_TOP`), so panel and annotation now occupy disjoint
+   bands of the screen by construction rather than by luck.
+
+   The panel is OPAQUE, painted with the exact `--ground` this render's furniture was derived from —
+   never a translucent scrim whose effective colour drifts with whatever part of the graphic happens
+   to sit behind it. Because it fully occludes the graphic at its own footprint, ink-on-ground is the
+   only contrast question left, and `deriveFurniture` already answers it (asserted again in
+   `renderScrolly`, above, and in this skill's own test). */
+.step-panel {
+  position: sticky;
+  bottom: clamp(16px, 4vh, 40px);
+  max-width: min(46ch, 100%);
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--grid);
+  padding: 14px 16px;
+}
+.step-panel p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.step-panel p + p { margin-top: 10px; }
+
+/* ONE PANEL AT A TIME, AND ONLY WHILE IT IS IN THE LANE — the second half of the same correction,
+   and the part a seventh round had to widen. Two steps' panels are on screen together through every
+   transition, because the outgoing one is still riding up out of the lane while the incoming one
+   has already parked in it. That is unavoidable in a flow layout and it is not fixed by geometry;
+   it is fixed by PAINTING only the step whose panel is actually in the lane.
+
+   The class is `in-lane`, NOT `active`, and the difference is the whole fix. `active` says which
+   FRAME the graphic shows and is held across the gap between two steps, because the graphic is
+   fixed and has nothing else to show. `in-lane` says which PANEL may be painted, and a
+   `bottom`-sticky panel un-pins one panel-height before the next one parks — so for that gap the
+   outgoing prose was still `active`, still opaque, and climbing straight up over the graphic's own
+   labels. Every prose-over-annotation collision that survived the lane lived in exactly that gap:
+   measured across five beats at three widths, 20 to 56 animation frames per run, on the seed and on
+   the shipped Danube beat alike. Painting on `in-lane` closes it by construction — a panel that has
+   left the lane is not painted, so it cannot cover anything the lane was reserved to protect.
+
+   `.scrolly--live` is added by `assets/interaction.mjs` at init, so this rule exists only where a
+   script is actually running: with JavaScript off no panel is ever faded, every step's prose reads
+   in flow, and the page degrades to exactly what it degraded to before. `opacity` (not
+   `display`/`visibility`) is the deliberate choice — a faded panel stays in the accessibility tree
+   and in the document, so a screen reader user still meets every step's words in order. */
+.scrolly--live .step:not(.in-lane) .step-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .step-panel { transition: opacity 0.3s ease; }
+  /* LEAVING IS A CUT, ARRIVING IS A FADE, and the asymmetry is the point. A panel mid-fade is a
+     TRANSLUCENT box over the graphic — the one thing "Measuring prose over the graphic" rules out,
+     because a scrim's effective colour depends on whatever sits behind it and is therefore not a
+     measurable contrast at all. On the way IN that is harmless: the panel is inside the lane, over
+     nothing the graphic annotates. On the way OUT it is not: the panel is leaving the lane, so a
+     fade paints a semi-transparent box over exactly the band the lane exists to keep clear.
+     Measured with a 0.12s exit at 24px per animation frame, that was still 168px of the track per
+     boundary with prose over the graphic's own tick labels. A cut is 0. */
+  .scrolly--live .step:not(.in-lane) .step-panel { transition: opacity 0s; }
+}
+</style>
+</head>
+<body>
+<article class="scrolly" data-prose-lane="36">
+  <header class="scrolly-header">
+    <h2>One line, four readings: life expectancy in Switzerland, 1876–2023</h2>
+    <p class="source">Life expectancy at birth (period): Our World in Data, indicator life-expectancy — Human Mortality Database with Zijdeman et al. (2015) before 1950, UN World Population Prospects after. Switzerland, 1876–2023, 148 annual readings, frozen as swiss-life-expectancy.csv. Colours: PALETTE.md, chosen by the subject.</p>
+  </header>
+  <div class="scrolly-track">
+    <div class="scrolly-graphic">
+      <div class="frame-stack">
+      <div class="step-frame active" data-step="shape" aria-hidden="true">
+<div data-visual="one-chart" style="position:absolute;inset:0;background:#FFFFFF;overflow:hidden"><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:5.000%">years of life expectancy at birth</div><div style="position:absolute;left:11.500%;top:11.000%;width:84.000%;height:43.000%"><svg viewBox="0 0 1000 500" preserveAspectRatio="none" style="display:block;width:100%;height:100%;overflow:hidden"><defs><clipPath id="one-chart-plot"><rect x="0" y="0" width="1000" height="500"></rect></clipPath></defs><g clip-path="url(#one-chart-plot)"><rect data-part="band" x="278.91" y="0" width="6.8" height="500" fill="#B4451F" opacity="0" style="opacity:0"></rect><line data-ygrid="0" x1="0" x2="1000" y1="465.41919788815886" y2="465.41919788815886" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0.28"></line><line data-ygrid="1" x1="0" x2="1000" y1="367.3757067367016" y2="367.3757067367016" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0.28"></line><line data-ygrid="2" x1="0" x2="1000" y1="269.33221558524434" y2="269.33221558524434" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0.28"></line><line data-ygrid="3" x1="0" x2="1000" y1="171.28872443378705" y2="171.28872443378705" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0.28"></line><line data-ygrid="4" x1="0" x2="1000" y1="73.24523328232979" y2="73.24523328232979" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0.28"></line><line data-ygrid="5" x1="0" x2="1000" y1="-24.798257869127482" y2="-24.798257869127482" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"></line><line data-ygrid="6" x1="0" x2="1000" y1="-122.84174902058476" y2="-122.84174902058476" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"></line><line data-ygrid="7" x1="0" x2="1000" y1="-220.88524017204202" y2="-220.88524017204202" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"></line><polyline data-part="base" points="0,463.56 6.8,465.52 13.61,459.83 20.41,447.48 27.21,441.2 34.01,446.4 40.82,435.81 47.62,416.2 54.42,415.71 61.22,426.99 68.03,418.85 74.83,411.89 81.63,406.59 88.44,414.63 95.24,416.3 102.04,418.26 108.84,394.83 115.65,405.81 122.45,408.06 129.25,397.48 136.05,378.45 142.86,376.2 149.66,384.44 156.46,374.14 163.27,391 170.07,377.47 176.87,363.06 183.67,366.59 190.48,374.93 197.28,370.42 204.08,360.02 210.88,355.71 217.69,344.92 224.49,351.2 231.29,338.65 238.1,350.02 244.9,324.24 251.7,325.9 258.5,317.28 265.31,309.43 272.11,303.45 278.91,310.8 285.71,403.65 292.52,320.02 299.32,323.26 306.12,291.2 312.93,284.23 319.73,269.53 326.53,274.53 333.33,270.21 340.14,263.55 346.94,268.45 353.74,265.12 360.54,267.96 367.35,255.61 374.15,257.27 380.95,257.57 387.76,246.1 394.56,241.59 401.36,248.45 408.16,238.55 414.97,235.21 421.77,231.78 428.57,230.31 435.37,234.62 442.18,221.19 448.98,214.13 455.78,212.27 462.59,221.68 469.39,216.58 476.19,209.92 482.99,208.25 489.8,197.66 496.6,191.39 503.4,181.94 510.2,184.09 517.01,175.33 523.81,176.01 530.61,171.44 537.41,170.6 544.22,169.34 551.02,166.01 557.82,158.63 564.63,157.04 571.43,157.43 578.23,154.2 585.03,158.52 591.84,158.62 598.64,149.92 605.44,148.56 612.24,147.27 619.05,144.41 625.85,144.76 632.65,144.64 639.46,140.66 646.26,139.52 653.06,134.43 659.86,131.49 666.67,128.14 673.47,124.31 680.27,123.19 687.07,118.67 693.88,119.25 700.68,116.31 707.48,116.48 714.29,114.24 721.09,110.87 727.89,110.92 734.69,105.05 741.5,103.82 748.3,102.26 755.1,99.41 761.9,99.08 768.71,97.19 775.51,98.88 782.31,96.3 789.12,93.4 795.92,90.56 802.72,88 809.52,87.31 816.33,82.57 823.13,80.77 829.93,78.39 836.73,75.96 843.54,74.87 850.34,70.78 857.14,68.89 863.95,68.02 870.75,62.9 877.55,61.13 884.35,58.05 891.16,56.55 897.96,53.92 904.76,53.74 911.56,50.82 918.37,48.01 925.17,47.59 931.97,46.88 938.78,43.01 945.58,45.34 952.38,39.46 959.18,39.77 965.99,38.3 972.79,36.18 979.59,43.22 986.39,37.48 993.2,41.87 1000,34.48" fill="none" stroke="#616161" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline><polyline data-part="highlight" points="278.91,310.8 285.71,403.65" fill="none" stroke="#B4451F" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" style="opacity:0"></polyline></g></svg></div><div data-ytick="0" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:51.026%;transform:translateY(-50%);opacity:1">40</div><div data-ytick="1" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:42.594%;transform:translateY(-50%);opacity:1">50</div><div data-ytick="2" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:34.163%;transform:translateY(-50%);opacity:1">60</div><div data-ytick="3" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:25.731%;transform:translateY(-50%);opacity:1">70</div><div data-ytick="4" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:17.299%;transform:translateY(-50%);opacity:1">80</div><div data-ytick="5" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:8.867%;transform:translateY(-50%);opacity:0">90</div><div data-ytick="6" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:0.436%;transform:translateY(-50%);opacity:0">100</div><div data-ytick="7" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:2.000%;top:-7.996%;transform:translateY(-50%);opacity:0">110</div><div data-xtick="0" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:13.786%;top:55.800%;transform:translateX(-50%);opacity:1">1880</div><div data-xtick="1" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:25.214%;top:55.800%;transform:translateX(-50%);opacity:1">1900</div><div data-xtick="2" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:36.643%;top:55.800%;transform:translateX(-50%);opacity:1">1920</div><div data-xtick="3" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:48.071%;top:55.800%;transform:translateX(-50%);opacity:1">1940</div><div data-xtick="4" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:59.500%;top:55.800%;transform:translateX(-50%);opacity:1">1960</div><div data-xtick="5" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:70.929%;top:55.800%;transform:translateX(-50%);opacity:1">1980</div><div data-xtick="6" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:82.357%;top:55.800%;transform:translateX(-50%);opacity:1">2000</div><div data-xtick="7" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:93.786%;top:55.800%;transform:translateX(-50%);opacity:1">2020</div><div data-xtick="8" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:105.214%;top:55.800%;transform:translateX(-50%);opacity:0">2040</div><div data-xtick="9" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:14px;color:#616161;white-space:nowrap;left:116.643%;top:55.800%;transform:translateX(-50%);opacity:0">2060</div><div data-part="band-label" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:15px;color:#000000;white-space:nowrap;left:35.214%;top:7.800%;transform:translateX(-50%);opacity:0">1918–1921</div><div data-mark="0" style="position:absolute;left:35.500%;top:45.714%;width:11px;height:11px;margin-left:-5.5px;margin-top:-5.5px;border-radius:50%;background:#B4451F;box-shadow:0 0 0 2px #FFFFFF;opacity:0"></div><div data-mark="1" style="position:absolute;left:93.786%;top:14.717%;width:11px;height:11px;margin-left:-5.5px;margin-top:-5.5px;border-radius:50%;background:#B4451F;box-shadow:0 0 0 2px #FFFFFF;opacity:0"></div><div data-annotation="0" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:15px;color:#000000;white-space:nowrap;font-weight:600;background:#FFFFFF;padding:1px 6px;border-radius:2px;left:35.500%;top:45.714%;transform:translate(-50%, -145%);opacity:0">1918: 46.3</div><div data-annotation="1" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:15px;color:#000000;white-space:nowrap;font-weight:600;background:#FFFFFF;padding:1px 6px;border-radius:2px;left:93.786%;top:14.717%;transform:translate(-100%, -145%);opacity:0">2020: 83.1</div><div data-part="credit" style="position:absolute;font-family:Helvetica, Arial, sans-serif;font-size:12px;color:#616161;white-space:normal;left:2.000%;right:2.000%;bottom:calc(36.000% + 8px)">Life expectancy at birth, Switzerland 1876–2023 · Our World in Data</div></div><script>// THE ONE IMPLEMENTATION OF THIS BEAT'S GEOMETRY, USED TWICE.
+//
+// `ChartFrame.tsx` imports it in node to SSR the chart in its FIRST state; `render.mjs` reads this
+// same file as text, strips the `export` keywords and inlines it into the delivered HTML, where
+// `initChartScrolly` drives every state after the first. There is exactly one `chartGeometry`, so
+// the picture a reader meets before any script runs and the picture the scroll drives cannot drift
+// apart — which is the failure a second, browser-only copy of the layout maths would invite.
+//
+// WHY A DRIVER AT ALL, AND NOT FOUR STACKED FRAMES. `twin-scrolly`'s scaffold assembles N pictures
+// and swaps which one is painted. This beat is the other form: ONE picture, and the steps are
+// successive READINGS of it — a segment lifted, a band called out, the axes narrowed to a decade.
+// A swap cannot express that: the reader has to see the SAME line stay put while the thing they are
+// asked to notice about it changes, and at the last step they have to watch the axis itself travel,
+// or the rescale reads as a different chart rather than the same one seen closer. So the visual is
+// a single persistent element and the scroll drives its state continuously.
+//
+// NOTHING HERE DEPENDS ON THE DOCUMENT SCROLLING. Progress is read from where the PROSE PANELS
+// actually are in viewport coordinates (`measureProgress` below), which is true whether the page
+// scrolls, an inner container scrolls, or the panels are moved by something else entirely. The
+// scaffold is being rewritten to a fixed-page model while this beat is being built; a driver that
+// read `window.scrollY` would have been written against the model that is going away.
+
+// ── Placement, shared with the scaffold ────────────────────────────────────────────────────────
+
+/** The band at the BOTTOM of the graphic reserved for the pinned prose panel. `render.mjs` hands
+ *  this same number to `renderScrolly` as `proseLane`, so the lane the CSS reserves and the lane
+ *  the frame keeps clear are one value, never two that can disagree.
+ *
+ *  0.36, not the vehicle's own 0.28 default: the lane has to be at least as tall as the TALLEST
+ *  panel, and a panel's height is set by its words at the NARROWEST width. Measured at 375x812 with
+ *  the 0.28 lane, the panel overhung it and sat on the x-axis labels and the credit at 47 scroll
+ *  positions. Two things were changed together — this number, and the prose, which was cut to at
+ *  most two sentences a step. `drive.mjs` reports the tallest measured panel as a fraction of the
+ *  scrollport at every width, so the budget is a measurement rather than a hope. */
+const PROSE_LANE = 0.36;
+
+/** How much of the frame's own height the drawing may use, measured from the top. */
+const CONTENT_TOP = 1 - PROSE_LANE;
+
+/** The plot box, in fractions of the frame. The floor leaves room for the x-axis label strip AND
+ *  for the credit line, which sits at the BOTTOM of the visual — above the prose lane, never under
+ *  the header (owner feedback B1.1). */
+const PLOT = {
+  left: 0.115,
+  right: 0.955,
+  top: 0.11,
+  bottom: CONTENT_TOP - 0.1,
+};
+
+/** The geometry-only viewBox the plot's SVG stretches across. Type is never inside it. */
+const VIEWBOX = { width: 1000, height: 500 };
+
+/** Fixed tick slots, so the driver only ever rewrites text and position and never adds or removes
+ *  a node. A slot outside the current domain is hidden, not deleted. */
+const Y_SLOTS = 8;
+const X_SLOTS = 10;
+
+// ── Interpolation ──────────────────────────────────────────────────────────────────────────────
+
+function clamp01(t) {
+  return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+/** easeInOutQuad — the camera leaves and arrives calmly, and holds still in between. */
+function ease(t) {
+  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+}
+
+/** Every field of a state is a number, so a state interpolates field by field. A state that
+ *  carried a string would silently stop moving; `assertNumericStates` refuses one. */
+function lerpState(a, b, t) {
+  const out = {};
+  for (const key of Object.keys(a)) out[key] = lerp(a[key], b[key], t);
+  return out;
+}
+
+function assertNumericStates(states) {
+  const keys = Object.keys(states[0]).join(",");
+  states.forEach((state, i) => {
+    if (Object.keys(state).join(",") !== keys)
+      throw new Error(`state ${i} has different fields from state 0 — they cannot be interpolated`);
+    for (const [k, v] of Object.entries(state))
+      if (typeof v !== "number" || !Number.isFinite(v))
+        throw new Error(`state ${i}.${k} is ${JSON.stringify(v)}; every field of a state must be a finite number`);
+  });
+  return states;
+}
+
+/** The state at a continuous position along the steps. `position` 1.5 is halfway between step 1
+ *  and step 2; `reduced` snaps to the nearer step, which is what a reader who asked for no motion
+ *  gets — the step still ARRIVES, it just does not fly. */
+function stateAt(states, position, reduced) {
+  const last = states.length - 1;
+  const p = position < 0 ? 0 : position > last ? last : position;
+  if (reduced) return states[Math.round(p)];
+  const i = Math.min(Math.floor(p), last - 1);
+  return lerpState(states[i], states[i + 1], ease(p - i));
+}
+
+// ── Where the reader is, read off the prose rather than off the page ───────────────────────────
+
+/**
+ * WHERE THE READER IS — measured with the SAME fact the scaffold uses to decide which words are on
+ * screen, so the picture and the prose cannot disagree.
+ *
+ * The first build of this driver invented its own criterion: a step had "arrived" when its panel
+ * reached its own parked position. Driven at 1600x900 that was wrong by a whole step for 27 of 99
+ * scroll positions — the axis had finished flying to the last decade while the previous step's
+ * sentence was still the one on screen. The cause was not the arithmetic: a `bottom`-sticky panel
+ * parks as soon as its own step's box reaches the parking line, which happens long before that step
+ * is the step being read, so "parked" is true of two panels at once for most of a step.
+ *
+ * The scaffold's own rule (`twin-scrolly/assets/interaction.mjs`) is LANE OCCUPANCY: the step whose
+ * panel covers the most of the prose lane is the active one, decided over every panel on every
+ * scroll. It cannot oscillate, because occupancy changes monotonically as a panel enters and
+ * leaves. This driver takes the identical measurement and adds only the continuous part:
+ *
+ *   index = argmax overlap                       (identical to the scaffold, ties to the earlier)
+ *   t     = 2 * next / (active + next)           (clamped to 0..1)
+ *
+ * `t` reaches exactly 1 at the moment the two overlaps are equal — which is exactly the moment the
+ * argmax flips and the scaffold swaps the words. So the visual finishes arriving on the same frame
+ * the sentence changes, by construction rather than by tuning, and the same expression runs
+ * backwards without a special case when the reader scrolls back up.
+ */
+function measureProgress(overlaps) {
+  let index = 0;
+  for (let k = 1; k < overlaps.length; k++) if (overlaps[k] > overlaps[index]) index = k;
+  const active = overlaps[index];
+  const next = index + 1 < overlaps.length ? overlaps[index + 1] : 0;
+  const sum = active + next;
+  const t = sum > 0 ? clamp01((2 * next) / sum) : 0;
+  return index + t;
+}
+
+/**
+ * The prose lane, in viewport coordinates, computed the way the scaffold computes it: a fraction of
+ * the scrollport's height measured up from its bottom edge, with the bottom edge of the band at the
+ * panels' own PARKING LINE rather than at the scrollport's floor. The fraction is read off
+ * `data-prose-lane`, which the scaffold writes onto the root, so this beat never restates a number
+ * the CSS already owns; the parking offset is read off the panel's computed `bottom`, which is a
+ * `clamp()` and therefore different at every viewport.
+ */
+function laneBandOf(port, panels, view, fallbackPercent) {
+  let node = panels[0];
+  let percent = null;
+  while (node && percent === null) {
+    const value = node.getAttribute && node.getAttribute("data-prose-lane");
+    if (value) percent = Number(value);
+    node = node.parentElement;
+  }
+  if (!percent) percent = fallbackPercent;
+  const box = port.getBoundingClientRect();
+  const offset = Number.parseFloat(view.getComputedStyle(panels[0]).bottom) || 0;
+  return {
+    top: box.bottom - (percent / 100) * box.height,
+    bottom: box.bottom - offset,
+    height: box.height,
+  };
+}
+
+function laneOverlap(panelBox, lane) {
+  return Math.max(0, Math.min(panelBox.bottom, lane.bottom) - Math.max(panelBox.top, lane.top));
+}
+
+// ── Ticks ──────────────────────────────────────────────────────────────────────────────────────
+
+/** A 1/2/5 x 10^n step that puts about `slots` ticks across the span. */
+function niceStep(span, slots) {
+  const raw = span / Math.max(1, slots - 1);
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const scaled = raw / magnitude;
+  const step = scaled >= 5 ? 10 : scaled >= 2 ? 5 : scaled >= 1 ? 2 : 1;
+  return step * magnitude;
+}
+
+function fmt(value, decimals) {
+  return value.toFixed(decimals);
+}
+
+/**
+ * Exactly `slots` tick descriptors for a domain — `at` is the fraction of the domain, 0 at `lo`.
+ * Slots past the end of the domain come back `visible: 0` rather than absent, so the driver never
+ * adds or removes a node and the SSR'd markup and the driven markup are the same shape.
+ */
+function ticksFor(lo, hi, slots) {
+  const step = niceStep(hi - lo, slots);
+  // The precision comes from the STEP, never from the span. Taken from the span, the label format
+  // flips somewhere in the MIDDLE of the last step's axis flight — "84" becoming "84.0" while
+  // nothing else on the frame changes — which reads as a glitch. Taken from the step, it can only
+  // change at the same moment the ticks themselves jump, which a reader is already watching.
+  const decimals = step >= 1 ? 0 : Math.max(0, -Math.floor(Math.log10(step)));
+  const first = Math.ceil(lo / step) * step;
+  const out = [];
+  for (let i = 0; i < slots; i++) {
+    const value = first + i * step;
+    const inside = value <= hi + step * 1e-9;
+    out.push({
+      value,
+      label: fmt(value, decimals),
+      at: (value - lo) / (hi - lo),
+      visible: inside ? 1 : 0,
+    });
+  }
+  return out;
+}
+
+// ── The picture ────────────────────────────────────────────────────────────────────────────────
+
+function round(n) {
+  return Math.round(n * 100) / 100;
+}
+
+/** The band's fill alpha when it is fully present — the denominator its label's own opacity is
+ *  taken against, so one number governs both and they cannot drift. */
+const BAND_FILL = 0.16;
+
+/** The reading at a fractional year, linearly between the two years that bracket it — so a
+ *  highlighted RUN can start and end anywhere, and grow continuously as the reader scrolls. */
+function valueAt(readings, year) {
+  if (year <= readings[0].year) return readings[0].value;
+  const last = readings[readings.length - 1];
+  if (year >= last.year) return last.value;
+  for (let i = 1; i < readings.length; i++) {
+    const b = readings[i];
+    if (b.year >= year) {
+      const a = readings[i - 1];
+      return lerp(a.value, b.value, (year - a.year) / (b.year - a.year));
+    }
+  }
+  return last.value;
+}
+
+/**
+ * Everything the picture needs, for one state. Pure: no DOM, no React, no colours — the caller
+ * (SSR or driver) turns this into nodes.
+ *
+ * `state` fields:
+ *   x0 x1 y0 y1     the two domains, both interpolated, which is what makes the axis TRAVEL rather
+ *                   than cut when the last step narrows the chart to one decade;
+ *   hiFrom hiTo     the run of the line drawn in the accent, in (fractional) years;
+ *   hiOpacity       how present that run is;
+ *   bandFrom bandTo bandOpacity   the called-out band behind the plot;
+ *   markA markB     the two annotated points' own opacity (each has a FIXED year: a mark that
+ *                   interpolated its year would slide through six decades of meaningless positions
+ *                   on the way from one annotation to the other).
+ */
+function chartGeometry(readings, state, marks) {
+  const { x0, x1, y0, y1 } = state;
+  const sx = (year) => ((year - x0) / (x1 - x0)) * VIEWBOX.width;
+  const sy = (value) => (1 - (value - y0) / (y1 - y0)) * VIEWBOX.height;
+
+  const base = readings.map((r) => `${round(sx(r.year))},${round(sy(r.value))}`).join(" ");
+
+  const from = Math.min(state.hiFrom, state.hiTo);
+  const to = Math.max(state.hiFrom, state.hiTo);
+  const inner = readings.filter((r) => r.year > from && r.year < to);
+  const highlight = [
+    [from, valueAt(readings, from)],
+    ...inner.map((r) => [r.year, r.value]),
+    [to, valueAt(readings, to)],
+  ]
+    .map(([year, value]) => `${round(sx(year))},${round(sy(value))}`)
+    .join(" ");
+
+  const bandLeft = sx(state.bandFrom);
+  const bandRight = sx(state.bandTo);
+
+  const point = (year) => {
+    const value = valueAt(readings, year);
+    const x = sx(year);
+    // A mark whose year is outside the CURRENT domain is off the plot, and its annotation is off
+    // the screen with it. Measured on the first build: while the last step's axes fly in to the
+    // last twelve years, 1918 leaves the frame long before its own opacity has finished fading, and
+    // its label was found outside the viewport at 27 consecutive scroll positions. Faded out over
+    // the last `EDGE` viewBox units at either end, so it leaves with the plot rather than after it.
+    const EDGE = 70;
+    const inside = Math.min(
+      clamp01((x + EDGE) / EDGE),
+      clamp01((VIEWBOX.width + EDGE - x) / EDGE),
+    );
+    return { x: round(x), y: round(sy(value)), value, inside };
+  };
+
+  return {
+    base,
+    highlight,
+    hiOpacity: state.hiOpacity,
+    band: {
+      x: round(Math.min(bandLeft, bandRight)),
+      width: round(Math.abs(bandRight - bandLeft)),
+      opacity: state.bandOpacity,
+      // The band's FILL is deliberately faint — it sits behind the line and must not compete with
+      // it. Its LABEL is a word and has to be read, so it rides the band's arrival rather than its
+      // alpha: shipped once at the fill's own 0.16 and the label was invisible in the render.
+      labelOpacity: clamp01(state.bandOpacity / BAND_FILL),
+    },
+    marks: marks.map((mark, i) => {
+      const at = point(mark.year);
+      return { ...at, opacity: (i === 0 ? state.markA : state.markB) * at.inside, label: mark.label };
+    }),
+    yTicks: ticksFor(y0, y1, Y_SLOTS),
+    xTicks: ticksFor(x0, x1, X_SLOTS),
+  };
+}
+
+/** viewBox units → a fraction of the whole FRAME, which is how every word on this frame is
+ *  positioned: type is HTML at a fixed pixel size over a plot that stretches. */
+function toFrame(x, y) {
+  return [
+    PLOT.left + (PLOT.right - PLOT.left) * (x / VIEWBOX.width),
+    PLOT.top + (PLOT.bottom - PLOT.top) * (y / VIEWBOX.height),
+  ];
+}
+
+function pct(v) {
+  return `${(v * 100).toFixed(3)}%`;
+}
+
+/** An annotation hangs above its point, and flips to the inside when the point is near an edge, so
+ *  it can never be the thing that leaves the frame. */
+function annotationPlacement(x, y) {
+  const [fx, fy] = toFrame(x, y);
+  const nearRight = fx > 0.62;
+  const nearLeft = fx < 0.2;
+  return {
+    left: pct(fx),
+    top: pct(fy),
+    transform: nearRight
+      ? "translate(-100%, -145%)"
+      : nearLeft
+        ? "translate(0, -145%)"
+        : "translate(-50%, -145%)",
+  };
+}
+
+// ── The driver (browser only) ──────────────────────────────────────────────────────────────────
+
+/* eslint-env browser */
+
+/**
+ * Re-parent the persistent visual OUT of the per-step frame stack.
+ *
+ * The scaffold's contract is N pictures of which exactly one is painted; this beat has ONE picture
+ * that must never be un-painted. Left inside step 1's frame wrapper, it would be faded out the
+ * moment step 2 became active. Moved up one level into the stack itself, it is a permanent sibling
+ * the swap never touches — and with JavaScript off it stays where it was SSR'd, inside the frame
+ * the scaffold marks active by default, so the no-JS reader still gets the whole first state.
+ *
+ * Reported rather than patched around: the vehicle has no way for a beat to declare "my visual is
+ * one persistent element". This function is what that missing declaration costs today.
+ */
+function detachVisual(root) {
+  const wrapper = root.parentElement;
+  const stack = wrapper && wrapper.parentElement;
+  if (!stack) return;
+  stack.appendChild(root);
+  root.style.position = "absolute";
+  root.style.inset = "0";
+  root.setAttribute("aria-hidden", "true");
+  // Every wrapper the scaffold swaps is now empty; keep them from painting anything over the
+  // visual, whatever the scaffold decides to do with their opacity.
+  for (const sibling of Array.from(stack.children))
+    if (sibling !== root) sibling.style.pointerEvents = "none";
+}
+
+/**
+ * The prose panels, found WITHOUT depending on a class name: every element carrying `data-step`
+ * that holds a paragraph and does not itself contain another `data-step` element. The scaffold puts
+ * `data-step` on the section, the panel and the frame wrapper; only the panel holds prose and is
+ * innermost.
+ */
+/**
+ * The box the prose actually scrolls INSIDE — the nearest ancestor of a panel that has scroll
+ * distance and is allowed to use it. Under the scaffold's fixed-page model that is the prose
+ * column, not the window: the document has no scroll distance at all, and the reference height for
+ * "how far has the next step come" is the column's height, which is the viewport MINUS the fixed
+ * header. Measured rather than assumed, so this beat keeps working if the header's height changes
+ * or if the model changes back.
+ */
+function scrollportOf(el, view) {
+  let node = el.parentElement;
+  while (node) {
+    const overflow = view.getComputedStyle(node).overflowY;
+    if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight + 1)
+      return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+function findPanels(doc, root) {
+  return Array.from(doc.querySelectorAll("[data-step]")).filter(
+    (el) =>
+      !root.contains(el) &&
+      el.querySelector("p") &&
+      !el.querySelector("[data-step]"),
+  );
+}
+
+function initChartScrolly(root, readings, states, marks) {
+  const doc = root.ownerDocument;
+  const view = doc.defaultView;
+  detachVisual(root);
+
+  const panels = findPanels(doc, root);
+  if (panels.length < 2) return;
+
+  const reduced = view.matchMedia("(prefers-reduced-motion: reduce)");
+  const nodes = {
+    base: root.querySelector("[data-part=base]"),
+    hi: root.querySelector("[data-part=highlight]"),
+    band: root.querySelector("[data-part=band]"),
+    bandLabel: root.querySelector("[data-part=band-label]"),
+    marks: Array.from(root.querySelectorAll("[data-mark]")),
+    annotations: Array.from(root.querySelectorAll("[data-annotation]")),
+    yTicks: Array.from(root.querySelectorAll("[data-ytick]")),
+    yGrid: Array.from(root.querySelectorAll("[data-ygrid]")),
+    xTicks: Array.from(root.querySelectorAll("[data-xtick]")),
+  };
+
+  let queued = false;
+  let lastPosition = -1;
+
+  function paint() {
+    queued = false;
+    const port = scrollportOf(panels[0], view);
+    if (!port) return;
+    const lane = laneBandOf(port, panels, view, PROSE_LANE * 100);
+    const overlaps = panels.map((p) => laneOverlap(p.getBoundingClientRect(), lane));
+    const position = measureProgress(overlaps);
+    if (Math.abs(position - lastPosition) < 0.0005) return;
+    lastPosition = position;
+    root.dataset.position = position.toFixed(3);
+    const state = stateAt(states, position, reduced.matches);
+    // The driven state, published on the element itself. This is what a verification run reads:
+    // a screenshot proves a frame was painted, it never proves WHICH state the geometry is in, and
+    // "the visual arrives at the wrong moment" is a claim about exactly that.
+    root.dataset.state = JSON.stringify(state);
+    const geometry = chartGeometry(readings, state, marks);
+
+    nodes.base.setAttribute("points", geometry.base);
+    nodes.hi.setAttribute("points", geometry.highlight);
+    nodes.hi.style.opacity = String(geometry.hiOpacity);
+    nodes.band.setAttribute("x", String(geometry.band.x));
+    nodes.band.setAttribute("width", String(geometry.band.width));
+    nodes.band.style.opacity = String(geometry.band.opacity);
+    if (nodes.bandLabel) {
+      const [fx] = toFrame(geometry.band.x + geometry.band.width / 2, 0);
+      nodes.bandLabel.style.left = pct(fx);
+      nodes.bandLabel.style.opacity = String(geometry.band.labelOpacity);
+    }
+    geometry.marks.forEach((mark, i) => {
+      const node = nodes.marks[i];
+      if (node) {
+        // The dot is HTML, not an SVG circle. Inside a `preserveAspectRatio="none"` plot a circle
+        // is an ellipse at every viewport but one: at 1600x900 the first build's r=5 mark drew as a
+        // 14px-wide, 2px-tall dash, which read as a stray tick rather than as the point the
+        // sentence beside it names. Same rule as every word on this frame — geometry stretches,
+        // everything else is placed in fractions and drawn at a fixed pixel size.
+        const [dx, dy] = toFrame(mark.x, mark.y);
+        node.style.left = pct(dx);
+        node.style.top = pct(dy);
+        node.style.opacity = String(mark.opacity);
+      }
+      const annotation = nodes.annotations[i];
+      if (annotation) {
+        const place = annotationPlacement(mark.x, mark.y);
+        annotation.style.left = place.left;
+        annotation.style.top = place.top;
+        annotation.style.transform = place.transform;
+        annotation.style.opacity = String(mark.opacity);
+      }
+    });
+    geometry.yTicks.forEach((tick, i) => {
+      const node = nodes.yTicks[i];
+      if (!node) return;
+      const [, fy] = toFrame(0, (1 - tick.at) * VIEWBOX.height);
+      node.style.top = pct(fy);
+      node.style.opacity = String(tick.visible);
+      if (node.textContent !== tick.label) node.textContent = tick.label;
+      const rule = nodes.yGrid[i];
+      if (rule) {
+        const y = String((1 - tick.at) * VIEWBOX.height);
+        rule.setAttribute("y1", y);
+        rule.setAttribute("y2", y);
+        rule.style.opacity = String(tick.visible * 0.28);
+      }
+    });
+    geometry.xTicks.forEach((tick, i) => {
+      const node = nodes.xTicks[i];
+      if (!node) return;
+      const [fx] = toFrame(tick.at * VIEWBOX.width, 0);
+      node.style.left = pct(fx);
+      node.style.opacity = String(tick.visible);
+      if (node.textContent !== tick.label) node.textContent = tick.label;
+    });
+  }
+
+  function schedule() {
+    if (queued) return;
+    queued = true;
+    view.requestAnimationFrame(paint);
+  }
+
+  // `capture: true` on the window catches a scroll from ANY scroller, including an inner container
+  // — which is what the fixed-page model this scaffold is moving to actually scrolls.
+  view.addEventListener("scroll", schedule, { capture: true, passive: true });
+  view.addEventListener("resize", schedule, { passive: true });
+  view.addEventListener("orientationchange", schedule, { passive: true });
+  if (reduced.addEventListener) reduced.addEventListener("change", () => { lastPosition = -1; schedule(); });
+  doc.addEventListener("visibilitychange", schedule);
+  schedule();
+  return { paint, panels };
+}
+
+;(function () {
+  if (window.__oneChartStarted) return;
+  window.__oneChartStarted = true;
+  function boot() {
+    var root = document.querySelector('[data-visual="one-chart"]');
+    if (!root) return;
+    initChartScrolly(root, [{"year":1876,"value":40.19},{"year":1877,"value":39.99},{"year":1878,"value":40.57},{"year":1879,"value":41.83},{"year":1880,"value":42.47},{"year":1881,"value":41.94},{"year":1882,"value":43.02},{"year":1883,"value":45.02},{"year":1884,"value":45.07},{"year":1885,"value":43.92},{"year":1886,"value":44.75},{"year":1887,"value":45.46},{"year":1888,"value":46},{"year":1889,"value":45.18},{"year":1890,"value":45.01},{"year":1891,"value":44.81},{"year":1892,"value":47.2},{"year":1893,"value":46.08},{"year":1894,"value":45.85},{"year":1895,"value":46.93},{"year":1896,"value":48.87},{"year":1897,"value":49.1},{"year":1898,"value":48.26},{"year":1899,"value":49.31},{"year":1900,"value":47.59},{"year":1901,"value":48.97},{"year":1902,"value":50.44},{"year":1903,"value":50.08},{"year":1904,"value":49.23},{"year":1905,"value":49.69},{"year":1906,"value":50.75},{"year":1907,"value":51.19},{"year":1908,"value":52.29},{"year":1909,"value":51.65},{"year":1910,"value":52.93},{"year":1911,"value":51.77},{"year":1912,"value":54.4},{"year":1913,"value":54.23},{"year":1914,"value":55.11},{"year":1915,"value":55.91},{"year":1916,"value":56.52},{"year":1917,"value":55.77},{"year":1918,"value":46.3},{"year":1919,"value":54.83},{"year":1920,"value":54.5},{"year":1921,"value":57.77},{"year":1922,"value":58.48},{"year":1923,"value":59.98},{"year":1924,"value":59.47},{"year":1925,"value":59.91},{"year":1926,"value":60.59},{"year":1927,"value":60.09},{"year":1928,"value":60.43},{"year":1929,"value":60.14},{"year":1930,"value":61.4},{"year":1931,"value":61.23},{"year":1932,"value":61.2},{"year":1933,"value":62.37},{"year":1934,"value":62.83},{"year":1935,"value":62.13},{"year":1936,"value":63.14},{"year":1937,"value":63.48},{"year":1938,"value":63.83},{"year":1939,"value":63.98},{"year":1940,"value":63.54},{"year":1941,"value":64.91},{"year":1942,"value":65.63},{"year":1943,"value":65.82},{"year":1944,"value":64.86},{"year":1945,"value":65.38},{"year":1946,"value":66.06},{"year":1947,"value":66.23},{"year":1948,"value":67.31},{"year":1949,"value":67.95},{"year":1950,"value":68.9133},{"year":1951,"value":68.6939},{"year":1952,"value":69.5876},{"year":1953,"value":69.5183},{"year":1954,"value":69.9846},{"year":1955,"value":70.0701},{"year":1956,"value":70.1987},{"year":1957,"value":70.5385},{"year":1958,"value":71.2912},{"year":1959,"value":71.4531},{"year":1960,"value":71.4137},{"year":1961,"value":71.7428},{"year":1962,"value":71.3027},{"year":1963,"value":71.2924},{"year":1964,"value":72.1791},{"year":1965,"value":72.318},{"year":1966,"value":72.4497},{"year":1967,"value":72.7412},{"year":1968,"value":72.7054},{"year":1969,"value":72.7176},{"year":1970,"value":73.1238},{"year":1971,"value":73.2406},{"year":1972,"value":73.7591},{"year":1973,"value":74.0598},{"year":1974,"value":74.4013},{"year":1975,"value":74.7913},{"year":1976,"value":74.9059},{"year":1977,"value":75.3673},{"year":1978,"value":75.3079},{"year":1979,"value":75.6078},{"year":1980,"value":75.5898},{"year":1981,"value":75.8183},{"year":1982,"value":76.1624},{"year":1983,"value":76.1574},{"year":1984,"value":76.756},{"year":1985,"value":76.882},{"year":1986,"value":77.0403},{"year":1987,"value":77.3317},{"year":1988,"value":77.3646},{"year":1989,"value":77.5573},{"year":1990,"value":77.3851},{"year":1991,"value":77.6485},{"year":1992,"value":77.9441},{"year":1993,"value":78.2335},{"year":1994,"value":78.4946},{"year":1995,"value":78.565},{"year":1996,"value":79.0494},{"year":1997,"value":79.2329},{"year":1998,"value":79.4752},{"year":1999,"value":79.7235},{"year":2000,"value":79.834},{"year":2001,"value":80.2511},{"year":2002,"value":80.4438},{"year":2003,"value":80.5325},{"year":2004,"value":81.0549},{"year":2005,"value":81.2362},{"year":2006,"value":81.5495},{"year":2007,"value":81.7028},{"year":2008,"value":81.9709},{"year":2009,"value":81.9891},{"year":2010,"value":82.2873},{"year":2011,"value":82.5738},{"year":2012,"value":82.6167},{"year":2013,"value":82.6892},{"year":2014,"value":83.0841},{"year":2015,"value":82.8461},{"year":2016,"value":83.4457},{"year":2017,"value":83.414},{"year":2018,"value":83.5639},{"year":2019,"value":83.7804},{"year":2020,"value":83.0626},{"year":2021,"value":83.6477},{"year":2022,"value":83.2003},{"year":2023,"value":83.9536}], [{"x0":1876,"x1":2023,"y0":36.472912,"y1":87.470688,"hiFrom":1917,"hiTo":1918,"hiOpacity":0,"bandFrom":1917,"bandTo":1918,"bandOpacity":0,"markA":0,"markB":0},{"x0":1876,"x1":2023,"y0":36.472912,"y1":87.470688,"hiFrom":1917,"hiTo":1918,"hiOpacity":1,"bandFrom":1917,"bandTo":1918,"bandOpacity":0,"markA":1,"markB":0},{"x0":1876,"x1":2023,"y0":36.472912,"y1":87.470688,"hiFrom":1918,"hiTo":1921,"hiOpacity":1,"bandFrom":1918,"bandTo":1921,"bandOpacity":0.16,"markA":1,"markB":0},{"x0":2012,"x1":2023,"y0":82.322582,"y1":84.24771799999999,"hiFrom":2019,"hiTo":2020,"hiOpacity":1,"bandFrom":2019,"bandTo":2020,"bandOpacity":0,"markA":0,"markB":1}], [{"year":1918,"label":"1918: 46.3"},{"year":2020,"label":"2020: 83.1"}]);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+      </div>
+      <div class="step-frame" data-step="worst" aria-hidden="true">
+<div></div>
+      </div>
+      <div class="step-frame" data-step="recovery" aria-hidden="true">
+<div></div>
+      </div>
+      <div class="step-frame" data-step="decade" aria-hidden="true">
+<div></div>
+      </div>
+      </div>
+    </div>
+    <div class="scrolly-steps" tabindex="0">
+      <section class="step active" data-step="shape">
+        <div class="step-panel" data-step="shape">
+          <p>Life expectancy at birth in Switzerland, one reading a year, 1876 to 2023: 40.2 years to 84.0. Scroll — the line will not move; what you are asked to see in it will.</p>
+        </div>
+      </section>
+      <section class="step" data-step="worst">
+        <div class="step-panel" data-step="worst">
+          <p>One year breaks the climb. 1918: 55.8 down to 46.3 — 9.5 years gone in twelve months, 5.5 times the next-steepest fall in the whole record.</p>
+        </div>
+      </section>
+      <section class="step" data-step="recovery">
+        <div class="step-panel" data-step="recovery">
+          <p>How long to undo it? Not until 1921 does the line pass its 1917 level again — 4 years, shaded here.</p>
+        </div>
+      </section>
+      <section class="step" data-step="decade">
+        <div class="step-panel" data-step="decade">
+          <p>Now the axes close in on the last 12 years. At the scale you have been reading, 2020's fall of 0.72 years is 1.4% of the plot's height. At this one it is the steepest since 1944.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</article>
+<script>
+// twin/skills/twin-scrolly/assets/interaction.mjs
+//
+// The one script this genre ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-scrolly.mjs` (which strips the `export` keyword from each top-level declaration,
+// the same trick `twin-chart-web/scripts/render-web.mjs` already uses, so this file can also sit as
+// a plain classic `<script>` — no `type="module"`, so it keeps working in a CMS iframe or a
+// sandboxed embed that restricts module scripts).
+//
+// `pickActiveStep` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/render-scrolly.test.ts`). `initScrolly`/`initAll` are DOM wiring and are NOT unit-tested
+// here: per `twin-doctrine`'s own verification rule, an interactive genre is verified by driving a
+// real browser, not by asserting against a DOM emulation nobody looked at
+// (`references/scrolly-discipline.md`, "Verification").
+//
+// ONE mechanism decides which step is active: on every scroll of the prose column, MEASURE where
+// each panel currently is and give the step to whichever panel occupies the most of the prose lane.
+// That is the whole of it. There is no observer, no threshold list and no rootMargin.
+//
+// WHY THERE IS NO INTERSECTIONOBSERVER ANY MORE, and this is the correction this file exists to
+// carry. Every build up to the sixth used one, and picked the winner out of the entries of the
+// CURRENT CALLBACK — the delta set, the panels whose ratio had just crossed one of
+// `[0, 0.25, 0.5, 0.75, 1]`. A callback that heard about exactly one panel therefore activated that
+// panel unconditionally, whatever every other panel was doing. On a teleport (scroll straight to an
+// offset, wait, read) that is harmless: the browser recomputes every panel at once, so the delta
+// set IS the full state and the winner is right. On a CONTINUOUS scroll — a wheel, a finger, the
+// only way a reader has ever actually read one of these — the outgoing and incoming panels cross
+// thresholds on alternating frames, so the active class OSCILLATED between them, each flip
+// restarting the 0.3s opacity transition from wherever the last one had got to.
+//
+// Measured, in a driven Chrome, scrolling continuously through the whole track of all five beats on
+// disk at three widths — fifteen runs: in FOURTEEN of them at least one step's frame was never
+// painted at all, the graphic lagged the prose by up to 1,800px, and roughly 45% of every animation
+// frame drawn was a BLEND of two frames rather than one settled image. The same pages, probed at 25
+// discrete offsets with 450ms of stillness after each, measured 25/25 clean — one frame at exactly
+// opacity 1, every other at exactly 0. Both measurements were honest. The instrument was blind by
+// construction, and the vehicle was broken.
+//
+// The rule below cannot oscillate, and that is a property of the rule rather than a tuning of it:
+// it reads the CURRENT position of EVERY panel on every scroll, and lane occupancy changes
+// monotonically as a panel enters and leaves, so the winner changes exactly once per boundary,
+// whatever speed the reader scrolls at and however many frames the browser skipped.
+//
+// What this file does NOT do: decide which step is narratively "first", or know what kind of
+// content a `.step-frame` holds — an `<img>`, an `<svg>`, or anything else a future beat hands the
+// scaffold. The first step's own frame is already marked `active` in the SSR'd markup by
+// `scripts/render-scrolly.mjs`'s own loop over `steps` — this file never assigns that class for the
+// first time, only moves it as the reader scrolls. With this script entirely absent, the page still
+// shows that one step's own frame and every step's own prose, unchanged — see
+// references/scrolly-discipline.md, "What survives with JavaScript disabled."
+
+/**
+ * Pure decision function: given where every panel currently sits and where the prose lane is —
+ * both in the scrollport's own coordinates, both measured by the caller, so this function has
+ * nothing DOM-shaped to accept — returns the `stepId` whose panel occupies the most of the lane,
+ * or `null` when no panel is in the lane at all.
+ *
+ * `panels` is `{ stepId, top, bottom }[]`. `lane` is `{ top, bottom }`.
+ *
+ * THE FULL STATE, NEVER A DELTA. Every panel is passed in, every time, and the winner is decided
+ * against all of them — the property that makes the outcome a function of the reader's position
+ * rather than of which panels happened to change since the last frame. See this file's own header
+ * for the measurement that condemned the delta-set rule this replaced.
+ *
+ * `null` means no panel is in the lane, NOT that the reader has left the track — the caller keeps
+ * whichever step was active last, which is what stops the gap between two panels from clearing the
+ * server-rendered default.
+ *
+ * Nothing here reads how many panels were passed or assumes any particular count — the same loop
+ * resolves a winner whether the page carries two steps or eight.
+ */
+function pickActiveStep(panels, lane) {
+  let winner = null;
+  for (const panel of panels) {
+    const overlap = laneOverlap(panel, lane);
+    if (overlap <= 0) continue;
+    if (!winner || overlap > winner.overlap)
+      winner = { stepId: panel.stepId, overlap: overlap };
+  }
+  return winner ? winner.stepId : null;
+}
+
+function laneOverlap(panel, lane) {
+  return Math.min(panel.bottom, lane.bottom) - Math.max(panel.top, lane.top);
+}
+
+/**
+ * Pure decision function, and the second half of the lane's contract: which panel may be PAINTED.
+ * Same inputs as `pickActiveStep`, and deliberately a different answer.
+ *
+ * THE LANE IS A PROMISE IN BOTH DIRECTIONS. Every frame keeps what it annotates above the lane
+ * (`safeBand`/`CONTENT_TOP`); this is what keeps the prose inside it. A panel is paintable only
+ * while it occupies the lane as fully as its own height allows — so a panel on its way OUT, riding
+ * up over the graphic as its step scrolls past, stops being painted the moment it leaves rather
+ * than when the next step wins the frame. Those two moments are not the same: a `bottom`-sticky
+ * panel un-pins one panel-height before the next one has parked, and that gap is where every
+ * remaining prose-over-annotation collision lived. Measured on the shipped Danube beat at
+ * 1600x900, 41% of the way down: the numbered badge "6" under a panel that had already climbed
+ * 16px above the lane's own top edge.
+ *
+ * A PANEL THAT DOES NOT FIT ITS LANE IS STILL PAINTED, and that fallback is deliberate rather than
+ * a softening. Measured across the five beats on disk: a panel needs its own height PLUS its bottom
+ * offset to sit inside the lane, and at 1280x800 that is 215px against a 202px lane, at 375x812
+ * 241px against 177px — the reserved 28% is simply too small for three paragraphs at a phone's
+ * measure. Refusing to paint such a panel would leave the reader with a graphic and no words at
+ * all, which is worse than an overlap and is not what the lane was reserved to buy. So when nothing
+ * fits, the panel closest to its parked position — the largest lane overlap — is painted anyway,
+ * and `scripts/verify-scrolly.mjs` REPORTS the beat and the width where that happened. The lane is
+ * either wide enough or the beat's prose is too long for it; both are facts about the beat, and the
+ * vehicle's job is to make them visible rather than to hide them behind a blank frame.
+ *
+ * Returns `null` only when no panel touches the lane at all — a real state, between two steps, and
+ * the caller paints no panel rather than keeping a stale one on screen.
+ */
+function pickLanePanel(panels, lane) {
+  let winner = null;
+  for (const panel of panels) {
+    // Two ways to be eligible, and a panel on its way out satisfies neither.
+    //   - its top is not above the lane: it fits, and it is in. This is the promise.
+    //   - it is still at its parking line: it has not started to rise yet. This is what keeps a
+    //     panel TALLER than the lane paintable — such a panel's top is above the lane wherever it
+    //     stands, so the first clause can never hold for it, and only the second can.
+    const eligible =
+      panel.top >= lane.top - 1 || panel.bottom >= lane.bottom - 1;
+    if (!eligible) continue;
+    const overlap = laneOverlap(panel, lane);
+    if (overlap <= 0) continue;
+    if (!winner || overlap > winner.overlap)
+      winner = { stepId: panel.stepId, overlap: overlap };
+  }
+  return winner ? winner.stepId : null;
+}
+
+/**
+ * Wires one `.scrolly` root's steps to its frames by measuring THE PROSE LANE — the band at the
+ * bottom of the track where `scripts/render-scrolly.mjs`'s own CSS pins each step's panel
+ * (`--prose-lane`, mirrored onto the root as `data-prose-lane` so this script never has to parse a
+ * CSS length).
+ *
+ * **What is measured is the PANEL, not the section.** An earlier build watched the `.step` sections
+ * through a thin band at the middle of the screen, which asked "whose 115%-tall section crosses the
+ * centre right now" — a different question from the one that matters, "whose words are in the lane
+ * right now", with a different answer for a large fraction of every step. Measuring the pinned
+ * panel makes the active step and the visible prose the same fact by construction, which is what
+ * lets the CSS fade every panel that is not the active one without ever fading the one the reader
+ * is actually reading.
+ *
+ * **The scroller is the prose column, never the document.** The page itself does not scroll (see
+ * `references/scrolly-discipline.md`, "The graphic is fixed and the page does not scroll"), so the
+ * event this listens to is `.scrolly-steps`'s own.
+ *
+ * Every `.step`/`.step-panel`/`.step-frame` triple is matched by its shared `data-step` id, baked
+ * into the markup at build time — this function never invents an id, and never reads how many steps
+ * there are to decide how to behave, so it wires N steps exactly as it wires two.
+ */
+function initScrolly(root) {
+  const steps = Array.prototype.slice.call(root.querySelectorAll(".step"));
+  const panels = Array.prototype.slice.call(
+    root.querySelectorAll(".step-panel"),
+  );
+  const frames = Array.prototype.slice.call(
+    root.querySelectorAll(".step-frame"),
+  );
+  const scroller = root.querySelector(".scrolly-steps");
+  if (
+    steps.length === 0 ||
+    frames.length === 0 ||
+    panels.length === 0 ||
+    !scroller
+  )
+    return;
+
+  let currentFrame = null;
+  let currentPanel = null;
+  /** Which frame the graphic shows. Held across the gap between two steps — the graphic is fixed,
+   *  so it holds the last thing the reader was told about until the next prose arrives. */
+  function activate(stepId) {
+    if (stepId === currentFrame) return;
+    currentFrame = stepId;
+    steps.forEach((s) =>
+      s.classList.toggle("active", s.getAttribute("data-step") === stepId),
+    );
+    frames.forEach((f) =>
+      f.classList.toggle("active", f.getAttribute("data-step") === stepId),
+    );
+  }
+  /** Which panel is painted — a DIFFERENT fact from which frame is shown, and `null` between two
+   *  steps. See `pickLanePanel` for why the two decisions were split. */
+  function paint(stepId) {
+    if (stepId === currentPanel) return;
+    currentPanel = stepId;
+    steps.forEach((s) =>
+      s.classList.toggle("in-lane", s.getAttribute("data-step") === stepId),
+    );
+  }
+
+  // The lane, as a percentage of the track's own height. The fallback matches `renderScrolly`'s
+  // own default rather than a number invented here.
+  const lane = Number(root.getAttribute("data-prose-lane")) || 28;
+
+  // `.scrolly--live` is what turns on the CSS that paints only the active step's panel. It is added
+  // HERE, by the script, so that a page whose script never runs never hides a word: see
+  // `scripts/render-scrolly.mjs`'s own `buildCss` note on `.scrolly--live`.
+  root.classList.add("scrolly--live");
+
+  function update() {
+    const port = scroller.getBoundingClientRect();
+    // The lane's bottom edge for these two decisions is the PANEL'S OWN PARKING LINE, not the
+    // track's bottom edge — read off the CSS rather than restated here, because the offset is a
+    // `clamp()` that changes with the viewport. A panel parked in the lane has its bottom exactly
+    // on this line, which is what lets `pickLanePanel` tell "parked" from "already rising" without
+    // being told what the offset is.
+    const offset = parseFloat(getComputedStyle(panels[0]).bottom) || 0;
+    const laneBand = {
+      top: port.bottom - (lane / 100) * port.height,
+      bottom: port.bottom - offset,
+    };
+    const measured = panels.map(function (p) {
+      const r = p.getBoundingClientRect();
+      return {
+        stepId: p.getAttribute("data-step"),
+        top: r.top,
+        bottom: r.bottom,
+      };
+    });
+    const next = pickActiveStep(measured, laneBand);
+    if (next) activate(next);
+    paint(pickLanePanel(measured, laneBand));
+  }
+
+  // `scroll` fires at most once per animation frame in every engine, and it fires BEFORE the frame
+  // is painted, so the class is already right for the frame the reader actually sees. No rAF
+  // trampoline: adding one would deliberately paint one frame of the wrong step.
+  scroller.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+}
+
+function initAll() {
+  document.querySelectorAll(".scrolly").forEach((root) => {
+    initScrolly(root);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-scrolly.test.ts` (for the pure `pickActiveStep` helper), in a context with no
+// `document`. In the browser the guard is always true, so the inlined `<script>` still self-starts
+// the moment it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

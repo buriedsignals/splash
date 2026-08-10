@@ -1,0 +1,90 @@
+{
+  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html",
+  "sweeps": [
+    {
+      "label": "1600x900 down",
+      "samples": 99,
+      "tallestPanelAsFractionOfPort": 0.161,
+      "portHeight": 820.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 1,
+      "problems": []
+    },
+    {
+      "label": "1600x900 up",
+      "samples": 99,
+      "tallestPanelAsFractionOfPort": 0.161,
+      "portHeight": 820.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0,
+      "problems": []
+    },
+    {
+      "label": "1280x800 down",
+      "samples": 87,
+      "tallestPanelAsFractionOfPort": 0.183,
+      "portHeight": 720.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 1,
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "samples": 87,
+      "tallestPanelAsFractionOfPort": 0.183,
+      "portHeight": 720.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0.036,
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "samples": 75,
+      "tallestPanelAsFractionOfPort": 0.255,
+      "portHeight": 617.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstLag": 0.824,
+      "problems": []
+    },
+    {
+      "label": "375x812 up",
+      "samples": 75,
+      "tallestPanelAsFractionOfPort": 0.255,
+      "portHeight": 617.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstLag": 0.39,
+      "problems": []
+    }
+  ],
+  "reducedMotion": {
+    "samples": 99,
+    "distinctStates": 4,
+    "everySampleIsOneOfTheFourStates": true,
+    "discrete": true
+  },
+  "noJs": {
+    "visual": true,
+    "linePoints": 148,
+    "paragraphs": 4,
+    "credit": "Life expectancy at birth, Switzerland 1876–2023 · Our World in Data",
+    "visualVisible": 1
+  }
+}
