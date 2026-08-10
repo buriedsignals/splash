@@ -262,6 +262,10 @@ export async function verifyLiveMap({ htmlPath, key }) {
     /<script type="application\/json" id="mw-live-plan">([\s\S]*?)<\/script>/.exec(readFileSync(htmlPath, "utf8"))[1],
   );
   const keyedPath = keyedCopy(htmlPath, key);
+  // Printed, because a committed page is deliberately unkeyed (R1b) and therefore shows its
+  // FALLBACK when you double-click it. This is the path to open in a browser to look at the live
+  // map with your own eyes — outside the tree, so looking at it can never commit a key.
+  console.log(`keyed copy (open this to look at the live map): ${keyedPath}\n`);
   const browser = await puppeteer.launch({
     headless: true,
     executablePath: resolveChrome(),

@@ -222,6 +222,10 @@ bun skills/twin-map-web/scripts/render-web.mjs /tmp/map-web-twin
 # every value checked against assets/sample-data/regions.json — renders its own copy first
 bun skills/twin-map-web/scripts/verify-interaction.mjs
 
+# LOOK AT THE LIVE MAP. The committed page is deliberately unkeyed (R1b), so opening it directly
+# shows the FALLBACK plate. This writes a KEYED copy outside the tree and prints its path:
+bun skills/twin-map-web/scripts/verify-live-map.mjs --html <the beat's own .html>
+
 # then drive it yourself — a static screenshot of ONE width cannot verify a responsive claim
 python3 -m http.server 8935 --bind 127.0.0.1 --directory skills/twin-map-web/output-proof &
 # open http://127.0.0.1:8935/population.html in a real (or automated) browser and:
