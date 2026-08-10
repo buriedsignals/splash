@@ -218,7 +218,12 @@ by an ordinary relative path — that import is for this skill's own tests
   `render-still.mjs`, at `shared/twin-chart-beat/` and
   `assets/root-template/shared/twin-chart-beat/`; `splash-twin/test/annotation-ink-parity.test.ts`
   WALKS the tree for the basename rather than taking a list, so a fourth copy is guarded the day it
-  lands.
+  lands. What reads the ARTIFACT rather than the arithmetic is
+  `splash-twin/test/annotation-reads-over-what-it-crosses.test.ts`, which parses every committed
+  static SVG and measures what is really under each dashed rule and each line of text — by sampling
+  at pixel centres strictly inside the mark, never at its endpoints, because a waterfall's connector
+  meets the bars it joins at a point of zero width and an endpoint-sampling guard reports four
+  defects that are not there.
 - `scripts/render-preview.mjs` — renders the seed to PNG; accepts `--out <dir>` to write the proof
   to that directory instead of `assets/preview.png`.
 - `scripts/inspect-render.mjs` — `inspectSvg`: contrast against the real ground, alt-text

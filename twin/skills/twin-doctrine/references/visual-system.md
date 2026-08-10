@@ -112,6 +112,14 @@ annotation is in the wrong PLACE, not the wrong colour. A callout lying half on 
 on a mid-blue bar has no ink at all — 4.05:1 one side, 1.00:1 the other — and the fix is to move it
 onto one background or the other, which is what `static-swiss-age-pyramid` did.
 
+The check that reads the delivered artifact rather than the arithmetic is
+`splash-twin/test/annotation-reads-over-what-it-crosses.test.ts`. Its one measurement decision is
+worth carrying to any sibling written later: **what is underneath is decided by sampling at pixel
+centres strictly inside the annotation, never at its endpoints.** A waterfall's connector runs from
+one bar's right edge to the next bar's left edge, so it meets both at a point of zero width;
+sampling the endpoints reports four crossings at 1.00–1.60:1 in a beat that is correct, and a guard
+that accuses correct work is a guard someone switches off.
+
 ## An open gap: adjacency inside an already-safe palette
 
 A CVD-safe palette (Okabe-Ito or equivalent) guarantees its members are distinguishable from each
