@@ -324,18 +324,24 @@ export function IncomeLifeExpectancyWeb({
         `${endOf(WEB_ENTRANCE.reveal) + LABEL_FADE_MS}ms`,
     );
 
+  // TWO ELEMENTS PER POINT, and the split is not decoration — it is this genre's rule that **the
+  // entrance is an addition to a page that already works**, applied to the one type where the mark
+  // and the hit target are the same element. Everywhere else the targets sit outside the animation
+  // (a lollipop's `.row-hit`, a line's `.hit-area`); here the `.pt` span carries the reading AND
+  // `tabIndex`/`aria-label`/`data-detail`. Scaling it to nothing collapses its border box, so for
+  // the ~1.5s of its own arrival a dot answered no pointer, no tap and no key — measured, by
+  // `splash/test/interaction-promises-are-kept.test.ts`, which reported **164 marks unreachable**
+  // the first time this shipped. So the OUTER span keeps its size, its focus ring and every
+  // attribute, and never animates; the inner disc is what pops.
   const dot = (p: (typeof g.points)[number], isNamed: boolean) => (
     <span
       key={p.code}
-      {...dotLayer(p.code).attrs}
       className={isNamed ? "pt pt-named" : "pt"}
       style={{
-        ...dotLayer(p.code).vars,
         left: `${pct(p.x, frame.width)}%`,
         top: `${pct(p.y, frame.height)}%`,
         width: isNamed ? frame.namedDotPx : frame.dotPx,
         height: isNamed ? frame.namedDotPx : frame.dotPx,
-        background: isNamed ? accent : muted,
       }}
       tabIndex={0}
       role="img"
@@ -343,7 +349,16 @@ export function IncomeLifeExpectancyWeb({
       {...attrsFor(filterIndex, p.code)}
       data-country={p.country}
       data-detail={`${p.country} · ${usd(p.gdp)} · ${years(p.lifeExpectancy)} yrs`}
-    />
+    >
+      <span
+        {...dotLayer(p.code).attrs}
+        className="pt-disc"
+        style={{
+          ...dotLayer(p.code).vars,
+          background: isNamed ? accent : muted,
+        }}
+      />
+    </span>
   );
 
   return (

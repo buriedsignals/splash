@@ -152,6 +152,17 @@ const EXTRA_CSS = `
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
+/* The visible disc, inside the target rather than being it. The outer .pt keeps its box, its
+   focus ring and every attribute and never animates; this is what the entrance pops, so a dot
+   answers a pointer, a tap and a key from the first millisecond of its own arrival — the genre's
+   "the entrance is an addition to a page that already works", on the one type where the mark and
+   the target would otherwise be the same element. */
+.pt .pt-disc {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
 .pt.pt-active, .pt:focus {
   box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--ink);
 }
