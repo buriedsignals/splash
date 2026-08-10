@@ -909,3 +909,72 @@ their own tolerance from each mark's OWN settled length; six of the diverging ba
 bars are shorter than the shared step (Croatia's is 1.2 user units against a step of 19.7) and were
 reported unfinished. **The reader publishes the step it used**, and every tolerance downstream is
 that number.
+
+### Every type's arrival was already decided — in its own video beat
+
+Six types were left pending here with the note that each needed "an editorial call the per-mark
+reveal does not make for them": which side of a pyramid leads, whether a dumbbell grows from one dot
+or opens from the middle, how a box of five numbers assembles, how a stacked segment sitting on the
+one below it arrives, how a waterfall's running-total baseline moves, how a scatter with no length
+enters at all.
+
+**The owner's answer removed the question rather than settling it:** *"On arrive bien à les animer
+dans la vidéo, alors on garde la même idée pour l'apparition pour le web."* Every one of those types
+already has an arrival choreography, decided once, on the video side — and this whole genre exists to
+replay the video's idiom rather than invent a second grammar. So each was read and carried, and each
+beat's own file names the video it came from.
+
+| web beat | video carried from | what the video had already decided |
+| --- | --- | --- |
+| `weby-population-pyramid-switzerland` | `vidy-pyramid-niger-population` | **Neither side leads.** One `rowReveal[i]` drives both `maleCurrentX` and `femaleCurrentX`, so a band's two bars grow OUTWARD from the shared zero together. Cascade oldest-at-top to youngest, overlap **1.8** |
+| `weby-dumbbell-life-expectancy-gains` | `video-population-growth-dumbbell` | **The row arrives whole, by fading**, in gap-size order — connector, right dot, category label and value label on one `rowOpacity[i]`. A range is not a length from a baseline |
+| `weby-boxplot-france-co2-decades` | `vidy-boxplot-co2-by-continent` | **The box arrives as one event** — whiskers, box, median, outliers and the label together; "the five marks inside a box never cascade against each other". Overlap **1.7** |
+| `webx-electricity-mix` | `vidx-stacked-bar-swiss-electricity` | **There is no per-segment baseline.** All three segment tops interpolate from `zeroY` on one `colProgress`, so the column rises whole and its proportions hold at every frame |
+| `webx-germany-bridge` | `vidy-waterfall-germany-electricity-mix` | The opening total lands from zero and **doubles as the reference**; each step grows **from where the previous bar ended**; the closing total is the subject, again from zero |
+| `web-income-life-expectancy` | `vidx-scatter-income-life-expectancy` | Each point's **RADIUS** grows from zero, cascading in **x-axis order**; and the subject **lands at its natural sorted position, "not held back to last for spectacle"** |
+| `webx-wind-vs-solar` | `vidx-grouped-bar-co2-per-capita` | One clock per group; the two bars rise together from the shared zero |
+| `web-co2-decline-slope` | `vidx-slope-child-mortality` | Left dot at 0→0.18 of the line's own window, connector drawing 0.18→0.82, right dot at 0.82. Overlap **1.7** |
+| `co2-suisse` | `chart-video/assets/EmissionsVideo.tsx` | Not a sibling — the ancestor. Reference rule, clip-wipe reveal, peak marker at the head's own x plus a 0.06 lag, final reading as subject |
+| `weby-small-multiples-co2-per-capita` | *(none exists)* | Nothing carried and nothing invented: four LINE panels, so four clip wipes on four clocks |
+
+### Three places the web genuinely could not do the same thing
+
+Stated with what was measured, because "we adapted it" without a reason is how a second grammar
+starts.
+
+1. **The video's SUBJECT EMPHASIS is a ring and a wash dropped on an already-landed mark.** This
+   genre's pages carry neither at rest, and the entrance may not add artwork — SSR ships the settled
+   page and every keyframe runs *to* it, so a ring invented for the build is a mark the reader keeps.
+   The web's emphasis is instead the subject's own ARRIVAL: its mark is lifted out of the cascade and
+   lands after every other. **Except where lifting it would make the sequence lie** — on a TIME axis
+   (`weby-boxplot-france-co2-decades`, whose peak is the third of eight decades) a build that
+   assembled 1950, 1960, 1980, 1990 … and filled 1970 in afterwards states a false order for most of
+   the entrance. There the subject arrives in its place, which is also the scatter video's own
+   answer.
+2. **A value label cannot RIDE a growing tip.** `vidy-waterfall-germany-electricity-mix` fades each
+   label in within the first quarter of its bar's window and then moves it with the edge; CSS is
+   handed ONE delay up front. The choice is a number printed at the final tip while the bar is still
+   short — the label rule's own prohibition, and driven — or a label that waits. It waits, and the
+   video's objection ("absent for most of the time the bar is on screen") does not transfer: there
+   the bar is on screen for eight seconds and the label misses 0.9 of them; here the bar is on screen
+   for the rest of the page's life and the label misses at most 460 ms of a two-second entrance.
+3. **A `transform` keyframe REPLACES an element's own transform.** This genre draws a scatter's dots
+   and a lollipop's heads as HTML spans (an SVG circle inside a `preserveAspectRatio="none"` viewBox
+   comes out an oval) and every one already carries `transform: translate(-50%, -50%)`. Animating
+   `transform` flies the whole cloud in from its dots' top-left corners. Hence the fifth motion,
+   `pop`, which animates **`scale`** — the individual transform property, applied before `transform`,
+   composited identically, origin at the element's own centre.
+
+### What the beats taught the instrument, in order
+
+Each of these was a false reading or a blind spot found by pointing the tool at a real page.
+
+| found on | what was wrong |
+| --- | --- |
+| `webz-diverging-bar-eu-per-capita` | Three checks invented their own tolerance from each mark's OWN settled length; six of its 27 bars are shorter than the shared step (Croatia's is 1.2 user units against 19.7) and were reported unfinished on a settled page. **The reader publishes the step it used.** |
+| `weby-lollipop-co2-per-capita` | The no-JS pass never scrolled, and `elementsFromPoint` answers about the VIEWPORT — every mark read zero painted extent on a complete page |
+| `webx-electricity-mix` | **`elementsFromPoint` never returns an intermediate SVG `<g>`** — only the painted leaf and its HTML ancestors. A mark declared on a group reads zero painted at every sample. The instrument names that case now; the fix in the beat is to scale each child about the SAME baseline, which is the identical picture |
+| `web-income-life-expectancy` | A mark is not always an SVG element (`getBBox` threw), and a `pop` does not appear in the computed transform matrix at all — its own property is the reading |
+| `web-co2-decline-slope` | Its de-collision leaders carry `opacity={0}` as a real settled style, and a tagged layer at opacity 0 on the settled page is indistinguishable from an entrance that never finished. Tag only what is drawn |
+| `webx-germany-bridge` | A connector declared with `names` went red, correctly: that attribute means "may not be painted until the mark arrives", and a connector INTRODUCES its step. The guard was right about the vocabulary |
+| a mutation that did **not** redden | The keyframes were read as a union of properties, so swapping `chart-entrance-pop`'s `scale` for `opacity` left every clause green — a scatter that pops had silently become one that fades. **A motion IS the property it moves**, and each named block is now held to its own |
