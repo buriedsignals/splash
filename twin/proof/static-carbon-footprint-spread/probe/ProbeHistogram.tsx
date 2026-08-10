@@ -4,6 +4,14 @@
  * measurement #4 of the probe: "did anything outside {typeScale, tick hints, collision thresholds}
  * need editing?". Not a beat; nothing ships from here.
  *
+ * FROZEN 2026-08-10, and the beat has moved on since. `../CarbonFootprintHistogram.tsx` now derives
+ * the median rule's ink from the bars it crosses (`annotation-ink.mjs`) — this copy still strokes it
+ * `accent`, at the 1.20:1 that change exists to remove. That is deliberate: a probe records a
+ * measurement of a question already answered, and re-rendering it rewrites the record it exists to
+ * hold. Nothing reads these four SVGs but `MEASUREMENTS.md` and `VERDICT.md`, and
+ * `annotation-reads-over-what-it-crosses.test.ts` skips every `*probe*` directory for the same
+ * reason. Whoever next takes the size work here brings this copy forward with it.
+ *
  * Beat: "Most countries emit under 4 tonnes of CO2 per person" (histogram).
  *
  * Written fresh from `ChartSeed.tsx`'s shape for a type whose bars are contiguous SLICES OF ONE
@@ -44,8 +52,16 @@ export function tokens(typeScale: number) {
     // same multiplier applied to them; nothing here is a new layout.
     sp: px,
     PAD: px(BASE.PAD),
-    TITLE: { ...BASE.TITLE, fontSize: px(BASE.TITLE.fontSize), lead: px(BASE.TITLE.lead) },
-    SUBTITLE: { ...BASE.SUBTITLE, fontSize: px(BASE.SUBTITLE.fontSize), lead: px(BASE.SUBTITLE.lead) },
+    TITLE: {
+      ...BASE.TITLE,
+      fontSize: px(BASE.TITLE.fontSize),
+      lead: px(BASE.TITLE.lead),
+    },
+    SUBTITLE: {
+      ...BASE.SUBTITLE,
+      fontSize: px(BASE.SUBTITLE.fontSize),
+      lead: px(BASE.SUBTITLE.lead),
+    },
     SOURCE: { ...BASE.SOURCE, fontSize: px(BASE.SOURCE.fontSize) },
     AXIS: { ...BASE.AXIS, fontSize: px(BASE.AXIS.fontSize) },
     AXIS_TITLE: { ...BASE.AXIS_TITLE, fontSize: px(BASE.AXIS_TITLE.fontSize) },
@@ -157,7 +173,8 @@ export function ProbeHistogram({
     );
 
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { sp, PAD, TITLE, SUBTITLE, SOURCE, AXIS, AXIS_TITLE, NOTE } = tokens(typeScale);
+  const { sp, PAD, TITLE, SUBTITLE, SOURCE, AXIS, AXIS_TITLE, NOTE } =
+    tokens(typeScale);
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
@@ -188,7 +205,8 @@ export function ProbeHistogram({
     // to end above the axis title's ink. Reproduces the old reserve exactly when there is no
     // credit block to clear.
     bottom: height - axisTitleBaseline + AXIS_TITLE.fontSize + sp(30),
-    left: PAD + sp(10) + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
+    left:
+      PAD + sp(10) + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
   const { plot, bars, x, ticksY } = histogramGeometry(bins, {
@@ -280,25 +298,27 @@ export function ProbeHistogram({
           fill={muted}
         />
       ))}
-      {bars.filter((_, i) => i % xTickEvery === 0).map((b) => (
-        <text
-          key={`label-${b.lo}`}
-          // The label names the bin's LOWER EDGE (`b.lo`), so it is drawn at that edge — not at
-          // `b.x + b.width / 2`, which is where it used to sit. A histogram's ticks are boundaries
-          // between bins, never marks on top of them, and the half-bin offset made the axis lie:
-          // the median rule, drawn correctly at x=184.4, read against the printed labels as ≈1.1 t
-          // while its own label said "Median: 3.1 t". The final tick was already at the true right
-          // edge, which is why the last gap rendered half-width and the two labels collided at
-          // 375px — the visible symptom of an axis that was wrong everywhere else too.
-          x={b.x}
-          y={plot.bottom + sp(20)}
-          fill={muted}
-          fontSize={AXIS.fontSize}
-          textAnchor="middle"
-        >
-          {b.lo}
-        </text>
-      ))}
+      {bars
+        .filter((_, i) => i % xTickEvery === 0)
+        .map((b) => (
+          <text
+            key={`label-${b.lo}`}
+            // The label names the bin's LOWER EDGE (`b.lo`), so it is drawn at that edge — not at
+            // `b.x + b.width / 2`, which is where it used to sit. A histogram's ticks are boundaries
+            // between bins, never marks on top of them, and the half-bin offset made the axis lie:
+            // the median rule, drawn correctly at x=184.4, read against the printed labels as ≈1.1 t
+            // while its own label said "Median: 3.1 t". The final tick was already at the true right
+            // edge, which is why the last gap rendered half-width and the two labels collided at
+            // 375px — the visible symptom of an axis that was wrong everywhere else too.
+            x={b.x}
+            y={plot.bottom + sp(20)}
+            fill={muted}
+            fontSize={AXIS.fontSize}
+            textAnchor="middle"
+          >
+            {b.lo}
+          </text>
+        ))}
       <text
         x={plot.right}
         y={plot.bottom + sp(20)}

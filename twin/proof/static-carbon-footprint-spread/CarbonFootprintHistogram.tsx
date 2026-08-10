@@ -12,8 +12,16 @@ import { scaleLinear } from "d3-scale";
 import {
   deriveFurniture,
   measureText,
+  measureTextBand,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  NON_TEXT_CONTRAST_FLOOR,
+  inkBox,
+  inkThatReadsOver,
+  marksUnder,
+  textContrastFloor,
+} from "#shared/twin-chart-beat/annotation-ink.mjs";
 
 export type Bin = { lo: number; hi: number; count: number };
 
@@ -25,6 +33,12 @@ const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const AXIS_TITLE = { fontSize: 13, fontWeight: 600 };
 const NOTE = { fontSize: 13, fontWeight: 700 };
+/** The median rule's own weight and dash. Its INK is not here — it is derived from the marks the
+ *  rule crosses, which is the whole point (`annotation-ink.mjs`). */
+const MEDIAN_RULE = { width: 2, dash: "6 4" };
+/** The air between the median rule and its label, and between the label and the last bar it had to
+ *  clear. One number, used for both, because it is the same gap doing the same job. */
+const MEDIAN_LABEL_GAP = 8;
 const Y_TICK_HINT = 5;
 
 function wrap(
@@ -98,7 +112,6 @@ export function CarbonFootprintHistogram({
   source,
   alt,
   ground,
-  accent,
   median,
   medianLabel,
 }: {
@@ -108,7 +121,12 @@ export function CarbonFootprintHistogram({
   source: string;
   alt: string;
   ground: string;
-  accent: string;
+  // NO `accent`, and that is the finding rather than an omission. This beat's only annotation is
+  // the median rule, and the median rule runs THROUGH the tallest bar — so whatever hue arrives
+  // here, it is measured against `#616161` and not against the page. `#0B7A75` measured 1.20:1
+  // there. `references/types/histogram.md` asks for the accent on the median line; it now carries
+  // the amendment this render forced. A beat that cannot spend its accent anywhere a reader would
+  // see it does not take one.
   median: number;
   medianLabel: string;
 }) {
@@ -165,6 +183,69 @@ export function CarbonFootprintHistogram({
     padding,
   });
   const medianX = x(median);
+
+  // THE MEDIAN ANNOTATION IS COLOURED AND PLACED AGAINST THE BARS IT CROSSES, NOT AGAINST THE PAGE.
+  //
+  // Measured on the committed still before this existed: the rule was `stroke={accent}` — 5.18:1
+  // against the white page it is nominally drawn on, and **1.20:1 against the `#616161` bar it
+  // spends 97 % of its length inside**. It was not a faint rule, it was an invisible one, and
+  // nothing could have said so, because the only contrast check in this file measures ink against
+  // the GROUND. See `twin-chart-beat/scripts/annotation-ink.mjs`.
+  const barMarks = bars.map((b) => ({
+    x: b.x,
+    y: b.y,
+    width: Math.max(b.width - 1, 0),
+    height: b.height,
+    fill: muted,
+  }));
+  const medianRuleBox = {
+    x: medianX - MEDIAN_RULE.width / 2,
+    y: plot.top,
+    width: MEDIAN_RULE.width,
+    height: plot.bottom - plot.top,
+  };
+  // The ground belongs in this set: the rule runs from `plot.top`, so it crosses bare page above
+  // the tallest bar as well as the bar itself. That is what forces the answer to a near-black rule
+  // rather than a near-white one — white reads on the bar and vanishes on the page.
+  const medianRuleInk = inkThatReadsOver(
+    [ground, ...marksUnder(medianRuleBox, barMarks).map((m) => m.fill)],
+    NON_TEXT_CONTRAST_FLOOR,
+  );
+
+  // The label is a POSITION problem, not a colour one: lying partly on the page and partly on a
+  // mid-grey bar, no ink clears 4.5:1 on both (black is 3.39:1 on the bar, white is 1.00:1 on the
+  // page). So it is pushed right, past the right edge of every bar it would otherwise sit on, until
+  // it stands on one background — then inked against that. Derived from the bars' own geometry, so
+  // a different median or a different distribution moves it without anyone retyping an offset.
+  const labelBand = measureTextBand(medianLabel, NOTE);
+  const labelWidth = measureText(medianLabel, NOTE);
+  const labelBaseline = plot.top + 16;
+  let labelX = medianX + MEDIAN_LABEL_GAP;
+  const labelBoxAt = (at: number) =>
+    inkBox({
+      x: at,
+      y: labelBaseline,
+      width: labelWidth,
+      ascent: labelBand.ascent,
+      descent: labelBand.descent,
+    });
+  for (let pass = 0; pass <= bars.length; pass++) {
+    const blocking = marksUnder(labelBoxAt(labelX), barMarks);
+    if (!blocking.length) break;
+    labelX = Math.max(...blocking.map((m) => m.x + m.width)) + MEDIAN_LABEL_GAP;
+  }
+  if (labelX + labelWidth > plot.right) {
+    throw new Error(
+      `"${medianLabel}" is ${labelWidth.toFixed(1)}px wide and every position clear of the bars ` +
+        `starts at x=${labelX.toFixed(1)}, past the plot's right edge at ${plot.right.toFixed(1)}. ` +
+        `A shorter label, or a taller frame, or the label goes above the plot — but it does not get ` +
+        `drawn where it cannot be read.`,
+    );
+  }
+  const labelInk = inkThatReadsOver(
+    [ground, ...marksUnder(labelBoxAt(labelX), barMarks).map((m) => m.fill)],
+    textContrastFloor(NOTE),
+  );
 
   return (
     <svg
@@ -286,23 +367,23 @@ export function CarbonFootprintHistogram({
         CO2 emissions per capita (tonnes/year)
       </text>
 
-      {/* The median: one accent colour, not the bars' own fill repeated as a second signal
-          (`references/types/histogram.md`'s own worked example). Label in ink — a colour safe as
-          a bar fill is not automatically safe as text, the same lesson the doctrine's own vermillion
-          case teaches. */}
+      {/* The median. `references/types/histogram.md`'s worked example asks for one distinct signal,
+          not the bars' own fill repeated — and the accent is not it here: an accent rule that spends
+          its length inside a mid-grey bar carries no signal at all, at 1.20:1. Both the rule's ink
+          and the label's position are derived above, from the bars they meet. */}
       <line
         x1={medianX}
         x2={medianX}
         y1={plot.top}
         y2={plot.bottom}
-        stroke={accent}
-        strokeWidth={2}
-        strokeDasharray="6 4"
+        stroke={medianRuleInk}
+        strokeWidth={MEDIAN_RULE.width}
+        strokeDasharray={MEDIAN_RULE.dash}
       />
       <text
-        x={medianX + 8}
-        y={plot.top + 16}
-        fill={ink}
+        x={labelX}
+        y={labelBaseline}
+        fill={labelInk}
         fontSize={NOTE.fontSize}
         fontWeight={NOTE.fontWeight}
       >

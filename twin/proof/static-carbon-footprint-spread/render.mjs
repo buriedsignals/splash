@@ -78,7 +78,10 @@ async function main() {
       // better number.
       alt: `Histogram of CO2 emissions per capita across ${values.length} countries in 2023, in ${BIN_WIDTH}-tonne bins from 0 to ${topBin.lo} and above. The distribution is heavily right-skewed: ${bins[0].count} countries sit in the 0-${BIN_WIDTH} tonne bin, more than any other bin; the rest thin out into a long tail, topped by ${topBinCountries.join(" and ")} alone above ${topBin.lo} tonnes, at ${Math.max(...values).toFixed(1)} tonnes. A dashed median line sits at ${med.toFixed(1)} tonnes.`,
       ground: "#FFFFFF",
-      accent: "#0B7A75",
+      // No accent is passed. This beat's one annotation is the median rule, and it runs through
+      // the tallest bar, where `#0B7A75` measured 1.20:1 — see the component's own props comment
+      // and `references/types/histogram.md`'s amendment. The rule's ink is derived from the marks
+      // it crosses instead, which on this ground and these bars is near-black.
       median: med,
       medianLabel: `Median: ${med.toFixed(1)} t`,
     }),

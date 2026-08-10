@@ -43,3 +43,16 @@ because it reads fine as a bar fill (Okabe-Ito vermillion, which clears every CV
 text needs. The fix generalizes past this one chart: a color that's safe on a shape is not
 automatically safe as a label. If the median gets a value label, render the label in ink and
 reserve the accent color for the mark itself (the line, not the number next to it).
+
+**Amendment, measured 2026-08-10 on `proof/static-carbon-footprint-spread`.** "Reserve the accent
+for the line" holds only while the line can be SEEN in it. A histogram's median rule runs from the
+top of the plot to the baseline, so on a right-skewed distribution it spends nearly its whole length
+*inside the tallest bar* — and it is then measured against that bar's fill, not against the page.
+Measured on the committed still: `#0B7A75` against the `#FFFFFF` page is 5.18:1 and against the
+`#616161` bar it crosses for 97 % of its length is **1.20:1**. There is no ink that reads at 3:1
+over both a white page and a mid-grey bar except a near-black one, so on this beat the median rule
+is near-black and the beat takes no accent at all. Derive it — `marksUnder` then `inkThatReadsOver`,
+`twin-chart-beat/scripts/annotation-ink.mjs` — rather than typing either colour. A rule a reader
+cannot see was not carrying the accent either. The same arithmetic moves the median's LABEL: it
+cannot be inked at all while it lies half on the page and half on a bar, so it is pushed clear of
+every bar it would sit on and then inked against what is left.
