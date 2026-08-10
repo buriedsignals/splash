@@ -109,20 +109,51 @@ const ALREADY_ROW_DRIVEN = ["population-pyramid"];
  * Aspect ranges MEASURED by rendering, with where each came from. `plot width / plot height`.
  *
  * `suspect` is carried in the data rather than in a comment because it changes what a caller should
- * do: the line's floor was learned from a square render that already contained the defect, so a
- * line that lands exactly at 0.8 has satisfied a number the probe distrusts. It is used as given so
- * comparisons stay honest, and it is reported.
+ * CONCLUDE from a pass. It began as the line's own warning that its floor came from an
+ * already-stretched square render; that floor has since been re-measured, and the field now carries
+ * the thing a passing line still must not be read as proving — that its labels fit. A guard's
+ * silence is only as wide as what it looks at.
  */
 export const MEASURED_ASPECT = {
   histogram: { min: 1.1, max: 2.9, from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md" },
+  // RE-MEASURED 2026-08-11. Both ends moved, and neither moved the way the corpus expected.
+  //
+  // The old range was 0.8–1.8 and BOTH bounds were unusable. The floor was the SQUARE render's
+  // 0.81:1 from a three-point derivation, and that render "was itself already stretched" — this
+  // file carried the doubt in a `suspect` field for exactly as long as nobody re-measured. The
+  // ceiling of 1.8 sat UNDER this corpus's own accepted landscape line at 1.94:1, so a line could
+  // not satisfy its own range at a table size; `proof/life-expectancy` delivers 2.4:1 at square and
+  // 2.55:1 at portrait and recorded that as a finding for the table's owner rather than a defect.
+  //
+  // Swept and opened (ten arms at 900px plot / 26px type, and six more at the phone's own regime,
+  // 700px / 36px, because a bound learned at one ratio of type to plot is worth nothing until it
+  // has been checked at the other one this toolchain exports — the range did not move between
+  // them). What bounds a line is its SLOPE, which is the one quantity an aspect change destroys
+  // (Cleveland's banking-to-45°, formalised by Heer & Agrawala 2006).
   line: {
-    min: 0.8,
-    max: 1.8,
+    min: 0.7,
+    max: 3.6,
+    from: "proof/aspect-range-probe/ASPECT-VERDICT.md §6 — arms 0.5 through 4.5, both regimes",
+    countedOn: "one series over 74 annual readings, directly end-labelled",
+    reads:
+      "arms/line-0p7.png at 53.3° end to end, and arms/line-3p6.png at 14.6°, where the 2020 dip " +
+      "is small and still present",
+    breaks:
+      "arms/line-0p5.png — 62° end to end, past banking-to-45° by 17°, so a steady 34-year climb " +
+      "reads as a cliff and the 1950s year-to-year noise reads as drama; and arms/line-4p5.png — " +
+      "11.8°, where the 2020 dip and the 1962 one have both gone. The trend survives at 4.5:1; " +
+      "every event inside it does not.",
+    // Kept, because the field's job is to change what a caller may conclude — and what it says now
+    // is the opposite of what it used to say.
     suspect:
-      "the floor is the SQUARE render's 0.81:1, and that render was itself already stretched — " +
-      "PORTRAIT-VERDICT.md distrusts it. Derive a line's range from its landscape and base renders " +
-      "only, or state it as a slope target (Cleveland's bank-to-45°, Heer & Agrawala 2006).",
-    from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
+      "the SQUARE defect this range used to be blamed for is not an aspect defect. " +
+      "vidx-line-life-expectancy at square passes at 0.83:1 and is unpublishable, and the probe " +
+      "settled why: the same 0.83:1 READS at 700px of plot width and the same defects appear at " +
+      "1.5:1 — comfortably inside this range — once the plot is the 370px that beat's own end-label " +
+      "gutter leaves it. The failure travels with the plot's WIDTH against the ink drawn in it, and " +
+      "it is aspect-blind. Tightening this floor would refuse a picture that reads and still pass " +
+      "the one that does not; the honest instrument is a measured minimum plot width, or the " +
+      "annotation-over-marks guard.",
   },
   // The COLUMN form of a ranking, kept because it was measured and because it is what the probe's
   // A and B arms rendered — not because it is reachable. `ranking` itself is a band-scale type, so

@@ -58,6 +58,19 @@
  *   a range's `from` set to "measured by eye"                       RED — 42/2, on both the
  *        `proof/` address and the probe name
  *
+ * THE LINE'S RE-MEASURED RANGE, same sandbox, baseline 47 pass / 0 fail:
+ *
+ *   the ceiling put back to 1.8                                     RED — 46/1. It sat under this
+ *        corpus's own accepted landscape line at 1.94:1, so a line could not satisfy its own range
+ *        at a table size.
+ *   the floor raised to 1.0 — the "fix" the square defect invites   RED — 46/1, but only after the
+ *        floor was tied to the arms that bracket it. **The first run of this mutation was GREEN**,
+ *        which is the honest reading: nothing held the floor, so it was free to drift upward and
+ *        refuse a picture the sweep says reads. `assertPlotAspect` is now asserted to accept 0.83
+ *        and to refuse 0.5, both against opened arms.
+ *   `suspect` softened into "raise the floor and it goes away"      RED — 46/1. The field's job is
+ *        to change what a caller concludes, and the conclusion here is the opposite.
+ *
  * THE PYRAMID AS A BAND-SCALE TYPE, same sandbox, baseline 45 pass / 0 fail:
  *
  *   `population-pyramid` removed from BAND_SCALE_TYPES everywhere   RED — 44/1
@@ -360,6 +373,49 @@ describe("whether a type can enter a size at all", () => {
     expect(MEASURED_ASPECT["population-pyramid"]).toBeUndefined();
   });
 
+  it("should hold a line's re-measured range wide enough for the frames this corpus delivers", () => {
+    // The failure the old 0.8–1.8 encoded, asserted so it cannot come back: the ceiling sat UNDER
+    // this corpus's own accepted landscape line at 1.94:1, so a line could not satisfy its own
+    // range at a table size, and `proof/life-expectancy` delivers 2.4:1 at square and 2.55:1 at
+    // portrait. Both are inside the swept range; `more-line-swiss-life-expectancy`'s 6.02:1 and
+    // 4.43:1 stay outside it, which is why that beat still ships landscape only.
+    const line = MEASURED_ASPECT.line;
+    for (const delivered of [1.94, 2.4, 2.55])
+      expect([
+        delivered,
+        delivered >= line.min && delivered <= line.max,
+      ]).toEqual([delivered, true]);
+    for (const refused of [6.02, 4.43, 0.25])
+      expect([refused, refused >= line.min && refused <= line.max]).toEqual([
+        refused,
+        false,
+      ]);
+    // THE FLOOR, held against the arms that bracket it, in both directions. Without the first of
+    // these the floor is free to drift upward and nothing goes red — and drifting it upward is
+    // precisely the "fix" the square defect invites, which the sweep showed would refuse a picture
+    // that reads (`arms/line-0p83.png`, and the same aspect at the phone's regime) while still
+    // passing the one that does not (the same beat at 1.5:1 on a 370px plot).
+    expect(assertPlotAspect(flatFor(0.83), "line", "square").verdict).toBe(
+      "clamp",
+    );
+    expect(() => assertPlotAspect(flatFor(0.5), "line", "square")).toThrow(
+      /too TALL/,
+    );
+  });
+
+  it("should say, on the line, what a passing aspect still does NOT prove", () => {
+    // `suspect` earns its place by changing what a caller may CONCLUDE. It used to say the floor
+    // came from an already-stretched render; the sweep replaced that with the finding that
+    // supersedes it — the square defect this range was blamed for is aspect-blind, because the same
+    // 0.83:1 reads at 700px of plot width and fails at 370px, and 1.5:1 fails there too.
+    const suspect = formForSize("line", "portrait").suspect ?? "";
+    expect(suspect).toContain("aspect-blind");
+    expect(suspect).toContain("plot's WIDTH");
+    // It must not tell a caller to tighten the bound, which is the fix that would refuse a picture
+    // that reads and still pass the one that does not.
+    expect(suspect).not.toMatch(/raise the (floor|min)/i);
+  });
+
   it("should NOT transpose a type whose category axis is a continuum", () => {
     // "rotating a scatterplot would violate conventions of reading direction… Line charts also
     // resist rotation" — Horak et al. §2.4.2. The probe deliberately rendered no transposed arm
@@ -395,7 +451,13 @@ describe("whether a type can enter a size at all", () => {
     // The method's own rule made mechanical: a bound is only a measurement if one rendered arm
     // reads and another does not. The three-point method that preceded it could not state this,
     // and that is exactly how the line inherited a floor from a render the probe distrusted.
-    for (const type of ["waterfall", "slope", "small-multiples", "bump"]) {
+    for (const type of [
+      "waterfall",
+      "slope",
+      "small-multiples",
+      "bump",
+      "line",
+    ]) {
       const range = MEASURED_ASPECT[type];
       expect([type, typeof range.reads, typeof range.breaks]).toEqual([
         type,

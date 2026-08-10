@@ -12,7 +12,7 @@ carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
 
 **Why landscape, and what the other two sizes cost.** A line resists rotation — its x axis is
 time, read left to right — so it has no twin form. What it has is the one MEASURED aspect range in
-this lot (0.8:1 to 1.8:1, `type-at-size.mjs`), so square and portrait are `clamp` rather than
+this lot (0.7:1 to 3.6:1, `type-at-size.mjs`), so square and portrait are `clamp` rather than
 `refuse` and `assertPlotAspect` decides them at render time instead of a comment deciding them
 here. Landscape is pinned because it is R2's row for video and because a slope read at 16:9 is the
 shape this beat's claim was written against; the 1080 x 1080 it used to draw at was not a
@@ -23,9 +23,22 @@ refusal is the guard's own: the plot comes back 285 x 1158 — 0.25:1 — becaus
 need a gutter that is more than half of a 1080 px frame, and `assertPlotAspect` names the range it
 is outside. Square PASSES both guards at 0.83:1 and is still a chart nobody should publish: the
 render was opened, and the "80 years" reference label sits across both lines while the end labels
-overflow the plot to the frame's edge. That is a datum about the range and not only about this
-beat — 0.8 is the floor `type-at-size.mjs` carries with `suspect` set on it, learned from a square
-render that was already stretched. It is used as given here, and it is reported.
+overflow the plot to the frame's edge.
+
+**That datum was taken to be about the RANGE, and it is not — settled 2026-08-11 by rendering.**
+The reading here was that 0.8 is too permissive a floor. `proof/aspect-range-probe/` swept the line
+and then rebuilt this exact configuration — two series, a reference level, the phone's own 36px
+floor — at two plot widths, and the answer is unambiguous: at **700px** of plot (what a 1080 frame
+gives once a normal end-label gutter is paid for) the same **0.83:1 reads**, with zero lines under
+the reference label and the end labels 66px apart; at **370px** — the width this beat's own labels
+("Switzerland · 83.95 years" takes 55% of the frame) actually leave it — the reference label lies on
+both lines, the year labels collapse into a smear, and **1.5:1 fails there in exactly the same way**,
+comfortably inside any range. The defect travels with the plot's WIDTH against the ink drawn in it
+and is aspect-blind. Tightening the floor would refuse a picture that reads and still pass the one
+that does not, so the range was corrected to what the sweep measured (**0.7–3.6**, both ends
+re-bracketed) and this beat's defect is named for what it is: label placement, whose instruments are
+a measured minimum plot width or the annotation-over-marks guard. Both refusal and pass here are
+unchanged: portrait still refuses at 0.25:1, square still passes at 0.83:1.
 
 **Proves:** since 1990, Switzerland's life expectancy at birth has stayed continuously above
 France's — both countries crossed 80 years, and by 2023 they sit within a year of each other.

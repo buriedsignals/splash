@@ -56,8 +56,8 @@ square are refused by `assertPlotAspect`, which is the guard for a type with no 
 | size | plot | aspect | verdict |
 |---|---|---|---|
 | landscape | 1232 x 634 | 1.94:1 | ships (`formForSize` answers `as-is` — landscape is the frame this corpus was designed at, and is not clamped) |
-| square | 722 x 120 | **6.02:1** | refused, outside `line`'s measured 0.8–1.8 |
-| portrait | 722 x 163 | **4.43:1** | refused, outside `line`'s measured 0.8–1.8 |
+| square | 722 x 120 | **6.02:1** | refused, outside `line`'s measured 0.7–3.6 |
+| portrait | 722 x 163 | **4.43:1** | refused, outside `line`'s measured 0.7–3.6 |
 
 **A line's argument is its slope, so an aspect nobody chose is a slope nobody chose** — and at 6:1
 the 15-year climb this beat exists to show reads as a shallow drift. Nothing is clipped and nothing
@@ -80,12 +80,22 @@ that costs under a quarter of the frame's width, and above that it sits over the
 right-aligned to the plot's own edge. Still direct, never a legend. Without it the portrait plot
 was 200 px wide instead of 722.
 
-## A finding for the shared table, not fixed here
+## The finding this beat raised, and how it was settled
 
-`MEASURED_ASPECT.line` in `type-at-size.mjs` records **0.8–1.8**, taken from the portrait probe's own
-renders. This beat's ACCEPTED landscape render measures **1.94:1** — outside its own type's recorded
-range, and it only passes because `formForSize` exempts landscape. The range was measured at 900x560
-and at the probe's frames, not at 16:9, so a line drawn at a table size can never satisfy it. The
-file already distrusts the floor of that range in writing (`suspect`); this is the same doubt about
-its ceiling, with a rendered number attached. Not changed here — 22 vendored copies of that file
-move together and it belongs to whoever owns the table.
+`MEASURED_ASPECT.line` used to record **0.8–1.8**, taken from the portrait probe's three-point
+derivation. This beat's ACCEPTED landscape render measures **1.94:1** — outside its own type's
+recorded range, passing only because `formForSize` exempts landscape — and that was reported here
+as a finding for the table's owner rather than worked around.
+
+**Settled 2026-08-11 by re-measuring** (`proof/aspect-range-probe/ASPECT-VERDICT.md` §6). The range
+is now **0.7–3.6**, swept rather than derived from three accepted frames, with both bounds bracketed
+by arms that were opened: 0.5:1 breaks (62° end to end — a steady climb read as a cliff) and 0.7:1
+reads; 3.6:1 reads (the 2020 dip small and still present) and 4.5:1 breaks (the dip gone). 1.94:1
+now sits comfortably inside it. **This beat's two refusals are unchanged** — 6.02:1 and 4.43:1 are
+outside the new ceiling too — so it still ships landscape only, and for the reason the section above
+gives: the title, which the ladder has no rung for.
+
+The one thing the wider range does NOT buy, recorded because a wider bound invites the assumption:
+it does not make a narrow plot safe. The same probe showed a two-series line failing at 0.83:1 and
+at 1.5:1 alike once its plot is 370px wide — the defect travels with the plot's WIDTH against the
+ink drawn in it, and `assertPlotAspect` is blind to it by construction.
