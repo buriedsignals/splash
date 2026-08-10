@@ -31,11 +31,12 @@
  *    reported is real: the scrolly column shows four beats where six exist. Those three briefs and
  *    `portrait-aspect-probe` — a probe workspace that is not a beat at all — belong to other
  *    chantiers, so the residue is reported here rather than edited.
- * 3. AN UNTRACKED DIRECTORY UNDER `proof/`. `readBeats()` walks the filesystem, so a folder another
- *    session has not committed yet counts. `MATRIX.md` was regenerated for this commit with one such
- *    folder (`scrolly-mixed-grinnell-ice`) moved aside, so the committed table describes the
- *    committed tree; a working copy holding in-flight beats will see this red and should regenerate
- *    rather than edit the file.
+ * 3. A BEAT NOBODY HAS COMMITTED YET. `MATRIX.md` is a committed artifact, so `matrix.mjs` skips a
+ *    `proof/<name>/` that git does not track — on BOTH its paths, write and check, because a rule
+ *    two callers read two ways is the drift that script exists to end. A new beat enters the table
+ *    the moment it is committed. This was not cosmetic: seven sessions share this worktree, and
+ *    reddening everybody's check because one of them has an uncommitted folder is how a check
+ *    becomes a thing people learn to regenerate past.
  *
  * THE MUTATION THAT REDDENS IT, run in a copy of the tree under /tmp, never here: one row of
  * `MATRIX.md` edited by hand (`static-world-population` -> `static-world-populations`).
@@ -46,6 +47,10 @@
  *   (fail) the generated coverage map still describes the tree > should match what
  *          scripts/matrix.mjs produces from proof/ today
  *    1 pass · 1 fail
+ *
+ * And a second, from the same copy: `git add`-ing the untracked beat so it becomes tracked reddens
+ * the check too, which is blind spot 3 working in the direction that matters — a beat enters the
+ * table when it is committed, and the table has to be regenerated then.
  *
  * And the mutation that reddened the FIRST DRAFT OF THIS FILE, which is the more useful one: the
  * same hand-edit, with a `--help` liveness probe above it. GREEN — because the probe rewrote

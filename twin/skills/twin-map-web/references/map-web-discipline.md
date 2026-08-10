@@ -101,6 +101,28 @@ Zoomed, the box must clip, and the zoom rule sets `overflow: auto`.
 
 ## The plate strategy
 
+**Read this section knowing what the plate now IS.** Ruling R1 (2026-08-10) made the ground a live
+MapTiler map; the baked plate became **layer 1, the fallback** — what a reader gets with JavaScript
+off, offline, on a CMS whose Content-Security-Policy refuses `api.maptiler.com`, and on the day the
+account's keys are invalidated. Everything below is still true of that layer and is why it is still
+baked generously rather than cheaply; none of it decides the resolution a reader normally sees any
+more, because normally the canvas is vector tiles at the device's own pixel ratio. `PLATE_SIZE` is
+now a payload argument first and a sharpness argument second: it is inlined as a `data:` URI in
+every delivered file, beside 803 KB of maplibre-gl.
+
+**And this is where B5.1 stops being one question.** The owner's rule — *the map takes the full
+available width and no more than the available height* — is now TRUE of the live layer and
+STRUCTURALLY FALSE of the fallback, and that is a trade rather than an oversight. Measured on
+`proof/mapgen-symbol-web/quake-symbol.html` at 1600×900: live, the canvas is 1568×593, **98 % of the
+window's width**; unkeyed, the same page draws its square plate at 593×593, **37 %**. A square raster
+cannot fill a 2.64:1 box without a non-uniform scale, and a non-uniform scale is a lie about distance
+and shape — so the outcomes available for the fallback are "smaller and correct" or "full width and
+false", and this genre takes the first. The live layer has no plate aspect to preserve (the canvas IS
+the container), which is why `html.mw-live .mw-viewport` sets `aspect-ratio: auto !important` and the
+map takes the whole stage. What is common to both layers, and what B5.1 actually asked for, is that
+**the beat is never taller than the window**: measured at 1600/1024/768/375, the symbol beat's own
+column ends at 884/752/1008/796 px against windows of 900/768/1024/812.
+
 **The ground is a baked raster plate, not vector geometry.** Stretching it to an arbitrary width
 either distorts the geography (a non-uniform scale — ruled out entirely, see above: `aspect-ratio`
 guarantees the scale this genre ever applies is uniform) or, if the display width exceeds the plate's
@@ -132,7 +154,11 @@ at the cost of a heavier bake and a larger embedded PNG, because the old size wa
 **Where the bound genuinely lives, if one is needed at all: the bake's own resolution, not the
 display width.** If a future beat needs to look crisp at containers meaningfully wider than 1600px,
 the fix is raising `PLATE_SIZE`, not adding a CSS `max-width` back — the display-time cap is exactly
-the mistake this section's own first paragraph describes.
+the mistake this section's own first paragraph describes. **Since R1, the honest reason to raise it
+is narrower than it was**: the reader who sees the plate at 1600px is the reader whose live layer did
+not boot, and for them a slightly soft basemap is the smallest of the day's problems. The reason to
+LOWER it is now real and was not before — every kilobyte of plate ships in a file that already
+carries the library.
 
 ## Text is HTML, not SVG
 
@@ -603,6 +629,44 @@ own data: for that beat it is the zoom at which the closest pair of events stops
 (`separationHeadroom` — a camera-scaled circle holds its screen size as the reader zooms, so each
 doubling doubles the distance between two centres while the radii stay put), which comes out at
 4.58 levels and is the same number at every container shape.
+
+**Three more things the leash and the fit got wrong, each found by looking at a delivered page
+rather than by reading code, each fixed in the shared `live-map.mjs` and re-vendored to all five
+beats:**
+
+- **A leash that clamps is a leash that crops.** `leash()` ended with `setMaxBounds(getBounds())`.
+  When the whole world fits inside the canvas, `getBounds()` returns MORE than 360° — the empty
+  margin either side of the world counts — and MapLibre's own constraint clamps a longitude range to
+  one world width by RAISING the zoom. Traced on `proof/mapgen-hexgrid-web`: that one call took the
+  fitted zoom from **0.960 to 2.417**, so a beat titled *"not spread evenly across the globe"* opened
+  on eight hexagons over the Great Lakes while its own fallback drew the planet. Two claims, one swap
+  apart. There is nothing to leash a reader to when the world is already on screen, so at
+  `visibleLonSpan >= 360` nothing is set.
+- **`fitToStudy` floored the world at zoom 0.** It called `setMinZoom(0)` before fitting; a planet
+  needs zoom −1.06 in a 341 px box, and MapLibre's own floor is −2 (`setMinZoom` refuses less). Now
+  −2, and the fit reaches −0.16 on a phone instead of being pinned.
+- **The fit padding was a flat 48 px.** At 375×667 the stage is 341 × 178, so 48 px each side takes
+  **96 of 178 px — 54 % of the height** — and `fitBounds` answered by dropping to zoom 0 with Europe
+  a blob and five labels stacked. It is now 9 % of the shorter side, capped at 48: every container
+  from 1600 down to 768 keeps the old number exactly, and a phone gets a padding proportional to
+  what it has. The constructor still uses the ceiling because it has no canvas to measure yet, and
+  `map.on("load")` re-fits with the padding the container earns.
+
+**And one rule per mark type that only shows up at the bottom end.** A `radius: "ground"` layer — a
+dot standing for a fixed number of people in a fixed piece of ground — must keep its GROUND area, so
+its screen radius halves for every zoom level the reader pulls back. Below some radius a circle stops
+being drawn at all and the encoding is simply gone: measured on `proof/mapgen-dot-web` at 375×812,
+the live field deposited **6 % of the ink the baked plate deposits over the same ground** (0.0119
+against 0.1856) under a caption reading *"2,996 dots drawn for 596,770,599 people"*. So a ground
+layer may declare `radiusFloorPx`, derived as the radius at which the live field deposits what the
+plate's field deposits, and the beat's own caveat states what it costs (where the floor binds, a dot
+covers more ground than it stands for). **The trap, because it will catch the next person:**
+`["max", <the zoom expression>, floor]` is SILENTLY REJECTED — MapLibre refuses a `["zoom"]`
+expression nested inside another, `setPaintProperty` becomes a no-op, and five different floors
+render identically. The floor has to be stops of one top-level interpolation, which needs the zoom
+where the rule crosses it (`bakeZoom + log2(floor / r)`) — a number that exists only when every mark
+in the layer shares one radius. `groundRadiusExpression` therefore refuses a floor without a declared
+`uniformRadius`, naming why.
 
 ## What must not become interactive
 

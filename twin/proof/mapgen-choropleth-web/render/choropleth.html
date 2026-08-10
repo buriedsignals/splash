@@ -548,16 +548,54 @@ function cameraScale(plan, map) {
  * Written as an interpolation rather than computed per frame because it has to be true DURING a
  * zoom gesture, not only after it settles.
  */
-function groundRadiusExpression(bakeZoom) {
+function groundRadiusExpression(bakeZoom, options) {
   const span = 6;
+  const floorPx = options && options.floorPx > 0 ? options.floorPx : 0;
+  if (!floorPx)
+    return [
+      "interpolate",
+      ["exponential", 2],
+      ["zoom"],
+      bakeZoom - span,
+      ["/", ["get", "r"], Math.pow(2, span)],
+      bakeZoom + span,
+      ["*", ["get", "r"], Math.pow(2, span)],
+    ];
+  // THE FLOOR, and why it cannot be written the obvious way.
+  //
+  // Measured on `proof/mapgen-dot-web` at 375x812: the live field deposited **6% of the ink the
+  // baked plate deposits over the same ground** — 0.0119 against 0.1856 — because the ground rule
+  // had shrunk every dot to 0.50px. The page still said "2,996 dots drawn for 596,770,599 people"
+  // over a map with no dots on it. Below some radius a circle stops being drawn and the encoding is
+  // simply gone, so the ground rule needs a bottom.
+  //
+  // `["max", <the expression above>, floorPx]` is the obvious way and MapLibre SILENTLY REJECTS IT:
+  // a `["zoom"]` expression may not be nested inside another expression, `setPaintProperty` becomes
+  // a no-op, and five different floors render identically. Found by rendering all five and
+  // comparing the pictures, not by an error. So the floor has to be expressed as STOPS of one
+  // top-level interpolation — which needs the zoom at which the ground rule crosses the floor, and
+  // that zoom depends on the radius, so it exists only if every mark in the layer shares one.
+  const uniform = options.uniformRadius;
+  if (!(uniform > 0))
+    throw new Error(
+      "a ground-scaled layer asked for a radius floor of " +
+        floorPx +
+        "px but declared no `uniformRadius`. The floor is a zoom breakpoint (`bakeZoom + log2(floor / r)`) " +
+        "and MapLibre refuses a zoom expression nested inside a `max`, so the breakpoint has to be a " +
+        "number — which exists only when every mark in the layer is drawn at one radius. A layer whose " +
+        "marks differ in size cannot take a floor this way.",
+    );
+  const breakZoom = bakeZoom + Math.log2(floorPx / uniform);
   return [
     "interpolate",
     ["exponential", 2],
     ["zoom"],
-    bakeZoom - span,
-    ["/", ["get", "r"], Math.pow(2, span)],
-    bakeZoom + span,
-    ["*", ["get", "r"], Math.pow(2, span)],
+    breakZoom - span,
+    floorPx,
+    breakZoom,
+    floorPx,
+    breakZoom + span,
+    floorPx * Math.pow(2, span),
   ];
 }
 
@@ -602,7 +640,9 @@ function initLiveMap(win) {
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
-    fitBoundsOptions: { padding: FIT_PADDING_PX, animate: false },
+    // The constructor has no canvas to measure yet, so the FIRST fit takes the ceiling and
+    // `map.on("load")`'s `fitToStudy` immediately re-fits with the padding this container earns.
+    fitBoundsOptions: { padding: MAX_FIT_PADDING_PX, animate: false },
     maxZoom: 22,
     attributionControl: false,
   });
@@ -636,7 +676,11 @@ function initLiveMap(win) {
       // sets the real number. Adding a circle layer with no radius at all would draw MapLibre's own
       // default 5px for one frame, which is a visible flash of the wrong circle.
       if (layer.radius === "camera") paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
-      else if (layer.radius === "ground") paint["circle-radius"] = groundRadiusExpression(plan.bakeZoom);
+      else if (layer.radius === "ground")
+        paint["circle-radius"] = groundRadiusExpression(plan.bakeZoom, {
+          floorPx: layer.radiusFloorPx,
+          uniformRadius: layer.uniformRadius,
+        });
       else if (layer.radius === "fixed") paint["circle-radius"] = ["get", "r"];
       map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: paint });
     }
@@ -646,7 +690,10 @@ function initLiveMap(win) {
     fallback.hidden = true;
     doc.documentElement.classList.add("mw-live");
     map.resize();
-    leash(map, plan);
+    // `fitToStudy`, not `leash` alone: the constructor fitted with the ceiling padding because it
+    // had no canvas to measure yet, and on a short viewport that ceiling is more than half the
+    // height. This is the first fit that knows the container.
+    fitToStudy(map, plan);
     applyMarkScale(map, doc, plan);
     applyFilter(map, doc, plan);
   });
@@ -678,9 +725,30 @@ function initLiveMap(win) {
   return map;
 }
 
-/** The room left around the study set when the camera fits it. ONE constant, read by the first fit
- *  and by every re-fit — they must stay equal or a container resize makes the map jump. */
-const FIT_PADDING_PX = 48;
+/** The most room this genre ever leaves around the study set, in CSS pixels. A ceiling, not the
+ *  value — `fitPadding` below is what a fit actually uses. */
+const MAX_FIT_PADDING_PX = 48;
+
+/**
+ * The room left around the study set when the camera fits it — **a fraction of the box being
+ * padded, capped at the ceiling above**, read by the first fit and by every re-fit so the two can
+ * never disagree and make a resize jump.
+ *
+ * It was a flat 48px, and that is fine until the box is small. Measured on `proof/mapgen-dot-web`
+ * at 375x667: the stage is 341 x 178, so 48px of padding on each side takes **96 of 178px — 54% of
+ * the height** — and `fitBounds` answered by dropping to zoom 0, showing 240° of longitude with
+ * Europe as a blob and five labels stacked on each other. The same camera at 375x812 is fine, so it
+ * only appears on a short viewport, which is why nothing caught it.
+ *
+ * 9% of the shorter side keeps every container this genre has been driven at 1600 down to 768 at the
+ * old 48 exactly, and hands a phone a padding proportional to what it has.
+ */
+function fitPadding(map) {
+  const canvas = map.getCanvas();
+  const shorter = Math.min(canvas.clientWidth || 0, canvas.clientHeight || 0);
+  if (!(shorter > 0)) return MAX_FIT_PADDING_PX;
+  return Math.min(MAX_FIT_PADDING_PX, Math.round(shorter * 0.09));
+}
 
 /**
  * The reader's leash, set once the camera has actually been fitted.
@@ -709,7 +777,17 @@ function leash(map, plan) {
   // minimum zoom that is the whole claim and there is nothing to pan to, which is correct; zoomed
   // in, a reader moves within the subject's own area and no further. Set after the fit, because a
   // bound set before it constrains the fit — which is how it came to crop the claim.
-  map.setMaxBounds(visible);
+  //
+  // EXCEPT AT PLANET EXTENT, where setting it crops the claim in the OTHER direction. When the whole
+  // world fits inside the canvas, `getBounds()` returns more than 360° of longitude — the empty
+  // margin either side of the world counts — and MapLibre's own constraint clamps a longitude range
+  // to one world width and RAISES THE ZOOM to make it fit. Traced on `proof/mapgen-hexgrid-web`:
+  // this one call took the fitted zoom from 0.960 to 2.417, so a beat whose title says "not spread
+  // evenly across the globe" opened on eight hexagons over the Great Lakes while its own fallback
+  // drew the whole planet. There is nothing to leash a reader to when the world is already on
+  // screen, so nothing is set.
+  if (visibleLonSpan < 360) map.setMaxBounds(visible);
+  else map.setMaxBounds(null);
 }
 
 /**
@@ -723,13 +801,17 @@ function leash(map, plan) {
  */
 function fitToStudy(map, plan) {
   map.setMaxBounds(null);
-  map.setMinZoom(0);
+  // `-2`, not `0`, and it is MapLibre's own floor rather than a number of ours (`setMinZoom` refuses
+  // anything below it). A planet needs zoom -1.06 to fit a 341px box; floored at 0 the fit could not
+  // reach it and returned a cropped world instead. Measured on `proof/mapgen-hexgrid-web`, where the
+  // same fit reaches -1.279 once the floor allows it.
+  map.setMinZoom(-2);
   map.fitBounds(
     [
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
-    { padding: FIT_PADDING_PX, animate: false },
+    { padding: fitPadding(map), animate: false },
   );
   leash(map, plan);
 }

@@ -286,13 +286,13 @@ export function partsInFrame(
  * the dots are the same dots, read back through the same projection that made them, so the live
  * field and the fallback field are one scatter seen twice rather than two scatters that can drift.
  *
- * Deliberately left OUT of `geo-parity.test.ts`'s tagged set, and that is a limitation rather than
- * an oversight. `proof/mapgen-hexgrid-web/geo-hex.ts` and `proof/mapscrolly-quakes-three-ways/
- * geo-hex.ts` already declare this function, byte-identical to this copy and untagged, and that
- * walk's second assertion reddens every file declaring a name tagged ANYWHERE without carrying the
- * tag itself — so tagging this one copy alone reddens two beats that are not this beat's to edit.
- * Measured: doing it turned that suite from green to two failures naming exactly those two files.
- * Tagging all three together is the right close, and it belongs to whoever owns all three.
+ * Under `geo-parity.test.ts`'s walk, in all three copies at once — `proof/mapgen-hexgrid-web/geo-hex.ts`
+ * and `proof/mapscrolly-quakes-three-ways/geo-hex.ts` carry the same tag on the same byte-identical
+ * body. It had to be all three in one edit: that walk's second assertion reddens every file
+ * declaring a name tagged ANYWHERE without carrying the tag itself, so tagging one copy alone turned
+ * the suite green→two failures naming exactly the other two. Measured, both ways.
+ *
+ * @parity
  */
 export function pixelToLonLat(
   px: number,

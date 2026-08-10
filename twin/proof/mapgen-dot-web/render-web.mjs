@@ -151,40 +151,21 @@ const LON_LAT_DECIMALS = 3;
 const DOT_RADIUS_FLOOR_PX = 1.25;
 
 /**
- * The ground-area rule with that floor: constant radius up to the zoom where the ground radius
- * reaches the floor, then doubling per zoom level exactly as `live-map.mjs`'s own
- * `groundRadiusExpression` does.
+ * NOTE, 2026-08-10 — this beat no longer builds its own radius expression.
  *
- * WHY THIS LAYER DECLARES ITS OWN `circle-radius` INSTEAD OF `radius: "ground"`. The shared boot
- * script is a byte-identical copy in every map × web beat and its ground mode has no floor, and a
- * floor cannot be wrapped around it from outside: MapLibre refuses a `["zoom"]` expression nested
- * inside `["max", …]` — measured, and it fails SILENTLY (`setPaintProperty` was a no-op and five
- * different floors all rendered identically, which is how this nearly shipped unfloored twice). So
- * the whole expression is built here, top-level, and `live-map.mjs` copies the layer's own paint
- * verbatim because the layer declares no `radius`.
+ * It did, for one commit, because the shared `live-map.mjs`'s ground mode had no floor and a floor
+ * cannot be wrapped around one from outside: MapLibre refuses a `["zoom"]` expression nested inside
+ * `["max", …]`, and it fails SILENTLY (`setPaintProperty` becomes a no-op and five different floors
+ * render identically, which is how this nearly shipped unfloored twice). The cost was written down
+ * at the time: a rule the boot script owns, re-implemented here, that would not follow it if it
+ * changed.
  *
- * THE COST OF THAT, stated rather than discovered: this is the one place in this beat where a rule
- * the shared boot script owns is re-implemented. If `groundRadiusExpression` changes there, this
- * does not follow. The two agree today — same `["exponential", 2]`, same 6-level span, same
- * `r · 2^(zoom − bakeZoom)` above the floor.
+ * That cost is paid off rather than carried. `groundRadiusExpression(bakeZoom, { floorPx,
+ * uniformRadius })` in `live-map.mjs` now builds exactly this expression — same `["exponential", 2]`,
+ * same 6-level span, same `bakeZoom + log2(floor / r)` breakpoint — and refuses, naming why, a layer
+ * that asks for a floor without a uniform radius. This layer declares `radius: "ground"` and the two
+ * numbers, and the boot script owns the rule again.
  */
-function groundRadiusWithFloor(bakeZoom, radius, floorPx) {
-  const span = 6;
-  // The zoom at which the honest ground radius reaches the floor. Below it the radius is held; above
-  // it the floor is irrelevant and the expression is the ground rule itself.
-  const floorZoom = bakeZoom + Math.log2(floorPx / radius);
-  return [
-    "interpolate",
-    ["exponential", 2],
-    ["zoom"],
-    0,
-    floorPx,
-    floorZoom,
-    floorPx,
-    floorZoom + span,
-    floorPx * 2 ** span,
-  ];
-}
 
 /**
  * The plan the live layer reads out of the page: the style URL with its placeholder, the camera
@@ -369,17 +350,13 @@ export function livePlan({
               },
             })),
         },
-        paint: {
-          "circle-color": accent,
-          // The ground rule WITH its floor, declared here rather than as `radius: "ground"` — see
-          // `groundRadiusWithFloor` for why the shared boot script cannot carry the floor and what
-          // that costs.
-          "circle-radius": groundRadiusWithFloor(
-            geometry.zoom,
-            geometry.frame.width * DOT_RADIUS_FRACTION,
-            DOT_RADIUS_FLOOR_PX,
-          ),
-        },
+        paint: { "circle-color": accent },
+        // The ground rule, with the floor `DOT_RADIUS_FLOOR_PX` documents. `uniformRadius` is the
+        // one radius every dot in this field is drawn at — the boot script needs it because the
+        // floor is a zoom BREAKPOINT, and a breakpoint only exists when every mark shares a size.
+        radius: "ground",
+        radiusFloorPx: DOT_RADIUS_FLOOR_PX,
+        uniformRadius: geometry.frame.width * DOT_RADIUS_FRACTION,
         // The dots do not answer a pointer, and this is the type's own rule rather than an
         // omission: a dot is not a place (its position inside its country is random) and it carries
         // no value of its own, so a tooltip on one would answer a question the encoding cannot ask.

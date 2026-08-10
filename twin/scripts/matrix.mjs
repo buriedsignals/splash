@@ -28,6 +28,7 @@
 // labels legible is what the audits are for. Read this as a coverage map, never as a quality one.
 
 import { readdirSync, readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -170,7 +171,27 @@ if (import.meta.main) {
     process.exit(2);
   }
 
-  const built = render(readBeats());
+  // MATRIX.md IS A COMMITTED ARTIFACT, SO IT DESCRIBES THE COMMITTED BEATS. A `proof/<name>/` that
+  // git does not track at all is somebody's beat in progress — several sessions share this worktree
+  // — and it appears here the moment it is committed, not before. BOTH paths obey this: if only
+  // `--check` did, writing and checking would disagree, and a rule that two callers read two ways
+  // is the drift this file exists to end.
+  const untracked = new Set(
+    spawnSync(
+      "git",
+      ["ls-files", "--others", "--directory", "--exclude-standard", "proof/"],
+      { cwd: TWIN, encoding: "utf8" },
+    )
+      .stdout.split("\n")
+      // Only a WHOLE directory one level under `proof/`. `git ls-files --directory` also lists
+      // untracked files inside tracked beats, and those are not beats.
+      .filter((line) => /^proof\/[^/]+\/$/.test(line.trim()))
+      .map((line) => line.trim().slice("proof/".length, -1)),
+  );
+  const note = untracked.size
+    ? ` (${untracked.size} untracked director${untracked.size === 1 ? "y" : "ies"} under proof/ not counted: ${[...untracked].join(", ")})`
+    : "";
+  const built = render(readBeats().filter((b) => !untracked.has(b.name)));
 
   if (args.includes("--check")) {
     const current = existsSync(target) ? readFileSync(target, "utf8") : "";
@@ -178,9 +199,9 @@ if (import.meta.main) {
       console.error("MATRIX.md has drifted from the tree. Run: bun scripts/matrix.mjs");
       process.exit(1);
     }
-    console.log("MATRIX.md matches the tree.");
+    console.log(`MATRIX.md matches the tree.${note}`);
   } else {
     writeFileSync(target, built);
-    console.log(`wrote ${target}`);
+    console.log(`wrote ${target}${note}`);
   }
 }

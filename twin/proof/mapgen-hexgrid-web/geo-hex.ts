@@ -240,7 +240,9 @@ export function binIndexUpperInclusive(value: number, breaks: number[]): number 
  *  latitude needs the inverse Mercator formula because pixel-y is linear in Mercator-y, not in
  *  latitude itself. Exists so a beat can name which real place its subject cell sits over, derived
  *  from the same projection the bake used, instead of a hand-typed place name that can drift out of
- *  sync with which cell the data actually makes the subject. */
+ *  sync with which cell the data actually makes the subject.
+ *
+ *  @parity */
 export function pixelToLonLat(
   px: number,
   py: number,
