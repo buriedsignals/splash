@@ -303,6 +303,11 @@ export function fillTightness<T extends { key: string; parts: Ring[][] }>(
  * input `markRadiusCeilingPx` needs, measured on the drawn field rather than guessed from the frame
  * width. Squared distances are compared and the root is taken once per point, which is the same
  * ordering and the same answer at a tenth of the cost over three thousand dots.
+ *
+ * @parity-exempt: `geo.ts`'s twin reads `{ px, py }` objects and takes a square root per PAIR. This
+ * one reads `[x, y]` tuples — the shape a dot field is already in, 2,996 of them — and compares
+ * SQUARED distances, rooting once per point. Same ordering, same answer, a tenth of the work; the
+ * difference is the representation the caller already holds, not a drift in the measurement.
  */
 export function nearestNeighbourPx(points: readonly Pt[]): number[] {
   const out: number[] = [];
@@ -333,6 +338,8 @@ export function nearestNeighbourPx(points: readonly Pt[]): number[] {
  *
  * The uniform-scale radius stays as the CEILING'S OTHER SIDE, so nothing ever gets bigger than a
  * plain enlargement of the plate would have drawn it.
+ *
+ * @parity
  */
 export function markRadiusCeilingPx(
   medianNearestNeighbourPx: number,
@@ -444,6 +451,8 @@ export function assertDrawnDotsStillReadAsDots(
  * drawn on changes what the reader measures. Here the camera runs 36°N to 67°N and the answer is
  * 4.3 — the same figure `skills/splash/test/every-extent-band-is-produced.test.ts` records for this
  * beat, computed rather than copied from it.
+ *
+ * @parity
  */
 export function mercatorAreaBias(corners: {
   north: number;
