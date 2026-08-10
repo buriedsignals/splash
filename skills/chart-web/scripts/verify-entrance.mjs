@@ -237,12 +237,28 @@ const READ = () => {
     const cs = getComputedStyle(el);
     const box = el.getBBox(); // the element's OWN user units, before its own transform
     const sx = cs.getPropertyValue("--e-sx").trim();
-    const axis = sx === "" ? (box.width >= box.height ? "x" : "y") : sx === "0" ? "x" : "y";
-    const settled = axis === "x" ? box.width : box.height;
+    const sy = cs.getPropertyValue("--e-sy").trim();
+    // A MARK THAT ARRIVES BY FADING IS STILL A MARK, and it is not a defect — two of the video
+    // beats this genre replays answer their own type that way, because a dumbbell's mark is a range
+    // between two dots and a box's is five numbers, and neither is a length that can grow from a
+    // baseline. What changes is which reading measures the arrival. A painted extent CANNOT: an
+    // element at `opacity: 0` is still returned by `elementsFromPoint`, so a fading mark reads at
+    // full extent from the first sample. So a non-grow mark reports `painted: null` and is measured
+    // by its own opacity instead — and the clause that refuses "every mark on one clock", which is
+    // the fade-over-a-finished-picture defect, applies identically to both kinds.
+    const grows = cs.getPropertyValue("--e-ox").trim() !== "" || sx !== "" || sy !== "";
+    const axis = !grows
+      ? "none"
+      : sx === "0" && sy === "0"
+        ? "both"
+        : sy === "1"
+          ? "x"
+          : "y";
+    const settled = axis === "y" ? box.height : box.width;
     const declaredOrigin = cs
-      .getPropertyValue(axis === "x" ? "--e-ox" : "--e-oy")
+      .getPropertyValue(axis === "y" ? "--e-oy" : "--e-ox")
       .trim();
-    const low = axis === "x" ? box.x : box.y;
+    const low = axis === "y" ? box.y : box.x;
     const high = low + settled;
     // Which end the mark grows FROM. A declared origin names it exactly; without one, the end the
     // bounding box starts at, which is where a left-to-right or top-down reveal begins.
@@ -254,7 +270,7 @@ const READ = () => {
           ? high
           : low;
     const tip = origin === high ? low : high;
-    return { el, axis, settled, origin, tip, box };
+    return { el, axis, settled, origin, tip, box, grows };
   });
   const step =
     Math.max(1e-6, Math.max(0, ...geometry.map((g) => g.settled))) /
@@ -272,9 +288,13 @@ const READ = () => {
             .slice(matrix.indexOf("(") + 1, matrix.lastIndexOf(")"))
             .split(",")
             .map(Number);
-    const scale = parts === null ? 1 : g.axis === "x" ? parts[0] : parts[3];
+    const scale = parts === null ? 1 : g.axis === "y" ? parts[3] : parts[0];
+    const opacity = Number(cs.opacity);
     let painted = 0;
-    if (ctm && g.settled > 0) {
+    // `both` scales about the mark's own centre, so the extent is uncovered from the middle
+    // outward rather than from one end — the walk below assumes a baseline at one end and would
+    // report a growing dot as arriving late. Its scale is exact and is the reading that matters.
+    if (ctm && g.settled > 0 && g.grows && g.axis !== "both") {
       const direction = g.tip >= g.origin ? 1 : -1;
       const across =
         g.axis === "x" ? g.box.y + g.box.height / 2 : g.box.x + g.box.width / 2;
@@ -292,8 +312,20 @@ const READ = () => {
       key: g.el.getAttribute("data-entrance-key"),
       axis: g.axis,
       settled: Math.round(g.settled * 100) / 100,
-      painted: Math.round(Math.min(painted, g.settled) * 100) / 100,
+      // Null, not zero, when the reading does not apply — a fading mark has no painted extent to
+      // report and a growing dot's is measured from its centre. A zero here would read as "absent".
+      painted:
+        g.grows && g.axis !== "both"
+          ? Math.round(Math.min(painted, g.settled) * 100) / 100
+          : null,
       scale: Math.round(scale * 1000) / 1000,
+      opacity: Math.round(opacity * 1000) / 1000,
+      // THE ONE NUMBER EVERY MARK HAS, whichever way it arrives: 0 = not here, 1 = here. The
+      // cascade clause and the label rule are both stated against this, so a beat that reveals by
+      // growing and a beat that reveals by fading are held to the same rule.
+      arrival: g.grows
+        ? Math.round(scale * 1000) / 1000
+        : Math.round(opacity * 1000) / 1000,
     };
   });
   // The labels that STATE a mark's value, paired to their mark by name. The label rule is checked on
@@ -336,16 +368,19 @@ const READ = () => {
 
 /** One row per declared mark: its settled extent, and what was painted and scaled at every sample. */
 function markSeries(samples) {
+  const seriesOf = (key, field) =>
+    samples.map((s) => {
+      const mark = s.marks.find((m) => m.key === key);
+      return mark === undefined ? undefined : mark[field];
+    });
   return samples[0].marks.map((first) => ({
     key: first.key,
     axis: first.axis,
+    grows: first.painted !== null,
     settled: first.settled,
-    painted: samples.map(
-      (s) => (s.marks.find((m) => m.key === first.key) ?? {}).painted ?? null,
-    ),
-    scale: samples.map(
-      (s) => (s.marks.find((m) => m.key === first.key) ?? {}).scale ?? null,
-    ),
+    painted: seriesOf(first.key, "painted"),
+    scale: seriesOf(first.key, "scale"),
+    arrival: seriesOf(first.key, "arrival"),
   }));
 }
 
@@ -372,78 +407,89 @@ function markFailures(samples, label) {
         `paired with the mark it names`,
     );
 
-  // 1 — EACH MARK'S OWN EXTENT GROWS. Its own, not the picture's: this is the clause that separates
-  // a mark arriving from a finished mark being uncovered or faded.
+  // 1 — EACH MARK ARRIVES ON ITS OWN, from nothing to whole. `arrival` is the mark's own scale when
+  // it grows and its own opacity when it fades, so the clause reads the same for both kinds — and it
+  // is the clause that separates a mark arriving from a finished mark being uncovered.
   for (const row of rows) {
-    const painted = row.painted;
-    if (painted.some((v) => v === null)) {
+    if (row.arrival.some((v) => v === undefined)) {
       failures.push(`${label}: mark ${row.key} vanished from the page mid-build`);
       continue;
     }
+    if (!row.arrival.every((v, i) => i === 0 || v >= row.arrival[i - 1] - 1e-9))
+      failures.push(
+        `${label}: mark ${row.key} went backwards: ${row.arrival.join(", ")}`,
+      );
+    if (Math.max(...row.arrival) > 1.001)
+      failures.push(
+        `${label}: mark ${row.key} overshot its own value (${row.arrival.join(", ")}) — a mark that ` +
+          `overshoots shows, for those frames, a reading the data does not contain`,
+      );
+    if (row.arrival[row.arrival.length - 1] !== 1)
+      failures.push(
+        `${label}: mark ${row.key} finished at ${row.arrival[row.arrival.length - 1]} — the build ` +
+          `must end on the settled graphic`,
+      );
+  }
+  if (!rows.some((r) => r.arrival[0] <= 0.02))
+    failures.push(
+      `${label}: every one of the ${rows.length} marks had already begun arriving at the first ` +
+        `reading after entry (${rows.map((r) => `${r.key}=${r.arrival[0]}`).join(", ")}) — nothing ` +
+        `here is arriving, which is what a fade over a finished picture measures like`,
+    );
+
+  // 1b — AND FOR A MARK THAT GROWS, ITS PAINTED EXTENT AGREES. The second instrument, independent
+  // of every matrix above: what is actually on the screen, hit-tested. A reveal that uncovers
+  // finished marks — a clip, a mask — leaves every scale at 1 while these still climb, and this is
+  // where the two disagree.
+  const growing = rows.filter((r) => r.grows);
+  for (const row of growing) {
+    const painted = row.painted;
     if (!painted.every((v, i) => i === 0 || v >= painted[i - 1] - step))
       failures.push(
-        `${label}: mark ${row.key} went backwards: ${painted.join(", ")} of ${row.settled}`,
+        `${label}: mark ${row.key} went backwards on the screen: ${painted.join(", ")} of ` +
+          `${row.settled}`,
       );
     if (painted[painted.length - 1] < row.settled - step)
       failures.push(
         `${label}: mark ${row.key} finished at ${painted[painted.length - 1]} of its own ` +
           `${row.settled} — the build must end on the settled graphic`,
       );
-    if (Math.max(...row.scale) > 1.001)
-      failures.push(
-        `${label}: mark ${row.key} scaled past its own value (${row.scale.join(", ")}) — a mark that ` +
-          `overshoots shows, for those frames, a reading the data does not contain`,
-      );
-    if (!row.scale.every((v, i) => i === 0 || v >= row.scale[i - 1] - 1e-9))
-      failures.push(
-        `${label}: mark ${row.key}'s own scale went backwards: ${row.scale.join(", ")}`,
-      );
   }
-  if (!rows.some((r) => r.painted[0] <= step))
+  if (growing.length > 0 && !growing.some((r) => r.painted[0] <= step))
     failures.push(
-      `${label}: every one of the ${rows.length} marks already had extent at the first reading ` +
-        `after entry (${rows.map((r) => `${r.key}=${r.painted[0]}`).join(", ")}) — nothing here is ` +
-        `arriving, which is what an opacity fade over a finished picture measures like`,
-    );
-  // The SECOND instrument, independent of every hit test above: the marks' own transform matrices.
-  // A reveal that uncovers finished marks — a clip, a mask, an opacity — leaves every one of these
-  // at 1 for the whole build while the painted readings above still climb.
-  if (!rows.some((r) => r.scale[0] <= 0.02) || !rows.every((r) => r.scale[r.scale.length - 1] === 1))
-    failures.push(
-      `${label}: no mark's own scale ran from nothing to whole (${rows
-        .map((r) => `${r.key}:${r.scale[0]}→${r.scale[r.scale.length - 1]}`)
-        .join(", ")}) — the marks are not growing, something else is uncovering them`,
+      `${label}: every one of the ${growing.length} growing marks already had extent at the first ` +
+        `reading (${growing.map((r) => `${r.key}=${r.painted[0]}`).join(", ")}) — the marks are not ` +
+        `growing, something else is uncovering them`,
     );
 
   // 2 — THEY DO NOT ALL ARRIVE ON ONE CLOCK. The cascade is the argument's order made visible; a
-  // reveal that moves every mark together carries no order at all.
+  // reveal that moves every mark together carries no order at all, and that is exactly the
+  // fade-over-a-finished-picture defect whichever motion it is written in.
   const widest = Math.max(
     0,
-    ...samples.map((s) =>
-      spread(
-        s.marks.map((m) => (m.settled > 0 ? m.painted / m.settled : 1)),
-      ),
-    ),
+    ...samples.map((s) => spread(s.marks.map((m) => m.arrival))),
   );
   if (widest < 0.5)
     failures.push(
-      `${label}: the widest spread between the marks' own progress at any one reading was ` +
+      `${label}: the widest spread between the marks' own arrivals at any one reading was ` +
         `${widest.toFixed(2)} — they arrive together, so the build states no order`,
     );
 
-  // 3 — NO FRAME SHOWS THE MARKS ALL EQUAL UNLESS THEY REALLY ARE. **This is the clause the whole
+  // 3 — NO FRAME SHOWS THE MARKS ALL EQUAL UNLESS THEY REALLY ARE. **This is the clause the grow
   // motion exists for.** A left-to-right clip over a ranking leaves every stem exactly as long as
   // the wipe's own front, so for two thirds of the build the graphic asserts that all fifteen
   // countries are equal — measurable, and the reason the first lollipop entrance was reverted after
   // it had already been driven green by the two clip instruments.
   //
-  // "Visible" is more than one step, so the opening frames — where nothing has arrived and every
-  // mark reads zero — are not mistaken for a claim of equality. And it takes at least three marks,
-  // and at least half of them, before an equal reading is called a claim rather than a coincidence
-  // between two marks that happen to be crossing.
+  // Computed over the marks whose reading IS a painted length, because that is what the sentence is
+  // about. A mark that fades states nothing false while it is half-transparent; a mark whose length
+  // is wrong states a number. It self-disables where it would be meaningless — a scatter's dots are
+  // all the same size at rest, so their settled spread is zero and the clause never fires.
   for (let i = 0; i < samples.length; i++) {
-    const visible = samples[i].marks.filter((m) => m.painted > step);
-    if (visible.length < 3 || visible.length < samples[i].marks.length / 2) continue;
+    const visible = samples[i].marks.filter(
+      (m) => m.painted !== null && m.painted > step,
+    );
+    if (visible.length < 3 || visible.length < growing.length / 2) continue;
     if (spread(visible.map((m) => m.painted)) > step) continue;
     if (spread(visible.map((m) => m.settled)) <= 2 * step) continue;
     failures.push(
@@ -470,16 +516,19 @@ function markFailures(samples, label) {
     for (const l of samples[i].markLabels) {
       const mark = samples[i].marks.find((m) => m.key === l.names);
       if (!mark || l.opacity <= 0.02) continue;
-      // BOTH instruments, and each is here for a different failure. The mark's own SCALE is exact
-      // and answers the per-mark question directly, which the painted extent cannot on a bar shorter
-      // than the shared step — six of this beat's twenty-seven are. The PAINTED extent is what
-      // catches a reveal that is not a per-mark growth at all, where every scale sits at 1 and only
-      // what is on the screen changes.
-      if (mark.scale < 0.9 || mark.painted < 0.9 * mark.settled - step) {
+      // BOTH instruments where both exist, and each is here for a different failure. `arrival` is
+      // exact and answers the per-mark question directly, which the painted extent cannot on a bar
+      // shorter than the shared step — six of the diverging bar's twenty-seven are. The PAINTED
+      // extent is what catches a reveal that is not a per-mark arrival at all, where every scale
+      // sits at 1 and only what is on the screen changes.
+      if (
+        mark.arrival < 0.9 ||
+        (mark.painted !== null && mark.painted < 0.9 * mark.settled - step)
+      ) {
         failures.push(
           `${label}: at reading ${i} the label for ${l.names} was painted (opacity ${l.opacity}) ` +
-            `while its own mark was ${mark.painted} of ${mark.settled} — a value label may not ` +
-            `appear before the mark it names has arrived`,
+            `while its own mark was at ${mark.arrival} (painted ${mark.painted} of ${mark.settled}) ` +
+            `— a value label may not appear before the mark it names has arrived`,
         );
         i = samples.length;
         break;
@@ -650,13 +699,15 @@ try {
       // The same claim for a per-mark reveal, and it needs its own sentence: `scaleX` is 1 on a page
       // that has no clip at all, so the clause above passes vacuously on every bar-family beat.
       const unarrived = first.marks.filter(
-        (m) => m.scale !== 1 || m.painted < m.settled - first.markStep,
+        (m) =>
+          m.arrival !== 1 ||
+          (m.painted !== null && m.painted < m.settled - first.markStep),
       );
       check(
         unarrived.length === 0,
         `${vp.label}: under reduce ${unarrived.length} mark(s) were still part-way at the first ` +
           `reading after entry (${unarrived
-            .map((m) => `${m.key}=${m.painted}/${m.settled} scale ${m.scale}`)
+            .map((m) => `${m.key}=${m.arrival} (painted ${m.painted}/${m.settled})`)
             .join(", ")}) — the finished graphic must appear immediately`,
       );
       check(
@@ -704,13 +755,15 @@ try {
           `transform ${noJs.transform} — the settled page must be complete`,
       );
       const short = noJs.marks.filter(
-        (m) => m.scale !== 1 || m.painted < m.settled - noJs.markStep,
+        (m) =>
+          m.arrival !== 1 ||
+          (m.painted !== null && m.painted < m.settled - noJs.markStep),
       );
       check(
         short.length === 0,
-        `${vp.label}: with JavaScript disabled ${short.length} mark(s) were not at their own full ` +
-          `length (${short.map((m) => `${m.key}=${m.painted}/${m.settled}`).join(", ")}) — a mark ` +
-          `must never need the entrance to be readable`,
+        `${vp.label}: with JavaScript disabled ${short.length} mark(s) were not fully arrived ` +
+          `(${short.map((m) => `${m.key}=${m.arrival} painted ${m.painted}/${m.settled}`).join(", ")}) ` +
+          `— a mark must never need the entrance to be readable`,
       );
       await page.close();
     }
@@ -732,7 +785,10 @@ for (const [name, pass] of Object.entries(report.passes))
     // together, and that no column of this table is flat across the marks.
     for (const row of pass.marks ?? [])
       console.log(
-        `${name}    ${row.key} (${row.axis}, ${row.settled})  painted ${row.painted.join(" ")}`,
+        `${name}    ${row.key} (${row.axis}, ${row.settled})  ` +
+          (row.grows
+            ? `painted ${row.painted.join(" ")}`
+            : `opacity ${row.arrival.join(" ")}`),
       );
   } else if (pass.first)
     console.log(`${name}  animations ${pass.first.animations}  wipe ${pass.first.scaleX}  segments ${pass.first.segsHit}/${pass.first.segsTotal}  marks ${pass.first.marks.length}`);

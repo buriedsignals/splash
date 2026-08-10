@@ -318,7 +318,8 @@ export function DivergingBarWeb({
       ease: ENTRANCE_EASING.ARRIVE,
       // The baseline is the ZERO LINE for every row, on both sides of it — the one point a
       // diverging bar may not move while it grows.
-      grow: { axis: "x", origin: { x: g.zeroX, y: 0 }, key: country },
+      grow: { axis: "x", origin: { x: g.zeroX, y: 0 } },
+      mark: country,
     });
   };
   const valueLabelLayer = (country: string) =>
@@ -345,7 +346,7 @@ export function DivergingBarWeb({
     delay: WEB_ENTRANCE.reference.start,
     duration: WEB_ENTRANCE.reference.duration,
     ease: ENTRANCE_EASING.ARRIVE,
-    // No key: the zero line is what the bars are MEASURED AGAINST, not one of the readings.
+    // No name: the zero line is what the bars are MEASURED AGAINST, not one of the readings.
     grow: { axis: "y", origin: { x: g.zeroX, y: g.plot.top } },
   });
   /** The falls' own average, and its label — after the last fall, never before. */

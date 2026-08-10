@@ -191,7 +191,8 @@ export function HistogramWeb({
       delay: own.start,
       duration: own.duration,
       ease: ENTRANCE_EASING.ARRIVE,
-      grow: { axis: "y", origin: { x: 0, y: baselineY }, key: `bin-${bars[i].lo}` },
+      grow: { axis: "y", origin: { x: 0, y: baselineY } },
+      mark: `bin-${bars[i].lo}`,
     });
   };
   const furnitureLayer = () =>
@@ -211,7 +212,7 @@ export function HistogramWeb({
     delay: WEB_ENTRANCE.subject.start,
     duration: WEB_ENTRANCE.subject.duration,
     ease: ENTRANCE_EASING.ARRIVE,
-    // Grown from the plot's own top edge, downward. No key: the median is what the distribution is
+    // Grown from the plot's own top edge, downward. No name: the median is what the distribution is
     // summarised BY, not one of the counts, and the per-mark equality clause is computed over the
     // counts.
     grow: { axis: "y", origin: { x: medianX, y: 0 } },

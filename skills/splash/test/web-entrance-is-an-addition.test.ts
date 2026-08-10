@@ -478,8 +478,12 @@ describe("the markup half: what a page that declares an entrance must already sa
           );
       }
       // A mark's own name is what pairs it with the layers gated on its arrival, so a duplicate or a
-      // dangling name silently turns the label rule off for the pair it belongs to.
-      const markKeys = growTags
+      // dangling name silently turns the label rule off for the pair it belongs to. Read off EVERY
+      // tag that carries one and not only the `grow` ones: two of the video beats this genre replays
+      // reveal their marks by fading each one in on its own clock, because a dumbbell's mark is a
+      // range and a box's is five numbers — neither is a length that grows from a baseline — and
+      // those marks declare themselves the same way.
+      const markKeys = tagsCarrying(html, "data-entrance-key")
         .map((tag) => /\sdata-entrance-key="([^"]*)"/.exec(tag)?.[1])
         .filter((k): k is string => k !== undefined);
       if (new Set(markKeys).size !== markKeys.length)

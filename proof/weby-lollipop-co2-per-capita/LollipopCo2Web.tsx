@@ -251,7 +251,8 @@ export function LollipopCo2Web({
       delay: own.start,
       duration: own.duration,
       ease: ENTRANCE_EASING.ARRIVE,
-      grow: { axis: "x", origin: { x: zeroX, y: 0 }, key: country },
+      grow: { axis: "x", origin: { x: zeroX, y: 0 } },
+      mark: country,
     });
   };
   const dotLayer = (country: string) =>
@@ -285,7 +286,7 @@ export function LollipopCo2Web({
     delay: WEB_ENTRANCE.reference.start,
     duration: WEB_ENTRANCE.reference.duration,
     ease: ENTRANCE_EASING.ARRIVE,
-    // No key: the floor is what the stems are MEASURED AGAINST, not one of the readings, and the
+    // No name: the floor is what the stems are MEASURED AGAINST, not one of the readings, and the
     // instrument's "no frame shows the marks all equal" clause is computed over the keyed set.
     grow: { axis: "y", origin: { x: zeroX, y: plot.top } },
   });

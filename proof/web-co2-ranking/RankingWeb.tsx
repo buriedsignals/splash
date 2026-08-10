@@ -248,7 +248,8 @@ export function RankingWeb({
       delay: own.start,
       duration: own.duration,
       ease: ENTRANCE_EASING.ARRIVE,
-      grow: { axis: "x", origin: { x: x0, y: 0 }, key: name },
+      grow: { axis: "x", origin: { x: x0, y: 0 } },
+      mark: name,
     });
   };
   const valueLabelLayer = (name: string) =>
@@ -275,7 +276,7 @@ export function RankingWeb({
     delay: WEB_ENTRANCE.reference.start,
     duration: WEB_ENTRANCE.reference.duration,
     ease: ENTRANCE_EASING.ARRIVE,
-    // No key: the axis is what the bars are MEASURED AGAINST, not one of the readings.
+    // No name: the axis is what the bars are MEASURED AGAINST, not one of the readings.
     grow: { axis: "y", origin: { x: 0, y: 0 } },
   });
   const lastCascadeEnd = Math.max(

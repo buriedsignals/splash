@@ -388,26 +388,15 @@ export type EntranceMotion = "fade" | "wipe" | "land" | "grow";
  *  coordinates (a `<line x1=100>` given `transform-origin: 100px 200px` and `scaleX(0.5)` keeps its
  *  left end at 100 and halves its length — driven, not read off a spec). */
 export type GrowFrom = {
-  axis: "x" | "y";
-  origin: { x: number; y: number };
   /**
-   * The mark's own name, unique within the page. It is what pairs this mark with any layer gated on
-   * its arrival — its own dot, its own value label — so the label rule can be DRIVEN in a browser:
-   * an instrument that only knows "some label is visible and some mark is still growing" cannot tell
-   * a cascade from a defect, because in a cascade the first row's label is legitimately painted
-   * while the last row's mark has not started.
-   *
-   * OPTIONAL, because a length that arrives is not always a DATUM. A lollipop's zero baseline is
-   * laid down the same way a stem is — it grows from the plot's own top edge — and it is the
-   * reference the stems are measured against, not one of them. A key is what says "this is one of
-   * the readings the argument is about", and the instrument's "no frame shows the marks all equal"
-   * clause is computed over exactly the keyed set, so putting the baseline in it would be comparing
-   * a rule against the values it measures.
-   *
-   * It is NOT optional on the `reveal` event — that is where the data arrives, and a keyless mark
-   * there would be a datum quietly outside the instrument. `entranceLayer` refuses it.
+   * `x` for a horizontal bar or a lollipop stem, `y` for a column, and **`both` for a mark whose
+   * arrival is its own SIZE rather than a length** — a scatter dot, which has no length to grow
+   * because its reading is its POSITION. That third case is the video's own answer for this type:
+   * `vidx-scatter-income-life-expectancy` grows each point's RADIUS from zero on its own slice of
+   * the reveal, and `both` is that gesture in CSS.
    */
-  key?: string;
+  axis: "x" | "y" | "both";
+  origin: { x: number; y: number };
 };
 
 /**
@@ -431,6 +420,7 @@ export function entranceLayer(
     duration,
     ease,
     grow,
+    mark,
     names,
   }: {
     delay: number;
@@ -438,8 +428,33 @@ export function entranceLayer(
     ease?: string;
     /** Required by, and only legal on, `grow`. See `GrowFrom`. */
     grow?: GrowFrom;
-    /** The `grow` mark whose value this layer STATES, if it is a label. Only legal on a layer that
-     *  is not itself a mark. */
+    /**
+     * THIS LAYER IS ONE OF THE READINGS THE ARGUMENT IS ABOUT, under this name — unique in the page.
+     *
+     * Stated on ANY motion, not only on `grow`, and that generality was forced by the video rather
+     * than invented: `video-population-growth-dumbbell` and `vidy-boxplot-co2-by-continent` both
+     * reveal their marks by FADING each one in on its own clock, in the argument's order, because a
+     * dumbbell's mark is a range between two dots and a box's is five numbers — neither is a length
+     * that can grow from a baseline. That is still a per-mark reveal and it still has to be
+     * measured; what changes is which reading measures it (its own opacity rather than its own
+     * painted extent), and the clause that refuses "everything on one clock" is the same either way.
+     *
+     * It is what pairs this mark with any layer gated on its arrival — its own dot, its own value
+     * label — so the label rule can be DRIVEN in a browser: an instrument that only knows "some
+     * label is visible and some mark is still arriving" cannot tell a cascade from a defect, because
+     * in a cascade the first row's label is legitimately painted while the last row's mark has not
+     * started.
+     *
+     * OPTIONAL on a `grow`, because a length that arrives is not always a DATUM: a lollipop's zero
+     * baseline is laid down exactly the way a stem is, and it is the reference the stems are
+     * measured AGAINST. The instrument's "no frame shows the marks all equal" clause is computed
+     * over exactly the named set, so putting the baseline in it would be comparing a rule against
+     * the values it measures. It is NOT optional for a `grow` on the `reveal` event — that is where
+     * the data arrives, and a nameless mark there would be a datum quietly outside every check.
+     */
+    mark?: string;
+    /** The mark whose arrival this layer is gated on, if it is a label or a dot rather than a mark
+     *  itself. Only legal on a layer that is not itself a mark. */
     names?: string;
   } = { delay: 0, duration: 0 },
 ): {
@@ -461,18 +476,18 @@ export function entranceLayer(
         ? `a grow layer must state its own axis, baseline and key — ${event} states none`
         : `a ${motion} layer may not state a grow baseline; only grow scales about one`,
     );
-  if (grow && names !== undefined)
+  if (mark !== undefined && names !== undefined)
     throw new Error(
-      `a mark cannot also be a label: ${grow.key} names ${names}. A layer either IS a mark or ` +
+      `a mark cannot also be a label: ${mark} names ${names}. A layer either IS a reading or ` +
         `STATES one`,
     );
   // The data arrives on `reveal`, and every reading that arrives there has to be inside the
-  // instrument that checks no intermediate frame states something false about them. A keyless grow
+  // instrument that checks no intermediate frame states something false about them. A nameless grow
   // is legal elsewhere (a reference rule being laid down), never here.
-  if (grow && event === "reveal" && grow.key === undefined)
+  if (grow && event === "reveal" && mark === undefined)
     throw new Error(
       `a grow mark on the reveal is one of the readings the argument is about and must carry its ` +
-        `own key — without one it is outside every per-mark check`,
+        `own name — without one it is outside every per-mark check`,
     );
   return {
     attrs: {
@@ -480,9 +495,7 @@ export function entranceLayer(
       "data-entrance-motion": motion,
       // Emitted only when present, so a beat that declares no cascade ships no trace of one — the
       // same "declared or absent" rule the entrance's own CSS is gated by.
-      ...(grow && grow.key !== undefined
-        ? { "data-entrance-key": grow.key }
-        : {}),
+      ...(mark !== undefined ? { "data-entrance-key": mark } : {}),
       ...(names !== undefined ? { "data-entrance-label": names } : {}),
     },
     vars: {
@@ -494,8 +507,8 @@ export function entranceLayer(
       "--e-ease": ease ?? ENTRANCE_EASING.LINEAR,
       ...(grow
         ? {
-            "--e-sx": grow.axis === "x" ? "0" : "1",
-            "--e-sy": grow.axis === "y" ? "0" : "1",
+            "--e-sx": grow.axis === "y" ? "1" : "0",
+            "--e-sy": grow.axis === "x" ? "1" : "0",
             "--e-ox": `${grow.origin.x}px`,
             "--e-oy": `${grow.origin.y}px`,
           }
