@@ -54,7 +54,9 @@ import {
 
 const TWIN = join(import.meta.dirname, "..");
 const REPO = join(TWIN, "..");
-const WORK = "/tmp/two-palette-proof";
+// Outside the repository, always. `TWO_PALETTE_WORK` lets a second run — the one in the default
+// suite — take its own directory so two runs cannot overwrite each other's renders.
+const WORK = process.env.TWO_PALETTE_WORK || "/tmp/two-palette-proof";
 
 /** The fraction of a frame that has to move before this is called a pass.
  *
