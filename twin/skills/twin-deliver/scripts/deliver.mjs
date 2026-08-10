@@ -10,6 +10,7 @@ import { basename, join } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
+import { GENRE_OFFER_RECEIPT, PENDING } from "./another-genre.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -478,6 +479,12 @@ export async function materialise({
   await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(exportDir, DELIVERY_RECEIPT), `${beatName}\n`);
+  // A DELIVERED BEAT IS NOT A FINISHED ONE until the journalist has been offered the same beat in
+  // the other genres and has answered — taken one or declined, both clean. The offer is written
+  // `pending` here, at the moment the delivery lands, so "the run never made the offer" is a state
+  // on disk rather than a habit that can be forgotten. `deliveryClosed` reads it; `recordGenreAnswer`
+  // replaces it with the answer. A dotfile, for the same reason as the receipt above.
+  await writeFile(join(exportDir, GENRE_OFFER_RECEIPT), `${PENDING}\n`);
   const written = [];
   // One `mapKeyState` per HTML file this delivery writes — read for the hand-over, never for a
   // verdict. Nothing in this function refuses over a key.

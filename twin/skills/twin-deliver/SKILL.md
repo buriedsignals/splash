@@ -45,6 +45,10 @@ until the choice does.
   if the beat has not been approved — show the render first.
 - Once the journalist has named a form (its `id`, exactly), call `materialise` with that id, the
   *same* genre, the beat's directory, and the export directory. Nothing before that call.
+- **Immediately after `materialise` returns**, and before the run ends: call `otherGenresFor` with
+  the beat's medium and the genre just delivered, present `formatGenreOffer`'s text, and wait for an
+  answer. `recordGenreAnswer` writes it. A delivery that has not been answered is not closed
+  (`deliveryClosed`), and the receipt says so on disk.
 - **Not** for production. This skill never renders a chart or a map — it only decides which
   already-rendered (or already-written) files leave the beat directory, and in what shape.
 
@@ -81,6 +85,7 @@ Two things close it, and both are code rather than convention:
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
+| The other genres | `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`, `deliveryClosed` | After the delivery: which other genres this beat could be produced in, filtered by what is producible, what the capability allows and what the journalist says does not suit it. The answer — taken or declined — is a fact on disk |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
 | CMS doctrine | `references/cms-insertion.md` | Both mechanics in prose — We.Publish's `updateArticle` is total, Livingdocs' `insertComponent` is a genuine insertion — and what remains untested |
@@ -156,6 +161,29 @@ Two things close it, and both are code rather than convention:
    caveat is `limits`. A caller with nothing to hand in has not read the storyboard back.
 5. **`materialise` returns every path it wrote**, the hand-over included. A caller that wants to
    confirm the delivery can list `written` without re-reading the directory.
+
+6. **`otherGenresFor({medium, deliveredGenre, capabilities, notSuited})` — the offer the run used to
+   end without.** The owner delivered an interactive web chart and was never asked whether he also
+   wanted it as a still for print or a video for a feed: *"À la toute fin il ne me propose pas
+   d'exporter sous un autre genre si jamais."* This names the genres the SAME beat could also be
+   produced in — never the one just delivered — with what each is for and what it costs in time.
+   Three filters run before a genre is named, so the offer is never a menu of everything the
+   toolchain can do in the abstract: the pair must be **producible** for this medium (an image beat
+   is never offered video), the medium's **capability** must be open (`capabilityGap`, the same
+   verdict the storyboard's genre gate consults — a capability shut for want of a key is shown as
+   unavailable **with what would open it**, not offered), and the beat's own claim must survive the
+   genre (`notSuited`, an editorial input, each entry carrying its reason).
+
+   **Taking one means producing that beat again**, in that genre, with its own size, its own review
+   and its own delivery form. It never means quietly emitting every artifact at once — the original
+   Splash over-produced exactly that way and it was deliberately reversed.
+
+   **Declining is a recorded answer.** `materialise` writes `.another-genre` as `pending` the moment
+   a beat is delivered, `recordGenreAnswer` replaces it with `declined` or `taken <genre>`, and
+   `deliveryClosed(exportDir)` reports `{closed, missing}` — so "the run never made the offer" is a
+   state that can be SEEN, in the same shape `whereIs` reports a phase, rather than a habit that can
+   be forgotten. (The story-level gate does not consult it yet; that wiring belongs to `where.mjs`,
+   which another chantier owns.)
 
 ### The MapTiler key — the ARTIFACT decides, never the environment
 
@@ -255,6 +283,8 @@ const written = await materialise({
 | What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"twin-deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
+| Which genres a medium can also be produced in, after its first delivery | `chart`/`map` → 4 each, `image` → 2 (an absent pair is never offered) | `PRODUCIBLE_GENRES`, `scripts/another-genre.mjs` |
+| What answers close a delivery | `2` — `declined` and `taken <genre>`; `pending` is what `materialise` writes and what `deliveryClosed` refuses to call closed | `recordGenreAnswer`, `scripts/another-genre.mjs` |
 | How many live-tile states a delivery can be in | `4` (`none`, `restricted`, `development`, `unkeyed`) — an unknown one throws in the hand-over rather than saying nothing | `LIVE_TILE_STATES`, `scripts/deliver.mjs` |
 | What each of those states says to the journalist | `4` paragraph blocks, one per state, `none` being silence | `LIVE_TILES`, `scripts/format-handover.mjs` |
 | Which CMS kind `cms-insertion` demonstrates when the caller supplies none | `"we-publish"` (override with `materialise`'s own `cms` object) | `materialise`'s `"cms-insertion"` branch |
@@ -271,6 +301,10 @@ const written = await materialise({
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one
   directory a beat delivers into), and the `BUILD_SCRIPT` template written into every
   `source-bundle` delivery.
+- `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`,
+  `deliveryClosed`, and `PRODUCIBLE_GENRES`, this skill's own reading of which medium × genre pairs
+  can be walked to a delivered export (a duplicate of the storyboard's catalogue, cross-checked by a
+  test, never imported).
 - `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor`,
   and the header comment documenting the exact Cloudflare Pages call sequence, matched by hand
   against Wrangler's own source (`cloudflare/workers-sdk`) rather than guessed.
@@ -289,6 +323,10 @@ const written = await materialise({
   each, refuses ambiguity, and — for `cms-insertion` — makes zero network calls. Its
   "a story has more than one beat" block is the two-beat fixture nothing here had: it delivers two
   approved beats and asserts the first one's files survive the second's delivery.
+- `test/another-genre.test.ts` — the offer's three filters, the reason a withholding must carry,
+  the journalist-facing text asserted to name nothing of ours, the parity with the storyboard's
+  catalogue, and the fixture the run would have failed: a beat that has been DELIVERED is not closed
+  until the offer has been answered, and declining closes it as cleanly as taking.
 - `test/refusals-name-no-detour.test.ts` — every refusal in this path, triggered for real and read
   from the source, asserted to name no alternative delivery route; plus the historical sentence the
   run followed, kept as the proof the detector can see the defect it was written for.
