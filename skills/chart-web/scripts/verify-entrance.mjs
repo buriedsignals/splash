@@ -257,7 +257,13 @@ const READ = () => {
     // by its own opacity instead — and the clause that refuses "every mark on one clock", which is
     // the fade-over-a-finished-picture defect, applies identically to both kinds.
     const grows = cs.getPropertyValue("--e-ox").trim() !== "" || sx !== "" || sy !== "";
-    const axis = !grows ? "none" : sy === "1" ? "x" : "y";
+    const axis = !grows
+      ? "none"
+      : sx === "0" && sy === "0"
+        ? "both"
+        : sy === "1"
+          ? "x"
+          : "y";
     // `pop` scales the INDIVIDUAL `scale` property (see `entranceCss`), which does not appear in the
     // computed `transform` matrix at all — so a pop mark read through the matrix would report 1 for
     // the whole build. Its own property is the reading.
@@ -320,6 +326,9 @@ const READ = () => {
     // beat, not in the reading (a group is also the one place a scale can silently mean something
     // different from the same scale on its children), so it is reported by name below rather than
     // absorbed.
+    // `both` scales uniformly about a point that is not on either bounding-box axis — a diagonal —
+    // so the straight walk below, which samples the perpendicular centre of the box, would miss the
+    // mark everywhere but its middle. Its scale is exact and is the reading that matters.
     if (ctm && g.settled > 0 && g.grows && g.axis !== "both" && g.tag !== "g") {
       const direction = g.tip >= g.origin ? 1 : -1;
       const across =
@@ -410,7 +419,7 @@ function markSeries(samples) {
     axis: first.axis,
     tag: first.tag,
     kind: first.kind,
-    grows: first.painted !== null,
+    grows: first.kind === "grow",
     settled: first.settled,
     painted: seriesOf(first.key, "painted"),
     scale: seriesOf(first.key, "scale"),
@@ -471,7 +480,7 @@ function markFailures(samples, label) {
         `here is arriving, which is what a fade over a finished picture measures like`,
     );
 
-  for (const row of rows.filter((r) => r.grows && r.tag === "g"))
+  for (const row of rows.filter((r) => r.kind === "grow" && r.tag === "g" && r.axis !== "both"))
     failures.push(
       `${label}: mark ${row.key} is declared on a <g>, which no hit test can reach — put the layer ` +
         `on the drawable it wraps. Scaling each child about the SAME baseline is the same picture ` +
@@ -482,7 +491,10 @@ function markFailures(samples, label) {
   // of every matrix above: what is actually on the screen, hit-tested. A reveal that uncovers
   // finished marks — a clip, a mask — leaves every scale at 1 while these still climb, and this is
   // where the two disagree.
-  const growing = rows.filter((r) => r.grows);
+  // Only the marks whose painted extent is actually a reading: a `grow` along one axis. A `both`
+  // scales about a point off both bounding-box axes (a diagonal) and reports none, exactly as a
+  // `pop` and a `fade` do.
+  const growing = rows.filter((r) => r.painted[0] !== null);
   for (const row of growing) {
     const painted = row.painted;
     if (!painted.every((v, i) => i === 0 || v >= painted[i - 1] - step))
@@ -827,9 +839,9 @@ for (const [name, pass] of Object.entries(report.passes))
     for (const row of pass.marks ?? [])
       console.log(
         `${name}    ${row.key} (${row.kind}${row.grows ? `, ${row.axis}, ${row.settled}` : ""})  ` +
-          (row.grows
+          (row.grows && row.painted[0] !== null
             ? `painted ${row.painted.join(" ")}`
-            : `${row.kind === "pop" ? "scale" : "opacity"} ${row.arrival.join(" ")}`),
+            : `${row.kind === "fade" ? "opacity" : "scale"} ${row.arrival.join(" ")}`),
       );
   } else if (pass.first)
     console.log(`${name}  animations ${pass.first.animations}  wipe ${pass.first.scaleX}  segments ${pass.first.segsHit}/${pass.first.segsTotal}  marks ${pass.first.marks.length}`);

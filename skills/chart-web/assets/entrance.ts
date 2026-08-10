@@ -388,11 +388,20 @@ export type EntranceMotion = "fade" | "wipe" | "land" | "grow" | "pop";
  *  coordinates (a `<line x1=100>` given `transform-origin: 100px 200px` and `scaleX(0.5)` keeps its
  *  left end at 100 and halves its length — driven, not read off a spec). */
 export type GrowFrom = {
-  /** `x` for a horizontal bar or a lollipop stem, `y` for a column. A mark whose arrival is its own
-   *  SIZE rather than a length — a scatter dot, whose reading is its POSITION — is not a `grow` at
-   *  all: it is `pop`, which animates a different CSS property for a measured reason. See
-   *  `render-web.mjs`'s `entranceCss`. */
-  axis: "x" | "y";
+  /**
+   * `x` for a horizontal bar or a lollipop stem, `y` for a column, and **`both` for a mark whose
+   * length runs along NEITHER axis** — a slope chart's connector, a diagonal from its 1990 point to
+   * its 2024 one. Scaling that on one axis flattens it into a vertical rule and then widens it,
+   * which is not the gesture: `vidx-slope-child-mortality` interpolates the head's x AND y together
+   * from the left point to the right one, and a uniform scale about the left point is that, exactly.
+   *
+   * `both` is NOT the same thing as `pop`, and the difference is which property moves. `both` is a
+   * `transform: scale()` about a DECLARED point in the SVG's own coordinates — for an SVG mark that
+   * grows out of one end. `pop` animates the `scale` property about the ELEMENT'S OWN centre, for a
+   * mark that already carries a `transform` of its own and would lose it (this genre's scatter dots
+   * are HTML spans centred with `translate(-50%, -50%)`).
+   */
+  axis: "x" | "y" | "both";
   origin: { x: number; y: number };
 };
 
@@ -505,7 +514,7 @@ export function entranceLayer(
       ...(grow
         ? {
             "--e-sx": grow.axis === "y" ? "1" : "0",
-            "--e-sy": grow.axis === "y" ? "0" : "1",
+            "--e-sy": grow.axis === "x" ? "1" : "0",
             "--e-ox": `${grow.origin.x}px`,
             "--e-oy": `${grow.origin.y}px`,
           }

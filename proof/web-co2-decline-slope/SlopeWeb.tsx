@@ -34,6 +34,15 @@
  * threads them in as props (`ink`/`muted`/`grid`/`measure`).
  */
 
+import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
 import { slopeGeometry, fmt, type Country } from "./slope-geometry";
 
 type Measure = (
@@ -392,6 +401,92 @@ export function SlopeWeb({
     ...lines.filter((l) => l.name === highlighted),
   ];
 
+  // ── THE ENTRANCE, carried from `proof/vidx-slope-child-mortality`, this type's own video. Each
+  // line takes an overlapping slice of the reveal at this type's own factor, 1.7, and inside its
+  // own window: the LEFT dot at 0 → 0.18, the CONNECTOR drawing from the left point to the right one
+  // over 0.18 → 0.82, and the RIGHT dot at 0.82 → 1. Those three fractions are the video's, not
+  // invented here.
+  //
+  // THE CONNECTOR IS A DIAGONAL, which is why `grow` grew an axis. Its length runs along neither
+  // axis; scaling it on one flattens it into a vertical rule that then widens, which is not the
+  // gesture. `axis: "both"` is a uniform scale about the left point, and that is exactly what the
+  // video's paired `currentX`/`currentY` interpolation draws.
+  //
+  // The two period axes are the reference — the two scales every value is read against, laid down
+  // before a single line. The highlighted country is the subject and is lifted out of the cascade to
+  // land last (the video rings an already-drawn line; this page carries no ring at rest), with its
+  // own right-hand label as the conclusion.
+  const SLOPE_OVERLAP = 1.7;
+  const cascade = lines.filter((l) => l.name !== highlighted);
+  const windowFor = (name: string) =>
+    name === highlighted
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((l) => l.name === name),
+          cascade.length,
+          SLOPE_OVERLAP,
+        );
+  const eventFor = (name: string) =>
+    name === highlighted ? ("subject" as const) : ("reveal" as const);
+  /** The connector, drawing from its own 1990 point — the video's 0.18 → 0.82 slice of the line's
+   *  own window. */
+  const connectorLayer = (name: string, x1990: number, y1990: number) => {
+    const own = windowFor(name);
+    return entranceLayer(eventFor(name), "grow", {
+      delay: atProgress(own, 0.18),
+      duration: atProgress(own, 0.82) - atProgress(own, 0.18),
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "both", origin: { x: x1990, y: y1990 } },
+      mark: name,
+    });
+  };
+  /** The 1990 endpoint and its label: the line's own window OPENS on them, before it draws. They
+   *  carry no `names` — they are not gated on the mark, they are the first fifth of it arriving. */
+  const startLayer = (name: string) =>
+    entranceLayer(eventFor(name), "fade", {
+      delay: windowFor(name).start,
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  /** The 2024 endpoint and its label: once the connector has reached it. */
+  const endLayer = (name: string) =>
+    name === highlighted
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: name,
+        })
+      : entranceLayer(eventFor(name), "fade", {
+          delay: atProgress(windowFor(name), 0.82),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: name,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const periodAxisLayer = () =>
+    entranceLayer("reference", "grow", {
+      delay: WEB_ENTRANCE.reference.start,
+      duration: WEB_ENTRANCE.reference.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      // No name: the two axes are what the values are MEASURED AGAINST, not one of the readings.
+      grow: { axis: "y", origin: { x: 0, y: 0 } },
+    });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((l) => atProgress(windowFor(l.name), 0.82) + LABEL_FADE_MS),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last line's 2024 label ends at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms`,
+    );
+
   const totalWidth = gutterPx + frame.gap + frame.width + frame.gap + gutterPx;
 
   return (
@@ -417,7 +512,11 @@ export function SlopeWeb({
           plot's own top edge (they caption its two columns, so they must line up with them), and
           without this gap they print straight through the caveat at a narrow width. Fixed pixels,
           because a caption is furniture and furniture in this genre does not stretch. */}
-      <div className="chart-header" style={{ marginBottom: 26 }}>
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={{ ...furnitureLayer().vars, marginBottom: 26 }}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
       </div>
@@ -437,8 +536,12 @@ export function SlopeWeb({
           {lines.map((l) => (
             <span
               key={`left-${l.name}`}
+              {...startLayer(l.name).attrs}
               className="slope-label left"
-              style={{ top: `${pct(l.labelY1990, frame.height)}%` }}
+              style={{
+                ...startLayer(l.name).vars,
+                top: `${pct(l.labelY1990, frame.height)}%`,
+              }}
             >
               {labelLines(l.name, l.v1990, frame, measure).map((line, i) => (
                 <span
@@ -509,6 +612,8 @@ export function SlopeWeb({
           {[0, frame.width].map((x) => (
             <line
               key={`axis-${x}`}
+              {...periodAxisLayer().attrs}
+              style={periodAxisLayer().vars}
               x1={x}
               x2={x}
               y1={0}
@@ -527,6 +632,8 @@ export function SlopeWeb({
             return (
               <g key={l.name}>
                 <line
+                  {...connectorLayer(l.name, l.x1990, l.y1990).attrs}
+                  style={connectorLayer(l.name, l.x1990, l.y1990).vars}
                   x1={l.x1990}
                   y1={l.y1990}
                   x2={l.x2024}
@@ -551,7 +658,14 @@ export function SlopeWeb({
                     its own true point, so a nudged label never reads as ambiguous about which point
                     it names. Drawn as a two-segment polyline out to the frame edge, because the
                     label itself now lives outside the `viewBox` entirely. */}
+                {/* The leader is TAGGED ONLY WHERE IT IS DRAWN. It carries `opacity={0}` as a
+                    real settled style wherever the de-collision pass did not move that label, and a
+                    tagged layer at opacity 0 on the settled page is indistinguishable, to the
+                    driven guard, from an entrance that never finished — it read exactly that on the
+                    first drive. */}
                 <polyline
+                  {...(startDisplaced ? startLayer(l.name).attrs : {})}
+                  style={startDisplaced ? startLayer(l.name).vars : undefined}
                   points={`${l.x1990},${l.y1990} ${l.x1990},${l.labelY1990} ${l.x1990 - 8},${l.labelY1990}`}
                   fill="none"
                   stroke={stroke}
@@ -561,6 +675,8 @@ export function SlopeWeb({
                   vectorEffect="non-scaling-stroke"
                 />
                 <polyline
+                  {...(endDisplaced ? endLayer(l.name).attrs : {})}
+                  style={endDisplaced ? endLayer(l.name).vars : undefined}
                   points={`${l.x2024},${l.y2024} ${l.x2024},${l.labelY2024} ${l.x2024 + 8},${l.labelY2024}`}
                   fill="none"
                   stroke={stroke}
@@ -570,6 +686,8 @@ export function SlopeWeb({
                   vectorEffect="non-scaling-stroke"
                 />
                 <circle
+                  {...startLayer(l.name).attrs}
+                  style={startLayer(l.name).vars}
                   cx={l.x1990}
                   cy={l.y1990}
                   r={frame.pointRadius}
@@ -577,6 +695,8 @@ export function SlopeWeb({
                   vectorEffect="non-scaling-stroke"
                 />
                 <circle
+                  {...endLayer(l.name).attrs}
+                  style={endLayer(l.name).vars}
                   cx={l.x2024}
                   cy={l.y2024}
                   r={frame.pointRadius}
@@ -637,10 +757,18 @@ export function SlopeWeb({
             shares the `<svg>`'s own grid cell, so "1990" stays over the 1990 column at any width.
             Unconditional furniture, never gated behind interaction. */}
         <div className="overlay">
-          <span className="period-label" style={{ left: "0%" }}>
+          <span
+            {...furnitureLayer().attrs}
+            className="period-label"
+            style={{ ...furnitureLayer().vars, left: "0%" }}
+          >
             {periodLabels.p1990}
           </span>
-          <span className="period-label" style={{ left: "100%" }}>
+          <span
+            {...furnitureLayer().attrs}
+            className="period-label"
+            style={{ ...furnitureLayer().vars, left: "100%" }}
+          >
             {periodLabels.p2024}
           </span>
         </div>
@@ -650,8 +778,12 @@ export function SlopeWeb({
           {lines.map((l) => (
             <span
               key={`right-${l.name}`}
+              {...endLayer(l.name).attrs}
               className="slope-label right"
-              style={{ top: `${pct(l.labelY2024, frame.height)}%` }}
+              style={{
+                ...endLayer(l.name).vars,
+                top: `${pct(l.labelY2024, frame.height)}%`,
+              }}
             >
               {labelLines(l.name, l.v2024, frame, measure).map((line, i) => (
                 <span
@@ -670,7 +802,13 @@ export function SlopeWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
