@@ -27,7 +27,8 @@
 // component and the props to call it with as arguments, and it never reaches into the component's
 // own returned markup — the SSR'd `<figure>` (geometry SVG, HTML furniture, filter, all of it) is
 // dropped into the page body verbatim. `buildCss` below is the genre's shared stylesheet: the
-// structural CSS grid, the fluid sizing rule, the filter's own `:checked` dimming, the tooltip —
+// structural CSS grid, the fluid sizing rule, the tooltip — and, ONLY for a beat that declared one
+// (`assets/filter.ts`), the filter's own chrome and its generated `:checked` hiding rules —
 // every class name a component targets (`.chart-figure`, `.chart-plot`, `.seg`, `.pt`, `.axis-label`,
 // `.note`, `.end-label`, `.hit-area`, `#tooltip`) is a documented CONTRACT between this file and
 // `ChartWebSeed.tsx`-shaped components, the same contract `.pt`/`.hit-area`/`#tooltip` already were
@@ -50,7 +51,24 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
-import { ChartWebSeed, FRAME } from "../assets/ChartWebSeed.tsx";
+import {
+  assertOneVocabulary,
+  buildFilterIndex,
+  filterCss,
+  filterNotes,
+  filterOptionsForMarkup,
+} from "../assets/filter.ts";
+import {
+  ChartWebSeed,
+  FRAME,
+  seedFilterDeclaration,
+} from "../assets/ChartWebSeed.tsx";
+
+/** This genre's own scope selector and radio-id prefix — the two arguments `filter.ts` refuses to
+ *  know about, because the same vocabulary is vendored into a genre that scopes on `.map-web-page`.
+ *  Declared once here so the stylesheet, the markup's ids and the guard all read one pair. */
+const FILTER_SCOPE = ".chart-figure";
+const FILTER_ID_PREFIX = "chart-filter";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -98,13 +116,30 @@ const OUTPUT_NAME = "rainfall.html";
  */
 async function renderWeb({ component, props, outDir, name }) {
   const furniture = deriveFurniture(props.ground);
+
+  // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
+  // (`assets/filter.ts` — what may be narrowed and on what) and `props.filterKeys` is what the beat
+  // actually draws, the list every count and every emptiness check is measured against. A beat that
+  // declares nothing gets an EMPTY index, `attrsFor` then hands out no attributes, `filterCss`
+  // returns the empty string and `filterNotes` returns nothing — no markup, no rule, no listener,
+  // which is the difference between a filter that is removable and a control that is merely hidden.
+  const filterIndex = buildFilterIndex(props.filter, props.filterKeys ?? []);
   const markup = renderToStaticMarkup(
     createElement(component, {
       ...props,
       ...furniture,
       measure: measureText,
+      filterIndex,
+      filterOptions: filterOptionsForMarkup(props.filter, FILTER_ID_PREFIX),
+      filterNotes: filterNotes(props.filter, props.filterKeys ?? []),
     }),
   );
+  // Read the rendered markup back before it is written: an element drawn from a datum that carries
+  // `data-key` without the vocabulary's own `data-filter` is refused here, so a beat cannot ship the
+  // half-tagged datum whose visible symptom is a label left on the map after its mark was filtered
+  // away (B6.18b). What this cannot see — an element carrying no attributes at all — is what the
+  // driven guard walks a real browser for.
+  assertOneVocabulary(markup, filterIndex);
 
   const interactionSource = await readFile(
     join(HERE, "../assets/interaction.mjs"),
@@ -119,7 +154,7 @@ async function renderWeb({ component, props, outDir, name }) {
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground: props.ground, accent: props.accent, ...furniture })}
+${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: props.filter ?? null })}
 </style>
 </head>
 <body>
@@ -183,7 +218,138 @@ const FRAME_PAD_PX = 24;
 // scrollbar, which is honest, rather than a 20px strip pretending to be a line chart.
 const PLOT_FLOOR_PX = 120;
 
-function buildCss({ ground, accent, ink, muted, grid }) {
+/**
+ * The control's own chrome, emitted ONLY for a beat that declared a filter — the styling of the
+ * fieldset, the segmented pills, and the narrowing note the reader is owed. The rules that decide
+ * WHAT is hidden are not here: they are generated per option by `filter.ts`'s `filterCss`, over
+ * `[data-filter]`, so no element type is ever named twice.
+ *
+ * ONE OVERTURN, RECORDED RATHER THAN SLIPPED IN. This block used to end with
+ * `.chart-figure:has(#period-early:checked) .seg[data-period="late"] { opacity: 0.2 }` and its
+ * three siblings, and the comment above them said filtering "only ever dims, never removes, which
+ * is what keeps every point reachable and every hover/focus answer honest". That reasoning is real
+ * and it is now overturned, for two reasons stated so a future reader meets the cost:
+ *
+ *   - **Dimming cannot satisfy what a filter is for.** A datum at `opacity: 0.2` is still on the
+ *     page, still in the tab order, still answers a hover with its own value. "Everything that
+ *     value drew disappears together" is not expressible as an opacity; the label left behind after
+ *     its mark was hidden (B6.18b) is the same defect one shade lighter.
+ *   - **Two genres cannot mean two things by one word.** `twin-map-web` has always removed. A
+ *     vocabulary vendored into both that dimmed in one and removed in the other would be one name
+ *     over two behaviours, which is the thing this whole rework exists to end.
+ *
+ * What the dimming was protecting is kept by a different mechanism: the axis, the grid, the
+ * reference rule and every piece of furniture carry no `data-filter` at all, so the frame a reader
+ * is comparing against never moves when the marks inside it do.
+ */
+const FILTER_CHROME_CSS = `
+/* The filter this beat declared. Native radios in a real <fieldset>: reachable and operable from
+   the keyboard with no help from this stylesheet or the inline script, and the hiding rules
+   (generated per option by filter.ts) are PURE CSS — :checked plus :has() on the enclosing figure —
+   so the control works identically with the inline script absent. */
+.chart-filter { flex: 0 0 auto; }
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts the legend on
+   a row of its own -- verified in the render, and worth ~20px of the vertical budget the
+   window-fit rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE NARROWING NOTE — the reader-facing consequence, and it is not optional. A filtered view is a
+   PARTIAL view while the title above it states the whole claim, so every narrowed option reveals
+   one sentence counting what is shown against what the beat draws ("Showing Above 8 t — 4 of 27
+   countries."). Both numbers are derived from the beat's own frozen data by filter.ts's
+   filterNotes(), never typed. The unfiltered option reveals nothing, because it IS the claim.
+   Hidden by default and revealed by the same :checked mechanism that narrows the marks, so it
+   works with JavaScript off. */
+.filter-note {
+  margin: 0 0 8px;
+  font-size: var(--source-size);
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: default blue dots with a bare word beside each,
+   indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with identical unlit pills and a hidden input, the
+   entire block is dropped there and the reader gets the plain native radios above, which state
+   their own checked-ness without any help. That is the same engine in which this genre's hiding
+   rules could not work either, so the fallback is not a second design to maintain -- it is the
+   design this genre already had.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrowed it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+`.trim();
+
+function buildCss({ ground, accent, ink, muted, grid, filter = null }) {
+  // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
+  // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
+  // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
+  // contained a `<fieldset class="chart-filter">`** — the seed's own story's ids, shipped as dead
+  // weight in every delivered file because the stylesheet was written for one beat and handed to
+  // every beat. `filterChrome` is now the whole cost and it is an empty string without a
+  // declaration, which is what makes "removable" literal.
+  const filterChrome = filter ? FILTER_CHROME_CSS : "";
+  const filterRules = filterCss(filter, { scope: FILTER_SCOPE, idPrefix: FILTER_ID_PREFIX });
   return `
 :root {
   --ground: ${ground};
@@ -241,7 +407,7 @@ body {
 }
 /* Everything except the plot keeps its natural height: words are never squeezed to make a chart
    fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
-.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { flex: 0 0 auto; }
 .chart-title {
   margin: 0 0 4px;
   font-size: var(--title-size);
@@ -255,96 +421,7 @@ body {
 }
 .chart-source { font-size: var(--source-size); margin-top: 10px; }
 
-/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
-   for the test a beat applies before shipping one at all. Native radios: reachable and operable
-   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
-   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
-   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
-   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
-   every hover/focus answer honest regardless of which radio is checked. */
-.chart-filter {
-  margin: 12px 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is not a layout instruction here -- inside a flex container float is ignored
-   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
-   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
-   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
-   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
-   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
-   rule above is spending. */
-.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-.chart-filter input { cursor: pointer; margin: 0; }
-
-/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
-   above rather than replacing them. The owner's read of the first shipped filter was that plain
-   radios read as a placeholder, and they did: three default blue dots with a bare word beside
-   each, indistinguishable from an unfinished form.
-   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
-   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
-   change is its parent <label>), so an engine without :has() could not draw a checked pill at
-   all -- and rather than leave such an engine with three identical unlit pills and a hidden
-   input, the entire block is dropped there and the reader gets the plain native radios above,
-   which state their own checked-ness without any help. That is the same engine in which this
-   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
-   the fallback is not a second design to maintain -- it is the design this genre already had.
-   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
-   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
-   announces it as a radio group, and the CSS-only dimming still fires with the inline script
-   absent. The input is made transparent and stretched over its own pill -- never display:none or
-   visibility:hidden, either of which would take it out of the focus order and out of the
-   accessibility tree.
-   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
-   reserved for the subject (visual-system.md), and a control that borrows it would make the one
-   colour that means something in this frame also mean "you clicked here". ink/ground is the
-   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
-   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
-   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
-   would shift sideways every time the reader changed their mind.
-   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
-   background is overridden by the OS and the checked state loses its only signal. Nothing else in
-   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
-   does not touch), so handling it here alone would be a half-measure -- see
-   references/web-discipline.md. */
-@supports selector(:has(*)) {
-  .chart-filter .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  .chart-filter label {
-    gap: 0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  .chart-filter label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  .chart-filter label:hover { color: var(--ink); }
-  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+${filterChrome}
 
 .chart-plot {
   position: relative;
@@ -402,17 +479,6 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   transform: translate(-100%, -50%) translateX(-10px);
 }
 
-/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
-   peak marker, the end point or any of the HTML furniture above, none of which carries a
-   data-period attribute at all and so can never match these selectors. :has() on the
-   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
-   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
-   supported in every evergreen browser this genre targets. */
-.chart-figure:has(#period-early:checked) .seg[data-period="late"],
-.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
-.chart-figure:has(#period-late:checked) .seg[data-period="early"],
-.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
-
 /* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
    the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
    a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
@@ -446,6 +512,8 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
+
+${filterRules}
 `.trim();
 }
 
@@ -468,6 +536,10 @@ async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       ground: SEED.ground,
       accent: SEED.accent,
       frame: FRAME,
+      // The seed's own filter declaration and the keys it draws. A beat that wants none omits both
+      // lines — nothing downstream needs a `false` anywhere.
+      filter: seedFilterDeclaration(data.map((d) => d.year)),
+      filterKeys: data.map((d) => String(d.year)),
     },
     outDir,
     name,

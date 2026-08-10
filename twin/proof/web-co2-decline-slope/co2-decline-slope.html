@@ -61,7 +61,7 @@ body {
 }
 /* Everything except the plot keeps its natural height: words are never squeezed to make a chart
    fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
-.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { flex: 0 0 auto; }
 .chart-title {
   margin: 0 0 4px;
   font-size: var(--title-size);
@@ -75,96 +75,7 @@ body {
 }
 .chart-source { font-size: var(--source-size); margin-top: 10px; }
 
-/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
-   for the test a beat applies before shipping one at all. Native radios: reachable and operable
-   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
-   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
-   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
-   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
-   every hover/focus answer honest regardless of which radio is checked. */
-.chart-filter {
-  margin: 12px 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is not a layout instruction here -- inside a flex container float is ignored
-   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
-   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
-   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
-   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
-   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
-   rule above is spending. */
-.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-.chart-filter input { cursor: pointer; margin: 0; }
 
-/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
-   above rather than replacing them. The owner's read of the first shipped filter was that plain
-   radios read as a placeholder, and they did: three default blue dots with a bare word beside
-   each, indistinguishable from an unfinished form.
-   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
-   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
-   change is its parent <label>), so an engine without :has() could not draw a checked pill at
-   all -- and rather than leave such an engine with three identical unlit pills and a hidden
-   input, the entire block is dropped there and the reader gets the plain native radios above,
-   which state their own checked-ness without any help. That is the same engine in which this
-   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
-   the fallback is not a second design to maintain -- it is the design this genre already had.
-   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
-   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
-   announces it as a radio group, and the CSS-only dimming still fires with the inline script
-   absent. The input is made transparent and stretched over its own pill -- never display:none or
-   visibility:hidden, either of which would take it out of the focus order and out of the
-   accessibility tree.
-   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
-   reserved for the subject (visual-system.md), and a control that borrows it would make the one
-   colour that means something in this frame also mean "you clicked here". ink/ground is the
-   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
-   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
-   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
-   would shift sideways every time the reader changed their mind.
-   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
-   background is overridden by the OS and the checked state loses its only signal. Nothing else in
-   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
-   does not touch), so handling it here alone would be a half-measure -- see
-   references/web-discipline.md. */
-@supports selector(:has(*)) {
-  .chart-filter .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  .chart-filter label {
-    gap: 0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  .chart-filter label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  .chart-filter label:hover { color: var(--ink); }
-  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
 
 .chart-plot {
   position: relative;
@@ -221,17 +132,6 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   font-weight: var(--label-weight);
   transform: translate(-100%, -50%) translateX(-10px);
 }
-
-/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
-   peak marker, the end point or any of the HTML furniture above, none of which carries a
-   data-period attribute at all and so can never match these selectors. :has() on the
-   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
-   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
-   supported in every evergreen browser this genre targets. */
-.chart-figure:has(#period-early:checked) .seg[data-period="late"],
-.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
-.chart-figure:has(#period-late:checked) .seg[data-period="early"],
-.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
 
 /* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
    the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for

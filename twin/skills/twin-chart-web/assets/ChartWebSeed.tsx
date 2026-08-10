@@ -72,6 +72,11 @@
 
 import { extent, tickStep } from "d3-array";
 import { scaleLinear } from "d3-scale";
+// The filter vocabulary, vendored into this skill (`./filter.ts`) and never imported from another.
+// `attrsFor` is the ONE call a component makes: spread it on every element drawn from a datum, and
+// the mark, the segment arriving at it, its hit target and anything a later beat adds are hidden or
+// shown together by construction rather than by four hand-written selectors kept in step.
+import { attrsFor } from "./filter.ts";
 
 type Reading = { year: number; value: number };
 type Measure = (
@@ -137,7 +142,45 @@ const PEAK_LABEL = "the year's biggest rebound";
  *  See this file's own doc-comment, item 5, and `SKILL.md`'s "When to use" for the test a real beat
  *  applies before adding a filter like this one at all. */
 const FILTER_SPLIT_YEAR = 2020;
+/** The control's own words. Part of the declaration, not of the machinery — a beat filtering by
+ *  region, by fuel or by size writes its own legend and its own noun. */
+const FILTER_LEGEND = "Show";
+const FILTER_ALL_LABEL = "All years";
+/** The noun the narrowing note counts, so the sentence reads in this beat's own terms. */
+const FILTER_UNIT = "readings";
 // =========================================
+
+/**
+ * THIS BEAT'S OWN FILTER DECLARATION — the whole of what a beat says when it wants one, and the
+ * thing it simply leaves out when it does not. Exported so the runner can hand it to `renderWeb`
+ * beside the keys the beat draws, and so a test can read it without rendering.
+ *
+ * It is a THRESHOLD-shaped filter (a split year), expressed as two named sets of keys, which is the
+ * whole reduction `filter.ts` is built on: a category column, a series and a threshold band all
+ * become "an option is a named set of data keys", so one control, one stylesheet rule and one guard
+ * cover every type instead of three of each.
+ *
+ * A REAL BEAT APPLIES THE TEST FIRST. This seed's is here to make the mechanism runnable end to end
+ * in the skill a journalist copies — not as evidence that a beat should have one. `SKILL.md`'s
+ * "When to use" and `references/web-discipline.md` carry the test: a filter earns its place only
+ * when the data has a natural, orthogonal dimension a reader would plausibly want to isolate, and
+ * narrowing to it is a genuinely different reading rather than a smaller version of the same one.
+ * Most beats do not, and a beat that does not declares nothing — see the twenty committed chart
+ * beats that now ship no control and no CSS for one.
+ */
+export function seedFilterDeclaration(years: number[]) {
+  return {
+    label: FILTER_LEGEND,
+    allLabel: FILTER_ALL_LABEL,
+    unit: FILTER_UNIT,
+    options: (["early", "late"] as Period[]).map((period) => ({
+      label: periodRangeLabel(period, years, FILTER_SPLIT_YEAR),
+      keys: years
+        .filter((year) => periodOf(year, FILTER_SPLIT_YEAR) === period)
+        .map(String),
+    })),
+  };
+}
 
 /** Early/late relative to `FILTER_SPLIT_YEAR` — the filter's own category, derived from the data
  *  rather than tagged by hand. Exported and pure so it is unit-tested directly. */
@@ -353,6 +396,9 @@ export function ChartWebSeed({
   grid,
   measure,
   frame,
+  filterIndex = new Map<string, string[]>(),
+  filterOptions = [],
+  filterNotes = [],
 }: {
   data: Reading[];
   title: string;
@@ -368,6 +414,13 @@ export function ChartWebSeed({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** THE FILTER, ALL THREE OF THEM DERIVED IN THE RUNNER FROM ONE DECLARATION (`./filter.ts`), never
+   *  here. A beat that declares no filter is handed an empty index, no options and no notes, and
+   *  every expression below collapses to nothing — no fieldset, no attribute, no sentence. That is
+   *  the whole of "removable": there is no flag to set, only a declaration to leave out. */
+  filterIndex?: Map<string, string[]>;
+  filterOptions?: { id: string; slug: string; label: string; isAll: boolean }[];
+  filterNotes?: { slug: string; text: string }[];
 }) {
   if (data.length < 2)
     throw new Error(
@@ -448,40 +501,49 @@ export function ChartWebSeed({
         <p className="chart-caveat">{CAVEAT}</p>
       </div>
 
-      {/* The filter — see this file's own doc-comment, item 5. Pure CSS: `render-web.mjs`'s
-          `buildCss` dims `.seg`/`.pt` by `data-period` only when a non-"all" radio is `:checked`,
-          via `:has()` on the enclosing `.chart-figure`, so this works identically with the inline
-          script absent and regardless of how deep inside the `<fieldset>` a given `<input>` sits
-          (a plain sibling combinator could not reach past the `<label>` wrapping each one). */}
-      <fieldset className="chart-filter">
-        <legend>Show</legend>
-        {/* One wrapper around the three options — the element the shared stylesheet draws the
-            segmented control's own outer track on (`.chart-filter .options`), so the three pills
-            read as one control rather than three loose chips, and so the `<legend>` is not inside
-            that track. It is a grouping box and nothing else: the control is still three plain
-            `<input type="radio" name="period">` in a `<fieldset>` with a `<legend>`, which is what
-            makes it a radio group to a screen reader and to the keyboard. */}
-        <div className="options">
-          <label>
-            <input
-              id="period-all"
-              type="radio"
-              name="period"
-              value="all"
-              defaultChecked
-            />
-            All years
-          </label>
-          <label>
-            <input id="period-early" type="radio" name="period" value="early" />
-            {periodRangeLabel("early", years, FILTER_SPLIT_YEAR)}
-          </label>
-          <label>
-            <input id="period-late" type="radio" name="period" value="late" />
-            {periodRangeLabel("late", years, FILTER_SPLIT_YEAR)}
-          </label>
-        </div>
-      </fieldset>
+      {/* The filter — drawn from the DECLARATION the runner handed down (`./filter.ts`), never from
+          this story's own words, so a beat that declares none renders nothing here at all: no
+          fieldset, no legend, no radios. The hiding itself is pure CSS (`:checked` + `:has()` on
+          the enclosing `.chart-figure`, one generated rule per option over `[data-filter]`), so it
+          works identically with the inline script absent and regardless of how deep inside the
+          `<fieldset>` a given `<input>` sits — a plain sibling combinator could not reach past the
+          `<label>` wrapping each one. */}
+      {filterOptions.length > 0 && (
+        <fieldset className="chart-filter">
+          <legend>{FILTER_LEGEND}</legend>
+          {/* One wrapper around the options — the element the shared stylesheet draws the segmented
+              control's own outer track on (`.chart-filter .options`), so the pills read as one
+              control rather than loose chips, and so the `<legend>` is not inside that track. It is
+              a grouping box and nothing else: the control is still plain
+              `<input type="radio" name="chart-filter">` in a `<fieldset>` with a `<legend>`, which
+              is what makes it a radio group to a screen reader and to the keyboard. */}
+          <div className="options">
+            {filterOptions.map((option) => (
+              <label key={option.id}>
+                <input
+                  id={option.id}
+                  type="radio"
+                  name="chart-filter"
+                  value={option.slug}
+                  defaultChecked={option.isAll}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {/* THE NARROWING NOTE — one per option, hidden by default and revealed by the same `:checked`
+          that narrows the marks. A filtered view is a partial view while the title above states the
+          whole claim; this is the sentence that stops the two contradicting each other silently.
+          Both of its numbers come from the beat's own frozen data (`filterNotes`), so nobody can
+          edit the count and not the total. */}
+      {filterNotes.map((note) => (
+        <p className="filter-note" data-filter-note={note.slug} key={note.slug}>
+          {note.text}
+        </p>
+      ))}
 
       <div
         className="chart-plot"
@@ -563,7 +625,11 @@ export function ChartWebSeed({
             <path
               key={`${seg.a.year}-${seg.b.year}`}
               className="seg"
-              data-period={seg.period}
+              // A segment belongs to the reading it ARRIVES at, so hiding a reading hides the line
+              // that reaches it and the reader is never left a stroke pointing at nothing. Both
+              // halves get the vocabulary from the same call, which is the point: there is no
+              // second place to remember.
+              {...attrsFor(filterIndex, String(seg.b.year))}
               d={`M ${seg.a.x} ${seg.a.y} L ${seg.b.x} ${seg.b.y}`}
               fill="none"
               stroke={accent}
@@ -588,7 +654,7 @@ export function ChartWebSeed({
             <circle
               key={p.year}
               className="pt"
-              data-period={periodOf(p.year, FILTER_SPLIT_YEAR)}
+              {...attrsFor(filterIndex, String(p.year))}
               cx={p.x}
               cy={p.y}
               r={5}

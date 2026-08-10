@@ -418,29 +418,121 @@ file why it does not assert more.
 
 ## The filter obeys the same rule interaction does
 
-**Nothing argument-bearing may sit behind a filter — the same rule "What must not become
-interactive" states for hover, extended to a second interaction surface this skill's second build
-adds.** A filter lets a reader explore PAST the claim a beat already states; it must never be the
-thing that reveals the claim in the first place. Concretely, in this seed: the default "All years"
-state is the ONLY state with no script or CSS override active — it is what a no-JS reader sees, and
-it already draws the full fall the title claims. The other two options ("2015–2019", "2020–2025")
-narrow the reader's FOCUS by dimming (`opacity: 0.2`, `render-web.mjs`) the segments and points
-outside the chosen period — they never hide, remove, or fail to SSR a reading, and they never touch
-the reference rule, the peak marker/label or the end point/label, none of which carries the
-`data-period` attribute the filter's CSS keys off. A beat whose headline is only true after the
-reader operates a filter is exactly as broken as one whose headline is only true after a hover — see
-`SKILL.md`'s "When to use" for the three-part test a beat applies before shipping a filter at all
-(most should not).
+### The filter is DECLARED by the beat, and a beat that declares none ships none
 
-**Mechanism: native controls, pure CSS, no script required.** Three `<input type="radio"
-name="period">` elements, each with an `id` the shared stylesheet keys off
-(`.chart-figure:has(#period-early:checked) …`). `:has()` — not the general sibling combinator this
-genre might otherwise reach for — because the radios sit inside `<label>`s inside a `<fieldset>`,
-never as a direct sibling of the plot it needs to reach; a sibling combinator cannot cross that
-nesting, `:has()` can, and is supported in every evergreen browser this genre targets. Keyboard and
-touch parity fall out of using real `<input>` elements rather than inventing a custom widget: Tab
-reaches the group, arrow keys move within it, and a screen reader announces it as the radio group it
-is, all without a line of this genre's own script.
+**Rewritten 2026-08-10, on the owner's instruction: *"il faut que les filtres soient ajoutables et
+supprimables en fonction des besoins pour tous les types."*** Before it, a filter was an ad-hoc
+property of two genres and neither could be added or removed by a beat. This genre hard-wired ONE
+story's dimension into the genre's own stylesheet — `#period-early` / `#period-late`, ids belonging
+to the seed's rainfall beat — and the cost was measurable: **21 of 21 committed chart × web pages
+carried 12 lines of `.chart-filter` styling and 3 `#period-*` rules, and not one of them contained a
+`<fieldset class="chart-filter">`.** Dead control machinery in every delivered file, because the
+stylesheet was written for one beat and handed to every beat.
+
+**What a beat declares now** (`assets/filter.ts`, vendored per skill and never imported across one):
+
+```js
+filter: {
+  label: "Filter by region",     // the <legend> — the dimension, in the beat's own words
+  allLabel: "All regions",       // the unfiltered option; always first, always the default
+  unit: "countries",             // the noun the narrowing note counts
+  options: [{ label: "Europe", keys: ["CHE", "DEU", …] }, …],
+}
+```
+
+**An option is a NAMED SET OF DATA KEYS, and that is the whole vocabulary.** Deliberately not three
+kinds of control, because the three things a beat legitimately filters on all reduce to it — a
+category column (`rows.filter(r => r.region === "Europe")`), a series
+(`rows.filter(r => r.series === "coal")`), a threshold band (`rows.filter(r => r.value >= 5e6)`) —
+and reducing them is what lets one control, one stylesheet rule and one guard cover every type.
+A threshold as named bands is a real control a reader operates from the keyboard with no script; a
+slider is a second mechanism with its own no-JS story, its own focus behaviour and its own
+accessible name, bought for a capability the bands already give. `data-filter` is a whitespace TOKEN
+LIST, so nested bands ("Above 3 M", "Above 8 M") need not partition the data.
+
+**Leaving the declaration out is the whole of "removable".** There is no flag, and no control that
+is merely hidden: `filterCss` returns the empty string, `buildFilterIndex` returns an empty map,
+`attrsFor` returns `{}`, `filterOptionsForMarkup`/`filterNotes` return nothing, and
+`assertOneVocabulary` **throws** if a `data-filter` attribute survives in a beat that declared none.
+Guarded by `splash-twin/test/filters-are-declared-or-absent.test.ts`, which walks every committed
+page and requires all of it or none of it.
+
+### Everything a value drew disappears together, by construction
+
+The known failure is B6.18b: on a symbol map a filter hid the marks and left their labels on the
+map. It happened because the hiding was four hand-written selectors — `.pt`, `.point-label`, the
+decorative `<circle>`, the table row — four chances to forget the fifth kind of element. So:
+
+- **The hiding is ONE rule per option, over `[data-filter]`**, never a list of element types.
+  Whatever a beat draws from a datum is covered the moment it carries the attribute, including the
+  kind of element that does not exist yet.
+- **The attributes are handed out, never typed.** A component spreads `attrsFor(index, key)` on
+  every element it draws from a datum; `assertOneVocabulary` reads the rendered markup back and
+  refuses any element carrying `data-key` without the `data-filter` the vocabulary says that key
+  has. A build cannot ship half a tagged datum.
+- **What neither of those can see** — an element drawn from a datum that carries no attributes at
+  all — is what the DRIVEN guard walks a real browser for, looking for the datum's own NAME still on
+  screen. Proven, not assumed: dropping `attrsFor` from the scatter's `.point-label` and leaving its
+  dot and leader line correctly tagged is invisible to the markup scan and reddens the driven walk
+  with *"Switzerland belongs to a datum this option excludes and is still drawn"*.
+
+### One overturn, kept with its cost attached: filtering HIDES, it no longer dims
+
+This section used to read that filtering "only ever DIMS a subset the default view already draws …
+never hides", and `SKILL.md`'s own three-part test made that its third clause. Overturned, for two
+reasons:
+
+- **Dimming cannot satisfy what a filter is for.** A datum at `opacity: 0.2` is still on the page,
+  still in the tab order, still answers a hover with its own value. "Everything that value drew
+  disappears together" is not expressible as an opacity; the label left behind after its mark was
+  hidden is the same defect one shade lighter.
+- **Two genres cannot mean two things by one word.** `twin-map-web` has always removed. A vocabulary
+  vendored into both that dimmed in one and removed in the other would be one name over two
+  behaviours.
+
+What the dimming was protecting is kept by a different mechanism: the axis, the grid, the reference
+rule and every piece of furniture carry no `data-filter` at all, so the frame a reader compares
+against never moves when the marks inside it do.
+
+### A narrowed view names itself
+
+**A filtered view is a PARTIAL view while the title above it states the whole claim, and the two must
+not contradict each other silently.** So every narrowed option reveals one sentence — *"Showing
+Europe — 40 of 164 countries."* — both numbers derived from the beat's own frozen data by
+`filterNotes`, never typed by an author who might edit the count and not the total. It is hidden by
+default and revealed by the same `:checked` that narrows the marks, so it works with JavaScript off.
+**The unfiltered option reveals no note, because it is not a subset of anything: it IS the claim.**
+
+What this deliberately does NOT do, stated so a future reader meets a decision rather than an
+accident: it does not police the beat's own PROSE. `proof/web-income-life-expectancy`'s subtitle
+names Cuba, and under "Europe" that sentence is still printed while Cuba is off the plot. Hiding it
+with one more rule would make the page consistent and the editorial problem invisible; the honest
+answer is that a beat whose standfirst names three subjects should offer options that keep them, or
+accept that the standfirst describes the unfiltered view — which is a decision about the beat, not
+about this genre's code. (`twin-map-web`'s discipline records the identical residue for its own
+subject sentence.)
+
+**Nothing argument-bearing may sit behind a filter — the same rule "What must not become
+interactive" states for hover.** A filter lets a reader explore PAST the claim a beat already states;
+it must never be the thing that reveals the claim. The unfiltered option carries `defaultChecked`
+in the SSR'd markup, not set by script, so a reader who never touches the control — and a no-JS
+reader who could not meaningfully touch it — both see everything the title claims. A beat whose
+headline is only true after the reader operates a filter is exactly as broken as one whose headline
+is only true after a hover; see `SKILL.md`'s "When to use" for the test a beat applies before
+shipping one at all (most should not).
+
+**Mechanism: native controls, pure CSS, no script required.** One `<input type="radio"
+name="chart-filter">` per option, each with an `id` the generated stylesheet keys off
+(`.chart-figure:has(#chart-filter-europe:checked) …`). `:has()` — not the general sibling combinator
+this genre might otherwise reach for — because the radios sit inside `<label>`s inside a
+`<fieldset>`, never as a direct sibling of the plot it needs to reach; a sibling combinator cannot
+cross that nesting, `:has()` can, and is supported in every evergreen browser this genre targets.
+Keyboard and touch parity fall out of using real `<input>` elements rather than inventing a custom
+widget: Tab reaches the group, arrow keys move within it, and a screen reader announces it as the
+radio group it is, all without a line of this genre's own script. The id, the `data-filter` token,
+the selector and (on a map) the live layer's own `setFilter` value are ONE string from `slugOf`,
+because the last time two of those were derived differently a raw group name HTML-escaped into a
+selector emptied a whole map with nothing red.
 
 **The control must look like a decision the newsroom made.** The first shipped filter was three
 default radio dots with a bare word beside each, and the owner's read of it was that it looked like

@@ -20,6 +20,9 @@ export type CountryRow = {
   code: string;
   gdp: number;
   lifeExpectancy: number;
+  /** OWID's own world-region column. Nothing in the geometry reads it — it exists solely so this
+   *  beat's runner can declare a filter over a dimension orthogonal to both axes. */
+  region?: string;
 };
 
 /**

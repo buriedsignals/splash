@@ -94,9 +94,13 @@ export function rowsFromCsv(csv) {
   const codeAt = columns.indexOf("Code");
   const lifeAt = columns.indexOf("Life expectancy at birth");
   const gdpAt = columns.indexOf("GDP per capita");
-  if ([entityAt, codeAt, lifeAt, gdpAt].some((i) => i < 0))
+  // The filter's own column. It is read here, beside the two the geometry needs, rather than
+  // second-guessed later: `regionOf` below turns it into the beat's declaration, and nothing else
+  // in this file knows what a region is.
+  const regionAt = columns.indexOf("World region according to OWID");
+  if ([entityAt, codeAt, lifeAt, gdpAt, regionAt].some((i) => i < 0))
     throw new Error(
-      `csv is missing one of Entity / Code / Life expectancy at birth / GDP per capita, got: ${header}`,
+      `csv is missing one of Entity / Code / Life expectancy at birth / GDP per capita / World region according to OWID, got: ${header}`,
     );
 
   return lines
@@ -107,6 +111,7 @@ export function rowsFromCsv(csv) {
       code: cells[codeAt],
       gdp: Number(cells[gdpAt]),
       lifeExpectancy: Number(cells[lifeAt]),
+      region: cells[regionAt],
     }))
     .filter(
       (r) =>
@@ -306,6 +311,40 @@ export function creditFrom(metadata, year) {
   return `Source: ${lifeProducer} & ${gdpDataset} (${gdpProducer}), via Our World in Data · ${year} data`;
 }
 
+/**
+ * THIS BEAT DECLARES A FILTER, AND HERE IS WHY IT PASSES THE TEST MOST BEATS DO NOT.
+ *
+ * The test (`twin-chart-web/references/web-discipline.md`, "Filters"): a filter earns its place only
+ * when the study set has a natural, ORTHOGONAL dimension a reader would plausibly want to isolate,
+ * with enough groups and enough data per group that narrowing to one is a genuinely different
+ * reading rather than a smaller version of the same one.
+ *
+ * This beat is 164 countries in one cloud, and OWID ships its own world-region column beside the two
+ * numbers plotted. The regions are orthogonal to both axes — neither income nor life expectancy is
+ * derived from where a country is — and the narrowed readings are genuinely different pictures: the
+ * European cluster sits in the top right corner of the plot as a tight knot, Africa spreads across
+ * the whole left half at a lower life expectancy, and the Americas straddle both. A reader who
+ * narrows to one is not looking at a sparser version of the same cloud; they are looking at a
+ * different shape, which is the whole test.
+ *
+ * The claim the title makes is measured on the WHOLE cloud, which is why the unfiltered option is
+ * the default and the only state the beat renders in with no interaction: the filter lets a reader
+ * explore PAST the claim, never into it. Every narrowed state prints its own count against the 164
+ * (`filterNotes`), so a partial view can never be mistaken for the total the title states.
+ */
+export function regionFilter(rows) {
+  const regions = [...new Set(rows.map((r) => r.region).filter(Boolean))].sort();
+  return {
+    label: "Filter by region",
+    allLabel: "All regions",
+    unit: "countries",
+    options: regions.map((region) => ({
+      label: region,
+      keys: rows.filter((r) => r.region === region).map((r) => r.code),
+    })),
+  };
+}
+
 export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = rowsFromCsv(csv);
@@ -330,6 +369,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
+      filter: regionFilter(data),
+      filterKeys: data.map((r) => r.code),
     },
     outDir,
     name,

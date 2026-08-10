@@ -16,9 +16,15 @@ import {
   FRAME,
   periodOf,
   periodRangeLabel,
+  seedFilterDeclaration,
   segments,
   chartGeometry,
 } from "../assets/ChartWebSeed.tsx";
+import {
+  buildFilterIndex,
+  filterNotes,
+  filterOptionsForMarkup,
+} from "../assets/filter.ts";
 import { buildCss } from "../scripts/render-web.mjs";
 
 const HERE = import.meta.dirname;
@@ -30,12 +36,23 @@ const DATA = JSON.parse(
   ),
 );
 
+/** The seed's own filter declaration and the keys it draws — built exactly as the runner builds
+ *  them (`render-web.mjs`'s `render`), because a test that hand-rolled the index would stop
+ *  proving that the DECLARED path works. */
+const SEED_YEARS = DATA.map((d: { year: number }) => d.year);
+const SEED_FILTER = seedFilterDeclaration(SEED_YEARS);
+const SEED_FILTER_KEYS = SEED_YEARS.map(String);
+const SEED_INDEX = buildFilterIndex(SEED_FILTER, SEED_FILTER_KEYS);
+
 function renderSeed() {
   const ground = "#FFFFFF";
   const furniture = deriveFurniture(ground);
   return renderToStaticMarkup(
     createElement(ChartWebSeed, {
       data: DATA,
+      filterIndex: SEED_INDEX,
+      filterOptions: filterOptionsForMarkup(SEED_FILTER, "chart-filter"),
+      filterNotes: filterNotes(SEED_FILTER, SEED_FILTER_KEYS),
       title: "Rainfall over the sample town fell by a third",
       source: "Sample data — not a real measurement",
       alt: "A line falling from 912 to 604 across eleven readings.",
@@ -140,9 +157,7 @@ describe("nothing caps the chart frame's own width", () => {
       .map(([, selector]) => selector.trim().split("\n").pop());
     expect(capped).toEqual([]);
     // What did NOT change: words are still never squeezed to make the chart fit.
-    expect(css).toContain(
-      ".chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }",
-    );
+    expect(css).toContain(".chart-header, .chart-source { flex: 0 0 auto; }");
   });
 
   // NARROWED 2026-08-10, W4 Task 5. This assertion used to read `expect(css).not.toContain("@media")`
@@ -354,7 +369,7 @@ describe("the beat fits the visible window", () => {
   it("should let ONLY the plot absorb the shortfall — words are never squeezed", () => {
     const stylesheet = css();
     expect(stylesheet).toContain(
-      ".chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }",
+      ".chart-header, .chart-source { flex: 0 0 auto; }",
     );
     const plot = rule(".chart-plot {");
     expect(plot).toContain("flex: 0 1 auto");
@@ -374,15 +389,15 @@ describe("the beat fits the visible window", () => {
   });
 });
 
-describe("the filter — default view complete, dimming only, native controls", () => {
+describe("the filter — declared by the beat, default view complete, native controls", () => {
   it("should default to the 'All years' radio checked, with the other two present but unchecked", () => {
     const markup = renderSeed();
-    expect(markup).toContain('id="period-all"');
-    expect(markup).toContain('id="period-early"');
-    expect(markup).toContain('id="period-late"');
+    expect(markup).toContain('id="chart-filter-all"');
+    expect(markup).toContain('id="chart-filter-2015-2019"');
+    expect(markup).toContain('id="chart-filter-2020-2025"');
     const allInput = markup.slice(
-      markup.indexOf('id="period-all"') - 40,
-      markup.indexOf('id="period-all"') + 120,
+      markup.indexOf('id="chart-filter-all"') - 40,
+      markup.indexOf('id="chart-filter-all"') + 120,
     );
     expect(allInput).toContain("checked");
   });
@@ -391,8 +406,11 @@ describe("the filter — default view complete, dimming only, native controls", 
     expect(periodOf(2019, 2020)).toBe("early");
     expect(periodOf(2020, 2020)).toBe("late");
     const markup = renderSeed();
-    expect(markup).toContain('data-period="early"');
-    expect(markup).toContain('data-period="late"');
+    expect(markup).toContain('data-filter="2015-2019"');
+    expect(markup).toContain('data-filter="2020-2025"');
+    // And the key beside it, because the two travel together or the build refuses them.
+    expect(markup).toContain('data-key="2019" data-filter="2015-2019"');
+    expect(markup).toContain('data-key="2020" data-filter="2020-2025"');
   });
 
   it("should derive each filter option's label from the real span of readings in that period", () => {
@@ -427,11 +445,12 @@ describe("the filter — default view complete, dimming only, native controls", 
     // Three native radios in one named group — the thing that makes this a radio group to a
     // keyboard and to a screen reader, before any styling is applied to it.
     expect((markup.match(/type="radio"/g) ?? []).length).toBe(3);
-    expect((markup.match(/name="period"/g) ?? []).length).toBe(3);
+    expect((markup.match(/name="chart-filter"/g) ?? []).length).toBe(3);
   });
 
   it("should put the segmented treatment behind a :has() support guard, leaving native radios as the base", () => {
     const css = buildCss({
+      filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -455,6 +474,7 @@ describe("the filter — default view complete, dimming only, native controls", 
 
   it("should never take a radio out of the focus order to make the pills look tidy", () => {
     const css = buildCss({
+      filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -476,6 +496,7 @@ describe("the filter — default view complete, dimming only, native controls", 
 
   it("should paint the checked pill from the derived furniture, never a literal colour", () => {
     const css = buildCss({
+      filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -491,7 +512,7 @@ describe("the filter — default view complete, dimming only, native controls", 
     expect(checkedRule).not.toContain("var(--accent)");
   });
 
-  it("should never gate the reference rule, the peak label or the end label behind data-period", () => {
+  it("should never gate the reference rule, the peak label or the end label behind the filter", () => {
     // These three are the argument, already stated (web-discipline.md, "What must not become
     // interactive") — none of them may carry the attribute the filter's CSS keys off.
     const markup = renderSeed();
@@ -499,6 +520,6 @@ describe("the filter — default view complete, dimming only, native controls", 
       markup.indexOf('class="overlay"'),
       markup.indexOf('<div class="x-axis"'),
     );
-    expect(overlay).not.toContain("data-period");
+    expect(overlay).not.toContain("data-filter");
   });
 });

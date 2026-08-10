@@ -31,6 +31,10 @@
  */
 
 import { scaleLinear } from "d3-scale";
+// The filter vocabulary. `attrsFor` is the one call this component makes for it: spread on every
+// element drawn from a country — the dot, its leader line, its name — so a narrowed region takes
+// all three away together rather than leaving a word floating over the cloud.
+import { attrsFor } from "../../skills/twin-chart-web/assets/filter.ts";
 import {
   logTicks,
   scatterGeometry,
@@ -160,6 +164,9 @@ export function IncomeLifeExpectancyWeb({
   grid,
   frame,
   measure,
+  filterIndex = new Map<string, string[]>(),
+  filterOptions = [],
+  filterNotes = [],
 }: {
   /** Every valid row EXCEPT Central African Republic's 2022 reading — excluded upstream, in
    *  `render-web.mjs`'s CSV reader, per `BRIEF.md`'s data-quality flag. This component draws
@@ -176,6 +183,12 @@ export function IncomeLifeExpectancyWeb({
   grid: string;
   frame: ScatterFrame;
   measure: Measure;
+  /** Derived in the runner from ONE declaration (`regionFilter` in `render-web.mjs`). A beat that
+   *  declares none is handed an empty index, no options and no notes, and every expression below
+   *  collapses to nothing — no fieldset, no attribute, no sentence. */
+  filterIndex?: Map<string, string[]>;
+  filterOptions?: { id: string; slug: string; label: string; isAll: boolean }[];
+  filterNotes?: { slug: string; text: string }[];
 }) {
   if (data.length < 8)
     throw new Error(
@@ -240,6 +253,7 @@ export function IncomeLifeExpectancyWeb({
       tabIndex={0}
       role="img"
       aria-label={`${p.country}: ${usd(p.gdp)} GDP per capita, ${years(p.lifeExpectancy)} years life expectancy`}
+      {...attrsFor(filterIndex, p.code)}
       data-country={p.country}
       data-detail={`${p.country} · ${usd(p.gdp)} · ${years(p.lifeExpectancy)} yrs`}
     />
@@ -267,6 +281,36 @@ export function IncomeLifeExpectancyWeb({
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
+
+      {/* The filter, drawn from the declaration the runner handed down — nothing here names a
+          region, so this markup disappears entirely for a beat that declares none. */}
+      {filterOptions.length > 0 && (
+        <fieldset className="chart-filter">
+          <legend>Filter by region</legend>
+          <div className="options">
+            {filterOptions.map((option) => (
+              <label key={option.id}>
+                <input
+                  id={option.id}
+                  type="radio"
+                  name="chart-filter"
+                  value={option.slug}
+                  defaultChecked={option.isAll}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {/* A narrowed view is a partial view and the title states the whole cloud, so every narrowed
+          option prints its own count against the total, both numbers off the beat's frozen data. */}
+      {filterNotes.map((note) => (
+        <p className="filter-note" data-filter-note={note.slug} key={note.slug}>
+          {note.text}
+        </p>
+      ))}
 
       {/* Both axes stated explicitly — the scatter doctrine's own rule: "a bare number axis on a
           scatter is close to unreadable... unlike a bar chart's shared baseline there is no other
@@ -354,6 +398,7 @@ export function IncomeLifeExpectancyWeb({
             return (
               <line
                 key={`leader-${p.code}`}
+                {...attrsFor(filterIndex, p.code)}
                 x1={p.x}
                 y1={p.y}
                 x2={p.x + off.dx}
@@ -393,6 +438,7 @@ export function IncomeLifeExpectancyWeb({
             return (
               <span
                 key={`label-${p.code}`}
+                {...attrsFor(filterIndex, p.code)}
                 className={`point-label anchor-${off.anchor}`}
                 style={{
                   left: `${pct(p.x + off.dx, frame.width)}%`,

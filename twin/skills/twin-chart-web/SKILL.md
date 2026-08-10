@@ -63,13 +63,22 @@ first build's shipped output was that it did not fill its container (see "How it
      explore past it, add it; if the claim only becomes true once the reader operates the control,
      it fails this test outright — see `web-discipline.md`, "The filter obeys the same rule
      interaction does."
-  3. Filtering can be expressed as DIMMING a subset the default view already draws (CSS only), not
-     as hiding or fetching data the default view never rendered. This genre never ships a filter
-     that removes an SSR'd reading from the no-JS page — see "What must not become interactive" in
-     `web-discipline.md`.
-  This seed's own filter (narrow to "2015–2019" or "2020–2025") passes all three: the split is a
-  real property of the series, "All years" (the default) already shows the full fall the title
-  claims, and the other two options only ever dim `.seg`/`.pt` elements already drawn.
+  3. Every option is a subset the default view ALREADY DRAWS, expressible as a named set of the
+     beat's own data keys (CSS only) — never data the default view did not render and never a fetch.
+     A single-series line has no such dimension and must not grow a control; a chart with several
+     series, a scatter with categories, a ranking with a region column all do.
+  A beat that passes writes ONE object — `filter: { label, allLabel, unit, options: [{ label, keys }] }`
+  — and hands it to `renderWeb` beside `filterKeys`; the machinery builds the control, the hiding
+  rules and the narrowing note, and spreads `attrsFor(index, key)` on every element drawn from a
+  datum. **A beat that does not pass writes nothing, and ships nothing**: no fieldset, no CSS rule,
+  no attribute — measured, `filters-are-declared-or-absent.test.ts` walks every committed page and
+  requires all of it or none of it. Filtering HIDES (it used to dim; overturned 2026-08-10, see
+  `web-discipline.md`, "One overturn"), and a narrowed view always states its own count against the
+  total so it cannot be read as the whole.
+  This seed's own filter (narrow to "2015–2019" or "2020–2025") is a THRESHOLD-shaped declaration
+  kept so the mechanism is runnable end to end in the skill a journalist copies — not evidence that
+  a beat should have one. Of the twenty-one committed chart × web beats, exactly one declares a
+  filter (`proof/web-income-life-expectancy`, OWID's world-region column over 164 countries).
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
   a story's web composition imports its own `crossing-geometry.ts`-shaped module **from its own
   workspace**, exactly as its static sibling does (`proof/co2-suisse/EmissionsWeb.tsx` and
