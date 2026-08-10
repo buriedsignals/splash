@@ -227,7 +227,13 @@ export const MEASURED_ASPECT = {
 const NAMED_REFUSALS = {
   map:
     "a map has no plot rectangle to clamp. R2 makes the target aspect an input the CAMERA takes, " +
-    "which is a camera decision and belongs to the map chantier, not to a chart's aspect range.",
+    "which is a camera decision and belongs to the map chantier, not to a chart's aspect range. " +
+    "That decision now exists: skills/map-beat/scripts/stage.mjs. A baked map's plate is a raster " +
+    "whose camera already fitted the study bounds, so the PLATE's aspect is the shape its geography " +
+    "takes; `mapStageBox` scales that to whichever dimension binds and hands the leftover back to " +
+    "furniture, and `assertStageHonoursGeography` refuses a plate whose longitude its own aspect " +
+    "cannot hold. This entry stays a refusal because it is a CHART's answer to a map, and it is " +
+    "still the right one — nothing here should invent an aspect range for a camera.",
   scatter:
     "rotating a scatter violates conventions of reading direction (Horak et al. §2.4.2), so it has " +
     "no twin form; and its density, not its aspect, is what a phone frame runs out of budget on. " +
