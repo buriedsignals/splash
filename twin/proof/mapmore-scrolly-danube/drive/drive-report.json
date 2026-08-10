@@ -1,0 +1,239 @@
+{
+  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "sweeps": [
+    {
+      "label": "1600x900 down",
+      "samples": 126,
+      "tallestPanelAsFractionOfPort": 0.223,
+      "portHeight": 820.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstStepDrift": 0.562,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 360
+      },
+      "reveal": {
+        "span": [
+          0.3612,
+          1
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 126
+      },
+      "fluidity": {
+        "intraStepFrames": 113,
+        "paintChanged": 113,
+        "geometryChanged": 112,
+        "fractionMoving": 0.991,
+        "alphaOnlyFrames": 1,
+        "signalHeldFrames": 9
+      },
+      "problems": []
+    },
+    {
+      "label": "1600x900 up",
+      "samples": 126,
+      "tallestPanelAsFractionOfPort": 0.223,
+      "portHeight": 820.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstStepDrift": 0.581,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 3474
+      },
+      "reveal": {
+        "span": [
+          1,
+          0.3612
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 126
+      },
+      "fluidity": {
+        "intraStepFrames": 113,
+        "paintChanged": 113,
+        "geometryChanged": 113,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 9
+      },
+      "problems": []
+    },
+    {
+      "label": "1280x800 down",
+      "samples": 111,
+      "tallestPanelAsFractionOfPort": 0.254,
+      "portHeight": 720.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstStepDrift": 0.571,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 420
+      },
+      "reveal": {
+        "span": [
+          0.3612,
+          1
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 111
+      },
+      "fluidity": {
+        "intraStepFrames": 99,
+        "paintChanged": 99,
+        "geometryChanged": 99,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 8
+      },
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "samples": 111,
+      "tallestPanelAsFractionOfPort": 0.254,
+      "portHeight": 720.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstStepDrift": 0.564,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 194
+      },
+      "reveal": {
+        "span": [
+          1,
+          0.3612
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 111
+      },
+      "fluidity": {
+        "intraStepFrames": 99,
+        "paintChanged": 99,
+        "geometryChanged": 98,
+        "fractionMoving": 0.99,
+        "alphaOnlyFrames": 1,
+        "signalHeldFrames": 8
+      },
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "samples": 95,
+      "tallestPanelAsFractionOfPort": 0.296,
+      "portHeight": 617.5,
+      "span": [
+        0,
+        3
+      ],
+      "worstStepDrift": 0.551,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 1980
+      },
+      "reveal": {
+        "span": [
+          0.3612,
+          1
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 95
+      },
+      "fluidity": {
+        "intraStepFrames": 84,
+        "paintChanged": 84,
+        "geometryChanged": 84,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 7
+      },
+      "problems": []
+    },
+    {
+      "label": "375x812 up",
+      "samples": 95,
+      "tallestPanelAsFractionOfPort": 0.296,
+      "portHeight": 617.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstStepDrift": 0.565,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 2210
+      },
+      "reveal": {
+        "span": [
+          1,
+          0.3612
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 95
+      },
+      "fluidity": {
+        "intraStepFrames": 84,
+        "paintChanged": 84,
+        "geometryChanged": 84,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 7
+      },
+      "problems": []
+    }
+  ],
+  "reducedMotion": {
+    "samples": 126,
+    "distinctStates": 4,
+    "everySampleIsOneOfTheFourStates": true
+  },
+  "camera": {
+    "framesMeasured": 664,
+    "worstRasterPerPixel": 1.125,
+    "clampedFrames": 0,
+    "scales": [
+      0.4167,
+      1.4222,
+      1.7778
+    ]
+  },
+  "live": {
+    "canvases": [
+      0
+    ],
+    "warm": [
+      null
+    ],
+    "errors": [
+      null
+    ]
+  },
+  "noJs": {
+    "visual": true,
+    "territories": 9,
+    "badgesVisible": 3,
+    "plateIsInlineData": true,
+    "externalRequests": 0,
+    "paragraphs": 4,
+    "credit": "Basemap © MapTiler © OpenStreetMap",
+    "visualVisible": 1
+  }
+}
