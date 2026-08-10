@@ -235,7 +235,17 @@ const READ = () => {
   const STEP_DIVISIONS = 40;
   const geometry = markEls.map((el) => {
     const cs = getComputedStyle(el);
-    const box = el.getBBox(); // the element's OWN user units, before its own transform
+    // A MARK IS NOT ALWAYS AN SVG ELEMENT. This genre draws a scatter's dots as HTML spans, because
+    // a `<circle>` inside a `preserveAspectRatio="none"` viewBox comes out an oval — so `getBBox`,
+    // which is SVG-only, is not always there. An HTML mark reports its own untransformed border box
+    // instead; nothing downstream needs more, because an HTML mark here is a `pop` and a `pop` has
+    // no painted extent to walk.
+    const box = el.getBBox
+      ? el.getBBox() // the element's OWN user units, before its own transform
+      : (() => {
+          const r = el.getBoundingClientRect();
+          return { x: 0, y: 0, width: r.width, height: r.height };
+        })();
     const sx = cs.getPropertyValue("--e-sx").trim();
     const sy = cs.getPropertyValue("--e-sy").trim();
     // A MARK THAT ARRIVES BY FADING IS STILL A MARK, and it is not a defect — two of the video
@@ -247,13 +257,12 @@ const READ = () => {
     // by its own opacity instead — and the clause that refuses "every mark on one clock", which is
     // the fade-over-a-finished-picture defect, applies identically to both kinds.
     const grows = cs.getPropertyValue("--e-ox").trim() !== "" || sx !== "" || sy !== "";
-    const axis = !grows
-      ? "none"
-      : sx === "0" && sy === "0"
-        ? "both"
-        : sy === "1"
-          ? "x"
-          : "y";
+    const axis = !grows ? "none" : sy === "1" ? "x" : "y";
+    // `pop` scales the INDIVIDUAL `scale` property (see `entranceCss`), which does not appear in the
+    // computed `transform` matrix at all — so a pop mark read through the matrix would report 1 for
+    // the whole build. Its own property is the reading.
+    const popped = cs.getPropertyValue("scale").trim();
+    const pops = popped !== "" && popped !== "none";
     const settled = axis === "y" ? box.height : box.width;
     const declaredOrigin = cs
       .getPropertyValue(axis === "y" ? "--e-oy" : "--e-ox")
@@ -270,7 +279,18 @@ const READ = () => {
           ? high
           : low;
     const tip = origin === high ? low : high;
-    return { el, axis, settled, origin, tip, box, grows, tag: el.tagName.toLowerCase() };
+    return {
+      el,
+      axis,
+      settled,
+      origin,
+      tip,
+      box,
+      grows,
+      pops,
+      popScale: pops ? Number(popped.split(/\s+/)[0]) : null,
+      tag: el.tagName.toLowerCase(),
+    };
   });
   const step =
     Math.max(1e-6, Math.max(0, ...geometry.map((g) => g.settled))) /
@@ -321,6 +341,9 @@ const READ = () => {
       // Null, not zero, when the reading does not apply — a fading mark has no painted extent to
       // report and a growing dot's is measured from its centre. A zero here would read as "absent".
       tag: g.tag,
+      // How this mark arrives, so the report says which reading it is quoting rather than leaving
+      // the next person to infer it from a column of numbers.
+      kind: g.grows ? "grow" : g.pops ? "pop" : "fade",
       painted:
         g.grows && g.axis !== "both" && g.tag !== "g"
           ? Math.round(Math.min(painted, g.settled) * 100) / 100
@@ -332,7 +355,9 @@ const READ = () => {
       // growing and a beat that reveals by fading are held to the same rule.
       arrival: g.grows
         ? Math.round(scale * 1000) / 1000
-        : Math.round(opacity * 1000) / 1000,
+        : g.pops
+          ? Math.round(g.popScale * 1000) / 1000
+          : Math.round(opacity * 1000) / 1000,
     };
   });
   // The labels that STATE a mark's value, paired to their mark by name. The label rule is checked on
@@ -384,6 +409,7 @@ function markSeries(samples) {
     key: first.key,
     axis: first.axis,
     tag: first.tag,
+    kind: first.kind,
     grows: first.painted !== null,
     settled: first.settled,
     painted: seriesOf(first.key, "painted"),
@@ -800,10 +826,10 @@ for (const [name, pass] of Object.entries(report.passes))
     // together, and that no column of this table is flat across the marks.
     for (const row of pass.marks ?? [])
       console.log(
-        `${name}    ${row.key} (${row.axis}, ${row.settled})  ` +
+        `${name}    ${row.key} (${row.kind}${row.grows ? `, ${row.axis}, ${row.settled}` : ""})  ` +
           (row.grows
             ? `painted ${row.painted.join(" ")}`
-            : `opacity ${row.arrival.join(" ")}`),
+            : `${row.kind === "pop" ? "scale" : "opacity"} ${row.arrival.join(" ")}`),
       );
   } else if (pass.first)
     console.log(`${name}  animations ${pass.first.animations}  wipe ${pass.first.scaleX}  segments ${pass.first.segsHit}/${pass.first.segsTotal}  marks ${pass.first.marks.length}`);

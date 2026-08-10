@@ -154,7 +154,6 @@ const TWIN = join(new URL(".", import.meta.url).pathname, "../../..");
 const ENTRANCE_PENDING = [
   "proof/co2-suisse/co2.html",
   "proof/web-co2-decline-slope/co2-decline-slope.html",
-  "proof/web-income-life-expectancy/income-life-expectancy.html",
   "proof/webx-wind-vs-solar/wind-vs-solar.html",
   "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html",
   "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html",
@@ -357,8 +356,14 @@ describe("the markup half: what a page that declares an entrance must already sa
 
       // 3 — only opacity and transform.
       const animated = animatedProperties(html);
+      // `scale` joins the two, and it is not a loosening: it is the INDIVIDUAL transform property,
+      // composited exactly as `transform` is and just as incapable of moving anything else on the
+      // page. It exists here for a measured reason — this genre's scatter draws its dots as HTML
+      // spans already carrying `transform: translate(-50%, -50%)`, and a keyframe animating
+      // `transform` REPLACES that, flying the whole cloud in from its dots' corners. What stays
+      // refused is the same list: never a layout property, never `stroke-dashoffset`.
       const illegal = animated.filter(
-        (p) => p !== "opacity" && p !== "transform",
+        (p) => p !== "opacity" && p !== "transform" && p !== "scale",
       );
       if (animated.length === 0)
         failures.push(
@@ -447,9 +452,9 @@ describe("the markup half: what a page that declares an entrance must already sa
       // drawn in full from the first millisecond, with every other clause here green.
       const motionOf = new Set(declared.map((l) => l.motion));
       for (const motion of motionOf)
-        if (!["fade", "wipe", "land", "grow"].includes(motion))
+        if (!["fade", "wipe", "land", "grow", "pop"].includes(motion))
           failures.push(
-            `data-entrance-motion="${motion}" is not one of the four motions the stylesheet defines`,
+            `data-entrance-motion="${motion}" is not one of the five motions the stylesheet defines`,
           );
       for (const motion of motionOf)
         if (!html.includes(`@keyframes chart-entrance-${motion}`))
@@ -458,6 +463,12 @@ describe("the markup half: what a page that declares an entrance must already sa
           );
 
       const growTags = tagsCarrying(html, 'data-entrance-motion="grow"');
+      for (const tag of tagsCarrying(html, 'data-entrance-motion="pop"'))
+        if (/\sdata-entrance="reveal"/.test(tag) && !/\sdata-entrance-key="/.test(tag))
+          failures.push(
+            "a pop mark on the reveal carries no data-entrance-key — it is one of the readings " +
+              "the argument is about, and without a key it sits outside every per-mark check",
+          );
       for (const tag of growTags) {
         const key = /\sdata-entrance-key="([^"]*)"/.exec(tag);
         const event = /\sdata-entrance="([a-z]+)"/.exec(tag);

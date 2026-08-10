@@ -369,9 +369,9 @@ export const LABEL_FADE_MS = 110;
  * (`splash/test/web-entrance-is-an-addition.test.ts`) asserts every `clipPath` id in a page is
  * unique and referenced rather than trusting 32 bits.
  */
-/** The four motions the shared stylesheet defines. See `render-web.mjs`'s `entranceCss` for what
- *  each one is for and why there are exactly four. */
-export type EntranceMotion = "fade" | "wipe" | "land" | "grow";
+/** The five motions the shared stylesheet defines. See `render-web.mjs`'s `entranceCss` for what
+ *  each one is for and why there are exactly five. */
+export type EntranceMotion = "fade" | "wipe" | "land" | "grow" | "pop";
 
 /** Which way a `grow` mark's own extent runs, and where its baseline is.
  *
@@ -388,14 +388,11 @@ export type EntranceMotion = "fade" | "wipe" | "land" | "grow";
  *  coordinates (a `<line x1=100>` given `transform-origin: 100px 200px` and `scaleX(0.5)` keeps its
  *  left end at 100 and halves its length — driven, not read off a spec). */
 export type GrowFrom = {
-  /**
-   * `x` for a horizontal bar or a lollipop stem, `y` for a column, and **`both` for a mark whose
-   * arrival is its own SIZE rather than a length** — a scatter dot, which has no length to grow
-   * because its reading is its POSITION. That third case is the video's own answer for this type:
-   * `vidx-scatter-income-life-expectancy` grows each point's RADIUS from zero on its own slice of
-   * the reveal, and `both` is that gesture in CSS.
-   */
-  axis: "x" | "y" | "both";
+  /** `x` for a horizontal bar or a lollipop stem, `y` for a column. A mark whose arrival is its own
+   *  SIZE rather than a length — a scatter dot, whose reading is its POSITION — is not a `grow` at
+   *  all: it is `pop`, which animates a different CSS property for a measured reason. See
+   *  `render-web.mjs`'s `entranceCss`. */
+  axis: "x" | "y";
   origin: { x: number; y: number };
 };
 
@@ -484,10 +481,10 @@ export function entranceLayer(
   // The data arrives on `reveal`, and every reading that arrives there has to be inside the
   // instrument that checks no intermediate frame states something false about them. A nameless grow
   // is legal elsewhere (a reference rule being laid down), never here.
-  if (grow && event === "reveal" && mark === undefined)
+  if ((grow || motion === "pop") && event === "reveal" && mark === undefined)
     throw new Error(
-      `a grow mark on the reveal is one of the readings the argument is about and must carry its ` +
-        `own name — without one it is outside every per-mark check`,
+      `a ${motion} mark on the reveal is one of the readings the argument is about and must carry ` +
+        `its own name — without one it is outside every per-mark check`,
     );
   return {
     attrs: {
@@ -508,7 +505,7 @@ export function entranceLayer(
       ...(grow
         ? {
             "--e-sx": grow.axis === "y" ? "1" : "0",
-            "--e-sy": grow.axis === "x" ? "1" : "0",
+            "--e-sy": grow.axis === "y" ? "0" : "1",
             "--e-ox": `${grow.origin.x}px`,
             "--e-oy": `${grow.origin.y}px`,
           }

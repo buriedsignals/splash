@@ -30,6 +30,15 @@
  * sit close in x, far apart in y).
  */
 
+import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
 import { scaleLinear } from "d3-scale";
 // The filter vocabulary. `attrsFor` is the one call this component makes for it: spread on every
 // element drawn from a country — the dot, its leader line, its name — so a narrowed region takes
@@ -239,11 +248,89 @@ export function IncomeLifeExpectancyWeb({
   const totalWidth = yGutterPx + frame.width;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE, carried from `proof/vidx-scatter-income-life-expectancy`. I had listed this
+  // type as having "no length at all", which is true and is not the obstacle it looked like: the
+  // video grows each point's RADIUS from zero on its own overlapping slice of the reveal, cascading
+  // in GDP-ASCENDING ORDER — the x axis's own order, so the cloud fills from the left and the
+  // reader's eye is walked along the axis the claim is about.
+  //
+  // THE VIDEO'S OTHER ANSWER, kept exactly: **the subject lands at its natural sorted position, not
+  // held back to last for spectacle**. That is the one place this beat does NOT do what the four
+  // bar-family beats here do, and it is the video's own sentence. This beat has three named points
+  // rather than one subject; their leaders and labels arrive with their own dots, and the
+  // conclusion is the three names together, once the cloud is complete.
+  //
+  // THE MOTION IS `pop`, NOT `grow`, and the reason is measured. These dots are HTML spans (an SVG
+  // `<circle>` in a `preserveAspectRatio="none"` viewBox is stretched into an oval — this file's own
+  // header says so) and every one already carries `transform: translate(-50%, -50%)` to sit on its
+  // coordinate. A keyframe animating `transform` REPLACES that translate, so the whole cloud would
+  // fly in from its dots' top-left corners. `pop` animates `scale`, the individual transform
+  // property, which composes with the centring instead of clobbering it and whose default origin is
+  // the element's own centre — a dot growing from its own middle, which is the radius the video
+  // grows.
+  const cloud = [...g.points].sort((a, b) => a.gdp - b.gdp);
+  const SCATTER_OVERLAP = 1.8;
+  const windowFor = (code: string) =>
+    markEvent(
+      WEB_ENTRANCE.reveal,
+      cloud.findIndex((p) => p.code === code),
+      cloud.length,
+      SCATTER_OVERLAP,
+    );
+  const dotLayer = (code: string) => {
+    const own = windowFor(code);
+    return entranceLayer("reveal", "pop", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      mark: code,
+    });
+  };
+  const namedLayer = (code: string) =>
+    entranceLayer("reveal", "fade", {
+      delay: atProgress(windowFor(code), 1),
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: code,
+    });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  // The reference is the y axis's own top gridline — the level "life expectancy" is read against —
+  // laid down left to right before the cloud, the same gesture the line beat's dashed rule makes.
+  const referenceValue = yTicks[yTicks.length - 1];
+  const referenceLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  // The three named countries are what this beat concludes with — the cloud states the shape, the
+  // names state the argument — so their labels are the conclusion and land once every dot is in.
+  const conclusionLayer = () =>
+    entranceLayer("conclusion", "fade", {
+      delay: WEB_ENTRANCE.conclusion.start,
+      duration: WEB_ENTRANCE.conclusion.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const lastNamedEnd = Math.max(
+    ...named.map((p) => atProgress(windowFor(p.code), 1) + LABEL_FADE_MS),
+  );
+  if (lastNamedEnd > endOf(WEB_ENTRANCE.reveal) + LABEL_FADE_MS)
+    throw new Error(
+      `a named point's leader ends at ${lastNamedEnd}ms, after the cloud is complete at ` +
+        `${endOf(WEB_ENTRANCE.reveal) + LABEL_FADE_MS}ms`,
+    );
+
   const dot = (p: (typeof g.points)[number], isNamed: boolean) => (
     <span
       key={p.code}
+      {...dotLayer(p.code).attrs}
       className={isNamed ? "pt pt-named" : "pt"}
       style={{
+        ...dotLayer(p.code).vars,
         left: `${pct(p.x, frame.width)}%`,
         top: `${pct(p.y, frame.height)}%`,
         width: isNamed ? frame.namedDotPx : frame.dotPx,
@@ -277,7 +364,11 @@ export function IncomeLifeExpectancyWeb({
         ["--label-weight" as string]: frame.label.fontWeight,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -317,7 +408,11 @@ export function IncomeLifeExpectancyWeb({
           cue for what a position means." The y title sits ABOVE the plot rectangle and the x title
           BELOW it, in their own rows of the figure's flex column, so neither can occlude a real
           point the way a title in the plot's own corner silently can ("The accessibility trap"). */}
-      <p className="axis-title y-axis-title">
+      <p
+        className="axis-title y-axis-title"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         Life expectancy at birth (years)
       </p>
 
@@ -329,7 +424,11 @@ export function IncomeLifeExpectancyWeb({
           aspectRatio: `${totalWidth} / ${totalHeight}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {yTicks.map((value, i) => (
             <span
               key={value}
@@ -367,19 +466,38 @@ export function IncomeLifeExpectancyWeb({
             fill={ground}
           />
 
-          {yTicks.map((value) => (
-            <line
-              key={`y-${value}`}
-              x1={0}
-              x2={frame.width}
-              y1={g.y(value)}
-              y2={g.y(value)}
-              stroke={grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* Gridlines are FURNITURE and come up on one clock with the labels beside them — except
+              the topmost, which is this beat's REFERENCE (the level life expectancy is read
+              against) and is laid down alone, before the cloud. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {yTicks
+              .filter((value) => value !== referenceValue)
+              .map((value) => (
+                <line
+                  key={`y-${value}`}
+                  x1={0}
+                  x2={frame.width}
+                  y1={g.y(value)}
+                  y2={g.y(value)}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+          </g>
+          <line
+            {...referenceLayer.attrs}
+            style={referenceLayer.vars}
+            x1={0}
+            x2={frame.width}
+            y1={g.y(referenceValue)}
+            y2={g.y(referenceValue)}
+            stroke={grid}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
           {/* One vertical gridline per decade — a log axis's own "round number". */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
           {xTicks.map((value) => (
             <line
               key={`x-${value}`}
@@ -392,12 +510,15 @@ export function IncomeLifeExpectancyWeb({
               vectorEffect="non-scaling-stroke"
             />
           ))}
+          </g>
 
           {named.map((p) => {
             const off = frame.labelOffsets[p.code];
             return (
               <line
                 key={`leader-${p.code}`}
+                {...namedLayer(p.code).attrs}
+                style={namedLayer(p.code).vars}
                 {...attrsFor(filterIndex, p.code)}
                 x1={p.x}
                 y1={p.y}
@@ -438,9 +559,11 @@ export function IncomeLifeExpectancyWeb({
             return (
               <span
                 key={`label-${p.code}`}
+                {...conclusionLayer().attrs}
                 {...attrsFor(filterIndex, p.code)}
                 className={`point-label anchor-${off.anchor}`}
                 style={{
+                  ...conclusionLayer().vars,
                   left: `${pct(p.x + off.dx, frame.width)}%`,
                   top: `${pct(p.y + off.dy, frame.height)}%`,
                 }}
@@ -451,7 +574,11 @@ export function IncomeLifeExpectancyWeb({
           })}
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {xTicks.map((value) => (
             <span
               key={value}
@@ -464,11 +591,21 @@ export function IncomeLifeExpectancyWeb({
         </div>
       </div>
 
-      <p className="axis-title x-axis-title">
+      <p
+        className="axis-title x-axis-title"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         GDP per capita, log scale ({GDP_UNIT})
       </p>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }

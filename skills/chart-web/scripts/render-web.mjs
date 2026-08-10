@@ -382,7 +382,7 @@ const FILTER_CHROME_CSS = `
  * Here, under `reduce`, the guard's own assertion is literally true: nothing animates because
  * nothing that animates was ever defined.
  *
- * THE FOUR MOTIONS, and the reason there are exactly four:
+ * THE FIVE MOTIONS, and the reason there are exactly five:
  *
  *   - `fade` — a layer of FURNITURE arriving, or a LABEL arriving on the mark it names. Opacity
  *     only, which composites and never reflows.
@@ -394,6 +394,17 @@ const FILTER_CHROME_CSS = `
  *   - `land` — `transform: scale()` on the SUBJECT, from nothing to its full size. The component
  *     guarantees the origin by drawing the mark at (0,0) inside a translated `<g>`, so there is no
  *     `transform-box`/percentage question to get wrong at two different engine versions.
+ *   - `pop` — ONE MARK arriving at ITS OWN SIZE, from nothing. For a mark whose reading is its
+ *     POSITION and not a length: a scatter's dots, whose own video (`vidx-scatter-income-life-
+ *     expectancy`) grows each point's RADIUS from zero on its own slice of the reveal. It animates
+ *     `scale`, the INDIVIDUAL transform property, and not `transform` — measured, not preferred:
+ *     this genre's scatter draws its dots as HTML spans (a `<circle>` inside a
+ *     `preserveAspectRatio="none"` viewBox is deformed into an oval), and every one of them already
+ *     carries `transform: translate(-50%, -50%)` to sit on its own coordinate. A keyframe animating
+ *     `transform` REPLACES that translate, so the cloud would fly in from its dots' top-left
+ *     corners. `scale` is applied before `transform` in the individual-transform-property order, so
+ *     it composes with the centring rather than clobbering it, composites identically, and its
+ *     default origin is the element's own centre — which is exactly where a dot grows from.
  *   - `grow` — ONE MARK growing from ITS OWN baseline to ITS OWN value, along the one axis that
  *     encodes the reading. The bar family's reveal, and the reason a fourth motion exists at all:
  *     the `wipe` above uncovers a picture left to right, which is the truth about a line whose x
@@ -427,6 +438,7 @@ function entranceCss() {
   @keyframes chart-entrance-wipe { from { transform: scaleX(0); } }
   @keyframes chart-entrance-land { from { transform: scale(0); } }
   @keyframes chart-entrance-grow { from { transform: scale(var(--e-sx, 1), var(--e-sy, 1)); } }
+  @keyframes chart-entrance-pop { from { scale: 0; } }
 
   /* One class, added once, by an IntersectionObserver — never on load. An embed can sit far below
      the fold of an article, and an entrance nobody watched is a worse artifact than a static one.
@@ -444,6 +456,7 @@ function entranceCss() {
   .chart-figure.entered [data-entrance-motion="wipe"] { animation-name: chart-entrance-wipe; }
   .chart-figure.entered [data-entrance-motion="land"] { animation-name: chart-entrance-land; }
   .chart-figure.entered [data-entrance-motion="grow"] { animation-name: chart-entrance-grow; }
+  .chart-figure.entered [data-entrance-motion="pop"] { animation-name: chart-entrance-pop; }
   .chart-figure.entered [data-entrance-motion="wipe"],
   .chart-figure.entered [data-entrance-motion="land"] {
     transform-box: view-box;
