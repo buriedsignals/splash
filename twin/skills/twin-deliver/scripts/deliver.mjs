@@ -202,20 +202,43 @@ async function copyTree(srcDir, destDir, written, { env = process.env } = {}) {
  * So the key is substituted HERE, when the file goes to the newsroom, and nowhere earlier.
  * `splash-twin/test/no-key-in-the-repository.test.ts` reddens if one ever reaches a tracked file.
  *
- * `MAPTILER_DELIVERY_KEY` is read BEFORE `MAPTILER_KEY`, and that order is the operational advice
- * rather than a preference. MapTiler's documented mitigation for a client-side key is Allowed HTTP
- * origins, enforced server-side — copied elsewhere, a restricted key does not work — and an
- * account's DEFAULT key cannot be restricted, so a dedicated one has to be created. The delivered
- * key should be that second, origin-restricted key, never the development one.
+ * THE DELIVERED KEY IS `MAPTILER_DELIVERY_KEY`, AND NOTHING ELSE — clause 4 of the ruling, which
+ * used to be advice in this docblock while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`.
+ * The audit measured what that fallback meant in practice: `twin/.env` holds only `MAPTILER_KEY`,
+ * so **as configured, every delivery substituted the unrestricted development key**, and nothing
+ * refused, warned or recorded it (AUDIT-W5-W6-map.md §2, clause 4).
  *
- * With neither set, the placeholder travels through untouched. That is not a silent failure: the
- * delivered page still renders its complete fallback layer, exactly as it does offline or with
- * JavaScript off. The live layer simply never boots, which is the honest outcome for a delivery
- * nobody gave a key to.
+ * Why the fallback cannot stay. MapTiler's documented mitigation for a client-side key is Allowed
+ * HTTP origins, enforced server-side — copied elsewhere, a restricted key simply does not work — and
+ * an account's DEFAULT key CANNOT be restricted, so a dedicated one has to be created
+ * (docs.maptiler.com/cloud/api/authentication-key/). A development key delivered into a published
+ * article is a key any reader can lift and spend, and MapTiler invalidates ALL of an account's keys
+ * at 100% of its spending limit — so the blast radius of the convenient fallback is every map in
+ * every article the newsroom has ever published.
+ *
+ * The three states, and there is no fourth:
+ *
+ *   - `MAPTILER_DELIVERY_KEY` set  → substituted. The delivery is live.
+ *   - neither set                  → the placeholder travels through untouched. Not a silent
+ *                                    failure: the delivered page renders its complete fallback
+ *                                    layer, exactly as it does offline or with JavaScript off.
+ *   - only `MAPTILER_KEY` set      → **THROWS**, naming both ways forward. Substituting it would be
+ *                                    the defect; falling silently back to the placeholder would
+ *                                    ship a dead map to someone who believes they configured one.
  */
 export function substituteKeys(html, env = process.env) {
-  const key = env.MAPTILER_DELIVERY_KEY || env.MAPTILER_KEY;
-  if (!key) return html;
+  const key = env.MAPTILER_DELIVERY_KEY;
+  if (!key) {
+    if (env.MAPTILER_KEY)
+      throw new Error(
+        "MAPTILER_DELIVERY_KEY is not set, and MAPTILER_KEY is — refusing to deliver the " +
+          "development key into a published page (ruling R1b). Create a SECOND MapTiler key " +
+          "restricted to the newsroom's own origins (docs.maptiler.com/cloud/api/authentication-key/) " +
+          "and set MAPTILER_DELIVERY_KEY, or unset MAPTILER_KEY for this delivery and the page will " +
+          "ship its complete fallback layer with no live tiles.",
+      );
+    return html;
+  }
   const placeholder = "__MAPTILER" + "_KEY__";
   return html.split(placeholder).join(key);
 }

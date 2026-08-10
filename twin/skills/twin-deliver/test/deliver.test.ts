@@ -7,6 +7,7 @@ import {
   materialise,
   ownedFileForInsertion,
   exportDirFor,
+  substituteKeys,
 } from "../scripts/deliver.mjs";
 
 // A hand-over payload, module-scope, because EVERY delivery needs one: G4 closes into
@@ -795,5 +796,51 @@ describe("a story has more than one beat", () => {
     const files = await readdir(mine);
     expect(files).not.toContain("still.png");
     expect(files).toContain("package.json");
+  });
+});
+
+/**
+ * RULING R1b, CLAUSE 4 — the delivered key is a SECOND, domain-restricted key.
+ *
+ * It was advice in a docblock while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`, and the
+ * audit measured what that meant on the machine this was built on: `twin/.env` holds only
+ * `MAPTILER_KEY`, so **every delivery substituted the unrestricted development key** and nothing
+ * refused, warned or recorded it. MapTiler cannot restrict an account's default key, and it
+ * invalidates ALL of an account's keys at 100% of its spending limit — so the fallback's blast
+ * radius is every map in every article the newsroom has already published.
+ *
+ * The three states below are the whole contract, and the third is the one that used to be silent.
+ */
+describe("substituteKeys — R1b clause 4, the delivered key", () => {
+  const page = 'style.json?key=__MAPTILER' + '_KEY__"';
+
+  it("should substitute the second, domain-restricted key", () => {
+    expect(substituteKeys(page, { MAPTILER_DELIVERY_KEY: "restricted-key" })).toBe(
+      'style.json?key=restricted-key"',
+    );
+  });
+
+  it("should leave the placeholder alone when no key is configured at all", () => {
+    // Not a silent failure: the delivered page renders its complete fallback layer, exactly as it
+    // does offline or with JavaScript off. The live layer never boots, which is the honest outcome
+    // for a delivery nobody gave a key to.
+    expect(substituteKeys(page, {})).toBe(page);
+  });
+
+  it("should REFUSE to deliver the development key, naming both ways forward", () => {
+    expect(() => substituteKeys(page, { MAPTILER_KEY: "development-key" })).toThrow(
+      /MAPTILER_DELIVERY_KEY is not set/,
+    );
+    // The refusal has to be actionable, or it is just an obstacle: it names the second key, where
+    // to create it, and the alternative of delivering the fallback layer.
+    expect(() => substituteKeys(page, { MAPTILER_KEY: "development-key" })).toThrow(
+      /restricted to the newsroom's own origins/,
+    );
+  });
+
+  it("should prefer the delivery key even when the development key is also set", () => {
+    expect(
+      substituteKeys(page, { MAPTILER_DELIVERY_KEY: "restricted-key", MAPTILER_KEY: "development-key" }),
+    ).toBe('style.json?key=restricted-key"');
   });
 });

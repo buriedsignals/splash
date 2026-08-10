@@ -535,16 +535,36 @@ code** — clicking every chip in a real browser at 1600 × 900:
 ### The key (ruling R1b)
 
 The rendered HTML carries a documented placeholder, never a key. `twin-deliver` substitutes at
-delivery (`substituteKeys`), reading `MAPTILER_DELIVERY_KEY` before `MAPTILER_KEY`, and
-`splash-twin/test/no-key-in-the-repository.test.ts` reddens if a real key ever reaches a tracked
-file. Every map × web beat commits its own HTML and the FJM deliverable is an MIT open-source
-release: a key pushed to a public repository is found by scanners within minutes and survives in the
-history after any later removal.
+delivery (`substituteKeys`) and `splash-twin/test/no-key-in-the-repository.test.ts` reddens if a real
+key ever reaches a tracked file. Every map × web beat commits its own HTML and the FJM deliverable is
+an MIT open-source release: a key pushed to a public repository is found by scanners within minutes
+and survives in the history after any later removal.
 
-**The delivered key should be a SECOND, origin-restricted key**, not the development one. MapTiler's
-documented mitigation for a client-side key is Allowed HTTP origins, enforced server-side — copied
-elsewhere it does not work — and **an account's default key cannot be restricted**, so a dedicated
-one has to be created (<https://docs.maptiler.com/cloud/api/authentication-key/>).
+**The delivered key IS `MAPTILER_DELIVERY_KEY`, a SECOND, origin-restricted key — never the
+development one, and there is no fallback to it.** MapTiler's documented mitigation for a
+client-side key is Allowed HTTP origins, enforced server-side — copied elsewhere it does not work —
+and **an account's default key cannot be restricted**, so a dedicated one has to be created
+(<https://docs.maptiler.com/cloud/api/authentication-key/>).
+
+This paragraph used to say "should", while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`,
+and that is the difference between a rule and advice. Measured: this tree's `.env` holds only
+`MAPTILER_KEY`, so **every delivery substituted the unrestricted development key** and nothing
+refused, warned or recorded it. `substituteKeys` now has three states and no fourth — the delivery
+key is substituted; with neither key set the placeholder travels through and the page ships its
+complete fallback layer; **with only `MAPTILER_KEY` set it throws**, naming both ways forward.
+Falling silently back to the placeholder there would ship a dead map to someone who believes they
+configured one, which is why the third state is loud rather than lenient.
+
+**The guard's three holes, closed 2026-08-10.** `AUDIT-W5-W6-map.md` §5.2 wrote a real key into
+three tracked files and watched the guard pass on all three: a tracked `.html` over 8 MB (skipped by
+size), a tracked file named `.png` (skipped by extension), and **a key other than the one in
+`.env`** — which is precisely the key clause 4 says will be delivered. The scan is now chunked over
+BYTES with no size ceiling and no extension list, it looks for the delivery key by name as well, and
+it carries a value-INDEPENDENT check: every `api.maptiler.com/…?key=` in a tracked file must be the
+placeholder, where "a key" is matched by SHAPE (16+ alphanumerics) rather than by value. That last
+one needs no key at all to be looking, which is what makes it the real close — and it is pinned by
+an anti-vacuity assertion, because it passes trivially in a tree with no live map in it, which is
+exactly the tree the audit found.
 
 **The rules that already govern interaction here apply, and matter more with a zoom control than
 without:**
