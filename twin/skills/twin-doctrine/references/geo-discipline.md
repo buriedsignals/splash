@@ -228,6 +228,12 @@ their study set asked for in portrait** (×1.95 and ×2.08) against ×1.00 in la
 (`survey/map-camera.md`). On the web this is the same arithmetic wearing its other face — driving one
 live page at four viewports, a 1600×900 article column showed **3.2× the longitude the story asked
 for**, mostly ocean, while 768×1024 left the reader **0.27 of a zoom level** of room to move in.
+Re-measured 2026-08-10 across four live beats — the symbol seed, the quake symbols, the CO₂
+choropleth and the population dots — the wide article column admits **×2.58 to ×3.23 of longitude**
+and the phone **×1.46 to ×1.70 of latitude**, while the tall tablet is the one shape that comes out
+near ×1.2 on both. Nothing is cropped in any of them, which is the point: the excess is what
+`fitBounds` MUST show to keep the whole study set on screen at a shape the plate was not baked for,
+so it is a number to record and put in front of a journalist, not a bug to fix in the fit.
 
 So a camera that takes an aspect owes two recorded numbers — how much longitude and how much latitude
 it ADMITTED beyond the study set — and a leash that answers the second case: the twin's map × web
