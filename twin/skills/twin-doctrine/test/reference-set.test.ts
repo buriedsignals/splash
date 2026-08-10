@@ -117,14 +117,16 @@ a long, noisy series read against a historical level | some video without a link
     );
     const structures = shipped
       .split("\n")
-      .filter((line) => /^\|/.test(line.trim()) && !/^[\s|:-]+$/.test(line.trim()))
+      .filter(
+        (line) => /^\|/.test(line.trim()) && !/^[\s|:-]+$/.test(line.trim()),
+      )
       .slice(1)
       .map((line) => line.split("|")[1].trim());
-    expect(structures.length).toBeGreaterThanOrEqual(7);
+    expect(structures.length).toBeGreaterThanOrEqual(8);
     expect(new Set(structures).size).toBe(structures.length);
   });
 
-  it("should require at least seven references in the shipped file", async () => {
+  it("should require at least eight references in the shipped file", async () => {
     // The floor tracks what the file actually ships, not an aspiration — a
     // failing assertion has no signal value once it is permanently red, and a
     // permanently-red test trains everyone to ignore the next real regression.
@@ -132,15 +134,19 @@ a long, noisy series read against a historical level | some video without a link
     // three rounds of getting verification wrong, and a fourth round (see
     // reference-set.md's own preamble) added three more rows — each newly
     // verified against its own live pixels and the text beside them — to
-    // cover argument structures the four-row set had no answer for. The
-    // floor here tracks that honestly-verified reality, seven, so it goes
+    // cover argument structures the four-row set had no answer for. A fifth
+    // round added the eighth, for the structure the owner's own run needed
+    // and this file had to answer "nothing" to: a total whose majority
+    // escapes the subject named in the title. It stayed at seven while the
+    // only candidates were NGO reports, which is the floor doing its job.
+    // The floor here tracks that honestly-verified reality, eight, so it goes
     // red the moment a row is silently dropped from what is true today —
     // not because it fell short of an aspiration nobody re-affirmed.
     const shipped = await readFile(
       new URL("../references/reference-set.md", import.meta.url),
       "utf8",
     );
-    expect(countReferenceRows(shipped)).toBeGreaterThanOrEqual(7);
+    expect(countReferenceRows(shipped)).toBeGreaterThanOrEqual(8);
     expect(checkReferenceSet(shipped)).toEqual([]);
   });
 });

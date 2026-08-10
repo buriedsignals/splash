@@ -180,18 +180,22 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
   the fixed-gutter class (a reserved text space sized as a constant instead of measured against the
   real string about to be drawn — the second most independently-rediscovered defect in this
   project's history, and the reason "measured" is itself a claim this file teaches how to check).
-- `references/reference-set.md` — **seven** rows, past the original six-row target. The floor in
-  `test/reference-set.test.ts` tracks that reality (`7`) so the suite stays green against what is
+- `references/reference-set.md` — **eight** rows, past the original six-row target. The floor in
+  `test/reference-set.test.ts` tracks that reality (`8`) so the suite stays green against what is
   actually true rather than standing permanently red against an unmet aspiration or, just as bad,
-  green against a stale one. Five outlets, seven rows counting NYT's two desks (The Upshot, Visual
+  green against a stale one. Six outlets, eight rows counting NYT's two desks (The Upshot, Visual
   Investigations) and ABC News Australia's two separate pieces each as distinct rows — The New York
-  Times (×2), The Washington Post, Vox, ABC News Australia (×2), The Pudding. Four kinds of
+  Times (×2), The Washington Post, Vox, ABC News Australia (×2), The Pudding, Republik. Five kinds of
   verification are mixed in (the file's own preamble says which row is which): a social-preview
   image (rows 1–2), an extracted video frame at a real timecode (rows 3–4), a live-rendered in-page
   chart read on the article's real, live URL (rows 5–6, new this round), and a genuinely published,
-  in-article static `<img>` (row 7, new this round — the artifact three earlier rounds went looking
-  for and did not find). **The static bar (at least half genuinely static) is still not fully met**:
-  two rows are unambiguously static (row 1, row 7); two more (rows 5–6) are static charts but
+  in-article static `<img>` (row 7 — the artifact three earlier rounds went looking
+  for and did not find), and the static export an in-article interactive embed serves, read
+  directly, with the paragraphs around the embed read on the live page (row 8, new this round —
+  *a total whose majority escapes the subject named in the title*, the structure the owner's own run
+  needed and this file had no answer for; it stayed absent while the only candidates were NGO
+  reports). **The static bar (at least half genuinely static) is still not fully met**:
+  three rows are unambiguously static (row 1, row 7, row 8); two more (rows 5–6) are static charts but
   implemented as rendered SVG rather than a raster file, so this file declines to count them either
   way — stated here and in the file's own preamble rather than papered over. The three new rows each
   target one of the three argument structures that broke the original four-row set on real stories —
