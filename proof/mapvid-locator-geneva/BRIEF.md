@@ -147,3 +147,35 @@ beside it.
 ## Source line
 
 `Source: Wikidata (query.wikidata.org/sparql), organisations within 6 km of central Geneva · basemap © MapTiler, © OpenStreetMap`
+
+## Size — REFUSED, with the numbers, and R6 fired — 2026-08-11
+
+**This beat pins no size, and that is a decision rather than an omission.** The full measurement is
+`probe/VERDICT.md`; re-run it with `bun proof/mapvid-locator-geneva/probe/size-budget.mjs`.
+
+This is the beat the removal ladder's new title rung had the most to bite on: the longest headline of
+the four owing a pin, 114 characters, on the map video whose words the ledger measured at 1191 px
+against a 910 px band. **R6 fired at every frame in the table** — the shortened form is *All 11
+international organisations sit within 4.4 km of central Geneva — a 6 km search finds no more.*, 101
+characters, keeping the count, what it counts, both distances with their unit, the place, the
+universal and the negation. Three lines become two at landscape, six become five at square and
+portrait.
+
+**And it is worth 90 px against a 106 px gap.** At landscape the words still overrun the band by 16
+px with the rung fired. Spending the conclusion line as well leaves 53 px of plate — a 53 × 53 map in
+a 1920 px frame, 3% of its width, and this plate is square, so height lost is width it cannot take.
+Square and portrait are 1137 and 1094 px short.
+
+**The refusal does not rest on the caveat.** With the caveat gone entirely landscape reaches 272 px
+and square and portrait are still short by 212 and 169 px. The honesty line is kept and the beat
+still refuses.
+
+At the beat's **own** 1080 × 1350 frame R6 declines: the long form already fits in two lines there,
+so the shorter one recovers nothing and the journalist's sentence stays. Nothing this beat delivers
+changes.
+
+What this settles is the ledger's own open question. It recorded that the count "comes down when
+those beats' words are shortened, which is an editorial decision". The decision has now been taken,
+on the beat with the most to gain, and measured. **The words were never the whole constraint** — what
+fills this frame is a five-line caveat, a two-line conclusion and a two-line source at a 30 px video
+floor, and the title is one block among five.
