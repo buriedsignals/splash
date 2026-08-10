@@ -37,27 +37,76 @@
  *    viewBox, a legend swatch — none of it is measured here.
  * 4. **The gap between "fits" and "reads".** A 9px label inside the frame passes. Legibility floors
  *    are the type scale's job, and the type scale's evidence is the probe.
+ * 5. **A gap that tightens by the same proportion at every size.** Assertion 4 compares the sizes
+ *    against each other, so a change that crowds all three equally is invisible to it. That is a
+ *    deliberate change of leading, not a frozen literal, and it is the render's job to judge it.
  *
- * THE MUTATIONS, run in a copy of the tree under /tmp, 2026-08-10 — and the greens are the
+ * THE MUTATIONS, re-run in a copy of the tree under /tmp, 2026-08-11 — and the greens are the
  * informative half, so they are written down rather than quietly dropped:
  *
- *   X_TICK_DROP back to a bare 24            RED — and it reproduces this seed's own recorded
- *                                                  defect verbatim: the source line struck through
- *                                                  "2016" and "2018", here by 58.2 x 1.9 px
+ *   HEADER_TO_PLOT back to a bare 34         RED — assertion 4, pasted verbatim:
+ *
+ *       error: expect(received).toEqual(expected)
+ *       - []
+ *       + [
+ *       +   "a different pair of words is the closest pair at different sizes — something between
+ *       +    them is not scaling with the type",
+ *       +   "landscape: 0.417x the type (11.3px) between "years" / "950 mm"",
+ *       +   "square: 0.560x the type (17.4px) between "Rainfall over Annemasse-…-sur-Arve fell by a
+ *       +    third in ten" / "years"",
+ *       +   "portrait: 0.560x the type (17.4px) between "Rainfall over Annemasse-…-sur-Arve fell by a
+ *       +    third in ten" / "years"",
+ *       +   "the tightest moment drifts by 0.143x across the sizes, tolerance 0.10 — a gap is being
+ *       +    held in pixels while the type around it is scaled",
+ *       +   … the same three lines again
+ *       + ]
+ *       (fail) … should reach its tightest moment at the same pair of words, and by the same
+ *              proportion, at every size
+ *        9 pass · 1 fail
+ *
+ *     And the render was opened: at 1920x1080 the mutated landscape puts `950 mm` 11px under a 55px
+ *     title, so the y-axis top label reads as a second deck of the headline.
+ *   TITLE.fontSize x 3                       RED — clipping and overlap, all three sizes
+ *   PAD frozen at 0                          RED — clipping, all three sizes
+ *   X_TICK_DROP back to a bare 24            GREEN — and it CANNOT be red. See the arithmetic below.
+ *   X_AXIS_TO_SOURCE_GAP back to a bare 8    GREEN — the gap tightens from 0.89x to 0.56x the type
+ *                                                    at landscape, which is tighter than intended
+ *                                                    and still clear air; assertion 4's tightest
+ *                                                    moment is the title's own leading at 0.53x
  *   END_LABEL_GUTTER back to a bare 12       GREEN
  *   Y_TICK_INSET back to a bare 10           GREEN
- *   PAD stops scaling                        GREEN
+ *   PAD stops scaling (`PAD: BASE.PAD`)      GREEN — `sourceBaseline` is `height - PAD` and
+ *                                                    `padding.bottom` is `height - sourceBaseline`
+ *                                                    + …, so the whole bottom band slides down
+ *                                                    together and no gap changes
+ *   `sp = (v) => v`                          GREEN — and this is NOT "spacing stops scaling": `sp`
+ *                                                    is applied to the FONT SIZES too, so the whole
+ *                                                    drawing stays at its 900x560 values on a bigger
+ *                                                    canvas. Small type, no collision. That is
+ *                                                    blind spot 4, not a defect this can measure.
  *   title wraps to a fixed 900 measure       GREEN
  *   GAP_NOTE.fontSize back to a bare 12      GREEN
  *
+ * **`X_TICK_DROP` CANNOT REDDEN THIS GUARD, and an earlier version of this header claimed it did.**
+ * The claim was false when it was typed — `git log ee55c95a..` on `ChartSeed.tsx` is empty, so the
+ * seed never changed under it. The arithmetic: `padding.bottom` is
+ * `height − sourceBaseline + SOURCE.fontSize + X_TICK_DROP + X_AXIS_TO_SOURCE_GAP` (`:351-356`),
+ * the plot floor is `height − padding.bottom` (`:193`), and the tick baseline is
+ * `plot.bottom + X_TICK_DROP` (`:422`). Substitute and the tick baseline is
+ * `sourceBaseline − SOURCE.fontSize − X_AXIS_TO_SOURCE_GAP`: **`X_TICK_DROP` cancels out of it
+ * entirely.** Freezing it moves the plot's floor and moves no drawn word at all. The rendered defect
+ * the old row described is real history — it is what made the two places agree in the first place —
+ * but the arithmetic that fixed it is also what puts it permanently out of this guard's reach.
+ *
  * **The line this draws is the useful thing to know about this guard.** It sees a spacing literal
- * that is THE WHOLE of a gap — `X_TICK_DROP` is the entire distance between the plot floor and the
- * tick baseline, so freezing it at 24 while the type triples puts the labels into the source line.
- * It does NOT see a literal that is a small ADDEND to a measured quantity: the end-label gutter is
- * `PAD + END_LABEL_GUTTER + measureText(endLabel)`, and the measured term is so much the larger
- * that dropping 13px from the constant moves nothing outside the frame. That is not a hole to be
- * plugged — it is `static-discipline.md`'s "gutters are measured, never fixed" paying off, and a
- * frozen addend beside a measured gutter is genuinely not a defect at these sizes.
+ * that is THE WHOLE of a gap BETWEEN TWO DRAWN WORDS — `HEADER_TO_PLOT` is the entire distance from
+ * the last header line to the plot's ceiling, and the topmost y-tick label hangs off that ceiling,
+ * so freezing it at 34 while the type doubles puts `950 mm` 11px under a 55px title. It does NOT see
+ * a literal that is a small ADDEND to a measured quantity (`END_LABEL_GUTTER` sits beside
+ * `measureText(endLabel)`), nor one that cancels out of every baseline it touches (`X_TICK_DROP`),
+ * nor one that moves a whole band without changing a gap inside it (`PAD`). The first of those is
+ * `static-discipline.md`'s "gutters are measured, never fixed" paying off; the other two are
+ * arithmetic, and no assertion can reach them.
  *
  * `GAP_NOTE` is the other kind of green and it is the one to keep in mind: un-scaling it IS a real
  * defect, found by opening the landscape render, where a 12px note under a 55px title read like a
@@ -120,11 +169,43 @@ function attr(tag: string, name: string) {
 
 type Run = {
   text: string;
+  /** The size it is DRAWN at, read off the markup — assertion 4 divides by it. */
+  fontSize: number;
   left: number;
   right: number;
   top: number;
   bottom: number;
 };
+
+/**
+ * The tightest moment in a layout: over every pair of runs whose horizontal extents overlap and
+ * which do not overlap vertically, the smallest vertical clear air EXPRESSED IN MULTIPLES OF THE
+ * SMALLER OF THE TWO TYPE SIZES. In multiples, because that is the only form in which the three
+ * frames are comparable — 24px of air under a 27px label and 14px under a 16px label are the same
+ * picture, and the raw pixel counts say they are not.
+ */
+function tightestMoment(runs: Run[]) {
+  let worst: { pair: string; ratio: number; gap: number } | null = null;
+  for (let i = 0; i < runs.length; i++) {
+    for (let j = i + 1; j < runs.length; j++) {
+      const a = runs[i];
+      const b = runs[j];
+      if (Math.min(a.right, b.right) - Math.max(a.left, b.left) <= 0) continue;
+      const [upper, lower] =
+        a.bottom <= b.top ? [a, b] : b.bottom <= a.top ? [b, a] : [null, null];
+      if (!upper || !lower) continue;
+      const gap = lower.top - upper.bottom;
+      const ratio = gap / Math.min(upper.fontSize, lower.fontSize);
+      if (!worst || ratio < worst.ratio)
+        worst = {
+          pair: `${JSON.stringify(upper.text)} / ${JSON.stringify(lower.text)}`,
+          ratio,
+          gap,
+        };
+    }
+  }
+  return worst;
+}
 
 function textRuns(svg: string): Run[] {
   const runs: Run[] = [];
@@ -145,6 +226,7 @@ function textRuns(svg: string): Run[] {
       anchor === "middle" ? -box.width / 2 : anchor === "end" ? -box.width : 0;
     runs.push({
       text: content,
+      fontSize,
       left: x + box.x + shift,
       right: x + box.x + shift + box.width,
       top: y + box.y,
@@ -154,15 +236,19 @@ function textRuns(svg: string): Run[] {
   return runs;
 }
 
+const drawn = new Map<string, Run[]>(
+  Object.keys(SIZES).map((size) => [
+    size,
+    textRuns(renderToStaticMarkup(createElement(ChartSeed, { ...SEED, size }))),
+  ]),
+);
+
 describe("the seed draws cleanly at every size the table offers", () => {
   for (const [size, row] of Object.entries(SIZES) as [
     string,
     { width: number; height: number },
   ][]) {
-    const svg = renderToStaticMarkup(
-      createElement(ChartSeed, { ...SEED, size }),
-    );
-    const runs = textRuns(svg);
+    const runs = drawn.get(size)!;
 
     it(`should draw at least the title, the source, the end label and the axes at ${size}`, () => {
       // The premise, pinned rather than assumed: with no runs, both assertions below go vacuously
@@ -205,4 +291,51 @@ describe("the seed draws cleanly at every size the table offers", () => {
       expect([size, collisions]).toEqual([size, []]);
     });
   }
+
+  /**
+   * ASSERTION 4 — the one that reaches the frozen literal.
+   *
+   * Assertions 1-3 only see a gap once it has closed to zero, and a frozen spacing literal almost
+   * never gets that far: it makes a gap TIGHTER AT THE LARGER SIZE while everything around it grows.
+   * `HEADER_TO_PLOT` frozen at 34 leaves 11px of air under a 55px title at 1920x1080 — crowded, and
+   * not a collision, so nothing above it fires.
+   *
+   * What is invariant when every number goes through `sp` is the layout's TIGHTEST MOMENT, measured
+   * in multiples of its own type: the same pair of words is the closest pair at every size, and by
+   * the same proportion. `tokens()` rounds to integers, so the three do not agree exactly; the
+   * measured spread across this seed's three sizes is 0.032, and the tolerance below is 0.10.
+   *
+   * Deliberately NOT a floor on the ratio itself. A floor would be a number picked to sit between
+   * this seed's healthy 0.53 and one mutation's 0.42 — calibrated to the mutation rather than to
+   * anything about reading, and wrong for the next beat's leading.
+   */
+  it("should reach its tightest moment at the same pair of words, and by the same proportion, at every size", () => {
+    const moments = Object.keys(SIZES).map((size) => {
+      const worst = tightestMoment(drawn.get(size)!);
+      if (!worst) throw new Error(`no measurable clear air at ${size}`);
+      return { size, ...worst };
+    });
+    // The premise, pinned: with nothing measurable the two checks below go vacuously green.
+    expect(moments.length).toBe(Object.keys(SIZES).length);
+
+    const pairs = [...new Set(moments.map((m) => m.pair))];
+    const ratios = moments.map((m) => m.ratio);
+    const spread = Math.max(...ratios) - Math.min(...ratios);
+    const detail = moments.map(
+      (m) =>
+        `${m.size}: ${m.ratio.toFixed(3)}x the type (${m.gap.toFixed(1)}px) between ${m.pair}`,
+    );
+    const problems: string[] = [];
+    if (pairs.length !== 1)
+      problems.push(
+        "a different pair of words is the closest pair at different sizes — something between them is not scaling with the type",
+        ...detail,
+      );
+    if (spread > 0.1)
+      problems.push(
+        `the tightest moment drifts by ${spread.toFixed(3)}x across the sizes, tolerance 0.10 — a gap is being held in pixels while the type around it is scaled`,
+        ...detail,
+      );
+    expect(problems).toEqual([]);
+  });
 });
