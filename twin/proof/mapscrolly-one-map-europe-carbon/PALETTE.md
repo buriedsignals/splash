@@ -17,11 +17,23 @@ sibling `scrolly-chart-eu-carbon` records — the `fossil` convention is a mater
 series drawn AGAINST another fuel, and nothing here is drawn against anything.)
 
 **The ramp is the quantity; the accent is the subject** — `geo-discipline.md` rule 8. So the two
-colours do two different jobs on this beat and neither is a palette:
+colours do two different jobs on this beat and neither is a palette. **But the quantity is drawn in
+the newsroom's own hue, and until 2026-08-10 it was not:** the ramp ran `ground → furniture.ink`,
+computed between the background and the ink, so the one thing on this plate a reader reads a number
+off was the one place the recorded accent never reached. Rendered twice under two deliberately
+different recorded answers, this map came out the SAME GREY EUROPE both times — 0 pixels moved
+(`scripts/two-palette-proof.mjs`). It now runs `ground → dataRampEnd(accent, ground)`, the same
+function the other choropleth beats take, and the same two runs move **269,318 pixels, 32.8% of its
+ink**: a teal Europe under one answer and a warm-red Europe under the other, with every word, axis,
+legend tick and no-data patch byte-identical between them.
+
+`assertRampReads` then measures the finished classes — monotone, neighbours ≥0.02 apart in relative
+luminance, top class over the 3:1 mark floor — because a ramp derived between two arbitrary colours
+can fold back, and a ramp toward an accent that is itself dark has nowhere to go on a dark ground.
 
 | What | Colour | Where it comes from |
 | --- | --- | --- |
-| the six classes of the choropleth | a sequential ramp `ground → ink` | `sequentialRamp(ground, ink, 6, 0.14, 0.92)`, derived — no hue is picked for a class |
+| the six classes of the choropleth | a sequential ramp `ground → the accent, walked toward the far pole` | `sequentialRamp(ground, dataRampEnd(accent, ground), 6, 0.14, 0.92)`, derived — no hue is picked for a class |
 | the outline of whatever a step is about | the house accent | `readPalette`, this file |
 | water on the plate | `#AAC9E0` | `geo-choropleth.ts`, `WATER_FILL` — basemap doctrine (rule 7: water is a blue tint, never grey), baked into the plate at capture time, not a choice this beat makes |
 | no data | `#B9B9B9` | `geo-choropleth.ts`, `NO_DATA_FILL` — rule 7 again: a distinct mid-grey outside the ramp, fixed rather than derived so a no-data reading stays recognisable on any newsroom's ground |

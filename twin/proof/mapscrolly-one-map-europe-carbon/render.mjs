@@ -38,7 +38,9 @@ import { MapFrame } from "./MapFrame.tsx";
 import {
   CO2_BREAKS,
   WATER_FILL,
+  assertRampReads,
   binIndexLowerInclusive,
+  dataRampEnd,
   en,
   sequentialRamp,
 } from "./geo-choropleth.ts";
@@ -122,7 +124,23 @@ async function render() {
   // the reason the camera has to move at all.
   const starWidthShare = ((lowStar.box.maxX - lowStar.box.minX) / plateWidth) * 100;
 
-  const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1, RAMP_FROM, RAMP_TO);
+  // THE SHADING IS THE DATA. Until this landed the ramp ran ground → furniture.ink — computed
+  // between the background and the ink, so it never touched the recorded accent: a newsroom could
+  // change its house colour and this map stayed grey, which is exactly what the paired render
+  // showed (a grey Europe under two deliberately different palettes, 0 pixels moved).
+  // `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then
+  // measures the finished classes — monotone, ≥0.02 apart, top class over the 3:1 mark floor.
+  const ramp = assertRampReads(
+    sequentialRamp(
+      ground,
+      dataRampEnd(accent, ground),
+      CO2_BREAKS.length + 1,
+      RAMP_FROM,
+      RAMP_TO,
+    ),
+    ground,
+    "the CO₂-per-person choropleth ramp",
+  );
   const fillFor = (value) => ramp[binIndexLowerInclusive(value, CO2_BREAKS)];
 
   // ── The four cameras, DERIVED from the projected shapes of what each reading is about ─────────
