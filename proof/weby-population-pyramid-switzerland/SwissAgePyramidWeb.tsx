@@ -52,6 +52,13 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  WEB_ENTRANCE,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   exactCount,
   pyramidGeometry,
   thousands,
@@ -389,6 +396,79 @@ export function SwissAgePyramidWeb({
   // `pyramid-interaction.mjs` moves focus the way a sighted reader expects.
   const rowsTopToBottom = [...bars].sort((a, b) => a.y - b.y);
 
+  // ── THE ENTRANCE, carried from `proof/vidy-pyramid-niger-population`. It answers the question I
+  // had left open — which side of the pyramid leads — by refusing it: NEITHER. A band's two bars
+  // grow OUTWARD from the shared zero on ONE clock, `rowReveal[i]` driving both `maleCurrentX` and
+  // `femaleCurrentX` there, so the silhouette assembles row by row and no frame ever shows one sex
+  // ahead of the other. The cascade runs OLDEST (top) to YOUNGEST (bottom), which is the order the
+  // video states, and it takes the video's own overlap factor for this type — 1.8, not the 1.6 four
+  // of the other beats use.
+  //
+  //   - THE REFERENCE is the centre rule the two sides share, laid down before any band. It is drawn
+  //     twice here (once on each half's own inner edge) because this beat is TWO `<svg>` elements
+  //     with two viewBoxes — no rect can span them, which is also why the hit rows are HTML.
+  //   - THE SUBJECT is the peak band, 55-59. As on every other beat in this genre, its own arrival
+  //     is the emphasis: the video drops an outline and a wash onto an already-landed row, and this
+  //     page carries neither at rest, so the peak's two bars are lifted out of the cascade and land
+  //     after every other band, its row staying empty until then.
+  //   - THE CONCLUSION is the peak annotation — the label and its leader, the sentence the
+  //     silhouette has just finished asserting.
+  const displayOrder = rowsTopToBottom.map((b) => b.ageBand);
+  const cascade = displayOrder.filter((band) => band !== peakBand);
+  const PYRAMID_OVERLAP = 1.8;
+  const windowFor = (band: string) =>
+    band === peakBand
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.indexOf(band),
+          cascade.length,
+          PYRAMID_OVERLAP,
+        );
+  const eventFor = (band: string) =>
+    band === peakBand ? ("subject" as const) : ("reveal" as const);
+  /** One band, one side. Both sides share the band's own window — that is the video's answer. */
+  const barLayer = (band: string, side: "male" | "female", originX: number) => {
+    const own = windowFor(band);
+    return entranceLayer(eventFor(band), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "x", origin: { x: originX, y: 0 } },
+      mark: `${band}·${side}`,
+    });
+  };
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const centreRuleLayer = () =>
+    entranceLayer("reference", "grow", {
+      delay: WEB_ENTRANCE.reference.start,
+      duration: WEB_ENTRANCE.reference.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      // No name: the centre is what the two sides are MEASURED FROM, not one of the readings.
+      grow: { axis: "y", origin: { x: 0, y: plot.top } },
+    });
+  const peakAnnotationLayer = () =>
+    entranceLayer("conclusion", "fade", {
+      delay: WEB_ENTRANCE.conclusion.start,
+      duration: WEB_ENTRANCE.conclusion.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: `${peakBand}·female`,
+    });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((band) => endOf(windowFor(band))),
+  );
+  if (lastCascadeEnd > WEB_ENTRANCE.subject.start)
+    throw new Error(
+      `the last band finishes growing at ${lastCascadeEnd}ms, after the peak band starts landing at ` +
+        `${WEB_ENTRANCE.subject.start}ms — a row would still be arriving under the one the ` +
+        `annotation is about`,
+    );
+
   const totalWidth = HALF * 2 + bandGutterPx;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
@@ -431,14 +511,22 @@ export function SwissAgePyramidWeb({
         }}
       />
 
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
       </div>
 
       {/* Load-bearing legend: the two hues are the only thing naming which side is which. Plain
           HTML, outside any overlay and NOT `aria-hidden`, because nothing else states it. */}
-      <div className="chart-legend">
+      <div
+        className="chart-legend"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <span className="legend-key">
           <span
             className="legend-swatch"
@@ -475,31 +563,42 @@ export function SwissAgePyramidWeb({
           preserveAspectRatio="none"
         >
           <rect x={0} y={0} width={HALF} height={frame.height} fill={ground} />
-          {ticksLeft.map((t) => (
-            <line
-              key={`l-${t.value}`}
-              x1={t.x}
-              x2={t.x}
-              y1={plot.top}
-              y2={plot.bottom}
-              stroke={grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {bars.map((b) => (
-            <rect
-              key={b.ageBand}
-              x={b.male_.x}
-              y={b.y}
-              width={b.male_.width}
-              height={b.height}
-              fill={colours.male}
-            />
-          ))}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticksLeft.map((t) => (
+              <line
+                key={`l-${t.value}`}
+                x1={t.x}
+                x2={t.x}
+                y1={plot.top}
+                y2={plot.bottom}
+                stroke={grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
+          {/* THE REVEAL, left side — each band grows OUTWARD from the shared centre, on the same
+              clock as its own right-side bar. */}
+          {bars.map((b) => {
+            const layer = barLayer(b.ageBand, "male", b.male_.x + b.male_.width);
+            return (
+              <rect
+                key={b.ageBand}
+                {...layer.attrs}
+                style={layer.vars}
+                x={b.male_.x}
+                y={b.y}
+                width={b.male_.width}
+                height={b.height}
+                fill={colours.male}
+              />
+            );
+          })}
           {/* The centre rule — drawn on the left half's own right edge, where the label gutter
               begins. */}
           <line
+            {...centreRuleLayer().attrs}
+            style={centreRuleLayer().vars}
             x1={HALF}
             x2={HALF}
             y1={plot.top}
@@ -518,13 +617,19 @@ export function SwissAgePyramidWeb({
         {/* The peak annotation's label — HTML at a fixed size, over the left half's own cell. */}
         <div className="overlay left" aria-hidden="true">
           <span
+            {...peakAnnotationLayer().attrs}
             className="peak-leader-v peak-anchor"
-            style={{ borderColor: ink }}
+            style={{ ...peakAnnotationLayer().vars, borderColor: ink }}
           />
-          <span className="peak-leader-h" style={{ borderColor: ink }} />
           <span
+            {...peakAnnotationLayer().attrs}
+            className="peak-leader-h"
+            style={{ ...peakAnnotationLayer().vars, borderColor: ink }}
+          />
+          <span
+            {...peakAnnotationLayer().attrs}
             className="note peak-label peak-anchor"
-            style={{ left: "0%", color: ink }}
+            style={{ ...peakAnnotationLayer().vars, left: "0%", color: ink }}
           >
             {peakLines.map((line, i) => (
               <span key={line} className={i === 0 ? "band" : undefined}>
@@ -537,7 +642,11 @@ export function SwissAgePyramidWeb({
         {/* The reserved central gutter: one age-band label per row, centred, at a FIXED pixel size
             that never tracks either half's stretch. Never printed over a bar — that is what the
             track is for. */}
-        <div className="band-labels">
+        <div
+          className="band-labels"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {bars.map((b) => (
             <span
               key={b.ageBand}
@@ -558,29 +667,39 @@ export function SwissAgePyramidWeb({
           preserveAspectRatio="none"
         >
           <rect x={0} y={0} width={HALF} height={frame.height} fill={ground} />
-          {ticksRight.map((t) => (
-            <line
-              key={`r-${t.value}`}
-              x1={t.x - centerX}
-              x2={t.x - centerX}
-              y1={plot.top}
-              y2={plot.bottom}
-              stroke={grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-          {bars.map((b) => (
-            <rect
-              key={b.ageBand}
-              x={b.female_.x - centerX}
-              y={b.y}
-              width={b.female_.width}
-              height={b.height}
-              fill={colours.female}
-            />
-          ))}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticksRight.map((t) => (
+              <line
+                key={`r-${t.value}`}
+                x1={t.x - centerX}
+                x2={t.x - centerX}
+                y1={plot.top}
+                y2={plot.bottom}
+                stroke={grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
+          {/* THE REVEAL, right side — same band, same clock, opposite direction. */}
+          {bars.map((b) => {
+            const layer = barLayer(b.ageBand, "female", b.female_.x - centerX);
+            return (
+              <rect
+                key={b.ageBand}
+                {...layer.attrs}
+                style={layer.vars}
+                x={b.female_.x - centerX}
+                y={b.y}
+                width={b.female_.width}
+                height={b.height}
+                fill={colours.female}
+              />
+            );
+          })}
           <line
+            {...centreRuleLayer().attrs}
+            style={centreRuleLayer().vars}
             x1={0}
             x2={0}
             y1={plot.top}
@@ -595,7 +714,11 @@ export function SwissAgePyramidWeb({
             not a negative quantity (`references/types/population-pyramid.md`). Both print the
             rounded thousands the static frame states unconditionally; each band's exact figure
             lives only in its own `data-detail`, on demand. */}
-        <div className="x-axis left">
+        <div
+          className="x-axis left"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksLeft.map((t) => (
             <span
               key={`lx-${t.value}`}
@@ -606,7 +729,11 @@ export function SwissAgePyramidWeb({
             </span>
           ))}
         </div>
-        <div className="x-axis right">
+        <div
+          className="x-axis right"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksRight.map((t) => (
             <span
               key={`rx-${t.value}`}
@@ -652,7 +779,13 @@ export function SwissAgePyramidWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
