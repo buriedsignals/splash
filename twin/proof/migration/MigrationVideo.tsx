@@ -257,8 +257,12 @@ export function MigrationVideo({
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves: it fades in with the title and is still there at
+  // the last frame. See twin-chart-beat/references/static-discipline.md, "The source on the
+  // frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
   const tickLabelsFor = (values: number[]) =>
     values.map((v, i, all) =>
@@ -281,9 +285,11 @@ export function MigrationVideo({
       `${year} · ${en(data.find((d) => d.year === year)!.value)}${UNIT}`,
   );
   const padding = {
-    top: sourceBaseline + 60,
+    // The plot starts below the LAST TITLE LINE, never below the source.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
     right: PAD + 16 + measureText(`${data[data.length - 1].year}`, AXIS),
-    bottom: PAD + 90,
+    // Grown by the credit's own height plus clear air, so the x-axis label band ends above it.
+    bottom: PAD + 90 + SOURCE.fontSize + 10,
     left:
       PAD + 14 + Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
   };

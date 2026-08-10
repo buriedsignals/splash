@@ -250,14 +250,24 @@ export function HistogramVideo({
   // so nothing shifts when the reveal or the subject bin arrives.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The axis note keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
+  const axisNoteBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
-  const axisNoteBaseline = sourceBaseline + 44;
 
   const padding = {
     top: axisNoteBaseline + 40,
     right: PAD + 8,
-    bottom: PAD + 56, // room for tick labels + the unit line below the axis
+    // Room for tick labels + the unit line below the axis, AND for the credit under them. 26px of
+    // air rather than the family's 10: this beat draws TWO rows under the axis (ticks, then the
+    // unit line), and the first render left the unit line's descender about three pixels off the
+    // credit's ink.
+    bottom: PAD + 56 + SOURCE.fontSize + 26,
     left: PAD + 8,
   };
 

@@ -294,9 +294,15 @@ export function WaterfallVideo({
   // sits, so nothing shifts when a bar arrives late.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
-  const legendBaseline = sourceBaseline + 38;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
+  const legendBaseline =
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 38;
 
   // The opening and closing bars sit at the very edges of the plot — their centre-anchored value
   // labels can be wider than the bar itself, and the closing total's CONCLUSION label ("506.72 TWh
@@ -340,7 +346,8 @@ export function WaterfallVideo({
   const padding = {
     top: legendBaseline + 60,
     right: Math.max(PAD, rightGutter),
-    bottom: PAD + CATEGORY_STRIP,
+    // Grown by the credit's own height plus clear air.
+    bottom: PAD + CATEGORY_STRIP + SOURCE.fontSize + 10,
     left: Math.max(PAD, leftGutter),
   };
 

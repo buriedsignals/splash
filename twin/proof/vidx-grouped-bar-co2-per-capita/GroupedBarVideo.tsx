@@ -201,10 +201,15 @@ export function GroupedBarVideo({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 42;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
+  // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
+  // the furniture opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
   const legendBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
 
   const referenceLabelWidth = measureText(referenceLabel, {
     fontSize: 22,
@@ -220,7 +225,10 @@ export function GroupedBarVideo({
   const padding = {
     top: legendBaseline + CONCLUSION_RESERVE + 44,
     right: PAD + 24 + referenceLabelWidth,
-    bottom: PAD + 60,
+    // Grown by the credit block's own height plus clear air, so the label band beneath the plot
+    // ends above its ink.
+    bottom:
+      PAD + 60 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + 20 + measureText(fmt(reference * 1.05), AXIS),
   };
 

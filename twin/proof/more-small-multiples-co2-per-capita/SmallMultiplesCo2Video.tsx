@@ -176,11 +176,18 @@ export function SmallMultiplesCo2Video({
   const titleBaseline = PAD + TITLE.fontSize;
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 30;
-  const sourceBaseline = limitsBaseline + 24;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The credit's own band, which the conclusion block and the grid both have to end above.
+  const sourceBlock = SOURCE.fontSize + 14;
 
-  const gridTop = sourceBaseline + 40;
+  // The grid starts below the LAST HEADER line, never below the source.
+  const gridTop = limitsBaseline + 40;
   const conclusionHeight = CONCLUSION.lead * 2 + 20;
-  const gridBottom = height - PAD - conclusionHeight;
+  const gridBottom = height - PAD - sourceBlock - conclusionHeight;
   const colGap = 36;
   const rowGap = 40;
   const panelWidth = (width - PAD * 2 - colGap) / 2;
@@ -274,8 +281,10 @@ export function SmallMultiplesCo2Video({
 
   const conclusionLines = wrap(conclusionText, width - PAD * 2, CONCLUSION);
   const conclusionOpacity = interpolate(conclusionProgress, [0, 1], [0, 1]);
+  // The conclusion used to sit on the frame's bottom margin. The credit owns it now, so the
+  // conclusion's last line lands just above the credit's ink instead.
   const conclusionBaseline =
-    height - PAD - (conclusionLines.length - 1) * CONCLUSION.lead;
+    height - PAD - sourceBlock - (conclusionLines.length - 1) * CONCLUSION.lead;
 
   return (
     <svg

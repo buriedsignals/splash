@@ -263,8 +263,12 @@ export function LifeExpectancyVideo({
   // where anything sits, so nothing shifts when a layer arrives late.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves: it fades in with the title and is still there at
+  // the last frame. See twin-chart-beat/references/static-discipline.md, "The source on the
+  // frame's bottom margin".
+  const sourceBaseline = height - PAD;
 
   const subjectLabel = `${subjectYear} · ${en(
     data.find((d) => d.year === subjectYear)!.value,
@@ -314,9 +318,11 @@ export function LifeExpectancyVideo({
     })(),
   );
   const padding = {
-    top: sourceBaseline + 76,
+    // The plot starts below the LAST TITLE LINE, never below the source.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 76,
     right: PAD + 16,
-    bottom: PAD + 44,
+    // Grown by the credit's own height plus clear air, so the x-axis label band ends above it.
+    bottom: PAD + 44 + SOURCE.fontSize + 10,
     left:
       PAD + 14 + Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
   };

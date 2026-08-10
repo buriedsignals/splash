@@ -253,9 +253,15 @@ export function BoxplotVideo({
   // so nothing shifts when a group arrives late.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
-  const axisUnitBaseline = sourceBaseline + 34;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The axis unit keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
+  const axisUnitBaseline =
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 34;
   // The reference line's caption lives in the header, not floating beside the line itself: at
   // 3.69 t the dashed rule crosses through the BODY of two boxes (Americas', Asia's) and runs
   // flush against the median value labels of the others — there is no clean band beside the line
@@ -269,7 +275,11 @@ export function BoxplotVideo({
   const padding = {
     top: referenceNoteBaseline + 40,
     right: PAD + 20,
-    bottom: PAD + 54,
+    // Grown by the credit's own height plus clear air. 24px rather than the family's 10: this
+    // beat draws TWO rows under the plot (the continent name and its `n = ` row), and the first
+    // render left the `n = ` row and the credit about ten pixels apart — legible, but not the
+    // clear band the rest of the family gets.
+    bottom: PAD + 54 + SOURCE.fontSize + 24,
     left: PAD + 46,
   };
 

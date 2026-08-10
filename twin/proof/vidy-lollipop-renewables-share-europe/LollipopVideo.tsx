@@ -230,10 +230,15 @@ export function LollipopVideo({
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   const sourceLead = SOURCE.fontSize * 1.5;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
+  // The axis label keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
   const axisLabelBaseline =
-    sourceBaseline + (sourceLines.length - 1) * sourceLead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
 
   const valueLabelFor = (r: Row) => `${en(r.value)}%`;
   const subjectRow = data[subjectIndex];
@@ -257,7 +262,9 @@ export function LollipopVideo({
   const padding = {
     top: axisLabelBaseline + 24,
     right: PAD + 16 + maxRightWidth,
-    bottom: PAD + 16,
+    // Grown by the credit block's own height plus clear air.
+    bottom:
+      PAD + 16 + (sourceLines.length - 1) * sourceLead + SOURCE.fontSize + 10,
     left: PAD + 14 + maxCategoryWidth,
   };
 

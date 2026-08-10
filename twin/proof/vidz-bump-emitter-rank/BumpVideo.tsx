@@ -241,11 +241,16 @@ export function BumpVideo({
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   const sourceLead = SOURCE.fontSize * 1.5;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
+  // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
+  // the furniture opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
   const caveatLines = wrap(caveat, width - PAD * 2, CAVEAT);
+  // The caveat keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
   const caveatBaseline =
-    sourceBaseline + (sourceLines.length - 1) * sourceLead + 32;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 32;
   const axisTitleBaseline =
     caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 34;
 
@@ -278,7 +283,16 @@ export function BumpVideo({
   const padding = {
     top: axisTitleBaseline + 26,
     right: PAD + endGutter,
-    bottom: PAD + yearLabelBlock + conclusionGap + conclusionBlock,
+    // Grown by the credit block's own height plus clear air, so the conclusion line ends above
+    // the credit's ink.
+    bottom:
+      PAD +
+      yearLabelBlock +
+      conclusionGap +
+      conclusionBlock +
+      (sourceLines.length - 1) * sourceLead +
+      SOURCE.fontSize +
+      10,
     left: PAD + rankGutter,
   };
 

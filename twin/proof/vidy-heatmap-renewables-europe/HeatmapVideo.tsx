@@ -323,14 +323,23 @@ export function HeatmapVideo({
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
+  const legendTitleBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
-  const legendTitleBaseline = sourceBaseline + 40;
   const legendBarTop = legendTitleBaseline + 34;
   const legendLabelBaseline = legendBarTop - 10; // sits ABOVE the bar, never under the column headers
   const colLabelBaseline = legendBarTop + LEGEND_BAR.height + 44;
   const plotTop = colLabelBaseline + 16;
-  const captionBaseline = height - PAD + 6;
+  // This beat's caption used to own the frame's bottom margin. The credit owns it now, so the
+  // caption sits directly above the credit's ink instead — the one place in the video family where
+  // the credit displaced something rather than joining an empty margin.
+  const captionBaseline = sourceBaseline - SOURCE.fontSize - 14;
 
   const maxRowLabelWidth = Math.max(
     ...data.map((r) =>
@@ -344,7 +353,8 @@ export function HeatmapVideo({
   const padding = {
     top: plotTop,
     right: PAD,
-    bottom: PAD + 44, // reserves the caption line under the grid
+    // Reserves the caption line under the grid, AND the credit under the caption.
+    bottom: PAD + 44 + SOURCE.fontSize + 14,
     left: PAD + 16 + maxRowLabelWidth,
   };
 

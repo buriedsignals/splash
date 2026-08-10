@@ -216,10 +216,15 @@ export function SlopeVideo({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 42;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
+  // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
+  // the furniture opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The caption keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
   const captionBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 44;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
 
   const CONCLUSION_RESERVE = 40;
   const longestLabel = Math.max(
@@ -228,7 +233,9 @@ export function SlopeVideo({
   const padding = {
     top: captionBaseline + CONCLUSION_RESERVE + 30,
     right: PAD + 20 + longestLabel,
-    bottom: PAD + 30,
+    // Grown by the credit block's own height plus clear air.
+    bottom:
+      PAD + 30 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + 20 + longestLabel,
   };
 

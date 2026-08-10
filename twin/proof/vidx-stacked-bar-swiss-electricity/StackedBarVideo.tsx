@@ -245,10 +245,15 @@ export function StackedBarVideo({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 42;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
+  // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
+  // the furniture opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+  // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
+  // than from the source, which is no longer in the header.
   const legendBaseline =
-    sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
 
   // CONCLUSION_RESERVE: the conclusion's own banner row, reserved from frame 0 — same fix the
   // grouped-bar beat needed, for the same reason: four narrow columns leave no clear width beside
@@ -261,7 +266,9 @@ export function StackedBarVideo({
   const padding = {
     top: legendBaseline + CONCLUSION_RESERVE + 44,
     right: PAD + 20 + referenceLabelWidth,
-    bottom: PAD + 44,
+    // Grown by the credit block's own height plus clear air.
+    bottom:
+      PAD + 44 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + 20 + measureText(fmt(reference * 1.05, 0), AXIS),
   };
 

@@ -239,8 +239,11 @@ export function LifeExpectancyGapVideo({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 44;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
+  // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
+  // the furniture opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
 
   const cheEndReading = che[che.length - 1];
   const fraEndReading = fra[fra.length - 1];
@@ -250,12 +253,15 @@ export function LifeExpectancyGapVideo({
     (v) => `${fmt(v, 1)}`,
   );
   const padding = {
-    top: sourceBaseline + (sourceLines.length - 1) * SOURCE.lead + 60,
+    // The plot starts below the LAST TITLE LINE, never below the source.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
     right:
       PAD +
       16 +
       Math.max(measureText(cheLabel, LABEL), measureText(fraLabel, LABEL)),
-    bottom: PAD + 44,
+    // Grown by the credit block's own height plus clear air.
+    bottom:
+      PAD + 44 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
     left: PAD + 14 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 

@@ -274,8 +274,14 @@ export function PyramidVideo({
   const titleBaseline = PAD + TITLE.fontSize;
   const noteBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 34;
-  const sourceBaseline = noteBaseline + 30;
-  const legendBaseline = sourceBaseline + 38;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves. See
+  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  const sourceBaseline = height - PAD;
+  // The legend keeps the air it always had above it, measured from the LAST HEADER line (the
+  // note) rather than from the source, which is no longer in the header.
+  const legendBaseline = noteBaseline + 38;
 
   const maxBandLabelWidth = Math.max(
     ...displayBands.map((b) =>
@@ -290,7 +296,9 @@ export function PyramidVideo({
   const padding = {
     top: legendBaseline + 40,
     right: PAD,
-    bottom: PAD + 64, // room for the subject's conclusion label, centred below the widest row
+    // Room for the subject's conclusion label, centred below the widest row, AND for the credit
+    // under it.
+    bottom: PAD + 64 + SOURCE.fontSize + 10,
     left: PAD,
   };
 
