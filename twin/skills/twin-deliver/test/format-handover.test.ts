@@ -94,16 +94,52 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
       join(import.meta.dirname, "..", "scripts", "format-handover.mjs"),
       "utf8",
     );
-    const signature = /export function formatHandover\(\{([^}]*)\}\)/.exec(source);
+    const signature = /export function formatHandover\(\{([^}]*)\}\)/.exec(
+      source,
+    );
     expect(signature).not.toBeNull();
     const declared = signature![1]
       .split(",")
-      .map((name) => name.trim())
+      .map((name) => name.trim().split("=")[0]!.trim())
       .filter(Boolean)
       .sort();
     expect(declared).toEqual(
-      ["alt", "caveat", "credit", "files", "genre", "placement"].sort(),
+      [
+        "alt",
+        "caveat",
+        "credit",
+        "files",
+        "genre",
+        "placement",
+        // `liveTiles` was added deliberately, and it is an ENUM, not a field: the test below proves
+        // an unrecognised value throws, so nothing a caller writes can be rendered through it. That
+        // is the condition on which this list may grow at all.
+        "liveTiles",
+      ].sort(),
     );
+  });
+
+  // WHY THE NEW PARAMETER IS NOT THE FREE-TEXT FIELD THIS FILE EXISTS TO PREVENT.
+  //
+  // The delivered page can carry a live map, and R1 says it carries the key with it. The journalist
+  // has to be TOLD which key, and what it costs them — a recommendation nobody makes is what the
+  // hard block in `substituteKeys` was standing in for. So the fact travels as one of four names and
+  // the prose lives here; a caller cannot write a sentence into this document.
+  //
+  // MUTATION (copy under /tmp): delete the `hasOwnProperty` check in `formatHandover`, so an unknown
+  // state renders nothing. This reddens.
+  it("should refuse a live-tiles state it does not know, rather than silently say nothing", () => {
+    expect(() =>
+      formatHandover({ ...VALID, liveTiles: "probably fine" }),
+    ).toThrow(/not a state this hand-over knows/);
+  });
+
+  it("should state the cost of a development key, in the journalist's own terms", () => {
+    const doc = formatHandover({ ...VALID, liveTiles: "development" });
+    expect(doc).toContain("100% of its spending limit");
+    expect(doc).toMatch(/\bbilled\b/);
+    expect(doc).not.toMatch(/\bskills\//);
+    expect(doc).not.toMatch(/\.(mjs|mts|cjs|cts|tsx|jsx)\b/);
   });
 
   it("should let a clean hand-over through carrying no path and no module of ours", () => {

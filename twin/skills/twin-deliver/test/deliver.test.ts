@@ -15,6 +15,7 @@ import {
   ownedFileForInsertion,
   exportDirFor,
   substituteKeys,
+  mapKeyState,
 } from "../scripts/deliver.mjs";
 
 // A hand-over payload, module-scope, because EVERY delivery needs one: G4 closes into
@@ -921,16 +922,21 @@ describe("a story has more than one beat", () => {
 });
 
 /**
- * RULING R1b, CLAUSE 4 — the delivered key is a SECOND, domain-restricted key.
+ * RULING R1b, CLAUSE 4 — the delivered key SHOULD be the second, domain-restricted one.
  *
- * It was advice in a docblock while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`, and the
- * audit measured what that meant on the machine this was built on: `twin/.env` holds only
- * `MAPTILER_KEY`, so **every delivery substituted the unrestricted development key** and nothing
- * refused, warned or recorded it. MapTiler cannot restrict an account's default key, and it
- * invalidates ALL of an account's keys at 100% of its spending limit — so the fallback's blast
- * radius is every map in every article the newsroom has already published.
+ * "Should" is the whole point, and for a while it was compiled into a hard block: with only
+ * `MAPTILER_KEY` set, `substituteKeys` threw, so a journalist whose root held one key could not
+ * deliver their own work. Ruling **R1** is the one that governs, and it went the other way, after
+ * the owner was shown the cost: *"On a le droit d'utiliser pleinement MapTiler. Et garder l'export
+ * du HTML pas grave pour la clé."* The delivered HTML carries the key, knowingly.
  *
- * The three states below are the whole contract, and the third is the one that used to be silent.
+ * So the contract below is: RECOMMEND, never block. The best key available goes in, `mapKeyState`
+ * names which one, and the hand-over says plainly what the newsroom is shipping and what it costs
+ * them — the recommendation is MADE, in the file they keep, rather than enforced in a refusal.
+ *
+ * MUTATION (run in a copy under /tmp): restore the throw, i.e. make `substituteKeys` refuse when
+ * `MAPTILER_DELIVERY_KEY` is absent and `MAPTILER_KEY` is present. "should deliver the development
+ * key rather than block" and the two hand-over tests below redden.
  */
 describe("substituteKeys — R1b clause 4, the delivered key", () => {
   const page = "style.json?key=__MAPTILER" + '_KEY__"';
@@ -948,15 +954,23 @@ describe("substituteKeys — R1b clause 4, the delivered key", () => {
     expect(substituteKeys(page, {})).toBe(page);
   });
 
-  it("should REFUSE to deliver the development key, naming both ways forward", () => {
-    expect(() =>
-      substituteKeys(page, { MAPTILER_KEY: "development-key" }),
-    ).toThrow(/MAPTILER_DELIVERY_KEY is not set/);
-    // The refusal has to be actionable, or it is just an obstacle: it names the second key, where
-    // to create it, and the alternative of delivering the fallback layer.
-    expect(() =>
-      substituteKeys(page, { MAPTILER_KEY: "development-key" }),
-    ).toThrow(/restricted to the newsroom's own origins/);
+  it("should deliver the development key rather than block, when it is the only one", () => {
+    expect(substituteKeys(page, { MAPTILER_KEY: "development-key" })).toBe(
+      'style.json?key=development-key"',
+    );
+  });
+
+  it("should name which key went in, so the hand-over can say so", () => {
+    expect(mapKeyState(page, { MAPTILER_DELIVERY_KEY: "restricted-key" })).toBe(
+      "restricted",
+    );
+    expect(mapKeyState(page, { MAPTILER_KEY: "development-key" })).toBe(
+      "development",
+    );
+    expect(mapKeyState(page, {})).toBe("unkeyed");
+    expect(mapKeyState("<p>no map here</p>", { MAPTILER_KEY: "k" })).toBe(
+      "none",
+    );
   });
 
   it("should prefer the delivery key even when the development key is also set", () => {
@@ -1006,6 +1020,70 @@ describe("the key rule reads the artifact, not the environment", () => {
       substituteKeys(mapPage, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
     ).toBe('style.json?key=restricted-key"');
     expect(substituteKeys(mapPage, {})).toContain("__MAPTILER" + "_KEY__");
+  });
+
+  it("should deliver a MAP beat on a development key, and say so in the hand-over", async () => {
+    // R1: the delivered HTML carries the key, knowingly. R1b prefers the restricted one. The
+    // journalist gets the delivery AND the statement of what it costs — never a refusal instead of
+    // both.
+    await rm(join(beatDir, "renders", "still.png"));
+    await rm(join(beatDir, "renders", "still.svg"));
+    await writeFile(join(beatDir, "renders", "map.html"), mapPage);
+
+    await materialise({
+      form: "owned-file",
+      genre: "web",
+      beatDir,
+      exportDir,
+      env: { MAPTILER_KEY: "development-key" },
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(
+      'style.json?key=development-key"',
+    );
+    const readme = await readFile(join(exportDir, "HANDOVER.md"), "utf8");
+    expect(readme).toContain("development");
+    expect(readme).toContain("100% of its spending limit");
+    expect(readme).toContain("MAPTILER_DELIVERY_KEY");
+  });
+
+  it("should say the map is not live when no key was recorded at all", async () => {
+    await rm(join(beatDir, "renders", "still.png"));
+    await rm(join(beatDir, "renders", "still.svg"));
+    await writeFile(join(beatDir, "renders", "map.html"), mapPage);
+
+    await materialise({
+      form: "owned-file",
+      genre: "web",
+      beatDir,
+      exportDir,
+      env: {},
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, "HANDOVER.md"), "utf8")).toContain(
+      "does not draw its map live",
+    );
+  });
+
+  it("should say nothing about MapTiler in a hand-over for a beat that is not a map", async () => {
+    await rm(join(beatDir, "renders", "still.png"));
+    await rm(join(beatDir, "renders", "still.svg"));
+    await writeFile(join(beatDir, "renders", "chart.html"), chartPage);
+
+    await materialise({
+      form: "owned-file",
+      genre: "web",
+      beatDir,
+      exportDir,
+      env: { MAPTILER_KEY: "development-key" },
+      handover,
+    });
+
+    expect(
+      await readFile(join(exportDir, "HANDOVER.md"), "utf8"),
+    ).not.toContain("MapTiler");
   });
 
   it("should deliver a non-map web beat while a development key sits in the environment", async () => {

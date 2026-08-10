@@ -172,15 +172,19 @@ export function offerForms({ medium, genre, beatDir, env = process.env }) {
 // written. Directories are walked, never handed to `copyFile` directly — a beat carrying a
 // subdirectory anywhere other than "renders" (an "assets" folder, say) must be copied whole,
 // not throw EISDIR.
-async function copyTree(srcDir, destDir, written, { env = process.env } = {}) {
+// `states` collects one `mapKeyState` per HTML file copied, so the hand-over can state what the
+// delivery actually carries rather than what the environment happens to hold.
+async function copyTree(srcDir, destDir, written, { env = process.env, states = [] } = {}) {
   await mkdir(destDir, { recursive: true });
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name);
     const destPath = join(destDir, entry.name);
     if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env });
+      await copyTree(srcPath, destPath, written, { env, states });
     } else if (entry.name.endsWith(".html")) {
-      await writeFile(destPath, substituteKeys(await readFile(srcPath, "utf8"), env));
+      const html = await readFile(srcPath, "utf8");
+      states.push(mapKeyState(html, env));
+      await writeFile(destPath, substituteKeys(html, env));
       written.push(destPath);
     } else {
       await copyFile(srcPath, destPath);
@@ -230,48 +234,72 @@ export function carriesMapKey(html) {
  * So the key is substituted HERE, when the file goes to the newsroom, and nowhere earlier.
  * `splash-twin/test/no-key-in-the-repository.test.ts` reddens if one ever reaches a tracked file.
  *
- * THE DELIVERED KEY IS `MAPTILER_DELIVERY_KEY`, AND NOTHING ELSE — clause 4 of the ruling, which
- * used to be advice in this docblock while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`.
- * The audit measured what that fallback meant in practice: `twin/.env` holds only `MAPTILER_KEY`,
- * so **as configured, every delivery substituted the unrestricted development key**, and nothing
- * refused, warned or recorded it (AUDIT-W5-W6-map.md §2, clause 4).
+ * THE DELIVERED KEY IS `MAPTILER_DELIVERY_KEY` WHEN THERE IS ONE — and `MAPTILER_KEY` when there is
+ * not. Clause 4 of R1b says the delivered key *should* be the second, origin-restricted one, and it
+ * is right: MapTiler's documented mitigation for a client-side key is Allowed HTTP origins, enforced
+ * server-side, so a restricted key copied elsewhere simply does not work — and an account's DEFAULT
+ * key CANNOT be restricted, so a dedicated one has to be created
+ * (docs.maptiler.com/cloud/api/authentication-key/).
  *
- * Why the fallback cannot stay. MapTiler's documented mitigation for a client-side key is Allowed
- * HTTP origins, enforced server-side — copied elsewhere, a restricted key simply does not work — and
- * an account's DEFAULT key CANNOT be restricted, so a dedicated one has to be created
- * (docs.maptiler.com/cloud/api/authentication-key/). A development key delivered into a published
- * article is a key any reader can lift and spend, and MapTiler invalidates ALL of an account's keys
- * at 100% of its spending limit — so the blast radius of the convenient fallback is every map in
- * every article the newsroom has ever published.
+ * THAT "SHOULD" WAS COMPILED INTO A HARD BLOCK, AND THE BLOCK IS GONE. With only `MAPTILER_KEY` set
+ * this function threw, so a journalist whose root held one key could not deliver their own work at
+ * all. That is stricter than ruling R1, which is the ruling that governs: *"la carte doit rester
+ * interactive tout le temps… On a le droit d'utiliser pleinement MapTiler. Et garder l'export du
+ * HTML pas grave pour la clé."* The owner was shown the cost — the key ships inside the delivered
+ * HTML, readable by anyone who opens the article — and accepted it explicitly. R1b added where the
+ * key may not go (the repository) and which key is preferable (the restricted one). Neither says a
+ * delivery stops.
  *
- * The three states, and there is no fourth:
+ * So this function RECOMMENDS and never blocks: the best key available is substituted, and
+ * `mapKeyState` names which one went in, so the hand-over can say plainly what the newsroom is
+ * shipping and what it costs them. **There is no refusal left in this path** — a rule that stops a
+ * journalist delivering is a rule they will route around, which is precisely what the run did.
  *
- *   - `MAPTILER_DELIVERY_KEY` set  → substituted. The delivery is live.
- *   - neither set                  → the placeholder travels through untouched. Not a silent
- *                                    failure: the delivered page renders its complete fallback
- *                                    layer, exactly as it does offline or with JavaScript off.
- *   - only `MAPTILER_KEY` set      → **THROWS**, naming both ways forward. Substituting it would be
- *                                    the defect; falling silently back to the placeholder would
- *                                    ship a dead map to someone who believes they configured one.
+ * The four states, and there is no fifth:
+ *
+ *   - no key slot in the file      → `"none"`. Not a map delivery; nothing is substituted or said.
+ *   - `MAPTILER_DELIVERY_KEY` set  → `"restricted"`. Substituted. The delivery is live, and the key
+ *                                    it carries is worthless off the newsroom's own domains.
+ *   - only `MAPTILER_KEY` set      → `"development"`. Substituted, and SAID OUT LOUD: the delivery
+ *                                    is live and carries an unrestricted key. Ruling R1's own trade.
+ *   - neither set                  → `"unkeyed"`. The placeholder travels through untouched. Not a
+ *                                    silent failure: the delivered page renders its complete
+ *                                    fallback layer, exactly as it does offline, and the hand-over
+ *                                    says so.
  */
 export function substituteKeys(html, env = process.env) {
   // The artifact decides, not the environment. A beat with no key slot is not a map delivery and
   // has nothing here to protect.
   if (!carriesMapKey(html)) return html;
 
-  const key = env.MAPTILER_DELIVERY_KEY;
-  if (!key) {
-    if (env.MAPTILER_KEY)
-      throw new Error(
-        "MAPTILER_DELIVERY_KEY is not set, and MAPTILER_KEY is — refusing to deliver the " +
-          "development key into a published page (ruling R1b). Create a SECOND MapTiler key " +
-          "restricted to the newsroom's own origins (docs.maptiler.com/cloud/api/authentication-key/) " +
-          "and set MAPTILER_DELIVERY_KEY, or unset MAPTILER_KEY for this delivery and the page will " +
-          "ship its complete fallback layer with no live tiles.",
-      );
-    return html;
-  }
+  const key = env.MAPTILER_DELIVERY_KEY || env.MAPTILER_KEY;
+  if (!key) return html;
   return html.split(MAP_KEY_PLACEHOLDER).join(key);
+}
+
+/**
+ * WHICH KEY THIS ARTIFACT IS ABOUT TO LEAVE WITH — the fact the hand-over states to the journalist.
+ *
+ * `substituteKeys` used to carry a judgement (deliver / refuse) where it only ever had a FACT. The
+ * fact is this enum; what to do about it is the journalist's, and `formatHandover` is where they are
+ * told. Separating the two is what let the block become a recommendation without becoming silence.
+ */
+export const LIVE_TILE_STATES = ["none", "restricted", "development", "unkeyed"];
+
+export function mapKeyState(html, env = process.env) {
+  if (!carriesMapKey(html)) return "none";
+  if (env.MAPTILER_DELIVERY_KEY) return "restricted";
+  if (env.MAPTILER_KEY) return "development";
+  return "unkeyed";
+}
+
+// A delivery can write more than one file, so the hand-over states the state that COSTS THE MOST.
+// An unrestricted key in any delivered file is the thing the newsroom needs told, whatever the file
+// beside it carries.
+const STATE_COST = { none: 0, restricted: 1, unkeyed: 2, development: 3 };
+
+function costliestState(states) {
+  return states.reduce((worst, state) => (STATE_COST[state] > STATE_COST[worst] ? state : worst), "none");
 }
 
 // A real, dependency-free build entry point: Bun's own bundler ships inside the Bun runtime,
@@ -404,14 +432,17 @@ async function refuseToWipeAnotherBeat(exportDir, beatDir) {
 // one of its inputs is ALREADY RECORDED (placement and credit are hand fields 4 and 5, the caveat is
 // `limits`, the alt is in the component), so a caller with nothing to hand in has not read the
 // storyboard back — and that is a refusal, not a delivery.
-async function withHandover(written, { exportDir, genre, handover }) {
+async function withHandover(written, { exportDir, genre, handover, states = [] }) {
   if (!handover) {
     throw new Error(
       "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.",
     );
   }
   const path = join(exportDir, "HANDOVER.md");
-  await writeFile(path, formatHandover({ ...handover, genre, files: written }));
+  await writeFile(
+    path,
+    formatHandover({ ...handover, genre, files: written, liveTiles: costliestState(states) }),
+  );
   written.push(path);
   return written;
 }
@@ -448,10 +479,13 @@ export async function materialise({
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(exportDir, DELIVERY_RECEIPT), `${beatName}\n`);
   const written = [];
+  // One `mapKeyState` per HTML file this delivery writes — read for the hand-over, never for a
+  // verdict. Nothing in this function refuses over a key.
+  const states = [];
 
   if (form === "owned-file") {
-    await copyTree(join(beatDir, "renders"), exportDir, written, { env });
-    return withHandover(written, { exportDir, genre, handover });
+    await copyTree(join(beatDir, "renders"), exportDir, written, { env, states });
+    return withHandover(written, { exportDir, genre, handover, states });
   }
 
   if (form === "embed") {
@@ -470,7 +504,9 @@ export async function materialise({
     // can never boot. Written into the export directory first so what is deployed is a real file on
     // disk that can be inspected, never a string only this function ever saw.
     const stagedPath = join(exportDir, fileName);
-    await writeFile(stagedPath, substituteKeys(await readFile(join(beatDir, "renders", fileName), "utf8"), env));
+    const hosted = await readFile(join(beatDir, "renders", fileName), "utf8");
+    states.push(mapKeyState(hosted, env));
+    await writeFile(stagedPath, substituteKeys(hosted, env));
     const { url } = await deployFile({
       accountId: creds.accountId,
       apiToken: creds.apiToken,
@@ -486,12 +522,14 @@ export async function materialise({
     const urlPath = join(exportDir, "EMBED_URL.txt");
     await writeFile(urlPath, `${url}\n`);
     written.push(urlPath);
-    return withHandover(written, { exportDir, genre, handover });
+    return withHandover(written, { exportDir, genre, handover, states });
   }
 
   if (form === "cms-insertion") {
     const fileName = await ownedFileForInsertion(beatDir, genre);
-    const insertionHtml = substituteKeys(await readFile(join(beatDir, "renders", fileName), "utf8"), env);
+    const inserted = await readFile(join(beatDir, "renders", fileName), "utf8");
+    states.push(mapKeyState(inserted, env));
+    const insertionHtml = substituteKeys(inserted, env);
 
     // Without a live CMS to fetch a real article from, this form demonstrates its own mechanics
     // against a clearly-labelled placeholder rather than pretending to have read a real article —
@@ -523,7 +561,7 @@ ${JSON.stringify(insertion, null, 2)}
     const docPath = join(exportDir, "CMS-INSERTION.md");
     await writeFile(docPath, doc);
     written.push(docPath);
-    return withHandover(written, { exportDir, genre, handover });
+    return withHandover(written, { exportDir, genre, handover, states });
   }
 
   for (const entry of await readdir(beatDir, { withFileTypes: true })) {
@@ -531,7 +569,7 @@ ${JSON.stringify(insertion, null, 2)}
     const srcPath = join(beatDir, entry.name);
     const destPath = join(exportDir, entry.name);
     if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written);
+      await copyTree(srcPath, destPath, written, { env, states });
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
@@ -559,5 +597,5 @@ ${JSON.stringify(insertion, null, 2)}
   );
   written.push(manifestPath);
 
-  return withHandover(written, { exportDir, genre, handover });
+  return withHandover(written, { exportDir, genre, handover, states });
 }

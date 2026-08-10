@@ -21,6 +21,51 @@
 
 const REQUIRED = ["genre", "placement", "alt", "credit"];
 
+// WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,
+// which is what lets a paragraph this honest exist here at all without opening a free-text field.
+//
+// Ruling R1: a web map you cannot move through is a picture, so map × web ships live MapTiler tiles
+// and the key travels inside the delivered HTML. The owner accepted that cost explicitly, having
+// been shown it. R1b adds that the key ought to be a SECOND, origin-restricted one — and for a while
+// that "ought" was a hard block in `substituteKeys`, so a journalist with one key could not deliver
+// their own work. It is a recommendation again, which only works if the recommendation is actually
+// MADE: this is where it is made, in the file the newsroom keeps, not in a refusal they never see.
+//
+// Every sentence is about THEIR article and THEIR account. Nothing about our code reaches this page
+// — the same rule `refuseMaintainerText` enforces for the fields the caller supplies.
+const LIVE_TILES = {
+  none: null,
+  restricted: [
+    "## The live map in this file",
+    "",
+    "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
+    "inside the file, and it is the one restricted to your own domains — copied out of the page, it",
+    "does not work anywhere else.",
+  ],
+  development: [
+    "## The live map in this file, and the key it carries",
+    "",
+    "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
+    "inside the file: anyone who opens the published article can read it, and it is your development",
+    "key, which is not restricted to your own domains.",
+    "",
+    "What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by",
+    "whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler",
+    "switches off **every** key on it — including the maps in articles you published years ago.",
+    "",
+    "The way to close that, when you want to: create a second MapTiler key restricted to your own",
+    "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry",
+    "the restricted key, which is worth nothing to anyone who lifts it out of the page.",
+  ],
+  unkeyed: [
+    "## The live map in this file",
+    "",
+    "No MapTiler key was recorded, so this page does not draw its map live: it shows the map layer",
+    "that is baked into the file. That layer is complete and readable — it simply does not pan or",
+    "zoom. Recording a MapTiler key on the setup page is what makes the live version possible.",
+  ],
+};
+
 // A MAINTAINER-FACING SENTENCE PHYSICALLY CANNOT PASS THROUGH THIS FUNCTION.
 //
 // The run's closing message was four fifths internals: three paragraphs naming `ground-claim.mjs`,
@@ -76,7 +121,15 @@ function baseName(path) {
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it
  * looks complete.
  */
-export function formatHandover({ files, placement, alt, credit, caveat, genre }) {
+export function formatHandover({ files, placement, alt, credit, caveat, genre, liveTiles = "none" }) {
+  // A CLOSED vocabulary, checked rather than defaulted: an unrecognised state would silently drop
+  // the paragraph that says a development key is shipping, which is the one thing here nobody may
+  // fail to be told.
+  if (!Object.prototype.hasOwnProperty.call(LIVE_TILES, liveTiles)) {
+    throw new Error(
+      `liveTiles ${JSON.stringify(liveTiles)} is not a state this hand-over knows — ${Object.keys(LIVE_TILES).join(", ")}`,
+    );
+  }
   const given = { genre, placement, alt, credit };
   const missing = REQUIRED.filter((field) => !given[field] || !String(given[field]).trim());
   if (missing.length > 0) {
@@ -129,6 +182,8 @@ export function formatHandover({ files, placement, alt, credit, caveat, genre })
     `> ${credit}`,
     "",
   );
+
+  if (LIVE_TILES[liveTiles]) lines.push(...LIVE_TILES[liveTiles], "");
 
   if (caveat && String(caveat).trim()) {
     lines.push(

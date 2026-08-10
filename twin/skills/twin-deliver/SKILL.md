@@ -78,7 +78,7 @@ Two things close it, and both are code rather than convention:
 | --- | --- | --- |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
-| The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment) |
+| The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
@@ -170,10 +170,29 @@ HTML beat that was not a map at all (zero occurrences of `maptiler`, no key slot
 because a `MAPTILER_KEY` sat in the environment. A rule that fires where it cannot be protecting
 anything teaches its reader to route around it, and that is exactly what the run then did.
 
-For an artifact that DOES carry the slot, three states and no fourth: `MAPTILER_DELIVERY_KEY` set →
-substituted, the delivery is live; neither key set → the placeholder travels through and the page
-ships its complete fallback layer, exactly as it does offline; only `MAPTILER_KEY` set → **throws**,
-because R1b clause 4 says the delivered key is a second, origin-restricted one.
+**It recommends; it does not block.** For an artifact that DOES carry the slot, `mapKeyState` names
+one of four states and `substituteKeys` puts the best available key in — there is **no refusal left
+in this path**:
+
+| state | what happens | what the hand-over says |
+| --- | --- | --- |
+| `none` | no key slot in the file; nothing is substituted | nothing — it is not a map delivery |
+| `restricted` | `MAPTILER_DELIVERY_KEY` goes in | the live map's key is restricted to the newsroom's own domains |
+| `development` | `MAPTILER_KEY` goes in | the page carries a development key: readable by any reader, billed by usage, and MapTiler switches off **every** key on an account at 100% of its spending limit — plus how to record a restricted one |
+| `unkeyed` | the placeholder travels through | the page shows its baked map layer; it does not pan or zoom |
+
+The `development` row used to **throw**, which is stricter than the ruling that governs it. R1: *"la
+carte doit rester interactive tout le temps… On a le droit d'utiliser pleinement MapTiler. Et garder
+l'export du HTML pas grave pour la clé."* The owner accepted, having been shown the cost, that the
+delivered HTML carries the key. R1b's clause 4 says the delivered key *should* be a second,
+origin-restricted one — a recommendation, and a hard block turned it into a wall a journalist could
+not deliver their own work past. The recommendation is now actually MADE, in the file the newsroom
+keeps: `formatHandover` renders it from a **closed** four-state vocabulary (an unknown state throws
+rather than silently saying nothing), so it can never be forgotten and can never become free text.
+
+**Say it in the conversation too, in the journalist's own terms**, at the moment the delivery lands:
+which key their page carries and what it costs them. Never as a refusal, never with a route around
+one — the state is a fact about their file, and the decision to create a restricted key is theirs.
 
 ## Quick start
 
@@ -217,14 +236,19 @@ const written = await materialise({
 | What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"twin-deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
+| How many live-tile states a delivery can be in | `4` (`none`, `restricted`, `development`, `unkeyed`) — an unknown one throws in the hand-over rather than saying nothing | `LIVE_TILE_STATES`, `scripts/deliver.mjs` |
+| What each of those states says to the journalist | `4` paragraph blocks, one per state, `none` being silence | `LIVE_TILES`, `scripts/format-handover.mjs` |
 | Which CMS kind `cms-insertion` demonstrates when the caller supplies none | `"we-publish"` (override with `materialise`'s own `cms` object) | `materialise`'s `"cms-insertion"` branch |
 
 ## Files
 
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
-  hand fields 4 and 5, the caveat is `limits`, the alt is in the component.
+  hand fields 4 and 5, the caveat is `limits`, the alt is in the component. `LIVE_TILES` is the
+  four-state vocabulary that says which MapTiler key the delivered page carries and what it costs —
+  an enum, never a sentence a caller writes.
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper),
+  `carriesMapKey` and `mapKeyState` (the key question, asked of the artifact),
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one
   directory a beat delivers into), and the `BUILD_SCRIPT` template written into every
   `source-bundle` delivery.
