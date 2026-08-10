@@ -27,6 +27,7 @@
 // Usage:
 //   bun proof/mapscrolly-one-map-europe-carbon/render.mjs [outDir]
 
+import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +37,7 @@ import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.
 import { MapFrame } from "./MapFrame.tsx";
 import {
   CO2_BREAKS,
+  WATER_FILL,
   binIndexLowerInclusive,
   en,
   sequentialRamp,
@@ -47,9 +49,26 @@ import {
   t1,
   wholePlate,
 } from "./carbon-map.ts";
-import { CONTENT_TOP, MAX_SCALE, PROSE_LANE, assertNumericStates } from "./map-drive.mjs";
+import { CONTENT_TOP, MAX_SCALE, PROSE_LANE, assertNumericStates, resolveCamera, stateAt } from "./map-drive.mjs";
+import { keyPlaceholder, viewForCamera, warmPositions } from "./live-scroll-map.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Resolved through node's own module resolution, never by a relative path out of this beat —
+// `no-cross-skill-imports.test.ts` reads path STRINGS, and `../../../node_modules/...` reads to it
+// (correctly) as a specifier leaving the beat.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
+const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
+
+/** The frame the WARM is computed against. The reader's frame is not known at build time (web is a
+ *  range, R2), and the warm only has to fetch the right neighbourhood of tiles at the right zoom —
+ *  a container 20% wider asks for the same tiles plus an edge, which the live map then fetches on
+ *  its own. This is the widest shape the beat is verified at, so the warm errs wide. */
+const WARM_FRAME = { width: 1600, height: 820 };
+/** How many camera positions each leg of the path contributes to the warm. Three means each leg is
+ *  warmed at its start and at two interior positions — the zooms a reader passes through mid-flight,
+ *  which no authored state has. */
+const WARM_SAMPLES_PER_LEG = 3;
 
 // The colours come from the answer recorded in PALETTE.md beside this beat — never a hex written
 // here. `stopAt` is an input SEARCH BOUNDARY, not an output path.
@@ -142,7 +161,7 @@ async function render() {
   // Short on purpose: it sits at the bottom of the DRAWING, above the prose lane, and at 375px a
   // credit that runs to a third line reaches down into the panel. Full provenance is in the header,
   // which under the fixed-page model never scrolls away.
-  const credit = `Global Carbon Budget (2025) via Our World in Data · basemap: MapTiler, baked once`;
+  const credit = `Global Carbon Budget (2025) via Our World in Data · basemap © MapTiler © OpenStreetMap`;
 
   const visual = createElement(MapFrame, {
     plate: `data:image/png;base64,${(await readFile(join(HERE, "plate", "plate.png"))).toString("base64")}`,
@@ -160,9 +179,47 @@ async function render() {
     accent,
   });
 
+  // ── The live MapTiler layer (ruling R1, extended to the scrolly 2026-08-10) ───────────────────
+  //
+  // The style URL carries the PLACEHOLDER, never a key (R1b): this file is committed, the release
+  // is open source, and a pushed key is scanned within minutes and survives in the history.
+  // `twin-deliver` substitutes at delivery.
+  //
+  // The warm is the answer to the objection this beat used to keep the plate over: a reader
+  // scrubbing fast meets tiles that have not arrived. The cameras are authored, so every one of
+  // them — and the positions BETWEEN them, where the reader spends most of the piece — is walked
+  // through the map before the live layer is revealed.
+  const warmViews = warmPositions(states.length, WARM_SAMPLES_PER_LEG).map((p) =>
+    viewForCamera(
+      resolveCamera(stateAt(states, p, false), WARM_FRAME, CONTENT_TOP, MAX_SCALE),
+      WARM_FRAME,
+      geometry,
+    ),
+  );
+  const livePlan = {
+    styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${keyPlaceholder()}`,
+    waterFill: WATER_FILL,
+    // The opening camera, so the map is constructed already pointing at reading 1 rather than at
+    // null island for one frame.
+    center: warmViews[0].center,
+    zoom: warmViews[0].zoom,
+    // Only the camera facts the live layer needs — the 41 shapes stay where they are, in the SVG
+    // this beat already draws, and are never re-projected.
+    geometry: {
+      frame: geometry.frame,
+      frameCorners: geometry.frameCorners,
+      worldWidthPx: geometry.worldWidthPx,
+    },
+    warm: warmViews,
+  };
+
   const driverSource = await readFile(join(HERE, "map-drive.mjs"), "utf8");
+  const liveSource = await readFile(join(HERE, "live-scroll-map.mjs"), "utf8");
+  const maplibreJs = await readFile(MAPLIBRE_JS, "utf8");
+  const maplibreCss = await readFile(MAPLIBRE_CSS, "utf8");
   const boot =
     driverSource.replace(/^export /gm, "") +
+    liveSource.replace(/^export /gm, "") +
     `\n;(function () {\n` +
     `  if (window.__oneMapStarted) return;\n` +
     `  window.__oneMapStarted = true;\n` +
@@ -172,8 +229,12 @@ async function render() {
     `  function boot() {\n` +
     `    var root = document.querySelector('[data-visual="one-map"]');\n` +
     `    if (!root) return;\n` +
+    // The live layer is booted FIRST so its `follow` exists before the first paint, and it returns
+    // null — leaving the plate showing and the camera driving it alone — whenever the page carries
+    // the placeholder, has no MapLibre, or has no container.
+    `    var live = initLiveScrollMap(root, ${JSON.stringify(livePlan)}, {});\n` +
     `    initMapScrolly(root, ${JSON.stringify(states)}, ${JSON.stringify(labels)}, ` +
-    `${JSON.stringify({ rasterPerUnit, lift: 16 })});\n` +
+    `${JSON.stringify({ rasterPerUnit, lift: 16 })}, live ? live.follow : null);\n` +
     `  }\n` +
     `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
     `  else boot();\n` +
@@ -222,6 +283,12 @@ async function render() {
             Fragment,
             null,
             visual,
+            // maplibre-gl INLINED rather than loaded from a CDN: a `<script src>` would trade
+            // payload for a SECOND third-party host, and this file's whole request budget is one
+            // host — api.maptiler.com. Measured cost of the ruling, stated rather than discovered:
+            // ~803 KB of JS and ~65 KB of CSS on top of the plate this page already carries.
+            createElement("style", { dangerouslySetInnerHTML: { __html: maplibreCss } }),
+            createElement("script", { dangerouslySetInnerHTML: { __html: maplibreJs } }),
             createElement("script", { dangerouslySetInnerHTML: { __html: boot } }),
           )
         : createElement("div"),
@@ -232,10 +299,10 @@ async function render() {
   // every scroll position — measured at 375x812, where a longer draft took 230px of 812.
   const source =
     `CO₂ per person (fossil fuels and industry): Global Carbon Budget (2025), processing by Our World in Data. ` +
-    `Shapes: Natural Earth 1:50m. Basemap: MapTiler dataviz-light, captured ONCE at ` +
-    `${geometry.frame.width}×${geometry.frame.height} and frozen beside this beat — the delivered file carries ` +
-    `no key and makes no request. Colours: ${paletteSource.slice(paletteSource.lastIndexOf("/") + 1)}, ` +
-    `chosen by the ${origin}.`;
+    `Shapes: Natural Earth 1:50m. Basemap: LIVE MapTiler ${geometry.style} tiles, the camera flown by the ` +
+    `scroll; the same basemap captured once at ${geometry.frame.width}×${geometry.frame.height} is frozen ` +
+    `beside this beat and stays underneath as the fallback, so the map still reads with no network and no key. ` +
+    `Colours: ${paletteSource.slice(paletteSource.lastIndexOf("/") + 1)}, chosen by the ${origin}.`;
 
   const { outPath, panelContrast } = await renderScrolly({
     steps: stepsWithFrames,

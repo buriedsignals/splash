@@ -156,13 +156,30 @@ export function report(label, samples, stepCount) {
             `on the right at scrollY=${s.scrollY}`,
         );
     }
-    // Every panel is painted now — the vehicle's eighth correction removed the fade, because two
-    // panels on screen through a boundary is what a boundary looks like. What must stay true is
-    // that the VISIBLE part of a panel never covers anything the frame annotates.
+    // WHAT THE CARD MAY DO TO A LABEL, restated for the vehicle's NINTH correction — and this is a
+    // replacement, not a widening. The eighth put the prose in its own cell, so a card could never
+    // reach a label and the assertion here was "never overlaps". The ninth deliberately trades that
+    // guarantee away: the card is centred and travels OVER the graphic, opaque, and its own
+    // discipline file states the successor guarantee in the terms it measured —
+    //
+    //   "A label sitting under the card reads as absent, which is what a card over a picture means.
+    //    A label the card's own VERTICAL edge cuts down the middle reads as broken text, and stays
+    //    broken for every frame the card spends at that row."
+    //
+    // So covered-whole is allowed and SLICED is not: a label must be entirely clear of the card or
+    // entirely inside it, never straddling one of its vertical edges. That is the property the
+    // vehicle's own F4 asserts for the seed, applied here to what THIS frame annotates.
     for (const box of s.panelVisibleBoxes)
-      for (const m of s.marked)
-        if (overlaps(m.box, box))
-          problems.push(`"${m.text}" (${m.what}) is under the prose panel at scrollY=${s.scrollY}`);
+      for (const m of s.marked) {
+        if (!overlaps(m.box, box)) continue;
+        const slicedLeft = box.left > m.box.left + 0.5 && box.left < m.box.right - 0.5;
+        const slicedRight = box.right > m.box.left + 0.5 && box.right < m.box.right - 0.5;
+        if (slicedLeft || slicedRight)
+          problems.push(
+            `"${m.text}" (${m.what}) is cut down its side by the prose card's vertical edge at ` +
+              `scrollY=${s.scrollY} — covered whole is allowed, sliced is not`,
+          );
+      }
     // NOTHING THE FRAME ANNOTATES SITS UNDER THE CREDIT. The credit is the one piece of furniture
     // that is placed against the FRAME rather than against the plot or the camera, so it is the one
     // that can land on top of a label without any layout rule noticing. It did: anchored above the

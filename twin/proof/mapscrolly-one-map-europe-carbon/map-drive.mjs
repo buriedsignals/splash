@@ -11,41 +11,39 @@
 // states carry `logSpanX`/`logSpanY`, so a lerp in state space is a constant-rate zoom in what the
 // eye sees, rather than a flight that races at the start and crawls at the end).
 //
-// WHY A BAKED PLATE AND NOT LIVE TILES — the decision, argued rather than inherited.
-// `twin-doctrine/references/geo-discipline.md` rule 2 is written for a moving camera: render ONE
-// fixed plate wide enough to hold every camera position and move WITHIN it, because re-rendering
-// tiles per camera position resamples the basemap slightly differently each time and the picture
-// shimmers. That rule was written about a video's camera. A scroll-driven camera is the same camera
-// with the reader's thumb on the timeline, so it inherits the rule unchanged — and it inherits it
-// for one more reason a video does not have: the reader can stop anywhere, scrub back and forth,
-// and go as fast as a trackpad allows, so a tile fetch would be firing continuously through a
-// gesture the reader is making, and reading 3 would arrive as grey squares at exactly the moment
-// its own sentence names what to look at.
+// THE BASEMAP IS LIVE MAPTILER — ruling R1, extended to the scrolly by the owner on 2026-08-10:
+// *"il faut tout le temps utiliser MapTiler."* This file used to carry, in this position, the
+// argument for keeping a baked plate instead: a scrolly's cameras are AUTHORED and finite, so a
+// plate can hold them, while a reader mid-scrub can outrun a tile server and meet reading 3 as grey
+// squares. The argument was real and it is kept, marked overturned, in `BRIEF.md` — but it was
+// answered rather than accepted. Because the cameras ARE known at build time, they are warmed
+// through MapLibre's own tile cache before the live layer is revealed (`live-scroll-map.mjs`,
+// `warmCameras`), and the baked plate stays UNDERNEATH the tiles as the fallback layer rather than
+// instead of them.
 //
-// Ruling R1 put map x WEB on live MapTiler tiles, and that ruling does not reach here, because the
-// two are not the same problem. A free-pan map's set of camera positions is INFINITE — the reader
-// chooses it — and no bake can hold an infinite set. A scrolly's camera is AUTHORED: four positions,
-// known at build time, on one continuous path between them. A finite, known set is exactly what a
-// plate can hold. So this file keeps the plate, and pays for it in one measured currency:
-// `MAX_SCALE` below, the point past which the camera would be magnifying the plate beyond its own
-// resolution. The story was written to that budget rather than the budget being stretched to the
-// story — see `BRIEF.md`, "What the plate costs."
+// What this file still owns is the camera, and nothing about that changed: one resolved camera per
+// frame, written to the plate box, to this beat's own vector drawing, and — through `onCamera` —
+// to the live map. One derivation, three consumers. `MAX_SCALE` below still clamps the FALLBACK's
+// magnification, because the plate under a failed tile request must not be a blur; the live tiles
+// have no such ceiling.
 
 // ── Placement, shared with the scaffold ────────────────────────────────────────────────────────
 
-/** The band at the BOTTOM of the graphic this frame keeps clear. `render.mjs` hands the same number
- *  to `renderScrolly` as `proseLane`. 0.36 rather than the vehicle's 0.28: at 375x812 the tallest
- *  panel measured 0.28 of the scrollport and parked 0.06 above its floor.
+/** The band at the BOTTOM of the graphic this frame keeps clear — RECLAIMED, and it is 0.
  *
- *  AND SINCE THE VEHICLE'S EIGHTH CORRECTION NOTHING GOES THERE. The prose moved into its own cell
- *  of the track's grid, so the panel is no longer inside the graphic's box at any offset. This band
- *  is now the bottom third of the PLATE — sea and land the camera still paints, which is why it
- *  reads as less wasteful here than on the chart — but `CONTENT_TOP` still refuses to centre a
- *  subject or place a label in it. Kept, for now, because reclaiming it is a change every beat's own
- *  copy of this constant carries and the vehicle's `proseLane` parameter — validated `0 < x < 0.6`
- *  and emitted as `--prose-lane` — cannot express "none" without editing the settled scaffold. Named
- *  as residue in `BRIEF.md`, "The dead lane". */
-export const PROSE_LANE = 0.36;
+ *  It was 0.36: a band for a prose panel that PARKED at the bottom of the graphic's own box. The
+ *  vehicle's eighth correction moved the prose out of that box and the band held nothing; its NINTH
+ *  puts the card back over the graphic, travelling the whole height of it at the reader's own rate,
+ *  and states in its own discipline file why no band can be reserved from that — *"the card crosses
+ *  the whole height of the frame once per step … at the one position that is editorially
+ *  load-bearing the card is DEAD CENTRE of the frame. A band at the bottom protects the one place
+ *  the card never dwells."* So the band was not protection any more, it was 36% of every frame spent
+ *  on nothing — and the owner's instruction of 2026-08-10, *"la map doit prendre toute la largeur"*,
+ *  is about the whole frame, not only its width.
+ *
+ *  Reclaiming it was blocked on the scaffold, which validated `0 < proseLane < 0.6` and could not
+ *  express "none"; the ninth's `renderScrolly` accepts 0. */
+export const PROSE_LANE = 0;
 
 /** How much of the frame's own height the map's SUBJECT is centred in. The plate keeps painting
  *  below it — a map is scenery, and cropping sea is not a loss — but nothing this beat ANNOTATES is
@@ -229,9 +227,61 @@ export function labelPlacement(box, camera, frame, contentTop, lift) {
   return { x, y, clamped: Math.abs(y - wanted) > 1 || Math.abs(x - cx) > 1 };
 }
 
+/**
+ * A LABEL IS NEVER CUT DOWN ITS SIDE BY THE PROSE CARD.
+ *
+ * The vehicle's ninth correction sends an opaque card down the middle of this frame and states, in
+ * its own discipline file, the only guarantee it can offer instead of the eighth's "the two never
+ * meet": *"A label sitting under the card reads as absent, which is what a card over a picture
+ * means. A label the card's own VERTICAL edge cuts down the middle reads as broken text, and stays
+ * broken for every frame the card spends at that row."* Its own answer for the seed was to place
+ * the label INSIDE the stripe.
+ *
+ * So this takes a wanted centre and returns the nearest centre that is either wholly inside the
+ * stripe or wholly outside it — whichever moves the label less, and only when the label is narrow
+ * enough to fit inside. `stripe` is null on a phone, where the card is edge to edge and has no
+ * interior edge to cut anything against.
+ *
+ * Measured before it existed, at 1280x800: "Hungary 4.2" straddled the card's left edge on 4 of
+ * 126 frames per sweep, in both directions.
+ */
+export function avoidStripe(x, halfWidth, stripe, frame) {
+  if (!stripe) return x;
+  const left = x - halfWidth;
+  const right = x + halfWidth;
+  const straddles =
+    (stripe.left > left && stripe.left < right) || (stripe.right > left && stripe.right < right);
+  if (!straddles) return x;
+  const options = [];
+  if (halfWidth * 2 <= stripe.right - stripe.left)
+    options.push(Math.min(Math.max(x, stripe.left + halfWidth), stripe.right - halfWidth));
+  if (stripe.left - halfWidth >= halfWidth) options.push(stripe.left - halfWidth);
+  if (stripe.right + halfWidth <= frame.width - halfWidth) options.push(stripe.right + halfWidth);
+  if (options.length === 0) return x;
+  return options.reduce((best, o) => (Math.abs(o - x) < Math.abs(best - x) ? o : best));
+}
+
 // ── The driver (browser only) ──────────────────────────────────────────────────────────────────
 
 /* eslint-env browser */
+
+/**
+ * Where the prose card's own vertical edges are, in this frame's coordinates, or null when it has
+ * none inside the frame. MEASURED off the rendered card rather than re-derived from the vehicle's
+ * `min(46ch, 100%)` and its 600px breakpoint: a second copy of two numbers the scaffold owns is a
+ * second opinion, and this beat has already paid for one of those.
+ */
+export function stripeOf(root, frame) {
+  const doc = root.ownerDocument;
+  const card = doc.querySelector(".step-panel");
+  if (!card) return null;
+  const box = card.getBoundingClientRect();
+  const own = root.getBoundingClientRect();
+  const left = box.left - own.left;
+  const right = box.right - own.left;
+  if (left <= 1 && right >= frame.width - 1) return null;
+  return { left, right };
+}
 
 /**
  * Move the persistent visual OUT of the per-step frame stack.
@@ -257,7 +307,14 @@ export function detachVisual(root) {
     if (sibling !== root) sibling.style.pointerEvents = "none";
 }
 
-export function initMapScrolly(root, states, labels, config) {
+/**
+ * `onCamera` is the LIVE MAP's subscription to this camera: `(camera, frame)` on every painted
+ * frame, or null for a beat with no live layer (which is also what the page is when it still holds
+ * the delivery placeholder). It is a parameter rather than a call into `live-scroll-map.mjs`
+ * because this file is the one thing that decides where the camera is, and the live layer has to
+ * stay something that can fail without taking the beat with it.
+ */
+export function initMapScrolly(root, states, labels, config, onCamera) {
   const doc = root.ownerDocument;
   const view = doc.defaultView;
   detachVisual(root);
@@ -273,7 +330,12 @@ export function initMapScrolly(root, states, labels, config) {
     );
 
   const reduced = view.matchMedia("(prefers-reduced-motion: reduce)");
-  const camera = root.querySelector("[data-part=camera]");
+  // TWO boxes carry the camera since the live layer landed — the baked plate underneath and this
+  // beat's own vector drawing above the live map — and they are written from ONE resolved camera in
+  // one place. Two transforms computed twice is the same defect class as two scroll positions.
+  const cameraBoxes = Array.from(root.querySelectorAll("[data-part=camera]"));
+  if (cameraBoxes.length === 0)
+    throw new Error("this beat's visual carries no [data-part=camera] box for the camera to move");
   const veil = root.querySelector("[data-part=veil]");
   const groups = { A: root.querySelector("[data-hi=A]"), B: root.querySelector("[data-hi=B]"), C: root.querySelector("[data-hi=C]") };
   const labelNodes = Array.from(root.querySelectorAll("[data-label]"));
@@ -292,6 +354,9 @@ export function initMapScrolly(root, states, labels, config) {
     const box = root.getBoundingClientRect();
     const frame = { width: box.width, height: box.height };
     const view3 = resolveCamera(state, frame, CONTENT_TOP, MAX_SCALE);
+    // Read every frame, not cached: the card's own width regime changes with the viewport and it is
+    // the same read either way.
+    const stripe = stripeOf(root, frame);
 
     root.dataset.position = position.toFixed(3);
     // Published so a verification run can read the CAMERA, not just look at a picture. A screenshot
@@ -310,7 +375,12 @@ export function initMapScrolly(root, states, labels, config) {
       rasterPerPixel: config.rasterPerUnit / view3.scale,
     });
 
-    camera.style.transform = `translate(${view3.tx}px, ${view3.ty}px) scale(${view3.scale})`;
+    const transform = `translate(${view3.tx}px, ${view3.ty}px) scale(${view3.scale})`;
+    for (const box of cameraBoxes) box.style.transform = transform;
+    // The LIVE MapTiler camera, driven from the same resolved camera on the same frame. A hook
+    // rather than a call into the live module, so this driver stays the one thing that decides
+    // where the camera is and the live layer stays deletable without editing it.
+    if (onCamera) onCamera(view3, frame);
     veil.style.opacity = String(state.dim);
     groups.A.style.opacity = String(state.hiA);
     groups.B.style.opacity = String(state.hiB);
@@ -331,7 +401,12 @@ export function initMapScrolly(root, states, labels, config) {
       const halfWidth = node.offsetWidth / 2 + 6;
       const height = node.offsetHeight + 6;
       const contentH = frame.height * CONTENT_TOP;
-      const x = Math.max(halfWidth, Math.min(frame.width - halfWidth, place.x));
+      const x = avoidStripe(
+        Math.max(halfWidth, Math.min(frame.width - halfWidth, place.x)),
+        halfWidth,
+        stripe,
+        frame,
+      );
       const y = Math.max(height, Math.min(contentH - 6, place.y));
       node.style.left = `${x}px`;
       node.style.top = `${y}px`;
