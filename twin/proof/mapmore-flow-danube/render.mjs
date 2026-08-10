@@ -10,6 +10,9 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { FlowMapStill } from "./FlowMapStill.tsx";
 import { assertTerritoryFillsReadAsLand, territoryColour } from "./geo-flow.ts";
 
@@ -20,9 +23,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // so a fill that reads as sea stops the run instead of shipping (geo-discipline.md rule 7).
 assertTerritoryFillsReadAsLand();
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#E69F00", // Okabe-Ito orange — held back from the territory cycle for the route itself.
+  ground: PALETTE.ground,
+  // Held back from the territory cycle for the route itself — see PALETTE.md for the value and
+  // for why it is one step deeper than the Okabe–Ito orange this beat used to name here.
+  accent: PALETTE.accent,
   title:
     "From the Black Forest to the Black Sea: the Danube touches ten countries — nine of them " +
     "shown here, in crossing order — Germany, Austria, Slovakia, Hungary, Croatia, Serbia, " +

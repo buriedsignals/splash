@@ -62,6 +62,8 @@ import {
   en,
   pathFromRings,
   scalePosition,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
   NO_DATA_FILL,
   type BakedShape,
@@ -122,13 +124,30 @@ export function regionDetail(region: {
  *  `render-web.mjs`'s `livePlan` writes the SAME colours onto the live layer's own features, so the
  *  swap from plate to live map cannot change what class a country reads as. Two ramps derived
  *  independently would be exactly the "one mark, two halves, two mechanisms" class
- *  `map-web-discipline.md` names, in colour instead of in radius. */
+ *  `map-web-discipline.md` names, in colour instead of in radius.
+ *
+ *  It takes the ACCENT, not the ink pole, and that is the change of 2026-08-10. The shading is the
+ *  only thing on this map a reader reads a quantity off, and it used to be derived between the
+ *  ground and the ink — grey, whatever the newsroom recorded, with one accent outline on top
+ *  (`AUDIT-W2-palette-credits.md` H3). `dataRampEnd` walks the accent toward the pole the ground is
+ *  not; `assertRampReads` measures the finished classes before anything is painted. Both call sites
+ *  come through here, so they cannot disagree about it. */
 export function choroplethRamp(
   ground: string,
-  ink: string,
+  accent: string,
   breaks: number[],
 ): string[] {
-  return sequentialRamp(ground, ink, breaks.length + 1, 0.1, 0.78);
+  return assertRampReads(
+    sequentialRamp(
+      ground,
+      dataRampEnd(accent, ground),
+      breaks.length + 1,
+      0.1,
+      0.78,
+    ),
+    ground,
+    "the per-capita CO2 choropleth ramp",
+  );
 }
 
 /** The exact colour one value is painted in — no-data included, explicitly, never by falling through
@@ -216,7 +235,7 @@ export function ChoroplethWeb({
       `a choropleth needs at least two shapes, got ${shapes.length}`,
     );
 
-  const ramp = choroplethRamp(ground, ink, breaks);
+  const ramp = choroplethRamp(ground, accent, breaks);
   const anyNoData = shapes.some((r) => r.value === null);
 
   const subject = shapes.find((r) => r.key === SUBJECT_KEY);

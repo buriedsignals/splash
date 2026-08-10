@@ -10,13 +10,36 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
+// a beat is a story, not a skill, so it may reach out where a skill may not. This beat's own
+// `render-still.mjs` is the rasteriser it renders through and carries neither.
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 import { LocatorStill } from "./LocatorStill.tsx";
 import { orgsFromCsv } from "./geo-locator.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// The colours are READ, not typed. Three categories on a plate that carries no other encoding
+// means the marker colour IS this map's data, so all three come out of the recorded answer.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+const CATEGORIES = [
+  "UN system",
+  "Other intergovernmental",
+  "Other international body",
+];
+const CATEGORY_COLOUR = Object.fromEntries(
+  CATEGORIES.map((category, index) => [
+    category,
+    seriesInks(PALETTE, CATEGORIES.length)[index],
+  ]),
+);
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, chosen by ${PALETTE.origin}; ` +
+    CATEGORIES.map((c) => `${c} ${CATEGORY_COLOUR[c]}`).join(", "),
+);
+
 const BEAT = {
-  ground: "#FFFFFF",
+  ground: PALETTE.ground,
   title: "Geneva's international quarter: eleven organisations, three tiers of the system.",
   source: "Source: Wikidata (query.wikidata.org/sparql), organisations within 6 km of central Geneva",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
@@ -230,6 +253,7 @@ if (wantStill) {
       caveat,
       alt,
       ground: BEAT.ground,
+      categoryColour: CATEGORY_COLOUR,
       ...furniture,
       geometry: promoted,
       plate,

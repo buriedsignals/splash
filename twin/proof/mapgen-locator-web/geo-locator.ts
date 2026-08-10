@@ -129,14 +129,16 @@ export function slugOf(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-/** Okabe–Ito, the CVD-safe qualitative palette this project cycles categorical colour from. A
- *  locator draws NO value channel (`references/types/locator.md`: "no magnitude, no rate, no
- *  gradient") — category is the only thing colour is allowed to carry here. */
-export const CATEGORY_COLOUR: Record<string, string> = {
-  "UN system": "#0072B2",
-  "Other intergovernmental": "#E69F00",
-  "Other international body": "#009E73",
-};
+/* The category colours used to be a hard table here. They are now READ from this beat's own
+ * `PALETTE.md` and handed in as `categoryColour` — `render-web.mjs` takes them through
+ * `seriesInks`, and `LocatorWeb` names no hex of its own.
+ *
+ * The reason is what a locator IS. It draws NO value channel (`references/types/locator.md`: "no
+ * magnitude, no rate, no gradient"), so category is the only thing colour is allowed to carry —
+ * which makes these three the map's entire data encoding, and a table here would be the one mark a
+ * reader reads the map by, in a colour nobody chose. The set is still Okabe–Ito, the CVD-safe
+ * qualitative palette this project cycles categorical colour from; it is recorded now rather than
+ * asserted. */
 
 /**
  * Edge-aware label side, from the marker's PROJECTED screen position — `references/types/locator.md`'s

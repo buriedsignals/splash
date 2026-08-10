@@ -32,6 +32,9 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
@@ -69,9 +72,17 @@ const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 // `claimSentences`. Typed here, "41 countries" would have kept its wording after a code was added
 // to `CO2_2023_STUDY` and the map drew 42. The two country NAMES stay in the wording because
 // `checkClaim` already refuses to render if either stops being the extreme it is named as.
+// The colours are READ, not typed — see `PALETTE.md` beside this file. The class shading is
+// this map's data, so the accent reaches the ramp and not only the subject outline.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const SEED = {
-  ground: "#FFFFFF",
-  accent: "#B2182B",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   source: "Global Carbon Budget 2025, via Our World in Data — 2023 data",
   basemapCredit: "shapes: Natural Earth 1:50m Admin 0 Countries · basemap © MapTiler, © OpenStreetMap",
   caveat:
@@ -338,7 +349,7 @@ export function liveRings(collection, keys, geometry) {
  */
 export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent, waterFill }) {
   const camera = cameraOf(geometry);
-  const ramp = choroplethRamp(ground, ink, breaks);
+  const ramp = choroplethRamp(ground, accent, breaks);
 
   const features = [];
   const anchors = {};

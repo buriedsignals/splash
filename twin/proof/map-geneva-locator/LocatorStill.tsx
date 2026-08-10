@@ -29,12 +29,6 @@ const NOTE = { fontSize: 11.5, fontWeight: 400, lead: 15 };
 const LABEL = { fontSize: 11, fontWeight: 600 };
 const LEGEND_LABEL = { fontSize: 11.5, fontWeight: 400 };
 
-/** Okabe–Ito, the CVD-safe qualitative palette this project cycles categorical colour from. */
-const CATEGORY_COLOUR: Record<string, string> = {
-  "UN system": "#0072B2",
-  "Other intergovernmental": "#E69F00",
-  "Other international body": "#009E73",
-};
 
 export type LocatorStillProps = {
   geometry: {
@@ -51,6 +45,13 @@ export type LocatorStillProps = {
   ground: string;
   ink: string;
   muted: string;
+  /** One colour per category, in the order the legend lists them — READ from the beat's recorded
+   *  PALETTE.md and handed in, never named here. A locator's categories ARE its data: the marker
+   *  colour is the only thing separating three tiers of an institutional system on a plate that
+   *  carries no other encoding, so a hex typed into this file would be the one mark a reader reads
+   *  the map by, in a colour nobody chose. The set is still Okabe–Ito, the CVD-safe qualitative
+   *  palette this project cycles categorical colour from; it is now recorded rather than asserted. */
+  categoryColour: Record<string, string>;
   /** Keys the furniture names in words, which must therefore be labelled in the picture. */
   mustLabel?: string[];
 };
@@ -84,6 +85,7 @@ export function LocatorStill({
   ground,
   ink,
   muted,
+  categoryColour,
   mustLabel = [],
 }: LocatorStillProps) {
   const scale = MAP / geometry.frame.width;
@@ -194,7 +196,7 @@ export function LocatorStill({
         {separated.map((point) => {
           const cx = point.cx;
           const cy = point.cy;
-          const colour = CATEGORY_COLOUR[point.category] ?? muted;
+          const colour = categoryColour[point.category] ?? muted;
           const side = labelSide(cx, MAP);
           const labelX =
             side === "right" ? cx + MARKER_R + 4 : cx - MARKER_R - 4;
@@ -287,7 +289,7 @@ export function LocatorStill({
               cx={COLUMN.x + 6}
               cy={y - 4}
               r={MARKER_R}
-              fill={CATEGORY_COLOUR[category]}
+              fill={categoryColour[category]}
               stroke={ground}
               strokeWidth={1}
             />

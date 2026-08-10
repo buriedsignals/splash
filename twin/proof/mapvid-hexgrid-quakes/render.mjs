@@ -38,6 +38,8 @@ import {
   dominantRegions,
   quakePointsFromCsv,
   quakeTimesFromCsv,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
   spreadOverDays,
 } from "./geo-hex.ts";
@@ -245,7 +247,22 @@ const alt =
 
 const palette = readPalette(import.meta.dirname, { stopAt: HERE });
 const furniture = deriveFurniture(palette.ground);
-const ramp = sequentialRamp(palette.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
+// THE SHADING IS THE DATA. Until 2026-08-10 this ramp ran ground -> furniture.ink — computed
+// between the background and the ink, so it never touched the recorded accent, and a newsroom
+// could change its house colour while this map stayed grey (`AUDIT-W2-palette-credits.md` H3).
+// `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then
+// measures the finished classes: monotone, separated, top class above the 3:1 mark floor.
+const ramp = assertRampReads(
+  sequentialRamp(
+    palette.ground,
+    dataRampEnd(palette.accent, palette.ground),
+    breaks.length + 1,
+    0.14,
+    0.82,
+  ),
+  palette.ground,
+  "the hex-density ramp",
+);
 console.log(
   `palette: ground ${palette.ground}, accent ${palette.accent} (chosen by ${palette.origin}, ${palette.source})`,
 );

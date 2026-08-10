@@ -19,6 +19,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { ChoroplethStill } from "./ChoroplethStill.tsx";
 import {
   CHOROPLETH_BREAKS,
@@ -26,6 +29,8 @@ import {
   en,
   joinValues,
   ratioClaimViolations,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
   valuesFromCsv,
 } from "./geo-choropleth.ts";
@@ -36,10 +41,17 @@ const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "choropleth-co2";
 
 /** The story's own constants: the confirmed title, its source, its subject, its comparison. */
+// The colours are READ, not typed — see `PALETTE.md` beside this file.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const BEAT = {
   year: 2023,
-  ground: "#FFFFFF",
-  accent: "#C1440E",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   subject: "POL",
   subjectLabel: "Poland",
   comparison: "SWE",
@@ -155,7 +167,22 @@ function altFor(geometry) {
 }
 
 const furniture = deriveFurniture(BEAT.ground);
-const ramp = sequentialRamp(BEAT.ground, furniture.ink, CHOROPLETH_BREAKS.length + 1, 0.1, 0.78);
+// THE SHADING IS THE DATA. Until 2026-08-10 this ramp ran ground -> furniture.ink — computed
+// between the background and the ink, so it never touched the recorded accent, and a newsroom
+// could change its house colour while this map stayed grey (`AUDIT-W2-palette-credits.md` H3).
+// `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then
+// measures the finished classes: monotone, separated, top class above the 3:1 mark floor.
+const ramp = assertRampReads(
+  sequentialRamp(
+    BEAT.ground,
+    dataRampEnd(BEAT.accent, BEAT.ground),
+    CHOROPLETH_BREAKS.length + 1,
+    0.1,
+    0.78,
+  ),
+  BEAT.ground,
+  "the per-capita CO2 choropleth ramp",
+);
 
 /** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. The
  *  size is read off the folder name, so `plate-496` and `plate-620` each rebuild themselves. */

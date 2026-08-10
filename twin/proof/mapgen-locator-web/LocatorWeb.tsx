@@ -49,7 +49,6 @@
  */
 
 import {
-  CATEGORY_COLOUR,
   CATEGORY_ORDER,
   declutterLabels,
   labelSide,
@@ -230,6 +229,7 @@ export function LocatorWeb({
   ground,
   ink,
   muted,
+  categoryColour,
   measure,
   mustLabel = [],
 }: {
@@ -247,6 +247,10 @@ export function LocatorWeb({
   /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component. */
   ink: string;
   muted: string;
+  /** One colour per category, in the order `CATEGORY_ORDER` lists them — read from the beat's
+   *  recorded `PALETTE.md` and handed in. See `geo-locator.ts` for why a locator's category colours
+   *  are its whole data encoding and therefore may not be typed into a component. */
+  categoryColour: Record<string, string>;
   measure: Measure;
   /** Keys the furniture names in words, which must therefore be labelled in the picture — checked
    *  against the SSR'd (no-JS) label set, which is the one a reader can be left with. The delivered
@@ -330,7 +334,7 @@ export function LocatorWeb({
               <span
                 className="mw-chip-swatch"
                 aria-hidden="true"
-                style={{ background: CATEGORY_COLOUR[category] }}
+                style={{ background: categoryColour[category] }}
               />
               <span>{category}</span>
             </label>
@@ -383,7 +387,7 @@ export function LocatorWeb({
                     cx={point.px}
                     cy={point.py}
                     r={MARKER_RADIUS_PX}
-                    fill={CATEGORY_COLOUR[point.category] ?? muted}
+                    fill={categoryColour[point.category] ?? muted}
                     stroke={ground}
                     strokeWidth={MARKER_STROKE_PX}
                     // The filter has to reach this decorative mark too, or a narrowed view leaves

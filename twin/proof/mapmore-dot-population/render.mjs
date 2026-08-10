@@ -10,8 +10,11 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 
-import { DotDensityStill } from "./DotDensityStill.tsx";
+import { DotDensityStill, stillFrameHeight } from "./DotDensityStill.tsx";
 import {
   LAND_TINT,
   WATER_TINT,
@@ -19,6 +22,7 @@ import {
   assertStudyAreaReadsApart,
   chooseDotValue,
   compositeOver,
+  dotInkThatReadsOn,
   fillTightness,
   wcagContrast,
   joinPopulation,
@@ -28,9 +32,17 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0072B2", // Okabe-Ito blue — a vetted default, distinct light/dark, not a house colour.
+  ground: PALETTE.ground,
+  // A vetted default, distinct light/dark, not a house colour — recorded in PALETTE.md.
+  accent: PALETTE.accent,
   title:
     "More than half of this map's population lives in just five countries: Germany, the United " +
     "Kingdom, France, Italy and Spain.",
@@ -130,7 +142,18 @@ if (wantStill) {
   // here, on the composited colours, because the tint, its opacity and the basemap's own land only
   // ever meet on the plate: a fill that reads like the land outside the study, or that stops the
   // dots reading, stops the run instead of shipping.
-  const study = assertStudyAreaReadsApart(furniture.ink, STUDY_AREA_TINT_OPACITY, BEAT.accent, furniture.muted);
+  // B6.13 — the dots are inked against the ground they really land on, not against the page.
+  // `assertStudyAreaReadsApart` is asked about the DRAWN ink, not about the recorded accent: the
+  // accent is what the journalist chose and `dotInkThatReadsOn` is the shade of it that survives a
+  // grey wash. See that function's own doc-comment for the two levers that were measured and
+  // rejected first (the wash cannot pay for it; the palette is not a beat's to overrule).
+  const studyLand = compositeOver(furniture.ink, LAND_TINT, STUDY_AREA_TINT_OPACITY);
+  const dotInk = dotInkThatReadsOn(BEAT.accent, studyLand);
+  const study = assertStudyAreaReadsApart(furniture.ink, STUDY_AREA_TINT_OPACITY, dotInk, furniture.muted);
+  console.log(
+    `dot ink: ${BEAT.accent} was ${wcagContrast(BEAT.accent, studyLand).toFixed(2)}:1 on the study area's ` +
+      `${studyLand} — drawn as ${dotInk} at ${wcagContrast(dotInk, studyLand).toFixed(2)}:1`,
+  );
   console.log(
     `study area: ${furniture.ink} at ${STUDY_AREA_TINT_OPACITY} over the basemap land ${LAND_TINT} → ` +
       `${study.studyLand}, ${study.separation.toFixed(2)} ΔE76 from the land outside the study; ` +
@@ -192,6 +215,7 @@ if (wantStill) {
       alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
+      dotInk,
       landTint: furniture.ink,
       landTintOpacity: STUDY_AREA_TINT_OPACITY,
       studySwatch: compositeOver(furniture.ink, LAND_TINT, STUDY_AREA_TINT_OPACITY),
@@ -199,7 +223,15 @@ if (wantStill) {
       ...furniture,
     }),
     width: 920,
-    height: 1140,
+    // Derived from this plate, these keys and this caveat — the beat used to type 1140 while its own
+    // component docstring said 1010, and about 400px of the difference was bare ground (B6.13).
+    height: stillFrameHeight({
+      plateHeight: geometry.frame.height,
+      dotKeyLineCount: 1,
+      caveat: BEAT.caveat,
+      source: BEAT.source,
+      basemapCredit: BEAT.basemapCredit,
+    }),
     outDir,
     name: "static",
   });

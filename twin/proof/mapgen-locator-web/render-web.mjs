@@ -42,12 +42,14 @@ import {
   pointDetail,
 } from "./LocatorWeb.tsx";
 import {
-  CATEGORY_COLOUR,
   CATEGORY_ORDER,
   orgsFromCsv,
   readingOrder,
   slugOf,
 } from "./geo-locator.ts";
+// `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
+// a beat is a story, not a skill, so it may reach out where a skill may not.
+import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this beat.
@@ -59,9 +61,24 @@ const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file. A locator draws no value
+// channel, so category colour is this map's ENTIRE data encoding; all three come out of the
+// recorded answer, in the order `CATEGORY_ORDER` lists them.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+const CATEGORY_COLOUR = Object.fromEntries(
+  seriesInks(PALETTE, CATEGORY_ORDER.length).map((ink, index) => [
+    CATEGORY_ORDER[index],
+    ink,
+  ]),
+);
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, chosen by ${PALETTE.origin}; ` +
+    CATEGORY_ORDER.map((c) => `${c} ${CATEGORY_COLOUR[c]}`).join(", "),
+);
+
 // ===== CONFIG — edit for your story =====
 const BEAT = {
-  ground: "#FFFFFF",
+  ground: PALETTE.ground,
   title: "Eleven international organisations headquartered in and around Geneva",
   source:
     "Source: Wikidata (query.wikidata.org/sparql), organisations within 6 km of central Geneva",
@@ -1035,6 +1052,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
       caveat: separation.caveat,
       alt: separation.alt,
       ground: BEAT.ground,
+      categoryColour: CATEGORY_COLOUR,
     },
     outDir,
     name,

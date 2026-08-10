@@ -10,6 +10,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { HexGridStill, stillFrameHeight } from "./HexGridStill.tsx";
 import {
   cellMembers,
@@ -17,14 +20,23 @@ import {
   countBreaks,
   dominantRegions,
   quakePointsFromCsv,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
 } from "./geo-hex.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#C1440E",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   aggregateMode: "count",
   title: "Where 2024's earthquakes clustered: the Pacific “Ring of Fire”, not an even spread.",
   source: "Source: USGS Earthquake Catalog (earthquake.usgs.gov), magnitude 4.0+, worldwide, 2024",
@@ -127,7 +139,22 @@ if (wantStill) {
     `${subjectWhere}.`;
 
   const furniture = deriveFurniture(BEAT.ground);
-  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
+  // THE SHADING IS THE DATA. Until 2026-08-10 this ramp ran ground -> furniture.ink — computed
+  // between the background and the ink, so it never touched the recorded accent, and a newsroom
+  // could change its house colour while this map stayed grey (`AUDIT-W2-palette-credits.md` H3).
+  // `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then
+  // measures the finished classes: monotone, separated, top class above the 3:1 mark floor.
+  const ramp = assertRampReads(
+    sequentialRamp(
+      BEAT.ground,
+      dataRampEnd(BEAT.accent, BEAT.ground),
+      breaks.length + 1,
+      0.14,
+      0.82,
+    ),
+    BEAT.ground,
+    "the hex-density ramp",
+  );
 
   const { pngPath } = await renderStill({
     element: createElement(HexGridStill, {

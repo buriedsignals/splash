@@ -26,6 +26,9 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import {
   HexGridWeb,
   DensityTable,
@@ -42,6 +45,8 @@ import {
   dominantRegions,
   hexCorners,
   quakePointsFromCsv,
+  assertRampReads,
+  dataRampEnd,
   sequentialRamp,
   pixelToLonLat,
 } from "./geo-hex.ts";
@@ -56,10 +61,18 @@ const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
+// The colours are READ, not typed — see `PALETTE.md` beside this file. The cell shading is this
+// map's data, so the accent reaches the ramp and not only the densest cell's ring.
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
+    `chosen by ${PALETTE.origin}`,
+);
+
 // ===== CONFIG — this beat's own words =====
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#C1440E",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   aggregateMode: "count",
   title:
     "2024's earthquakes clustered along tectonic plate boundaries — the Pacific “Ring of Fire” most densely, not spread evenly across the globe.",
@@ -813,7 +826,22 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   );
 
   const furniture = deriveFurniture(BEAT.ground);
-  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
+  // THE SHADING IS THE DATA. Until 2026-08-10 this ramp ran ground -> furniture.ink — computed
+  // between the background and the ink, so it never touched the recorded accent, and a newsroom
+  // could change its house colour while this map stayed grey (`AUDIT-W2-palette-credits.md` H3).
+  // `dataRampEnd` walks the accent toward the pole the ground is not; `assertRampReads` then
+  // measures the finished classes: monotone, separated, top class above the 3:1 mark floor.
+  const ramp = assertRampReads(
+    sequentialRamp(
+      BEAT.ground,
+      dataRampEnd(BEAT.accent, BEAT.ground),
+      breaks.length + 1,
+      0.14,
+      0.82,
+    ),
+    BEAT.ground,
+    "the hex-density ramp",
+  );
 
   // ── What this plate actually holds, and what it therefore leaves out ────────────────────────────
   // "The map holds 60°S–78°N" was typed. The corners MapLibre settled on are −64.478 / 79.847, so
