@@ -153,9 +153,26 @@ function render(beats) {
 // Two readers of the same 65 directories is exactly the drift this file was written to end.
 if (import.meta.main) {
   const target = join(TWIN, "MATRIX.md");
+
+  // AN ARGUMENT THIS SCRIPT DOES NOT KNOW MUST NOT MEAN "WRITE". The write was the else-branch of
+  // `--check`, so ANY other argv rewrote MATRIX.md — including a typo, and including the
+  // `--help` a caller reaches for first. That is not theoretical: the guard written to run
+  // `--check` probed liveness with `--help`, silently regenerated the file, and then reported that
+  // it matched. It could not go red, and it was repairing the very drift it existed to report.
+  const args = process.argv.slice(2);
+  const unknown = args.filter((a) => a !== "--check");
+  if (unknown.length > 0) {
+    console.error(
+      `matrix.mjs does not know ${unknown.join(", ")}.\n` +
+        `  bun scripts/matrix.mjs           writes MATRIX.md\n` +
+        `  bun scripts/matrix.mjs --check   fails if MATRIX.md has drifted from the tree`,
+    );
+    process.exit(2);
+  }
+
   const built = render(readBeats());
 
-  if (process.argv.includes("--check")) {
+  if (args.includes("--check")) {
     const current = existsSync(target) ? readFileSync(target, "utf8") : "";
     if (current !== built) {
       console.error("MATRIX.md has drifted from the tree. Run: bun scripts/matrix.mjs");

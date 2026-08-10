@@ -6,7 +6,11 @@
     "#shared/*": "./shared/*"
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "matrix": "bun scripts/matrix.mjs",
+    "matrix:check": "bun scripts/matrix.mjs --check",
+    "survey": "bun scripts/type-survey.mjs",
+    "survey:check": "bun scripts/type-survey.mjs --check"
   },
   "devDependencies": {
     "@remotion/cli": "4.0.507",
