@@ -169,6 +169,20 @@ extended here to a chart. That is the "adapt cheaply" this genre requires, and i
 claim from "adapt without a client-side layout engine recomputing gutters and tick counts," which
 this file continues to reject exactly as its first build did.
 
+**An annotation is placed by the shape it annotates, and it moves with the width.** A label parked
+at a typed corner is the second form of the same mistake: `weby-population-pyramid-switzerland`'s
+peak annotation sat at `left: 0%, top: 0%`, twelve rows above the band it named, with a 600px dashed
+rule down the frame edge — and it overlapped nothing only because that corner happened to be empty,
+which nothing measured. The rule this genre now holds: **find the position from the marks**, at the
+width the label is actually drawn at, and let a `@container` step move it as the frame grows. Two
+things that cost a build each, recorded so they are not rediscovered: a VERTICAL distance converts
+through the plot's rendered HEIGHT, never through its width (the two differ whenever a `min-height`
+floor is doing the work), and **a container query styles a container's descendants, never the
+container itself** — a rule that sets a custom property on the queried element silently never
+matches, and every width gets the base value. `web-annotation-clears-its-marks.test.ts` measures the
+result: painted-fill sampling under the label, plus label-over-label, at four widths. It is also the
+corpus's only measurement of label collision outside video.
+
 **A rung IS a cap, and that is why the last two-rung beat had to be rewritten rather than adjusted.**
 `more-heatmap-co2-per-capita-decades` shipped two pre-rendered SVGs — 900px and 375px — swapped by a
 `@media` query under `.chart-figure { max-width: 900px }`. Its own runner argued at length about

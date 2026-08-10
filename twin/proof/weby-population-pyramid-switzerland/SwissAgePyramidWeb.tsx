@@ -68,8 +68,20 @@ const HALF = 380;
 const MIN_ROW_PX = 17;
 /** Where the peak annotation's vertical leader stands, in canonical SVG user units from the left
  *  half's own edge — far enough in that its dashes are not flush against the frame, close enough
- *  that the label's own ground chip covers its top end. */
+ *  that the label's own ground chip covers its top end. An inset, in the same family as a mark
+ *  inset; the leader's own LENGTH is derived (see `peakAnnotation`) and is what used to be wrong. */
 const LEADER_X = 6;
+
+/** The narrowest viewport `twin-chart-web/scripts/verify-web.mjs` drives this genre at, and the two
+ *  halves of `FRAME_PAD_PX` the skill's own stylesheet puts inside it. Duplicated from the skill,
+ *  not linked: a beat may not import a skill's internals, and a beat that silently tracked a change
+ *  to them would be worse. */
+const NARROWEST_VIEWPORT_PX = 375;
+const FRAME_PAD_TOTAL_PX = 48;
+/** Air between the annotation's own box and the nearest bar beside it, in CSS pixels. */
+const PEAK_LABEL_AIR_PX = 8;
+/** One line of the annotation, in CSS pixels — the `.note` type size plus its own leading. */
+const PEAK_LABEL_LEAD_PX = 15;
 
 type Measure = (
   text: string,
@@ -116,6 +128,160 @@ export const FRAME: WebFrame = {
   xTickHint: 4,
 };
 
+type Bar = {
+  ageBand: string;
+  y: number;
+  height: number;
+  centerLabelY: number;
+  male_: { x: number; width: number };
+};
+
+/**
+ * WHERE THE PEAK ANNOTATION GOES, DERIVED FROM THE BARS IT HAS TO CLEAR.
+ *
+ * THE DEFECT THIS REPLACES, which the owner reported by opening the file: the label was parked at
+ * `left: 0%, top: 0%` — the plot's top-left corner — with a dashed rule running the whole height of
+ * the frame down to the peak row. Twelve rows away from the band it names, flush against the frame
+ * edge, its leader reading as a border rather than as a pointer. *"It sits off-centre and reads
+ * poorly."* The corner was not chosen; it was typed, and it is one of the eight sites the W3 audit
+ * counted placing a label by a number rather than by the shape it annotates.
+ *
+ * WHY THE OBVIOUS PLACE IS IMPOSSIBLE, and this part of the original build was right. The widest
+ * band is BY DEFINITION the bar with the least empty space beside it: at 1024px there were 60px
+ * between the frame edge and its own bar against a label needing 95, and at 375px there were 6.
+ * A label on the peak row punches its own ground chip straight through the bar above it — a white
+ * hole in the 60-64 men's bar, visible at every width. So the label does have to sit further up,
+ * where the oldest bands leave the left of the frame empty.
+ *
+ * WHAT IS DERIVED. Which row, and it is the LOWEST one that fits rather than the top corner: walk
+ * up from the peak band and take the first row whose own free space — the pixels between the frame
+ * edge and that row's own male bar — holds the label with air. The label is bottom-anchored on that
+ * row, so it grows UPWARDS into rows whose bars are shorter still, and every row it spans is
+ * checked, not just the one it hangs from. On this beat's own numbers that puts it six rows from
+ * the peak instead of twelve, and the leader becomes a short L a reader can follow.
+ *
+ * AND IT MOVES WITH THE WIDTH, which is the second half. A bar's free space is a FRACTION of the
+ * half's own width and grows with the container; the label is fixed CSS pixels and does not. So each
+ * candidate row has ONE half-width at which it starts to fit, in closed form — `need × HALF ÷ the
+ * tightest bar the label would span` — and the anchor is simply the lowest row whose threshold the
+ * container has passed. One `@container` rule per threshold, later rules winning, exactly the
+ * mechanism `BumpWeb.tsx` uses for its year ticks. Measured on this beat's own numbers: at a 141px
+ * half (a 375px phone) the label hangs from the 85-59 row; at a 652px half (1400px) it hangs from
+ * the row DIRECTLY above the peak and the leader is one row long. A single anchor chosen at the
+ * narrowest width would have been correct at every width and eleven rows away at most of them,
+ * which is the defect restated rather than fixed.
+ *
+ * The leader moves with it, and that is why the leader is HTML here rather than a `<path>` in the
+ * `<svg>`: a container query cannot reach inside the SVG's own user-unit coordinate system. Its
+ * vertical segment is `height: calc(<peak row>% − var(--peak-top))`, so it always spans exactly
+ * from the label's bottom edge to the band it points at, whichever row that is.
+ *
+ * It THROWS rather than shipping a label over a bar.
+ */
+export function peakAnnotation(
+  bars: Bar[],
+  peak: Bar,
+  lines: string[],
+  halfWidthUnits: number,
+  narrowestHalfPx: number,
+  narrowestPlotHeightPx: number,
+  frameHeight: number,
+  measure: Measure,
+  font: { fontSize: number; fontWeight?: number },
+): { steps: { topPct: number; minHalfPx: number }[]; labelWidthPx: number } {
+  const labelWidthPx = Math.ceil(
+    Math.max(...lines.map((line) => measure(line, font))),
+  );
+  // The label's own height in CANONICAL UNITS, converted through the VERTICAL scale — the frame's
+  // height over the plot's rendered height — and never through the horizontal one. The two are
+  // different numbers on this beat (the plot's `min-height` floor drives the height at narrow
+  // widths, not the aspect ratio), and using the wrong one is how the first build of this
+  // derivation put the label above the plot's own top edge, over the legend.
+  const labelHeightUnits =
+    (lines.length * PEAK_LABEL_LEAD_PX * frameHeight) / narrowestPlotHeightPx;
+  const need = labelWidthPx + PEAK_LABEL_AIR_PX;
+  const above = [...bars]
+    .filter((b) => b.centerLabelY < peak.centerLabelY)
+    .sort((a, b) => b.centerLabelY - a.centerLabelY);
+
+  /** The half-width, in CSS pixels, at which a row's own label box first clears every bar it spans.
+   *  The SPAN is taken at the narrowest width — where the fixed-height label covers the most rows —
+   *  so a row that qualifies never stops qualifying as the frame grows. */
+  const thresholdPx = (candidate: Bar) => {
+    const spanTopY = candidate.centerLabelY - labelHeightUnits;
+    // A row the label would overflow the plot's own top edge from is not a candidate at all. The
+    // annotation is furniture inside the frame, never over the legend above it.
+    if (spanTopY < 0) return Infinity;
+    const spanned = bars.filter(
+      (b) => b.y + b.height > spanTopY && b.y < candidate.centerLabelY + 1,
+    );
+    const tightest = Math.min(...spanned.map((b) => b.male_.x));
+    if (tightest <= 0) return Infinity;
+    return Math.ceil((need * halfWidthUnits) / tightest);
+  };
+
+  // Highest row first, so the narrowest frame's answer is the base rule and every lower row is an
+  // override that only applies once the container is wide enough for it.
+  const steps = [...above]
+    .reverse()
+    .map((b) => ({ topPct: pct(b.centerLabelY, frameHeight), minHalfPx: thresholdPx(b) }))
+    .filter((s) => Number.isFinite(s.minHalfPx))
+    .sort((a, b) => a.minHalfPx - b.minHalfPx);
+
+  if (steps.length === 0 || steps[0].minHalfPx > narrowestHalfPx)
+    throw new Error(
+      `the peak annotation ${JSON.stringify(lines)} measures ${labelWidthPx}px and no row above ` +
+        `${peak.ageBand} leaves it that much clear of its own bar at the narrowest frame this beat ` +
+        `ships to (a ${Math.floor(narrowestHalfPx)}px half): the easiest row needs a ` +
+        `${steps.length === 0 ? "wider" : String(steps[0].minHalfPx) + "px"} half`,
+    );
+  return { steps, labelWidthPx };
+}
+
+/** The container name the steps above are written against — declared on the LEFT overlay, which
+ *  shares the left half's own grid cell, so a query on it is a query on the exact half-width the
+ *  arithmetic is expressed in. */
+const PEAK_CONTAINER = "pyramid-left-half";
+
+/** The annotation's placement as CSS: one custom-property override per threshold, later rules
+ *  winning, plus the two leader segments that follow it. `LEADER_X`, the peak row and the peak
+ *  bar's own left edge are fixed percentages of the same box the geometry is drawn in. */
+export function peakAnnotationCss(
+  steps: { topPct: number; minHalfPx: number }[],
+  leaderLeftPct: number,
+  peakRowPct: number,
+  peakBarPct: number,
+): string {
+  const base = steps[0];
+  // `--peak-top` is set on the ANNOTATION's own elements, never on `.overlay.left` itself: a
+  // container query styles a container's DESCENDANTS, never the container, so a rule that set the
+  // property on the queried element would silently never match and every width would get the base
+  // value. Measured the hard way — the first build of this did exactly that and shipped the label
+  // pinned to the top of the frame at every width, which is the defect it was written to remove.
+  const anchor = `.chart-plot.pyramid .overlay.left .peak-anchor`;
+  return [
+    `.chart-plot.pyramid .overlay.left { container-type: inline-size; container-name: ${PEAK_CONTAINER}; }`,
+    `${anchor} { --peak-top: ${base.topPct}%; }`,
+    ...steps
+      .slice(1)
+      .map(
+        (s) =>
+          `@container ${PEAK_CONTAINER} (min-width: ${s.minHalfPx}px) {\n` +
+          `  ${anchor} { --peak-top: ${s.topPct}%; }\n}`,
+      ),
+    `.chart-plot.pyramid .peak-leader-v {`,
+    `  left: ${leaderLeftPct}%;`,
+    `  top: var(--peak-top);`,
+    `  height: calc(${peakRowPct}% - var(--peak-top));`,
+    `}`,
+    `.chart-plot.pyramid .peak-leader-h {`,
+    `  left: ${leaderLeftPct}%;`,
+    `  top: ${peakRowPct}%;`,
+    `  width: calc(${peakBarPct}% - ${leaderLeftPct}%);`,
+    `}`,
+  ].join("\n");
+}
+
 /** `value / total` as a percentage, one decimal — puts an HTML label on the exact spot the SVG
  *  geometry it annotates was drawn at, as a fraction of the SAME box, so it tracks the stretch. */
 function pct(value: number, total: number): number {
@@ -131,7 +297,7 @@ export function SwissAgePyramidWeb({
   ground,
   accent,
   peakBand,
-  peakLabel,
+  peakLines,
   ink,
   muted,
   grid,
@@ -150,7 +316,9 @@ export function SwissAgePyramidWeb({
    *  any rule this beat's own CSS or markup writes. */
   accent: string;
   peakBand: string;
-  peakLabel: string;
+  /** The annotation, one string per line — the band, what it is, and its own total. Worded by the
+   *  runner from its own frozen data; placed here. */
+  peakLines: string[];
   ink: string;
   muted: string;
   grid: string;
@@ -183,6 +351,29 @@ export function SwissAgePyramidWeb({
   );
 
   const peak = bars.find((b) => b.ageBand === peakBand);
+  if (!peak) throw new Error(`no bar for the peak band ${JSON.stringify(peakBand)}`);
+  const narrowestPlotWidthPx = NARROWEST_VIEWPORT_PX - FRAME_PAD_TOTAL_PX;
+  const narrowestHalfPx = (narrowestPlotWidthPx - bandGutterPx) / 2;
+  // The plot's own rendered height at that width: `aspect-ratio` unless the row floor is taller,
+  // which on this beat it is — 21 bands x MIN_ROW_PX. Both are stated in the markup below; this is
+  // the same pair, read once so the annotation's vertical arithmetic is in the same units the
+  // browser will actually lay out.
+  const narrowestPlotHeightPx = Math.max(
+    (narrowestPlotWidthPx * (frame.height + frame.xAxisRowPx)) /
+      (HALF * 2 + bandGutterPx),
+    bands.length * MIN_ROW_PX,
+  );
+  const annotation = peakAnnotation(
+    bars,
+    peak,
+    peakLines,
+    HALF,
+    narrowestHalfPx,
+    narrowestPlotHeightPx,
+    frame.height,
+    measure,
+    frame.note,
+  );
   // Visual top-to-bottom order (oldest band at the top, per `pyramidGeometry`'s reversed domain) —
   // DOM/tab order for the hit rows follows this same order, so `ArrowUp`/`ArrowDown` in
   // `pyramid-interaction.mjs` moves focus the way a sighted reader expects.
@@ -216,6 +407,20 @@ export function SwissAgePyramidWeb({
         ["--legend-weight" as string]: frame.legend.fontWeight,
       }}
     >
+      {/* The annotation's placement — the one thing in this beat a static stylesheet cannot hold,
+          because it is derived from the real bars and the real strings. `dangerouslySet` because
+          React escapes text children of `<style>`; the content is this component's own arithmetic. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: peakAnnotationCss(
+            annotation.steps,
+            pct(LEADER_X, HALF),
+            pct(peak.centerLabelY, frame.height),
+            pct(peak.male_.x, HALF),
+          ),
+        }}
+      />
+
       <div className="chart-header">
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
@@ -293,39 +498,27 @@ export function SwissAgePyramidWeb({
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
-          {/* The peak annotation's own leader — an L, not a straight rule, and the bend is the
-              whole point. The widest band is BY DEFINITION the bar with the least empty space
-              beside it: at 1024px there were 60px between the frame edge and its own bar and the
-              label needs 95px, and at 375px there were 6px. A label parked on that row therefore
-              printed its ground chip straight through the bar above it — a white hole punched in
-              the 60-64 men's bar, visible in the render at every width. So the label sits in the
-              plot's top-left corner instead, where the oldest bands' bars are a percent of the
-              half-width and nothing is ever drawn, and the leader runs down from it and then right
-              into the peak bar. Unconditional — it is the argument, not a reveal
-              (`web-discipline.md`, "What must not become interactive"). The LABEL itself is HTML,
-              in the overlay below. */}
-          {peak && (
-            <path
-              d={`M ${LEADER_X} 0 L ${LEADER_X} ${peak.centerLabelY} L ${peak.male_.x} ${peak.centerLabelY}`}
-              fill="none"
-              stroke={ink}
-              strokeWidth={1}
-              strokeDasharray="3 3"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
+          {/* The peak annotation's leader is NOT here. It used to be a `<path>` in this `<svg>`,
+              which is what pinned it to one hand-typed corner: a container query cannot reach
+              inside the SVG's own user-unit coordinate system, so a leader drawn here could not
+              follow a label that moves with the width. Both segments are HTML in the overlay
+              below, positioned in `%` over this same box — see `peakAnnotationCss`. */}
         </svg>
 
         {/* The peak annotation's label — HTML at a fixed size, over the left half's own cell. */}
         <div className="overlay left" aria-hidden="true">
-          {peak && (
-            <span
-              className="note peak-label"
-              style={{ left: "0%", top: "0%", color: ink }}
-            >
-              {peakLabel}
-            </span>
-          )}
+          <span className="peak-leader-v peak-anchor" style={{ borderColor: ink }} />
+          <span className="peak-leader-h" style={{ borderColor: ink }} />
+          <span
+            className="note peak-label peak-anchor"
+            style={{ left: "0%", color: ink }}
+          >
+            {peakLines.map((line, i) => (
+              <span key={line} className={i === 0 ? "band" : undefined}>
+                {line}
+              </span>
+            ))}
+          </span>
         </div>
 
         {/* The reserved central gutter: one age-band label per row, centred, at a FIXED pixel size

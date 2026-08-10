@@ -78,11 +78,25 @@ function inlineable(moduleSource) {
  *  pointer coverage). A stroke outline framing the whole row highlights it without hiding anything
  *  underneath. */
 const EXTRA_CSS = `
-/* The peak annotation hangs from the plot's own top-left corner, where nothing is ever drawn — see
-   SwissAgePyramidWeb.tsx's leader-path comment for why it cannot sit on the row it points at. */
+/* The peak annotation hangs FROM the lowest row whose own bar leaves it clear — see
+   SwissAgePyramidWeb.tsx's peakAnnotation() for how that row is derived and for why it cannot sit
+   on the row it points at. translateY(-100%) is what "hangs from" means: the row the component
+   computed is the label's BOTTOM edge, so the block grows upward into rows whose bars are shorter
+   still, and the leader emerges from directly under it. */
 .chart-plot.pyramid .overlay .note.peak-label {
-  transform: none;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  top: var(--peak-top);
+  transform: translateY(-100%);
 }
+/* The leader, in two segments, both HTML so they can follow a label the container query moves. A
+   dashed BORDER rather than a stroked path: a border is a fixed number of CSS pixels at any
+   stretch, which is what a 1px hairline has to be. Their geometry is written by
+   peakAnnotationCss() in SwissAgePyramidWeb.tsx, from the peak bar's own coordinates. */
+.chart-plot.pyramid .peak-leader-v { position: absolute; border-left: 1px dashed; }
+.chart-plot.pyramid .peak-leader-h { position: absolute; border-top: 1px dashed; }
+.chart-plot.pyramid .overlay .note.peak-label .band { font-weight: 700; }
 /* THE MIRROR'S OWN GRID — three tracks, and the middle one is the whole reason this beat needed a
    layout of its own. The age labels sit in a reserved gutter down the CENTRE, and in a fluid frame
    that gutter cannot be measured in SVG user units: the label is fixed-pixel HTML while the viewBox
@@ -260,13 +274,17 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       ground: "#FFFFFF",
       accent: NOMINAL_ACCENT,
       peakBand: peak.ageBand,
-      // "the widest band", not "55-59: the widest band (669,962)". The band is already named in
-      // the gutter the leader line points out of, and the exact total is already in that band's own
-      // tooltip and in the alt text — while the long form measured 230px against a 143px half-frame
-      // at 375px and printed straight across the age labels for two whole rows. Seen in the render,
-      // not reasoned about. This also restores what the component's own doc-comment always claimed
-      // the annotation did: name the band, stay silent on its figure.
-      peakLabel: "the widest band",
+      // Three lines, not one run-on string, and the value is BACK. The old build passed the bare
+      // "the widest band" because the long form ("55-59: the widest band (669,962)") measured 230px
+      // against a 143px half-frame at 375px and printed across the age labels for two whole rows —
+      // seen in the render, not reasoned about. Stacking halves the width to the longest single
+      // line, so the band, what it is, and its own total all survive at every width, which is what
+      // the static sibling carries and what the web beat was dropping.
+      peakLines: [
+        peak.ageBand,
+        "the widest band",
+        `${peak.total.toLocaleString("en-US")} people`,
+      ],
     },
     outDir,
     name,
