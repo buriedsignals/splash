@@ -110,6 +110,8 @@
     }
   ],
   "size": "landscape",
+  "width": 1920,
+  "height": 1080,
   "ink": "#000000",
   "muted": "#616161",
   "grid": "#d1d1d1"
