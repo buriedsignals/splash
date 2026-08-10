@@ -148,7 +148,7 @@ export function RenewablesShiftSlope({
       "a slope beat needs at least two categories, got " + series.length,
     );
 
-  const { ink, muted } = deriveFurniture(ground);
+  const { ink, muted, grid } = deriveFurniture(ground);
   const { width, height } = FRAME;
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
@@ -237,6 +237,35 @@ export function RenewablesShiftSlope({
           {line}
         </text>
       ))}
+
+      {/* THE TWO VERTICAL AXES, one per period. `references/types/slope.md` asks for them by name —
+          "Two vertical axes — one per period — with each category's two values plotted as points
+          and joined by a straight line between them" — and this beat drew neither. What the
+          delivered HTML sibling calls `.y-axis` and `.r-axis` are label GUTTERS, not rules; the
+          only vertical strokes in the committed SVG were the twelve dashed label leaders, whose
+          longest span measured 6.21px against a ~292px plot. That is what "not everything seems
+          rendered" was: the connecting lines were there, and the thing they connect was not.
+          Drawn first, in `grid`, so the six category lines and their end dots sit on top of them —
+          an axis is the frame a reading is taken against, never a mark competing with the data.
+          `vidx-slope-child-mortality/SlopeVideo.tsx` already honoured the sheet; the static and the
+          web sibling did not, which is this project's recurring shape — the video honours the sheet
+          and its siblings do not. */}
+      <line
+        x1={plot.left}
+        x2={plot.left}
+        y1={plot.top}
+        y2={plot.bottom}
+        stroke={grid}
+        strokeWidth={1}
+      />
+      <line
+        x1={plot.right}
+        x2={plot.right}
+        y1={plot.top}
+        y2={plot.bottom}
+        stroke={grid}
+        strokeWidth={1}
+      />
 
       {/* Each period needs its own caption — a slope chart with unlabelled ends states direction
           with no stated "from when to when," half the claim (`references/types/slope.md`). */}
