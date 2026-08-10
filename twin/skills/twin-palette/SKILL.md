@@ -1,6 +1,6 @@
 ---
 name: twin-palette
-description: Use to decide the two colours a beat is drawn in — the ground and the one accent that carries the argument. Proposes the subject's own convention first when the subject carries one a reader already holds, the newsroom's house colours second, and says out loud when no convention applies; measures each against the WCAG non-text floor; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default; 54 of 70 shipped beats still name their colours as hex literals and are the migration debt this mechanism is closing.
+description: Use to decide the colours a beat is drawn in — the ground, the accent that carries the argument, and the further house accents a multi-series beat needs. Proposes the subject's own convention first when the subject carries one a reader already holds, the newsroom's house colours second, and says out loud when no convention applies; measures every accent against the WCAG non-text floor and REFUSES one a reader cannot see, at the proposal and again when the answer is read back; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default.
 ---
 
 # twin-palette — propose the colours, measure them, let the journalist decide
@@ -12,7 +12,7 @@ validates them, and **nothing threaded them into a render**. Every beat named it
 literals in its own source, with a `// from NEWSROOM.md` comment beside them — an instruction to
 copy by eye. A newsroom's identity was collected and then never used.
 
-This skill closes that. It does three things and refuses a fourth:
+This skill closes that. It does four things and refuses a fifth:
 
 1. **Proposes.** `proposePalette` returns the options — the newsroom's house colours, and the
    subject's own convention when one applies — each carrying where its values came from, why it is
@@ -24,10 +24,22 @@ This skill closes that. It does three things and refuses a fourth:
    offered beside it, never swapped in, and `recommended` only ever names an option that PASSED:
    a newsroom whose primary accent misses the floor gets the first of its own further accents that
    clears it, and nothing at all when none does.
-3. **Reads the answer back.** `readPalette` walks up from a beat's own directory looking for
-   `PALETTE.md`, so one recorded decision at a story root serves every beat under it.
+3. **Reads the answer back — and measures it again.** `readPalette` walks up from a beat's own
+   directory looking for `PALETTE.md`, so one recorded decision at a story root serves every beat
+   under it. `parsePalette` then measures **every** recorded accent against the recorded ground and
+   REFUSES one under 3:1, naming the ratio, the criterion and the nearest colour that clears it.
+   That second measurement is not redundancy for its own sake: measured on 2026-08-10, a
+   `PALETTE.md` recording `#FFFF00` on white rendered a clean PNG with the beat's whole number in
+   it, because the floor lived only inside the proposal — and a `PALETTE.md` can be written by
+   hand, copied from another story, or produced by `twin-newsroom-charter`, which measures a
+   newsroom's own site.
+4. **Carries more than one accent, when the newsroom has more than one.** `accents:` lists the
+   further house colours beside `accent:`, same shape `NEWSROOM.md` uses. A beat drawing several
+   series takes them in order through `seriesInks` and derives further ones — shades of a recorded
+   accent, each clearing the mark floor and reading apart from the others — instead of falling back
+   to the furniture grey, which is what a three-series beat did until this landed.
 
-The fourth thing — **writing a colour anywhere** — it does not do. There is no write path in this
+The fifth thing — **writing a colour anywhere** — it does not do. There is no write path in this
 skill, not a commented-out one, not a flag. `PALETTE.md` is authored from the journalist's answer,
 the same way `NEWSROOM.md` is.
 
@@ -73,7 +85,9 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
 | Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject})` — the options, each with provenance, reasoning and measured contrast |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
-| Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched |
+| Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
+| Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
+| Series inks | `twin-chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out |
 
 ## How it works (the shape)
 
@@ -192,11 +206,12 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 
 ## Files
 
-- `scripts/palette.mjs` — `contrast`, `NON_TEXT_CONTRAST_MIN`, `adjustToContrast`,
-  `SUBJECT_CONVENTIONS`, `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`.
-  No write path.
+- `scripts/palette.mjs` — `contrast`, `NON_TEXT_CONTRAST_MIN`, `TEXT_CONTRAST_MIN`,
+  `LARGE_TEXT_CONTRAST_MIN`, `adjustToContrast`, `assertLegible`, `SUBJECT_CONVENTIONS`,
+  `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`. No write path.
 - `scripts/format-proposal.mjs` — `formatProposal`, the markdown the journalist reads and answers.
-- `assets/PALETTE.example.md` — the recorded-answer shape: `ground`, `accent`, `origin`.
+- `assets/PALETTE.example.md` — the recorded-answer shape: `ground`, `accent`, the optional
+  `accents` list, `origin`.
 - `references/subject-conventions.md` — the evidence behind each convention, why the table is short,
   and why a multi-match returns nothing.
 - `references/contrast-floors.md` — why 3:1 and not 4.5:1, why a failing option is still shown, and

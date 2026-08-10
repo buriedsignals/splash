@@ -87,6 +87,20 @@ import { contrast as mapRasterContrast } from "../../twin-map-beat/scripts/rende
 import { contrast as sharedContrast } from "../../../shared/twin-chart-beat/render-still.mjs";
 import { contrast as rootTemplateContrast } from "../assets/root-template/shared/twin-chart-beat/render-still.mjs";
 import { contrast as paletteContrast } from "../../twin-palette/scripts/palette.mjs";
+// contrast, again — `twin-newsroom-charter` gained the same arithmetic on 2026-08-10, when it was
+// measured to have NONE: it proposed a brandColor and a ground off a newsroom's own site and never
+// asked whether the pair could be read together. It is the skill a journalist with no profile is
+// sent to, so a drift here decides whether a house colour is approved at a ratio no render
+// achieves.
+import { contrast as charterContrast } from "../../twin-newsroom-charter/scripts/derive-charter.mjs";
+
+// adjustToContrast — the REMEDY offered beside a failing colour, never swapped in for it. Three
+// copies now: the proposal's, the renderer's (which shows it in its refusal) and the charter's.
+// A drift means the three disagree about which colour is the nearest legible one, in the three
+// places a journalist could meet that question.
+import { adjustToContrast as paletteAdjust } from "../../twin-palette/scripts/palette.mjs";
+import { adjustToContrast as beatAdjust } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { adjustToContrast as charterAdjust } from "../../twin-newsroom-charter/scripts/derive-charter.mjs";
 
 // readPalette/parsePalette — the recorded-answer reader, vendored into every render-still copy
 // (a beat already imports that module to render at all) and duplicated in `twin-palette`, which
@@ -233,12 +247,38 @@ describe("contrast — every copy agrees, renderers and the palette proposal ali
       expect(sharedContrast(a, b)).toBe(reference);
       expect(rootTemplateContrast(a, b)).toBe(reference);
       expect(paletteContrast(a, b)).toBe(reference);
+      expect(charterContrast(a, b)).toBe(reference);
+    });
+  }
+});
+
+describe("adjustToContrast — the remedy is the same colour in all three copies", () => {
+  // Colours that FAIL their ground at 3:1, on light and dark grounds and on the mid-grey band
+  // where the pole a walk starts toward is the thing a naive implementation gets wrong.
+  const CASES: Array<[string, string, number]> = [
+    ["#FFFF00", "#FFFFFF", 3],
+    ["#0B7A75", "#12161C", 3],
+    ["#808080", "#7A7A7A", 3],
+    ["#949494", "#FFFFFF", 4.5],
+    ["#E4B23C", "#F4EFE7", 3],
+  ];
+  for (const [colour, ground, min] of CASES) {
+    it(`should walk ${colour} on ${ground} to the same variant at ${min}:1 in every copy`, () => {
+      const reference = paletteAdjust(colour, ground, min);
+      expect(["render-still", beatAdjust(colour, ground, min)]).toEqual([
+        "render-still",
+        reference,
+      ]);
+      expect(["newsroom-charter", charterAdjust(colour, ground, min)]).toEqual([
+        "newsroom-charter",
+        reference,
+      ]);
     });
   }
 });
 
 describe("parsePalette — every copy reads and REFUSES the same things", () => {
-  const VALID = `---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: newsroom\n---\n`;
+  const VALID = `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#C1440E"\norigin: newsroom\n---\n`;
   // Each rejection is a rule the copies must agree on, not just a shape they must parse. A copy
   // that accepted `origin: default`, or filled in a missing ground, would put an unchosen colour
   // into a chart while every other copy refused — the exact silent divergence this file exists for.
@@ -252,6 +292,22 @@ describe("parsePalette — every copy reads and REFUSES the same things", () => 
     [
       "an origin nobody chose",
       `---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: default\n---\n`,
+    ],
+    // Added 2026-08-10 with the two rules themselves. A copy that accepted an accent a reader
+    // cannot see, or silently dropped a further accent, would render a beat in a colour the other
+    // copies refuse — which is the divergence this file exists for, in the field where it costs
+    // most.
+    [
+      "an accent under the 3:1 mark floor",
+      `---\nground: "#FFFFFF"\naccent: "#FFFF00"\norigin: journalist\n---\n`,
+    ],
+    [
+      "a malformed further accent",
+      `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "teal"\norigin: newsroom\n---\n`,
+    ],
+    [
+      "a further accent under the 3:1 mark floor",
+      `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#FFFF00"\norigin: newsroom\n---\n`,
     ],
   ];
   const copies: Array<[string, typeof beatParse]> = [

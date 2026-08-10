@@ -71,6 +71,38 @@ export function formatProposal(proposal) {
     }
   }
 
+  // WHETHER THESE COLOURS CAN COME OUT AS THEY ARE. A charter is collected in order to be
+  // PROPOSED, and a colour a reader cannot see has to fail HERE, where the journalist is still
+  // choosing — not silently at the render, and not at all, which is what happened until
+  // 2026-08-10. Every accent is measured against the ground this same proposal found; a failure
+  // names the ratio, the floor, the criterion, and the nearest variant that clears it — offered
+  // beside the value, never swapped in for it.
+  if (proposal.legibility) {
+    const { ground, accents, allPass } = proposal.legibility;
+    lines.push(
+      "",
+      "## Can these colours be read together",
+      allPass
+        ? `Yes — measured. Every accent below clears the 3:1 floor WCAG 2.2 SC 1.4.11 sets against ` +
+            `\`${ground}\` for a mark a reader identifies data by. (Words are a different floor, 4.5:1, ` +
+            `and are met a different way: a beat draws them in ink derived from the ground.)`
+        : `**No — not all of them.** A chart drawn in a failing accent below would be published in a ` +
+            `colour a reader cannot see, so it is refused when the palette is recorded. Correct it here.`,
+    );
+    for (const measured of accents) {
+      const role = measured.primary ? "brandColor" : "accents";
+      lines.push(
+        measured.passes
+          ? `- \`${measured.accent}\` (${role}) on \`${ground}\` — **${measured.ratio}:1**, clears ${measured.min}:1.`
+          : `- \`${measured.accent}\` (${role}) on \`${ground}\` — **${measured.ratio}:1, FAILS the ${measured.min}:1 floor**. ` +
+              (measured.remedy
+                ? `Nearest variant that clears it: \`${measured.remedy.accent}\` at ${measured.remedy.ratio}:1 — ` +
+                  `use it only if the newsroom accepts it; it is not their recorded colour.`
+                : `No variant of it clears the floor on this ground — the ground is the thing to change.`),
+      );
+    }
+  }
+
   if (stylesheetsRead.length > 0) {
     lines.push("", "## Stylesheets read", ...stylesheetsRead.map((href) => `- ${href}`));
   }

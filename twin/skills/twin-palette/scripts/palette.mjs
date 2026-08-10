@@ -45,6 +45,15 @@ export function contrast(a, b) {
  */
 export const NON_TEXT_CONTRAST_MIN = 3;
 
+/**
+ * The other floor, and the relaxation that belongs to it rather than to the one above. 4.5:1 is
+ * SC 1.4.3 and it governs WORDS; its own large-text relaxation drops to 3:1 at 24px, or 18.66px
+ * bold, or larger. The number coincides with the non-text floor and the criterion does not, which
+ * is exactly why `assertLegible` below makes a caller name the role instead of the number.
+ */
+export const TEXT_CONTRAST_MIN = 4.5;
+export const LARGE_TEXT_CONTRAST_MIN = 3;
+
 function toHex(values) {
   return "#" + values.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
 }
@@ -335,5 +344,90 @@ export function parsePalette(text, source = "PALETTE.md") {
         `It records WHO chose these colours, and a render is allowed to say so.`,
     );
   }
-  return { ground: record.ground, accent: record.accent, origin: record.origin, source };
+  const further = String(record.accents ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item !== "");
+  for (const hex of further) {
+    if (!HEX.test(hex)) {
+      throw new Error(
+        `${source}: every entry in accents must be #rrggbb, got ${JSON.stringify(hex)}. ` +
+          `accents lists the FURTHER house colours beside the primary one, comma-separated.`,
+      );
+    }
+  }
+  const all = [record.accent, ...further];
+  const accents = all.filter((hex, index) => all.indexOf(hex) === index);
+  for (const hex of accents) {
+    assertLegible(hex, record.ground, {
+      role: "mark",
+      where: `${source}: the accent ${hex}`,
+    });
+  }
+  return {
+    ground: record.ground,
+    accent: record.accent,
+    accents,
+    origin: record.origin,
+    source,
+  };
+}
+
+/**
+ * REFUSE A COLOUR A READER CANNOT SEE, AND SAY WHAT WAS MEASURED.
+ *
+ * `twin-palette`'s proposal measures every option it offers and never recommends one that fails.
+ * That is the first line, and it is the only one that existed until now — measured on 2026-08-10,
+ * a `PALETTE.md` recording `accent: "#FFFF00"` on `ground: "#FFFFFF"` (1.07:1) rendered a clean
+ * PNG with no warning at all, the beat's whole number set in yellow on white.
+ *
+ * A `PALETTE.md` can be written by hand, copied from another story, or produced by a path that
+ * never asked — `twin-newsroom-charter` proposes a `brandColor` and a `ground` off a newsroom's
+ * own site. So the floor is measured HERE too, where the colour meets the render, and the refusal
+ * names the ratio, the floor, the criterion it comes from and the nearest colour that clears it.
+ *
+ * It refuses rather than adjusts, for the reason `adjustToContrast` states above.
+ */
+export function assertLegible(colour, against, { role = "mark", where = "this colour" } = {}) {
+  const floors = {
+    mark: {
+      min: NON_TEXT_CONTRAST_MIN,
+      criterion: "WCAG 2.2 SC 1.4.11 Non-text Contrast",
+      governs: "a graphical object a reader identifies the data by",
+    },
+    text: {
+      min: TEXT_CONTRAST_MIN,
+      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum)",
+      governs: "text",
+    },
+    largeText: {
+      min: LARGE_TEXT_CONTRAST_MIN,
+      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum), large-text relaxation",
+      governs: "text at 24px, or 18.66px bold, or larger",
+    },
+  };
+  const floor = floors[role];
+  if (!floor) {
+    throw new Error(
+      `assertLegible: role must be mark, text or largeText — got ${JSON.stringify(role)}. ` +
+        `The floors differ by criterion, so the caller has to say which one it is asking about.`,
+    );
+  }
+  if (!HEX.test(colour)) throw new Error(`${where} must be #rrggbb, got ${JSON.stringify(colour)}`);
+  if (!HEX.test(against)) {
+    throw new Error(
+      `${where} is read against ${JSON.stringify(against)}, which is not #rrggbb`,
+    );
+  }
+  const ratio = contrast(colour, against);
+  if (ratio >= floor.min) return ratio;
+  const remedy = adjustToContrast(colour, against, floor.min);
+  throw new Error(
+    `${where}: ${colour} on ${against} measures ${ratio.toFixed(2)}:1 — under the ${floor.min}:1 ` +
+      `floor ${floor.criterion} sets for ${floor.governs}. A reader cannot see it. ` +
+      (remedy
+        ? `The nearest variant that clears the floor is ${remedy}, at ${contrast(remedy, against).toFixed(2)}:1 — ` +
+          `record that, or another colour, or a ground it can be read on.`
+        : `No variant of it clears that floor on this ground: choose another colour, or another ground.`),
+  );
 }

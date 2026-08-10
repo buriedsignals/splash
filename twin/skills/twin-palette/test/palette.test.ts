@@ -341,13 +341,71 @@ describe("a newsroom with several accents", () => {
 describe("parsePalette", () => {
   const good = `---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: newsroom\n---\n`;
 
-  it("should read the three recorded fields", () => {
+  it("should read the recorded fields, with the primary accent leading the accent list", () => {
     expect(parsePalette(good)).toEqual({
       ground: "#FFFFFF",
       accent: "#0B7A75",
+      accents: ["#0B7A75"],
       origin: "newsroom",
       source: "PALETTE.md",
     });
+  });
+
+  it("should read FURTHER accents, primary first, so a multi-series beat is not one colour", () => {
+    // A newsroom's identity is rarely one colour — `NEWSROOM.md` has recorded `accents` all along,
+    // `proposePalette` scores every one of them, and until now `PALETTE.md` could record exactly
+    // one. Measured before this landed: a three-series stacked bar drew `[accent, muted, muted]`.
+    expect(
+      parsePalette(
+        `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#C1440E, #1F6FB2"\norigin: newsroom\n---\n`,
+      ).accents,
+    ).toEqual(["#0B7A75", "#C1440E", "#1F6FB2"]);
+  });
+
+  it("should de-duplicate an accent repeated in the further list", () => {
+    expect(
+      parsePalette(
+        `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#0B7A75, #C1440E"\norigin: newsroom\n---\n`,
+      ).accents,
+    ).toEqual(["#0B7A75", "#C1440E"]);
+  });
+
+  it("should reject a malformed entry in accents by name, rather than drop it", () => {
+    expect(() =>
+      parsePalette(
+        `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#C1440E, teal"\norigin: newsroom\n---\n`,
+      ),
+    ).toThrow(/accents must be #rrggbb.*"teal"/s);
+  });
+
+  it("should REFUSE an accent a reader cannot see, naming the ratio, the floor and the remedy", () => {
+    // The measured defect this closes: `#FFFF00` on white is 1.07:1 and rendered a clean PNG with
+    // no warning at all — the beat's whole number set in yellow on white
+    // (`AUDIT-W2-palette-credits.md` H2, opened at the pixel). The floor lived only inside the
+    // proposal, and a PALETTE.md can be written by hand or copied from another story.
+    let thrown = "";
+    try {
+      parsePalette(
+        `---\nground: "#FFFFFF"\naccent: "#FFFF00"\norigin: journalist\n---\n`,
+      );
+    } catch (error) {
+      thrown = String((error as Error).message);
+    }
+    expect(thrown).toContain("#FFFF00 on #FFFFFF measures 1.07:1");
+    expect(thrown).toContain("3:1");
+    expect(thrown).toContain("SC 1.4.11 Non-text Contrast");
+    // The remedy is NAMED, never swapped in — one edit away, and still the journalist's edit.
+    expect(thrown).toMatch(
+      /nearest variant that clears the floor is #[0-9a-f]{6}/,
+    );
+  });
+
+  it("should measure EVERY recorded accent, so a longer list is not a way past the floor", () => {
+    expect(() =>
+      parsePalette(
+        `---\nground: "#FFFFFF"\naccent: "#0B7A75"\naccents: "#FFFF00"\norigin: newsroom\n---\n`,
+      ),
+    ).toThrow(/#FFFF00 on #FFFFFF/);
   });
 
   it("should reject a file with no front matter", () => {

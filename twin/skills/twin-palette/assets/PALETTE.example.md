@@ -1,12 +1,27 @@
 ---
 ground: "#FFFFFF"
 accent: "#0B7A75"
+accents: "#C1440E, #1F6FB2"
 origin: newsroom
 ---
 
 `ground` is the colour the beat is drawn on, as `#rrggbb`.
 `accent` is the one colour that carries the argument — the line, the highlighted bar — as `#rrggbb`.
+`accents` is **optional** and lists the FURTHER house colours, comma-separated, in the order the
+newsroom would use them. A newsroom's identity is rarely one colour, `NEWSROOM.md` has recorded
+`accents` all along, and `twin-palette` scores every one of them; this is where that survives into
+the render. A beat drawing several series takes them in order (`seriesInks`), and derives further
+ones from them — shades of a recorded accent — rather than falling back to the furniture grey.
+Leave it out when the newsroom has one accent: one accent still carries three series.
 `origin` records **who chose these**: `newsroom`, `subject`, or `journalist`. Nothing else is valid.
+
+Every accent — the primary and every entry in `accents` — is measured against the `ground` when
+this file is read, and one that falls under **3:1** (WCAG 2.2 SC 1.4.11 Non-text Contrast, the
+floor for a mark a reader identifies data by) is REFUSED, with the ratio, the floor and the nearest
+colour that clears it. `#FFFF00` on `#FFFFFF` measures 1.07:1 and used to render a clean PNG with a
+whole headline number set in yellow on white; it now refuses instead. Text is a different floor —
+4.5:1, SC 1.4.3, relaxed to 3:1 at 24px or 18.66px bold — and it is met a different way: every word
+in a beat is drawn in `ink` or `muted`, derived from the `ground` and escalated until they clear it.
 
 Copy this file to `PALETTE.md` beside the story — or beside a single beat, when that one beat needs
 its own — and fill in the answer the journalist gave to `twin-palette`'s proposal. `readPalette`

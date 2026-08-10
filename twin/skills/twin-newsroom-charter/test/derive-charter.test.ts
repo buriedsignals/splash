@@ -161,7 +161,16 @@ describe("deriveCharter — never writes anything", () => {
   it("should export no function whose name suggests a write path", async () => {
     const module = await import("../scripts/derive-charter.mjs");
     const names = Object.keys(module);
-    expect(names).toEqual(["deriveCharter"]);
+    // Pinned, so a new export is a decision somebody made in a diff rather than something that
+    // arrived. The measuring exports joined on 2026-08-10, when this skill gained the contrast
+    // arithmetic it had none of; every one of them MEASURES and none of them applies anything.
+    expect(names.sort()).toEqual([
+      "NON_TEXT_CONTRAST_MIN",
+      "adjustToContrast",
+      "contrast",
+      "deriveCharter",
+      "measureLegibility",
+    ]);
     for (const name of names) {
       expect(name.toLowerCase()).not.toContain("write");
       expect(name.toLowerCase()).not.toContain("save");
@@ -270,5 +279,77 @@ describe("deriveCharter — the extended model", () => {
     expect(proposal.fields.accents).toBe(null);
     expect(proposal.unresolved).not.toContain("accents");
     expect(proposal.nothingFurther).toEqual(["accents"]);
+  });
+});
+
+/**
+ * THE MEASUREMENT TRAVELS WITH THE PROPOSAL.
+ *
+ * `format-proposal.test.ts` proves the renderer PRINTS a legibility block; it builds one itself,
+ * so it cannot prove `deriveCharter` produces one. Mutating `legibility: measureLegibility(fields)`
+ * to `legibility: null` left that file green — the hole this closes.
+ */
+describe("deriveCharter — every proposed accent arrives measured", () => {
+  const siteWith = (brand: string, second?: string) => ({
+    "https://measured.test/": {
+      text: `<html lang="fr"><head><title>Measured</title>
+        <link rel="stylesheet" href="/s.css"></head></html>`,
+    },
+    "https://measured.test/s.css": {
+      text:
+        `:root{--brand-primary: ${brand};` +
+        (second ? `--brand-accent: ${second};` : "") +
+        `}\nbody{background:#FFFFFF}`,
+    },
+  });
+
+  it("should carry the ratio, the floor and the verdict for the brand colour", async () => {
+    const proposal = await deriveCharter({
+      url: "https://measured.test/",
+      fetchFn: fakeFetch(siteWith("#0B7A75")),
+    });
+    expect(proposal.legibility).not.toBe(null);
+    expect(proposal.legibility.ground).toBe("#ffffff");
+    expect(proposal.legibility.allPass).toBe(true);
+    expect(proposal.legibility.accents[0]).toMatchObject({
+      accent: "#0b7a75",
+      primary: true,
+      ratio: 5.18,
+      min: 3,
+      passes: true,
+    });
+  });
+
+  it("should mark a brand colour a reader cannot see as failing, with the nearest that clears", async () => {
+    const proposal = await deriveCharter({
+      url: "https://measured.test/",
+      fetchFn: fakeFetch(siteWith("#FFFF00")),
+    });
+    expect(proposal.legibility.allPass).toBe(false);
+    expect(proposal.legibility.accents[0].ratio).toBe(1.07);
+    expect(proposal.legibility.accents[0].passes).toBe(false);
+    expect(proposal.legibility.accents[0].remedy.ratio).toBeGreaterThanOrEqual(3);
+  });
+
+  it("should measure a FURTHER accent too, so a longer palette is not a way past the floor", async () => {
+    const proposal = await deriveCharter({
+      url: "https://measured.test/",
+      fetchFn: fakeFetch(siteWith("#0B7A75", "#FFFF00")),
+    });
+    expect(proposal.legibility.accents.map((a: { accent: string }) => a.accent)).toEqual([
+      "#0b7a75",
+      "#ffff00",
+    ]);
+    expect(proposal.legibility.allPass).toBe(false);
+  });
+
+  it("should stay silent rather than measure nothing against nothing", async () => {
+    const proposal = await deriveCharter({
+      url: "https://www.nzz.ch/",
+      fetchFn: fakeFetch({
+        "https://www.nzz.ch/": { text: `<html lang="de"><head></head></html>` },
+      }),
+    });
+    expect(proposal.legibility).toBe(null);
   });
 });

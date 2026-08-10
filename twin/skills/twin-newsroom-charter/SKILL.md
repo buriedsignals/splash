@@ -1,6 +1,6 @@
 ---
 name: twin-newsroom-charter
-description: Use to derive a proposed newsroom charter — brand colour, ground, typefaces — by measuring the newsroom's own website, when the journalist doesn't have a NEWSROOM.md yet and doesn't know their house colours off the top of their head. Every value ships with where it was read; nothing is written until the journalist confirms it.
+description: Use to derive a proposed newsroom charter — brand colour, further accents, ground, typefaces — by measuring the newsroom's own website, when the journalist doesn't have a NEWSROOM.md yet and doesn't know their house colours off the top of their head. Every value ships with where it was read, and every accent ships with what it MEASURES against the ground, so a pair a reader could not see fails here rather than at the render. Nothing is written until the journalist confirms it.
 ---
 
 # twin-newsroom-charter — measure the site, show the evidence, ask when it's silent
@@ -93,7 +93,8 @@ video-player mode, not the site's own default background.
 | Bounded fetch | `scripts/fetch-document.mjs` | `fetchWithTimeout(url, opts)` — races a real request against a hard timer; never hangs, whatever the far end (or a test double) does |
 | Pure readers | `scripts/extract.mjs` | `extractThemeColor`, `extractName`, `extractLanguage`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`, `extractRootCustomProperties`, `extractBackgroundDeclarations`, `extractFontFamilies` — no network, text in, evidence out |
 | Orchestrator | `scripts/derive-charter.mjs` | `deriveCharter({url, fetchFn, timeoutMs, maxStylesheets})` — fetches the page and its stylesheets, runs every reader, picks the highest-confidence candidate per field, names every field it couldn't |
-| Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the human-facing markdown: the NEWSROOM.md front-matter shape, every value's evidence, every unresolved field as a question |
+| Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the human-facing markdown: the NEWSROOM.md front-matter shape, every value's evidence, every unresolved field as a question, and what each accent measures against the ground |
+| Legibility | `scripts/derive-charter.mjs` | `contrast`, `adjustToContrast`, `measureLegibility(fields)` — every accent against the proposed ground, the 3:1 mark floor, and the nearest passing variant offered beside a failure. Duplicated from `twin-palette`, held in step by `helper-parity.test.ts` |
 
 ## How it works (the shape)
 
@@ -177,6 +178,7 @@ evidence line is what lets a journalist catch that in one glance instead of trus
 | Which custom-property name fragments count as a brand-colour hint | `brand`, `primary`, `accent` | `BRAND_NAME_HINT`, `derive-charter.mjs` |
 | Which custom-property name fragments count as a ground-colour hint | `background`, `ground`, `surface`, `page` | `GROUND_NAME_HINT`, `derive-charter.mjs` |
 | Which two hex values never count as a confident colour candidate | `#ffffff`, `#000000` | `isNeutralHex`, `extract.mjs` |
+| The contrast an accent must clear against the proposed ground before the proposal says it can come out as it is | `3` | `NON_TEXT_CONTRAST_MIN`, `derive-charter.mjs` |
 
 ## Files
 
