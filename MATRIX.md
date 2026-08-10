@@ -11,7 +11,7 @@ it is a by-product of that beat's reveal, not a chart framed to be read at rest.
 This is a coverage map, never a quality one. Whether these artifacts are CORRECT is what the
 `AUDIT-*.md` files are for.
 
-## Charts — 19 types, 56 beats
+## Charts — 19 types, 57 beats
 
 17 of 19 are proven in all three of static, web and video.
 
@@ -26,7 +26,7 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 | **grouped bar** | static-wind-vs-solar | webx-wind-vs-solar | vidx-grouped-bar-co2-per-capita | — |
 | **heatmap** | static-heatmap-coal-share-europe | more-heatmap-co2-per-capita-decades | vidy-heatmap-renewables-europe | — |
 | **histogram** | static-carbon-footprint-spread | webx-carbon-footprint | vidy-histogram-life-expectancy | — |
-| **line** | more-line-swiss-life-expectancy | webx-life-expectancy | life-expectancy<br>migration<br>vidx-line-life-expectancy | scrolly-chart-eu-carbon |
+| **line** | more-line-swiss-life-expectancy | webx-life-expectancy | life-expectancy<br>migration<br>vidx-line-life-expectancy | scrolly-chart-eu-carbon<br>scrolly-one-chart-swiss-life-expectancy |
 | **lollipop** | more-lollipop-co2-per-capita | weby-lollipop-co2-per-capita | vidy-lollipop-renewables-share-europe | — |
 | **mixed scrolly** | — | — | — | scrolly-mixed-grinnell-ice |
 | **photograph sequence** | — | — | — | scrolly-image-grinnell-glacier |
@@ -45,12 +45,12 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 |---|---|---|---|---|
 | **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | mapscrolly-one-map-europe-carbon |
 | **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | mapscrolly-quakes-three-ways |
-| **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
+| **flow / route map** | mapgen-flowmap-video<br>mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
 | **hex grid** | map-quake-density<br>mapvid-hexgrid-quakes | mapgen-hexgrid-web | mapvid-hexgrid-quakes | — |
 | **locator** | map-geneva-locator<br>mapvid-locator-geneva | mapgen-locator-web | mapvid-locator-geneva | — |
 | **proportional symbol** | map-quake-symbol | mapgen-symbol-web | map-quake-symbol | — |
 
 ## Beats with no `BRIEF.md`
 
-`aspect-range-probe`, `portrait-aspect-probe`, `co2-suisse`, `scrolly-one-chart-swiss-life-expectancy` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
+`aspect-range-probe`, `portrait-aspect-probe`, `co2-suisse` — no declared type, so absent from the tables above. A beat without its editorial contract cannot be placed in a coverage map.
 

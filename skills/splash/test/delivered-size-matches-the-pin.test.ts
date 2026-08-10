@@ -90,16 +90,25 @@ const PROOF = join(TWIN, "proof");
  * How many beats that SHOULD pin an export size still have not. MAY ONLY GO DOWN, AND IT REACHES
  * ZERO — which the count it replaces never could.
  *
- * Measured 2026-08-10 off the tree: 76 beats hold a `BRIEF.md`; 47 of them deliver a frame (25
- * static, 22 video) and 29 do not (22 web, 7 scrolly). Of the 38 unpinned, **9 owe a pin** and 29
- * are the genres that take none. Those 9 are the migration that is actually left: the remaining
- * map statics and map videos, and `vidz-diverging-bar-eu-per-capita`.
+ * Measured 2026-08-10 off the tree: 76 beats hold a `BRIEF.md`; 43 are pinned and 33 are not, and
+ * of those 33 only **4 owe a pin** — 29 are the genres that take none (a web chart fills its
+ * container, a scrolly exports no frame).
+ *
+ * The four are `vidz-diverging-bar-eu-per-capita` and THREE MAP VIDEOS, and the three are one
+ * finding rather than three arrears. `mapvid-hexgrid-quakes`, `mapvid-locator-geneva` and
+ * `mapvid-dot-population` were each measured against every row of the video table and each refuses
+ * all three: at the 30 px landscape floor their WORDS alone fill the band — 879 px of 910 for the
+ * hex grid, 1191 px for the locator — and the removal ladder's last rung before R9 costs the
+ * caveat, which on a map is the honesty line. Two of their siblings that ship both genres
+ * (`map-quake-symbol`, `mapgen-choropleth-video`) pin and deliver their STATIC and refuse their
+ * video for the same arithmetic. So this number does not come down by trying harder; it comes down
+ * when those beats' words are shortened, which is an editorial decision and not a migration.
  *
  * It is re-measured off the tree rather than decremented by hand each time, because several lots
  * migrate in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const BEATS_OWING_A_PIN = 9;
+const BEATS_OWING_A_PIN = 4;
 
 /**
  * Which genres deliver a FRAME — an artifact with fixed pixel dimensions that a pinned size can be
