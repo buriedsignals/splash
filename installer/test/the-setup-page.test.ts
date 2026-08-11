@@ -55,7 +55,6 @@ import {
   mkdirSync,
   rmSync,
   symlinkSync,
-  cpSync,
   statSync,
 } from "node:fs";
 import { mkdtempSync, readFileSync } from "node:fs";
@@ -109,9 +108,6 @@ beforeAll(async () => {
   // page resolves `<root>/skills/<id>/scripts/…`, and a symlinked `skills` resolves exactly the
   // same way an installed one does.
   symlinkSync(join(TWIN, "skills"), join(root, "skills"));
-  cpSync(join(TWIN, ".claude-plugin"), join(root, ".claude-plugin"), {
-    recursive: true,
-  });
 
   localFile = join(lab, "not-a-newsroom.html");
   await Bun.write(

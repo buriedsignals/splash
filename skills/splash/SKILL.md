@@ -225,7 +225,7 @@ the five resolves paths independently:
 | the owner of the single `.env` | `recordKey`, and every producer that reads a key |
 | the `#shared/*` resolution root | every beat's craft import, at any depth |
 | the parent of `stories/` | `createStory`, `whereIs` |
-| what the hosts' symlinks point into | Goose, the Claude family, Gemini, Codex |
+| what the hosts' symlinks point into | Goose, Gemini, Codex |
 
 They were not one directory before, and that is exactly how a producer came to read the DEVELOPER's
 `.env` while a journalist's key sat unread in their own root — both Bun and Node resolve a symlink
@@ -236,10 +236,10 @@ throws rather than guessing when there is none. `test/the-key-has-one-home.test.
 producers and `recordKey` name the same file.
 
 Installing is therefore `installer/install.sh`, and it copies the template, the fifteen skills and
-the plugin manifest into that one root. It contains **no keys and receives none**: secrets are typed
+the installer into that one root. It contains **no keys and receives none**: secrets are typed
 into `installer/configure.mjs`, a page served on 127.0.0.1, so nothing reaches shell history — and
 each key is PROBED against its real service before it is written, at `0600`. `installer/place-skills.mjs`
-then wires the two doors every host reads, and the generated `splash-doctor`
+then wires the shared `~/.agents/skills/` store those hosts read, and the generated `splash-doctor`
 (`installer/doctor.mjs`) checks the wiring preflight structurally cannot see — the links, the skill
 front matter, `bun` on a login shell's PATH, a browser — and then hands the last word to
 `runPreflight` rather than re-deciding anything it owns.
@@ -420,7 +420,7 @@ if (missing.length > 0) {
 - `../../installer/` — `install.sh` (one static, key-free script), `configure.mjs` (the 127.0.0.1
   setup page: keys probed live, written at `0600`, never on a command line; it also runs the charter
   derivation with its evidence, REPORTS the doors rather than asking about them, and collects the
-  CMS credential), `place-skills.mjs` (the two doors — and the module `configure.mjs` reads `DOORS`,
+  CMS credential), `place-skills.mjs` (the shared agents store — and the module `configure.mjs` reads `DOORS`,
   `HOSTS`, `detectHosts` and `planPlacement` from, so the doors are written down once),
   `doctor.mjs` (host wiring, then delegates to `runPreflight`).
 - `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its

@@ -1,7 +1,8 @@
 ---
 date: 2026-08-10
+updated: 2026-08-11
 topic: splash-data2story-human-gated-production
-status: proposed
+status: in-progress
 ---
 
 # Splash × Data2Story: human-gated visual production
@@ -31,19 +32,23 @@ plan is accepted or revised.
 
 ### Review baseline and confirmed current behavior
 
-This PRD targets the doctrine-twin ref `rd-dev` at commit `542e9f9a`. That ref is
-not the same implementation lineage as the current `main` working copy. In
-particular, `suggest-article`, `suggest-chart`, `ProposalSet`, and `accepted.json`
-do not exist on `rd-dev` and MUST NOT be described as its compatibility baseline.
-If a later integration must support those records, it needs a separately named
-adapter and fixtures from the lineage that actually owns them.
+This PRD was written against the doctrine-twin ref `rd-dev` at commit `542e9f9a`.
+That reviewed tree was intentionally consolidated as the Splash product baseline
+on `main` on 2026-08-11. References to `rd-dev` below describe the historical
+review fixture, not a branch that still needs to be merged.
+
+In particular, `suggest-article`, `suggest-chart`, `ProposalSet`, and
+`accepted.json` did not exist in that fixture and MUST NOT be described as its
+compatibility baseline. If a later integration must support those records, it
+needs a separately named adapter and fixtures from the lineage that actually
+owns them.
 
 The reviewed `rd-dev` implementation is a local, prose-first state machine. Its
 root skills are `splash`, `intake`, `storyboard`, `deliver`, and craft producers
 such as `chart-beat`, `chart-web`, `chart-video`, `map-beat`, `map-web`, and
 `scrolly`. The important on-disk contracts are:
 
-| Concern | Current `rd-dev` artifact or reader |
+| Concern | Historical baseline artifact or reader |
 | --- | --- |
 | Frozen source | `source/article.md`, `source/data.csv`, `source/profile.json` |
 | Editorial framing and choices | `STORYBOARD.md`, plus optional `SUBJECTS.md` |
@@ -59,8 +64,9 @@ selected rather than an automatic dump of every format. Targeted legacy tests fo
 intake, storyboard, phase recovery, and delivery pass, so those behaviors are the
 starting material to preserve.
 
-The adversarial review also found that the implementation is not yet correct for
-this PRD:
+At that historical baseline, the adversarial review found the following gaps.
+The delivery items in this list have since landed; the current-status subsection
+below separates those fixes from the requirements still outstanding:
 
 - `intake/scripts/freeze.mjs` accepts only an article and CSV, writes its three
   files sequentially, and has no evidence manifest, provenance graph, atomic
@@ -83,9 +89,32 @@ this PRD:
   that it is the intended `export/<beat>/` path. It replaces the last good export
   before all local and remote steps succeed, and remote calls have no bounded
   timeout or reconciliation state.
-- The checked-in CI and installation documentation name scripts, paths, or skill
-  layouts that are absent on `rd-dev`; the full suite is therefore not currently
-  a reliable release gate.
+- At the historical baseline, CI and installation documentation named scripts,
+  paths, or skill layouts absent from `rd-dev`. Current `main` has corrected the
+  test environment and documentation contract; the remaining product gaps above
+  are still requirements of this PRD.
+
+### Current implementation status — 2026-08-11
+
+The consolidation and delivery-hardening slice are complete on `main`:
+
+- the doctrine-twin workflow and its 15 Splash-owned skills are the canonical
+  repository baseline;
+- delivery derives destinations from stable story/output IDs and rejects legacy
+  caller-controlled replacement paths;
+- `OUTPUT-REVIEW.json` binds approval and QA to the output, render digest, plan
+  version, and finding IDs;
+- local replacement is journaled, recoverable, and preserves the last good
+  export through injected failure;
+- Cloudflare delivery has bounded requests and persisted reconciliation for
+  ambiguous remote outcomes; and
+- the repository test environment, generated checks, README, and Data2Story
+  acknowledgement are in place.
+
+The evidence package, optional context acquisition, semantic per-claim trace,
+canonical versioned production plan, multi-output lifecycle, handoff adapters,
+and newsroom pilot remain active PRD work. The detailed delivery record is in
+[`docs/residual-review-findings/feat-data2story-human-gated-production.md`](../residual-review-findings/feat-data2story-human-gated-production.md).
 
 ### Sources of design context
 
@@ -103,8 +132,9 @@ what it cannot verify; a trace link alone never earns a `supported` verdict.
 
 - Paper: [Data Journalist Agent: Transforming Data into Verifiable Multimodal Stories](https://arxiv.org/html/2606.11176v1).
 - Open-source reference: [QinghongLin/data2story-skill](https://github.com/QinghongLin/data2story-skill).
-- Splash baseline: the local `rd-dev` tree at `542e9f9a`, including its skill
-  instructions, scripts, tests, README, and CI configuration.
+- Historical Splash review baseline: `rd-dev` at `542e9f9a`, including its skill
+  instructions, scripts, tests, README, and CI configuration. The reviewed
+  implementation is now consolidated on `main`.
 
 ## Problem
 
@@ -402,7 +432,9 @@ stale approvals mechanically detectable.
 1. **Harden the reviewed baseline.** Before adding the new model, contain export
    paths, remove caller-controlled recursive deletion, make delivery atomic,
    enforce approval and QA inside delivery APIs, distinguish missing files from
-   filesystem failures, and make CI run commands and paths that exist on `rd-dev`.
+   filesystem failures, and make CI run commands and paths that exist in the
+   consolidated repository. **Status:** delivery hardening and CI repair landed;
+   evidence/intake hardening remains in Phase 0.
 2. **Document and adapt the actual artifacts.** Add schemas and fixtures plus a
    compatibility adapter from `source/`, `STORYBOARD.md`, beat directories,
    `APPROVED.md`, and `HANDOVER.md` to a one-unit/one-output plan. If the separate
@@ -568,41 +600,22 @@ Accept when:
 | Migration breaks local archives | Use adapters for observed artifacts and preserve old records read-only; never assume one lineage's record names exist in another. |
 | Unrelated Git histories are merged as if one branch were ahead | Choose the shipping baseline explicitly and transplant reviewed content in a clean Jujutsu change; do not use an ordinary merge to conceal unrelated ancestry. |
 
-## README update, to make in the implementation change
+## README implementation record
 
-Do not update the README as part of this PRD-only work. The implementation PR
-that begins this redesign should:
+Completed on 2026-08-11. `README.md` now describes the consolidated local-first
+product, uses current repository commands and paths, links this PRD, and credits
+the Data2Story paper and open-source reference while stating that Splash neither
+installs nor invokes Data2Story skills.
 
-1. Reorganize `README.md` to match Scoutpost's established structure: project
-   title/tagline, overview, tech stack, quick start with prerequisites and local
-   development, environment variables where relevant, deployment, documentation,
-   project structure, acknowledgements, and license.
-2. Preserve Splash-specific local-first installation and newsroom-use guidance;
-   avoid claiming a hosted application or mandatory UI. Quick-start and test
-   commands MUST run from the actual repository root, and the documented skill
-   names and paths MUST exist in the chosen implementation baseline.
-3. Add a concise acknowledgement to Data2Story with links to the
-   [paper](https://arxiv.org/abs/2606.11176) and
-   [open-source repository](https://github.com/QinghongLin/data2story-skill).
-   State plainly that Splash adapts selected ideas on evidence traceability,
-   planning, and QA; Splash is not a Data2Story fork.
+## Historical branch and integration note
 
-## Branch and integration note
+The 2026-08-10 review found no `rm-dev` branch. It reviewed `rd-dev` at
+`542e9f9a`, also advertised by `origin/rd-dev` and `origin/splash-twin`, and found
+that it had no common ancestor with the then-current `main`. That evidence is why
+the implementation used an intentional baseline promotion instead of an ordinary
+merge that implied shared ancestry.
 
-Repository inspection on 2026-08-10 found no `rm-dev` local or remote branch.
-The relevant branch is `rd-dev` at `542e9f9a`, also advertised by `origin/rd-dev`
-and `origin/splash-twin`. `main` is at `097f7087`, while `origin/main` is at
-`75b11dde`. A merge-base check found no common ancestor between `rd-dev` and either
-local or remote `main`; `rd-dev` is therefore not an ordinary branch “ahead of
-main.” Its README also identifies it as a doctrine twin that was intentionally
-kept out of `main`. The current working copy is based on another change and
-contains uncommitted user additions and edits.
-
-Do not pull or merge into this working copy as part of the PRD change. For
-implementation, first preserve the current work in its own Jujutsu change, choose
-the shipping baseline explicitly, and create a clean integration change. Import
-or transplant the reviewed `rd-dev` content and adapters intentionally; do not use
-an ordinary merge or rebase to imply shared ancestry. If maintainers decide to
-promote the doctrine twin wholesale, base a dedicated integration bookmark on
-`rd-dev` and test the resulting product as that lineage. This PRD changes no
-bookmark, worktree topology, README, or application code.
+That integration is complete. The doctrine-twin content is the product baseline
+on `main`; no reader should now pull, merge, or reconstruct `rd-dev` to continue
+this PRD. New implementation work starts from current `main` in a clean Jujutsu
+change and preserves the historical fixture only for compatibility tests.

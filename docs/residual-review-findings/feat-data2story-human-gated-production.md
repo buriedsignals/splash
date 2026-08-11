@@ -2,8 +2,11 @@
 
 Accepted for canonical-lineage promotion on 2026-08-10 after adversarial review
 of `feat/data2story-human-gated-production`, based directly on `rd-dev` at
-`542e9f9a`. These are planned Phase 0 follow-ups, not evidence that the completed
-delivery-hardening slice is untested.
+`542e9f9a`, and promoted into the consolidated `main` baseline on 2026-08-11.
+
+The delivery-hardening follow-ups recorded below are resolved. The only remaining
+verification item in this ledger is the explicitly credential-gated live
+MapTiler smoke; the broader product work remains tracked by the PRD.
 
 ## Resolved 2026-08-11 — approval and QA binding
 

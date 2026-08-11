@@ -23,8 +23,8 @@
 # own root. Making them one directory is what makes both resolutions land on the same file by
 # construction rather than by care.
 #
-# It does NOT: install Bun, choose your AI host's model, or touch anything under a host's own
-# configuration except the one skills symlink each host reads.
+# It does NOT: install Bun, choose your AI host's model, or touch host-specific skill directories.
+# Goose, Codex and Gemini share the flat links placed under `~/.agents/skills/`.
 #
 # PROVISIONED MODE. When Splash is installed through the signed public channel, an engine-built
 # bootstrap has ALREADY verified a signature, checked out this repository at its pinned ref, created
@@ -114,14 +114,13 @@ else
 
 say "2/6  Copying Splash into $ROOT"
 # The root template first (package.json, tsconfig.json, NEWSROOM.example.md, shared/), then the
-# skills and the plugin manifest that the Claude-family door requires.
+# skills and installer.
 run mkdir -p "$ROOT"
 if [ "$DRY_RUN" = 1 ]; then
-  echo "   would copy: root-template/. skills/ .claude-plugin/ installer/  →  $ROOT"
+  echo "   would copy: root-template/. skills/ installer/  →  $ROOT"
 else
   cp -R "$SOURCE/skills/splash/assets/root-template/." "$ROOT/"
   cp -R "$SOURCE/skills" "$ROOT/skills"
-  cp -R "$SOURCE/.claude-plugin" "$ROOT/.claude-plugin"
   cp -R "$SOURCE/installer" "$ROOT/installer"
   # A skill directory must never carry a node_modules: on Goose, `load_skill` enumerates a skill's
   # whole directory into the model's context, and the original's monolith reached 294 111 characters

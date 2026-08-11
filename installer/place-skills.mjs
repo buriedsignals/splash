@@ -1,35 +1,17 @@
 #!/usr/bin/env bun
-// THE DOORS. Where the fifteen skills have to appear for each AI host to see them, and nothing else.
+// THE SHARED SKILL STORE. Goose, Codex and Gemini all discover flat skill directories under
+// `~/.agents/skills/`, so Splash places exactly one symlink per shipped skill there:
 //
-// Placement is by SYMLINK, which is what dissolves the depth problem: the twin's skills sit at
-// `<root>/skills/<id>`, one level deeper than a host expects, but a host only ever sees the depth
-// inside its OWN skills directory. Measured (`twin/survey/ai-hosts.md` §3), on the five hosts
-// installed on the machine this was written on:
+//   `~/.agents/skills/<id> → <root>/skills/<id>`
 //
-//   | route                                            | Goose 1.45 | Claude Code | Gemini 0.50 |
-//   | one link `~/.claude/skills/splash → <root>` |   15 ✔     |    15 ✔     |    0 ✘      |
-//   | 15 flat links in `~/.agents/skills/`             |   15 ✔     |     n/a     |   15 ✔      |
+// The repository's host survey preserves the wider discovery measurements, including Claude's
+// separate route. The installed Splash contract intentionally uses only the shared agents store:
+// there is no product-level `~/.claude/skills/splash` link and no separate Goose link. This keeps
+// the local installation to one source of truth while making every Splash skill visible to Goose
+// and Codex.
 //
-// So TWO doors cover every host, and neither is redundant:
-//
-//   1. `~/.claude/skills/splash → <root>` — ONE link. Claude Code and Claude Desktop read this
-//      directory, and Goose scans it too (it is among Goose's own discovery roots). The link points
-//      at the ROOT, not at `skills/`, because on this door Claude requires the plugin manifest:
-//      measured, a directory holding `skills/*` with no `.claude-plugin/plugin.json` loads NOTHING
-//      here, and the same tree with the manifest loads all fifteen. (Under `--plugin-dir` the
-//      manifest is optional; on this door it is required. Two different rules, both measured.)
-//
-//   2. `~/.agents/skills/<id> → <root>/skills/<id>` — FIFTEEN links, flat. Gemini discovers only
-//      this shape: measured, one link at depth 2 gives "No skills discovered", fifteen flat links
-//      give all fifteen. Codex uses the same directory. Goose reads it as well.
-//
-// FLAT, NOT NAMESPACED, and that is a correction to the contract this otherwise follows. The
-// engine's placement contract prescribes a product namespace for the Claude family
-// (`~/.claude/skills/<product>/<id>`). The original ran the probe: Claude Code reads
-// `~/.claude/skills/<name>/SKILL.md` exactly ONE level deep, so a product namespace there
-// discovers nothing, silently. Spotlight's own installer already carries the fallback
-// (`link_spotlight_skills` places flat when the adapter directory cannot be collapsed); this takes
-// the fallback as the default for that family.
+// Placement is by symlink. `skillIds` discovers directories containing `SKILL.md`; the installer
+// never maintains a second hard-coded inventory.
 //
 // TWO DEFENSIVE RULES STOLEN OUTRIGHT FROM SPOTLIGHT'S INSTALLER, both of which exist because it
 // learned them the hard way:
@@ -45,9 +27,9 @@
 // `ok`.
 //
 // IT IS ALSO A MODULE, and that is deliberate rather than incidental. The setup page
-// (`configure.mjs`) has to REPORT the doors — the owner expected a per-host question, there is
+// (`configure.mjs`) has to REPORT the store — the owner expected a per-host question, there is
 // correctly none, and a page that then says nothing at all leaves him unable to tell a wired
-// install from an unwired one. Reporting it needs three facts: which hosts exist, which door each
+// install from an unwired one. Reporting it needs three facts: which hosts exist, which store each
 // one reads, and what the placement would do. All three live HERE, next to the code that acts on
 // them, and `configure.mjs` imports them rather than keeping a second copy that would drift on its
 // first day. (The no-cross-skill-imports rule bans an import leaving a SKILL; both of these files
@@ -62,16 +44,10 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * The two doors, as data. `dir(home)` is the directory each one is placed in — the single place
- * either path is written down in this installer.
+ * The one host-discovery door, as data. `dir(home)` is the single place the path is written down
+ * in this installer.
  */
 export const DOORS = [
-  {
-    id: "claude-family",
-    name: "one link, pointing at the whole root",
-    dir: (home) => join(home, ".claude", "skills"),
-    why: "on this door the plugin manifest has to travel with the link, so it points at the root and not at skills/",
-  },
   {
     id: "agents-store",
     name: "one flat link per skill",
@@ -81,7 +57,7 @@ export const DOORS = [
 ];
 
 /**
- * The hosts those doors serve, and the marker each host leaves on a machine it is installed on.
+ * The hosts this store serves, and the marker each host leaves on a machine it is installed on.
  *
  * A marker is EVIDENCE, not proof, and the page that renders this says so: a configuration
  * directory left behind by an uninstall reads exactly like an installed host. It is the honest
@@ -91,23 +67,9 @@ export const DOORS = [
  */
 export const HOSTS = [
   {
-    id: "claude-code",
-    name: "Claude Code",
-    doorIds: ["claude-family"],
-    markers: (home) => [join(home, ".claude")],
-  },
-  {
-    id: "claude-desktop",
-    name: "Claude Desktop",
-    doorIds: ["claude-family"],
-    markers: (home) => [join(home, "Library", "Application Support", "Claude"), "/Applications/Claude.app"],
-  },
-  {
     id: "goose",
     name: "Goose",
-    // Goose reads BOTH doors — it is among the few hosts that scan `~/.claude/skills` as well as
-    // its own store, and it descends nested directories fine.
-    doorIds: ["claude-family", "agents-store"],
+    doorIds: ["agents-store"],
     markers: (home) => [join(home, ".config", "goose"), "/Applications/Goose.app"],
   },
   {
@@ -214,30 +176,15 @@ function openDoor({ dir, doorId, record, dryRun }) {
 /**
  * The whole placement, as one call. With `dryRun: true` it touches nothing and every result reads
  * `would-…` — which is what makes it safe for the setup page to ask, since that page reports the
- * doors and never places them.
+ * store and never places links.
  */
 export function planPlacement({ root, home, dryRun = false }) {
   const results = [];
   const record = (doorId, status, where, detail) => results.push({ doorId, status, where, detail });
   const ids = skillIds(root);
 
-  // Door 1 — the Claude family, and Goose reads it too. ONE link, pointing at the ROOT so that the
-  // plugin manifest travels with it.
-  const claudeDoor = DOORS[0];
-  if (!existsSync(join(root, ".claude-plugin", "plugin.json"))) {
-    record(
-      claudeDoor.id,
-      "refused",
-      join(root, ".claude-plugin", "plugin.json"),
-      "absent — measured: without it this door loads NOTHING, so the link would be silently useless",
-    );
-  } else {
-    const dir = openDoor({ dir: claudeDoor.dir(home), doorId: claudeDoor.id, record, dryRun });
-    if (dir) placeLink({ linkPath: join(dir, "splash"), target: root, doorId: claudeDoor.id, record, dryRun });
-  }
-
-  // Door 2 — the canonical agents store: Gemini and Codex read only this shape, Goose reads it too.
-  const agentsDoor = DOORS[1];
+  // The canonical agents store: Goose, Gemini and Codex all read this flat shape.
+  const agentsDoor = DOORS[0];
   const agents = openDoor({ dir: agentsDoor.dir(home), doorId: agentsDoor.id, record, dryRun });
   if (agents)
     for (const id of ids)

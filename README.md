@@ -42,22 +42,26 @@ bun run matrix:check
 bun run survey:check
 ```
 
-To install a local newsroom copy without opening the configurator:
+To install a local newsroom copy without automatically opening a browser:
 
 ```bash
 bash installer/install.sh --headless
 ```
 
-The installer defaults to `~/Splash`, installs dependencies, configures the AI
-host skill links, and creates `splash-doctor`. Use `--root <path>` to choose a
-different local root or `--skip-configure` to defer newsroom and credential
-setup.
+`--headless` still starts the local configurator and prints its URL. For an
+unattended install that defers newsroom and credential setup, use
+`bash installer/install.sh --skip-configure` instead.
+
+The installer defaults to `~/Splash`, installs dependencies, places flat skill
+links in `~/.agents/skills/` for Goose, Codex, and Gemini, and creates
+`splash-doctor`. It does not create a separate Goose link or a root Claude link.
+Use `--root <path>` to choose a different local root.
 
 ## Environment variables
 
 Copy `.env.example` to `.env` in the installed Splash root. The available values
-cover interface language, MapTiler, Datawrapper, and optional hosted-embed
-credentials. Do not commit `.env` or real keys.
+cover MapTiler, Datawrapper, Cloudflare Pages, and optional CMS credentials. Do
+not commit `.env` or real keys.
 
 ## Deployment and delivery
 
@@ -69,10 +73,18 @@ delivery receipt.
 
 ## Documentation
 
-- `docs/splash/` — product requirements and implementation decisions
-- `skills/splash/SKILL.md` — orchestration and human-gated workflow
-- `skills/deliver/SKILL.md` — delivery forms, safeguards, and handover contract
-- `survey/` — measured design and host-compatibility research
+- [`AGENTS.md`](AGENTS.md) — repository workflow and product constraints
+- [Data2Story production PRD](docs/splash/2026-08-10-data2story-human-gated-production-prd.md)
+  — active requirements and remaining work
+- [Consolidation status](docs/splash/data2story-consolidation-status.html) —
+  readable HTML overview of what landed and what remains
+- [Residual findings](docs/residual-review-findings/feat-data2story-human-gated-production.md)
+  — completed hardening and outstanding live verification
+- [`skills/splash/SKILL.md`](skills/splash/SKILL.md) — orchestration and
+  human-gated workflow
+- [`skills/deliver/SKILL.md`](skills/deliver/SKILL.md) — delivery forms,
+  safeguards, and handover contract
+- `survey/` — dated design and host-compatibility measurements
 - `proof/` — rendered examples and parity proofs
 
 ## Project structure

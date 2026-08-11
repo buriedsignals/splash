@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Current implementation status for Splash's Data2Story-informed production redesign.">
+  <title>Splash × Data2Story — consolidation status</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172523;
+      --muted: #5f6d69;
+      --ground: #f7f4ed;
+      --paper: #fffdf8;
+      --teal: #0d6862;
+      --teal-soft: #dcebe7;
+      --blue: #315d79;
+      --blue-soft: #dce8ef;
+      --amber: #a66a16;
+      --amber-soft: #f3e4c6;
+      --line: #d6d5ce;
+      --max: 1120px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--ground);
+      font: 16px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--teal); text-underline-offset: 0.2em; }
+    code {
+      padding: 0.08rem 0.32rem;
+      border-radius: 0.25rem;
+      background: rgba(23, 37, 35, 0.08);
+      font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.12; }
+    h1 { max-width: 850px; font-size: clamp(2.5rem, 7vw, 5.6rem); letter-spacing: -0.055em; }
+    h2 { margin-bottom: 1rem; font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -0.035em; }
+    h3 { font-size: 1.05rem; }
+    p { margin: 0.8rem 0 0; }
+
+    .hero {
+      color: white;
+      background: var(--ink);
+      border-bottom: 6px solid var(--teal);
+    }
+    .hero-inner, main, .status, .toc, footer {
+      width: min(calc(100% - 40px), var(--max));
+      margin-inline: auto;
+    }
+    .hero-inner { padding: clamp(64px, 10vw, 124px) 0 68px; }
+    .eyebrow, .kicker {
+      margin: 0 0 1rem;
+      color: #93cbc4;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .deck { max-width: 760px; color: #d7e1df; font-size: clamp(1.05rem, 2.2vw, 1.35rem); }
+    .meta { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 2rem; }
+    .pill {
+      padding: 0.4rem 0.7rem;
+      border: 1px solid #4a5c58;
+      border-radius: 999px;
+      color: #eaf2f0;
+      font-size: 0.82rem;
+    }
+
+    .status {
+      position: relative;
+      z-index: 2;
+      margin-top: -28px;
+      padding: 20px 24px;
+      border-left: 5px solid var(--teal);
+      background: var(--paper);
+      box-shadow: 0 12px 34px rgba(23, 37, 35, 0.12);
+    }
+    .status strong { color: var(--teal); }
+    .status p { display: inline; margin-left: 0.4rem; }
+
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1.15rem;
+      padding: 24px 0 6px;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .toc a { color: var(--muted); text-decoration: none; }
+    .toc a:hover { color: var(--teal); }
+
+    section { padding: clamp(54px, 8vw, 88px) 0; border-bottom: 1px solid var(--line); }
+    .lede { max-width: 800px; color: var(--muted); font-size: 1.12rem; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 30px; }
+    .card, .flow, .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+      box-shadow: 0 8px 24px rgba(23, 37, 35, 0.06);
+    }
+    .card { padding: 24px; }
+    .card.landed { border-top: 5px solid var(--teal); }
+    .card.next { border-top: 5px solid var(--amber); }
+    .card p { color: var(--muted); }
+    ul { margin: 0.8rem 0 0; padding-left: 1.2rem; }
+    li + li { margin-top: 0.45rem; }
+
+    .flow { margin-top: 30px; padding: 24px; overflow-x: auto; }
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 18px;
+      min-width: 920px;
+      align-items: stretch;
+    }
+    .node {
+      position: relative;
+      min-height: 108px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--teal-soft);
+    }
+    .node:nth-child(2n) { background: var(--blue-soft); }
+    .node::after {
+      content: "→";
+      position: absolute;
+      top: 38%;
+      right: -16px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .node:last-child::after { content: ""; }
+    .node small { display: block; margin-top: 0.45rem; color: var(--muted); line-height: 1.35; }
+    .caption { color: var(--muted); font-size: 0.88rem; }
+
+    .table-wrap { margin-top: 30px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); background: #f1efe8; font-size: 0.78rem; letter-spacing: 0.07em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    .yes { color: var(--teal); font-weight: 800; }
+    .no { color: #8b433d; font-weight: 800; }
+
+    .boundary {
+      margin-top: 28px;
+      padding: 20px 24px;
+      border-left: 5px solid var(--amber);
+      background: var(--amber-soft);
+    }
+    .links { list-style: none; padding: 0; }
+    .links li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .links li:last-child { border-bottom: 0; }
+    footer { padding: 34px 0 48px; color: var(--muted); font-size: 0.88rem; }
+
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero-inner, main, .status, .toc, footer { width: min(calc(100% - 28px), var(--max)); }
+      .status { margin-top: -18px; }
+      section { padding: 48px 0; }
+    }
+
+    @media print {
+      body { background: white; }
+      .toc { display: none; }
+      .hero { color: var(--ink); background: white; }
+      .hero .deck, .eyebrow { color: var(--muted); }
+      .status, .card, .flow, .table-wrap { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Implementation status · updated 11 August 2026</p>
+      <h1>Splash is consolidated. The redesign continues.</h1>
+      <p class="deck">
+        The doctrine-twin workflow now lives on <code>main</code>. Splash is keeping its own
+        orchestration, front end, visual doctrine, and human gates while selectively
+        reimplementing useful Data2Story ideas.
+      </p>
+      <div class="meta">
+        <span class="pill">Consolidated main</span>
+        <span class="pill">15 Splash-owned skills</span>
+        <span class="pill">PRD in progress</span>
+        <span class="pill">Data2Story: reference only</span>
+      </div>
+    </div>
+  </header>
+
+  <aside class="status" aria-label="Current status">
+    <strong>Current status</strong>
+    <p>Baseline consolidation and delivery hardening are complete. Evidence and planning work remains.</p>
+  </aside>
+
+  <nav class="toc" aria-label="Page sections">
+    <a href="#summary">Summary</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#adoption">What is reused</a>
+    <a href="#roadmap">Landed and remaining</a>
+    <a href="#boundaries">Boundaries</a>
+    <a href="#documents">Current documents</a>
+  </nav>
+
+  <main>
+    <section id="summary">
+      <p class="kicker">The decision</p>
+      <h2>One Splash repository and one Splash pipeline</h2>
+      <p class="lede">
+        The former <code>rd-dev</code> doctrine-twin tree was intentionally promoted as the
+        product baseline rather than merged as if the unrelated histories shared ancestry.
+        New work continues from current <code>main</code>; nobody needs to recover or merge the
+        historical branch to implement the PRD.
+      </p>
+
+      <div class="grid">
+        <article class="card landed">
+          <h3>What stays authoritative</h3>
+          <ul>
+            <li>Splash's journalist-owned story directory and file-backed state</li>
+            <li>The tuned Splash visual doctrine, front end, and craft skills</li>
+            <li>Confirmed takeaway, real-draft review, approval, and chosen delivery gates</li>
+            <li>Agent judgment informed by ranked visualization knowledge</li>
+          </ul>
+        </article>
+        <article class="card next">
+          <h3>What the PRD adds</h3>
+          <ul>
+            <li>Reusable evidence packages with provenance and limitations</li>
+            <li>Explicit reproducible findings and semantic claim support</li>
+            <li>An editable, versioned production plan with several possible outputs</li>
+            <li>Traceable handoffs and per-output review state</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="pipeline">
+      <p class="kicker">Current production line</p>
+      <h2>The existing workflow remains the backbone</h2>
+      <p class="lede">
+        Current production is already human-gated end to end. The PRD expands the records around
+        evidence and planning; it does not replace the craft layer or turn Splash into an article generator.
+      </p>
+
+      <div class="flow" role="img" aria-label="Source material flows through intake, storyboard, craft production, output review, and delivery">
+        <div class="flow-row">
+          <div class="node"><strong>Source</strong><small>Article, data, notes, and declared local material</small></div>
+          <div class="node"><strong>Intake</strong><small>Frozen files and silent profiling</small></div>
+          <div class="node"><strong>Storyboard</strong><small>Supported takeaway, intent, ranked visual candidates</small></div>
+          <div class="node"><strong>Craft</strong><small>Splash-owned chart, map, image, web, video, or scrolly producer</small></div>
+          <div class="node"><strong>Review</strong><small>Render digest, QA, plan identity, findings, and human decision</small></div>
+          <div class="node"><strong>Delivery</strong><small>One selected form, recoverable replacement, handover receipt</small></div>
+        </div>
+        <p class="caption">The delivery end of this line is hardened today. The richer evidence package and canonical production plan remain PRD work.</p>
+      </div>
+    </section>
+
+    <section id="adoption">
+      <p class="kicker">Selective reuse</p>
+      <h2>Ideas come across; the foreign runtime does not</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data2Story idea</th><th>Splash treatment</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Durable evidence references</td><td>Reimplemented as Splash-owned evidence, finding, review, and handoff contracts.</td><td class="yes">Adopt</td></tr>
+            <tr><td>Explicit analysis findings</td><td>Profile and calculate exhaustively, then let the editor-facing flow choose what matters.</td><td class="yes">Adopt</td></tr>
+            <tr><td>Media rationale</td><td>Use Splash's intent-led ranking and visual knowledge before craft routing.</td><td class="yes">Adopt</td></tr>
+            <tr><td>Render inspection</td><td>Keep automated QA and bind it to the exact output reviewed by a human.</td><td class="yes">Adopt</td></tr>
+            <tr><td>Fixed seven-role pipeline</td><td>Do not impose roles as runtime topology; Splash orchestrates capabilities as needed.</td><td class="no">Do not adopt</td></tr>
+            <tr><td>Article generation and mandatory multimedia</td><td>The journalist authors the story and chooses warranted outputs.</td><td class="no">Do not adopt</td></tr>
+            <tr><td>Data2Story skills or package</td><td>Never install, invoke, or require them. Credit the paper and reference implementation.</td><td class="no">Never depend</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <p class="kicker">Implementation ledger</p>
+      <h2>What landed and what remains</h2>
+      <div class="grid">
+        <article class="card landed">
+          <h3>Landed on main</h3>
+          <ul>
+            <li>Consolidated doctrine-twin product baseline and current README</li>
+            <li>Stable story/output identity and contained export destinations</li>
+            <li>Approval and QA bound to render digest, plan version, and finding IDs</li>
+            <li>Journaled local replacement with crash recovery</li>
+            <li>Bounded Cloudflare delivery and ambiguous-result reconciliation</li>
+            <li>One shared <code>~/.agents/skills</code> store for Goose, Codex, and Gemini</li>
+          </ul>
+        </article>
+        <article class="card next">
+          <h3>Still in the active PRD</h3>
+          <ul>
+            <li>Atomic evidence package and source/calculation provenance</li>
+            <li>Optional, consented external context acquisition</li>
+            <li>Semantic per-claim grounding and compact angle/evidence brief</li>
+            <li>Canonical versioned production plan and recovery from that plan</li>
+            <li>Multi-output derivatives, packaged topology, and handoff adapters</li>
+            <li>Journalist/editor pilot and credential-gated live MapTiler verification</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="boundaries">
+      <p class="kicker">Non-negotiable boundaries</p>
+      <h2>Traceability supports judgment; it does not replace it</h2>
+      <div class="boundary">
+        <strong>Evidence links are not truth certificates.</strong>
+        A resolved source or calculation can show where a claim came from. It cannot by itself
+        establish fair framing, factual completeness, visual honesty, or fitness to publish.
+        Those remain explicit journalist and editor decisions.
+      </div>
+    </section>
+
+    <section id="documents">
+      <p class="kicker">Canonical sources</p>
+      <h2>Continue from these documents</h2>
+      <ul class="links">
+        <li><a href="../../README.md">Repository README</a> — current product and installation overview</li>
+        <li><a href="../../AGENTS.md">Repository AGENTS.md</a> — agent workflow and product constraints</li>
+        <li><a href="2026-08-10-data2story-human-gated-production-prd.md">Human-gated production PRD</a> — active requirements and acceptance criteria</li>
+        <li><a href="../residual-review-findings/feat-data2story-human-gated-production.md">Residual findings ledger</a> — landed hardening and remaining live verification</li>
+        <li><a href="https://arxiv.org/abs/2606.11176">Data2Story paper</a> — research reference</li>
+        <li><a href="https://github.com/QinghongLin/data2story-skill">Data2Story reference implementation</a> — credited design/code reference, not a dependency</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Current implementation status, 11 August 2026. Historical <code>rd-dev</code> and spike language has been retired from the operating documentation.
+  </footer>
+</body>
+</html>

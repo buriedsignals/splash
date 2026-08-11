@@ -35,12 +35,13 @@
 //      skill's own rule is honoured exactly: it proposes, it never writes. `/derive` writes nothing
 //      whatsoever — `NEWSROOM.md` is still only written by `/submit`, from the form.
 //
-//   B. **It reports the doors instead of asking about them.** Two doors cover all five hosts and no
-//      key differs per host, so there is correctly no question to ask — but a page that then says
-//      nothing leaves a journalist unable to tell a wired install from an unwired one. The report
+//   B. **It reports the skill store instead of asking about it.** Goose, Codex and Gemini share one
+//      store and no key differs per host, so there is correctly no question to ask — but a page
+//      that then says nothing leaves a journalist unable to tell a wired install from an unwired
+//      one. The report
 //      is read from `place-skills.mjs` itself (which hosts, which doors, what the placement would
 //      do), never from a second list kept here, and it is asked in DRY-RUN: this page reports the
-//      doors, `place-skills.mjs` places them.
+//      store, `place-skills.mjs` places the links.
 //
 //   C. **It collects the CMS credential.** `deliver` builds We.Publish and Livingdocs mutation
 //      shapes and sends neither, and there was nowhere for an endpoint or a token to live. Now
@@ -288,9 +289,9 @@ function doorsSection() {
   }).join("");
 
   const refusedCount = plan.results.filter((r) => r.status === "refused").length;
-  return `<h2>The doors your AI hosts read</h2>
-<p class="lede">There is no question here, and that is deliberate: the same two doors cover all five
-hosts, no key differs between them, so the installer wires both unconditionally. What follows is
+  return `<h2>The skill store your AI hosts read</h2>
+<p class="lede">There is no question here, and that is deliberate: the supported hosts read the
+same flat skill store, so the installer wires it unconditionally. What follows is
 what it found and what it will do — read from <code>installer/place-skills.mjs</code>, the script
 that actually does the placing. <strong>This page places nothing</strong>; it asked that script for
 its plan without letting it touch anything.</p>

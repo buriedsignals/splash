@@ -1,4 +1,8 @@
-# The rename, and the move to `rd-dev` — procedure
+# Historical record — the rename and move from `rd-dev`
+
+Completed on 2026-08-11. The doctrine-twin tree is now the consolidated Splash
+baseline on `main`. The commands and branch topology below preserve the decision
+record; they are not current operating instructions.
 
 Decided by the owner, 2026-08-11. Written so this can be executed by whoever is holding the session,
 without re-deriving any of it. **Do not start it while agents are committing** — it touches 675 files
@@ -23,8 +27,9 @@ and any concurrent write becomes a conflict in the middle of a mechanical change
    map-beat · map-web · newsroom-charter · palette · scrolly · storyboard · splash`.
 2. **The doors and the doctor** — 12 occurrences of `splash` and 6 of `splash-doctor`
    across `installer/{install.sh,place-skills.mjs,configure.mjs,doctor.mjs}` and
-   `.claude-plugin/plugin.json`. The Claude-family door becomes `~/.claude/skills/splash`; the flat
-   links in `~/.agents/skills/` take the new ids; the binary on `~/.local/bin` becomes
+   `.claude-plugin/plugin.json`. At the time, both the Claude-family door and the
+   flat links in `~/.agents/skills/` took the new IDs; current installation uses
+   only the flat agents-store links. The binary on `~/.local/bin` becomes
    `splash-doctor`.
 3. **The shared import specifiers** — `#shared/chart-beat` and `#shared/chart-video`,
    which appear in beat sources *and* in the `imports` map of `package.json` and of the root

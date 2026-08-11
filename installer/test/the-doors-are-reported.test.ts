@@ -2,8 +2,8 @@
  * THE DOORS ARE REPORTED, NOT ASKED ABOUT — and reported from ONE source of truth.
  *
  * The owner expected the setup page to ask a question per AI host, and there correctly is none:
- * two doors cover all five hosts and no key differs between them, so `place-skills.mjs` wires both
- * unconditionally. But a page that then says nothing leaves him unable to tell a wired install
+ * Goose, Codex and Gemini share one agents store, so `place-skills.mjs` wires it unconditionally.
+ * But a page that then says nothing leaves him unable to tell a wired install
  * from an unwired one, or to see that a placement was REFUSED (a symlinked skills directory, a
  * name collision) — and a refusal is the one thing that install never works around.
  *
@@ -16,10 +16,9 @@
  * (`/tmp/twin-mut`), never in this tree:
  *
  *   1. MUTATION: paste a door path literal into `configure.mjs`
- *      (`const doors = [join(HOME, ".claude", "skills"), join(HOME, ".agents", "skills")];`).
+ *      (`const doors = [join(HOME, ".agents", "skills")];`).
  *        (fail) the doors > should keep the door and host knowledge in place-skills.mjs alone
  *        error: expect(received).toEqual(expected)
- *        + "configure.mjs spells .claude/skills itself",
  *        + "configure.mjs spells .agents/skills itself",
  *
  *   2. MUTATION: filter refusals out of the report (`.filter((r) => r.status !== "refused")` on
@@ -27,7 +26,7 @@
  *        (fail) the doors > should report a refusal, with its reason, rather than a silent absence
  *        error: expect(received).toContain(expected) · Expected to contain: "refused"
  *
- *   3. MUTATION: render only the first door (`DOORS.slice(0, 1).map(...)`).
+ *   3. MUTATION: omit the store section (`DOORS.slice(0, 0).map(...)`).
  *        (fail) the doors > should report every door and every host
  *        error: expect(received).toContain(expected)
  *          Expected to contain: "<code>~/.agents/skills</code> — one flat link per skill"
@@ -36,9 +35,8 @@
  *        (fail) the doors > should place nothing while rendering the report
  *        error: expect(received).toBe(expected) · Expected: false · Received: true
  *
- * WHAT IT DOES NOT CLOSE: `doctor.mjs` still spells both door paths itself. That is a THIRD copy of
- * the same knowledge, older than this change and out of its scope — named here so it is a known
- * debt rather than a discovery.
+ * `doctor.mjs` independently resolves every expected link because it verifies the installed
+ * machine rather than rendering the configuration plan.
  */
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -48,7 +46,6 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
-  cpSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -72,20 +69,9 @@ beforeAll(async () => {
   mkdirSync(root, { recursive: true });
   mkdirSync(join(home, ".agents", "skills"), { recursive: true });
   symlinkSync(join(TWIN, "skills"), join(root, "skills"));
-  cpSync(join(TWIN, ".claude-plugin"), join(root, ".claude-plugin"), {
-    recursive: true,
-  });
 
-  // Two machines' worth of trouble, both of which `place-skills.mjs` refuses by design:
-  //   - a skills directory that is itself a symlink (user-managed — placing through it would
-  //     mutate whatever repository it points into)
-  //   - a real file sitting on a name we would link (never removed)
-  mkdirSync(join(home, ".claude"), { recursive: true });
-  mkdirSync(join(lab, "someone-elses-skills"), { recursive: true });
-  symlinkSync(
-    join(lab, "someone-elses-skills"),
-    join(home, ".claude", "skills"),
-  );
+  // One detected host and one collision the installer must report without removing.
+  mkdirSync(join(home, ".config", "goose"), { recursive: true });
   writeFileSync(
     join(home, ".agents", "skills", "palette"),
     "a file the journalist put here",
@@ -134,7 +120,7 @@ describe("the doors the page reports", () => {
     const source = readFileSync(join(INSTALLER, "configure.mjs"), "utf8");
     const offenders: string[] = [];
     for (const door of DOORS) {
-      const tail = door.dir("/HOME").replace("/HOME/", ""); // ".claude/skills", ".agents/skills"
+      const tail = door.dir("/HOME").replace("/HOME/", ""); // ".agents/skills"
       const [first, second] = tail.split("/");
       if (
         source.includes(tail) ||
@@ -151,9 +137,8 @@ describe("the doors the page reports", () => {
 
   it("should report every door and every host", () => {
     // Each door's OWN section, not merely its path somewhere on the page: the host table lists the
-    // door each host reads, so a page rendering only the first door still contains both paths. The
-    // first draft of this guard asserted the path alone and stayed green under exactly that
-    // mutation — it was measured, not reasoned about, and the assertion moved.
+    // store each host reads, so this assertion checks the store's own rendered section rather than
+    // merely finding its path in the host table.
     for (const door of DOORS)
       expect(html).toContain(`<code>${door.dir("~")}</code> — ${door.name}`);
     for (const host of HOSTS) expect(html).toContain(host.name);
@@ -161,7 +146,7 @@ describe("the doors the page reports", () => {
 
   it("should say, per host, whether it was found on this machine", () => {
     const detected = detectHosts({ home });
-    // The fixture HOME has `~/.claude` and `~/.agents` and nothing else, so at least one host is
+    // The fixture HOME has a Goose marker and no Codex/Gemini marker, so at least one host is
     // reported present and at least one absent — a report that could only ever say one of the two
     // is not a report.
     expect(detected.some((h) => h.detected)).toBe(true);
@@ -171,17 +156,13 @@ describe("the doors the page reports", () => {
 
   it("should report a refusal, with its reason, rather than a silent absence", () => {
     expect(html).toContain("refused");
-    expect(html).toContain("this skills directory is a symlink");
     expect(html).toContain("a real file is already there");
     expect(html).toContain("palette");
   });
 
   it("should place nothing while rendering the report", () => {
-    // The door directory that was refused must still be the journalist's own symlink, and the
-    // collision must still be their file — the page reports, `place-skills.mjs` places.
-    expect(existsSync(join(lab, "someone-elses-skills", "splash"))).toBe(
-      false,
-    );
+    // The collision must still be the journalist's file — the page reports,
+    // `place-skills.mjs` places.
     expect(
       readFileSync(join(home, ".agents", "skills", "palette"), "utf8"),
     ).toBe("a file the journalist put here");
@@ -200,13 +181,11 @@ describe("planPlacement, the report's own source", () => {
     expect(planned.results.every((r) => r.status.startsWith("would-"))).toBe(
       true,
     );
-    expect(existsSync(join(fresh, ".claude", "skills"))).toBe(false);
+    expect(existsSync(join(fresh, ".agents", "skills"))).toBe(false);
 
     const placed = planPlacement({ root, home: fresh, dryRun: false });
     expect(placed.results.some((r) => r.status === "linked")).toBe(true);
-    expect(existsSync(join(fresh, ".claude", "skills", "splash"))).toBe(
-      true,
-    );
+    expect(existsSync(join(fresh, ".claude", "skills", "splash"))).toBe(false);
     expect(
       existsSync(join(fresh, ".agents", "skills", "palette", "SKILL.md")),
     ).toBe(true);
@@ -214,5 +193,20 @@ describe("planPlacement, the report's own source", () => {
     // Idempotent: a correct link already in place is left alone and reported as `ok`.
     const again = planPlacement({ root, home: fresh, dryRun: false });
     expect(again.results.every((r) => r.status === "ok")).toBe(true);
+  });
+
+  it("should refuse a user-managed agents skills directory", () => {
+    const blocked = join(lab, "blocked-home");
+    const managed = join(lab, "someone-elses-skills");
+    mkdirSync(join(blocked, ".agents"), { recursive: true });
+    mkdirSync(managed, { recursive: true });
+    symlinkSync(managed, join(blocked, ".agents", "skills"));
+
+    const result = planPlacement({ root, home: blocked, dryRun: false });
+    expect(result.results.some((r) => r.status === "refused")).toBe(true);
+    expect(result.results.some((r) => r.detail.includes("user-managed"))).toBe(
+      true,
+    );
+    expect(existsSync(join(managed, "splash"))).toBe(false);
   });
 });

@@ -69,18 +69,11 @@ function linkResolvesTo(linkPath, expected) {
   }
 }
 
-const claudeDoor = join(HOME, ".claude", "skills", "splash");
-const claudeVerdict = linkResolvesTo(claudeDoor, ROOT);
-if (claudeVerdict === true) ok("door: Claude family + Goose", claudeDoor.replace(HOME, "~"));
-else bad("door: Claude family + Goose", `${claudeDoor.replace(HOME, "~")} — ${claudeVerdict}. Run: bun installer/place-skills.mjs`);
-if (claudeVerdict === true && !existsSync(join(ROOT, ".claude-plugin", "plugin.json")))
-  bad("plugin manifest", "the link is there but .claude-plugin/plugin.json is not — measured: this door then loads NOTHING, silently");
-
 const agentsDir = join(HOME, ".agents", "skills");
 const missingAgentLinks = ids.filter((id) => linkResolvesTo(join(agentsDir, id), join(ROOT, "skills", id)) !== true);
-if (ids.length > 0 && missingAgentLinks.length === 0) ok("door: Gemini / Codex / Goose", `${ids.length} links in ${agentsDir.replace(HOME, "~")}`);
+if (ids.length > 0 && missingAgentLinks.length === 0) ok("door: Goose / Codex / Gemini", `${ids.length} links in ${agentsDir.replace(HOME, "~")}`);
 else if (ids.length > 0)
-  bad("door: Gemini / Codex / Goose", `${missingAgentLinks.length} of ${ids.length} missing or dangling in ${agentsDir.replace(HOME, "~")}: ${missingAgentLinks.join(", ")}. Run: bun installer/place-skills.mjs`);
+  bad("door: Goose / Codex / Gemini", `${missingAgentLinks.length} of ${ids.length} missing or dangling in ${agentsDir.replace(HOME, "~")}: ${missingAgentLinks.join(", ")}. Run: bun installer/place-skills.mjs`);
 
 // ── 3. Every SKILL.md still parses ───────────────────────────────────────────────────────────
 // An unquoted `: ` inside a frontmatter `description` makes a host DROP the skill without a word —
