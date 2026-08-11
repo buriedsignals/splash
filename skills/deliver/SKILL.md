@@ -8,12 +8,12 @@ description: Use to run the DELIVERY phase of the doctrine twin — offer the jo
 ## Overview
 
 Runs the DELIVERY phase: the last step of a beat's life, after a still has already been
-rendered into `<beatDir>/renders/`. `offerForms({medium, genre, beatDir, env})` names the delivery forms a
-beat's genre allows, each with a plain-language `gives` so the choice is informed. Nothing is
-built at this point — `offerForms` only lists what could be built. `materialise({form, genre,
-beatDir, exportDir, env, fetchFn, projectName, cms})` is the only function that writes anything,
-and it writes exactly one form: the one named in `form`, for the `genre` actually given, nothing
-else, into `exportDir`.
+rendered into `<beatDir>/renders/`. `offerForms({medium, genre, beatDir, planVersion, findingIds,
+env})` names the delivery forms a beat's genre allows, each with a plain-language `gives` so the
+choice is informed. Nothing is built at this point — `offerForms` only lists what could be built.
+`materialise({form, genre, beatDir, planVersion, findingIds, exportDir, env, fetchFn, projectName,
+cms})` is the only function that writes anything, and it writes exactly one form: the one named in
+`form`, for the `genre` actually given, nothing else, into `exportDir`.
 
 **Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
 every genre offers both. `embed` (a live Cloudflare Pages URL) and `cms-insertion` (a prepared
@@ -64,8 +64,8 @@ materialises `owned-file` and then changes their mind and materialises `source-b
 private sibling staging directory, including `HANDOVER.md`, and only then replaces `exportDir`. The
 directory therefore holds exactly the most recently completed form — never a mix of two — while a
 failed build, hand-over, copy, or remote deployment leaves the last good export intact. Validation
-of `{form, genre}`, the exact per-beat path, `APPROVED.md`, and the hand-over payload all happens
-before staging begins.
+of `{form, genre}`, the exact per-beat path, the bound `OUTPUT-REVIEW.json`, and the hand-over
+payload all happens before staging begins.
 
 **The other half of it, and it was live: a story has more than one beat.** With one story-level
 `export/` shared by every beat, that same wipe reached ACROSS beats — delivering beat 2 destroyed
@@ -86,8 +86,9 @@ Two things close it, and both are code rather than convention:
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
-| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Re-checks approval, derives and contains the per-beat export path, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; validates the bound output review (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
+| Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
+| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, derives and contains the per-beat export path, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
@@ -98,13 +99,27 @@ Two things close it, and both are code rather than convention:
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
 | CMS doctrine | `references/cms-insertion.md` | Both mechanics in prose — We.Publish's `updateArticle` is total, Livingdocs' `insertComponent` is a genuine insertion — and what remains untested |
 
+## Bound output review
+
+`OUTPUT-REVIEW.json` is written atomically beside the output's `renders/` directory. Version 1
+records `id`, `outputId`, `planVersion`, `draftRef`, `draftDigest`, `findingIds`, `qaRuns`,
+`angleEvidenceBrief`, and `decision`, plus optional reviewer metadata. Each embedded QA run carries
+its own schema version, ID, status, completion time, and the same output/render/plan/finding binding.
+`writeOutputReview` serializes a review and refuses to write an approval without a matching passing
+QA receipt; it does not run QA or manufacture that receipt. Unknown schema versions fail closed and
+remain untouched on disk.
+
 ## How it works (the shape)
 
-1. **`offerForms({medium, genre, beatDir, env = process.env})`** first refuses outright unless
-   `beatDir/APPROVED.md` exists — **Gate 3 closes before Gate 4 opens.** Delivery cannot honestly be
-   discussed before the journalist has seen the thing being delivered, and the forms are this
-   function's own output: anything said about them before it runs is a guess. The run guessed twice,
-   both times wrongly, once *inside* the Gate-3 approval question, and had to retract it. Then it
+1. **`offerForms({medium, genre, beatDir, planVersion, findingIds, env = process.env})`** first
+   validates `beatDir/OUTPUT-REVIEW.json` — **Gate 3 closes before Gate 4 opens.** The record must be
+   schema version 1, decide `approve`, name this output, match the exact current render digest,
+   current plan version and current finding IDs, and contain a passing QA run bound to that same
+   tuple. A bare `APPROVED.md`, a copied review, or a review made stale by any render or plan change
+   does not open delivery. Delivery cannot honestly be discussed before the journalist has seen the
+   thing being delivered, and the forms are this function's own output: anything said about them
+   before it runs is a guess. The run guessed twice, both times wrongly, once *inside* the Gate-3
+   approval question, and had to retract it. Then it
    looks `genre` up in `FORMS_BY_GENRE`. **Four** genres are known today —
    `"static"`, `"web"`, `"video"`, `"scrolly"` — any other genre throws rather than
    returning an empty or partial list, so a caller can never mistake "no forms for this genre yet"
@@ -119,16 +134,17 @@ Two things close it, and both are code rather than convention:
 2. **The conversation presents the list and waits.** This skill's code stops here; the doctrine
    of waiting is enforced by the calling conversation, the same way `storyboard` enforces
    its exchange in prose, not in code that could be skipped.
-3. **`materialise({form, genre, beatDir, exportDir, env, fetchFn, projectName, cms, handover})`** validates
+3. **`materialise({form, genre, beatDir, planVersion, findingIds, exportDir, env, fetchFn,
+   projectName, cms, handover})`** validates
    the **`{form, genre}` pair** against `FORMS_BY_GENRE[genre][form]` — the same table `offerForms`
    reads, so "not an offered form" can never drift from what was actually offered, and a form id
    that happens to exist under one genre is never accepted for a different genre just because the
-   id matches. It independently requires `beatDir/APPROVED.md`, validates `handover`, derives the
+   id matches. It independently validates the same bound review, validates `handover`, derives the
    one legal `export/<beat>/` directory from the beat path, and rejects path traversal, a broad
-   story-level destination, or symlinked delivery directories. It then builds the complete form in
-   a private staging directory. Only a successful build and hand-over replace the previous export;
-   failures remove staging and preserve the last good delivery. Inside staging it writes the beat's
-   receipt and:
+   story-level destination, or symlinked delivery directories. It checks the review again after
+   staging so a render or review changed during the build cannot be published. Only a successful
+   build and hand-over replace the previous export; failures remove staging and preserve the last
+   good delivery. Inside staging it writes the beat's receipt and:
    - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
      subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
      throws on it).
@@ -295,12 +311,16 @@ one — the state is a fact about their file, and the decision to create a restr
 ```js
 import { offerForms, materialise, exportDirFor } from "./scripts/deliver.mjs";
 
-// `beatDir` is REQUIRED, and its APPROVED.md must exist: Gate 3 closes before Gate 4 opens, so a
-// form cannot be named before the journalist has seen the render.
+// Read these from the current production plan. OUTPUT-REVIEW.json and its passing QA run must
+// match them and the exact current renders/ digest: Gate 3 closes before Gate 4 opens.
+const planVersion = 3;
+const findingIds = ["finding-rainfall-change"];
 const forms = offerForms({
   medium: "chart",
   genre: "web",
   beatDir: "stories/water-wars/beats/1-rainfall",
+  planVersion,
+  findingIds,
 });
 // present `forms` (id, label, gives) to the journalist here, and wait for a choice —
 // do not call materialise until one comes back. "embed" is only in this list when
@@ -310,6 +330,8 @@ const written = await materialise({
   form: chosenId, // must be one of forms[*].id
   genre: "web", // the same genre offerForms was called with
   beatDir: "stories/water-wars/beats/1-rainfall",
+  planVersion,
+  findingIds,
   // ONE DIRECTORY PER BEAT. `exportDirFor` is the answer; handing two beats the same directory
   // throws rather than destroying the first one's delivery.
   exportDir: exportDirFor("stories/water-wars", "1-rainfall"),
@@ -338,6 +360,7 @@ const written = await materialise({
 | What makes an artifact a MAP delivery, for the key rule | `1` string — the key slot the renderer leaves in the file (`carriesMapKey`). Nothing about the environment, the genre or the medium enters that decision | `MAP_KEY_PLACEHOLDER`, `scripts/deliver.mjs` |
 | What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
+| What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
 | Which genres a medium can also be produced in, after its first delivery | `chart`/`map` → 4 each, `image` → 2 (an absent pair is never offered) | `PRODUCIBLE_GENRES`, `scripts/another-genre.mjs` |
 | What answers close a delivery | `2` — `declined` and `taken <genre>`; `pending` is what `materialise` writes and what `deliveryClosed` refuses to call closed | `recordGenreAnswer`, `scripts/another-genre.mjs` |
@@ -366,6 +389,8 @@ const written = await materialise({
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one
   directory a beat delivers into), and the `BUILD_SCRIPT` template written into every
   `source-bundle` delivery.
+- `scripts/output-review.mjs` — deterministic render-tree digest, versioned review/QA validation,
+  atomic `OUTPUT-REVIEW.json` serialization, and the fail-closed gate both delivery APIs call.
 - `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`,
   `deliveryClosed`, and `PRODUCIBLE_GENRES`, this skill's own reading of which medium × genre pairs
   can be walked to a delivered export (a duplicate of the storyboard's catalogue, cross-checked by a

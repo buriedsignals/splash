@@ -5,13 +5,17 @@ of `feat/data2story-human-gated-production`, based directly on `rd-dev` at
 `542e9f9a`. These are planned Phase 0 follow-ups, not evidence that the completed
 delivery-hardening slice is untested.
 
-## P1 — approval and QA binding
+## Resolved 2026-08-11 — approval and QA binding
 
-`skills/deliver/scripts/deliver.mjs` currently requires a regular
-`APPROVED.md` file, but does not yet parse an `OutputReview` bound to the output
-ID, current render digest, plan version, finding IDs, and a passing QA run.
-Implement the versioned review record and reject missing, stale, or mismatched
-records inside every delivery entry point.
+`skills/deliver/scripts/output-review.mjs` now owns versioned
+`OUTPUT-REVIEW.json` records and a deterministic SHA-256 digest of the complete
+render tree. Approval and a passing QA run must both match the output ID, exact
+current digest, current plan version, and current finding IDs. `offerForms` and
+direct `materialise` calls independently fail closed on missing, legacy, stale,
+copied, malformed, or mismatched records; `materialise` checks again after
+staging before it publishes. Contract and entry-point tests cover render, plan,
+finding, output, QA, decision, and schema mismatches while preserving the last
+good export.
 
 ## P1 — interrupted replacement recovery
 
@@ -45,7 +49,6 @@ recursive replacement scope.
 
 - Fault injection at both publish renames, backup cleanup, and process restart.
 - Concurrent `materialise` calls for one output.
-- Render mutation after approval and QA receipt mismatch.
 - Cloudflare timeout, response loss, and remote-success/local-failure cases.
 - The credential-gated MapTiler browser smoke remains manual. On the 2026-08-10
   Ubuntu hosted runner it reached the keyed temporary page but timed out waiting

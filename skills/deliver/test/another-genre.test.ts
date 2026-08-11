@@ -37,8 +37,23 @@ import {
   PRODUCIBLE_GENRES,
 } from "../scripts/another-genre.mjs";
 import { recordSubjectAnswer } from "../scripts/other-subjects.mjs";
-import { materialise, exportDirFor } from "../scripts/deliver.mjs";
+import {
+  materialise as materialiseWithReview,
+  exportDirFor,
+} from "../scripts/deliver.mjs";
 import { GENRE_CATALOG } from "../../storyboard/scripts/genre-catalog.mjs";
+import {
+  approveCurrentOutput,
+  TEST_FINDING_IDS,
+  TEST_PLAN_VERSION,
+} from "./output-review-fixture";
+
+const materialise = (options: Record<string, unknown>) =>
+  materialiseWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
 
 const OPEN = {
   map: {
@@ -285,7 +300,7 @@ beforeEach(async () => {
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), "png-bytes");
   await writeFile(join(beatDir, "renders", "still.svg"), "<svg/>");
-  await writeFile(join(beatDir, "APPROVED.md"), "seen, approved");
+  await approveCurrentOutput(beatDir);
 });
 afterEach(async () => {
   await rm(join(storyDir, ".."), { recursive: true, force: true });

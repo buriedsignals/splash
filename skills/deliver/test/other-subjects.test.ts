@@ -50,7 +50,22 @@ import {
   deliveryClosed,
   recordGenreAnswer,
 } from "../scripts/another-genre.mjs";
-import { materialise, exportDirFor } from "../scripts/deliver.mjs";
+import {
+  materialise as materialiseWithReview,
+  exportDirFor,
+} from "../scripts/deliver.mjs";
+import {
+  approveCurrentOutput,
+  TEST_FINDING_IDS,
+  TEST_PLAN_VERSION,
+} from "./output-review-fixture";
+
+const materialise = (options: Record<string, unknown>) =>
+  materialiseWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
 
 const SURVEYED = [
   {
@@ -107,7 +122,7 @@ async function makeBeat(name: string) {
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), `png-${name}`);
   await writeFile(join(beatDir, "renders", "still.svg"), `<svg id='${name}'/>`);
-  await writeFile(join(beatDir, "APPROVED.md"), "vu en grand, validé");
+  await approveCurrentOutput(beatDir);
   return beatDir;
 }
 

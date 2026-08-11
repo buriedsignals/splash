@@ -5,7 +5,6 @@
 // is always on the {form, genre} pair, never on the form id alone.
 
 import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
@@ -13,6 +12,7 @@ import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
 import { GENRE_OFFER_RECEIPT, PENDING } from "./another-genre.mjs";
 import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
+import { requireApprovedOutput } from "./output-review.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -139,31 +139,30 @@ export const FORMS_BY_GENRE = {
  * there instead. "cms-insertion" needs no credential (nothing it does calls a network — see
  * `references/cms-insertion.md`), so it is never filtered by `env`.
  */
-export function offerForms({ medium, genre, beatDir, env = process.env }) {
+export function offerForms({
+  medium,
+  genre,
+  beatDir,
+  planVersion,
+  findingIds,
+  env = process.env,
+}) {
   const forms = FORMS_BY_GENRE[genre];
   if (!forms) {
     const known = Object.keys(FORMS_BY_GENRE).join(", ");
     throw new Error(`this skill delivers ${known} only, got ${JSON.stringify(genre)}`);
   }
 
-  // G3 BEFORE G4, mechanically. `beatDir` is required and its `APPROVED.md` must exist, because
-  // delivery cannot honestly be discussed before the journalist has seen the thing being
-  // delivered. The run talked about delivery twice before it could: once before production began,
-  // and once INSIDE the Gate-3 approval question ("hosted embed = closed") — and both were WRONG,
-  // and had to be retracted once this function was finally called. That is the point: the forms
-  // are this function's output and are not knowable without it, so calling it early has to fail
-  // loudly rather than let a guess stand in.
-  //
-  // `existsSync` keeps this function synchronous, which is what lets it stay cheap to call on
-  // every turn (see the `env` note above).
+  // G3 BEFORE G4, mechanically. A bare approval marker cannot identify what the journalist saw.
+  // The versioned review is checked against this output ID, the current render bytes, the caller's
+  // current plan version and finding IDs, and a passing QA run. The check stays synchronous so this
+  // menu remains cheap to call on every turn (see the `env` note above).
   if (!beatDir) {
-    throw new Error("offerForms needs the beat directory — its APPROVED.md is what proves Gate 3 closed");
-  }
-  if (!existsSync(join(beatDir, "APPROVED.md"))) {
     throw new Error(
-      `this beat has not been approved yet — show it first: no APPROVED.md in ${beatDir}. Delivery forms cannot be discussed before the journalist has seen the render.`,
+      "offerForms needs the beat directory — its bound output review is what proves Gate 3 closed",
     );
   }
+  requireApprovedOutput({ beatDir, planVersion, findingIds });
 
   const hasCloudflare = Boolean(resolveCloudflareCredentials(env));
   return Object.keys(forms)
@@ -757,19 +756,14 @@ async function publishStagedDelivery(stagingDir, exportDir) {
  * and verifies that exact destination before any existing export is read or changed.
  */
 export async function materialise(options) {
-  const { form, genre, beatDir, exportDir, handover } = options;
+  const { form, genre, beatDir, exportDir, handover, planVersion, findingIds } = options;
   const forms = FORMS_BY_GENRE[genre];
   if (!forms || !forms[form]) {
     throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
   }
 
   const paths = await deliveryPaths(beatDir, exportDir);
-  const approval = await optionalStat(join(beatDir, "APPROVED.md"));
-  if (!approval?.isFile()) {
-    throw new Error(
-      `this beat has not been approved yet — show it first: no APPROVED.md in ${beatDir}. Delivery cannot begin before the journalist has seen the render.`,
-    );
-  }
+  const approval = requireApprovedOutput({ beatDir, planVersion, findingIds });
   validateHandover(handover, genre);
   await refuseToWipeAnotherBeat(paths.exportDir, beatDir);
 
@@ -787,6 +781,10 @@ export async function materialise(options) {
 
   try {
     const stagedWritten = await materialiseInto({ ...options, exportDir: stagingDir });
+    const currentApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+    if (currentApproval.id !== approval.id) {
+      throw new Error("OutputReview changed while this delivery was being built");
+    }
     await publishStagedDelivery(stagingDir, paths.exportDir);
     return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
   } catch (error) {

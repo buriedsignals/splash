@@ -16,7 +16,7 @@
  *
  *   1. Every refusal in the delivery path, TRIGGERED FOR REAL (not read off the source), names no
  *      alternative delivery route.
- *   2. Every `throw new Error(...)` in the delivery path's four scripts, read statically, likewise —
+ *   2. Every `throw new Error(...)` in the delivery path's scripts, read statically, likewise —
  *      so a refusal no fixture happens to reach is still covered. Anti-vacuity: the scan must find
  *      at least as many throws as the path is known to carry, or a broken extractor would pass by
  *      finding nothing.
@@ -26,7 +26,7 @@
  * WHAT IS DELIBERATELY NOT AN OFFENCE, because the distinction is the whole subtlety here:
  *
  *   - naming the CONDITION the gate is waiting on — *"this beat has not been approved yet — show it
- *     first"*. That is the gate's own requirement, restated. It closes the gate; it does not go
+ *     first" or *"no OUTPUT-REVIEW.json"*. That is the gate's own requirement, restated. It does not go
  *     round it.
  *   - naming the CORRECT api — *"each beat delivers into its own export/<beat>/ directory (see
  *     exportDirFor)"*. That is where the delivery belongs, not a second way to get the same delivery
@@ -46,14 +46,33 @@ import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  offerForms,
-  materialise,
+  offerForms as offerFormsWithReview,
+  materialise as materialiseWithReview,
   ownedFileForInsertion,
   exportDirFor,
 } from "../scripts/deliver.mjs";
+import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
 import { formatHandover } from "../scripts/format-handover.mjs";
 import { buildInsertion } from "../scripts/cms-insert.mjs";
 import { deployFile } from "../scripts/deploy-embed.mjs";
+import {
+  approveCurrentOutput,
+  TEST_FINDING_IDS,
+  TEST_PLAN_VERSION,
+} from "./output-review-fixture";
+
+const offerForms = (options: Record<string, unknown>) =>
+  offerFormsWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
+const materialise = (options: Record<string, unknown>) =>
+  materialiseWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
 
 /**
  * "This refusal stands, and here is another way to get it delivered anyway."
@@ -98,8 +117,7 @@ describe("the detector can see the defect it was written for", () => {
   it("should not catch a refusal that only restates its own condition", () => {
     expect(
       detourIn(
-        "this beat has not been approved yet — show it first: no APPROVED.md in beats/1-rainfall. " +
-          "Delivery forms cannot be discussed before the journalist has seen the render.",
+        "this output has no bound review: no OUTPUT-REVIEW.json in beats/1-rainfall",
       ),
     ).toBeNull();
     expect(
@@ -129,7 +147,7 @@ beforeEach(async () => {
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), "png-bytes");
   await writeFile(join(beatDir, "renders", "still.svg"), "<svg/>");
-  await writeFile(join(beatDir, "APPROVED.md"), "seen, approved");
+  await approveCurrentOutput(beatDir);
 });
 afterEach(async () => {
   await rm(tempRoot, { recursive: true, force: true });
@@ -160,11 +178,11 @@ describe("every refusal in the delivery path, triggered for real", () => {
     );
     messages.push(
       await refusalFrom(async () => {
-        await rm(join(beatDir, "APPROVED.md"));
+        await rm(join(beatDir, OUTPUT_REVIEW_FILE));
         return offerForms({ medium: "chart", genre: "static", beatDir });
       }),
     );
-    await writeFile(join(beatDir, "APPROVED.md"), "seen, approved");
+    await approveCurrentOutput(beatDir);
 
     // materialise — the pair check, the missing hand-over, the missing Cloudflare credential, the
     // two-beats-one-directory receipt, and the two ambiguity guards.
@@ -343,6 +361,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
  */
 const SCRIPTS = [
   "deliver.mjs",
+  "output-review.mjs",
   "format-handover.mjs",
   // The two refusals that decide what language the delivery is written in are on the delivery path
   // like every other one here, so they are read by the same scan.

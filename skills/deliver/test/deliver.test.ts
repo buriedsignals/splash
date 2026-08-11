@@ -11,13 +11,19 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  offerForms,
-  materialise,
+  offerForms as offerFormsWithReview,
+  materialise as materialiseWithReview,
   ownedFileForInsertion,
   exportDirFor,
   substituteKeys,
   mapKeyState,
 } from "../scripts/deliver.mjs";
+import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
+import {
+  approveCurrentOutput,
+  TEST_FINDING_IDS,
+  TEST_PLAN_VERSION,
+} from "./output-review-fixture";
 
 // A hand-over payload, module-scope, because EVERY delivery needs one: G4 closes into
 // `export/<beat>/HANDOVER.md` the way every other gate closes into a file. `materialise` used to
@@ -36,6 +42,24 @@ const handover = {
   caveat: "four winters is a short window",
 };
 
+const offerForms = (options: Record<string, unknown>) =>
+  offerFormsWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
+
+// These cases exercise delivery behavior after review. Refresh their fixture record after any
+// render setup; the review-gate cases below call the unwrapped public functions directly.
+const materialise = async (options: Record<string, any>) => {
+  if (options.beatDir) await approveCurrentOutput(options.beatDir);
+  return materialiseWithReview({
+    ...options,
+    planVersion: TEST_PLAN_VERSION,
+    findingIds: TEST_FINDING_IDS,
+  });
+};
+
 let tempRoot: string, storyDir: string, beatDir: string, exportDir: string;
 beforeEach(async () => {
   tempRoot = await mkdtemp(join(tmpdir(), "beat-"));
@@ -51,9 +75,8 @@ beforeEach(async () => {
     "export const Rainfall = () => null;",
   );
   await writeFile(join(beatDir, "data.json"), "[]");
-  // G3 has closed for this fixture: the journalist was shown the render and approved it.
-  // `offerForms` refuses to name a single delivery form before that file exists.
-  await writeFile(join(beatDir, "APPROVED.md"), "seen at full size, approved");
+  // G3 has closed for this fixture: review and passing QA are bound to this exact render.
+  await approveCurrentOutput(beatDir);
 });
 afterEach(async () => {
   await rm(tempRoot, { recursive: true, force: true });
@@ -66,23 +89,36 @@ describe("offerForms — Gate 3 before Gate 4", () => {
   // were wrong and had to be retracted the moment this function was finally called. The forms are
   // this function's output; they are not knowable without it. So calling it early fails loudly.
   it("should refuse to name a single form before the beat has been approved", async () => {
-    await rm(join(beatDir, "APPROVED.md"));
+    await rm(join(beatDir, OUTPUT_REVIEW_FILE));
     expect(() =>
       offerForms({ beatDir, medium: "chart", genre: "static" }),
-    ).toThrow(/has not been approved yet/);
+    ).toThrow(/no bound review/);
   });
 
   it("should say what it looked for, so the refusal is actionable", async () => {
-    await rm(join(beatDir, "APPROVED.md"));
+    await rm(join(beatDir, OUTPUT_REVIEW_FILE));
     expect(() =>
       offerForms({ beatDir, medium: "chart", genre: "static" }),
-    ).toThrow(/APPROVED\.md/);
+    ).toThrow(/OUTPUT-REVIEW\.json/);
   });
 
   it("should refuse a call that names no beat directory at all", () => {
     expect(() => offerForms({ medium: "chart", genre: "static" })).toThrow(
       /needs the beat directory/,
     );
+  });
+
+  it("should require the caller's current plan binding", () => {
+    expect(() =>
+      offerFormsWithReview({ beatDir, medium: "chart", genre: "static" }),
+    ).toThrow(/current planVersion/);
+  });
+
+  it("should refuse a render changed after review", async () => {
+    await writeFile(join(beatDir, "renders", "still.png"), "changed-png");
+    expect(() =>
+      offerForms({ beatDir, medium: "chart", genre: "static" }),
+    ).toThrow(/rendered draft changed/);
   });
 });
 
@@ -233,21 +269,42 @@ describe("offerForms", () => {
 describe("materialise", () => {
   it("should enforce approval when materialise is called directly and preserve the last export", async () => {
     await writeFile(join(exportDir, "previous.txt"), "last-good");
-    await rm(join(beatDir, "APPROVED.md"));
+    await rm(join(beatDir, OUTPUT_REVIEW_FILE));
 
     await expect(
-      materialise({
+      materialiseWithReview({
         form: "owned-file",
         genre: "static",
         beatDir,
         exportDir,
         handover,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
       }),
-    ).rejects.toThrow(/APPROVED\.md/);
+    ).rejects.toThrow(/OUTPUT-REVIEW\.json/);
 
     expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
       "last-good",
     );
+  });
+
+  it("should reject a stale render when called directly and preserve the last export", async () => {
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+    await writeFile(join(beatDir, "renders", "still.png"), "changed-png");
+
+    await expect(
+      materialiseWithReview({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).rejects.toThrow(/rendered draft changed/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
   });
 
   it("should reject an export directory outside the story without touching it", async () => {
