@@ -159,14 +159,12 @@ residue.
 | Test | `test/seed-tracks.test.ts` | The four tracks: `safeBand` checked against real box aspect ratios, the reclaimed band and the strip the x-axis labels actually need, `MapFrame`/`ChartFrame` SSR, the data layer, and every figure the rendered beat says out loud recomputed from the frozen CSV |
 | Test | `test/canon.test.ts` | The canon's shape: `REPLACE ME` wording, the frozen files are real, the seed renders standalone into an empty directory, the seed still carries a map and a chart track, no registry/dispatcher, preview current |
 
-**Why the title and source live in the HTML `<header>`, in their own grid row.** The header is the
-ONE piece of furniture that never sits over the graphic, and — since the seventh correction — the
-one that never moves either: it is row 1 of `.scrolly`'s grid, OUTSIDE the element that scrolls, so
-the beat's argument stays on screen for the whole read instead of sliding away on the reader's first
-gesture. It is stated in full, unconditional, before any step's reveal and for the whole of it.
+**Why the title and source occupy separate grid rows.** The title stays in the HTML `<header>` above
+the visual; the source follows the track in DOM and layout order, at the visual's floor. Both remain
+outside the element that scrolls, so they are unconditional page furniture rather than step content.
 
 **Why every frame is `aria-hidden`, and why that wrapper lives in `renderScrolly`.** The argument is
-carried by the unconditional header and every step's own prose, never exclusively by the graphic.
+carried by the unconditional title, source and every step's own prose, never exclusively by the graphic.
 Exposing only whichever ONE frame happens to be active at a scroll position a screen reader user has
 no way to navigate to would be a worse reading than not exposing the graphic at all. The wrapper
 lives in the generic scaffold, not the frame, because an `<img>`, an `<svg>` and a `<div>` need

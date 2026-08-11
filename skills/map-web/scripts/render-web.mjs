@@ -90,7 +90,9 @@ const SEED = {
 // that would leave gutters beside a full-bleed beat — see references/map-web-discipline.md, "Full
 // width, genuinely", for the exact numbers this trades off.
 const PLATE_SIZE = 1000;
-const DEFAULT_PLATE_DIR = `/tmp/map-twin-web/plate-${PLATE_SIZE}`;
+// The seed's own frozen plate keeps preview, interaction and installation checks offline. Story
+// beats pass their own plate directory and still bake through `bake-plate.mjs` when it is absent.
+const DEFAULT_PLATE_DIR = join(HERE, "..", "assets", "sample-data", "plate");
 const DEFAULT_DATA_PATH = join(HERE, "../assets/sample-data/regions.json");
 // The seed's own rendered beat lands in this skill's `output-proof/`, beside the preview it already
 // ships, and is COMMITTED — carrying the placeholder, never a key (R1b).

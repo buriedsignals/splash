@@ -7,7 +7,6 @@
 // This script is the one place per render that calls `deriveFurniture`, then threads the results in
 // as props, once.
 
-import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -36,8 +35,10 @@ import {
 } from "../assets/geo.ts";
 
 const HERE = import.meta.dirname;
-const TWIN_ROOT = resolve(HERE, "../..");
-const PLATE_DIR = `/tmp/map-twin/plate-900`;
+// The seed preview is an offline fixture. A real beat still runs `bake-plate.mjs` with the
+// newsroom's MapTiler capability, but checking or installing the skill must never spend a tile
+// request or require a secret merely because `/tmp` is cold.
+const PLATE_DIR = join(HERE, "..", "assets", "sample-data", "plate");
 
 // If --out <dir> is passed, write to that directory; otherwise write to assets/preview.png
 const outDirArg = process.argv.indexOf("--out");
@@ -48,24 +49,14 @@ if (!outDir.startsWith("/")) {
 }
 const TARGET = join(outDir, "preview.png");
 
-// Ensure the plate is baked. If not, run bake-plate.mjs.
+// The frozen sample plate is part of the seed's sample data, just like regions.json.
 async function ensurePlate() {
   if (existsSync(join(PLATE_DIR, "geometry.json")) && existsSync(join(PLATE_DIR, "plate.png"))) {
-    console.log(`plate exists at ${PLATE_DIR}`);
     return;
   }
-
-  console.log(`plate not found at ${PLATE_DIR}, baking...`);
-  await mkdir(PLATE_DIR, { recursive: true });
-
-  const result = spawnSync("bun", [join(HERE, "bake-plate.mjs"), "--size", "900", "--out", PLATE_DIR], {
-    cwd: TWIN_ROOT,
-    stdio: "inherit",
-  });
-
-  if (result.status !== 0) {
-    throw new Error(`bake-plate.mjs exited with ${result.status}`);
-  }
+  throw new Error(
+    `the committed sample plate is incomplete at ${PLATE_DIR}; restore geometry.json and plate.png`,
+  );
 }
 
 // Read the baked plate

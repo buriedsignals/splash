@@ -666,11 +666,16 @@ function walkFiles(dir: string): string[] {
   return out;
 }
 
-/** The nearest ancestor directory (up to proof/) that holds a beat script. */
+/** A production render or an explicitly named measurement probe that writes its own artifacts. */
+function isArtifactScript(name: string): boolean {
+  return BEAT_SCRIPTS.has(name) || /-probe\.mjs$/.test(name);
+}
+
+/** The nearest ancestor directory (up to proof/) that holds the artifact's own script. */
 function owningBeatDir(artifact: string): string | null {
   let dir = artifact.slice(0, artifact.lastIndexOf("/"));
   while (dir.startsWith(PROOF_ROOT)) {
-    if (readdirSync(dir).some((f) => BEAT_SCRIPTS.has(f))) return dir;
+    if (readdirSync(dir).some(isArtifactScript)) return dir;
     if (dir === PROOF_ROOT) return null;
     dir = dir.slice(0, dir.lastIndexOf("/"));
   }

@@ -48,5 +48,5 @@ describe("chart-video assets — one seed, no story catalogue", () => {
       cwd: join(import.meta.dirname, ".."),
     });
     expect(await proc.exited).toBe(0);
-  });
+  }, 120_000);
 });

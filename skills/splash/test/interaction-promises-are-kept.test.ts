@@ -909,6 +909,10 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     measurable: false,
     probed: 0,
   },
+  "proof/scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html": {
+    measurable: false,
+    probed: 0,
+  },
   "proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html":
     { measurable: false, probed: 0 },
 };

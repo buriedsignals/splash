@@ -533,10 +533,13 @@ describe("renderScrolly — the full self-contained page", () => {
     const hiddenFrames = html.match(/aria-hidden="true"/g) ?? [];
     expect(hiddenFrames.length).toBe(steps.length);
 
-    // The title/source live in the HTML header, unconditional and ahead of every step's own
-    // reveal — see assets/ScrollySeed.tsx's own doc-comment on why this genre keeps them there.
+    // The title and source are unconditional page furniture. The source follows the visual rather
+    // than hanging from the headline, so the credit is at the visual's floor in DOM and layout.
     expect(html).toContain("<h2>A generic two-step scrolly</h2>");
     expect(html).toContain("Test fixture");
+    expect(html.indexOf('<p class="source">')).toBeGreaterThan(
+      html.indexOf('<div class="scrolly-track">'),
+    );
 
     // The interaction script is inlined, not fetched — and it is the scroll-driven one. An
     // IntersectionObserver in this file would be the delta-set rule coming back; see

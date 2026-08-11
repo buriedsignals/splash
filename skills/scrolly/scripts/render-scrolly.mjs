@@ -136,7 +136,6 @@ ${buildCss({ ground, ...furniture, proseLane })}
 <article class="scrolly" data-prose-lane="${Math.round(proseLane * 100)}">
   <header class="scrolly-header">
     <h2>${escapeHtml(title)}</h2>
-    <p class="source">${escapeHtml(source)}</p>
   </header>
   <div class="scrolly-track">
     <div class="scrolly-graphic">
@@ -148,6 +147,7 @@ ${frameHtml}
 ${stepsHtml}
     </div>
   </div>
+  <p class="source">${escapeHtml(source)}</p>
 </article>
 <script>
 ${inlineScript}
@@ -235,14 +235,14 @@ body {
    references/scrolly-discipline.md, "The graphic fills the width it is given."
 
    The HEIGHT rule is the SEVENTH correction, and it is a change of model rather than of a number.
-   \`.scrolly\` is a two-row grid exactly one frame tall: the header takes what it needs, and the
-   track takes everything left (\`minmax(0, 1fr)\` — never \`1fr\` alone, whose \`auto\` minimum
+   \`.scrolly\` is a three-row grid exactly one frame tall: the header and bottom credit take what
+   they need, and the track takes everything left (\`minmax(0, 1fr)\` — never \`1fr\` alone, whose \`auto\` minimum
    would let a tall track push the component past the frame and put the document back in the
    scrolling business). Nothing in this grid ever moves. */
 .scrolly {
   height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
 }
 
@@ -267,10 +267,17 @@ body {
    the gap now belongs to the header's own padding, because a margin between two grid rows would
    show the page's ground where the frame should start. */
 .scrolly-header {
-  padding: 4px clamp(16px, 6vw, 56px) 14px;
+  padding: 4px clamp(16px, 6vw, 56px) 10px;
 }
-.scrolly-header h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; }
-.scrolly-header .source { margin: 0; font-size: 13px; color: var(--muted); }
+.scrolly-header h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+/* The source follows the visual in DOM and layout order. It is page furniture, not part of the
+   headline, and placing it here keeps the credit at the visual's floor at every viewport. */
+.scrolly > .source {
+  margin: 0;
+  padding: 8px clamp(16px, 6vw, 56px) 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
 
 /* THE GRAPHIC FILLS THE FRAME, AND THE CARD TRAVELS OVER IT. The graphic is a layer of a track that
    never moves — it does not stick, it does not catch up and it does not unpin. That is the SEVENTH

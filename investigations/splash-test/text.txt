@@ -1,11 +1,30 @@
-Europe's heat-pump divide is narrowing, but the Nordics still lead
+SYNTHETIC INTERVIEW TRANSCRIPT — SPLASH PIPELINE TEST
+Recorded: 2026-07-15
+Participants: Reporter; Dr Mira Vale (fictional energy-policy researcher)
 
-Heat pumps spread rapidly across ten European countries between 2021 and 2025, according to a synthetic dataset prepared for testing the Splash visual-production workflow. The average share of households with a heat pump rose from 20.5% to 29.8% over the period.
+REPORTER: What is the most important thing a reader should take from the table?
 
-The Netherlands made the largest gain, climbing 18 percentage points from 8% of households in 2021 to 26% in 2025. Poland rose by 12 points and France by 11. Every country in the sample recorded an increase.
+VALE: Two things are true at once. Adoption rises in every country in the
+sample, but the 2025 endpoints are still far apart. Showing only the leaders
+would hide the movement elsewhere. Showing only growth would hide the gap.
 
-Despite that convergence, the geographic divide remains stark. Norway and Sweden ended 2025 at 64% and 62% respectively, while the United Kingdom remained at 9% and Spain at 12%. Finland, at 53%, was the only other country above half of households.
+REPORTER: Is the Netherlands the main story?
 
-The figures suggest two complementary visual stories: a time-based view of adoption accelerating across the sample, and a 2025 map showing how far the rest of Europe still trails the Nordic leaders.
+VALE: It is the clearest example of movement because its increase is the
+largest in this test dataset. It should not be framed as proof of why adoption
+changed. We do not have policy or price evidence here.
 
-Methodology and source: Splash Test Desk synthetic dataset, created in July 2026 for product testing. Values are fictional and must not be presented as real-world statistics. The accompanying data.csv is the complete source table.
+REPORTER: Should this be a map?
+
+VALE: Geography is relevant to the language of a Nordic divide, but location
+is not automatically the strongest way to compare change over time. The form
+should follow the editorial point.
+
+REPORTER: What caveat belongs with the visual?
+
+VALE: This is a ten-country fictional sample. It cannot stand for all of Europe
+and it cannot support a forecast.
+
+END TRANSCRIPT
+
+All names, statements, and circumstances above are fictional test material.

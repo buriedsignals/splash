@@ -211,8 +211,8 @@ async function render() {
 
   // Short on purpose: it sits at the bottom of the DRAWING, above the prose lane, and at 375px a
   // credit that wraps to a third line reaches down into the panel. The full provenance — which
-  // sources Our World in Data combines, and who chose the colours — is in the header, which under
-  // the fixed-page model never scrolls away.
+  // sources Our World in Data combines, and who chose the colours — is in the page's bottom source
+  // row, which under the fixed-page model never scrolls away.
   const shortCredit =
     `Life expectancy at birth, ${facts.entity} ${facts.firstYear}–${facts.lastYear} · Our World in Data`;
 

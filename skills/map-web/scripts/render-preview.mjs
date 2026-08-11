@@ -11,8 +11,8 @@
 // `references/map-web-discipline.md`'s own "Verification" section states for every claim about this
 // genre's responsiveness.
 //
-// Bakes the plate automatically if it is not already at `DEFAULT_PLATE_DIR` — the first run costs
-// the bake (headless Chrome + a MapTiler capture); every run after that is instant.
+// Uses the seed's committed frozen sample plate at `DEFAULT_PLATE_DIR`, so preview checks are
+// deterministic and do not require a MapTiler key. Real story beats still bake their own plates.
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";

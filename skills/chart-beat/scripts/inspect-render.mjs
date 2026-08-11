@@ -331,9 +331,21 @@ function measureNode(svg, nodes, index, ground) {
     .map((p) => ({ ratio: contrast(toHex(p.fg), toHex(p.bg)), fg: p.fg, x: p.x, y: p.y }))
     .sort((a, b) => a.ratio - b.ratio);
   const worst = worstCredible(byRatio, full.width);
+  // `worst` identifies the local BACKGROUND on which this run reads least well. Its pixel can
+  // still be an anti-aliased edge, so it is not a stable identity for the run's paint. Report the
+  // most fully covered pixel as `fill`, while retaining the pessimistic local ratio for the
+  // verdict. This keeps a tiny #AAAAAA tspan identifiable as #AAAAAA across rasteriser versions
+  // without allowing its smoother edge to improve the contrast result.
+  const painted = core.reduce((best, pixel) => {
+    const delta = Math.max(...pixel.fg.map((channel, i) => Math.abs(channel - pixel.bg[i])));
+    const bestDelta = Math.max(
+      ...best.fg.map((channel, i) => Math.abs(channel - best.bg[i])),
+    );
+    return delta > bestDelta ? pixel : best;
+  });
 
   return {
-    fill: toHex(worst.fg),
+    fill: toHex(painted.fg),
     ratio: Number(worst.ratio.toFixed(2)),
     pass: worst.ratio >= CONTRAST_FLOOR,
     unresolved: false,

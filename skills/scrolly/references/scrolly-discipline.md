@@ -910,7 +910,7 @@ means here and how it was measured).
 
 ## What survives with JavaScript disabled
 
-**Everything survives except which step's own frame is on screen.** The header (title, source),
+**Everything survives except which step's own frame is on screen.** The header title, bottom source,
 every step's own frame markup, and every step's own prose paragraphs are plain SSR'd HTML — nothing
 about the beat's argument depends on the script executing. What CSS alone does, with no script at
 all: the first step is wrapped `active` in the markup at build time by `renderScrolly` itself, and

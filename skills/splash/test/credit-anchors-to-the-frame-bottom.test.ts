@@ -318,12 +318,11 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
  *     placement B1.1 reverses, and it is how the scrolly seed still draws it;
  *   - the credit comes after the visual it credits — after the last `</svg>` on the page.
  *
- * THE RESIDUE IS RECORDED, NOT SKIPPED. Eleven delivered pages fail one of those two today, and
- * both populations are one un-migrated SEED apiece — W2 §3.4.5 (`MapWebSeed`/`render-web.mjs`, the
- * credit under the title) and §3.4.6 (`render-scrolly.mjs:140`, the credit inside
- * `<header class="scrolly-header">`). Neither is this chantier's file. Listing them here rather
- * than narrowing the population means: a TWELFTH page cannot join them quietly, and the day either
- * seed is migrated this turns red and asks for its rows to be struck.
+ * THE RESIDUE IS RECORDED, NOT SKIPPED. Five delivered map-web pages still inherit the one
+ * un-migrated seed (`MapWebSeed`/`render-web.mjs`, W2 §3.4.5). The scrolly seed has been migrated:
+ * its source now follows the track. Listing the remaining pages here rather than narrowing the
+ * population means a sixth page cannot join them quietly, and the day the seed is migrated this
+ * turns red and asks for its rows to be struck.
  *
  * THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, never in this one. Baseline
  * in the copy: 116 pass, 0 fail.
@@ -350,20 +349,6 @@ const CREDIT_NOT_AT_THE_BOTTOM: Record<string, string> = {
   "proof/mapgen-hexgrid-web/hex-grid.html": "map-web seed, §3.4.5",
   "proof/mapgen-locator-web/locator.html": "map-web seed, §3.4.5",
   "proof/mapgen-symbol-web/quake-symbol.html": "map-web seed, §3.4.5",
-  // W2 §3.4.6 — the scrolly seed draws `<p class="source">` inside `<header class="scrolly-header">`.
-  // Six delivered pages inherit it.
-  "proof/mapmore-scrolly-danube/render/danube-scrolly.html":
-    "scrolly seed, §3.4.6",
-  "proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html":
-    "scrolly seed, §3.4.6",
-  "proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html":
-    "scrolly seed, §3.4.6",
-  "proof/scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html":
-    "scrolly seed, §3.4.6",
-  "proof/scrolly-image-grinnell-glacier/render/grinnell-glacier.html":
-    "scrolly seed, §3.4.6",
-  "proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html":
-    "scrolly seed, §3.4.6",
 };
 
 /** A credit node: a block element whose class list carries a credit token. The class LIST is

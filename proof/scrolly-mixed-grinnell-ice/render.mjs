@@ -494,10 +494,9 @@ async function render() {
         : createElement("div"),
   }));
 
-  // Short on purpose. Under the fixed-page model the header never scrolls away, so every word in it
-  // costs graphic height at EVERY scroll position — measured at 375x812, where the first draft's
-  // title wrapped to four lines and its source to eleven, and the two together took 330px of 812
-  // before the picture started.
+  // Short on purpose. Under the fixed-page model the title and bottom source never scroll away, so
+  // every line of page furniture costs graphic height at EVERY scroll position — measured at
+  // 375x812, where the first draft consumed 330px before the picture had room to start.
   const title =
     `${facts.glacierName}: ${facts.sequence.frames} photographs, one map, ` +
     `${facts.balanceTo - facts.balanceFrom + 1} years of measurement`;
