@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "splash-doctrine-twin",
+      "name": "splash",
       "devDependencies": {
         "@remotion/cli": "4.0.507",
         "@resvg/resvg-js": "^2.6.2",

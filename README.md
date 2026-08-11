@@ -5,9 +5,8 @@ data into web, video, print, and static visual outputs while keeping source file
 editorial decisions, rendered drafts, approvals, and delivery artifacts in a
 journalist-owned working directory.
 
-This repository is the `rd-dev` doctrine-twin lineage. It remains separate from
-`main` while the two products are evaluated; changes based on this lineage should
-not be merged as though the histories shared an ancestor.
+This repository is the consolidated Splash development line. The former
+doctrine-twin implementation is now the product baseline on `main`.
 
 ## Overview
 

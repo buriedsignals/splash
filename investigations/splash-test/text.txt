@@ -1,0 +1,11 @@
+Europe's heat-pump divide is narrowing, but the Nordics still lead
+
+Heat pumps spread rapidly across ten European countries between 2021 and 2025, according to a synthetic dataset prepared for testing the Splash visual-production workflow. The average share of households with a heat pump rose from 20.5% to 29.8% over the period.
+
+The Netherlands made the largest gain, climbing 18 percentage points from 8% of households in 2021 to 26% in 2025. Poland rose by 12 points and France by 11. Every country in the sample recorded an increase.
+
+Despite that convergence, the geographic divide remains stark. Norway and Sweden ended 2025 at 64% and 62% respectively, while the United Kingdom remained at 9% and Spain at 12%. Finland, at 53%, was the only other country above half of households.
+
+The figures suggest two complementary visual stories: a time-based view of adoption accelerating across the sample, and a 2025 map showing how far the rest of Europe still trails the Nordic leaders.
+
+Methodology and source: Splash Test Desk synthetic dataset, created in July 2026 for product testing. Values are fictional and must not be presented as real-world statistics. The accompanying data.csv is the complete source table.

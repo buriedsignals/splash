@@ -1,5 +1,5 @@
 {
-  "name": "splash-doctrine-twin",
+  "name": "splash",
   "private": true,
   "type": "module",
   "imports": {

@@ -1,0 +1,51 @@
+country,iso3,year,households_with_heat_pump_pct
+Sweden,SWE,2021,55
+Sweden,SWE,2022,56
+Sweden,SWE,2023,58
+Sweden,SWE,2024,60
+Sweden,SWE,2025,62
+Finland,FIN,2021,42
+Finland,FIN,2022,44
+Finland,FIN,2023,47
+Finland,FIN,2024,50
+Finland,FIN,2025,53
+Norway,NOR,2021,60
+Norway,NOR,2022,61
+Norway,NOR,2023,62
+Norway,NOR,2024,63
+Norway,NOR,2025,64
+France,FRA,2021,12
+France,FRA,2022,14
+France,FRA,2023,17
+France,FRA,2024,20
+France,FRA,2025,23
+Germany,DEU,2021,7
+Germany,DEU,2022,9
+Germany,DEU,2023,11
+Germany,DEU,2024,13
+Germany,DEU,2025,16
+Italy,ITA,2021,9
+Italy,ITA,2022,10
+Italy,ITA,2023,12
+Italy,ITA,2024,14
+Italy,ITA,2025,16
+Spain,ESP,2021,4
+Spain,ESP,2022,5
+Spain,ESP,2023,7
+Spain,ESP,2024,9
+Spain,ESP,2025,12
+Poland,POL,2021,5
+Poland,POL,2022,7
+Poland,POL,2023,10
+Poland,POL,2024,13
+Poland,POL,2025,17
+Netherlands,NLD,2021,8
+Netherlands,NLD,2022,11
+Netherlands,NLD,2023,15
+Netherlands,NLD,2024,20
+Netherlands,NLD,2025,26
+United Kingdom,GBR,2021,3
+United Kingdom,GBR,2022,4
+United Kingdom,GBR,2023,5
+United Kingdom,GBR,2024,7
+United Kingdom,GBR,2025,9
