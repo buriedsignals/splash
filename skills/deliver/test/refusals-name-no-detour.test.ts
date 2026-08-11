@@ -44,13 +44,15 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import {
-  offerForms as offerFormsWithReview,
-  materialise as materialiseWithReview,
   ownedFileForInsertion,
-  exportDirFor,
+  exportDirFor as canonicalExportDirFor,
 } from "../scripts/deliver.mjs";
+import {
+  offerFormsLegacyV1,
+  materialiseLegacyV1,
+} from "../scripts/delivery-compat-v1.mjs";
 import { OUTPUT_REVIEW_FILE, renderDigest } from "../scripts/output-review.mjs";
 import { formatHandover } from "../scripts/format-handover.mjs";
 import { buildInsertion } from "../scripts/cms-insert.mjs";
@@ -61,15 +63,25 @@ import {
   TEST_PLAN_VERSION,
 } from "./output-review-fixture";
 
-const offerForms = (options: Record<string, unknown>) =>
-  offerFormsWithReview({
+function exportDirFor(storyDir: string, outputId: string) {
+  return canonicalExportDirFor({
+    storiesRoot: dirname(storyDir),
+    storyId: basename(storyDir),
+    outputId,
+  });
+}
+
+const offerForms = (options: Record<string, any>) =>
+  offerFormsLegacyV1({
     ...options,
+    storiesRoot: options.beatDir ? dirname(dirname(dirname(options.beatDir))) : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
-const materialise = (options: Record<string, unknown>) =>
-  materialiseWithReview({
+const materialise = (options: Record<string, any>) =>
+  materialiseLegacyV1({
     ...options,
+    storiesRoot: options.beatDir ? dirname(dirname(dirname(options.beatDir))) : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
@@ -366,6 +378,8 @@ describe("every refusal in the delivery path, triggered for real", () => {
  */
 const SCRIPTS = [
   "deliver.mjs",
+  "delivery-identity.mjs",
+  "delivery-compat-v1.mjs",
   "output-review.mjs",
   "delivery-replacement.mjs",
   "hosted-deployment.mjs",

@@ -38,7 +38,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import {
   recordSurveyedSubjects,
   readSurveyedSubjects,
@@ -50,19 +50,26 @@ import {
   deliveryClosed,
   recordGenreAnswer,
 } from "../scripts/another-genre.mjs";
-import {
-  materialise as materialiseWithReview,
-  exportDirFor,
-} from "../scripts/deliver.mjs";
+import { exportDirFor as canonicalExportDirFor } from "../scripts/deliver.mjs";
+import { materialiseLegacyV1 } from "../scripts/delivery-compat-v1.mjs";
 import {
   approveCurrentOutput,
   TEST_FINDING_IDS,
   TEST_PLAN_VERSION,
 } from "./output-review-fixture";
 
-const materialise = (options: Record<string, unknown>) =>
-  materialiseWithReview({
+function exportDirFor(storyDir: string, outputId: string) {
+  return canonicalExportDirFor({
+    storiesRoot: dirname(storyDir),
+    storyId: basename(storyDir),
+    outputId,
+  });
+}
+
+const materialise = (options: Record<string, any>) =>
+  materialiseLegacyV1({
     ...options,
+    storiesRoot: dirname(dirname(dirname(options.beatDir))),
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });

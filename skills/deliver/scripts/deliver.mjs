@@ -4,9 +4,9 @@
 // id that happens to exist under one genre is not automatically valid for another; the check
 // is always on the {form, genre} pair, never on the form id alone.
 
-import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, join, relative } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
@@ -20,6 +20,7 @@ import {
   withDeliveryLock,
 } from "./delivery-replacement.mjs";
 import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
+import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -146,30 +147,34 @@ export const FORMS_BY_GENRE = {
  * there instead. "cms-insertion" needs no credential (nothing it does calls a network — see
  * `references/cms-insertion.md`), so it is never filtered by `env`.
  */
-export function offerForms({
-  medium,
-  genre,
-  beatDir,
-  planVersion,
-  findingIds,
-  env = process.env,
-}) {
+export function offerForms(options) {
+  const {
+    medium,
+    genre,
+    storiesRoot,
+    storyId,
+    outputId,
+    planVersion,
+    findingIds,
+    env = process.env,
+  } = options;
   const forms = FORMS_BY_GENRE[genre];
   if (!forms) {
     const known = Object.keys(FORMS_BY_GENRE).join(", ");
     throw new Error(`this skill delivers ${known} only, got ${JSON.stringify(genre)}`);
+  }
+  if (Object.hasOwn(options, "beatDir") || Object.hasOwn(options, "exportDir")) {
+    throw new Error(
+      "offerForms accepts storiesRoot, storyId, and outputId; legacy paths require delivery-compat-v1",
+    );
   }
 
   // G3 BEFORE G4, mechanically. A bare approval marker cannot identify what the journalist saw.
   // The versioned review is checked against this output ID, the current render bytes, the caller's
   // current plan version and finding IDs, and a passing QA run. The check stays synchronous so this
   // menu remains cheap to call on every turn (see the `env` note above).
-  if (!beatDir) {
-    throw new Error(
-      "offerForms needs the beat directory — its bound output review is what proves Gate 3 closed",
-    );
-  }
-  requireApprovedOutput({ beatDir, planVersion, findingIds });
+  const identity = resolveDeliveryIdentity({ storiesRoot, storyId, outputId });
+  requireApprovedOutput({ beatDir: identity.beatDir, planVersion, findingIds });
 
   const hasCloudflare = Boolean(resolveCloudflareCredentials(env));
   return Object.keys(forms)
@@ -398,23 +403,11 @@ export async function ownedFileForInsertion(beatDir, genre) {
 // story, and the second delivery reported success over an export directory that had just lost half
 // its contents.
 //
-// So the export directory is per beat, and this function is where that fact lives — a caller asking
-// "where does this beat deliver" gets an answer from code rather than from a convention nobody wrote
-// down. `whereIs` reads the same shape: `export/<beat>/` non-empty means that beat is delivered.
-export function exportDirFor(storyDir, beatName) {
-  if (!storyDir) throw new Error("exportDirFor needs the story directory");
-  if (!beatName) throw new Error("exportDirFor needs the beat's own directory name");
-  if (
-    typeof beatName !== "string" ||
-    beatName === "." ||
-    beatName === ".." ||
-    beatName.includes("/") ||
-    beatName.includes("\\") ||
-    beatName.includes("\0")
-  ) {
-    throw new Error(`beat name must be one path segment, got ${JSON.stringify(beatName)}`);
-  }
-  return join(storyDir, "export", beatName);
+// So the export directory is per output, and this function derives it from the declared trust root
+// and stable IDs. A caller never hands that answer back to `materialise`; the canonical API derives
+// it again. `whereIs` reads the same shape: `export/<output>/` non-empty means that output delivered.
+export function exportDirFor(identity) {
+  return deliveryDestinations(identity).exportDir;
 }
 
 async function optionalFile(path) {
@@ -426,91 +419,21 @@ async function optionalFile(path) {
   }
 }
 
-async function optionalStat(path) {
-  try {
-    return await lstat(path);
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-// `beatDir` is not merely a source path: its `stories/<slug>/beats/<beat>` shape is the authority
-// from which the only legal export directory is derived. A caller may repeat that answer in
-// `exportDir` for compatibility, but cannot choose another recursive-delete target.
-async function deliveryPaths(beatDir, exportDir) {
-  if (!beatDir) throw new Error("materialise needs the beat directory");
-  if (!exportDir) throw new Error("materialise needs the export directory");
-
-  const resolvedBeat = resolve(beatDir);
-  const beatsDir = dirname(resolvedBeat);
-  if (basename(beatsDir) !== "beats") {
-    throw new Error(
-      `beat directory must have the stories/<slug>/beats/<beat> shape, got ${beatDir}`,
-    );
-  }
-
-  const beatStat = await lstat(resolvedBeat);
-  const beatsStat = await lstat(beatsDir);
-  const storyDir = dirname(beatsDir);
-  const storyStat = await lstat(storyDir);
-  const rendersDir = join(resolvedBeat, "renders");
-  const rendersStat = await lstat(rendersDir);
-  if (
-    beatStat.isSymbolicLink() ||
-    beatsStat.isSymbolicLink() ||
-    storyStat.isSymbolicLink() ||
-    rendersStat.isSymbolicLink()
-  ) {
-    throw new Error(`delivery refuses a symlinked beat directory: ${beatDir}`);
-  }
-  if (!rendersStat.isDirectory()) {
-    throw new Error(`delivery requires a real renders directory: ${rendersDir}`);
-  }
-
-  const beatName = basename(resolvedBeat);
-  const expected = resolve(exportDirFor(storyDir, beatName));
-  if (resolve(exportDir) !== expected) {
-    throw new Error(
-      `export directory must be ${expected} for beat ${JSON.stringify(beatName)}, got ${resolve(exportDir)}`,
-    );
-  }
-
-  const exportRoot = dirname(expected);
-  const exportRootStat = await optionalStat(exportRoot);
-  if (exportRootStat?.isSymbolicLink()) {
-    throw new Error(`delivery refuses a symlinked export root: ${exportRoot}`);
-  }
-  const exportStat = await optionalStat(expected);
-  if (exportStat?.isSymbolicLink()) {
-    throw new Error(`delivery refuses a symlinked export directory: ${expected}`);
-  }
-  if (exportStat && !exportStat.isDirectory()) {
-    throw new Error(`delivery refuses a non-directory export target: ${expected}`);
-  }
-
-  return { beatName, exportDir: expected, exportRoot };
-}
-
-// The receipt every delivery leaves behind, naming the beat it came from. It is the mechanical half
-// of the rule above: `exportDirFor` gives a caller the right directory, and this makes the WRONG one
-// fail loudly instead of destroying what is already there. A caller that hands two different beats
-// the same `exportDir` — the story-level `export/`, say — is refused on the second call rather than
-// wiping the first beat's delivery.
+// The receipt every delivery leaves behind, naming the stable output it came from. The canonical
+// API already derives the only destination; this is a second invariant checked before replacement.
 //
 // A dotfile, because `export/` is a directory the journalist opens: the hand-over and the delivered
 // files are what they should see there.
 const DELIVERY_RECEIPT = ".delivered-from";
 
-async function refuseToWipeAnotherBeat(exportDir, beatDir) {
-  const beatName = basename(beatDir ?? "");
+async function refuseToWipeAnotherBeat(exportDir, outputId) {
   const previous = await optionalFile(join(exportDir, DELIVERY_RECEIPT));
-  if (previous !== null && previous.trim() && previous.trim() !== beatName) {
+  if (previous !== null && previous.trim() && previous.trim() !== outputId) {
     throw new Error(
-      `${exportDir} already holds the delivery of beat "${previous.trim()}" — materialising beat "${beatName}" here would destroy it. Each beat delivers into its own export/<beat>/ directory (see exportDirFor).`,
+      `${exportDir} already holds the delivery of output "${previous.trim()}" — materialising output "${outputId}" here would destroy it. Each output delivers into its own export/<output>/ directory.`,
     );
   }
-  return beatName;
+  return outputId;
 }
 
 // The delivery phase closes into a file, like every other phase. `HANDOVER.md` is written BESIDE
@@ -560,6 +483,7 @@ async function materialiseInto({
   cms,
   handover,
   hostedOperation,
+  outputId,
 }) {
   // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
   // some other genre must not be accepted here just because it happens to share a name. Reading
@@ -574,12 +498,12 @@ async function materialiseInto({
   // the chosen form internally exact; the public materialise wrapper publishes it only after the
   // complete handover has been written.
   //
-  // A different BEAT's delivery is not a change of mind, and the wipe must never reach it: the
+  // A different OUTPUT's delivery is not a change of mind, and the wipe must never reach it: the
   // receipt check refuses before anything is removed.
-  const beatName = await refuseToWipeAnotherBeat(exportDir, beatDir);
+  const receiptOutputId = await refuseToWipeAnotherBeat(exportDir, outputId);
   await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
-  await writeFile(join(exportDir, DELIVERY_RECEIPT), `${beatName}\n`);
+  await writeFile(join(exportDir, DELIVERY_RECEIPT), `${receiptOutputId}\n`);
   // A DELIVERED BEAT IS NOT A FINISHED ONE until the journalist has been offered the same beat in
   // the other genres and has answered — taken one or declined, both clean. The offer is written
   // `pending` here, at the moment the delivery lands, so "the run never made the offer" is a state
@@ -722,39 +646,48 @@ ${JSON.stringify(insertion, null, 2)}
 
 /**
  * Build a complete delivery in a private sibling directory, then publish it as one replacement.
- * The caller repeats `exportDirFor(storyDir, beatName)` for compatibility, but `beatDir` derives
- * and verifies that exact destination before any existing export is read or changed.
+ * The canonical API accepts a declared stories root plus stable story/output IDs. It derives both
+ * source and destination; caller-supplied `beatDir`/`exportDir` paths belong only to the named v1
+ * compatibility adapter and never select a replacement target.
  */
 export async function materialise(options) {
-  const { form, genre, beatDir, exportDir, handover, planVersion, findingIds } = options;
+  const { form, genre, handover, planVersion, findingIds } = options;
   const forms = FORMS_BY_GENRE[genre];
   if (!forms || !forms[form]) {
     throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
   }
+  if (Object.hasOwn(options, "beatDir") || Object.hasOwn(options, "exportDir")) {
+    throw new Error(
+      "materialise accepts storiesRoot, storyId, and outputId; legacy paths require delivery-compat-v1",
+    );
+  }
 
-  const paths = await deliveryPaths(beatDir, exportDir);
-  requireApprovedOutput({ beatDir, planVersion, findingIds });
+  let paths = resolveDeliveryIdentity(options);
+  requireApprovedOutput({ beatDir: paths.beatDir, planVersion, findingIds });
   validateHandover(handover, genre);
 
   await mkdir(paths.exportRoot, { recursive: true });
-  const exportRoot = await lstat(paths.exportRoot);
-  if (exportRoot.isSymbolicLink()) {
-    throw new Error(`delivery refuses a symlinked export root: ${paths.exportRoot}`);
-  }
+  // The root may not have existed during the first check. Canonicalize it after creation and
+  // before the lock or any recursive replacement operation can use it.
+  paths = resolveDeliveryIdentity(options);
 
   return withDeliveryLock(
     paths.exportDir,
     async () => {
       await reconcileDeliveryReplacement(paths.exportDir);
-      await refuseToWipeAnotherBeat(paths.exportDir, beatDir);
-      const approval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+      await refuseToWipeAnotherBeat(paths.exportDir, paths.outputId);
+      const approval = requireApprovedOutput({
+        beatDir: paths.beatDir,
+        planVersion,
+        findingIds,
+      });
       const operationId = randomUUID();
       const { stagingDir } = replacementArtifacts(paths.exportDir, operationId);
       const hostedOperation =
         form === "embed"
           ? {
               recordDir: paths.exportRoot,
-              outputId: paths.beatName,
+              outputId: paths.outputId,
               reviewId: approval.id,
               draftDigest: approval.draftDigest,
               deliveryOperationId: operationId,
@@ -767,10 +700,16 @@ export async function materialise(options) {
       try {
         const stagedWritten = await materialiseInto({
           ...options,
+          beatDir: paths.beatDir,
           exportDir: stagingDir,
+          outputId: paths.outputId,
           hostedOperation,
         });
-        const currentApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+        const currentApproval = requireApprovedOutput({
+          beatDir: paths.beatDir,
+          planVersion,
+          findingIds,
+        });
         if (currentApproval.id !== approval.id) {
           throw new Error("OutputReview changed while this delivery was being built");
         }
@@ -805,7 +744,7 @@ export async function materialise(options) {
             operationId,
           );
         }
-        return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
+        return stagedWritten.map((path) => join(paths.exportDir, relative(stagingDir, path)));
       } catch (error) {
         try {
           await rm(stagingDir, { recursive: true, force: true });

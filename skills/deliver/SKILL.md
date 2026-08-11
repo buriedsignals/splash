@@ -7,13 +7,13 @@ description: Use to run the DELIVERY phase of the doctrine twin — offer the jo
 
 ## Overview
 
-Runs the DELIVERY phase: the last step of a beat's life, after a still has already been
-rendered into `<beatDir>/renders/`. `offerForms({medium, genre, beatDir, planVersion, findingIds,
-env})` names the delivery forms a beat's genre allows, each with a plain-language `gives` so the
-choice is informed. Nothing is built at this point — `offerForms` only lists what could be built.
-`materialise({form, genre, beatDir, planVersion, findingIds, exportDir, env, fetchFn, projectName,
-cms})` is the only function that writes anything, and it writes exactly one form: the one named in
-`form`, for the `genre` actually given, nothing else, into `exportDir`.
+Runs the DELIVERY phase: the last step of an output's life, after a render exists at the canonical
+`<storiesRoot>/<storyId>/beats/<outputId>/renders/` location.
+`offerForms({medium, genre, storiesRoot, storyId, outputId, planVersion, findingIds, env})` names the
+delivery forms its genre allows. `materialise({form, genre, storiesRoot, storyId, outputId,
+planVersion, findingIds, env, fetchFn, projectName, cms})` writes exactly the chosen form. Both APIs
+derive the source and `export/<outputId>/` destination from the separately declared stories root
+and stable IDs; neither accepts a caller-selected source or recursive replacement path.
 
 **Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
 every genre offers both. `embed` (a live Cloudflare Pages URL) and `cms-insertion` (a prepared
@@ -40,11 +40,11 @@ until the choice does.
 
 ## When to use
 
-- At the end of a beat's production, once `<beatDir>/renders/` holds a still — call
-  `offerForms` with the beat's medium, genre and directory, present the list, and wait. It throws
-  if the beat has not been approved — show the render first.
+- At the end of production, once the output's canonical `renders/` directory holds a draft — call
+  `offerForms` with its medium, genre, declared stories root, stable story ID, and stable output ID;
+  present the list and wait. It throws if the output has not been approved.
 - Once the journalist has named a form (its `id`, exactly), call `materialise` with that id, the
-  *same* genre, the beat's directory, and the export directory. Nothing before that call.
+  *same* identity and genre. Nothing before that call.
 - **Immediately after `materialise` returns**, and before the run ends: make BOTH halves of the
   closing offer. `otherGenresFor` + `formatGenreOffer` for the same beat in another genre;
   `otherSubjectsFor` + `formatSubjectOffer` for the other subjects in the same article. Wait for
@@ -58,14 +58,15 @@ until the choice does.
 
 ## The one gotcha that will waste your day (read first)
 
-**A second choice is not additive — and that wipe must never cross a beat.** If a journalist
-materialises `owned-file` and then changes their mind and materialises `source-bundle` into the same
-`exportDir`, the first form's files do not linger. `materialise` builds the complete replacement in a
-private sibling staging directory, including `HANDOVER.md`, and only then replaces `exportDir`. The
+**A second choice is not additive — and that wipe must never cross an output.** If a journalist
+materialises `owned-file` and then changes their mind and materialises `source-bundle` for the same
+output ID, the first form's files do not linger. `materialise` builds the complete replacement in a
+private sibling staging directory, including `HANDOVER.md`, and only then replaces the derived
+`export/<outputId>/` directory. The
 directory therefore holds exactly the most recently completed form — never a mix of two — while a
 failed build, hand-over, copy, or remote deployment leaves the last good export intact. Validation
-of `{form, genre}`, the exact per-beat path, the bound `OUTPUT-REVIEW.json`, and the hand-over
-payload all happens before staging begins. A per-output lock serializes concurrent calls. A
+of `{form, genre}`, the declared trust root and stable IDs, the bound `OUTPUT-REVIEW.json`, and the
+hand-over payload all happens before staging begins. A per-output lock serializes concurrent calls. A
 versioned replacement journal and `.delivery-manifest.json` let the next call restore the previous
 export or finish cleanup if the process stopped between the two publication renames.
 
@@ -75,26 +76,33 @@ beat 1's delivered files, silently, at the last phase of the journey, and the se
 reported success. Nothing in this repository had ever put two beats in one story, so no test saw it.
 Two things close it, and both are code rather than convention:
 
-- **`exportDirFor(storyDir, beatName)`** is where a beat delivers: `export/<beat>/`. The beat name
-  must be one path segment. `materialise` derives the same answer from the required
-  `stories/<slug>/beats/<beat>` source layout and refuses any other caller-supplied directory,
-  including a story-level path or symlink. `whereIs` reads the same per-beat shape.
-- **a `.delivered-from` receipt**, written into every export directory, naming the beat it came
-  from. `materialise` reads it BEFORE the wipe and throws when it names a different beat, so a
-  caller handing two beats the same directory is refused rather than obeyed. The receipt is a
-  dotfile because `export/<beat>/` is a directory the journalist opens; it is never in `written`.
+- **`exportDirFor({storiesRoot, storyId, outputId})`** reports the derived destination, but
+  `materialise` derives it independently and accepts no destination argument. The root, story,
+  `beats/`, output, `renders/`, export root, and existing export are canonicalized; symlinked
+  ancestors and traversal IDs fail closed. `whereIs` reads the same per-output shape.
+- **a `.delivered-from` receipt**, written into every export directory, naming the output it came
+  from. `materialise` reads it BEFORE replacement and throws when it names a different output. The
+  receipt is a dotfile because `export/<outputId>/` is a directory the journalist opens; it is never
+  in `written`.
+
+Legacy callers use `offerFormsLegacyV1` and `materialiseLegacyV1` from
+`scripts/delivery-compat-v1.mjs`. That named, versioned adapter requires `storiesRoot`, validates the
+old `beatDir` and `exportDir` against the canonical identity, discards both paths, and delegates to
+the ID-based API. It never restores a caller-selected deletion target.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
+| Delivery identity | `scripts/delivery-identity.mjs` — `resolveDeliveryIdentity`, `deliveryDestinations`, `stableDeliveryId` | Canonicalizes the declared stories root and every relevant source/export ancestor, validates stable story/output IDs, and derives the only legal source and replacement paths |
+| Legacy compatibility | `scripts/delivery-compat-v1.mjs` — `offerFormsLegacyV1`, `materialiseLegacyV1`, `LEGACY_DELIVERY_ADAPTER_VERSION` | Preserves the observed path-shaped v1 call contract while validating and discarding its paths before delegating to the canonical ID API |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; validates the bound output review (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
-| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, derives and contains the per-beat export path, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, derives the per-output export from the trusted identity, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
 | Replacement | `scripts/delivery-replacement.mjs` — `withDeliveryLock`, `publishStagedDelivery`, `reconcileDeliveryReplacement` | Serializes same-output delivery, journals both publication renames, records the complete new export, and reconciles an interrupted replacement before another begins |
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
-| Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
-| Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
+| Per-output export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each stable output ID delivers into `export/<outputId>/`; the destination is derived rather than accepted from the caller |
+| Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<outputId>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
 | The language it is written in | `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` | Ruling R4: the journalist's language follows the ARTICLE and is confirmed with them, so it is READ from `STORYBOARD.md`'s `language:` field — never detected from the prose, never defaulted. Every journalist-facing document this skill writes (the hand-over, both halves of the closing offer) is rendered from a copy table keyed by language. `en` and `fr` are written today; any other recorded language gets the English scaffold **and a line at the top of the document saying so** |
 | The other genres | `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`, `deliveryClosed` | After the delivery: which other genres this beat could be produced in, filtered by what is producible, what the capability allows and what the journalist says does not suit it. The answer — taken or declined — is a fact on disk |
 | The other subjects | `scripts/other-subjects.mjs` — `recordSurveyedSubjects`, `otherSubjectsFor`, `formatSubjectOffer`, `recordSubjectAnswer` | The article's own other angles, written at the proposal into `stories/<slug>/SUBJECTS.md` and RE-CHECKED at the end of the run — drawn, closed, unreachable, or still worth offering |
@@ -114,8 +122,9 @@ remain untouched on disk.
 
 ## How it works (the shape)
 
-1. **`offerForms({medium, genre, beatDir, planVersion, findingIds, env = process.env})`** first
-   validates `beatDir/OUTPUT-REVIEW.json` — **Gate 3 closes before Gate 4 opens.** The record must be
+1. **`offerForms({medium, genre, storiesRoot, storyId, outputId, planVersion, findingIds,
+   env = process.env})`** first resolves the canonical beat from that identity and validates its
+   `OUTPUT-REVIEW.json` — **Gate 3 closes before Gate 4 opens.** The record must be
    schema version 1, decide `approve`, name this output, match the exact current render digest,
    current plan version and current finding IDs, and contain a passing QA run bound to that same
    tuple. A bare `APPROVED.md`, a copied review, or a review made stale by any render or plan change
@@ -137,14 +146,15 @@ remain untouched on disk.
 2. **The conversation presents the list and waits.** This skill's code stops here; the doctrine
    of waiting is enforced by the calling conversation, the same way `storyboard` enforces
    its exchange in prose, not in code that could be skipped.
-3. **`materialise({form, genre, beatDir, planVersion, findingIds, exportDir, env, fetchFn,
-   projectName, cms, handover})`** validates
+3. **`materialise({form, genre, storiesRoot, storyId, outputId, planVersion, findingIds, env,
+   fetchFn, projectName, cms, handover})`** validates
    the **`{form, genre}` pair** against `FORMS_BY_GENRE[genre][form]` — the same table `offerForms`
    reads, so "not an offered form" can never drift from what was actually offered, and a form id
    that happens to exist under one genre is never accepted for a different genre just because the
-   id matches. It independently validates the same bound review, validates `handover`, derives the
-   one legal `export/<beat>/` directory from the beat path, and rejects path traversal, a broad
-   story-level destination, or symlinked delivery directories. Under a per-output filesystem lock,
+   id matches. It independently validates the same bound review, validates `handover`, derives both
+   source and the one legal `export/<outputId>/` destination from the declared trust root and IDs,
+   and rejects traversal or symlinked ancestors. It rejects `beatDir` and `exportDir` fields on the
+   canonical API. Under a per-output filesystem lock,
    it first reconciles any prior journal, then checks the review again after staging so a render or
    review changed during the build cannot be published. Publication records a complete manifest,
    journals the old-export and new-export renames, and retains cleanup state if removing the backup
@@ -191,7 +201,7 @@ remain untouched on disk.
      article, so a mutation that would drop any part of the article it read is refused before it is
      ever built, let alone sent. `references/cms-insertion.md` documents both CMS mechanics in
      prose and states plainly what remains untested.
-4. **Every form closes into `export/<beat>/HANDOVER.md` — that is G4, and it is not optional.**
+4. **Every form closes into `export/<outputId>/HANDOVER.md` — that is G4, and it is not optional.**
    `materialise` throws when the caller hands in no payload, rather than delivering files nobody was
    told what to do with. It used to return early instead, so every form worked without one and
    `whereIs` called the story done anyway — which is how the run delivered two filenames and two
@@ -256,7 +266,7 @@ remain untouched on disk.
 
    **What they read is what their READER would learn**, in their own words, not a list of chart
    types. **Taking one starts a new beat in this story**, from its first phase — never a shortcut
-   into production — with its own `export/<beat>/`, leaving the delivered beat untouched.
+   into production — with its own `export/<outputId>/`, leaving the delivered beat untouched.
    **Declining is an answer, and so is `none`**: an article that yielded nothing else says so
    plainly, and the run closes. Inventing a second-rate angle to fill the offer is the failure that
    case exists to prevent.
@@ -307,7 +317,7 @@ steps, and the next reader is always in a hurry.
 
 Two things that are NOT this, because the line is fine: restating the CONDITION the gate waits on
 ("this beat has not been approved yet — show it first") closes the gate rather than going round it,
-and naming the CORRECT api ("each beat delivers into its own `export/<beat>/` directory") is where
+and naming the CORRECT API ("each output ID derives its own export directory") is where
 the work belongs, not a way to skip a check. The offence is specifically *this refusal stands, and
 here is how to get the artifact out anyway*. `test/refusals-name-no-detour.test.ts` triggers every
 refusal in this path for real, reads the four scripts' `throw`s statically as well, and reddens on
@@ -326,10 +336,15 @@ import { offerForms, materialise, exportDirFor } from "./scripts/deliver.mjs";
 // match them and the exact current renders/ digest: Gate 3 closes before Gate 4 opens.
 const planVersion = 3;
 const findingIds = ["finding-rainfall-change"];
+const identity = {
+  storiesRoot: "stories",
+  storyId: "water-wars",
+  outputId: "1-rainfall",
+};
 const forms = offerForms({
+  ...identity,
   medium: "chart",
   genre: "web",
-  beatDir: "stories/water-wars/beats/1-rainfall",
   planVersion,
   findingIds,
 });
@@ -338,14 +353,11 @@ const forms = offerForms({
 // CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are both set.
 
 const written = await materialise({
+  ...identity,
   form: chosenId, // must be one of forms[*].id
   genre: "web", // the same genre offerForms was called with
-  beatDir: "stories/water-wars/beats/1-rainfall",
   planVersion,
   findingIds,
-  // ONE DIRECTORY PER BEAT. `exportDirFor` is the answer; handing two beats the same directory
-  // throws rather than destroying the first one's delivery.
-  exportDir: exportDirFor("stories/water-wars", "1-rainfall"),
   handover: {
     language: "en",
     placement: "After the paragraph that introduces the rainfall trend",
@@ -354,6 +366,7 @@ const written = await materialise({
     caveat: "Four winters are a short comparison window",
   },
 });
+const exportDir = exportDirFor(identity); // informational; materialise derives this itself
 // `written` names exactly what left the beat directory — nothing more. For "embed" this is
 // `EMBED_URL.txt`; for "cms-insertion" it is `CMS-INSERTION.md`.
 ```
@@ -367,9 +380,11 @@ const written = await materialise({
 | Which rendered file an insertion carries, per genre | `{static: [".svg", ".png"], web: [".html"], scrolly: [".html"], video: [".mp4"]}` — first extension with exactly one match wins | `INSERTION_PREFERENCE`, `scripts/deliver.mjs` |
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
-| Where a beat's delivery lands | `export/<beat>/` — one directory per beat, never one per story | `exportDirFor`, `scripts/deliver.mjs` |
+| What establishes delivery's filesystem trust boundary | Schema v1 `{storiesRoot, storyId, outputId}`; the IDs are single segments and every relevant ancestor is canonicalized against the root | `DELIVERY_IDENTITY_SCHEMA_VERSION`, `scripts/delivery-identity.mjs` |
+| Which path-shaped caller contract is retained | Legacy adapter v1; it validates and discards `beatDir`/`exportDir` before delegation | `LEGACY_DELIVERY_ADAPTER_VERSION`, `scripts/delivery-compat-v1.mjs` |
+| Where an output's delivery lands | `<storiesRoot>/<storyId>/export/<outputId>/` — derived internally, never supplied to `materialise` | `exportDirFor`, `scripts/deliver.mjs` |
 | What makes an artifact a MAP delivery, for the key rule | `1` string — the key slot the renderer leaves in the file (`carriesMapKey`). Nothing about the environment, the genre or the medium enters that decision | `MAP_KEY_PLACEHOLDER`, `scripts/deliver.mjs` |
-| What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
+| What names the output a delivery came from | `1` file, `.delivered-from` — read before replacement, so a mismatched output is refused | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | What makes an interrupted replacement recoverable | A schema-v1 sibling journal plus `.delivery-manifest.json`; a per-output lock serializes calls and stale dead-process locks are reclaimed | `scripts/delivery-replacement.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
@@ -400,8 +415,14 @@ const written = await materialise({
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper),
   `carriesMapKey` and `mapKeyState` (the key question, asked of the artifact),
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one
-  directory a beat delivers into), and the `BUILD_SCRIPT` template written into every
+  directory an output delivers into), and the `BUILD_SCRIPT` template written into every
   `source-bundle` delivery.
+- `scripts/delivery-identity.mjs` — `resolveDeliveryIdentity`, `deliveryDestinations`,
+  `stableDeliveryId`, and `DELIVERY_IDENTITY_SCHEMA_VERSION`: the explicit stories-root boundary,
+  stable IDs, canonical ancestor checks, and derived source/export paths.
+- `scripts/delivery-compat-v1.mjs` — `offerFormsLegacyV1`, `materialiseLegacyV1`,
+  `exportDirForLegacyV1`, and `LEGACY_DELIVERY_ADAPTER_VERSION`: the retained old call shape,
+  validated against the explicit root and converted to IDs without using its destination path.
 - `scripts/output-review.mjs` — deterministic render-tree digest, versioned review/QA validation,
   atomic `OUTPUT-REVIEW.json` serialization, and the fail-closed gate both delivery APIs call.
 - `scripts/delivery-replacement.mjs` — per-output in-process and filesystem locking, the versioned
@@ -432,6 +453,9 @@ const written = await materialise({
   each, refuses ambiguity, and — for `cms-insertion` — makes zero network calls. Its
   "a story has more than one beat" block is the two-beat fixture nothing here had: it delivers two
   approved beats and asserts the first one's files survive the second's delivery.
+- `test/delivery-identity.test.ts` — canonical root/ID derivation, traversal and symlink refusals,
+  rejection of path fields on the canonical API, and the versioned legacy fixture proving a valid
+  old call still works while an alternate recursive replacement target remains untouched.
 - `test/another-genre.test.ts` — the offer's three filters, the reason a withholding must carry,
   the journalist-facing text asserted to name nothing of ours, the parity with the storyboard's
   catalogue, and the fixture the run would have failed: a beat that has been DELIVERED is not closed

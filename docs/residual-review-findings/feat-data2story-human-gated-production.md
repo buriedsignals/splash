@@ -40,18 +40,21 @@ local replacement failed. Tests cover ignored abort signals, stalled response
 bodies, unreadable 5xx responses, response loss, duplicate-POST prevention, and
 remote success followed by local publication failure.
 
-## P1 — compatibility contract
+## Resolved 2026-08-11 — compatibility contract
 
-The hardened API requires the observed canonical
-`stories/<slug>/beats/<beat>` layout so it can derive the only legal recursive
-replacement target. Add a versioned compatibility adapter for any legacy caller
-that must be retained; do not restore a caller-selected deletion path.
+The canonical `offerForms` and `materialise` APIs now accept only a separately
+declared `storiesRoot` plus stable `storyId` and `outputId`. Delivery derives its
+source and `export/<outputId>/` replacement target from that identity,
+canonicalizes the root and every relevant source/export ancestor, and rejects
+traversal, symlinked ancestors, and legacy path fields before mutation.
 
-The current API also derives its story from `beatDir`; it does not yet receive a
-separately declared Splash stories root. Add that explicit trust boundary,
-canonicalize every relevant ancestor against it, and accept stable story/output
-IDs rather than allowing a caller-controlled absolute beat root to establish the
-recursive replacement scope.
+`skills/deliver/scripts/delivery-compat-v1.mjs` retains the observed
+`{beatDir, exportDir}` caller shape as an explicitly versioned adapter. It
+requires the declared root, validates both old paths against the canonical IDs,
+discards them, and delegates to the ID API; the supplied export path is never a
+recursive replacement target. Contract tests cover the canonical flow, path
+field rejection, traversal and symlink boundaries, a working legacy fixture,
+an outside beat, and an alternate export path left untouched.
 
 ## Review verification still required
 

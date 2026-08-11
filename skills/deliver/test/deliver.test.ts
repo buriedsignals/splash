@@ -11,13 +11,17 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import {
-  offerForms as offerFormsWithReview,
-  materialise as materialiseWithReview,
+  offerForms as canonicalOfferForms,
+  materialise as canonicalMaterialise,
   ownedFileForInsertion,
-  exportDirFor,
+  exportDirFor as canonicalExportDirFor,
   substituteKeys,
   mapKeyState,
 } from "../scripts/deliver.mjs";
+import {
+  offerFormsLegacyV1,
+  materialiseLegacyV1,
+} from "../scripts/delivery-compat-v1.mjs";
 import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
 import { replacementArtifacts } from "../scripts/delivery-replacement.mjs";
 import {
@@ -43,9 +47,32 @@ const handover = {
   caveat: "four winters is a short window",
 };
 
-const offerForms = (options: Record<string, unknown>) =>
-  offerFormsWithReview({
+function identityForBeat(beatDir: string) {
+  const storyDir = dirname(dirname(beatDir));
+  return {
+    storiesRoot: dirname(storyDir),
+    storyId: basename(storyDir),
+    outputId: basename(beatDir),
+  };
+}
+
+function exportDirFor(storyDir: string, outputId: string) {
+  return canonicalExportDirFor({
+    storiesRoot: dirname(storyDir),
+    storyId: basename(storyDir),
+    outputId,
+  });
+}
+
+const offerFormsWithReview = (options: Record<string, any>) => {
+  const { beatDir, exportDir: _exportDir, ...rest } = options;
+  return canonicalOfferForms({ ...rest, ...identityForBeat(beatDir) });
+};
+
+const offerForms = (options: Record<string, any>) =>
+  offerFormsLegacyV1({
     ...options,
+    storiesRoot: options.beatDir ? identityForBeat(options.beatDir).storiesRoot : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
@@ -54,11 +81,17 @@ const offerForms = (options: Record<string, unknown>) =>
 // render setup; the review-gate cases below call the unwrapped public functions directly.
 const materialise = async (options: Record<string, any>) => {
   if (options.beatDir) await approveCurrentOutput(options.beatDir);
-  return materialiseWithReview({
+  return materialiseLegacyV1({
     ...options,
+    storiesRoot: options.beatDir ? identityForBeat(options.beatDir).storiesRoot : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
+};
+
+const materialiseWithReview = (options: Record<string, any>) => {
+  const { beatDir, exportDir: _exportDir, ...rest } = options;
+  return canonicalMaterialise({ ...rest, ...identityForBeat(beatDir) });
 };
 
 let tempRoot: string, storyDir: string, beatDir: string, exportDir: string;
@@ -1308,10 +1341,10 @@ describe("a story has more than one beat", () => {
 });
 
 describe("exportDirFor", () => {
-  it("should reject traversal, absolute, and multi-segment beat names", () => {
-    expect(() => exportDirFor(storyDir, "../outside")).toThrow(/beat name/);
-    expect(() => exportDirFor(storyDir, "/tmp/outside")).toThrow(/beat name/);
-    expect(() => exportDirFor(storyDir, "nested/beat")).toThrow(/beat name/);
+  it("should reject traversal, absolute, and multi-segment output IDs", () => {
+    expect(() => exportDirFor(storyDir, "../outside")).toThrow(/outputId/);
+    expect(() => exportDirFor(storyDir, "/tmp/outside")).toThrow(/outputId/);
+    expect(() => exportDirFor(storyDir, "nested/beat")).toThrow(/outputId/);
   });
 });
 
