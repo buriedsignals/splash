@@ -19,6 +19,7 @@ import {
   replacementArtifacts,
   withDeliveryLock,
 } from "./delivery-replacement.mjs";
+import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -558,6 +559,7 @@ async function materialiseInto({
   projectName,
   cms,
   handover,
+  hostedOperation,
 }) {
   // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
   // some other genre must not be accepted here just because it happens to share a name. Reading
@@ -616,20 +618,27 @@ async function materialiseInto({
     const hosted = await readFile(join(beatDir, "renders", fileName), "utf8");
     states.push(mapKeyState(hosted, env));
     await writeFile(stagedPath, substituteKeys(hosted, env));
-    const { url } = await deployFile({
+    const deployment = await deployFile({
       accountId: creds.accountId,
       apiToken: creds.apiToken,
       projectName,
       filePath: stagedPath,
       fileName,
+      recordDir: hostedOperation.recordDir,
+      outputId: hostedOperation.outputId,
+      reviewId: hostedOperation.reviewId,
+      draftDigest: hostedOperation.draftDigest,
+      deliveryOperationId: hostedOperation.deliveryOperationId,
+      timeoutMs: hostedOperation.timeoutMs,
       fetchFn,
     });
+    hostedOperation.result = deployment;
     await rm(stagedPath, { force: true });
     // A hosted embed has no local file to keep — the URL IS the delivery. Mirrors the sibling
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
     const urlPath = join(exportDir, "EMBED_URL.txt");
-    await writeFile(urlPath, `${url}\n`);
+    await writeFile(urlPath, `${deployment.url}\n`);
     written.push(urlPath);
     return withHandover(written, { exportDir, genre, handover, states });
   }
@@ -741,10 +750,26 @@ export async function materialise(options) {
       const approval = requireApprovedOutput({ beatDir, planVersion, findingIds });
       const operationId = randomUUID();
       const { stagingDir } = replacementArtifacts(paths.exportDir, operationId);
+      const hostedOperation =
+        form === "embed"
+          ? {
+              recordDir: paths.exportRoot,
+              outputId: paths.beatName,
+              reviewId: approval.id,
+              draftDigest: approval.draftDigest,
+              deliveryOperationId: operationId,
+              timeoutMs: options.hostedRequestTimeoutMs,
+              result: null,
+            }
+          : null;
       await mkdir(stagingDir);
 
       try {
-        const stagedWritten = await materialiseInto({ ...options, exportDir: stagingDir });
+        const stagedWritten = await materialiseInto({
+          ...options,
+          exportDir: stagingDir,
+          hostedOperation,
+        });
         const currentApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
         if (currentApproval.id !== approval.id) {
           throw new Error("OutputReview changed while this delivery was being built");
@@ -760,10 +785,26 @@ export async function materialise(options) {
             findingIds: approval.findingIds,
             form,
             genre,
+            ...(hostedOperation?.result
+              ? {
+                  hostedDeployment: {
+                    deploymentKey: hostedOperation.result.deploymentKey,
+                    deploymentId: hostedOperation.result.deploymentId,
+                    url: hostedOperation.result.url,
+                    record: basename(hostedOperation.result.recordPath),
+                  },
+                }
+              : {}),
             createdAt: new Date().toISOString(),
           },
           hooks: options.replacementHooks,
         });
+        if (hostedOperation?.result) {
+          await markHostedDeploymentLocalComplete(
+            hostedOperation.result.recordPath,
+            operationId,
+          );
+        }
         return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
       } catch (error) {
         try {

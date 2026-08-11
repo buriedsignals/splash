@@ -98,7 +98,7 @@ Two things close it, and both are code rather than convention:
 | The language it is written in | `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` | Ruling R4: the journalist's language follows the ARTICLE and is confirmed with them, so it is READ from `STORYBOARD.md`'s `language:` field — never detected from the prose, never defaulted. Every journalist-facing document this skill writes (the hand-over, both halves of the closing offer) is rendered from a copy table keyed by language. `en` and `fr` are written today; any other recorded language gets the English scaffold **and a line at the top of the document saying so** |
 | The other genres | `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`, `deliveryClosed` | After the delivery: which other genres this beat could be produced in, filtered by what is producible, what the capability allows and what the journalist says does not suit it. The answer — taken or declined — is a fact on disk |
 | The other subjects | `scripts/other-subjects.mjs` — `recordSurveyedSubjects`, `otherSubjectsFor`, `formatSubjectOffer`, `recordSubjectAnswer` | The article's own other angles, written at the proposal into `stories/<slug>/SUBJECTS.md` and RE-CHECKED at the end of the run — drawn, closed, unreachable, or still worth offering |
-| Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
+| Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor`; `scripts/hosted-deployment.mjs` — stable operation key and schema-v1 record | The real Cloudflare Pages direct-upload sequence — proven live, hard-bounded, and reconciled after an ambiguous response or local publication failure (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
 | CMS doctrine | `references/cms-insertion.md` | Both mechanics in prose — We.Publish's `updateArticle` is total, Livingdocs' `insertComponent` is a genuine insertion — and what remains untested |
 
@@ -170,7 +170,12 @@ remain untouched on disk.
      Cloudflare Pages project (`DEFAULT_PROJECT_NAME`, or the caller's own `projectName`) using a
      plain four-call direct-upload sequence (`upload-token` → `check-missing` → `upload` →
      `deployments`, matched by hand against Wrangler's own source — no wrangler, no build step, no
-     framework). **This was run for real**, against the live API, through this exact function: a
+     framework). Every request and response-body read has a 15-second deadline. Before the final
+     request, it persists a schema-v1 operation record and sends its stable key as Cloudflare's
+     `commit_hash`. If the response is lost, the next call lists deployments and matches that key;
+     if the remote deployment succeeded but local replacement failed, the next call reuses it.
+     It never posts again while the remote result remains ambiguous. **This was run for real**,
+     against the live API, through this exact function: a
      `chart-web` seed render was deployed, and `curl`ing the returned URL back produced HTML
      byte-for-byte identical to the file that was sent (see the session's own report for the URL).
      `exportDir` receives one file, `EMBED_URL.txt`, holding the live URL — there is no local copy
@@ -369,6 +374,7 @@ const written = await materialise({
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
+| How long a Cloudflare request, including its response body, may remain unresolved | `15,000ms` (override with `materialise`'s `hostedRequestTimeoutMs`) | `scripts/deploy-embed.mjs`, `DEFAULT_REQUEST_TIMEOUT_MS` |
 | Which genres a medium can also be produced in, after its first delivery | `chart`/`map` → 4 each, `image` → 2 (an absent pair is never offered) | `PRODUCIBLE_GENRES`, `scripts/another-genre.mjs` |
 | What answers close a delivery | `2` — `declined` and `taken <genre>`; `pending` is what `materialise` writes and what `deliveryClosed` refuses to call closed | `recordGenreAnswer`, `scripts/another-genre.mjs` |
 | Where the article's other angles are kept | `1` file, `SUBJECTS.md`, in the STORY's own directory — never a beat's | `SUBJECTS_FILE`, `scripts/other-subjects.mjs` |
@@ -408,8 +414,9 @@ const written = await materialise({
   `readSurveyedSubjects`, `otherSubjectsFor` (the reader, which re-checks), `formatSubjectOffer`,
   `recordSubjectAnswer`, and `SUBJECT_OFFER_RECEIPT`, the second dotfile a closed delivery carries.
 - `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor`,
-  and the header comment documenting the exact Cloudflare Pages call sequence, matched by hand
-  against Wrangler's own source (`cloudflare/workers-sdk`) rather than guessed.
+  the bounded Cloudflare Pages call sequence, and reconciliation by stable `commit_hash`.
+- `scripts/hosted-deployment.mjs` — stable deployment-key derivation, schema-v1 operation records,
+  atomic state updates, and the remote-complete/local-complete boundary.
 - `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace`, `CMS_KINDS`. No network
   code anywhere in this file.
 - `references/cms-insertion.md` — both CMS mechanics in prose, and what remains untested.
@@ -440,7 +447,9 @@ const written = await materialise({
   run followed, kept as the proof the detector can see the defect it was written for.
 - `test/deploy-embed.test.ts` — the Cloudflare direct-upload sequence against a fake of the real
   API (four calls in order, an already-existing project treated as success, a real failure
-  surfaced with Cloudflare's own message) plus `contentTypeFor`/`resolveCloudflareCredentials`.
+  surfaced with Cloudflare's own message), hard request/body deadlines, unreadable 5xx handling,
+  and lost-response reconciliation without a duplicate POST; plus
+  `contentTypeFor`/`resolveCloudflareCredentials`.
   The live sequence itself was proven separately, once, against the real API — this suite exists
   so that proof does not need to re-run, and cost real deploys, on every `bun test`.
 - `test/cms-insert.test.ts` — both mutation shapes, and `assertNotPartialReplace` proven against

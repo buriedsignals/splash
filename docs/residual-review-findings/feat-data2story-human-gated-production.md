@@ -29,12 +29,16 @@ cleanup. Fault-injection tests cover both rename boundaries, deferred cleanup,
 both process-restart states, abandoned staging, stale locks, and concurrent
 direct `materialise` calls.
 
-## P1 — hosted deployment timeout and reconciliation
+## Resolved 2026-08-11 — hosted deployment timeout and reconciliation
 
-Cloudflare requests do not yet have a hard deadline or a persisted operation
-record. Add bounded abort signals, an idempotency/deployment identifier, and a
-reconciliation record that survives an ambiguous response or a successful
-remote deployment followed by local publication failure.
+Every Cloudflare request and response-body read now has a hard deadline. The
+final request carries a deterministic deployment key as `commit_hash`, with a
+schema-v1 operation record persisted before the request. A retry reconciles a
+lost response by listing and matching remote deployments, fails closed while
+the result remains ambiguous, and reuses a completed remote deployment when
+local replacement failed. Tests cover ignored abort signals, stalled response
+bodies, unreadable 5xx responses, response loss, duplicate-POST prevention, and
+remote success followed by local publication failure.
 
 ## P1 — compatibility contract
 
@@ -51,7 +55,6 @@ recursive replacement scope.
 
 ## Review verification still required
 
-- Cloudflare timeout, response loss, and remote-success/local-failure cases.
 - The credential-gated MapTiler browser smoke remains manual. On the 2026-08-10
   Ubuntu hosted runner it reached the keyed temporary page but timed out waiting
   for the page's `mw-live` readiness marker. Diagnose the external map/style load

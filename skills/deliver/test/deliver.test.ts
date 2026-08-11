@@ -805,7 +805,10 @@ function fakeCloudflare() {
       return new Response(
         JSON.stringify({
           success: true,
-          result: { url: "https://deadbeef.some-project.pages.dev" },
+          result: {
+            id: "deployment-1",
+            url: "https://deadbeef.some-project.pages.dev",
+          },
         }),
       );
     }
@@ -873,6 +876,71 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       join(webExportDir, "EMBED_URL.txt"),
       join(webExportDir, "HANDOVER.md"),
     ]);
+  });
+
+  it("should reuse a successful remote deployment after local publication fails", async () => {
+    await materialise({
+      form: "owned-file",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      handover,
+    });
+    const base = fakeCloudflare();
+    let deploymentPosts = 0;
+    const fetchFn = async (url: string, init?: RequestInit) => {
+      if (new URL(url).pathname.endsWith("/deployments") && init?.method === "POST") {
+        deploymentPosts++;
+      }
+      return base(url, init);
+    };
+
+    await expect(
+      materialise({
+        form: "embed",
+        genre: "web",
+        beatDir: webBeatDir,
+        exportDir: webExportDir,
+        env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+        fetchFn,
+        handover,
+        replacementHooks: {
+          beforePublishStaging: () => {
+            throw new Error("local publication fault");
+          },
+        },
+      }),
+    ).rejects.toThrow(/local publication fault/);
+
+    expect(await Bun.file(join(webExportDir, "rainfall.html")).exists()).toBe(true);
+    expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).exists()).toBe(false);
+    const exportRoot = dirname(webExportDir);
+    const recordName = (await readdir(exportRoot)).find((name) =>
+      name.includes("-hosted-deployment-"),
+    )!;
+    expect(JSON.parse(await readFile(join(exportRoot, recordName), "utf8"))).toMatchObject({
+      state: "remote-complete",
+      deploymentId: "deployment-1",
+    });
+
+    await materialise({
+      form: "embed",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn,
+      handover,
+    });
+
+    expect(deploymentPosts).toBe(1);
+    expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).text()).toContain(
+      "https://deadbeef.some-project.pages.dev",
+    );
+    expect(JSON.parse(await readFile(join(exportRoot, recordName), "utf8"))).toMatchObject({
+      state: "local-complete",
+      deploymentId: "deployment-1",
+    });
   });
 
   it("should refuse to materialise embed when renders/ holds more than one file", async () => {

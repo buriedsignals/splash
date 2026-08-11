@@ -51,7 +51,7 @@ import {
   ownedFileForInsertion,
   exportDirFor,
 } from "../scripts/deliver.mjs";
-import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
+import { OUTPUT_REVIEW_FILE, renderDigest } from "../scripts/output-review.mjs";
 import { formatHandover } from "../scripts/format-handover.mjs";
 import { buildInsertion } from "../scripts/cms-insert.mjs";
 import { deployFile } from "../scripts/deploy-embed.mjs";
@@ -335,6 +335,11 @@ describe("every refusal in the delivery path, triggered for real", () => {
           apiToken: "token",
           filePath: join(beatDir, "renders", "still.png"),
           fileName: "still.png",
+          recordDir: tempRoot,
+          outputId: "1-rainfall",
+          reviewId: "review-refusal",
+          draftDigest: renderDigest(beatDir),
+          deliveryOperationId: "delivery-refusal",
           fetchFn: async () =>
             new Response(
               JSON.stringify({ success: false, errors: [{ message: "nope" }] }),
@@ -363,6 +368,7 @@ const SCRIPTS = [
   "deliver.mjs",
   "output-review.mjs",
   "delivery-replacement.mjs",
+  "hosted-deployment.mjs",
   "format-handover.mjs",
   // The two refusals that decide what language the delivery is written in are on the delivery path
   // like every other one here, so they are read by the same scan.

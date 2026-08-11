@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -57,7 +57,7 @@ describe("contentTypeFor", () => {
 function fakeCloudflare({ existingProject = false } = {}) {
   const calls = [];
   const fetchFn = async (url, init) => {
-    calls.push({ url, method: init?.method ?? "GET" });
+    calls.push({ url, method: init?.method ?? "GET", init });
     const path = new URL(url).pathname;
 
     if (
@@ -112,7 +112,10 @@ function fakeCloudflare({ existingProject = false } = {}) {
       return new Response(
         JSON.stringify({
           success: true,
-          result: { url: "https://deadbeef.deliver-proof.pages.dev" },
+          result: {
+            id: "deployment-1",
+            url: "https://deadbeef.deliver-proof.pages.dev",
+          },
         }),
       );
     }
@@ -134,29 +137,31 @@ describe("deployFile", () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  it("should return the deployment's own URL", async () => {
-    const { fetchFn } = fakeCloudflare();
-    const { url } = await deployFile({
+  function deploy(overrides = {}) {
+    return deployFile({
       accountId: "acct",
       apiToken: "tok",
       projectName: "deliver-proof",
       filePath: join(dir, "rainfall.html"),
       fileName: "rainfall.html",
-      fetchFn,
+      recordDir: dir,
+      outputId: "1-rainfall",
+      reviewId: "review-1",
+      draftDigest: `sha256:${"a".repeat(64)}`,
+      deliveryOperationId: "delivery-operation-1",
+      ...overrides,
     });
+  }
+
+  it("should return the deployment's own URL", async () => {
+    const { fetchFn } = fakeCloudflare();
+    const { url } = await deploy({ fetchFn });
     expect(url).toBe("https://deadbeef.deliver-proof.pages.dev");
   });
 
   it("should call the four Cloudflare endpoints in order: create project, upload-token, check-missing, upload, deployments", async () => {
     const { fetchFn, calls } = fakeCloudflare();
-    await deployFile({
-      accountId: "acct",
-      apiToken: "tok",
-      projectName: "deliver-proof",
-      filePath: join(dir, "rainfall.html"),
-      fileName: "rainfall.html",
-      fetchFn,
-    });
+    await deploy({ fetchFn });
     const paths = calls.map((c) => new URL(c.url).pathname.split("/").pop());
     expect(paths).toEqual([
       "projects",
@@ -165,18 +170,17 @@ describe("deployFile", () => {
       "upload",
       "deployments",
     ]);
+    const deployment = calls.find(
+      (call) => call.method === "POST" && call.url.endsWith("/deployments"),
+    );
+    const deploymentKey = deployment.init.body.get("commit_hash");
+    expect(deploymentKey).toMatch(/^[0-9a-f]{40}$/);
+    expect(deployment.init.body.get("commit_message")).toContain(deploymentKey);
   });
 
   it("should treat an already-existing project as success, not a failure", async () => {
     const { fetchFn } = fakeCloudflare({ existingProject: true });
-    const { url } = await deployFile({
-      accountId: "acct",
-      apiToken: "tok",
-      projectName: "deliver-proof",
-      filePath: join(dir, "rainfall.html"),
-      fileName: "rainfall.html",
-      fetchFn,
-    });
+    const { url } = await deploy({ fetchFn });
     expect(url).toBe("https://deadbeef.deliver-proof.pages.dev");
   });
 
@@ -190,14 +194,98 @@ describe("deployFile", () => {
         { status: 401 },
       );
     await expect(
-      deployFile({
-        accountId: "acct",
-        apiToken: "bad-token",
-        projectName: "deliver-proof",
-        filePath: join(dir, "rainfall.html"),
-        fileName: "rainfall.html",
-        fetchFn,
-      }),
+      deploy({ apiToken: "bad-token", fetchFn }),
     ).rejects.toThrow("Invalid API Token");
+  });
+
+  it("should enforce a hard deadline even when fetch ignores the abort signal", async () => {
+    let signal: AbortSignal | undefined;
+    const fetchFn = (_url, init) => {
+      signal = init.signal;
+      return new Promise(() => {});
+    };
+    const started = Date.now();
+    await expect(deploy({ fetchFn, timeoutMs: 20 })).rejects.toThrow(/timed out after 20ms/);
+    expect(Date.now() - started).toBeLessThan(200);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it("should bound response-body reads too", async () => {
+    const fetchFn = async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => new Promise(() => {}),
+    });
+    await expect(deploy({ fetchFn, timeoutMs: 20 })).rejects.toThrow(/timed out after 20ms/);
+  });
+
+  it("should reconcile a deployment whose successful response was lost without posting twice", async () => {
+    const base = fakeCloudflare();
+    const remote = [];
+    let deploymentPosts = 0;
+    let deploymentLists = 0;
+    const fetchFn = async (url, init) => {
+      const parsed = new URL(url);
+      if (parsed.pathname.endsWith("/deployments") && init?.method !== "POST") {
+        deploymentLists++;
+        return new Response(JSON.stringify({ success: true, result: remote }));
+      }
+      if (parsed.pathname.endsWith("/deployments") && init?.method === "POST") {
+        deploymentPosts++;
+        const deploymentKey = init.body.get("commit_hash");
+        remote.push({
+          id: "deployment-after-loss",
+          url: "https://lost-response.deliver-proof.pages.dev",
+          deployment_trigger: { metadata: { commit_hash: deploymentKey } },
+        });
+        throw new Error("connection closed before the response arrived");
+      }
+      return base.fetchFn(url, init);
+    };
+
+    await expect(deploy({ fetchFn })).rejects.toThrow(/connection closed/);
+    const recovered = await deploy({
+      fetchFn,
+      deliveryOperationId: "delivery-operation-2",
+    });
+
+    expect(recovered.url).toBe("https://lost-response.deliver-proof.pages.dev");
+    expect(recovered.reused).toBe(true);
+    expect(deploymentPosts).toBe(1);
+    expect(deploymentLists).toBe(1);
+    expect(JSON.parse(await readFile(recovered.recordPath, "utf8"))).toMatchObject({
+      state: "remote-complete",
+      deploymentId: "deployment-after-loss",
+    });
+  });
+
+  it("should fail closed after an unreadable deployment 5xx instead of posting twice", async () => {
+    const base = fakeCloudflare();
+    let deploymentPosts = 0;
+    const fetchFn = async (url, init) => {
+      const parsed = new URL(url);
+      if (parsed.pathname.endsWith("/deployments") && init?.method !== "POST") {
+        return new Response(JSON.stringify({ success: true, result: [] }));
+      }
+      if (parsed.pathname.endsWith("/deployments") && init?.method === "POST") {
+        deploymentPosts++;
+        return {
+          ok: false,
+          status: 503,
+          statusText: "Service Unavailable",
+          json: async () => {
+            throw new Error("truncated response body");
+          },
+        };
+      }
+      return base.fetchFn(url, init);
+    };
+
+    await expect(deploy({ fetchFn })).rejects.toThrow(/unreadable JSON/);
+    await expect(
+      deploy({ fetchFn, deliveryOperationId: "delivery-operation-2" }),
+    ).rejects.toThrow(/remains ambiguous/);
+    expect(deploymentPosts).toBe(1);
   });
 });

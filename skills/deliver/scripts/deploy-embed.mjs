@@ -1,5 +1,5 @@
 // The HOSTED EMBED delivery form's mechanism: Cloudflare Pages, direct upload, one file. Nothing
-// here reaches for a build step, a framework, or a wrangler config — a plain, three-call sequence
+// here reaches for a build step, a framework, or a wrangler config — a plain direct-upload sequence
 // against api.cloudflare.com does the whole job, matched by hand against Wrangler's own
 // `packages/wrangler/src/pages/{upload,validate}.ts` and `packages/wrangler/src/api/pages/deploy.ts`
 // (cloudflare/workers-sdk) rather than guessed:
@@ -9,7 +9,9 @@
 //   3. POST /pages/assets/upload         (bearer: jwt)  [{key, value, metadata, base64}]
 //   4. POST /accounts/{account}/pages/projects/{project}/deployments  (multipart) { manifest }
 //
-// Step 4's `manifest` maps `"/index.html"` (the path a request resolves) to the SAME hash that
+// Step 4 also carries a stable `commit_hash`. If its response is lost, a later call lists the
+// project's deployments and reconciles against that hash instead of creating a duplicate.
+// Its `manifest` maps `"/index.html"` (the path a request resolves) to the SAME hash that
 // named the file in step 3 — a plain content-addressed key, not a real signature. Wrangler computes
 // that key with blake3 (`packages/deploy-helpers/src/deploy/helpers/hash.ts`), which is not
 // available here without a new dependency (this skill's own boundary: `twin/skills/deliver/`
@@ -26,7 +28,14 @@
 // artifact under `<beatDir>/renders/` is genre "web"'s single self-contained HTML file; nothing
 // here inspects its name beyond that there must be exactly one.
 
+import {
+  deploymentKeyFor,
+  readHostedDeployment,
+  writeHostedDeployment,
+} from "./hosted-deployment.mjs";
+
 const API = "https://api.cloudflare.com/client/v4";
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 
 // ===== CONFIG — edit for your story =====
 // The project a beat's hosted embeds land in, if the caller does not name its own. One Cloudflare
@@ -70,12 +79,71 @@ export function resolveCloudflareCredentials(env) {
   return { accountId, apiToken };
 }
 
-async function cf(path, init, fetchFn) {
-  const res = await fetchFn(`${API}${path}`, init);
-  const json = await res.json().catch(() => null);
+class CloudflareRequestError extends Error {
+  constructor(message, { ambiguous = false, cause } = {}) {
+    super(message, { cause });
+    this.name = "CloudflareRequestError";
+    this.ambiguous = ambiguous;
+  }
+}
+
+async function cf(
+  path,
+  init,
+  fetchFn,
+  { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, ambiguousOnFailure = false } = {},
+) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error("Cloudflare request timeout must be greater than zero");
+  }
+  const controller = new AbortController();
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(
+        new CloudflareRequestError(`Cloudflare API ${path} timed out after ${timeoutMs}ms`, {
+          ambiguous: ambiguousOnFailure,
+        }),
+      );
+    }, timeoutMs);
+  });
+
+  let res;
+  let json;
+  try {
+    try {
+      res = await Promise.race([
+        Promise.resolve().then(() =>
+          fetchFn(`${API}${path}`, { ...init, signal: controller.signal }),
+        ),
+        timeout,
+      ]);
+    } catch (error) {
+      if (error instanceof CloudflareRequestError) throw error;
+      throw new CloudflareRequestError(`Cloudflare API ${path} request failed: ${error.message}`, {
+        ambiguous: ambiguousOnFailure,
+        cause: error,
+      });
+    }
+    try {
+      json = await Promise.race([res.json(), timeout]);
+    } catch (error) {
+      if (error instanceof CloudflareRequestError) throw error;
+      throw new CloudflareRequestError(`Cloudflare API ${path} returned unreadable JSON`, {
+        ambiguous: ambiguousOnFailure && (res.ok || res.status >= 500),
+        cause: error,
+      });
+    }
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok || json?.success === false) {
     const detail = json?.errors?.map((e) => e.message).join("; ") || res.statusText;
-    throw new Error(`Cloudflare API ${path} failed (${res.status}): ${detail}`);
+    throw new CloudflareRequestError(
+      `Cloudflare API ${path} failed (${res.status}): ${detail}`,
+      { ambiguous: ambiguousOnFailure && res.status >= 500 },
+    );
   }
   return json;
 }
@@ -95,7 +163,7 @@ function contentHash(buffer, extension) {
 // Idempotent: a project this account already owns is exactly as usable as one just created, so a
 // 409 naming Cloudflare's own "already exists" error code (8000002) is swallowed, not thrown —
 // every OTHER failure (a bad token, an account mismatch) still throws, naming what Cloudflare said.
-async function ensureProject({ accountId, apiToken, projectName, fetchFn }) {
+async function ensureProject({ accountId, apiToken, projectName, fetchFn, timeoutMs }) {
   try {
     await cf(
       `/accounts/${accountId}/pages/projects`,
@@ -105,6 +173,7 @@ async function ensureProject({ accountId, apiToken, projectName, fetchFn }) {
         body: JSON.stringify({ name: projectName, production_branch: "main" }),
       },
       fetchFn,
+      { timeoutMs },
     );
   } catch (error) {
     if (!/already exists/i.test(error.message)) throw error;
@@ -123,21 +192,99 @@ export async function deployFile({
   projectName = DEFAULT_PROJECT_NAME,
   filePath,
   fileName,
+  recordDir,
+  outputId,
+  reviewId,
+  draftDigest,
+  deliveryOperationId,
+  timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   fetchFn = fetch,
 }) {
-  await ensureProject({ accountId, apiToken, projectName, fetchFn });
+  const buffer = Buffer.from(await Bun.file(filePath).arrayBuffer());
+  const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
+  const hash = contentHash(buffer, extension);
+  const deployedAs = extension ? `index.${extension}` : "index";
+  const deploymentKey = deploymentKeyFor({
+    accountId,
+    projectName,
+    outputId,
+    reviewId,
+    draftDigest,
+    contentHash: hash,
+  });
+  const binding = {
+    recordDir,
+    deploymentKey,
+    accountId,
+    projectName,
+    outputId,
+    reviewId,
+    draftDigest,
+    contentHash: hash,
+    fileName,
+    deployedAs,
+    deliveryOperationId,
+  };
+
+  const recorded = await readHostedDeployment(binding);
+  if (recorded?.record.state === "remote-complete" || recorded?.record.state === "local-complete") {
+    return {
+      url: recorded.record.url,
+      deploymentId: recorded.record.deploymentId,
+      deploymentKey,
+      recordPath: recorded.path,
+      reused: true,
+    };
+  }
+
+  if (
+    recorded?.record.state === "prepared" ||
+    recorded?.record.state === "requesting" ||
+    recorded?.record.state === "ambiguous"
+  ) {
+    const deployments = await cf(
+      `/accounts/${accountId}/pages/projects/${projectName}/deployments?per_page=100`,
+      { headers: { Authorization: `Bearer ${apiToken}` } },
+      fetchFn,
+      { timeoutMs },
+    );
+    const deployment = deployments.result?.find(
+      (candidate) =>
+        candidate?.deployment_trigger?.metadata?.commit_hash === deploymentKey,
+    );
+    if (deployment?.id && deployment?.url) {
+      const completed = await writeHostedDeployment(binding, "remote-complete", {
+        deploymentId: deployment.id,
+        url: deployment.url,
+        reconciledAt: new Date().toISOString(),
+        ambiguousReason: undefined,
+      });
+      return {
+        url: deployment.url,
+        deploymentId: deployment.id,
+        deploymentKey,
+        recordPath: completed.path,
+        reused: true,
+      };
+    }
+    await writeHostedDeployment(binding, "ambiguous", {
+      lastReconciledAt: new Date().toISOString(),
+    });
+    throw new Error(
+      `Cloudflare deployment ${deploymentKey} remains ambiguous; no matching deployment is visible yet`,
+    );
+  }
+
+  await ensureProject({ accountId, apiToken, projectName, fetchFn, timeoutMs });
 
   const { jwt } = (
     await cf(
       `/accounts/${accountId}/pages/projects/${projectName}/upload-token`,
       { headers: { Authorization: `Bearer ${apiToken}` } },
       fetchFn,
+      { timeoutMs },
     )
   ).result;
-
-  const buffer = Buffer.from(await Bun.file(filePath).arrayBuffer());
-  const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
-  const hash = contentHash(buffer, extension);
 
   await cf(
     "/pages/assets/check-missing",
@@ -147,6 +294,7 @@ export async function deployFile({
       body: JSON.stringify({ hashes: [hash] }),
     },
     fetchFn,
+    { timeoutMs },
   );
 
   await cf(
@@ -155,24 +303,72 @@ export async function deployFile({
       method: "POST",
       headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
       body: JSON.stringify([
-        { key: hash, value: buffer.toString("base64"), metadata: { contentType: contentTypeFor(fileName) }, base64: true },
+        {
+          key: hash,
+          value: buffer.toString("base64"),
+          metadata: { contentType: contentTypeFor(fileName) },
+          base64: true,
+        },
       ]),
     },
     fetchFn,
+    { timeoutMs },
   );
 
   const formData = new FormData();
   // Always served at the deployment's own root — the whole point of naming every upload
   // "index.<ext>" in the manifest regardless of the beat's own file name, so the returned URL is
   // the complete embed link with nothing to append.
-  const deployedAs = extension ? `index.${extension}` : "index";
   formData.append("manifest", JSON.stringify({ [`/${deployedAs}`]: hash }));
+  formData.append("commit_hash", deploymentKey);
+  formData.append("commit_message", `Splash deployment ${deploymentKey}`);
+  formData.append("commit_dirty", "false");
 
-  const deployment = await cf(
-    `/accounts/${accountId}/pages/projects/${projectName}/deployments`,
-    { method: "POST", headers: { Authorization: `Bearer ${apiToken}` }, body: formData },
-    fetchFn,
-  );
+  await writeHostedDeployment(binding, "prepared");
+  await writeHostedDeployment(binding, "requesting", {
+    requestStartedAt: new Date().toISOString(),
+  });
 
-  return { url: deployment.result.url };
+  let deployment;
+  try {
+    deployment = await cf(
+      `/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+      { method: "POST", headers: { Authorization: `Bearer ${apiToken}` }, body: formData },
+      fetchFn,
+      { timeoutMs, ambiguousOnFailure: true },
+    );
+  } catch (error) {
+    await writeHostedDeployment(binding, error.ambiguous ? "ambiguous" : "failed", {
+      failureReason: error.message,
+      failedAt: new Date().toISOString(),
+    });
+    throw error;
+  }
+
+  if (!deployment.result?.id || !deployment.result?.url) {
+    const error = new CloudflareRequestError(
+      "Cloudflare deployment response did not name its deployment ID and URL",
+      { ambiguous: true },
+    );
+    await writeHostedDeployment(binding, "ambiguous", {
+      failureReason: error.message,
+      failedAt: new Date().toISOString(),
+    });
+    throw error;
+  }
+
+  const completed = await writeHostedDeployment(binding, "remote-complete", {
+    deploymentId: deployment.result.id,
+    url: deployment.result.url,
+    remoteCompletedAt: new Date().toISOString(),
+    failureReason: undefined,
+  });
+
+  return {
+    url: deployment.result.url,
+    deploymentId: deployment.result.id,
+    deploymentKey,
+    recordPath: completed.path,
+    reused: false,
+  };
 }
