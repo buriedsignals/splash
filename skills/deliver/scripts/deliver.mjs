@@ -13,6 +13,12 @@ import { formatHandover } from "./format-handover.mjs";
 import { GENRE_OFFER_RECEIPT, PENDING } from "./another-genre.mjs";
 import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 import { requireApprovedOutput } from "./output-review.mjs";
+import {
+  publishStagedDelivery,
+  reconcileDeliveryReplacement,
+  replacementArtifacts,
+  withDeliveryLock,
+} from "./delivery-replacement.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -705,51 +711,6 @@ ${JSON.stringify(insertion, null, 2)}
   return withHandover(written, { exportDir, genre, handover, states });
 }
 
-async function publishStagedDelivery(stagingDir, exportDir) {
-  const existing = await optionalStat(exportDir);
-  if (existing?.isSymbolicLink()) {
-    throw new Error(`delivery refuses a symlinked export directory: ${exportDir}`);
-  }
-  if (existing && !existing.isDirectory()) {
-    throw new Error(`delivery refuses a non-directory export target: ${exportDir}`);
-  }
-
-  const backupDir = join(dirname(exportDir), `.${basename(exportDir)}-previous-${randomUUID()}`);
-  let movedExisting = false;
-  try {
-    if (existing) {
-      await rename(exportDir, backupDir);
-      movedExisting = true;
-    }
-    await rename(stagingDir, exportDir);
-  } catch (error) {
-    if (movedExisting) {
-      try {
-        await rename(backupDir, exportDir);
-      } catch (restoreError) {
-        throw new AggregateError(
-          [error, restoreError],
-          `delivery replacement failed and the previous export could not be restored at ${exportDir}`,
-        );
-      }
-    }
-    throw error;
-  }
-
-  if (movedExisting) {
-    try {
-      await rm(backupDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      // `rm` may already have removed part of the backup. Rolling back to that directory would turn
-      // a cleanup problem into data loss. The new export is complete and canonical at this point;
-      // retain whatever backup remains and report its exact path for operator cleanup.
-      console.warn(
-        `delivery published at ${exportDir}, but its previous backup could not be fully removed at ${backupDir}: ${cleanupError.message}`,
-      );
-    }
-  }
-}
-
 /**
  * Build a complete delivery in a private sibling directory, then publish it as one replacement.
  * The caller repeats `exportDirFor(storyDir, beatName)` for compatibility, but `beatDir` derives
@@ -763,9 +724,8 @@ export async function materialise(options) {
   }
 
   const paths = await deliveryPaths(beatDir, exportDir);
-  const approval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+  requireApprovedOutput({ beatDir, planVersion, findingIds });
   validateHandover(handover, genre);
-  await refuseToWipeAnotherBeat(paths.exportDir, beatDir);
 
   await mkdir(paths.exportRoot, { recursive: true });
   const exportRoot = await lstat(paths.exportRoot);
@@ -773,29 +733,50 @@ export async function materialise(options) {
     throw new Error(`delivery refuses a symlinked export root: ${paths.exportRoot}`);
   }
 
-  const stagingDir = join(
-    paths.exportRoot,
-    `.${paths.beatName}-delivery-staging-${randomUUID()}`,
-  );
-  await mkdir(stagingDir);
+  return withDeliveryLock(
+    paths.exportDir,
+    async () => {
+      await reconcileDeliveryReplacement(paths.exportDir);
+      await refuseToWipeAnotherBeat(paths.exportDir, beatDir);
+      const approval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+      const operationId = randomUUID();
+      const { stagingDir } = replacementArtifacts(paths.exportDir, operationId);
+      await mkdir(stagingDir);
 
-  try {
-    const stagedWritten = await materialiseInto({ ...options, exportDir: stagingDir });
-    const currentApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
-    if (currentApproval.id !== approval.id) {
-      throw new Error("OutputReview changed while this delivery was being built");
-    }
-    await publishStagedDelivery(stagingDir, paths.exportDir);
-    return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
-  } catch (error) {
-    try {
-      await rm(stagingDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      throw new AggregateError(
-        [error, cleanupError],
-        `delivery failed and its staging directory could not be removed at ${stagingDir}`,
-      );
-    }
-    throw error;
-  }
+      try {
+        const stagedWritten = await materialiseInto({ ...options, exportDir: stagingDir });
+        const currentApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+        if (currentApproval.id !== approval.id) {
+          throw new Error("OutputReview changed while this delivery was being built");
+        }
+        await publishStagedDelivery({
+          stagingDir,
+          exportDir: paths.exportDir,
+          manifest: {
+            operationId,
+            reviewId: approval.id,
+            planVersion: approval.planVersion,
+            draftDigest: approval.draftDigest,
+            findingIds: approval.findingIds,
+            form,
+            genre,
+            createdAt: new Date().toISOString(),
+          },
+          hooks: options.replacementHooks,
+        });
+        return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
+      } catch (error) {
+        try {
+          await rm(stagingDir, { recursive: true, force: true });
+        } catch (cleanupError) {
+          throw new AggregateError(
+            [error, cleanupError],
+            `delivery failed and its staging directory could not be removed at ${stagingDir}`,
+          );
+        }
+        throw error;
+      }
+    },
+    { waitMs: options.deliveryLockWaitMs },
+  );
 }

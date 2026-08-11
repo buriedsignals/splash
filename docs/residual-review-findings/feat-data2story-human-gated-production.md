@@ -17,13 +17,17 @@ staging before it publishes. Contract and entry-point tests cover render, plan,
 finding, output, QA, decision, and schema mismatches while preserving the last
 good export.
 
-## P1 — interrupted replacement recovery
+## Resolved 2026-08-11 — interrupted replacement recovery
 
-The two-rename local publication sequence preserves the last good export across
-ordinary validation, build, handover, network, and rename errors, but a process
-termination between renames can strand a backup. Add a durable replacement
-journal or versioned delivery manifest, reconcile staging/backup state before a
-new delivery, and serialize concurrent delivery for the same output.
+`skills/deliver/scripts/delivery-replacement.mjs` now serializes same-output
+work with an in-process queue and a dead-owner-aware filesystem lock. Each
+publication writes a schema-v1 replacement journal and complete delivery
+manifest before moving the old export and publishing staging. The next call
+reconciles interrupted staging, restores the previous export when publication
+did not complete, or keeps the manifest-proven new export and finishes backup
+cleanup. Fault-injection tests cover both rename boundaries, deferred cleanup,
+both process-restart states, abandoned staging, stale locks, and concurrent
+direct `materialise` calls.
 
 ## P1 — hosted deployment timeout and reconciliation
 
@@ -47,8 +51,6 @@ recursive replacement scope.
 
 ## Review verification still required
 
-- Fault injection at both publish renames, backup cleanup, and process restart.
-- Concurrent `materialise` calls for one output.
 - Cloudflare timeout, response loss, and remote-success/local-failure cases.
 - The credential-gated MapTiler browser smoke remains manual. On the 2026-08-10
   Ubuntu hosted runner it reached the keyed temporary page but timed out waiting

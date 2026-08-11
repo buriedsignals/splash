@@ -362,6 +362,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
 const SCRIPTS = [
   "deliver.mjs",
   "output-review.mjs",
+  "delivery-replacement.mjs",
   "format-handover.mjs",
   // The two refusals that decide what language the delivery is written in are on the delivery path
   // like every other one here, so they are read by the same scan.

@@ -65,7 +65,9 @@ private sibling staging directory, including `HANDOVER.md`, and only then replac
 directory therefore holds exactly the most recently completed form — never a mix of two — while a
 failed build, hand-over, copy, or remote deployment leaves the last good export intact. Validation
 of `{form, genre}`, the exact per-beat path, the bound `OUTPUT-REVIEW.json`, and the hand-over
-payload all happens before staging begins.
+payload all happens before staging begins. A per-output lock serializes concurrent calls. A
+versioned replacement journal and `.delivery-manifest.json` let the next call restore the previous
+export or finish cleanup if the process stopped between the two publication renames.
 
 **The other half of it, and it was live: a story has more than one beat.** With one story-level
 `export/` shared by every beat, that same wipe reached ACROSS beats — delivering beat 2 destroyed
@@ -89,6 +91,7 @@ Two things close it, and both are code rather than convention:
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; validates the bound output review (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, derives and contains the per-beat export path, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Replacement | `scripts/delivery-replacement.mjs` — `withDeliveryLock`, `publishStagedDelivery`, `reconcileDeliveryReplacement` | Serializes same-output delivery, journals both publication renames, records the complete new export, and reconciles an interrupted replacement before another begins |
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
@@ -141,10 +144,13 @@ remain untouched on disk.
    that happens to exist under one genre is never accepted for a different genre just because the
    id matches. It independently validates the same bound review, validates `handover`, derives the
    one legal `export/<beat>/` directory from the beat path, and rejects path traversal, a broad
-   story-level destination, or symlinked delivery directories. It checks the review again after
-   staging so a render or review changed during the build cannot be published. Only a successful
-   build and hand-over replace the previous export; failures remove staging and preserve the last
-   good delivery. Inside staging it writes the beat's receipt and:
+   story-level destination, or symlinked delivery directories. Under a per-output filesystem lock,
+   it first reconciles any prior journal, then checks the review again after staging so a render or
+   review changed during the build cannot be published. Publication records a complete manifest,
+   journals the old-export and new-export renames, and retains cleanup state if removing the backup
+   fails. Only a successful build and hand-over replace the previous export; ordinary failures
+   remove staging and preserve the last good delivery. Inside staging it writes the beat's receipt
+   and:
    - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
      subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
      throws on it).
@@ -359,6 +365,7 @@ const written = await materialise({
 | Where a beat's delivery lands | `export/<beat>/` — one directory per beat, never one per story | `exportDirFor`, `scripts/deliver.mjs` |
 | What makes an artifact a MAP delivery, for the key rule | `1` string — the key slot the renderer leaves in the file (`carriesMapKey`). Nothing about the environment, the genre or the medium enters that decision | `MAP_KEY_PLACEHOLDER`, `scripts/deliver.mjs` |
 | What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
+| What makes an interrupted replacement recoverable | A schema-v1 sibling journal plus `.delivery-manifest.json`; a per-output lock serializes calls and stale dead-process locks are reclaimed | `scripts/delivery-replacement.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
@@ -391,6 +398,8 @@ const written = await materialise({
   `source-bundle` delivery.
 - `scripts/output-review.mjs` — deterministic render-tree digest, versioned review/QA validation,
   atomic `OUTPUT-REVIEW.json` serialization, and the fail-closed gate both delivery APIs call.
+- `scripts/delivery-replacement.mjs` — per-output in-process and filesystem locking, the versioned
+  replacement journal and delivery manifest, both publication renames, and restart reconciliation.
 - `scripts/another-genre.mjs` — `otherGenresFor`, `formatGenreOffer`, `recordGenreAnswer`,
   `deliveryClosed`, and `PRODUCIBLE_GENRES`, this skill's own reading of which medium × genre pairs
   can be walked to a delivered export (a duplicate of the storyboard's catalogue, cross-checked by a

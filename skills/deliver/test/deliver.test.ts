@@ -9,7 +9,7 @@ import {
   symlink,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import {
   offerForms as offerFormsWithReview,
   materialise as materialiseWithReview,
@@ -19,6 +19,7 @@ import {
   mapKeyState,
 } from "../scripts/deliver.mjs";
 import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
+import { replacementArtifacts } from "../scripts/delivery-replacement.mjs";
 import {
   approveCurrentOutput,
   TEST_FINDING_IDS,
@@ -473,6 +474,78 @@ describe("materialise", () => {
     expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
       "last-good",
     );
+  });
+
+  it("should serialize concurrent materialisations for the same output", async () => {
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    const events: string[] = [];
+    let releaseFirst: () => void;
+    const firstMayPublish = new Promise<void>((resolvePublish) => {
+      releaseFirst = resolvePublish;
+    });
+    let firstReachedRename: () => void;
+    const firstAtRename = new Promise<void>((resolveRename) => {
+      firstReachedRename = resolveRename;
+    });
+
+    const first = materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir,
+      exportDir,
+      handover,
+      replacementHooks: {
+        beforeMovePrevious: async () => {
+          events.push("first");
+          firstReachedRename();
+          await firstMayPublish;
+        },
+      },
+    });
+    await firstAtRename;
+    const second = materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+      handover,
+      replacementHooks: {
+        beforeMovePrevious: () => events.push("second"),
+      },
+    });
+    await Bun.sleep(10);
+    expect(events).toEqual(["first"]);
+    releaseFirst();
+    await Promise.all([first, second]);
+
+    expect(events).toEqual(["first", "second"]);
+    expect(await readdir(exportDir)).toContain("still.png");
+    expect(await Bun.file(join(exportDir, "build.ts")).exists()).toBe(false);
+  });
+
+  it("should reconcile abandoned staging before starting a new delivery", async () => {
+    const abandoned = replacementArtifacts(exportDir, "interrupted-build").stagingDir;
+    await mkdir(abandoned);
+    await writeFile(join(abandoned, "partial.txt"), "never publish this");
+
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readdir(dirname(exportDir))).not.toContain(basename(abandoned));
+    expect(await Bun.file(join(exportDir, "partial.txt")).exists()).toBe(false);
+    expect(await readFile(join(exportDir, "still.png"), "utf8")).toBe("png-bytes");
   });
 
   it("should write only the owned file when that form is chosen", async () => {
