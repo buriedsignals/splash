@@ -64,6 +64,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Layer | File | Role |
 | --- | --- | --- |
 | Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the genres proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
+| Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · genre · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
@@ -76,7 +77,8 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 1. **Restitution → the exchange runs** (`references/exchange.md`, movements ①–⑩): the claims read
    back, the confirmed takeaway **and its grounding at G1**, the journalist's hand (each question
    landing somewhere named, and no destination presuming a medium), the survey of every type this
-   data could support, then the three sub-gates in order — **medium (G2a), genre (G2b), size
+   data could support and the advisory intent ranking in `references/chart-choice.md`, then the
+   three sub-gates in order — **medium (G2a), genre (G2b), size
    (G2c)** — the reference loop, the palette, the slots-and-candidates proposal, the beat brief.
    The order is the argument: each movement depends on the one before it. This is prose conducted
    in conversation — this skill's reference is what governs it, not code.
@@ -163,8 +165,12 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      `supported` therefore means "every claim this check could resolve, it resolved in favour", not
      "every number was verified" — the detail names how many could not be placed, and that half is
      said out loud, because an unverifiable claim is information, not a refusal.
-   - **④ ⑤** — `typeSurvey()` reads the generated survey back, and `proposeMediums({capabilities})`
-     marks a medium the environment has closed AT THE MEDIUM QUESTION, with what would open it.
+   - **④ ⑤** — `typeSurvey()` reads the generated survey back. The exchange reads
+     `references/chart-choice.md`, removes types whose hard data requirements fail, and ranks the
+     survivors by the confirmed intent before reachability is considered. The ranking is advisory:
+     a lower-ranked candidate is valid when its reason says why the higher surviving form lost.
+     `proposeMediums({capabilities})` then marks a medium the environment has closed AT THE MEDIUM
+     QUESTION, with what would open it.
    - **⑥** — `proposeGenres({medium, capabilities})` returns every genre in the vocabulary, each
      marked reachable or not AND CARRYING ITS REFUSAL, so an absent pair is named rather than
      quietly omitted. `confirmReachable({medium, genre, capabilities})` then produces the recorded
@@ -238,6 +244,10 @@ if (errors.length > 0) {
   and `test/type-survey.test.ts` runs that check. It exists as a generated copy because a script in
   this skill may not read `chart-beat/references/types/` — that path resolves inside another
   skill — which is the same reason `twin/MATRIX.md` is generated rather than hand-kept.
+- `references/chart-choice.md` — the advisory intent-to-form rankings used at movement ④. It keeps
+  hard data refusals ahead of rank, fit ahead of reachability, and agent judgement ahead of an
+  automatic dispatch rule. `test/chart-choice.test.ts` makes a new type sheet fail until the guide
+  accounts for it.
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
 - `scripts/propose.mjs` — `resolveGrounding`, `groundingScalar`, `typeSurvey`, `readTypeSurvey`,
   `proposeMediums`, `proposeGenres`, `proposeSizes`, `confirmReachable`, `assertDistinctWays`,

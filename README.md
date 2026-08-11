@@ -94,8 +94,9 @@ Splash's human-gated production redesign adapts selected ideas from Qinghong Lin
 et al.'s [Data2Story paper](https://arxiv.org/abs/2606.11176) and the
 [Data2Story open-source project](https://github.com/QinghongLin/data2story-skill),
 especially evidence traceability, explicit planning, and quality review. Splash
-is not a Data2Story fork and does not adopt its fixed role topology or
-article-only workflow.
+uses Data2Story as a design reference only: it does not install, invoke, or
+require Data2Story skills at runtime, and it does not adopt the project's fixed
+role topology or article-only workflow.
 
 ## License
 

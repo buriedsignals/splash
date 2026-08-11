@@ -119,7 +119,9 @@ exchange did not have: forty type sheets ship in this toolchain and the conversa
 of one of them, so the run offered three candidates that were three variants of the same bar.
 
 Read `references/type-survey.md` — generated from the type sheets themselves, and read back by
-`typeSurvey()` (`scripts/propose.mjs`) — and name, for this story's frozen profile:
+`typeSurvey()` (`scripts/propose.mjs`) — then read `references/chart-choice.md`. Name the narrow
+intent expressed by the confirmed takeaway and comparison, apply the chooser's hard refusals, and
+rank only the types this story's frozen profile can actually support. Then name:
 
 - the types the profile **could** support, each with what that type is for, in one line;
 - a type the profile **cannot** supply the shape for, said as *not applicable, and why* (a slope
@@ -128,6 +130,12 @@ Read `references/type-survey.md` — generated from the type sheets themselves, 
   `proposeGenres({medium, capabilities})` (`scripts/propose.mjs`) run `genreGap` and
   `capabilityGap` for you and hand back every row with its own refusal attached. A medium closed by
   a missing key is said HERE, with what would open it, not three movements later.
+
+The chooser is advisory. Its first surviving type is the recommendation, not a dispatch rule. A
+lower-ranked type may lead when the subject, comparison, limits, placement or delivery context gives
+it a stronger story-specific reason; say why the higher surviving type lost. Reachability is checked
+after editorial fit, so an unproven type is reported as unproven rather than quietly ranked below a
+weaker form. Do not ask the journalist to operate or override the ranking.
 
 Genuinely different ways of seeing the same numbers, not three treatments of one. `assertDistinctWays`
 refuses a candidate set whose candidates all name the same type — the run offered three and all
@@ -217,7 +225,8 @@ its medium, its genre, its size, and one line of why. `formatCandidates({medium,
 capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate carries
 the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that way,
 which is required, because a candidate with no reason is a name in a list. A candidate whose pair the
-catalog refuses cannot be rendered at all. The journalist drops, reorders, adds, vetoes.
+catalog refuses cannot be rendered at all. When a candidate departs from the chooser's first
+surviving type, its reason also says why. The journalist drops, reorders, adds, vetoes.
 Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly this gate,
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate
 2 has not actually closed no matter what the conversation implied.
