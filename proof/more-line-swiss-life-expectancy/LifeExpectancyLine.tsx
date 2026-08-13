@@ -70,9 +70,9 @@ const BASE = {
   END_DOT: 4,
 };
 const UNIT = "years";
-/** The static genre's own tick density (`static-discipline.md`, "Axis density") — enough
+/** The static format's own tick density (`static-discipline.md`, "Axis density") — enough
  *  gridlines that a reader who scrutinises the frame can read a value off either axis directly,
- *  not the sparse 2-3 tick set the motion genre keeps for a chart that is being watched draw.
+ *  not the sparse 2-3 tick set the motion format keeps for a chart that is being watched draw.
  *  Sparser where the frame is read on a phone: removal-ladder rung R2, the only rung that gives
  *  budget back without removing anything vertical. */
 const Y_TICK_HINT = 5;

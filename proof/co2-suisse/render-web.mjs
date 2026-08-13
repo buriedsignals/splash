@@ -1,8 +1,8 @@
 // twin/proof/co2-suisse/render-web.mjs
 //
 // The CO₂ beat's own WEB runner — the same shape `../life-expectancy/render.mjs` and
-// `../migration/render.mjs` have for the video genre: the story's own constants, the story's own
-// data reader, the story's own component, handed to the genre's generic machinery.
+// `../migration/render.mjs` have for the video format: the story's own constants, the story's own
+// data reader, the story's own component, handed to the format's generic machinery.
 //
 // It lives here, beside the story, and not inside `skills/chart-web/scripts/render-web.mjs`,
 // because that file used to import this story's component out of the skill — and a skill directory
@@ -35,7 +35,7 @@ console.log(
 );
 
 /** The story's own constants — the journalist's words, from `BRIEF.md` and `STORYBOARD.md`. The same
- *  words the video runner uses for the same beat, so the genres never disagree about what the chart
+ *  words the video runner uses for the same beat, so the formats never disagree about what the chart
  *  says. `ground` and `accent` are not among them: they are the newsroom's recorded answer, read
  *  from `PALETTE.md` beside this file. */
 export const BEAT = {

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "provider": "cloudflare-pages",
+  "storyId": "heat-pump-adoption-across-europe",
+  "outputId": "1-the-gap-that-persists",
+  "projectName": "deliver-proof",
+  "publicUrl": "https://9b0582c3.deliver-proof.pages.dev",
+  "immutableDeploymentUrl": "https://9b0582c3.deliver-proof.pages.dev",
+  "deploymentId": "9b0582c3-8ee1-42b9-b7b9-13bfc7850f63",
+  "reviewId": "d269c481-7713-4b86-9c4d-fa9389fbd56d",
+  "draftDigest": "sha256:ea3a71b20e22379bde62b2a5e1d8c3ae6bedbd0a46f5dd63cd9a8ef437729383",
+  "editableSource": "beats/1-the-gap-that-persists/",
+  "renderedArtifact": "beats/1-the-gap-that-persists/renders/slope.html",
+  "currentDelivery": "export/1-the-gap-that-persists/",
+  "legacySharedProject": true,
+  "stableAcrossRevisions": false,
+  "deployedAt": "2026-08-13T10:34:48.954Z"
+}

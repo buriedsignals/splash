@@ -1,14 +1,14 @@
 // twin/skills/chart-web/scripts/verify-web.mjs
 //
-// The genre's own verification, and the only place its three moving parts are actually proven.
+// The format's own verification, and the only place its three moving parts are actually proven.
 //
 // `references/web-discipline.md`, "Verification", already said the rule: an interactive, fluid
-// genre is verified by driving a real browser at several widths, never by reading markup and never
+// format is verified by driving a real browser at several widths, never by reading markup and never
 // by trusting a unit test. It said it and then left the doing to a human opening the file. This
 // script is that human, written down — so the claim "hover works" is a measurement with a number
 // beside it rather than a sentence somebody wrote after looking once.
 //
-// WHY IT DISPATCHES REAL INPUT AND NOTHING ELSE. This genre has already shipped, once, a build
+// WHY IT DISPATCHES REAL INPUT AND NOTHING ELSE. This format has already shipped, once, a build
 // where hover was completely dead: `.overlay` (the HTML layer carrying the reference/peak/end
 // labels, sharing the `<svg>`'s own grid cell so a `%` position lands on the geometry it
 // annotates) had no `pointer-events: none`, so it swallowed every mouse and touch event over the
@@ -29,7 +29,7 @@
 //     colliding with a line, a clipped mark, an ugly squat plot on a phone: none of that is
 //     reachable from here. `--shots` writes PNGs at every width so a human still looks.
 //   - One engine (Chrome). `:has()`, `dvh` and `@supports selector()` are the three features this
-//     genre leans on; all three are Baseline, none is verified here on Safari or Firefox.
+//     format leans on; all three are Baseline, none is verified here on Safari or Firefox.
 //   - Touch is exercised as a pointer, not as a real finger: no multi-touch, no scroll-vs-tap
 //     disambiguation, no 300ms tap delay.
 //   - It cannot prove the ABSENCE of a defect it was not written to look for, which is why the
@@ -54,7 +54,7 @@ import { render } from "./render-web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** The widths this genre claims to work at, each paired with a REAL window height rather than a
+/** The widths this format claims to work at, each paired with a REAL window height rather than a
  *  generous one — the fit rule is about the height a reader actually has, and a laptop reports far
  *  less of it than its screen's spec sheet does. 1600x800 and 1920x950 are the two that were
  *  measured overflowing (102px and 101px) before `.chart-figure` gained its `max-height`; 3440x900
@@ -237,7 +237,7 @@ async function checkHover(page, vp) {
   await sleep(60);
 
   // MARKS ARE DISCOVERED BY `[data-detail]`, NOT BY `.pt`. `.pt` is the SEED's own class for a
-  // point on a line; it is not the genre's contract and it is not what most beats draw. Measured
+  // point on a line; it is not the format's contract and it is not what most beats draw. Measured
   // across the thirteen shipped web beats: all 13 carry `data-detail`, only 5 carry `.pt`, and the
   // hit element is called `bin-hit`, `segment-hit`, `step-hit`, `bar-hit`, `hit-row` or `row-hit`
   // depending on what the beat is a chart OF. `data-detail` is the real contract — it is the
@@ -265,7 +265,7 @@ async function checkHover(page, vp) {
       .filter((p) => p.w > 0 && p.h > 0);
   });
 
-  // A web beat whose readings answer nothing has no reason to be in this genre at all
+  // A web beat whose readings answer nothing has no reason to be in this format at all
   // (`SKILL.md`, "When to use"): the honest use of interaction is the detail a static frame had to
   // omit. So this one is a FAILURE, never a skip.
   check(
@@ -549,7 +549,7 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
   // TEST (`SKILL.md`, "When to use" — "most beats should not have one"). Measured across the
   // thirteen shipped web beats: none of them carries a filter. So a hard assumption that
   // `#period-late` exists made this whole script unusable on them, which is the wrong way round —
-  // the genre's own doctrine says the filter is the exception. Absent, the filter checks are
+  // the format's own doctrine says the filter is the exception. Absent, the filter checks are
   // skipped ALOUD; present but malformed, they still fail.
   const filter = await page.evaluate(() => {
     const fs = document.querySelector("fieldset.chart-filter");

@@ -1,6 +1,6 @@
 # Beat — one river, nine territories, in the order the Danube reaches them
 
-**Type:** flow / route map. **Medium/genre:** map / static. **Channel:** article web, over a
+**Type:** flow / route map. **Medium/format:** map / static. **Channel:** article web, over a
 900 × 420 baked plate (`plate/`, frozen beside this brief), one fixed camera holding the whole
 course.
 

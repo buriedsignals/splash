@@ -5,7 +5,7 @@
  * how a chart arrives: six events named editorially, in a fixed order, each begun only once the one
  * before it has finished. The owner was asked what style the web entrance should be and answered
  * *"dans le même style que la vidéo"* — the same idiom as the video. So this file carries the
- * video's vocabulary rather than inventing a second one, and the web genre replays the video's own
+ * video's vocabulary rather than inventing a second one, and the web format replays the video's own
  * choreography instead of drifting into a parallel grammar that would slowly disagree with it.
  *
  * It is a COPY and not an import because nothing under a skill may import out of the skill
@@ -63,7 +63,7 @@
  *      event, so the next person can see which number came from where.
  *
  *   4. **A ceiling exists, and it is stated rather than measured.** `ENTRANCE_CEILING_MS` is the
- *      number this genre is held to, not a number read off an experiment: an entrance nobody watched
+ *      number this format is held to, not a number read off an experiment: an entrance nobody watched
  *      to the end is a worse artifact than a static chart, so the whole build has to fit inside the
  *      time a reader spends arriving at a graphic. 2400ms is a judgement. It is enforced
  *      (`checkEntrance`, and again in a real browser by
@@ -73,7 +73,7 @@
  *
  * The MECHANISM of a reveal belongs to the beat, not to the contract. A line's reveal is a head
  * advancing along its own path; a bar chart's is bars growing from their baseline; a pyramid's is
- * two rows meeting in the middle. The video genre has exactly the same split — `timing.ts` holds the
+ * two rows meeting in the middle. The video format has exactly the same split — `timing.ts` holds the
  * edit, `EmissionsVideo.tsx` holds the drawing — and it is why neither file is parameterised into a
  * general animator. What the contract owns is WHEN each layer arrives and IN WHAT ORDER.
  */
@@ -212,7 +212,7 @@ export function checkEntrance(entrance: BeatEntrance): string[] {
 }
 
 /**
- * This genre's own entrance. 2.03 seconds, against the video's 6.4.
+ * This format's own entrance. 2.03 seconds, against the video's 6.4.
  *
  * Read it as the edit, with its video ancestor beside each number (`CO2_TIMING`, 30fps):
  *
@@ -221,13 +221,13 @@ export function checkEntrance(entrance: BeatEntrance): string[] {
  * | establish  | 26f = 867ms     | 290ms   | ÷3     | motion                                     |
  * | *gap*      | 6f = 200ms      | 40ms    | ÷5     | pause                                      |
  * | reference  | 22f = 733ms     | 240ms   | ÷3     | motion                                     |
- * | *gap*      | 18f = 600ms     | 120ms   | ÷5     | pause — and 120ms is this genre's own unit |
+ * | *gap*      | 18f = 600ms     | 120ms   | ÷5     | pause — and 120ms is this format's own unit |
  * | reveal     | 78f = 2600ms    | 870ms   | ÷3     | motion                                     |
  * | subject    | 18f = 600ms     | 200ms   | ÷3     | motion                                     |
  * | conclusion | 24f = 800ms     | 270ms   | ÷3     | motion                                     |
  * | hold       | 48f = 1600ms    | —       |        | the rest of the page's life (change 1)     |
  *
- * The second gap is 120ms and not 200ms because 120ms is already this genre's transition unit —
+ * The second gap is 120ms and not 200ms because 120ms is already this format's transition unit —
  * the filter pill and the filtered marks both use it (`render-web.mjs`'s `FILTER_CHROME_CSS`) — and
  * a page with two motion units in it is a page whose motion was not designed.
  *
@@ -289,7 +289,7 @@ export const LABEL_FADE_MS = 110;
 /**
  * A `clipPath` id that cannot collide with another beat's on the same page.
  *
- * NOT decoration. This genre's whole delivery model is an embed: `renderWeb` writes one
+ * NOT decoration. This format's whole delivery model is an embed: `renderWeb` writes one
  * self-contained file that a CMS drops into an article, and an article may hold two of them. Two
  * `<clipPath id="entrance-reveal">` in one document is a real defect and a quiet one — `url(#id)`
  * resolves to the FIRST match in document order, so both figures would share one clip AND one

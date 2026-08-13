@@ -5,7 +5,7 @@ type: scatter
 
 # Beat — beyond $30,000, income buys far less extra life expectancy
 
-**Type:** scatter. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
+**Type:** scatter. **Medium/format:** chart / static. **Channel:** article web, 900 x 560.
 
 ## Claim
 

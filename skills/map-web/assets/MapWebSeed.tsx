@@ -1,11 +1,11 @@
 /**
  * REPLACE ME. Do not parameterise me.
  *
- * The web genre's seed: a proportional-symbol map, interactive. It draws a real claim — this
+ * The web format's seed: a proportional-symbol map, interactive. It draws a real claim — this
  * sample of thirteen European metro areas, sized by population, with Paris the largest — using the
  * same baked-plate approach `map-beat` ships for static and video (`geo-discipline.md` rules
  * 1-4, 6): the camera is spent ONCE by `scripts/bake-plate.mjs`, and this component draws an
- * `<image>` and some `<circle>`s, never a live map. What THIS genre adds on top of that is the
+ * `<image>` and some `<circle>`s, never a live map. What THIS format adds on top of that is the
  * thing static and video cannot have: every point's own exact value, on demand, without spending
  * the frame's fixed room printing all thirteen. The ordered, linear table of the same values
  * (`RegionTable` below) is now OPT-IN per beat, not automatic — `renderMapWeb`'s own
@@ -26,7 +26,7 @@
  * and `references/map-web-discipline.md`, "Fit the window". One render, no breakpoint, no second
  * layout to keep in sync with the first.
  *
- * Two capabilities layered on top of that split, both governed by the same rule this genre has
+ * Two capabilities layered on top of that split, both governed by the same rule this format has
  * always followed for interaction (`references/map-web-discipline.md`, "What must not become
  * interactive"): nothing the title claims may live ONLY behind them.
  *   - A FILTER (`.mw-filter`, radios drawn as chips) narrows which points are drawn, labelled and
@@ -42,7 +42,7 @@
  *     `#mw-map` is an empty box that `assets/live-map.mjs` fills with a live MapLibre map and swaps
  *     in on `map.on("load")`. Everything below therefore still renders complete with JavaScript off,
  *     offline, and after a key is rotated — the ruling asked for a map a reader can move through, not
- *     for a page that breaks without a network. The bounded `ZOOM_SCALE` checkbox this genre used to
+ *     for a page that breaks without a network. The bounded `ZOOM_SCALE` checkbox this format used to
  *     put ABOVE the map is gone (B6.14b asked for its removal by name).
  *   - The FILTER is still pure CSS: `:has()` + `:checked`, so it narrows the map, the labels and the
  *     table identically with the inline `<script>` never running. What `interaction.mjs` adds is the
@@ -70,7 +70,7 @@ const SUBJECT_KEY = "paris";
 const SUBJECT_NOTE = "the largest metro area in this sample";
 // =========================================
 
-// ===== Genre mechanics — not one story's numbers =====
+// ===== Format mechanics — not one story's numbers =====
 /** The on-map mark's largest radius, as a FRACTION of the bake's own frame width — not a fixed
  *  pixel count. Because the SVG's `viewBox` equals the frame and the whole SVG then scales with
  *  the container via CSS, a fraction of the frame is what stays a fraction of the container at
@@ -296,10 +296,10 @@ export function MapWebSeed({
               const isSubject = point.key === SUBJECT_KEY;
               const r = radiusOf(point.value);
               // `labelPlacement`'s own `margin` default (90) is an ABSOLUTE frame-unit number tuned
-              // for the OLD 496px bake — at this genre's now much bigger PLATE_SIZE (1000) that same
+              // for the OLD 496px bake — at this format's now much bigger PLATE_SIZE (1000) that same
               // default is barely 9% of the frame, not nearly enough room for a right-anchored label
               // like "Athens" to avoid spilling past the container's own right edge at the NARROWEST
-              // width this genre ships (375px, where every frame-unit percent is only a few real CSS
+              // width this format ships (375px, where every frame-unit percent is only a few real CSS
               // pixels). Passed explicitly, AS a fraction of the actual frame (`0.18`, the exact
               // fraction — 90/496 — the old fixed bake used to get "for free"), so the flip threshold
               // scales with whatever `PLATE_SIZE` a future bake picks instead of silently shrinking as
@@ -351,9 +351,9 @@ export function MapWebSeed({
 
             {/* The interaction layer: one HTML `<button>` per point, positioned by percentage,
                 sized in FIXED CSS pixels (`HIT_TARGET_PX`) — a legitimate touch/pointer target at
-                every container width this genre ships, which an SVG-scaled hit circle is not (it
+                every container width this format ships, which an SVG-scaled hit circle is not (it
                 would be a few physical pixels across at 375px). `title` gives a native, no-JS
-                tooltip on hover — the HTML equivalent of the SVG `<title>` this genre used to nest;
+                tooltip on hover — the HTML equivalent of the SVG `<title>` this format used to nest;
                 `aria-label`/`data-detail` are baked in at build time, not assembled by the inline
                 script, so the no-JS page is still keyboard-reachable and its value is still
                 announced with the script absent entirely. `assets/interaction.mjs` (unchanged by a
@@ -433,7 +433,7 @@ export function MapWebSeed({
 }
 
 /**
- * The accessibility answer this genre offers, now OPT-IN per beat
+ * The accessibility answer this format offers, now OPT-IN per beat
  * (`references/map-web-discipline.md`, "The accessibility question"): the SAME thirteen readings
  * the map draws spatially, again, as one plain HTML table — captioned, ordered largest first, and
  * when a beat asks for it, rendered plainly and visibly (never behind a disclosure widget, never

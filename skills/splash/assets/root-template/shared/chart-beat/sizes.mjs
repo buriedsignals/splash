@@ -10,13 +10,13 @@
 // its own walker (`splash/test/size-table-parity.test.ts`).
 //
 // WHY IT IS CARRIED AND NOT SHARED. `no-cross-skill-imports.test.ts`: a skill directory is
-// copy-pasteable on its own. This is the same kind and size of fact as `GENRE_CATALOG` — three
+// copy-pasteable on its own. This is the same kind and size of fact as `FORMAT_CATALOG` — three
 // declarative rows — which this project already duplicates deliberately between `storyboard`
 // and `deliver` and cross-checks by test in both directions. And `typeScale` is SUPPOSED to
 // differ per craft skill (see below), which a shared module could only express by being
 // parameterised by its caller, at which point it is no longer a table.
 //
-// WHAT IS NOT HERE, deliberately: which genres exist (that is `genre-catalog.mjs`'s question), and
+// WHAT IS NOT HERE, deliberately: which formats exist (that is `format-catalog.mjs`'s question), and
 // which chart TYPES may enter which size (that is `type-at-size.mjs`'s question, in this same
 // skill). A size table that also gated would be the original Splash's one-table-two-jobs defect.
 // There is no `print` row either — the original carries a fourth channel (2480x1748); R2 named
@@ -175,7 +175,7 @@ export function readPngSize(bytes) {
 /**
  * THE ASSERTION THE WHOLE SIZE DECISION RESTS ON. Reads the delivered file's own dimensions and
  * refuses anything but the row's. `got` is passed by callers whose artifact is not a PNG (an mp4's
- * dimensions come from `ffprobe`), so one refusal serves every genre and reads the same way.
+ * dimensions come from `ffprobe`), so one refusal serves every format and reads the same way.
  *
  * It holds for ALL THREE sizes. The original Splash exempts landscape from its own equivalent
  * (`skills/chart-native/scripts/produce.mjs:352-368`), which leaves the contract enforced for two

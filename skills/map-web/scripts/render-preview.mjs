@@ -9,7 +9,7 @@
 // temp file and SCREENSHOTS it with headless Chrome at one fixed viewport width — proving the actual
 // rendered page, the same "screenshot it, do not trust a computed value" rule
 // `references/map-web-discipline.md`'s own "Verification" section states for every claim about this
-// genre's responsiveness.
+// format's responsiveness.
 //
 // Uses the seed's committed frozen sample plate at `DEFAULT_PLATE_DIR`, so preview checks are
 // deterministic and do not require a MapTiler key. Real story beats still bake their own plates.
@@ -25,7 +25,7 @@ import { comparePngBuffers } from "./compare-png.mjs";
 const HERE = import.meta.dirname;
 
 // The width this skill's own documentation screenshot is taken at — one of the four widths this
-// genre's own verification proof is required to cover (1600/1024/768/375), chosen here because it
+// format's own verification proof is required to cover (1600/1024/768/375), chosen here because it
 // is a plausible "article column, desktop" width, not the extreme end of the range.
 const PREVIEW_WIDTH = 1024;
 

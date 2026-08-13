@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` have: the story's own constants, its own CSV reader, its own
-// component and layouts, handed to the genre's generic `renderWeb`
+// component and layouts, handed to the format's generic `renderWeb`
 // (`chart-web/scripts/render-web.mjs`), then PATCHED the same way
 // `web-income-life-expectancy/render-web.mjs`'s `patchForThisBeat` patches its own output — see
 // that file's own header comment for why the patch exists at all (nothing in the skill's own
@@ -12,7 +12,7 @@
 // THE ONLY EXISTING BEAT OF THIS CLAIM/DATA is the VIDEO build
 // (`../more-small-multiples-co2-per-capita/`) — read for its verified numbers and its data-reading
 // discipline, never imported (a beat never imports another beat's files, doubly so across
-// genres). The claim below is RECOMPUTED from this file's own CSV read, not assumed from that
+// formats). The claim below is RECOMPUTED from this file's own CSV read, not assumed from that
 // beat's own BRIEF.md — see the console output for the actual numbers found.
 //
 // Usage:  bun proof/weby-small-multiples-co2-per-capita/render-web.mjs [outDir] [--data <csv>]
@@ -61,7 +61,7 @@ const OUTPUT_NAME = "small-multiples-co2-per-capita.html";
 /** OWID's `co-emissions-per-capita` grapher CSV, four countries at once (`&csvType=filtered`) —
  *  same reader shape `../more-small-multiples-co2-per-capita/render.mjs`'s own
  *  `readingsByCountryFromCsv` uses (simple `split(",")`, no country name in this file carries a
- *  comma), rewritten fresh here rather than imported, per this genre's own "duplicate, do not
+ *  comma), rewritten fresh here rather than imported, per this format's own "duplicate, do not
  *  link" rule. Filters each country to `firstYear..lastYear` inclusive and verifies the entity set
  *  found is EXACTLY the four countries expected before returning anything. */
 export function readingsByCountryFromCsv(csv, { countries, firstYear, lastYear }) {

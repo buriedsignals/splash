@@ -1,8 +1,8 @@
 /**
  * The web beat of "Norway ran its grid on 99% renewables; Poland leaned on fossil fuel" — the
- * interactive genre.
+ * interactive format.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the format's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that

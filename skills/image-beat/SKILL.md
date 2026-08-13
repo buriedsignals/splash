@@ -1,6 +1,6 @@
 ---
 name: image-beat
-description: Use to produce an image beat — a beat whose evidence is a photograph, not a drawing — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (the journalist's own photos, one consistent letterboxed box, the journalist's own words), the image discipline (required alt and credit, letterbox not crop or stretch, EXIF orientation detected not corrected, a weight ceiling), and the render ladder's first rung for this medium. SP1 covers the static genre only.
+description: Use to produce an image beat — a beat whose evidence is a photograph, not a drawing — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (the journalist's own photos, one consistent letterboxed box, the journalist's own words), the image discipline (required alt and credit, letterbox not crop or stretch, EXIF orientation detected not corrected, a weight ceiling), and the render ladder's first rung for this medium. SP1 covers the static format only.
 ---
 
 # image-beat — write the beat, embed the photos, render the still, look at it
@@ -28,13 +28,13 @@ journalist supplies, with the alt text and the credit the journalist wrote, and 
 honestly. Editorial intent never leaves the journalist; that rule matters most exactly here, where
 a machine could plausibly "help" by describing a photograph nobody asked it to describe.
 
-The PNG exists to be looked at, the same as every other genre in this twin: the checklist in
+The PNG exists to be looked at, the same as every other format in this twin: the checklist in
 `image-discipline.md` applies to pixels, and a beat is not finished because its tests are green.
 Rendering the seed is what caught its own first real case — a portrait photo between two landscape
 ones, letterboxed rather than cropped or stretched — and looking at that render is the proof this
 skill's `SKILL.md` points to, not a description of what should happen.
 
-**SP1 scope: the static genre only.** This skill normalises a set of photographs to one consistent
+**SP1 scope: the static format only.** This skill normalises a set of photographs to one consistent
 box and composes a single static beat (title, per-photo caption, alt, credit) to a self-contained
 artifact. An interactive or scroll-driven image beat is a later sub-project — `scrolly` can
 already carry one once a real beat's own component exists; this skill is what makes that component
@@ -42,9 +42,9 @@ possible to write honestly, it does not build the scrolly wiring itself.
 
 ## When to use
 
-- When a chosen candidate in a closed `STORYBOARD.md` has medium `image` and genre `static`, and
+- When a chosen candidate in a closed `STORYBOARD.md` has medium `image` and format `static`, and
   the beat's `BRIEF.md` names the photographs, their alt text and their credits. No brief, no code
-  — same rule as every other genre.
+  — same rule as every other format.
 - When the evidence for a claim is photographs the journalist themselves took or was given the
   rights to use — a place, a before/after, a short sequence — not a quantity that belongs on an
   axis. A claim that needs a number belongs to `chart-beat`; a claim that needs a shape on a
@@ -64,7 +64,7 @@ possible to write honestly, it does not build the scrolly wiring itself.
 they last viewed it in and wrong here, silently, unless this skill's own orientation check catches
 it first.** Most viewers — Photos, Preview, a phone's own camera roll — apply a JPEG's EXIF
 `Orientation` tag when they display it, so a photo taken with a phone held sideways still looks
-upright there. `resvg`, the rasteriser every genre in this twin uses, does not apply that tag; it
+upright there. `resvg`, the rasteriser every format in this twin uses, does not apply that tag; it
 paints the stored pixels exactly as they sit in the file. Embed such a JPEG directly and the render
 is sideways, or mirrored, with nothing in the markup or the SVG itself saying so — the defect is
 invisible until a human looks at the actual PNG, which is exactly the failure mode this whole
@@ -86,14 +86,14 @@ runner shows where in the sequence that check belongs.
 | Seed | `assets/ImageBeatSeed.tsx` | `imageBeatLayout` (pure: box math, wrapped title/caption lines, the required-alt/required-credit check) and the `ImageBeatSeed` component. Replaced per story |
 | Sample | `assets/sample-data/manifest.json` + three PNGs | A three-photo sequence — a vacant lot, before/during/after — with two matching (landscape) aspect ratios and one deliberately mismatched (portrait), each with its own required alt and credit |
 | Preview | `assets/preview.png` | The seed rendered on a light ground — what this skill produces, without running it |
-| Render | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`/`renderStill`, plus the genre-specific `readImageMeta`, `readOrientation`/`checkOrientation`, `fitBox`, `toDataUri`, `checkWeight` |
+| Render | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`/`renderStill`, plus the format-specific `readImageMeta`, `readOrientation`/`checkOrientation`, `fitBox`, `toDataUri`, `checkWeight` |
 
 `scripts/render-still.mjs` is this skill's one script with dependencies — `react-dom/server` and
 `@resvg/resvg-js`, both from the root's own `package.json` — and its header says so, the same as
 its sibling copies in `chart-beat` and `scrolly`. **A skill never imports another skill's
 copy of this file** — the three copies are intentionally byte-similar where the rule is identical
 (`deriveFurniture`/`contrast`/`measureText`/`renderStill`) and genuinely different where the medium
-is (everything under "image-genre additions" in this skill's own copy has no sibling in the other
+is (everything under "image-format additions" in this skill's own copy has no sibling in the other
 two, because reading a raster file's own size, checking its EXIF tag, fitting it into a box and
 capping its combined weight are all things a drawn chart never needs to do).
 
@@ -102,12 +102,12 @@ fresh Splash root at `<root>/shared/chart-beat/` by `splash`'s own root template
 (`chart-beat/SKILL.md`, Architecture) — this skill's own copy is not vendored there yet. A
 real beat written tonight imports this skill's `render-still.mjs` and `ImageBeatSeed.tsx`-shaped
 component the way this skill's own tests do, by a relative path inside a Splash root's own copy of
-this skill's directory; wiring the `#shared/image-beat/*` subpath the other genre already has
+this skill's directory; wiring the `#shared/image-beat/*` subpath the other format already has
 is a named follow-up, not done as part of closing this gap (it touches `splash`'s own root
 template, outside this skill's own directory).
 
 **Rasteriser: `@resvg/resvg-js`**, the same choice `chart-beat/SKILL.md` explains and for the
-same reasons, with one addition verified for this genre specifically: resvg decodes and paints a
+same reasons, with one addition verified for this format specifically: resvg decodes and paints a
 base64-embedded raster `<image href="data:image/png;base64,…">` correctly — checked by rendering a
 known 4×4 red square through exactly that path and reading the resulting PNG's own pixels before
 this skill's seed was written around the assumption.
@@ -134,7 +134,7 @@ this skill's seed was written around the assumption.
    leaves a visibly explained bar, not an unexplained gap the same colour as the page.
 6. **`renderStill`** writes `<name>.svg` and `<name>.png`. The SVG is already self-contained — every
    photo is a `data:` URI, nothing it references lives outside the file — and it refuses to
-   rasterise at a size the element was not drawn at, the same invariant every genre in this twin
+   rasterise at a size the element was not drawn at, the same invariant every format in this twin
    keeps.
 7. **Look at the PNG**, and specifically at whichever photo does not share the others' aspect
    ratio — that is the one frame that exposes a layout only proven on tidy, matching inputs. Then
@@ -221,7 +221,7 @@ const { svgPath, pngPath } = await renderStill({
   data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
 - `scripts/render-still.mjs` — this skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`/
   `renderStill`, plus `readImageMeta`, `readOrientation`/`checkOrientation`, `fitBox`, `toDataUri`,
-  `WEIGHT_LIMIT_BYTES`/`checkWeight` — the genre-specific additions with no sibling in
+  `WEIGHT_LIMIT_BYTES`/`checkWeight` — the format-specific additions with no sibling in
   `chart-beat`'s own copy.
 - `scripts/build-sample-photos.mjs` — generates this skill's three sample PNGs deterministically
   from flat shapes, the same move `scrolly/scripts/build-sample-photo.mjs` makes and for the

@@ -66,9 +66,9 @@ describe("canonical delivery identity", () => {
   });
 
   it("drives offer and materialise without accepting source or destination paths", async () => {
-    expect(offerForms(reviewed({ medium: "chart", genre: "static" }))).toHaveLength(3);
+    expect(offerForms(reviewed({ medium: "chart", format: "static" }))).toHaveLength(3);
     const written = await materialise(
-      reviewed({ form: "owned-file", genre: "static", handover }),
+      reviewed({ form: "owned-file", format: "static", handover }),
     );
     const exportDir = exportDirFor(identity);
     expect(written).toContain(join(exportDir, "still.png"));
@@ -82,7 +82,7 @@ describe("canonical delivery identity", () => {
         reviewed({
           outputId: "../outside",
           form: "owned-file",
-          genre: "static",
+          format: "static",
           handover,
         }),
       ),
@@ -92,14 +92,14 @@ describe("canonical delivery identity", () => {
   it("rejects legacy path fields on the canonical API", async () => {
     expect(() =>
       offerForms(
-        reviewed({ medium: "chart", genre: "static", beatDir }),
+        reviewed({ medium: "chart", format: "static", beatDir }),
       ),
     ).toThrow(/delivery-compat-v1/);
     await expect(
       materialise(
         reviewed({
           form: "owned-file",
-          genre: "static",
+          format: "static",
           handover,
           beatDir,
           exportDir: join(tempRoot, "outside"),
@@ -111,7 +111,7 @@ describe("canonical delivery identity", () => {
   it("rejects a symlinked stories root and a symlinked story ancestor", async () => {
     const linkedRoot = join(tempRoot, "linked-stories");
     await symlink(storiesRoot, linkedRoot, "dir");
-    expect(() => offerForms(reviewed({ storiesRoot: linkedRoot, genre: "static" }))).toThrow(
+    expect(() => offerForms(reviewed({ storiesRoot: linkedRoot, format: "static" }))).toThrow(
       /symlinked stories root/,
     );
 
@@ -119,7 +119,7 @@ describe("canonical delivery identity", () => {
     await symlink(storyDir, linkedStory, "dir");
     expect(() =>
       offerForms(
-        reviewed({ storyId: "linked-story", medium: "chart", genre: "static" }),
+        reviewed({ storyId: "linked-story", medium: "chart", format: "static" }),
       ),
     ).toThrow(/symlinked story directory/);
   });
@@ -141,7 +141,7 @@ describe("legacy delivery adapter v1", () => {
         storiesRoot,
         beatDir,
         medium: "chart",
-        genre: "static",
+        format: "static",
         planVersion: TEST_PLAN_VERSION,
         findingIds: TEST_FINDING_IDS,
       }),
@@ -151,7 +151,7 @@ describe("legacy delivery adapter v1", () => {
       beatDir,
       exportDir,
       form: "owned-file",
-      genre: "static",
+      format: "static",
       handover,
       planVersion: TEST_PLAN_VERSION,
       findingIds: TEST_FINDING_IDS,
@@ -171,7 +171,7 @@ describe("legacy delivery adapter v1", () => {
         beatDir,
         exportDir: outsideExport,
         form: "owned-file",
-        genre: "static",
+        format: "static",
         handover,
         planVersion: TEST_PLAN_VERSION,
         findingIds: TEST_FINDING_IDS,
@@ -189,7 +189,7 @@ describe("legacy delivery adapter v1", () => {
         beatDir,
         exportDir: join(linkedStory, "export", identity.outputId),
         form: "owned-file",
-        genre: "static",
+        format: "static",
         handover,
         planVersion: TEST_PLAN_VERSION,
         findingIds: TEST_FINDING_IDS,
@@ -207,7 +207,7 @@ describe("legacy delivery adapter v1", () => {
         beatDir: outsideBeat,
         exportDir: join(outsideRoot, "other-story", "export", "other-output"),
         form: "owned-file",
-        genre: "static",
+        format: "static",
         handover,
       }),
     ).rejects.toThrow(/inside storiesRoot/);

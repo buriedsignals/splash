@@ -1,4 +1,4 @@
-// The render ladder for the locator beat. Static genre only — no video.
+// The render ladder for the locator beat. Static format only — no video.
 //
 // Usage:
 //   bun proof/map-geneva-locator/render.mjs --still

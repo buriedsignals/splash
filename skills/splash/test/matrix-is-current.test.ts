@@ -27,7 +27,7 @@
  *    Four directories are in that list today and the section's title is wrong about three of them:
  *    `co2-suisse`, `mapscrolly-one-map-europe-carbon` and `scrolly-one-chart-swiss-life-expectancy`
  *    all HAVE a `BRIEF.md`; what they lack is a `**Type:**` line for `matrix.mjs:66` to read
- *    (`co2-suisse`'s brief is in French and says "Médium / genre :"). The consequence the owner
+ *    (`co2-suisse`'s brief is in French and says "Médium / format :"). The consequence the owner
  *    reported is real: the scrolly column shows four beats where six exist. Those three briefs and
  *    `portrait-aspect-probe` — a probe workspace that is not a beat at all — belong to other
  *    chantiers, so the residue is reported here rather than edited.

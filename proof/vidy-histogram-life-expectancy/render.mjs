@@ -30,8 +30,8 @@ import {
   inkThatReadsOver,
   textContrastFloor,
 } from "#shared/chart-beat/annotation-ink.mjs";
-// The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
-// question, which is craft-neutral and therefore has one copy for both genres.
+// The VIDEO format's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
+// question, which is craft-neutral and therefore has one copy for both formats.
 import {
   assertDeliveredSize,
   readPinnedSize,

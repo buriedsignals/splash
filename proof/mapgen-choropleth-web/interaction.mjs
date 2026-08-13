@@ -24,7 +24,7 @@
 // BOTH states — the buttons keep their Tab stop when the live map swaps in.
 //
 // `initRegions`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
-// verification rule, an interactive genre is verified by driving a real browser, not asserting
+// verification rule, an interactive format is verified by driving a real browser, not asserting
 // against a DOM emulation nobody looked at.
 
 /** Wires every `.pt` button on the page — and every region `<path>` that forwards to one — to

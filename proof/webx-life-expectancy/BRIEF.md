@@ -1,9 +1,9 @@
 # Beat — Life expectancy in Switzerland rose 15 years since 1950
 
-**Type:** line. **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** line. **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/more-line-swiss-life-expectancy` (the static beat) — same claim, same frozen
-data, a fresh component written for this genre's two-layout / baked-in-interaction shape, not a
+data, a fresh component written for this format's two-layout / baked-in-interaction shape, not a
 port of the static file.
 
 ## Claim

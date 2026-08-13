@@ -76,7 +76,7 @@ const BASE = {
   MEDIAN_STROKE: 2.5,
   OUTLIER_DOT: 4,
 };
-/** Static genre density (`static-discipline.md`, "Axis density") — enough gridlines that a reader
+/** Static format density (`static-discipline.md`, "Axis density") — enough gridlines that a reader
  *  scrutinising the frame can put a number on any box edge, not the two-or-three-tick floor a
  *  motion beat would use. */
 const Y_TICK_HINT = 6;

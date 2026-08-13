@@ -6,7 +6,7 @@
  * distinct `.tsx` files, and not one of them anchored to `height - PAD`.** Every one derived the
  * source's y from something ABOVE it — `titleBaseline`, `titleTop`, `subtitleTop`,
  * `limitsBaseline`, `caveatBaseline`, `noteBaseline` — so the source hung under the header on every
- * genre this project ships.
+ * format this project ships.
  *
  * Five of those 60 are the CRAFT SKILLS' OWN SEEDS, and a seed is what the next beat is copied
  * from. This guard walks the skills and asserts that every source anchor there names the frame's
@@ -18,7 +18,7 @@
  *
  * When this guard was written it stopped at `skills/`, because 55 of the 60 anchors were beats
  * under `proof/` and pointing the walk there would have turned the suite red on ~52 shipped beats:
- * a migration, not a guard. That migration has since happened, genre by genre — static chart,
+ * a migration, not a guard. That migration has since happened, format by format — static chart,
  * chart video, map static, map video — so the walk covers the beats as well.
  *
  * A BEAT is a directory holding a `BRIEF.md`. That is the tree's own marker, the same one
@@ -149,7 +149,7 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
       "skills/chart-web/assets/ChartWebSeed.tsx",
       "skills/map-beat/assets/Co2MapStill.tsx",
       "skills/map-beat/assets/Co2MapVideo.tsx",
-      // and one beat per genre, so a walk that silently stopped covering `proof/` is caught
+      // and one beat per format, so a walk that silently stopped covering `proof/` is caught
       "proof/static-wind-vs-solar/WindVsSolarBar.tsx",
       "proof/vidz-bump-emitter-rank/BumpVideo.tsx",
       "proof/map-quake-symbol/QuakeSymbolStill.tsx",
@@ -206,8 +206,8 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
  * the population by the tree's rule, not by anybody remembering to skip it. A beat added tomorrow
  * is inside it the moment its `BRIEF.md` lands.
  *
- * WHAT IT PROVABLY DOES NOT CATCH. Only the genres that ship an SVG beside their PNG — the mp4 and
- * the HTML genres are not covered here (Guard A covers their expression; the HTML genres would
+ * WHAT IT PROVABLY DOES NOT CATCH. Only the formats that ship an SVG beside their PNG — the mp4 and
+ * the HTML formats are not covered here (Guard A covers their expression; the HTML formats would
  * need a DOM-ORDER check, never a byte-offset one, which the audit records as a measurement that
  * reports "bottom" and is wrong on a scrolly page). And it reads the credit's FIRST line: a
  * component drawing its wrapped credit downward off the frame would still pass, which is why the

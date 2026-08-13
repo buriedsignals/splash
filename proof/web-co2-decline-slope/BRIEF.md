@@ -8,7 +8,7 @@ whole would be false (Estonia, Bulgaria and Romania each cut more per head since
 scoped to the rows drawn, and `checkSubjectFellFurthest` in `render-web.mjs` throws if the data ever
 stops supporting it.
 
-**Medium / genre:** chart / web. **Type:** slope (slopegraph) — two vertical axes (1990, 2024), one
+**Medium / format:** chart / web. **Type:** slope (slopegraph) — two vertical axes (1990, 2024), one
 line per country from its 1990 value to its 2024 value, position-encoded (no forced zero), one
 accent line (Germany), the other nine muted.
 

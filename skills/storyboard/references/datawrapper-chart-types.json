@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-08-14",
+  "source": {
+    "url": "https://github.com/datawrapper/datawrapper/blob/cc86334ba94044fa4f07a72e2881fea2bcbb37e7/libs/shared/src/chartTypes.ts",
+    "commit": "cc86334ba94044fa4f07a72e2881fea2bcbb37e7",
+    "symbol": "VisualizationType"
+  },
+  "visualizationTypes": [
+    { "id": "column-chart", "label": "Column chart", "kind": "chart" },
+    { "id": "d3-area", "label": "Area chart", "kind": "chart" },
+    { "id": "d3-arrow-plot", "label": "Arrow plot", "kind": "chart" },
+    { "id": "d3-bars-bullet", "label": "Bullet bars", "kind": "chart" },
+    { "id": "d3-bars-grouped", "label": "Grouped bars", "kind": "chart" },
+    { "id": "d3-bars-split", "label": "Split bars", "kind": "chart" },
+    { "id": "d3-bars-stacked", "label": "Stacked bars", "kind": "chart" },
+    { "id": "d3-bars", "label": "Bar chart", "kind": "chart" },
+    { "id": "d3-donuts", "label": "Donut chart", "kind": "chart" },
+    { "id": "d3-dot-plot", "label": "Dot plot", "kind": "chart" },
+    { "id": "d3-lines", "label": "Line chart", "kind": "chart" },
+    { "id": "d3-maps-choropleth", "label": "Choropleth map", "kind": "map" },
+    { "id": "d3-maps-symbols", "label": "Symbol map", "kind": "map" },
+    { "id": "d3-multiple-donuts", "label": "Multiple donuts", "kind": "chart" },
+    { "id": "d3-multiple-pies", "label": "Multiple pies", "kind": "chart" },
+    { "id": "d3-pies", "label": "Pie chart", "kind": "chart" },
+    { "id": "d3-range-plot", "label": "Range plot", "kind": "chart" },
+    { "id": "d3-scatter-plot", "label": "Scatter plot", "kind": "chart" },
+    { "id": "dual-axis", "label": "Dual-axis chart", "kind": "chart" },
+    { "id": "election-donut-chart", "label": "Election donut", "kind": "chart" },
+    { "id": "grouped-column-chart", "label": "Grouped columns", "kind": "chart" },
+    { "id": "locator-map", "label": "Locator map", "kind": "map" },
+    { "id": "multiple-lines", "label": "Multiple lines", "kind": "chart" },
+    { "id": "multiple-columns", "label": "Multiple columns", "kind": "chart" },
+    { "id": "stacked-column-chart", "label": "Stacked columns", "kind": "chart" },
+    { "id": "tables", "label": "Table", "kind": "table" },
+    { "id": "waterfall", "label": "Waterfall", "kind": "chart" }
+  ],
+  "splashTreatments": [
+    {
+      "treatment": "Area and stacked area",
+      "aliases": ["area", "area and stacked area"],
+      "datawrapperTypes": ["d3-area"]
+    },
+    {
+      "treatment": "Bar and column",
+      "aliases": ["bar", "column", "bar and column"],
+      "datawrapperTypes": ["d3-bars", "column-chart"]
+    },
+    {
+      "treatment": "Bullet",
+      "aliases": ["bullet"],
+      "datawrapperTypes": ["d3-bars-bullet"]
+    },
+    {
+      "treatment": "Dumbbell",
+      "aliases": ["dumbbell", "range plot"],
+      "datawrapperTypes": ["d3-range-plot"]
+    },
+    {
+      "treatment": "Grouped bar",
+      "aliases": ["grouped bar", "grouped column"],
+      "datawrapperTypes": ["d3-bars-grouped", "grouped-column-chart"]
+    },
+    {
+      "treatment": "Line",
+      "aliases": ["line"],
+      "datawrapperTypes": ["d3-lines"]
+    },
+    {
+      "treatment": "Pie and donut",
+      "aliases": ["pie", "donut", "pie and donut"],
+      "datawrapperTypes": ["d3-pies", "d3-donuts"]
+    },
+    {
+      "treatment": "Population pyramid",
+      "aliases": ["population pyramid"],
+      "datawrapperTypes": ["d3-bars-split"]
+    },
+    {
+      "treatment": "Scatter and bubble",
+      "aliases": ["scatter", "scatter and bubble"],
+      "datawrapperTypes": ["d3-scatter-plot"]
+    },
+    {
+      "treatment": "Slope",
+      "aliases": ["slope", "slopegraph", "slope chart"],
+      "datawrapperTypes": ["d3-lines"]
+    },
+    {
+      "treatment": "Stacked bar",
+      "aliases": ["stacked bar", "stacked column"],
+      "datawrapperTypes": ["d3-bars-stacked", "stacked-column-chart"]
+    },
+    {
+      "treatment": "Waterfall",
+      "aliases": ["waterfall", "waterfall bridge"],
+      "datawrapperTypes": ["waterfall"]
+    }
+  ]
+}

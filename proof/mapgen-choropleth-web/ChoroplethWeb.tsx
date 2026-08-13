@@ -1,7 +1,7 @@
 /**
  * REPLACE ME. Do not parameterise me.
  *
- * The first WEB-genre choropleth this project has built (`map-web/SKILL.md`'s own gap: "a map
+ * The first WEB-format choropleth this project has built (`map-web/SKILL.md`'s own gap: "a map
  * beat could ship static or video, never a genuinely interactive one" — for the SYMBOL case; this
  * beat closes the CHOROPLETH cell of that same matrix). It draws a real claim: of the 41 European
  * countries this beat declares, the Faroe Islands' 2023 per-capita CO₂ emissions are the highest —
@@ -14,7 +14,7 @@
  *    (`bake-plate.mjs`, `geo-discipline.md` rules 1-4, 6, 7, 9, 12) is still spent once and still
  *    shipped — as the FALLBACK layer, not as the display surface. So this component draws THREE
  *    layers in one box, exactly as `map-web/assets/MapWebSeed.tsx` does:
- *      - `#mw-map`, empty, FIRST — `live-map.mjs` (a byte-identical copy of the genre's own boot
+ *      - `#mw-map`, empty, FIRST — `live-map.mjs` (a byte-identical copy of the format's own boot
  *        script, in this folder) fills it and swaps it in on `map.on("load")`;
  *      - `#mw-fallback`, the SSR'd plate `<image>` and the 41 `<path>`s — what a reader gets with
  *        JavaScript off, offline, or on the day a key is rotated;
@@ -32,7 +32,7 @@
  *    scales with its container, every glyph is a fixed CSS pixel size, and `render-web.mjs`'s own
  *    `buildCss` gives the map whatever height the window has left after the furniture.
  *
- * What this genre adds on top of the static/video choropleth (`map-beat/assets/Co2MapStill.tsx`,
+ * What this format adds on top of the static/video choropleth (`map-beat/assets/Co2MapStill.tsx`,
  * `Co2MapVideo.tsx`) is every region's own EXACT value on demand, without spending the frame's fixed
  * room printing all 41 — and, because a map is a spatial medium and not every reader has spatial
  * access to it, the SAME 41 values again as an ordered, linear, always-rendered table (`RegionTable`
@@ -43,7 +43,7 @@
  *   - LIVE: the canvas is the target. `live-map.mjs` hit-tests the rendered FILL, so a reader gets a
  *     region's value on ENTERING the region, anywhere inside it — B6.14a, closed by construction
  *     rather than by tuning. The overlay's buttons keep their Tab stop and their `aria-label`; the
- *     genre's own CSS drops their pointer-events (`html.mw-live .mw-overlay .pt`).
+ *     format's own CSS drops their pointer-events (`html.mw-live .mw-overlay .pt`).
  *   - FALLBACK: the region's own filled `<path>` is the target, forwarded to that region's button by
  *     `interaction.mjs` — one reading, never a second competing target. Six regions are too small
  *     to land a pointer on at this camera (`needsPointerTarget` below); those, and only those, keep
@@ -90,9 +90,9 @@ const COMPARISON_KEY = "ALB";
 const NO_DATA_LABEL = "No data";
 // =========================================
 
-// ===== Genre mechanics — not one story's numbers =====
+// ===== Format mechanics — not one story's numbers =====
 /** The per-region hit target's own diameter, in real CSS pixels — a legitimate touch/pointer target
- *  at every width this genre ships, which a shape sized in frame units is not (Andorra is 2.5 frame
+ *  at every width this format ships, which a shape sized in frame units is not (Andorra is 2.5 frame
  *  units across, a few physical pixels at any container size). Only the regions
  *  `needsPointerTarget` selects are pointer-active in the fallback; every other region is pointed at
  *  through its own painted `<path>`, which is a fairer target than a disc at its centroid. */
@@ -265,7 +265,7 @@ export function ChoroplethWeb({
           `.mw-stage`). The viewport inside it keeps the bake's own aspect EXACTLY while the plate
           is what is on screen — a plate stretched to a shape it was not baked for is a lie about
           distance and shape (`geo-discipline.md`). Once the LIVE map is in, that constraint is
-          released by the genre's own `html.mw-live` rule: a live camera has no plate aspect to
+          released by the format's own `html.mw-live` rule: a live camera has no plate aspect to
           preserve, so it takes the whole stage. */}
       <div className="mw-stage">
         <div
@@ -280,7 +280,7 @@ export function ChoroplethWeb({
 
           {/* LAYER 2 — the baked plate: complete, script-free, request-free. What a reader gets with
               JavaScript off, offline, or after the account's keys are invalidated at 100% of its
-              spending limit. The genre's rule survives verbatim here — the un-zoomed state is not a
+              spending limit. The format's rule survives verbatim here — the un-zoomed state is not a
               preview of the real view, it IS the full claim. */}
           <div id="mw-fallback" className="mw-fallback">
             {/* Geometry only: the plate and the 41 shaded regions. No text — every glyph is HTML,
@@ -389,7 +389,7 @@ export function ChoroplethWeb({
                     top: `${(ay / frame.height) * 100}%`,
                     // ONE dimension; the height comes from `.pt { aspect-ratio: 1 }` (B6.20). This
                     // beat was never anisotropic — both numbers were already fixed pixels — but the
-                    // rule is stated once for the genre, so nothing here can drift back into two
+                    // rule is stated once for the format, so nothing here can drift back into two
                     // numbers describing one circle.
                     width: `${HIT_TARGET_PX}px`,
                   }}
@@ -483,7 +483,7 @@ export function ChoroplethWeb({
  *
  * It sits BELOW the one-window-tall map column rather than inside it, and that is a deliberate,
  * stated trade: 41 rows cannot be shown inside a 900px window beside a map without either shrinking
- * the map to a stamp or putting the table behind a widget this genre forbids. The claim, the legend,
+ * the map to a stamp or putting the table behind a widget this format forbids. The claim, the legend,
  * the two named extremes and the caveat all fit above the fold; the linear reading of all 41
  * follows.
  */

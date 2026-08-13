@@ -1,7 +1,7 @@
 // twin/proof/web-co2-decline-slope/render-web.mjs
 //
 // This beat's own WEB runner — the same shape `proof/co2-suisse/render-web.mjs` has: the story's
-// own constants, its own data reader, its own component, handed to the genre's generic machinery.
+// own constants, its own data reader, its own component, handed to the format's generic machinery.
 // It lives here, beside the story, never inside the skill (`chart-web/SKILL.md`, "Why
 // `render-web.mjs` does not import a story's layouts" gives the reasoning this file also follows).
 //
@@ -120,10 +120,10 @@ function inlineable(moduleSource) {
   return moduleSource.replace(/^export /gm, "");
 }
 
-/** This beat's own rules, appended after the genre's shared stylesheet — the shared sheet is
+/** This beat's own rules, appended after the format's shared stylesheet — the shared sheet is
  *  generic and stays that way; what a slopegraph needs on top of it lives here, beside the story.
  *
- *   1. A THIRD GRID COLUMN. The genre's grid is `[y-gutter] [plot]`; a slopegraph labels BOTH ends,
+ *   1. A THIRD GRID COLUMN. The format's grid is `[y-gutter] [plot]`; a slopegraph labels BOTH ends,
  *      so it is `[left labels] [plot] [right labels]`. Both label tracks are a fixed pixel width
  *      measured from the real strings (`SlopeWeb.tsx`'s `gutterPx`), so the plot — and only the
  *      plot — absorbs a wider or a narrower container.
@@ -131,7 +131,7 @@ function inlineable(moduleSource) {
  *      and that number does not shrink with the container; `--min-plot-h` is derived in the
  *      component from the label block it actually draws. Below it the rows would collide at any
  *      width. A window too short for that is given a scrollbar rather than a collision, the same
- *      trade the genre's own `PLOT_FLOOR_PX` makes.
+ *      trade the format's own `PLOT_FLOOR_PX` makes.
  *   3. THE HIT BANDS ARE RECTS, so the shared `.pt:hover { fill: var(--muted) }` rule would paint
  *      an opaque block across the chart. Overridden here — higher specificity, no `!important` —
  *      to a soft tint that shows which endpoint answered without hiding anything behind it. */

@@ -9,7 +9,7 @@
 // after `renderWeb` writes it: the `lang` this beat's own English words need, and one anchored line
 // of the interaction script, so that a tap survives the finger lifting (see `repair`'s own note).
 //
-// SECOND BUILD: migrated to the genre's FLUID FRAME. `renderWeb` no longer takes a `layouts` array
+// SECOND BUILD: migrated to the format's FLUID FRAME. `renderWeb` no longer takes a `layouts` array
 // (the two-rung design was overturned — see `WorldPopulationWeb.tsx`'s own doc-comment); this
 // runner hands it one component and one `frame`.
 //
@@ -117,7 +117,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   return { outPath, readings: data.length, crossingYear: crossingRow.year };
 }
 
-// The genre's own line, verbatim, and the guarded one that replaces it. A touch pointer is
+// The format's own line, verbatim, and the guarded one that replaces it. A touch pointer is
 // destroyed the instant the finger lifts, and Chrome then fires `pointerleave` up the whole chain
 // for it — so an unguarded `pointerleave` handler wipes the tooltip the tap has just opened. This
 // beat's alt text promises every one of its 224 readings "on hover, tap or keyboard focus", and the
@@ -126,13 +126,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 // inside one gesture. Same defect, same remedy as
 // `proof/weby-small-multiples-co2-per-capita/small-multiples-interaction.mjs` — clear on
 // `pointerleave` for MOUSE AND PEN ONLY; a touch reader's tooltip is cleared instead by the
-// document-level `pointerdown` the genre already installs, so it holds until they tap elsewhere,
+// document-level `pointerdown` the format already installs, so it holds until they tap elsewhere,
 // which is what a tap-to-inspect control should do.
 //
-// Patched HERE, into the emitted HTML, rather than into the genre's shared
+// Patched HERE, into the emitted HTML, rather than into the format's shared
 // `chart-web/assets/interaction.mjs`, because that file is outside this beat's scope and is
 // being edited concurrently. It is an ANCHORED replacement, not a vendored copy of the whole
-// module: a copy would drift silently the moment the genre's script changed, whereas this throws
+// module: a copy would drift silently the moment the format's script changed, whereas this throws
 // by name if the line it expects is no longer there.
 const LEAVE_LINE = '    hitArea.addEventListener("pointerleave", clear);';
 const LEAVE_GUARDED = `    hitArea.addEventListener("pointerleave", function (evt) {
@@ -154,7 +154,7 @@ async function repair(outPath) {
   if (html.split(LEAVE_LINE).length !== 2)
     throw new Error(
       `expected exactly one ${JSON.stringify(LEAVE_LINE.trim())} in the inlined interaction script ` +
-        "to guard against a touch pointer's own leave — the genre's script may already guard it, in " +
+        "to guard against a touch pointer's own leave — the format's script may already guard it, in " +
         "which case delete this patch rather than widening it",
     );
   html = html.replace(LEAVE_LINE, LEAVE_GUARDED);

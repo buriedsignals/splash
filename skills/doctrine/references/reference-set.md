@@ -38,8 +38,8 @@ paragraph sitting next to it, the same bar this file has held itself to since ro
 **A fifth round added the eighth row, for the one structure a real story asked for and this file had
 to answer "nothing".** The owner's own Milan-Cortina run needed *a total whose majority escapes the
 subject named in the title* — the Games are 14 of 34 megatonnes, their sponsors the rest — and the
-loop had no row for it, so the hole was written into that story's `STORYBOARD.md` rather than filled
-(`FEEDBACK-2026-08-10.md`, A15). A first search returned only NGO and think-tank reports and nothing
+loop had no row for it, so the hole was written into that story's `STORYBOARD.md` rather than filled.
+A first search returned only NGO and think-tank reports and nothing
 was cited, which was the right outcome: an unfounded reference is worse than an acknowledged gap, and
 the floor stayed at seven on purpose. The row below is what closed it — a newsroom piece, verified
 the way this file demands.
@@ -49,7 +49,7 @@ argument is stated constantly in newsroom PROSE and very rarely drawn. Across a 
 the FT, the BBC, the Guardian and others wrote "Scope 3 is over 90% of it", "a third of the aid is
 spent at home", "87% of the emissions are travel" in body text and then charted a time series or a
 ranked list of the *majority* side instead. The chart that puts the titled subject in its own total
-as a minority is a gap in published practice, not a well-stocked genre. Two candidates survived
+as a minority is a gap in published practice, not a well-stocked format. Two candidates survived
 verification; the second (West Virginia Watch's opioid-settlement breakdown, 52.76% to law
 enforcement against 6.43% to treatment) is recorded here as a real instance in a different domain but
 is **not** a row, because its page refused retrieval and the chart was never read by the person

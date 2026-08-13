@@ -1,6 +1,6 @@
 // THE PROPOSAL, AND THE VERDICTS IT IS BUILT FROM.
 //
-// Measured before this file existed: `grep -rn "genreGap(\|capabilityGap(\|groundTakeaway("
+// Measured before this file existed: `grep -rn "formatGap(\|capabilityGap(\|groundTakeaway("
 // skills/` returned FOUR LINES, and all four were the definitions. Nothing called any of them.
 // `grounding:` and `reachable:` are recorded scalars both Gate-2 readings check — and both gates
 // were checking a field no code had ever produced. The convergence that design bought is real
@@ -8,8 +8,8 @@
 // was not a trusted verdict, it was an unwritten one.
 //
 // This file is where the phases call them. Grounding is resolved at G1 (`resolveGrounding`), the
-// medium/genre/size options are computed for movements ④–⑦, and `confirmReachable` is the ONE
-// function that returns the string `reachable:` records — it returns `"yes"` only after `genreGap`
+// medium/format/size options are computed for movements ④–⑦, and `confirmFormatReachable` is the ONE
+// function that returns the string `reachable:` records — it returns `"yes"` only after `formatGap`
 // and `capabilityGap` have both returned `null`, and throws the refusal otherwise. A pair nobody
 // can produce cannot be handed a `yes` to write down.
 //
@@ -25,9 +25,9 @@
 // not rank, does not choose, and never writes a slot.
 
 import { groundTakeaway } from "./ground-claim.mjs";
-import { genreGap, genresFor, GENRE_CATALOG } from "./genre-catalog.mjs";
+import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
-import { EXPORT_SIZES, SIZED_GENRES } from "./storyboard.mjs";
+import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
 import { readFileSync } from "node:fs";
 
 // ---------------------------------------------------------------------------------------------
@@ -101,9 +101,9 @@ const SURVEY_SECTION_RE = /^##\s+(Chart|Map)\s+types/i;
  * `test/type-survey.test.ts`; this reads it back so the exchange can name what exists instead of
  * proposing three variants of one bar, which is what it did with no survey at all.
  *
- * `provenGenres` is a COVERAGE fact (an artifact of that genre exists on disk for that type), never
- * a reachability one — reachability is `genreGap`, below, and the two must not be conflated: a type
- * with no proven genre is one nobody has rendered here yet, which is worth saying out loud.
+ * `provenFormats` is a COVERAGE fact (an artifact of that format exists on disk for that type), never
+ * a reachability one — reachability is `formatGap`, below, and the two must not be conflated: a type
+ * with no proven format is one nobody has rendered here yet, which is worth saying out loud.
  */
 export function readTypeSurvey(text) {
   const rows = [];
@@ -120,7 +120,7 @@ export function readTypeSurvey(text) {
       medium,
       type: row[1],
       purpose: row[2],
-      provenGenres: /none rendered/.test(row[3]) ? [] : row[3].split(",").map((g) => g.trim()),
+      provenFormats: /none rendered/.test(row[3]) ? [] : row[3].split(",").map((g) => g.trim()),
       sheet: row[4],
     });
   }
@@ -131,22 +131,22 @@ export function typeSurvey() {
   return readTypeSurvey(readFileSync(new URL("../references/type-survey.md", import.meta.url), "utf8"));
 }
 
-// Every medium and every genre this toolchain has an opinion about, read off the catalog itself
+// Every medium and every format this toolchain has an opinion about, read off the catalog itself
 // rather than typed out again — a pair added there widens both vocabularies with no second edit.
 export function knownMediums() {
-  return [...new Set(Object.keys(GENRE_CATALOG).map((pair) => pair.split("/")[0]))];
+  return [...new Set(Object.keys(FORMAT_CATALOG).map((pair) => pair.split("/")[0]))];
 }
 
-export function knownGenres() {
-  return [...new Set(Object.keys(GENRE_CATALOG).map((pair) => pair.split("/")[1]))];
+export function knownFormats() {
+  return [...new Set(Object.keys(FORMAT_CATALOG).map((pair) => pair.split("/")[1]))];
 }
 
 // ---------------------------------------------------------------------------------------------
-// ⑤ medium → ⑥ genre → ⑦ size, each verified before it is offered
+// ⑤ medium → ⑥ format → ⑦ size, each verified before it is offered
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Movement ⑤. Every medium, with the genres it can reach, the types this toolchain holds sheets
+ * Movement ⑤. Every medium, with the formats it can reach, the types this toolchain holds sheets
  * for, and — the half nobody computed — whether the ENVIRONMENT allows it at all. A map with no
  * working `MAPTILER_KEY` is named as closed HERE, at the medium question, with what would open it,
  * rather than three movements later at delivery.
@@ -158,47 +158,47 @@ export function proposeMediums({ capabilities = {}, survey = typeSurvey() } = {}
       medium,
       reachable: gap === null,
       why: gap,
-      genres: genresFor(medium),
+      formats: formatsFor(medium),
       types: survey.filter((row) => row.medium === medium),
     };
   });
 }
 
 /**
- * Movement ⑥. Every genre in this toolchain's vocabulary, for the medium just chosen, each marked
- * reachable or not AND CARRYING ITS REFUSAL. A genre with no producer for this medium is NAMED as
- * absent rather than quietly omitted, which is the whole reason `GENRE_CATALOG` is keyed on the
+ * Movement ⑥. Every format in this toolchain's vocabulary, for the medium just chosen, each marked
+ * reachable or not AND CARRYING ITS REFUSAL. A format with no producer for this medium is NAMED as
+ * absent rather than quietly omitted, which is the whole reason `FORMAT_CATALOG` is keyed on the
  * pair: "image reaches static and scrolly; it has no web or video producer" is a sentence the
- * journalist hears at the genre gate.
+ * journalist hears at the format gate.
  */
-export function proposeGenres({ medium, capabilities = {} }) {
+export function proposeFormats({ medium, capabilities = {} }) {
   const closed = capabilityGap(capabilities, medium);
-  return knownGenres().map((genre) => {
-    const gap = closed ?? genreGap(medium, genre);
-    return { genre, reachable: gap === null, why: gap, producer: GENRE_CATALOG[`${medium}/${genre}`]?.producerSkill ?? null };
+  return knownFormats().map((format) => {
+    const gap = closed ?? formatGap(medium, format);
+    return { format, reachable: gap === null, why: gap, producer: FORMAT_CATALOG[`${medium}/${format}`]?.producerSkill ?? null };
   });
 }
 
 /**
- * Movement ⑦. The sizes this genre exports — `EXPORT_SIZES` for a static or a video, none at all
+ * Movement ⑦. The sizes this format exports — `EXPORT_SIZES` for a static or a video, none at all
  * for a web or a scrolly page, which fills whatever container it is given. Where the set has one
  * member the movement STATES it; where it has more, it asks. Either way `size:` is recorded, or
  * deliberately absent, and `sizeGap` in both gates reads the same rule.
  */
-export function proposeSizes(genre) {
-  return SIZED_GENRES.includes(genre) ? [...EXPORT_SIZES] : [];
+export function proposeSizes(format) {
+  return SIZED_FORMATS.includes(format) ? [...EXPORT_SIZES] : [];
 }
 
 /**
  * THE RECORDED VERDICT. `reachable: yes` is written into the slot at G2b, and this is the only
- * function that produces the string — it returns `"yes"` exactly when `genreGap` and
+ * function that produces the string — it returns `"yes"` exactly when `formatGap` and
  * `capabilityGap` both return `null`, and throws the refusal, verbatim and journalist-facing,
  * otherwise. Before this existed both gates read a field nobody computed.
  */
-export function confirmReachable({ medium, genre, capabilities = {} }) {
+export function confirmFormatReachable({ medium, format, capabilities = {} }) {
   const closed = capabilityGap(capabilities, medium);
   if (closed) throw new Error(closed);
-  const gap = genreGap(medium, genre);
+  const gap = formatGap(medium, format);
   if (gap) throw new Error(gap);
   return "yes";
 }
@@ -232,7 +232,7 @@ export function assertDistinctWays(candidates, { min = 2 } = {}) {
 /**
  * The menu, RENDERED FROM THE OPTIONS. Each line names the type, what that type is for in the
  * sheet's own words (verbatim — this function writes no editorial prose of its own), and the
- * genres that are genuinely reachable for it. A candidate whose pair the catalog refuses cannot
+ * formats that are genuinely reachable for it. A candidate whose pair the catalog refuses cannot
  * appear, because this throws before it renders one.
  *
  * `why` per candidate is the caller's own editorial reason — why THIS story is worth seeing that
@@ -242,12 +242,12 @@ export function assertDistinctWays(candidates, { min = 2 } = {}) {
 export function formatCandidates({ medium, candidates, capabilities = {}, survey = typeSurvey() }) {
   assertDistinctWays(candidates);
   const lines = candidates.map((candidate) => {
-    const { type, why, genre } = candidate;
+    const { type, why, format } = candidate;
     if (!why || !why.trim()) throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
-    if (genre) confirmReachable({ medium, genre, capabilities });
+    if (format) confirmFormatReachable({ medium, format, capabilities });
     const row = survey.find((r) => r.medium === medium && r.type.toLowerCase() === type.trim().toLowerCase());
     const purpose = row ? ` — ${row.purpose}` : "";
-    const reach = genre ? ` (${genre})` : "";
+    const reach = format ? ` (${format})` : "";
     return `- **${type}**${reach}${purpose}\n  Why here: ${why.trim()}`;
   });
   return lines.join("\n");

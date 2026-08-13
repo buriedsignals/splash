@@ -19,7 +19,7 @@
 //             somebody should be able to change is a judgement, so it is REPORTED rather than
 //             scored — `--beats` prints every one.
 //
-//   bun scripts/palette-reach.mjs            per-genre table
+//   bun scripts/palette-reach.mjs            per-format table
 //   bun scripts/palette-reach.mjs --beats    every beat, one per line, with what it still names
 
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
@@ -28,8 +28,8 @@ import { join } from "node:path";
 const TWIN = join(import.meta.dirname, "..");
 const SOURCE = /\.(mjs|tsx|ts)$/;
 
-/** The genre a beat belongs to, read off its own folder name — the same prefixes the tree uses. */
-export function genreOf(beat) {
+/** The format a beat belongs to, read off its own folder name — the same prefixes the tree uses. */
+export function formatOf(beat) {
   if (/^mapscrolly-/.test(beat)) return "map scrolly";
   if (/^(scrolly-)/.test(beat)) return "scrolly";
   if (/^mapmore-scrolly/.test(beat)) return "map scrolly";
@@ -77,7 +77,7 @@ function stripComments(source) {
 /**
  * EVERY hex literal, and then a stated exemption — rather than a pattern of "colour-looking
  * identifiers", which is what this held until 2026-08-10 and which was measured wrong in four beats
- * in one genre. `const COLOURS = {…}` never matched `[A-Z_]*COLOUR` (the identifier ends in `S`
+ * in one format. `const COLOURS = {…}` never matched `[A-Z_]*COLOUR` (the identifier ends in `S`
  * before the `[:=]`); the object's own keys (`increase`, `male`, `y2000`, `nuclear`) were not in any
  * allow-list; and `NOMINAL_ACCENT` never matched `\bACCENT` because `_A` is not a word boundary.
  * Four beats therefore reported "reached" while still drawing in hexes no newsroom could reach —
@@ -153,26 +153,26 @@ const beats = readdirSync(proof)
 
 const rows = beats.map((beat) => ({
   beat,
-  genre: genreOf(beat),
+  format: formatOf(beat),
   ...measureBeat(join(proof, beat)),
 }));
 
 if (process.argv.includes("--beats")) {
   for (const row of rows) {
     console.log(
-      `${row.reached ? "reached" : "   ----"} ${row.clean ? "clean" : "     "}  ${row.genre.padEnd(12)}  ${row.beat}` +
+      `${row.reached ? "reached" : "   ----"} ${row.clean ? "clean" : "     "}  ${row.format.padEnd(12)}  ${row.beat}` +
         (row.named.length ? `\n           ${row.named.join("\n           ")}` : ""),
     );
   }
 }
 
-const genres = [...new Set(rows.map((r) => r.genre))].sort();
-console.log("\ngenre                reached    clean  total");
-for (const genre of genres) {
-  const inGenre = rows.filter((r) => r.genre === genre);
+const formats = [...new Set(rows.map((r) => r.format))].sort();
+console.log("\nformat                reached    clean  total");
+for (const format of formats) {
+  const inFormat = rows.filter((r) => r.format === format);
   console.log(
-    `${genre.padEnd(20)} ${String(inGenre.filter((r) => r.reached).length).padStart(7)}  ` +
-      `${String(inGenre.filter((r) => r.clean).length).padStart(7)}  ${String(inGenre.length).padStart(5)}`,
+    `${format.padEnd(20)} ${String(inFormat.filter((r) => r.reached).length).padStart(7)}  ` +
+      `${String(inFormat.filter((r) => r.clean).length).padStart(7)}  ${String(inFormat.length).padStart(5)}`,
   );
 }
 console.log(

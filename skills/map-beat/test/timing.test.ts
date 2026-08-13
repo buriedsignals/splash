@@ -10,7 +10,7 @@ import { arrivalProgress } from "../assets/Co2MapVideo";
 
 /**
  * The structural half of the motion grammar, for a map beat. The drawing itself is verified by
- * looking at four extracted frames — that is the discipline of the video genre — and what a test
+ * looking at four extracted frames — that is the discipline of the video format — and what a test
  * can carry is the arithmetic: the conclusion cannot precede its evidence, the subject is not the
  * tail of the reveal, and the video does not end on a transition.
  *

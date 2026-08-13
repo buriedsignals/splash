@@ -1,6 +1,6 @@
 # Beat — world population passed 8 billion in 2022
 
-**Type:** area. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
+**Type:** area. **Medium/format:** chart / static. **Channel:** article web, 900 x 560.
 
 ## Claim
 

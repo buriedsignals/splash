@@ -62,13 +62,13 @@ describe("the type survey has not drifted from the type sheets", () => {
     }
   });
 
-  it("should say, for every type, whether any genre is proven on disk", () => {
+  it("should say, for every type, whether any format is proven on disk", () => {
     const survey = readFileSync(SURVEY, "utf8");
     const rows = survey.split(/\r?\n/).filter((line) => /^\| \*\*/.test(line));
     expect(rows.length).toBe(sheetTitles().length);
     for (const row of rows) {
       const cells = row.split("|").map((c) => c.trim());
-      // type | what it is for | proven genres | sheet
+      // type | what it is for | proven formats | sheet
       expect(cells[3].length).toBeGreaterThan(0);
       expect(
         /^(static|web|video|scrolly)(, (static|web|video|scrolly))*$/.test(

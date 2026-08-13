@@ -11,7 +11,7 @@ export type Bin = { lo: number; hi: number; count: number; entities: string[] };
  *  divided into about ten roughly-round bins" default `references/types/histogram.md` names, and
  *  the exact bin edges the static sibling verified render a legible shape with. Keeps each bin's
  *  own member country names, never printed on the static frame's bars (only their count is), so
- *  this genre's hover/tap/keyboard-focus layer has something real to answer with. */
+ *  this format's hover/tap/keyboard-focus layer has something real to answer with. */
 export function makeBins(
   rows: { entity: string; value: number }[],
   { lo, hi, width }: { lo: number; hi: number; width: number },

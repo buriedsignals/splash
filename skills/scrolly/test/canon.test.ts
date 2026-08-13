@@ -68,7 +68,7 @@ describe("scrolly — the canon's assets", () => {
   });
 });
 
-describe("scrolly — a vehicle, not a new genre of chart", () => {
+describe("scrolly — a vehicle, not a new format of chart", () => {
   it("should carry a seed that assembles DIFFERENT MEDIA — including a real map track and a real chart track", async () => {
     // The vehicle's whole justification. A seed carrying only a picture and a diagram demonstrated
     // the mechanism but never the point: a map and a chart are media other skills in this project

@@ -7,9 +7,9 @@
  *
  * `decollide` is lifted, in shape, from the proven static slope beat at
  * `proof/static-renewables-shift/RenewablesShiftSlope.tsx` — that beat already solved "ten (there,
- * six) category labels stacked at one end must not overlap" for the static genre; this file reuses
+ * six) category labels stacked at one end must not overlap" for the static format; this file reuses
  * the same push-apart algorithm rather than inventing a second one. What is new here, because the
- * web genre's own narrow layout is far tighter than that static beat's single 900px frame, is that
+ * web format's own narrow layout is far tighter than that static beat's single 900px frame, is that
  * the composition (`SlopeWeb.tsx`) may need MORE than one line per label — this module only ever
  * moves a label's Y position, never its text, so wrapping is the composition's own job.
  */

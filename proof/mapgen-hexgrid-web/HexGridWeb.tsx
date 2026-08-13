@@ -1,5 +1,5 @@
 /**
- * The web genre of "Where 2024's earthquakes clustered" — a HEX-GRID (spatial-binning) map beat.
+ * The web format of "Where 2024's earthquakes clustered" — a HEX-GRID (spatial-binning) map beat.
  *
  * RULING R1 (2026-08-10), retrofitted here 2026-08-10: **map × web is a LIVE MapTiler map** —
  * *"une carte web qu'on ne peut pas parcourir est une image"*. The audit measured what the ruling
@@ -78,7 +78,7 @@
 
 import { binIndexUpperInclusive, hexCorners, type HexCell } from "./geo-hex.ts";
 
-// ===== Genre mechanics — not one story's numbers =====
+// ===== Format mechanics — not one story's numbers =====
 /** How much smaller than its own lattice cell a hexagon is DRAWN, so the field reads as a grid of
  *  cells rather than one continuous stain. The bins themselves are unchanged — this is a drawing
  *  gap, not a binning gap. Exported because `render-web.mjs`'s `livePlan` emits the SAME shrunk

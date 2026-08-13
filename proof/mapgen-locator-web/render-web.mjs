@@ -1,6 +1,6 @@
 // twin/proof/mapgen-locator-web/render-web.mjs
 //
-// The web genre, applied to a LOCATOR beat. Turns the SAME baked plate `bake-plate.mjs` produces
+// The web format, applied to a LOCATOR beat. Turns the SAME baked plate `bake-plate.mjs` produces
 // into one self-contained HTML file — ONE fluid SVG (geometry only) plus its HTML overlay
 // (furniture, labels, hit targets), the always-rendered table of all eleven organisations, one
 // inlined interaction script, and — since ruling R1 (2026-08-10) — a LIVE MapTiler map layered
@@ -267,7 +267,7 @@ export function livePlan({ geometry, ground, waterFill }) {
  * SSRs the table once beside it, wraps both in one self-contained HTML file and writes it to disk.
  */
 /** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
- *  genre's — `discloseTable` refuses to invent one. */
+ *  format's — `discloseTable` refuses to invent one. */
 const TABLE_ROW_NOUN = "organisations";
 
 /**
@@ -275,11 +275,11 @@ const TABLE_ROW_NOUN = "organisations";
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -441,7 +441,7 @@ function buildCss({ ground, ink, muted }) {
   assertDistinctSlugs(CATEGORY_ORDER);
   const filterRules = CATEGORY_ORDER.map((category) => {
     // The SLUG is what every marker, label, button and table row carries as `data-group`, and the
-    // slug is what this selector quotes — the two used to differ in this genre's own seed, where an
+    // slug is what this selector quotes — the two used to differ in this format's own seed, where an
     // HTML-escaped `&amp;` inside a CSS string matched no element, `:not(...)` therefore matched
     // every element, and one filter emptied the whole map. `slugOf` output is `[a-z0-9-]+` by
     // construction, so there is no escaping question left to get wrong.
@@ -982,7 +982,7 @@ async function loadPlate(plateDir) {
 }
 
 /** This beat's own runner: bakes the plate if missing, reads the eleven orgs from the frozen csv,
- *  hands `LocatorWeb` and `OrgTable` to the genre's `renderMapWeb`. */
+ *  hands `LocatorWeb` and `OrgTable` to the format's `renderMapWeb`. */
 async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   await ensurePlate(plateDir);
   const { geometry, plate } = await loadPlate(plateDir);

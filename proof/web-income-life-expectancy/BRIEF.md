@@ -4,7 +4,7 @@
 expectancies — years behind Switzerland, a country at a similar income level. Cuba, at a fraction
 of either country's income, comes within a few years of both.
 
-**Medium / genre:** chart / web. **Type:** scatter (both axes measured: GDP per capita on x,
+**Medium / format:** chart / web. **Type:** scatter (both axes measured: GDP per capita on x,
 log-scaled; life expectancy at birth on y; one dot per country; no forced zero on either axis).
 
 ## Data

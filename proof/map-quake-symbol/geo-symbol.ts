@@ -222,8 +222,8 @@ export type LabelBox = { x: number; y: number; width: number; height: number };
  * Highest priority (lowest number) places first; a lower-priority label whose box would overlap an
  * already-placed one is dropped. A physical copy of `map-geneva-locator/geo-locator.ts`'s own
  * `declutterLabels` (same shape, not an import — a beat under `proof/` never reaches into a sibling
- * beat at runtime), needed here because this beat's static genre labels EVERY point unconditionally
- * (`QuakeSymbolStill.tsx`'s first version) while the video genre only ever labels its one subject —
+ * beat at runtime), needed here because this beat's static format labels EVERY point unconditionally
+ * (`QuakeSymbolStill.tsx`'s first version) while the video format only ever labels its one subject —
  * fine with 1 label, not with the 17 this study set actually has. Three real clusters (Kuril
  * Islands, Sumatra, Solomon Islands/PNG) sit close enough that every point's own "M7.8"/"M7.9"-style
  * label collided into an illegible stack, caught by looking at the rendered PNG. Same input always

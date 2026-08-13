@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` both have: the story's own constants, its own CSV reader, its own
-// component, handed to the genre's generic machinery. It lives here, beside the story, not inside
+// component, handed to the format's generic machinery. It lives here, beside the story, not inside
 // `skills/chart-web/scripts/render-web.mjs` — a skill directory that imports a story workspace
 // does not build once copied, on its own, into a journalist's root.
 //
@@ -55,7 +55,7 @@ function parseCsv(text) {
  * Reads the frozen CSV, verifies it against the same checks the static beat's own `render.mjs`
  * makes (independent re-implementation, not imported — a beat never imports another beat's files),
  * buckets into decades keeping each reading's own year (needed for the outlier tooltip text this
- * genre adds — see `boxplot-geometry.ts`'s own doc-comment), and verifies the claim on the real
+ * format adds — see `boxplot-geometry.ts`'s own doc-comment), and verifies the claim on the real
  * computed medians before handing anything to the renderer.
  */
 export async function loadDecades(dataPath) {

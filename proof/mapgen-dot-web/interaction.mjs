@@ -1,6 +1,6 @@
 // twin/skills/map-web/assets/interaction.mjs
 //
-// The one script the map-web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the map-web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
@@ -13,7 +13,7 @@
 // `data-detail`, plus Arrow/Home/End cycling between points without leaving keyboard focus.
 //
 // `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
-// verification rule, an interactive genre is verified by driving a real browser, not by asserting
+// verification rule, an interactive format is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
 /** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
@@ -43,7 +43,7 @@ export function initPoints(points, tooltip) {
 
   // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each point
   // is already its own fixed-size hit target (MapWebSeed.tsx's own `HIT_TARGET_PX`), so no
-  // proximity resolution is needed the way the chart genre's shared `.hit-area` overlay needs one.
+  // proximity resolution is needed the way the chart format's shared `.hit-area` overlay needs one.
   points.forEach((point, i) => {
     point.addEventListener("pointerenter", function (evt) {
       show(point, evt.clientX, evt.clientY);

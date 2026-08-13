@@ -17,6 +17,7 @@ import {
   REQUIRED_SCALARS as STORYBOARD_SCALARS,
   REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../storyboard/scripts/storyboard.mjs";
+import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 
 let dir: string;
 beforeEach(async () => {
@@ -46,8 +47,9 @@ const SCALARS: Record<string, string> = {
 // `id` first: it is the line the slot list item opens on.
 const SLOT: Record<string, string> = {
   id: "1",
+  proves: '"Rainfall fell by a third in ten years."',
   medium: "chart",
-  genre: "static",
+  format: "static",
   size: "landscape",
   reachable: "yes",
   chosen: "trajectory",
@@ -267,16 +269,16 @@ describe("whereIs", () => {
     expect((await whereIs(dir)).phase).toBe("production");
   });
 
-  it("should stay in storyboard when a slot never recorded its medium, genre or size", async () => {
+  it("should stay in storyboard when a slot never recorded its medium, format or size", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     // `size` refuses in storyboard's OWN words rather than this file's generic ones, because
     // W4 Task 9 makes it the one slot field the two gates word identically on purpose — a
     // journalist reading one gate's reason while the other holds is the A7/A14 defect with better
-    // manners. See "gate 2c: both readings of R2's genre × size rule, string for string" below.
+    // manners. See "gate 2c: both readings of R2's format × size rule, string for string" below.
     const expected: Record<string, string> = {
       medium: "slot 1: no medium was ever chosen",
-      genre: "slot 1: no genre was ever chosen",
+      format: "slot 1: no format was ever chosen",
       size: "slot 1: size is missing — gate 2c never closed",
     };
     for (const [field, message] of Object.entries(expected)) {
@@ -290,7 +292,7 @@ describe("whereIs", () => {
     }
   });
 
-  it("should stay in storyboard when the medium and genre were never confirmed reachable", async () => {
+  it("should stay in storyboard when the medium and format were never confirmed reachable", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
@@ -300,7 +302,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain(
-      "slot 1: this medium and genre were never confirmed reachable",
+      "slot 1: this medium and format were never confirmed reachable",
     );
   });
 
@@ -419,6 +421,71 @@ describe("whereIs", () => {
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
+  it("should reopen production and delivery from a durable editor-feedback receipt", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    const beatDir = join(dir, "beats", "1-rainfall");
+    await mkdir(join(beatDir, "renders"), { recursive: true });
+    await writeFile(join(beatDir, "renders", "still.png"), "old render");
+    await writeFile(join(beatDir, "APPROVED.md"), "seen");
+    await deliver(dir, "1-rainfall", "rainfall.png");
+    const feedbackPath = join(beatDir, "FEEDBACK.md");
+    const manifestPath = join(dir, "export", "1-rainfall", ".delivery-manifest.json");
+    await approveCurrentOutput(beatDir, { reviewId: "review-old" });
+    await writeFile(feedbackPath, "Move the annotation above the line.");
+
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "production",
+      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+      missing: [],
+    });
+
+    await writeFile(join(beatDir, "renders", "still.png"), "revised render");
+    const review = await approveCurrentOutput(beatDir, { reviewId: "review-new" });
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "delivery",
+      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+      missing: [],
+    });
+
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        state: "complete",
+        operationId: "delivery-review-new",
+        outputId: "1-rainfall",
+        reviewId: review.id,
+        planVersion: review.planVersion,
+        draftDigest: review.draftDigest,
+        findingIds: review.findingIds,
+        feedbackDigest: review.feedbackDigest,
+      }),
+    );
+    expect(await whereIs(dir)).toMatchObject({ phase: "done", missing: [] });
+
+    await writeFile(feedbackPath, "Move the annotation below the line instead.");
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "production",
+      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+    });
+  });
+
+  it("should fail closed on malformed review state during feedback recovery", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    const beatDir = join(dir, "beats", "1-rainfall");
+    await mkdir(join(beatDir, "renders"), { recursive: true });
+    await writeFile(join(beatDir, "renders", "still.png"), "render");
+    await writeFile(join(beatDir, "APPROVED.md"), "seen");
+    await deliver(dir, "1-rainfall", "rainfall.png");
+    await writeFile(join(beatDir, "FEEDBACK.md"), "Change the label.");
+    await writeFile(join(beatDir, "OUTPUT-REVIEW.json"), JSON.stringify({ decision: "approve" }));
+    await expect(whereIs(dir)).rejects.toThrow(/unsupported schemaVersion/);
+  });
+
   // TWO BEATS, AND THE FIRST ONE DELIVERED. This is the fixture that did not exist, and its absence
   // is the whole reason the defect below survived a suite that tests the approval gate directly:
   // every approval case above runs with `export/` EMPTY, and every export case runs with ONE beat.
@@ -521,7 +588,7 @@ describe("whereIs", () => {
 // argument inside the test that exists to prove the two gates agree, which switched off the checks
 // only the second and third arguments enabled. `checkStoryboard` now genuinely takes one argument,
 // so that call is correct — but a hand-typed fixture list still cannot know about a rule added
-// after it was written, which is exactly how three rules (grounding, genre, capability) landed and
+// after it was written, which is exactly how three rules (grounding, format, capability) landed and
 // this suite stayed green.
 //
 // So the field list is read from BOTH GATES' OWN EXPORTED CONSTANTS and unioned. Remove a field
@@ -536,7 +603,7 @@ const SLOT_FIELDS = [
 ];
 
 // One value per field that is present and well-formed as YAML but outside what the gates accept.
-// A field with no vocabulary of its own (medium, genre — the gates require them, they do not judge
+// A field with no vocabulary of its own (medium, format — the gates require them, they do not judge
 // them) still gets a fixture: that the two gates AGREE to tolerate the value is a parity fact worth
 // pinning, and it is the fixture that would redden if one side grew a vocabulary alone.
 //
@@ -549,13 +616,13 @@ const OUT_OF_VOCABULARY: Record<string, string> = {
   grounding: "contradicted",
   reference: '""',
   medium: "hologram",
-  genre: "print",
+  format: "print",
   size: "billboard",
   reachable: "no",
   chosen: "dumbbell",
 };
 
-// Ruling R2 as fixtures. The genre×size triple is the one rule where a gate can be wrong in two
+// Ruling R2 as fixtures. The format×size triple is the one rule where a gate can be wrong in two
 // opposite directions — refusing a correct storyboard and closing on a wrong one — so both are
 // pinned, and so is the case the old shape got wrong: a `web` slot could not close gate 2 at all
 // without naming a size that would never be used.
@@ -565,7 +632,7 @@ const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
   { name: "static + portrait", slot: { ...SLOT, size: "portrait" } },
   {
     name: "video + portrait",
-    slot: { ...SLOT, genre: "video", size: "portrait" },
+    slot: { ...SLOT, format: "video", size: "portrait" },
   },
   {
     name: "static with a size nobody exports",
@@ -574,15 +641,15 @@ const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
   { name: "static with no size at all", slot: without(SLOT, "size") },
   {
     name: "web WITH a size — R2 says web is a range, not a fourth size",
-    slot: { ...SLOT, genre: "web", size: "landscape" },
+    slot: { ...SLOT, format: "web", size: "landscape" },
   },
   {
     name: "web with NO size — the correct shape, which the old flat requirement refused",
-    slot: without(SLOT, "size", { genre: "web" }),
+    slot: without(SLOT, "size", { format: "web" }),
   },
   {
     name: "scrolly with no size — a scroll has no single exported frame",
-    slot: without(SLOT, "size", { genre: "scrolly" }),
+    slot: without(SLOT, "size", { format: "scrolly" }),
   },
 ];
 
@@ -689,7 +756,7 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
   }
 });
 
-// ── R2's genre × size rule, held by BOTH gates, word for word ─────────────────────────────────
+// ── R2's format × size rule, held by BOTH gates, word for word ─────────────────────────────────
 //
 // The fixtures above compare a BOOLEAN: closed or not closed. That was enough while every slot rule
 // was a presence check, and it is not enough for this one. Two gates can agree that a storyboard is
@@ -706,7 +773,7 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
 // THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, 2026-08-10:
 //
 //   where.mjs learns a fourth size the other gate does not         RED ×2
-//   storyboard.mjs starts treating `web` as a sized genre          RED ×2
+//   storyboard.mjs starts treating `web` as a sized format          RED ×2
 //   where.mjs REWORDS one refusal, same verdict, other sentence    RED ×2  ← the boolean form missed this
 //   storyboard.mjs stops naming the three it accepts               RED ×2
 //   both gates drop the size rule together                         RED ×10
@@ -714,7 +781,7 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
 // The third row is the whole reason this block exists: the fixtures above, comparing closed-or-not,
 // stay GREEN for it. Two gates refusing the same storyboard for two different-sounding reasons is
 // A7/A14 with better manners, and only a string comparison sees it.
-describe("gate 2c: both readings of R2's genre × size rule, string for string", () => {
+describe("gate 2c: both readings of R2's format × size rule, string for string", () => {
   const sizeLines = (gaps: string[]) =>
     gaps.filter((g) => /\bsize\b/.test(g)).sort();
 
@@ -742,8 +809,8 @@ describe("gate 2c: both readings of R2's genre × size rule, string for string",
       await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
       return (await whereIs(dir)).phase !== "storyboard";
     };
-    expect(await closes(without(SLOT, "size", { genre: "web" }))).toBe(true);
-    expect(await closes({ ...SLOT, genre: "web", size: "landscape" })).toBe(
+    expect(await closes(without(SLOT, "size", { format: "web" }))).toBe(true);
+    expect(await closes({ ...SLOT, format: "web", size: "landscape" })).toBe(
       false,
     );
   });

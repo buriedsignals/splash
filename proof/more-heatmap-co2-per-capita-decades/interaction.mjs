@@ -1,6 +1,6 @@
 // twin/proof/more-heatmap-co2-per-capita-decades/interaction.mjs
 //
-// This beat's OWN interaction script — not the web genre skill's `assets/interaction.mjs`, which
+// This beat's OWN interaction script — not the web format skill's `assets/interaction.mjs`, which
 // wires a `.pt`/`.hit-area` nearest-by-x model built for points strung along one line. A heatmap's
 // cells are already discrete, non-overlapping regions, so each one can be its own hover/focus
 // target directly: no "nearest point" resolution is needed, the pointer is either over a cell or

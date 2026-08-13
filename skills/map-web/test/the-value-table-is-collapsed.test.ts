@@ -9,7 +9,7 @@
  * covering what was added after them: `the-live-layer-is-in-the-artifact.test.ts`'s own header
  * records a sweep that found 2 of 5 pages because it matched a class name three beats did not
  * carry. So the page set here is DISCOVERED — `git ls-files`, filtered by path, widened by the
- * genre's own root class — and then asserted by name, so a beat that stops committing its rendered
+ * format's own root class — and then asserted by name, so a beat that stops committing its rendered
  * file reddens here instead of quietly leaving the check.
  *
  * WHAT IT ASSERTS, and what it deliberately does not. "Collapsed" is a fact about the bytes a
@@ -75,7 +75,7 @@ function markup(html: string): string {
 
 /**
  * Every `<details>…</details>` block removed, so what is LEFT is what a reader sees without opening
- * anything. Nested disclosures are not a thing this genre writes, and a `<details>` with no closing
+ * anything. Nested disclosures are not a thing this format writes, and a `<details>` with no closing
  * tag would leave its own opener behind — both of which the assertions below would report rather
  * than swallow.
  */
@@ -99,7 +99,7 @@ function tableCount(html: string): number {
 
 /**
  * A page is a map-web beat if it is the rendered HTML of the seed or of a `mapgen-*-web` beat —
- * decided by PATH, with the genre's own root class kept as a widener so a beat living somewhere
+ * decided by PATH, with the format's own root class kept as a widener so a beat living somewhere
  * else is still caught. Copied deliberately from `the-live-layer-is-in-the-artifact.test.ts`: the
  * two guards must sweep the same set, or one of them silently covers less than the other.
  */
@@ -283,7 +283,7 @@ describe("the renderer collapses the table it renders", () => {
     expect(openDisclosures(html)).toEqual([]);
     // The table is INSIDE it: with every disclosure block removed, no table is left on the page.
     expect(withoutDisclosures(html)).not.toMatch(/<table\b/i);
-    // Native, not scripted: a `<summary>` is the control, and nothing in this genre's inline script
+    // Native, not scripted: a `<summary>` is the control, and nothing in this format's inline script
     // is needed to open it.
     expect(html).toMatch(/<summary>/);
   });

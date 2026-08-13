@@ -1,8 +1,13 @@
 import { describe, it, expect } from "bun:test";
-import { rm, readFile, mkdtemp } from "node:fs/promises";
+import { rm, readFile, mkdir, mkdtemp, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { produce } from "../scripts/produce.mjs";
+import { basename, join } from "node:path";
+import {
+  datawrapperFormatFor,
+  parseProduceCli,
+  produce,
+  resolveDatawrapperBeatIdentity,
+} from "../scripts/produce.mjs";
 
 function baseSpec(overrides = {}) {
   return {
@@ -74,6 +79,18 @@ function fakeDatawrapper({ pngBytes = fakePng(1920, 1080) } = {}) {
   return { fetchFn, calls };
 }
 
+async function storyBeat(prefix = "dw-story-") {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  const identity = {
+    storiesRoot: join(root, "stories"),
+    storyId: "emissions-story",
+    outputId: "1-emissions",
+  };
+  const beatDir = join(identity.storiesRoot, identity.storyId, "beats", identity.outputId);
+  await mkdir(beatDir, { recursive: true });
+  return { root, beatDir, identity };
+}
+
 describe("produce", () => {
   it("should throw a validation error before ever touching the network", async () => {
     const { fetchFn, calls } = fakeDatawrapper();
@@ -126,17 +143,24 @@ describe("produce", () => {
     }
   });
 
-  it("should not export a PNG for format interactive, and should return the published URL instead", async () => {
+  it("should map canonical web to Datawrapper interactive without leaking that provider value", async () => {
     const { fetchFn, calls } = fakeDatawrapper();
-    const result = await produce(baseSpec({ format: "interactive" }), {
+    const result = await produce(baseSpec({ format: "web" }), {
       size: "landscape",
       outDir: "/tmp",
       token: "secret",
       fetchFn,
     });
-    expect(result.format).toBe("interactive");
-    expect(result.publicUrl).toBe("//datawrapper.dwcdn.net/aBcDe/1/");
+    expect(result.format).toBe("web");
+    expect(result.provider).toEqual({ format: "interactive" });
+    expect(result.publicUrl).toBe("https://datawrapper.dwcdn.net/aBcDe/1/");
     expect(calls.some((c) => c.url.includes("/export/png"))).toBe(false);
+  });
+
+  it("should pin both canonical-to-provider format mappings", () => {
+    expect(datawrapperFormatFor("web")).toBe("interactive");
+    expect(datawrapperFormatFor("static")).toBe("static");
+    expect(() => datawrapperFormatFor("interactive")).toThrow(/canonical Splash formats/);
   });
 
   it("should send the mapped payload's title, type and language on chart creation", async () => {
@@ -172,6 +196,27 @@ describe("produce", () => {
     });
     const dataCall = calls.find((c) => c.url.endsWith("/data"));
     expect(dataCall.body).toBe("year,Co2 Mt\n1950,10.25\n2024,32.07");
+  });
+
+  it("should upload every series required by a multi-country slope", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(
+      baseSpec({
+        format: "web",
+        seriesLabel: "Norway adoption",
+        data: [
+          { year: 2021, Norway: 54, Sweden: 52, UK: 5 },
+          { year: 2025, Norway: 64, Sweden: 62, UK: 9 },
+        ],
+      }),
+      { outDir: "/tmp", token: "secret", fetchFn },
+    );
+    const dataCall = calls.find((c) => c.url.endsWith("/data"));
+    expect(dataCall.body).toBe(
+      "year,Norway adoption,Sweden,UK\n2021,54,52,5\n2025,64,62,9",
+    );
+    const patch = JSON.parse(calls.find((c) => c.method === "PATCH").body);
+    expect(patch.metadata.visualize["custom-range-y"].map(Number)[0]).toBeLessThan(5);
   });
 
   it("should never let the raw column name reach the CSV header or the custom-colors key sent to Datawrapper", async () => {
@@ -244,6 +289,192 @@ describe("produce", () => {
       barCalls.find((c) => c.method === "PATCH").body,
     );
     expect(barPatch.metadata.visualize["custom-range-y"]).toBeUndefined();
+  });
+
+  it("should persist a canonical Datawrapper beat and update the same chart after feedback", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    const { root, beatDir, identity } = await storyBeat("dw-story-beat-");
+    try {
+      const first = await produce(baseSpec({ format: "web" }), {
+        ...identity,
+        name: "co2",
+        token: "secret",
+        fetchFn,
+      });
+      expect(first.htmlPath).toBe(
+        join(resolveDatawrapperBeatIdentity(identity).beatDir, "renders", "co2.html"),
+      );
+      expect(await readFile(first.htmlPath, "utf8")).toContain(
+        'src="https://datawrapper.dwcdn.net/aBcDe/1/"',
+      );
+      const receipt = JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"));
+      expect(receipt).toMatchObject({
+        schemaVersion: 2,
+        provider: "datawrapper",
+        state: "local-complete",
+        outputId: basename(beatDir),
+        chartId: "aBcDe",
+        editableSpec: "spec.json",
+        renderedArtifact: "renders/co2.html",
+      });
+      expect(JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway).toBe(
+        "Emissions fell",
+      );
+
+      await produce(baseSpec({ format: "web", takeaway: "Emissions fell further" }), {
+        ...identity,
+        name: "co2",
+        token: "secret",
+        fetchFn,
+      });
+      expect(
+        calls.filter(
+          (call) => call.method === "POST" && call.url === "https://api.datawrapper.de/v3/charts",
+        ),
+      ).toHaveLength(1);
+      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8")).chartId).toBe(
+        "aBcDe",
+      );
+      expect(JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway).toBe(
+        "Emissions fell further",
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should persist a new chart ID before configuration so a failed run retries the same chart", async () => {
+    const base = fakeDatawrapper();
+    const { root, beatDir, identity } = await storyBeat("dw-prepared-beat-");
+    let failDataOnce = true;
+    const fetchFn = async (url, init = {}) => {
+      if (String(url).endsWith("/charts/aBcDe/data") && failDataOnce) {
+        failDataOnce = false;
+        base.calls.push({ url: String(url), method: init.method ?? "GET", body: init.body });
+        return new Response("injected data failure", { status: 500 });
+      }
+      return base.fetchFn(url, init);
+    };
+    try {
+      await expect(
+        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
+      ).rejects.toThrow(/set chart data failed/);
+      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"))).toMatchObject({
+        state: "prepared",
+        chartId: "aBcDe",
+      });
+
+      await produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn });
+      expect(
+        base.calls.filter(
+          (call) => call.method === "POST" && call.url === "https://api.datawrapper.de/v3/charts",
+        ),
+      ).toHaveLength(1);
+      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"))).toMatchObject({
+        state: "local-complete",
+        chartId: "aBcDe",
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should mark a failed revision prepared instead of leaving a stale complete claim", async () => {
+    const base = fakeDatawrapper();
+    const { root, beatDir, identity } = await storyBeat("dw-failed-revision-");
+    try {
+      await produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn: base.fetchFn });
+      let failData = true;
+      const fetchFn = async (url, init = {}) => {
+        if (String(url).endsWith("/charts/aBcDe/data") && failData) {
+          failData = false;
+          return new Response("revision failed", { status: 500 });
+        }
+        return base.fetchFn(url, init);
+      };
+      await expect(
+        produce(baseSpec({ format: "web", takeaway: "Revised" }), { ...identity, token: "secret", fetchFn }),
+      ).rejects.toThrow(/set chart data failed/);
+      const receipt = JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"));
+      expect(receipt).toMatchObject({
+        schemaVersion: 2,
+        state: "prepared",
+        chartId: "aBcDe",
+        lastCompleted: { renderedArtifact: "renders/chart.html" },
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should expose a story/output CLI mode that derives the provider receipt path", () => {
+    expect(
+      parseProduceCli(["stories", "story", "1-chart", "web", "--story-output"]),
+    ).toEqual({
+      storiesRoot: "stories",
+      storyId: "story",
+      outputId: "1-chart",
+      formatArg: "web",
+      sizeArg: undefined,
+      storyOutputMode: true,
+    });
+  });
+
+  it("should refuse a caller-selected tracked beat path", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await expect(
+      produce(baseSpec({ format: "web" }), {
+        beatDir: "/tmp/some-beat",
+        token: "secret",
+        fetchFn,
+      }),
+    ).rejects.toThrow(/storiesRoot, storyId, and outputId/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("should reject a symlinked story ancestor before using the bearer token", async () => {
+    const { root, identity } = await storyBeat("dw-identity-");
+    const linkedStory = "linked-story";
+    await symlink(
+      join(identity.storiesRoot, identity.storyId),
+      join(identity.storiesRoot, linkedStory),
+      "dir",
+    );
+    const { fetchFn, calls } = fakeDatawrapper();
+    try {
+      expect(() =>
+        resolveDatawrapperBeatIdentity({ ...identity, storyId: linkedStory }),
+      ).toThrow(/real directory/);
+      await expect(
+        produce(baseSpec({ format: "web" }), {
+          ...identity,
+          storyId: linkedStory,
+          token: "secret",
+          fetchFn,
+        }),
+      ).rejects.toThrow(/real directory/);
+      expect(calls).toHaveLength(0);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should serialize concurrent first production so only one remote chart is created", async () => {
+    const { root, identity } = await storyBeat("dw-concurrent-");
+    const { fetchFn, calls } = fakeDatawrapper();
+    try {
+      const [first, second] = await Promise.all([
+        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
+        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
+      ]);
+      expect(first.chartId).toBe("aBcDe");
+      expect(second.chartId).toBe("aBcDe");
+      expect(
+        calls.filter((call) => call.method === "POST" && call.url.endsWith("/charts")),
+      ).toHaveLength(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });
 

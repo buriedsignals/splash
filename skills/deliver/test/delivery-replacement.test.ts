@@ -59,7 +59,7 @@ function manifest(operationId: string) {
     draftDigest: `sha256:${"a".repeat(64)}`,
     findingIds: ["finding-1"],
     form: "owned-file",
-    genre: "static",
+    format: "static",
     createdAt: "2026-08-11T10:00:00.000Z",
   };
 }

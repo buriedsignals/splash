@@ -5,7 +5,7 @@
  * grew an assertion because every check INCLUDING this one, for one round, measured which step was
  * painted and never whether the words MOVE.
  *
- * ROUND ONE OF THIS FILE: THE INSTRUMENT. The genre's own verification rule has always been "drive
+ * ROUND ONE OF THIS FILE: THE INSTRUMENT. The format's own verification rule has always been "drive
  * a real browser", and every round obeyed it — by jumping to 25 discrete scroll offsets, waiting for
  * the page to settle, and reading the state. Measured that way on all five scrollies on disk, at
  * 1600x900, 1280x800 and 375x812: 25 samples out of 25 with exactly one frame at opacity 1 and every

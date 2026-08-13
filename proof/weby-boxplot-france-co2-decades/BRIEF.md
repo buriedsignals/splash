@@ -1,6 +1,6 @@
 # Beat — France's per-capita CO₂ emissions peaked in the 1970s (web)
 
-**Type:** box plot. **Medium/genre:** chart / web. **Channel:** article web — two responsive
+**Type:** box plot. **Medium/format:** chart / web. **Channel:** article web — two responsive
 rungs, 900px desktop and 360px narrow (`web-discipline.md`, "Responsive behaviour" — two
 pre-rendered layouts, not a live reflow).
 
@@ -37,7 +37,7 @@ Global Carbon Budget 2025, via Our World in Data ·
 `co-emissions-per-capita.csv?country=~FRA&csvType=filtered` · France, 1950–2024 (75 annual
 readings, verified `Entity` column contains only `France` after fetch), extracted 8 August 2026.
 `data.csv` is a byte-for-byte copy of `proof/more-boxplot-france-co2-decades/data.csv` (the static
-sibling beat's own frozen file) — same source, re-parsed independently per this genre's "duplicate,
+sibling beat's own frozen file) — same source, re-parsed independently per this format's "duplicate,
 do not link" rule.
 
 ## Outliers — what the Tukey rule found
@@ -51,7 +51,7 @@ an outlier.
 
 ## Interaction
 
-`boxplot.md`'s own line names the gap this genre exists to close: "once there are many [outliers],
+`boxplot.md`'s own line names the gap this format exists to close: "once there are many [outliers],
 drop the per-point labels and let hover or focus carry the value instead." Reading it against this
 beat's own static frame surfaces a wider version of the same gap — the static frame never prints
 Q1, the median, or Q3 as a number for ANY decade, only their positions as box edges and a median
@@ -71,7 +71,7 @@ decade reveals its full five-number summary, its Tukey fence (the drawn whisker 
 1980s · median 7.43 t · Q1 7.06 · Q3 8.03 · whisker 6.88–8.53 t · n=10, 1 outlier: 9.54 t (1980)
 ```
 
-**Why not the line genre's shared nearest-by-x hit area.** This beat's x-axis is categorical, not
+**Why not the line format's shared nearest-by-x hit area.** This beat's x-axis is categorical, not
 continuous — there is no meaningful "nearest reading" between two decade columns, only "which
 column is the pointer inside." Reusing `assets/interaction.mjs`'s `nearestIndex` (or the scatter
 beat's 2D `nearestPointIndex`) would answer a strictly worse version of the same question a plain
@@ -89,7 +89,7 @@ the shared `#tooltip`; it cannot hide or move anything else.
 The first render at 900px looked correct and passed every unit-testable check, but rendering the
 narrow (360px) layout and opening it in a real browser at 375px showed the eight decade labels
 ("1950s1960s1970s…") smashed into each other, unreadable — `web-discipline.md`'s own gotcha about
-this genre exactly: "a behaviour over time... not a frame," and the collision only showed up once
+this format exactly: "a behaviour over time... not a frame," and the collision only showed up once
 the file was actually looked at.
 
 Root cause, found by measuring rather than guessing: the narrow layout's left gutter was sized

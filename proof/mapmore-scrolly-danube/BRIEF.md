@@ -1,6 +1,6 @@
 # Beat — following the Danube in four scroll steps, the map only ever gaining ground
 
-**Type:** flow / route map, carried by the scroll vehicle. **Medium/genre:** map / scrolly.
+**Type:** flow / route map, carried by the scroll vehicle. **Medium/format:** map / scrolly.
 **Channel:** article web, one self-contained `render/danube-scrolly.html` (1 092 022 bytes — the
 plate and maplibre-gl both inlined; 177 109 without the live layer, which is the measured price of
 the ruling), **four steps**, **one fixed camera** on a **LIVE MapTiler basemap**, with

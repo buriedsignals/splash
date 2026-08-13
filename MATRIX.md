@@ -1,15 +1,15 @@
-# The type × genre matrix
+# The type × format matrix
 
 **Generated — do not edit by hand.** `bun scripts/matrix.mjs` rewrites this file;
 `bun scripts/matrix.mjs --check` fails if it has drifted from the tree.
 
-A cell names the beat whose ARTIFACT EXISTS ON DISK. A brief that declares a genre without a
+A cell names the beat whose ARTIFACT EXISTS ON DISK. A brief that declares a format without a
 rendered artifact counts for nothing here — five beats once did exactly that, and from the
 outside nothing distinguished them. A video beat's final frame is not counted as static proof:
 it is a by-product of that beat's reveal, not a chart framed to be read at rest.
 
-This is a coverage map, never a quality one. Whether these artifacts are CORRECT is what the
-`AUDIT-*.md` files are for.
+This is a coverage map, never a quality one. Correctness is established separately by the
+test suite and direct review of the rendered artifacts.
 
 ## Charts — 19 types, 56 beats
 

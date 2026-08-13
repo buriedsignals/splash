@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` both have: the story's own constants, its own CSV reader, its
-// own component, handed to the genre's generic `renderWeb`. It lives here, beside the story, not
+// own component, handed to the format's generic `renderWeb`. It lives here, beside the story, not
 // inside `skills/chart-web/scripts/render-web.mjs` — that file's own header explains why: a
 // skill directory that imports a story workspace does not build once copied, on its own, into a
 // journalist's root.
@@ -144,7 +144,7 @@ function inlineable(moduleSource) {
 /** CSS appended after the skill's own generic stylesheet. Four things live here, none of which the
  *  generic sheet can know about:
  *
- *  1. THE FOUR GRID TRACKS. The genre's `.chart-plot` is two columns (a measured y-gutter and the
+ *  1. THE FOUR GRID TRACKS. The format's `.chart-plot` is two columns (a measured y-gutter and the
  *     fluid plot). A dumbbell row carries three fixed-pixel strings around a fluid plot — the
  *     country name, and a value printed OUTSIDE each of the two dots — so three fixed tracks are
  *     reserved: the names in the first, and empty room either side of the plot (`--lv-gutter`,
@@ -156,7 +156,7 @@ function inlineable(moduleSource) {
  *  3. `.dot`, `.value-label` and the `.cat` name column — the type and mark styles this beat adds,
  *     all FIXED CSS pixel sizes read from the figure's own custom properties, never anything that
  *     tracks the `viewBox`. The value labels carry a `--ground` chip so a gridline passing behind
- *     one stays behind it (the one box this genre allows, `web-discipline.md`).
+ *     one stays behind it (the one box this format allows, `web-discipline.md`).
  *  4. `.hit-row`'s hover/focus treatment — the skill's `.pt` rules never match this beat's markup:
  *     a faint wash over the active row's whole band, never a colour that could be mistaken for
  *     either dot's own hue, plus a visible keyboard-focus outline. */

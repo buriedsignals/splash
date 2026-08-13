@@ -1,14 +1,14 @@
 /**
- * The WEB genre of a proportional-symbol map: the same seventeen events `proof/map-quake-symbol`
- * draws as a still and as a video, in the one genre neither of those can be — a map a reader can
+ * The WEB format of a proportional-symbol map: the same seventeen events `proof/map-quake-symbol`
+ * draws as a still and as a video, in the one format neither of those can be — a map a reader can
  * INTERROGATE.
  *
- * WHY THIS TYPE EARNS THE WEB GENRE, and it is not decoration. Radius goes as √magnitude, rooted at
+ * WHY THIS TYPE EARNS THE WEB FORMAT, and it is not decoration. Radius goes as √magnitude, rooted at
  * zero, because a reader compares circles by AREA. On a study set that runs from M7.8 to M9.1 that
  * makes every circle nearly the same size — the largest is under 3% wider than the second largest,
  * which is under a pixel at the size these are drawn. The still says so in words and the video says
  * so in words, and neither can do anything about it: the encoding is honest and the differences are
- * genuinely small. This genre can. Hover or focus any circle and its exact magnitude, place and date
+ * genuinely small. This format can. Hover or focus any circle and its exact magnitude, place and date
  * arrive; the accessible table below carries all seventeen at once. The picture states the claim;
  * the interaction supplies the precision the picture cannot.
  *
@@ -50,7 +50,7 @@ export const SUBJECT_KEY = "q0";
 const UNIT = "M";
 // ==========================================
 
-// ===== Genre mechanics =====
+// ===== Format mechanics =====
 /** The largest circle's radius as a FRACTION of the bake's own frame — not a pixel count. The SVG's
  *  viewBox is the frame and the whole SVG scales with the container, so a fraction of the frame stays
  *  the same fraction of the container at every width. 0.045 of a 1000px frame is a 45px radius: large
@@ -370,7 +370,7 @@ export function QuakeSymbolWeb({
  *
  * A map is a spatial medium and a screen-reader user has no spatial access to it; a hover tooltip is
  * not an answer, because it requires knowing where on the canvas to point before you can ask. The
- * genre makes this table opt-in per beat (`renderMapWeb`'s `regionTable`) and this beat opts IN,
+ * format makes this table opt-in per beat (`renderMapWeb`'s `regionTable`) and this beat opts IN,
  * deliberately: the claim is a comparison of seventeen magnitudes whose circles differ by less than
  * 3% at the top, so "which is largest" is not readable from the picture at all without asking each
  * circle in turn. A table makes it checkable in one pass. It also carries the two events whose hit

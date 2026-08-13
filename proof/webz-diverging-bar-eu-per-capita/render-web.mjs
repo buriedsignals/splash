@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../weby-lollipop-co2-per-capita/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` keep: the story's own constants, its own CSV reader, its own
-// component, handed to the genre's generic `renderWeb`. It lives here, beside the story, not inside
+// component, handed to the format's generic `renderWeb`. It lives here, beside the story, not inside
 // `skills/chart-web/scripts/render-web.mjs` — that file's own header explains why: a skill
 // directory that imports a story workspace does not build once copied, on its own, into a
 // journalist's root.
@@ -20,10 +20,10 @@
 //      one formatter is `en`, formatting with `Intl.NumberFormat("en-US")`).
 //   2. The inlined `<script>` block is swapped for this directory's OWN
 //      `diverging-interaction.mjs` — per-row hit rects need per-row wiring, not the skill's line
-//      genre nearest-by-x mechanic.
+//      format nearest-by-x mechanic.
 //   3. This beat's own CSS is appended: the four-column / three-row plot grid, the two value-label
 //      sides, the subject band's chip colour, and `.row-hit`'s hover/focus states — none of which
-//      the genre's generic stylesheet can know about.
+//      the format's generic stylesheet can know about.
 //
 // Usage:  bun proof/webz-diverging-bar-eu-per-capita/render-web.mjs [outDir] [--data <csv>]
 
@@ -96,7 +96,7 @@ export function changesBetween(csv, from, to) {
     .sort((a, b) => b.change - a.change);
 }
 
-/** Strips the `export` keyword from each top-level declaration — the same transform the genre's own
+/** Strips the `export` keyword from each top-level declaration — the same transform the format's own
  *  `inlineable` applies to the skill's script, so this beat's `diverging-interaction.mjs`
  *  (authored as an ES module for readability) can also run as a plain classic `<script>`: no
  *  `type="module"`, so it keeps working in a CMS iframe or sandboxed embed that restricts module
@@ -109,7 +109,7 @@ function inlineable(moduleSource) {
  * CSS appended after the skill's own generic stylesheet. Four things live here, none of which the
  * generic sheet can know about:
  *
- *  1. THE FOUR-COLUMN, THREE-ROW PLOT GRID. The genre's `.chart-plot` is two columns (a measured
+ *  1. THE FOUR-COLUMN, THREE-ROW PLOT GRID. The format's `.chart-plot` is two columns (a measured
  *     y-gutter and the fluid plot) and two rows (the plot and an x-axis strip). A diverging bar
  *     prints its value label just outside its bar's growing END — LEFT for a fall, RIGHT for a
  *     rise — and both extremes overflow the plot, so a fixed-pixel track is reserved on EACH side
@@ -121,7 +121,7 @@ function inlineable(moduleSource) {
  *  2. `.value-label` and the `.cat` name column — the type styles this beat adds, all FIXED CSS
  *     pixel sizes read from the figure's own custom properties, never anything that tracks the
  *     `viewBox`. Each value label carries an opaque chip so a gridline, the zero line or the average
- *     rule passing behind it stays BEHIND it (the one box this genre allows). On this type that chip
+ *     rule passing behind it stays BEHIND it (the one box this format allows). On this type that chip
  *     is not decoration: the video sibling's rule struck through four value labels and turned
  *     "−3.39" into what reads as "+3.39".
  *  3. `--subject-band` as the chip colour for the two labels that sit on the subject's own tinted

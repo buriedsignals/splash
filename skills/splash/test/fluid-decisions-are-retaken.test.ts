@@ -1,7 +1,7 @@
 /**
  * A DE-COLLISION DECISION TAKEN IN THE WRONG COORDINATE SYSTEM.
  *
- * This genre's second build made geometry stretch continuously while type stays a fixed CSS pixel
+ * This format's second build made geometry stretch continuously while type stays a fixed CSS pixel
  * size. That left every *de-collision* decision — which axis label survives, which side a caption
  * takes — computed ONCE, server-side, at ONE width. And the width chosen was the narrowest, so a
  * label dropped to save a 205px phone plot was dropped on a 3265px ultrawide one too.
@@ -23,7 +23,7 @@
  * WHY THE ROOM TEST IS HALF THE RULE. At 375 the same beat legitimately prints
  * `1990 2000 2010 2024`: 1995 is a member of the run and it is missing, and the gap it would sit in
  * is 30px against a 27px label — no room. A guard without the room test would demand a label that
- * cannot fit and would be wrong about a correct artifact at exactly the width the genre is hardest
+ * cannot fit and would be wrong about a correct artifact at exactly the width the format is hardest
  * at. The room a member needs is measured from the widest label the page itself drew, plus the same
  * air a reader needs to read two numbers as two numbers.
  *

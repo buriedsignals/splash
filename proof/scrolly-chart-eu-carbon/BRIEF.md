@@ -1,7 +1,7 @@
 # Beat — the same 27 countries, four charts, four different answers
 
 **Type:** line, ranked bar, slope and stacked dot plot — four chart types, carried by the scroll
-vehicle. **Medium/genre:** chart / **scrolly**. **Channel:** article web, one self-contained
+vehicle. **Medium/format:** chart / **scrolly**. **Channel:** article web, one self-contained
 `render/eu-carbon-four-charts.html` (76 KB), **four steps**, one frozen column of numbers.
 
 ## Claim

@@ -11,7 +11,7 @@
 // tile measurement with a real key. This file guards the pure pieces those two rest on, plus the
 // one thing neither can guard: that the COMMITTED artifact still contains the live layer at all.
 // Without that last block the whole of ruling R1 could be deleted from this beat in silence, which
-// is exactly the hole `AUDIT-W5-W6-map.md` §5.6 found on the map × web genre.
+// is exactly the hole `AUDIT-W5-W6-map.md` §5.6 found on the map × web format.
 //
 // THE MUTATIONS, run in an rsync copy of the tree under the session scratchpad — never in this
 // tree — with the red each one actually produced. Baseline in that copy: 46 pass, 0 fail (53 pass

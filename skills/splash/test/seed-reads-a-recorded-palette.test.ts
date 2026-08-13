@@ -45,7 +45,7 @@ import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 // A test-only cross-skill import, permitted specifically for this purpose (see where.test.ts's own
-// comment on the same pattern, and genre-shippability.test.ts's): `parsePalette` is the REAL
+// comment on the same pattern, and format-shippability.test.ts's): `parsePalette` is the REAL
 // validator every runner will hit at run time, and check 3 is worth nothing if this file
 // reimplements it. Runtime code in this branch never crosses a skill boundary; this does, once.
 import { parsePalette } from "../../chart-beat/scripts/render-still.mjs";

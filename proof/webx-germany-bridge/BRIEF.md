@@ -1,9 +1,9 @@
 # Beat — Germany generated 143 fewer terawatt-hours in 2024 than 2015
 
-**Type:** waterfall. **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** waterfall. **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/static-germany-electricity-bridge` — same claim, same frozen data, a fresh
-component written for this genre's two-layout / baked-in-interaction shape, with its own
+component written for this format's two-layout / baked-in-interaction shape, with its own
 step-hit interaction script that deliberately does NOT cover the two total bars (see below).
 
 ## Claim
@@ -33,7 +33,7 @@ that from any single bar. So only the three DELTA bars (Renewables, Nuclear, Fos
 hit target; hovering one reveals its own signed value AND the exact running total Germany's
 generation reached immediately after that step. The two TOTAL bars deliberately get no hit
 target at all — they already state everything they have to state, and an added tooltip on them
-would only repeat the printed label, which `web-discipline.md` names as the thing this genre must
+would only repeat the printed label, which `web-discipline.md` names as the thing this format must
 never do.
 
 ## Source line

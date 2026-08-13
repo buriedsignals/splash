@@ -1,6 +1,6 @@
 /**
  * The pure core of "Croatia is the only EU country emitting more CO₂ per person than in 1990" in
- * the WEB genre — data to coordinates, and nothing else. Same boundary
+ * the WEB format — data to coordinates, and nothing else. Same boundary
  * `proof/weby-lollipop-co2-per-capita/lollipop-geometry.ts` and
  * `proof/co2-suisse/crossing-geometry.ts` keep for their own beats: no colour, no font, no label,
  * no React.
@@ -8,13 +8,13 @@
  * It is structurally the sibling of `proof/static-diverging-bar-eu-per-capita`'s own
  * `divergingGeometry` and of `proof/vidz-diverging-bar-eu-per-capita`'s — **not imported from
  * either** (a beat never imports another beat's files: the "duplicate, do not link" ruling), and
- * adapted to this genre's own shape. Two differences from the static one, both deliberate:
+ * adapted to this format's own shape. Two differences from the static one, both deliberate:
  *
  *   - `tickHint` is passed in per call rather than fixed at module scope, so the one fluid frame
  *     states its own density explicitly and decides it ONCE at the canonical width
  *     (`web-discipline.md`, "Cheap, not recomputed").
  *   - every row reports its own BAND (`bandTop`/`bandHeight`) as well as its centre, because this
- *     genre gives each row a hit rectangle spanning the full plot width and the row's full height.
+ *     format gives each row a hit rectangle spanning the full plot width and the row's full height.
  *     Rows tile EXACTLY — no band padding — so a pointer anywhere in the plot is always inside
  *     exactly one row and there is no "nearest" to resolve.
  *
@@ -132,7 +132,7 @@ export function en(value: number, decimals = 2): string {
 }
 
 /**
- * The full-precision reading — the thing this genre's interaction honestly adds, and the reason
+ * The full-precision reading — the thing this format's interaction honestly adds, and the reason
  * this beat's hover is not the printed label repeated on demand. The static sibling prints the
  * CHANGE rounded to two decimals and has room for nothing else; the two readings the change is made
  * OF are omitted there entirely. Here they are one hover, tap or keyboard focus away, unrounded.

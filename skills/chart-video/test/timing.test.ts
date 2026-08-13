@@ -11,7 +11,7 @@ import { drawnSoFar } from "../assets/EmissionsVideo";
 
 /**
  * These tests pin the timing contract, and nothing else. The drawing is verified by looking at
- * four extracted frames, which is the discipline of the video genre; what a test can carry is the
+ * four extracted frames, which is the discipline of the video format; what a test can carry is the
  * structural half of the motion grammar — that the conclusion cannot precede its evidence, that
  * the subject is not the tail of the reveal, and that the video does not end on a transition.
  *

@@ -5,7 +5,7 @@
 // which capabilities the keys open. It runs INSIDE the root and it is very good at that. What it
 // structurally cannot see is everything OUTSIDE the root: whether the host can find the skills at
 // all, whether the shell the host spawns has `bun` on its PATH, whether a browser exists for the
-// three genres that need one. A journalist whose install is perfect inside the root and invisible
+// three formats that need one. A journalist whose install is perfect inside the root and invisible
 // to their AI host has an install that does not work, and preflight would say `ready: true`.
 //
 // So this checks the wiring preflight cannot see, and then DELEGATES THE LAST WORD to preflight
@@ -30,6 +30,9 @@ const flag = (name, fallback) => {
 };
 const ROOT = resolve(flag("--root", resolve(HERE, "..")));
 const HOME = resolve(flag("--home", homedir()));
+const SKILL_NAMESPACE = flag("--skill-namespace", "");
+if (SKILL_NAMESPACE && !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(SKILL_NAMESPACE))
+  throw new Error(`invalid skill namespace: ${SKILL_NAMESPACE}`);
 
 const rows = [];
 const ok = (what, detail) => rows.push({ level: "ok", what, detail });
@@ -69,7 +72,9 @@ function linkResolvesTo(linkPath, expected) {
   }
 }
 
-const agentsDir = join(HOME, ".agents", "skills");
+const agentsDir = SKILL_NAMESPACE
+  ? join(HOME, ".agents", "skills", SKILL_NAMESPACE)
+  : join(HOME, ".agents", "skills");
 const missingAgentLinks = ids.filter((id) => linkResolvesTo(join(agentsDir, id), join(ROOT, "skills", id)) !== true);
 if (ids.length > 0 && missingAgentLinks.length === 0) ok("door: Goose / Codex / Gemini", `${ids.length} links in ${agentsDir.replace(HOME, "~")}`);
 else if (ids.length > 0)
@@ -110,7 +115,7 @@ const bunPath = await which("bun");
 if (bunPath) ok("bun on a login shell's PATH", bunPath);
 else bad("bun on a login shell's PATH", "not found — every producer in this toolchain is a `bun` command, and a Dock-launched host would fail with `command not found: bun`");
 
-// ── 5. A browser, for the three genres that need one ─────────────────────────────────────────
+// ── 5. A browser, for the three formats that need one ─────────────────────────────────────────
 // Not a blocker, and deliberately so: a static chart never opens one. But web, video and every map
 // bake do, and today nothing installs it and preflight does not look for it — so the failure lands
 // mid-beat with a puppeteer stack trace instead of here, in one line, before anything is promised.

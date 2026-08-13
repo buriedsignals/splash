@@ -1,13 +1,13 @@
 # Beat — Poland's per-capita emissions have overtaken Germany's (WEB)
 
-**Type:** small multiples (four line panels). **Medium/genre:** chart / web. **Channel:** a
+**Type:** small multiples (four line panels). **Medium/format:** chart / web. **Channel:** a
 self-contained interactive HTML page, two responsive rungs (900px desktop, 360px narrow).
 
-This is the FIRST web-genre small-multiples beat. The only existing beat of this claim/data is a
+This is the FIRST web-format small-multiples beat. The only existing beat of this claim/data is a
 VIDEO build (`../more-small-multiples-co2-per-capita/`, a Remotion mp4) — read for its verified
 numbers and its panel-order reasoning, never imported (a beat never imports another beat's files,
-doubly so across genres; `chart-web/SKILL.md`, "duplicate, do not link"). Everything here is
-written fresh, in this genre's own shape (`ChartWebSeed.tsx`'s `WebLayout`/two-layouts/SSR'd
+doubly so across formats; `chart-web/SKILL.md`, "duplicate, do not link"). Everything here is
+written fresh, in this format's own shape (`ChartWebSeed.tsx`'s `WebLayout`/two-layouts/SSR'd
 interaction pattern), generalised from one panel to four.
 
 ## Claim
@@ -75,13 +75,13 @@ Global Carbon Budget 2025, via Our World in Data · Switzerland, France, Germany
 Small multiples are, by construction, MANY SMALL panels — a small-multiples panel is categorically
 smaller than a single full-width chart, because the same frame width that would hold one chart now
 holds `cols` of them side by side. That means there is categorically LESS room per panel to print a
-label than a single-panel beat has, on top of the usual problem every web beat in this genre
+label than a single-panel beat has, on top of the usual problem every web beat in this format
 solves (a 75-point annual series has no room to label more than a couple of years without turning
-into a table). Four panels × 75 readings = 300 individual numbers; the static/video genre can print
+into a table). Four panels × 75 readings = 300 individual numbers; the static/video format can print
 at most one end-label and rely on the shared axis's gridlines for the rest, per panel — every OTHER
-one of the 300 readings, in every panel, is undiscoverable without this genre. That is the specific
+one of the 300 readings, in every panel, is undiscoverable without this format. That is the specific
 argument for interaction earning its place here, more than anywhere else in this twin: not "more
-detail is nice," but "this is the only genre in which most of this data is reachable at all."
+detail is nice," but "this is the only format in which most of this data is reachable at all."
 
 **Design.** ONE `<svg class="chart">` per layout (matching `ChartWebSeed.tsx`'s own one-svg-per-
 layout shape, and `render-web.mjs`'s existing `svg.chart[data-layout=...]` CSS toggle), holding

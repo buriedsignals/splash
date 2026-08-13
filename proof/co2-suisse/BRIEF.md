@@ -1,7 +1,7 @@
 # Beat 1 — la courbe repasse sous 1967
 
 **Prouve :** que les émissions territoriales suisses de 2024 sont passées sous leur niveau de 1967.
-**Médium / genre :** chart / static. **Canal :** article web, 900 × 560.
+**Médium / format :** chart / static. **Canal :** article web, 900 × 560.
 
 ## Hiérarchie de la preuve
 

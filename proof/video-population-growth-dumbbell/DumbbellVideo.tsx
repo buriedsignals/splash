@@ -183,7 +183,7 @@ export type Row = {
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
- * of the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * of the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated, not imported from a sibling workspace or a skill).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;

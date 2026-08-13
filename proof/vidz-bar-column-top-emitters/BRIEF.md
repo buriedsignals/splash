@@ -15,15 +15,15 @@ tonnes, exceed the combined emissions of the five countries directly behind it i
 — the United States, India, Russia, Japan and Indonesia, 11.65 billion tonnes together. Five is the
 largest number for which that holds: adding the sixth (Iran) takes the group past China.
 
-**Medium / genre:** chart / video. **Type:** bar and column — one value per category, encoded as the
+**Medium / format:** chart / video. **Type:** bar and column — one value per category, encoded as the
 length of a rectangle from a shared zero baseline, categories sorted by value descending because the
 story is a ranking. Drawn as vertical **columns** rather than horizontal bars, which is the half of
-this type the corpus had not yet drawn in any genre and which keeps the beat visually distinct from
+this type the corpus had not yet drawn in any format and which keeps the beat visually distinct from
 its row-based neighbours (`vidy-lollipop-…`, `video-population-growth-dumbbell`).
 
-**This beat exists to close a measured gap.** Before it, the video genre shipped fourteen chart types
-and the web genre fifteen; bar-and-column was the one type the web genre had (`web-co2-ranking`) and
-the video genre did not.
+**This beat exists to close a measured gap.** Before it, the video format shipped fourteen chart types
+and the web format fifteen; bar-and-column was the one type the web format had (`web-co2-ranking`) and
+the video format did not.
 
 ## Data
 

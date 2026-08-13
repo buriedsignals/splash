@@ -1,0 +1,21 @@
+{
+  "operationId": "b69d3fac-e2e4-4b6b-8542-e69e4b0b9e61",
+  "reviewId": "d269c481-7713-4b86-9c4d-fa9389fbd56d",
+  "planVersion": 1,
+  "draftDigest": "sha256:ea3a71b20e22379bde62b2a5e1d8c3ae6bedbd0a46f5dd63cd9a8ef437729383",
+  "findingIds": [
+    "slope-universal-increase-gap-persists"
+  ],
+  "form": "embed",
+  "genre": "web",
+  "hostedDeployment": {
+    "deploymentKey": "fb498b91bb5b209fcf6eeefb3c0514c680b7e852",
+    "deploymentId": "9b0582c3-8ee1-42b9-b7b9-13bfc7850f63",
+    "url": "https://9b0582c3.deliver-proof.pages.dev",
+    "record": ".1-the-gap-that-persists-hosted-deployment-fb498b91bb5b209fcf6eeefb3c0514c680b7e852.json"
+  },
+  "createdAt": "2026-08-13T10:34:48.958Z",
+  "schemaVersion": 1,
+  "outputId": "1-the-gap-that-persists",
+  "state": "complete"
+}

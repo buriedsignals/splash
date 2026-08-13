@@ -1,13 +1,13 @@
 // twin/skills/scrolly/scripts/render-still.mjs
 //
-// A skill never imports another skill — this is this genre's OWN copy of `chart-beat`'s
-// rasteriser helper, byte-for-byte the same rule the other two chart genres already follow
+// A skill never imports another skill — this is this format's OWN copy of `chart-beat`'s
+// rasteriser helper, byte-for-byte the same rule the other two chart formats already follow
 // (`chart-web/scripts/render-still.mjs` carries the identical copy for the identical reason).
 // `deriveFurniture`/`measureText` are what `scripts/render-scrolly.mjs` calls, once per render, to
 // hand `assets/ScrollySeed.tsx` its ink/muted/grid colours and its measured gutters as props — the
 // component itself never imports this file.
 //
-// RASTERISER: @resvg/resvg-js — same choice, same reasoning as the other genres: a headless
+// RASTERISER: @resvg/resvg-js — same choice, same reasoning as the other formats: a headless
 // browser needs a system Chrome a journalist's laptop may not have; resvg is a native module
 // installed with the root, renders synchronously, and exposes `getBBox()`, the real ink extent of
 // rendered text, which is what makes a MEASURED gutter possible at all.
@@ -421,10 +421,10 @@ export function measureText(text, options) {
 /**
  * Render one React element to an SVG on disk and a PNG beside it. Not called by
  * `render-scrolly.mjs` itself (that script inlines its own SSR'd SVGs straight into one HTML
- * file) — kept here anyway, unchanged from the other genres' copies, because
+ * file) — kept here anyway, unchanged from the other formats' copies, because
  * `scripts/render-preview.mjs` uses it to rasterise this skill's own preview, and because a
  * future beat's own still-frame proof (rendering one step in isolation to look at) reaches for
- * exactly this function, the same way every other genre in this twin does.
+ * exactly this function, the same way every other format in this twin does.
  */
 export async function renderStill({
   element,

@@ -5,7 +5,7 @@ type: slope
 
 # Beat — Germany's renewable share nearly doubled in nine years
 
-**Type:** slope. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
+**Type:** slope. **Medium/format:** chart / static. **Channel:** article web, 900 x 560.
 
 ## Claim
 

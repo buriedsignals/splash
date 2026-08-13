@@ -67,6 +67,17 @@ describe("setChartData", () => {
       setChartData("aBcDe", "a,b", "token", fetchFn),
     ).rejects.toThrow(/422/);
   });
+
+  it("should reject a chart ID that could escape or select another API path", async () => {
+    let called = false;
+    await expect(
+      setChartData("../me", "a,b", "token", async () => {
+        called = true;
+        return new Response(null, { status: 204 });
+      }),
+    ).rejects.toThrow(/one provider ID segment/);
+    expect(called).toBe(false);
+  });
 });
 
 describe("patchMetadata", () => {
@@ -144,6 +155,47 @@ describe("getChart", () => {
     const result = await getChart("aBcDe", "token", fetchFn);
     expect(capturedUrl).toBe("https://api.datawrapper.de/v3/charts/aBcDe");
     expect(result.id).toBe("aBcDe");
+  });
+});
+
+describe("request deadlines", () => {
+  it("should time out a request even when fetch ignores the abort signal", async () => {
+    let signal;
+    const fetchFn = (_url, init) => {
+      signal = init.signal;
+      return new Promise(() => {});
+    };
+    await expect(
+      createChart(
+        { title: "T", type: "d3-lines", language: "en" },
+        "token",
+        fetchFn,
+        { timeoutMs: 20 },
+      ),
+    ).rejects.toThrow(/request timed out after 20ms/);
+    expect(signal.aborted).toBe(true);
+  });
+
+  it("should time out a stalled successful JSON body", async () => {
+    const fetchFn = async () => ({
+      ok: true,
+      status: 200,
+      json: () => new Promise(() => {}),
+    });
+    await expect(
+      getChart("aBcDe", "token", fetchFn, { timeoutMs: 20 }),
+    ).rejects.toThrow(/response body timed out after 20ms/);
+  });
+
+  it("should time out a stalled PNG body", async () => {
+    const fetchFn = async () => ({
+      ok: true,
+      status: 200,
+      arrayBuffer: () => new Promise(() => {}),
+    });
+    await expect(
+      exportChartPng("aBcDe", "token", fetchFn, { timeoutMs: 20 }),
+    ).rejects.toThrow(/response body timed out after 20ms/);
   });
 });
 

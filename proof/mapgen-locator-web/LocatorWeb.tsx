@@ -1,5 +1,5 @@
 /**
- * The web genre of the locator beat: "eleven international organisations headquartered in and
+ * The web format of the locator beat: "eleven international organisations headquartered in and
  * around Geneva," interactive — and, since ruling R1 (2026-08-10), a LIVE MapTiler map a reader can
  * actually move through, with the baked plate kept as the layer underneath it.
  *
@@ -13,7 +13,7 @@
  *
  * THREE LAYERS IN ONE BOX (`map-web/references/map-web-discipline.md`, "Pan and zoom", as
  * overturned by R1) — the same order and the same three ids `MapWebSeed.tsx` uses, because the
- * genre's own boot script (`live-map.mjs`, a byte-identical copy in this folder) addresses them by
+ * format's own boot script (`live-map.mjs`, a byte-identical copy in this folder) addresses them by
  * name:
  *   1. `#mw-map` — empty, FIRST, its own container. `live-map.mjs` fills it with a live MapLibre map
  *      and shows it only on `map.on("load")`.
@@ -24,7 +24,7 @@
  *      fallback (the seed's own first draft) took all of them away the moment the live map arrived.
  *
  * WHAT THE LIVE MAP FIXES FOR *THIS* BEAT, which is why R1 matters more here than anywhere else in
- * the genre. `AUDIT-W5-W6-map.md` §4.2 measured this page drawing **3 labels for 11 organisations**
+ * the format. `AUDIT-W5-W6-map.md` §4.2 measured this page drawing **3 labels for 11 organisations**
  * — 73% dropped — while the family's own video title says "All 11 of these international
  * organisations sit inside 4.4 km". The cause is not the label rule: the closest pair is 13.3 m
  * apart, which is **0.53 px** on this beat's own 420 px plate, and no amount of decluttering
@@ -43,7 +43,7 @@
  * the geometry as the container resizes) and sized in CSS pixels (so a font never grows with the
  * box). `render-web.mjs`'s own `buildCss` is what bounds the whole beat to the reader's window.
  *
- * This is this beat's OWN copy of the genre's mechanics — nothing here imports
+ * This is this beat's OWN copy of the format's mechanics — nothing here imports
  * `map-web/assets/MapWebSeed.tsx`, the same "a skill/beat builds after being copied alone" rule
  * that skill's own header states for its relationship to `map-beat`.
  */
@@ -63,7 +63,7 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-// ===== Genre mechanics — not one story's numbers =====
+// ===== Format mechanics — not one story's numbers =====
 /**
  * THE marker radius, in the bake's own frame units (which are CSS pixels at the plate's own 420 px
  * size). ONE number, and that is the point: this file used to carry FOUR values for one type —
@@ -301,7 +301,7 @@ export function LocatorWeb({
           currency. Every chip carries its category's own swatch, so the colour key is still drawn
           unconditionally, still readable with JavaScript off, and still there when `:has()` is not
           supported — only the narrowing stops working, which is the same graceful floor the rest of
-          this genre's filter has.
+          this format's filter has.
 
           Every input is a REAL radio in a REAL `<fieldset>`, moved out of sight by CSS and never
           replaced: Tab reaches the group, Arrow keys move within it, the native `<label>`
@@ -486,7 +486,7 @@ export function LocatorCaveat({ caveat }: { caveat: string }) {
 }
 
 /**
- * The accessibility answer this genre requires (`map-web-discipline.md`, "The accessibility
+ * The accessibility answer this format requires (`map-web-discipline.md`, "The accessibility
  * question"): the SAME eleven facts the map draws spatially, again, as one plain HTML table —
  * captioned, real `<th scope="row"/"col">`, ordered by PRIORITY (the same order the declutter places
  * labels in and a keyboard Home/End reaches markers in), ALWAYS rendered — not behind a disclosure

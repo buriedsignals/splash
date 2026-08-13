@@ -1,5 +1,5 @@
 /**
- * The video genre of "five countries hold more than half of this map's people" — 12.67s, 30fps,
+ * The video format of "five countries hold more than half of this map's people" — 12.67s, 30fps,
  * 1080 × 1440.
  *
  * Same plate, same seeded scatter and the same dot value as the static sibling

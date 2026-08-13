@@ -1,13 +1,13 @@
 ---
 name: chart-web
-description: Use to produce a chart beat in the WEB genre — a self-contained interactive HTML page that fills its container edge to edge (geometry stretches continuously, type stays a fixed CSS size), adds hover/tap/keyboard detail on every reading the static frame had to omit, and degrades to that same static frame with JavaScript off. Carries the interaction script, one worked composition, and the render ladder's third rung.
+description: Use to produce a chart beat in the WEB format — a self-contained interactive HTML page that fills its container edge to edge (geometry stretches continuously, type stays a fixed CSS size), adds hover/tap/keyboard detail on every reading the static frame had to omit, and degrades to that same static frame with JavaScript off. Carries the interaction script, one worked composition, and the render ladder's third rung.
 ---
 
 # chart-web — SSR the frame, inline the interaction, drive a real browser to check it
 
 ## Overview
 
-The web genre of a chart beat. It does not hold a chart: it holds **the interaction** — the one
+The web format of a chart beat. It does not hold a chart: it holds **the interaction** — the one
 thing a static frame and a video build cannot have, a reader who can ask the chart a question and
 get an exact answer back, without anything the static frame already states being gated behind that
 ask.
@@ -18,10 +18,10 @@ import this skill's own `renderWeb`, and every one of them is on the fluid frame
 `more-heatmap-co2-per-capita-decades` was the last hold-out — a two-rung, words-inside-the-SVG build
 under a 900px cap, with its own second copy of `buildCss` — and it is the beat the owner opened when
 he asked for the full available width. Its runner now calls `renderWeb` like every other, so the
-genre has exactly one stylesheet again. The five `mapgen-*-web` beats are the MAP genre and do not
+format has exactly one stylesheet again. The five `mapgen-*-web` beats are the MAP format and do not
 come through here. Each composition
 (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) lives with the rest of its story's own files, not inside
-this skill's `assets/`, so this skill never hosts a particular story's numbers, only the genre's own
+this skill's `assets/`, so this skill never hosts a particular story's numbers, only the format's own
 mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.mjs`). A worked
 example lives beside the skill the same replace-me way `chart-beat`'s seed and
 `chart-video`'s compositions do — see "Quick start" for how to drive it.
@@ -30,7 +30,7 @@ example lives beside the skill the same replace-me way `chart-beat`'s seed and
 `layouts` argument without migrating the beats that passed it, and all fifteen stopped rendering
 with the same `Cannot destructure property 'width'` — for an hour and a half, with a green suite,
 because the only file that would have caught it (`test/render-web.test.ts`) imported the same
-removed export and could not load either. The genre's machinery and the beats that call it move
+removed export and could not load either. The format's machinery and the beats that call it move
 together or not at all.
 
 Its THIRD build closed three things the owner named after looking at the rendered output: the beat
@@ -40,7 +40,7 @@ controls got **a considered treatment** instead of three default radio dots read
 placeholder, and hover and the filter are now **verified by driving a real browser**
 (`scripts/verify-web.mjs`) rather than asserted in prose.
 
-There was no doctrine for this genre before this skill. `references/web-discipline.md` was written
+There was no doctrine for this format before this skill. `references/web-discipline.md` was written
 against this beat's first real build, the way `static-discipline.md` was written against the first
 static beat and `motion-grammar.md` against the first video build — read it before writing a second
 web beat. It was rewritten again against this skill's SECOND build, when the owner's own read of the
@@ -48,8 +48,8 @@ first build's shipped output was that it did not fill its container (see "How it
 
 ## When to use
 
-- When a closed `STORYBOARD.md` picks medium `chart` and genre **web**, and the beat's `BRIEF.md` is
-  written. No brief, no code — same rule as the other two genres.
+- When a closed `STORYBOARD.md` picks medium `chart` and format **web**, and the beat's `BRIEF.md` is
+  written. No brief, no code — same rule as the other two formats.
 - When the argument is stronger with **every reading available on demand** than with the handful a
   static frame has room to label — a long series (here, eleven annual points) where the honest use
   of interaction is detail the static frame had to omit, never the same numbers repeated for effect.
@@ -91,8 +91,8 @@ first build's shipped output was that it did not fill its container (see "How it
 ## The one gotcha that will waste your day (read first)
 
 **A static render can be checked with a PNG; an interactive one cannot.** Every rule in
-`static-discipline.md` about looking at the pixels still applies to this genre's own furniture, but
-the thing unique to this genre — does hovering point X show point X's own value, does Tab actually
+`static-discipline.md` about looking at the pixels still applies to this format's own furniture, but
+the thing unique to this format — does hovering point X show point X's own value, does Tab actually
 reach it, does the frame genuinely fill a 1600px container without the type growing with it, does
 nothing clip at 375px — is a *behaviour over a range of widths*, not a frame. `test/render-web.test.ts`
 covers what a unit test can honestly prove (the geometry, the palette, the point count, the exact
@@ -109,7 +109,7 @@ side — see `web-discipline.md`, "Verification."
 **A beat FITS the window; it does not FILL it, and at phone width that is very visible.** Height
 follows width through `aspect-ratio`, so a narrow viewport buys a short chart: measured across the
 migrated beats, the tallest plot at 375×812 is 504px in an 812px window, and the seed's is 153px.
-Nothing is clipped and nothing scrolls — the rule this genre settled is the fit — but the empty
+Nothing is clipped and nothing scrolls — the rule this format settled is the fit — but the empty
 ground below reads as unfinished the first time you see it. Three separate agents reported it
 independently as a defect, which is the signal that saying it once in a doctrine file is not enough:
 **it is expected, it is not a bug, and filling the window is an open question nobody has decided.**
@@ -118,7 +118,7 @@ the owner, not a patch at the CSS.
 
 **So run `scripts/verify-web.mjs`, and know exactly what it can and cannot tell you.** It dispatches
 real pointer events at real coordinates and real clicks, which is the only way to catch the class of
-defect that has actually bitten this genre: an HTML overlay with no `pointer-events: none` swallowed
+defect that has actually bitten this format: an HTML overlay with no `pointer-events: none` swallowed
 every hover while keyboard focus kept working, because `.focus()` does not hit-test — so a test
 using `.focus()`, `.click()` or a synthesised `MouseEvent` would have passed against a chart nobody
 could hover. What it cannot do is look at the picture. Run it, then open the `--shots` frames and
@@ -128,20 +128,20 @@ look at them; each catches what the other is blind to.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, the fluid frame (geometry stretches, type stays fixed), the filter rule, what must never become interactive, the one box this genre allows |
+| Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, the fluid frame (geometry stretches, type stays fixed), the filter rule, what must never become interactive, the one box this format allows |
 | Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with that story's own STILL beat — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here. Not shared with the video SEED: that is a skill file and carries its own inlined copy |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `ChartWebSeed`-shaped component: SVG geometry plus HTML/CSS furniture, called once — not two pre-rendered rungs |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
-| Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
+| Render | `scripts/render-web.mjs` | Exports the format's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
-| Verify | `scripts/verify-web.mjs` | The genre's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
+| Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
 `deriveFurniture`/`measureText` live beside a native rasteriser in this skill's own
 `scripts/render-still.mjs` (a copy of `chart-beat`'s, because a skill never imports another
 skill) that no browser bundle can load, so `renderWeb` (node)
-derives the furniture and measures the one gutter this genre still measures (the y-axis label
+derives the furniture and measures the one gutter this format still measures (the y-axis label
 column — its width is content-dependent even at a fixed font size), and passes the results into
 whichever component it was given as props (`measure`, `ink`/`muted`/`grid`). The composition itself
 never imports the rasteriser.
@@ -195,7 +195,7 @@ three different grounds.
 constants — the skill's own renderer importing a story's frame geometry, which is the dependency
 running backwards: a second beat would have had to name its own layouts identically just to keep
 the skill's code working. `renderWeb` takes `component` and `props` as arguments; a story hands it
-its own props and its own `frame` (a `WebFrame`-shaped value, inside `props`). The genre's machinery
+its own props and its own `frame` (a `WebFrame`-shaped value, inside `props`). The format's machinery
 does not know, and does not need to know, what any one story calls its frame or how many pixels wide
 its canonical geometry is.
 
@@ -209,7 +209,7 @@ its canonical geometry is.
 2. **Import the geometry**; do not redraw it. `crossingGeometry`/`fr`/`yTickValues` are the same
    calls the static and video beats make.
 3. **Bake every point's exact detail server-side.** `render-web.mjs` (node) computes each reading's
-   `data-detail` string with the same `fr()` the other genres use — the browser script never formats
+   `data-detail` string with the same `fr()` the other formats use — the browser script never formats
    a number, it only reads an attribute back.
 4. **Wire the interaction layer**, not the layout. `assets/interaction.mjs`'s `initChart` only ever
    touches `.pt` circles' own class and the shared `#tooltip` — it has no code path that can hide or
@@ -222,10 +222,10 @@ its canonical geometry is.
    over your own beat and measures the fit at seven viewport sizes, dispatches real pointer events
    over every reading, clicks every filter option with scripting on and with JavaScript disabled,
    and checks the control's keyboard reach, focus ring and contrast. A claim not driven is not
-   evidence — the same rule `doctrine`'s verification section states for every genre.
+   evidence — the same rule `doctrine`'s verification section states for every format.
 7. **Then look at the screenshots yourself** (`--shots --out <dir>`). The script reads text,
    geometry, opacity and colour; it cannot see a label colliding with a line, a clipped mark, or a
-   plot that is technically fine and visually squat. Every defect this genre has shipped that a
+   plot that is technically fine and visually squat. Every defect this format has shipped that a
    script could not have caught was caught by an eye on a frame.
 
 ## Quick start
@@ -241,7 +241,7 @@ bun skills/chart-web/scripts/verify-web.mjs --shots --out /tmp/canon-web-verify
 #             x-axis and source line both on screen
 #   HOVER   — page.mouse.move over every reading, on its own mark AND anywhere in its column,
 #             plus one probe on the peak LABEL (an .overlay child — the exact pixel where this
-#             genre once shipped a dead hover); each must answer with that reading's own detail
+#             format once shipped a dead hover); each must answer with that reading's own detail
 #   FILTER  — page.mouse.click on every option, with scripting on and again with JavaScript
 #             DISABLED: the default dims nothing, each option dims only the other period, and
 #             the title/caveat/source/reference/peak/end label are fully drawn in every state
@@ -260,7 +260,7 @@ bun proof/co2-suisse/render-web.mjs /tmp/web-twin --data /tmp/web-twin/data.csv 
 
 The first command runs the SEED's runner (`render`, at the bottom of `scripts/render-web.mjs`), which
 reads `assets/sample-data/rainfall.json` and hands the seed component and its `FRAME` to the
-genre's generic `renderWeb`. A real beat writes its own runner in that same shape **beside its own
+format's generic `renderWeb`. A real beat writes its own runner in that same shape **beside its own
 story** — `proof/co2-suisse/render-web.mjs` is exactly that, importing its own composition, its own
 props and its own CSV reader. It is not filed under this skill, and that is not a filing preference:
 until it was fixed, `render-web.mjs` imported `proof/co2-suisse/EmissionsWeb.tsx`, so copying this
@@ -292,13 +292,13 @@ skill into a journalist's root — the whole premise — did not build.
 
 ## Files
 
-- `references/web-discipline.md` — the rules this genre is written under, each attached to the
+- `references/web-discipline.md` — the rules this format is written under, each attached to the
   reasoning or the defect that produced it.
 - `assets/ChartWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (rainfall over a sample town, fell by a third), not a stripped mechanics demo.
   `FRAME`, `ChartWebSeed`, `ChartWebPreviewSvg`, `chartGeometry`, `segments`, `xTickValues`,
   `yTickValues`, `periodOf`, `periodRangeLabel`, `wrap`. `WebFrame` is defined here too, describing
-  this genre's own mechanics rather than any one story's numbers — a story's own composition (e.g.
+  this format's own mechanics rather than any one story's numbers — a story's own composition (e.g.
   `proof/co2-suisse/EmissionsWeb.tsx`) does NOT import this type; it declares its own matching copy
   inline, the "duplicate, do not link" ruling this project applies to anything with no `#shared/*`
   vendoring path (see the seed's own doc-comment). Like `proof/co2-suisse/EmissionsWeb.tsx`, the
@@ -315,22 +315,22 @@ skill into a journalist's root — the whole premise — did not build.
   shipped beat). Regenerate with `bun scripts/render-preview.mjs` whenever the seed changes.
 - `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own sample
   data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
-- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
+- `assets/interaction.mjs` — the one script this format ships, inlined verbatim into the HTML.
   `nearestIndex` is pure and unit-tested; `initChart`/`initAll` are DOM wiring, verified by driving
   a real browser, not by a test.
-- `scripts/render-web.mjs` — the genre's own machinery: `renderWeb({ component, props, outDir,
+- `scripts/render-web.mjs` — the format's own machinery: `renderWeb({ component, props, outDir,
   name })` SSRs the component once, derives the furniture, inlines the interaction script, writes
   one self-contained HTML file. It knows no story's numbers. Beneath it, `SEED`, `render` and the
   CLI block are the runner for THIS SKILL'S OWN SEED, behind a labelled `CONFIG — edit for your
   story` seam. Nothing in this file imports out of this skill, which is what makes the directory
   copy-pasteable; a story's runner lives beside the story (`proof/co2-suisse/render-web.mjs`).
-- `scripts/verify-web.mjs` — the genre's own evidence. Drives Chrome (`resolveChrome`, the same
+- `scripts/verify-web.mjs` — the format's own evidence. Drives Chrome (`resolveChrome`, the same
   candidate-list shape every other script in this repository that drives a browser carries —
   duplicated, because nothing in a skill imports out of it) over a rendered beat and reports every
   measurement with its number: `checkFit` across `VIEWPORTS`, `checkHover` and `checkFilter` across
   `POINTER_VIEWPORTS`, `checkControlAffordance`. It dispatches ONLY `page.mouse.move` and
   `page.mouse.click` at real client coordinates — never `.focus()`, `.click()` or a synthesised
-  `MouseEvent` — because this genre once shipped a hover that was completely dead while keyboard
+  `MouseEvent` — because this format once shipped a hover that was completely dead while keyboard
   focus still worked, and every one of those three would have passed in that world. `--file` to
   verify an existing beat, `--shots --out <dir>` to write the frames a human then looks at. Its
   own checks were each proven against a deliberately broken copy of the rendered HTML in `/tmp`;
@@ -342,7 +342,7 @@ skill into a journalist's root — the whole premise — did not build.
   supplies `measureText` as `measure` — the same division `render-web.mjs`'s `renderWeb` uses for a
   real beat, so the seed components themselves never import the rasteriser. `--check` re-renders
   and fails non-zero if the committed PNG no longer matches a fresh render of the seed.
-- `test/render-web.test.ts` — `bun:test` coverage of the genre's contract against a REAL shipped
+- `test/render-web.test.ts` — `bun:test` coverage of the format's contract against a REAL shipped
   beat (the CO₂ story), rewritten against the fluid frame: CSV parsing; the words carried and the
   argument-bearing furniture drawn unconditionally; exactly one `svg.chart` with no `<text>` inside
   it and no root pixel size; nothing drawn outside the `viewBox`, with `POINT_INSET` keeping the
@@ -352,7 +352,7 @@ skill into a journalist's root — the whole premise — did not build.
   `data-detail`-bearing mark per reading; a hit area covering the whole plot box and staying
   transparent; a closed palette with the accent never on a non-subject point; the pure
   `nearestIndex` helper; and a direct coordinate-for-coordinate cross-check against
-  `crossingGeometry`, so this genre never carries a second implementation of data-to-coordinates.
+  `crossingGeometry`, so this format never carries a second implementation of data-to-coordinates.
   Its own header records what the two-rung version asserted, what was re-expressed and what was
   dropped outright — including one assertion that would now assert a BUG if it were kept.
 - `test/canon.test.ts` — the canon's own shape, not a story's: no CO₂ story component under this
@@ -371,7 +371,7 @@ skill into a journalist's root — the whole premise — did not build.
   measures whether any of it actually works in a browser.
 - **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `render-web.mjs`
   (the story's own runner — its `BEAT` constants, its OWID CSV reader, its CLI; it imports the
-  genre's `renderWeb` from this skill, never the other way round), `EmissionsWeb.tsx`
+  format's `renderWeb` from this skill, never the other way round), `EmissionsWeb.tsx`
   (composition — declares its own `WebLayout` type inline, not imported from this skill's seed, and
   predates this skill's fluid-frame redesign — see this file's own "Overview"),
   `crossing-geometry.ts` (the pure core, shared with the static and video beats), `EmissionsLine.tsx`

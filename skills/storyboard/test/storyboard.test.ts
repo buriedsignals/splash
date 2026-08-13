@@ -3,7 +3,7 @@ import {
   parseStoryboard,
   checkStoryboard,
   groundTakeaway,
-  genreGap,
+  formatGap,
   capabilityGap,
 } from "../scripts/storyboard.mjs";
 
@@ -23,7 +23,7 @@ slots:
   - id: 1
     proves: "The fall is a trend, not one bad year."
     medium: "chart"
-    genre: "static"
+    format: "static"
     size: "landscape"
     reachable: "yes"
     candidates: ["trajectory", "comparison"]
@@ -41,6 +41,16 @@ describe("parseStoryboard", () => {
     );
     expect(meta.slots).toHaveLength(1);
     expect(prose).toContain("The prose the journalist reads.");
+  });
+
+  it("rejects duplicate keys and duplicate slot identities", () => {
+    expect(() => parseStoryboard(VALID.replace("takeaway:", "takeaway: duplicate\ntakeaway:"))).toThrow(/duplicate key "takeaway"/);
+    expect(() => parseStoryboard(VALID.replace("    chosen: \"trajectory\"", "    producer: custom\n    producer: datawrapper\n    chosen: \"trajectory\""))).toThrow(/duplicate key "producer"/);
+    const duplicateSlot = VALID.replace(
+      "---\n\nThe prose",
+      '  - id: 1\n    proves: "A second claim."\n    medium: chart\n    format: static\n    size: landscape\n    reachable: yes\n    candidates: [comparison]\n    chosen: comparison\n---\n\nThe prose',
+    );
+    expect(() => parseStoryboard(duplicateSlot)).toThrow(/duplicate slot id "1"/);
   });
 });
 
@@ -119,9 +129,9 @@ describe("checkStoryboard", () => {
   });
 
   // The three sub-gates of Gate 2, each recorded as it closed. The gate reads the record; it does
-  // NOT re-run genreGap or capabilityGap, because where.mjs's own gate structurally cannot, and
+  // NOT re-run formatGap or capabilityGap, because where.mjs's own gate structurally cannot, and
   // two gates running different checks is the divergence this contract exists to make impossible.
-  for (const field of ["medium", "genre", "size"]) {
+  for (const field of ["medium", "format", "size"]) {
     it(`should refuse a slot that never recorded its ${field}`, () => {
       const meta = parseStoryboard(VALID).meta;
       delete meta.slots[0][field];
@@ -131,7 +141,7 @@ describe("checkStoryboard", () => {
     });
   }
 
-  it("should refuse a slot whose medium and genre were never confirmed reachable", () => {
+  it("should refuse a slot whose medium and format were never confirmed reachable", () => {
     const meta = parseStoryboard(VALID).meta;
     meta.slots[0].reachable = "no";
     expect(checkStoryboard(meta).join(" ")).toContain(
@@ -201,12 +211,12 @@ describe("checkStoryboard", () => {
 
   // The gate takes ONE argument, and that is the point rather than an omission. The three
   // expensive semantic checks it used to re-derive are still this skill's own work — they are just
-  // run by the PHASE that owns each (grounding at G1, genre and capability at G2b), which records
+  // run by the PHASE that owns each (grounding at G1, format and capability at G2b), which records
   // the verdict. A second argument here would be a rule where.mjs's gate could not see.
   it("should take one argument, and still export the checks the phases run", () => {
     expect(checkStoryboard.length).toBe(1);
     expect(typeof groundTakeaway).toBe("function");
-    expect(typeof genreGap).toBe("function");
+    expect(typeof formatGap).toBe("function");
     expect(typeof capabilityGap).toBe("function");
   });
 });

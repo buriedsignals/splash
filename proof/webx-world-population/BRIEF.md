@@ -1,9 +1,9 @@
 # Beat — world population passed 8 billion in 2022
 
-**Type:** area. **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** area. **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/static-world-population` — same frozen data, a fresh component written for
-this genre's two-layout / baked-in-interaction shape. **Note:** the claim below was corrected
+this format's two-layout / baked-in-interaction shape. **Note:** the claim below was corrected
 2026-08-09 after a render audit caught the first draft's headline reading "passed 8 billion in
 2023" — the frozen CSV shows the series first reaches 8 billion in **2022**
 (8,021,407,196; 2023 is 8,091,734,933), a full year earlier. `render-web.mjs` now finds this year

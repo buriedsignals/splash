@@ -6,6 +6,7 @@ import { basename, join } from "node:path";
 export const OUTPUT_REVIEW_FILE = "OUTPUT-REVIEW.json";
 export const OUTPUT_REVIEW_SCHEMA_VERSION = 1;
 export const QA_RUN_SCHEMA_VERSION = 1;
+export const FEEDBACK_FILE = "FEEDBACK.md";
 
 const DECISIONS = new Set(["approve", "changes-requested", "reject"]);
 const QA_STATUSES = new Set(["passed", "failed"]);
@@ -125,6 +126,25 @@ export function renderDigest(beatDir) {
   return `sha256:${hash.digest("hex")}`;
 }
 
+/** Bind an approval to the exact editor-feedback request it resolves, when one exists. */
+export function feedbackDigest(beatDir) {
+  const path = join(text(beatDir, "beatDir"), FEEDBACK_FILE);
+  let stat;
+  try {
+    stat = lstatSync(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw new Error(`editor feedback could not be inspected at ${path}`, { cause: error });
+  }
+  if (stat.isSymbolicLink() || !stat.isFile()) {
+    throw new Error(`${FEEDBACK_FILE} must be a regular file in ${beatDir}`);
+  }
+  return `sha256:${createHash("sha256")
+    .update("splash-editor-feedback-v1\0")
+    .update(readFileSync(path))
+    .digest("hex")}`;
+}
+
 function validateQaRun(run, index) {
   const label = `qaRuns[${index}]`;
   if (!run || typeof run !== "object" || Array.isArray(run)) {
@@ -186,6 +206,9 @@ export function validateOutputReview(record) {
   if (record.replacesReviewId !== undefined) {
     text(record.replacesReviewId, "OutputReview.replacesReviewId");
   }
+  if (record.feedbackDigest !== undefined && !SHA256.test(record.feedbackDigest)) {
+    throw new Error("OutputReview.feedbackDigest must be a sha256 digest");
+  }
   return record;
 }
 
@@ -212,6 +235,10 @@ function approvalAgainstCurrent(record, { beatDir, expectedPlanVersion, expected
   const digest = renderDigest(beatDir);
   if (record.draftDigest !== digest) {
     throw new Error("OutputReview is stale because the rendered draft changed after review");
+  }
+  const currentFeedbackDigest = feedbackDigest(beatDir);
+  if ((record.feedbackDigest ?? null) !== currentFeedbackDigest) {
+    throw new Error("OutputReview is stale because it is not bound to the current editor feedback");
   }
   if (record.decision !== "approve") {
     throw new Error(`OutputReview decision is ${JSON.stringify(record.decision)}, not "approve"`);
@@ -282,6 +309,7 @@ export async function writeOutputReview({
   notes,
   replacesReviewId,
 }) {
+  const currentFeedbackDigest = feedbackDigest(beatDir);
   const record = {
     schemaVersion: OUTPUT_REVIEW_SCHEMA_VERSION,
     id,
@@ -297,6 +325,7 @@ export async function writeOutputReview({
     ...(decidedAt === undefined ? {} : { decidedAt }),
     ...(notes === undefined ? {} : { notes }),
     ...(replacesReviewId === undefined ? {} : { replacesReviewId }),
+    ...(currentFeedbackDigest === null ? {} : { feedbackDigest: currentFeedbackDigest }),
   };
   validateOutputReview(record);
   if (decision === "approve") {

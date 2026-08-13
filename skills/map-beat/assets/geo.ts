@@ -2,7 +2,7 @@
  * The pure half of the map beat: the join, the classes, the ramp, the ring arithmetic.
  *
  * Nothing here knows about a browser, a tile, a key or a camera. That is deliberate on both sides:
- * it is what makes the join testable at all, and it is what lets BOTH genres import this file — the
+ * it is what makes the join testable at all, and it is what lets BOTH formats import this file — the
  * still path (node + resvg) and the video path (Remotion + Chromium) — without either dragging the
  * other's runtime behind it. `chart-video`'s gotcha, one engine over: a module that reaches a
  * native rasteriser at import time cannot be bundled for a browser.
@@ -640,7 +640,7 @@ export type StageBox = {
 };
 
 /**
- * THE DECISION, stated once so every genre inherits it:
+ * THE DECISION, stated once so every format inherits it:
  *
  *   **A map is never given more stage height than its own geography can fill. Where a frame is
  *   taller than the geography admits, the map takes the height the geography demands and the
@@ -678,7 +678,7 @@ export function stageBoxFor(
  *
  * The message names the stage that WOULD work, because a refusal a caller cannot act on is a
  * complaint. Stretching is not among the options: `map-web-discipline.md` rules a non-uniform scale
- * out in writing — this genre would rather draw a smaller true map than a larger false one. @parity
+ * out in writing — this format would rather draw a smaller true map than a larger false one. @parity
  */
 export function assertStageServesGeography(
   frameWidthPx: number,

@@ -14,8 +14,8 @@ import {
   deriveFurniture,
   readPalette,
 } from "../../skills/chart-video/scripts/render-still.mjs";
-// The VIDEO genre's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
-// question, which is craft-neutral and therefore has one copy serving both genres.
+// The VIDEO format's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
+// question, which is craft-neutral and therefore has one copy serving both formats.
 import {
   assertDeliveredSize,
   readPinnedSize,
@@ -216,7 +216,7 @@ const videoSeconds = remotion([
   "--timeout=120000",
 ]);
 // And the DELIVERED mp4, out of the container itself. This is the assertion the whole size
-// decision rests on for the video genre: everything upstream of it agrees with itself by
+// decision rests on for the video format: everything upstream of it agrees with itself by
 // construction.
 assertDeliveredSize(mp4Size(videoPath), size, { what: videoPath });
 console.log(`video → ${videoPath}  [${videoSeconds}s], verified from the container`);

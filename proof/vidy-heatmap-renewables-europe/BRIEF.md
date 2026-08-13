@@ -21,7 +21,7 @@ draw at was not a decision, it was a default.
 in every single year, while the rest of a comparable set of European countries sits well below
 that and, for several of them, is still visibly climbing.
 
-**Medium / genre:** chart / video. **Type:** heatmap (matrix) — one row per country (8), one
+**Medium / format:** chart / video. **Type:** heatmap (matrix) — one row per country (8), one
 column per year 2016–2024 (9, chronological), cell colour = share of electricity generated from
 renewables (%). Rows ordered by their 2024 value, descending, so the block pattern (a solid top,
 a rising middle, a paler bottom) reads without needing the numbers.

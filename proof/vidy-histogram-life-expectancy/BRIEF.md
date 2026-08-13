@@ -12,7 +12,7 @@ point of the whole distribution (the median country, Morocco, sits at 75.3 years
 **Size:** landscape (1920 x 1080) — the front matter above is the record that counts; `render.mjs`
 reads it with `readPinnedSize` and selects the composition of that name.
 
-**Medium / genre:** chart / video. **Type:** histogram — one continuous variable (life expectancy
+**Medium / format:** chart / video. **Type:** histogram — one continuous variable (life expectancy
 at birth, one reading per country/territory, 2023) binned into eight contiguous five-year bands,
 bar height = count of countries in that band, x-axis in the variable's real unit (years), count
 axis zero-based, bars edge-to-edge.
@@ -118,7 +118,7 @@ anticipates.
   never in `accent` — `histogram.md`'s own documented trap (an Okabe-Ito-safe *mark* colour
   measuring under the 4.5:1 text floor when reused as a label).
 - The x-axis shows every bin edge, in years, not bin index — the type's own non-negotiable
-  requirement, kept even though the video genre's general furniture-density rule prefers less: this
+  requirement, kept even though the video format's general furniture-density rule prefers less: this
   one axis is what makes it a histogram and not an unlabelled bar chart.
 - Bars are edge-to-edge (no gap) — this is a histogram, not a categorical bar chart; a gap would
   lie about the bins' contiguity.

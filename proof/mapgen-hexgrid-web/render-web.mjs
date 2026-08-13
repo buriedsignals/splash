@@ -1,10 +1,10 @@
 // twin/proof/mapgen-hexgrid-web/render-web.mjs
 //
-// This beat's own WEB runner, and this beat's OWN physical copy of the web genre's machinery
+// This beat's own WEB runner, and this beat's OWN physical copy of the web format's machinery
 // (`renderHexGridWeb`, modelled on `map-web/scripts/render-web.mjs`'s own `renderMapWeb`) —
 // nothing in this file imports out of a skill or another `proof/` beat. Binning happens AFTER the
 // bake, from the baked points' own pixel coordinates, the same order
-// `proof/map-quake-density/render.mjs` follows for its own static genre
+// `proof/map-quake-density/render.mjs` follows for its own static format
 // (`map-beat/references/types/hex-grid.md`'s own cell-size rule: check the rendered cell
 // count, never the config value alone).
 //
@@ -309,7 +309,7 @@ export function livePlan({
  * disk.
  */
 /** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
- *  genre's — `discloseTable` refuses to invent one. */
+ *  format's — `discloseTable` refuses to invent one. */
 const TABLE_ROW_NOUN = "cells";
 
 /**
@@ -317,11 +317,11 @@ const TABLE_ROW_NOUN = "cells";
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -495,7 +495,7 @@ body {
    its height, whichever binds first. A plate stretched to fill a shape it was not baked for is a
    lie about distance and shape (geo-discipline.md), so it is not one of the outcomes here; a
    smaller, correct map is. The plain 'width: 100%' above the 'min()' is the fallback for a browser
-   without container query units — it fills the width, exactly as this genre did before, rather
+   without container query units — it fills the width, exactly as this format did before, rather
    than collapsing. Flush LEFT when the height is what binds, so the map's edge lines up with the
    title, the legend and the caveat rather than floating away from them. */
 .mw-viewport {
@@ -504,7 +504,7 @@ body {
   width: min(100cqw, calc(100cqh * ${aspect}));
   max-width: 100%;
   margin-inline: 0 auto;
-  /* 'hidden', unlike the point-symbol genre's own 'visible'. That genre lets a point LABEL spill
+  /* 'hidden', unlike the point-symbol format's own 'visible'. That format lets a point LABEL spill
      into the page's gutter because a label is a name, and a name is data. This beat draws no
      labels at all — the only thing that could spill here is half a hit target's hover wash, over
      ground the plate has already cut away. */

@@ -1,6 +1,6 @@
 // twin/proof/web-income-life-expectancy/scatter-interaction.mjs
 //
-// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, the line-genre
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, the line-format
 // skill's own copy. `render-web.mjs` inlines this one instead, the same way the skill's own
 // `renderWeb` inlines its own (see that file's doc-comment for exactly how and why).
 //
@@ -16,7 +16,7 @@
 // `nearestPointIndex` below measures real 2D distance instead.
 //
 // Second difference: the skill's own CSS toggles `.pt`'s FILL between transparent (rest) and muted
-// (hover/focus/active), because that genre's points are invisible until interacted with. This
+// (hover/focus/active), because that format's points are invisible until interacted with. This
 // beat's points are visibly drawn from the start (the cloud IS the argument) and, since the fluid
 // frame stretches its `viewBox`, they are HTML elements rather than SVG circles that would render
 // as ellipses — see `IncomeLifeExpectancyWeb.tsx`'s own doc-comment. So hover/focus here draws a
@@ -111,7 +111,7 @@ export function initChart(plot, tooltip) {
 
   // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
   // entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for the line
-  // genre). This layer adds the same detail box hover shows, plus Left/Right/Home/End to move
+  // format). This layer adds the same detail box hover shows, plus Left/Right/Home/End to move
   // between points in DOM order (this beat's own DOM order is the CSV's own row order, i.e.
   // alphabetical by country — an intuitive-enough sequence for a reader stepping through by
   // keyboard, and simpler than trying to derive a 2D "next nearest" ordering no reader would expect

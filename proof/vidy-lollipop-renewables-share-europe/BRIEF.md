@@ -9,7 +9,7 @@ type: lollipop
 renewables sits well behind the continent's leaders — more than 31 percentage points behind Norway
 specifically, despite sitting comfortably mid-pack in the wider ranking.
 
-**Medium / genre:** chart / video. **Type:** lollipop (a bar's thin sibling) — one row per country,
+**Medium / format:** chart / video. **Type:** lollipop (a bar's thin sibling) — one row per country,
 one stem per row growing from a shared zero baseline to the country's value, capped with a dot at
 the tip, rows sorted by value descending (the natural ranking read). Zero-baseline encoding (not
 position-encoded like the dumbbell beat): the stem's LENGTH from zero is the point, so the value axis

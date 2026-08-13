@@ -1,6 +1,6 @@
 /**
  * The web beat of "Switzerland's CO₂ per-capita ranking among ten European economies" — the
- * interactive genre.
+ * interactive format.
  *
  * Not a second chart: the coordinates and the number formatting come from `./bar-geometry.ts`. What
  * this file adds is the one thing a static frame cannot have — a reader who can ask a bar for its
@@ -41,7 +41,7 @@ import { rankingGeometry, en, type Row } from "./bar-geometry";
 
 const UNIT = "t";
 
-/** This genre's single fluid frame, in this beat's own shape. Declared here rather than imported
+/** This format's single fluid frame, in this beat's own shape. Declared here rather than imported
  *  from the skill's seed for the reason that file's own doc-comment gives: a compile-time-only type
  *  has no `#shared/*` vendoring path, and a relative import across the skill boundary hard-codes
  *  this dev repository's own directory layout. Duplicate, do not link. The shape genuinely differs

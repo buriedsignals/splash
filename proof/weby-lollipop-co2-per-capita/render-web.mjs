@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../co2-suisse/render-web.mjs` and
 // `../web-income-life-expectancy/render-web.mjs` both keep: the story's own constants, its own CSV
-// reader, its own component, handed to the genre's generic `renderWeb`. It lives here, beside the
+// reader, its own component, handed to the format's generic `renderWeb`. It lives here, beside the
 // story, not inside `skills/chart-web/scripts/render-web.mjs` — that file's own header
 // explains why: a skill directory that imports a story workspace does not build once copied, on its
 // own, into a journalist's root.
@@ -16,7 +16,7 @@
 // `patchForThisBeat` shape `web-income-life-expectancy/render-web.mjs` uses:
 //   1. `<html lang="fr">` → `<html lang="en">` (this beat's words are English throughout).
 //   2. The inlined `<script>` block is swapped for this directory's OWN `lollipop-interaction.mjs`
-//      — a lollipop's per-row hit-rects need per-row wiring, not the skill's line-genre
+//      — a lollipop's per-row hit-rects need per-row wiring, not the skill's line-format
 //      nearest-by-x mechanic (see that file's own doc-comment for why).
 //   3. A small CSS override is appended for `.row-hit`'s own hover/focus states — the skill's
 //      generic stylesheet only styles `.pt`, which this beat's markup never uses.
@@ -134,16 +134,16 @@ function inlineable(moduleSource) {
 /** CSS appended after the skill's own generic stylesheet. Three things live here, none of which the
  *  generic sheet can know about:
  *
- *  1. THE THIRD GRID TRACK. The genre's `.chart-plot` is two columns (a measured y-gutter and the
+ *  1. THE THIRD GRID TRACK. The format's `.chart-plot` is two columns (a measured y-gutter and the
  *     fluid plot). A lollipop prints a value label to the RIGHT of every dot, and the top row's dot
  *     sits at the plot's own right edge — so a fixed-pixel track is reserved beyond it
  *     (`--r-gutter`, measured in node from the widest label actually drawn) for those labels to
  *     overflow into. Without it the longest label runs off the frame at 375px, which is exactly the
- *     defect class this genre's own gotcha section says only a screenshot ever catches.
+ *     defect class this format's own gotcha section says only a screenshot ever catches.
  *  2. `.value-label` and the `.cat` name column — the two type styles this beat adds. Both are
  *     FIXED CSS pixel sizes read from the figure's own custom properties, never anything that
  *     tracks the `viewBox`. `.value-label` carries a `--ground` chip so a gridline passing behind
- *     it stays behind it (the one box this genre allows, `web-discipline.md`).
+ *     it stays behind it (the one box this format allows, `web-discipline.md`).
  *  3. `.row-hit`'s hover/focus/active treatment — the skill's `.pt` rules never match this beat's
  *     markup: a translucent wash across the row's full hit-rect, so mouse and touch alike get a
  *     visible cue for where the "row" boundary is, not just the thin stem, plus a focus ring. */

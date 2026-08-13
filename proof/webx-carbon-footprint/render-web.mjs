@@ -132,20 +132,20 @@ async function repair(outPath) {
   // internally scrollable rather than truncating the list". Measured in Chrome at 1440x900,
   // hovering the 0-4 t bin: `clientHeight` 218 against `scrollHeight` 502, `scrollTop` 0 after a
   // 200px wheel — 56.6% of the 127 names unreachable. The tooltip carries `pointer-events: none`
-  // (the genre's own stylesheet, and correctly so: it follows the pointer, and a box that can
+  // (the format's own stylesheet, and correctly so: it follows the pointer, and a box that can
   // swallow its own trigger's events is worse), so the wheel goes to the bin underneath it and
   // nothing scrolls. Nor could any of the three inputs the alt text names ever scroll it: a
   // keyboard reader's focus stays on the bin, and a finger dragging inside a fixed overlay fights
   // the page. So the scroll is dropped rather than repaired — a promise no input mode could keep.
   // The whole list is now simply visible: tallest content is 502px (bin 0), which sits inside the
-  // window at every viewport this genre targets, and
+  // window at every viewport this format targets, and
   // `skills/splash/test/interaction-promises-are-kept.test.ts` fails if any delivered tooltip
   // ever hides content again, by scroll or by running off the window.
   const ownCss = `
 .bin-hit { cursor: pointer; }
 /* A bin answering a pointer is the only sign of WHICH bin answered, so it is drawn — a tint, never
    an opaque fill, so the bar and the median rule underneath stay visible. The shared stylesheet has
-   no rule for this class; nothing here overrides the genre. */
+   no rule for this class; nothing here overrides the format. */
 svg.chart rect.bin-hit:hover, svg.chart rect.bin-hit.bin-active {
   fill: var(--muted);
   fill-opacity: 0.12;

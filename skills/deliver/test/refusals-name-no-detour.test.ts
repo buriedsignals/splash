@@ -182,16 +182,16 @@ describe("every refusal in the delivery path, triggered for real", () => {
     // offerForms — the three it owns.
     messages.push(
       await refusalFrom(() =>
-        offerForms({ medium: "chart", genre: "hologram", beatDir }),
+        offerForms({ medium: "chart", format: "hologram", beatDir }),
       ),
     );
     messages.push(
-      await refusalFrom(() => offerForms({ medium: "chart", genre: "static" })),
+      await refusalFrom(() => offerForms({ medium: "chart", format: "static" })),
     );
     messages.push(
       await refusalFrom(async () => {
         await rm(join(beatDir, OUTPUT_REVIEW_FILE));
-        return offerForms({ medium: "chart", genre: "static", beatDir });
+        return offerForms({ medium: "chart", format: "static", beatDir });
       }),
     );
     await approveCurrentOutput(beatDir);
@@ -202,7 +202,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         materialise({
           form: "embed",
-          genre: "static",
+          format: "static",
           beatDir,
           exportDir,
           handover,
@@ -213,7 +213,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         materialise({
           form: "owned-file",
-          genre: "static",
+          format: "static",
           beatDir,
           exportDir,
         }),
@@ -223,7 +223,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         materialise({
           form: "embed",
-          genre: "web",
+          format: "web",
           beatDir,
           exportDir,
           env: {},
@@ -235,7 +235,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         materialise({
           form: "embed",
-          genre: "web",
+          format: "web",
           beatDir,
           exportDir,
           env: {
@@ -251,7 +251,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
         await writeFile(join(exportDir, ".delivered-from"), "9-another-beat\n");
         return materialise({
           form: "owned-file",
-          genre: "static",
+          format: "static",
           beatDir,
           exportDir,
           handover,
@@ -273,18 +273,18 @@ describe("every refusal in the delivery path, triggered for real", () => {
     // formatHandover — the missing field, the empty file list, the maintainer sentence, the
     // unknown live-tiles state.
     messages.push(
-      await refusalFrom(() => formatHandover({ ...handover, genre: "web" })),
+      await refusalFrom(() => formatHandover({ ...handover, format: "web" })),
     );
     messages.push(
       await refusalFrom(() =>
-        formatHandover({ ...handover, genre: "web", files: [], credit: "x" }),
+        formatHandover({ ...handover, format: "web", files: [], credit: "x" }),
       ),
     );
     messages.push(
       await refusalFrom(() =>
         formatHandover({
           ...handover,
-          genre: "web",
+          format: "web",
           files: ["still.png"],
           caveat: "see where.mjs",
         }),
@@ -294,7 +294,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         formatHandover({
           ...handover,
-          genre: "web",
+          format: "web",
           files: ["still.png"],
           liveTiles: "probably fine",
         }),
@@ -305,7 +305,7 @@ describe("every refusal in the delivery path, triggered for real", () => {
       await refusalFrom(() =>
         formatHandover({
           ...handover,
-          genre: "web",
+          format: "web",
           files: ["still.png"],
           language: "",
         }),

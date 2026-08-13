@@ -1,13 +1,13 @@
 ---
 name: map-web
-description: Use to produce a map beat in the WEB genre — a self-contained interactive HTML page that fits the reader's window, where hovering or focusing a region gives its exact value, a size legend stays readable, and an opt-in accessible table can carry the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
+description: Use to produce a map beat in the WEB format — a self-contained interactive HTML page that fits the reader's window, where hovering or focusing a region gives its exact value, a size legend stays readable, and an opt-in accessible table can carry the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
 ---
 
 # map-web — bake the plate once, draw circles a reader can interrogate, and answer for the reader who cannot see the shape
 
 ## Overview
 
-The web genre of a map beat. It does not hold a map type and it does not fill a config: it holds
+The web format of a map beat. It does not hold a map type and it does not fill a config: it holds
 **the interaction**, the same missing piece `chart-web` is for the chart engine — a reader who
 can ask "what is this one worth?" and get an exact answer, without anything the legend or the title
 already states being gated behind that ask. Before this skill, a map beat could ship static
@@ -16,7 +16,7 @@ cell this skill closes.
 
 The one seed proven through this skill, a proportional-symbol map of a sample of thirteen European
 metro-area populations (`assets/MapWebSeed.tsx`), draws from the SAME baked-plate approach
-`map-beat` ships for its own two genres (`doctrine/references/geo-discipline.md` rules 1,
+`map-beat` ships for its own two formats (`doctrine/references/geo-discipline.md` rules 1,
 2, 4, 6, 7, 9, 12): `scripts/bake-plate.mjs` spends the camera once, and the component draws an
 `<image>` and some `<circle>`s. **Since ruling R1 (2026-08-10) that render is the FALLBACK layer,
 not the beat**: the page ships a live MapTiler map over it (`assets/live-map.mjs` — MapTiler's own
@@ -32,7 +32,7 @@ skill carries its OWN copies of everything it needs (`assets/geo-symbol.ts`,
 actually uses (no polygon join — see the gotcha in `map-beat`'s own `SKILL.md`, "a data join
 fails silently" — a point has no shape to join).
 
-There was no doctrine for this genre before this skill. `references/map-web-discipline.md` was
+There was no doctrine for this format before this skill. `references/map-web-discipline.md` was
 written against this beat's first real build, the way `chart-web/references/web-discipline.md`
 was written against the chart engine's own first web build — read it before writing a second map-web
 beat, especially its first section: a map is a spatial medium, and a hover tooltip alone is not an
@@ -40,8 +40,8 @@ accessible answer to that fact.
 
 ## When to use
 
-- When a closed `STORYBOARD.md` picks medium **map** and genre **web**, and the beat's `BRIEF.md` is
-  written. No brief, no code — same rule every genre in this twin follows.
+- When a closed `STORYBOARD.md` picks medium **map** and format **web**, and the beat's `BRIEF.md` is
+  written. No brief, no code — same rule every format in this twin follows.
 - When the argument is stronger with **every region's exact value available on demand** than with
   the handful a static legend has room to label. The linear table for a reader with no spatial
   access is available beside it (`regionTable`, off by default) — read
@@ -51,7 +51,7 @@ accessible answer to that fact.
   reuses `map-beat/assets/geo.ts`'s join/ramp logic (carried as its own copy, the same rule this
   skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
 - **Not** to re-draw a map that already exists as a still or a video build — bake once, reuse the
-  plate the same way `map-beat` reuses one camera across its own two genres.
+  plate the same way `map-beat` reuses one camera across its own two formats.
 - **REVERSED 2026-08-10 (ruling R1).** This bullet used to read *"Not for pan/zoom on a LIVE tile
   source… the shipped HTML makes zero external request once the plate is inlined as a data URI."*
   The owner overturned it: *a web map you cannot move through is a picture.* The map IS a live
@@ -67,7 +67,7 @@ subsetting dimension a reader would plausibly want to isolate — enough distinc
 points per group, that narrowing to one is a genuinely different, useful reading. It is NOT
 warranted to declutter a busy map, hide outliers, or work around a legend/table with "too many
 rows" — that moves argument-bearing content behind an interaction under a different name, which this
-genre forbids regardless of motive. The unfiltered default must always already show the whole claim
+format forbids regardless of motive. The unfiltered default must always already show the whole claim
 the title makes. This seed's own thirteen points across three regions is close to the honest floor
 for the test to pass — it demonstrates the mechanism, not evidence every beat needs one; a beat with
 one group renders no filter at all (`groupsOf(points).length <= 1`).
@@ -83,7 +83,7 @@ states what the size legend and the subject sentence do NOT follow, and why.
 **Pan and zoom are no longer a per-beat decision** (ruling R1): every map × web beat is a live map a
 reader can move through. What IS per beat is `SEED.live` — set it `false` for a beat that must stay
 request-free (an offline archive, a CMS whose Content-Security-Policy refuses `api.maptiler.com`),
-and the page ships as the fallback layer alone, exactly as this genre worked before the ruling.
+and the page ships as the fallback layer alone, exactly as this format worked before the ruling.
 
 The reader's leash is derived, never picked: `minZoom` is the zoom the camera fitted to at the
 reader's own container size, so the claim the title makes is always fully on screen; `maxBounds` is
@@ -98,9 +98,9 @@ never regresses the one channel that serves a screen-reader user.
 ## The one gotcha that will waste your day (read first)
 
 **A static render can be checked with a PNG; an interactive one cannot — and a map's own
-accessibility question is not the same question a chart's web genre already answered.** Every rule
-in `geo-discipline.md` about the pixels still applies to this genre's own furniture (the legend, the
-labels, the water tint), but the thing unique to THIS genre — does hovering point X show point X's
+accessibility question is not the same question a chart's web format already answered.** Every rule
+in `geo-discipline.md` about the pixels still applies to this format's own furniture (the legend, the
+labels, the water tint), but the thing unique to THIS format — does hovering point X show point X's
 own exact value, does Tab reach every one of the points AND every control (filter radios, the zoom
 checkbox), does the accessible table read correctly, do the map and its legend survive JavaScript
 being off — is a *behaviour over time*, provable only by driving a real browser and using it. See
@@ -114,7 +114,7 @@ rather than by discipline: MapTiler's `dataviz-light` basemap paints water a nea
 same project only found by looking at a rendered symbol map, not by reading the style.
 
 **The third trap: a hover you never dispatched at a real pixel is a hover you never tested.** An
-HTML overlay with no `pointer-events: none` once swallowed every hover on this genre's own map while
+HTML overlay with no `pointer-events: none` once swallowed every hover on this format's own map while
 keyboard focus kept working — because `.focus()` does not hit-test, which is exactly why no test
 caught it. `scripts/verify-interaction.mjs` exists for this: it asks the browser what is at each
 point's own centre (`document.elementFromPoint`) and then moves a real pointer there, and it was
@@ -126,7 +126,7 @@ SCREEN.** Measured before this was fixed: at 1600×900 the page was 2275px tall 
 claim sat 800px below the fold. Width is only half the question — see
 `references/map-web-discipline.md`, "Fit the window".
 
-**The fifth trap, specific to this genre's own rewrite for genuine responsiveness: a COMPUTED style
+**The fifth trap, specific to this format's own rewrite for genuine responsiveness: a COMPUTED style
 value can disagree with what the screen actually shows, and the value is what's wrong.** Verify by
 screenshotting the beat at real widths (this skill's own proof: 1600/1024/768/375), not by reading
 `getBoundingClientRect()` or a CSS custom property off some element and trusting the number — a
@@ -149,20 +149,20 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, props, outDir, name, regionTable })` — SSRs the one fluid map render, plus the table only when the beat opted in, inlines the interaction script, writes one self-contained HTML file. `assertDistinctSlugs` refuses a filter vocabulary that cannot work. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
 | Preview | `scripts/render-preview.mjs` | The seed rendered from sample data, screenshotted through headless Chrome at one fixed viewport width — no longer a pure-SVG Resvg rasterise, since the furniture is now HTML |
 | Compare | `scripts/compare-png.mjs` | `comparePngBuffers` — tolerant, decoded-pixel PNG comparison through a real `<canvas>`; two Chrome launches of identical HTML are not always byte-identical (anti-aliasing jitter), so `--check`/the standalone test compare pictures, not bytes |
-| Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `chart-beat`'s, kept in step by hand (a skill never imports another skill); only `deriveFurniture` (the colour maths) is used by this genre now |
+| Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `chart-beat`'s, kept in step by hand (a skill never imports another skill); only `deriveFurniture` (the colour maths) is used by this format now |
 | Sample | `assets/sample-data/regions.json` | Thirteen European metro areas, sample population figures, each tagged with a `group` (the filter's own dimension), the seed's own data |
 
 **Why a symbol map, not a choropleth, for this skill's own seed.** A symbol map has no data JOIN
 (`map-beat/references/types/proportional-symbol.md`: "there is no data JOIN for this type") and
 no polygon geometry to bake, cull or thin — the bake is a handful of `map.project()` calls, not a
-Natural-Earth GeoJSON join against declared study-set keys. That made it the faster, lower-risk genre
+Natural-Earth GeoJSON join against declared study-set keys. That made it the faster, lower-risk format
 to prove the web mechanics AND the accessibility answer on first; a choropleth's own web beat is the
 next one to write, importing this skill's OWN copy of `map-beat/assets/geo.ts`'s join/ramp logic
 rather than `geo-symbol.ts`.
 
 **Why the accessible table is opt-in, and what that means for a beat that says nothing.**
 `renderMapWeb`'s `regionTable` defaults to FALSE — the owner's call. It takes no width/layout prop
-either: the same thirteen facts do not read differently at 375px than at 1600px, and this genre
+either: the same thirteen facts do not read differently at 375px than at 1600px, and this format
 ships one layout. When a beat opts in, the table is SSR'd after the map, inside the same
 `.map-web-page` wrapper the filter's own `:has()` CSS is scoped to, so one filter narrows both. When
 a beat leaves it off — as this seed does — a reader with no spatial access to the map has the
@@ -204,7 +204,7 @@ cost thirteen separate interactions. Read it before choosing; do not choose by n
    a bad camera, so screenshot at 1600/1024/768/375 and LOOK: the beat fits each window, the plate's
    own aspect never distorts, the type reads the same visual size at every width. A claim not
    driven, and not screenshotted, is not evidence — the same rule `doctrine`'s verification
-   section states for every genre in this twin, sharpened by this genre's own gotcha above: a
+   section states for every format in this twin, sharpened by this format's own gotcha above: a
    computed value can lie, a screenshot cannot.
 
 ## Quick start
@@ -246,7 +246,7 @@ python3 -m http.server 8935 --bind 127.0.0.1 --directory skills/map-web/output-p
 
 The first render command runs the SEED's runner (`render`, at the bottom of
 `scripts/render-web.mjs`), which reads `assets/sample-data/regions.json` and hands the seed
-component and `RegionTable` to the genre's generic `renderMapWeb`. A real beat writes its own runner
+component and `RegionTable` to the format's generic `renderMapWeb`. A real beat writes its own runner
 in the same shape, beside its own story, importing its own component and its own points —
 `renderMapWeb` itself does not change, the same rule `chart-web`'s own `render-web.mjs` states
 for its own generic function.
@@ -279,7 +279,7 @@ for its own generic function.
 
 ## Files
 
-- `references/map-web-discipline.md` — the rules this genre is written under, each attached to the
+- `references/map-web-discipline.md` — the rules this format is written under, each attached to the
   reasoning that produced it. Read before writing a second beat.
 - `assets/MapWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (thirteen European metro areas, Paris the largest, a three-region filter), not a
@@ -287,9 +287,9 @@ for its own generic function.
   only geometry, an HTML overlay carrying every piece of furniture and every control, and
   `RegionTable`, the accessible table a beat opts into.
 - `assets/geo-symbol.ts` — this skill's OWN copy of the pure proportional-symbol geometry, trimmed
-  to what this genre draws (no polygon join — a symbol map has none), plus `groupsOf`/`slugOf`, the
+  to what this format draws (no polygon join — a symbol map has none), plus `groupsOf`/`slugOf`, the
   filter's own shared vocabulary between the component and the CSS `render-web.mjs` generates.
-- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
+- `assets/interaction.mjs` — the one script this format ships, inlined verbatim into the HTML.
   `initPoints`/`initAll` are DOM wiring, verified by driving a real browser, not by a test.
 - `assets/sample-data/regions.json` — thirteen European metro areas with sample population figures
   (Paris 11.0M largest, Dublin 1.4M smallest) and a `group` per point (the filter's own dimension),
@@ -302,7 +302,7 @@ for its own generic function.
   data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
 - `scripts/bake-plate.mjs` — this skill's OWN copy of the bake: camera, gate, plate, projection, the
   water-colour override. No shapes/join argument — nothing here needs one.
-- `scripts/render-web.mjs` — the genre's own machinery (`renderMapWeb`, `buildCss`,
+- `scripts/render-web.mjs` — the format's own machinery (`renderMapWeb`, `buildCss`,
   `assertDistinctSlugs`) plus this skill's own seed runner (`ensurePlate`, `render`, the CLI block)
   behind a labelled `CONFIG — edit for your story` seam. Nothing in this file imports out of this
   skill.
@@ -328,7 +328,7 @@ for its own generic function.
   `render-preview.mjs --check` and `test/standalone.test.ts` use in place of a raw byte-equality
   check.
 - `scripts/render-still.mjs` — `deriveFurniture`/`measureText`, a byte-identical copy of
-  `chart-beat`'s own file (this genre now only calls `deriveFurniture`).
+  `chart-beat`'s own file (this format now only calls `deriveFurniture`).
 - `test/canon.test.ts` — the canon's own shape: the seed carries the exact `REPLACE ME` wording,
   the sample data is real rows the seed can render standalone, `preview.png` is a current render —
   and it RUNS `scripts/verify-interaction.mjs`, so the real-browser behaviour checks are part of

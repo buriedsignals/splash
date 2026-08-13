@@ -6,8 +6,8 @@
  *
  * Adapted from `proof/static-swiss-age-pyramid/SwissAgePyramid.tsx`'s own `pyramidGeometry` — NOT
  * imported from it (`chart-web/SKILL.md`: a beat never imports another beat's files, "duplicate,
- * do not link") — for this genre's own shape: `bandGutter` and `xTickHint` are now CALL-TIME
- * parameters instead of module-level constants, because the two `WebLayout` rungs this genre ships
+ * do not link") — for this format's own shape: `bandGutter` and `xTickHint` are now CALL-TIME
+ * parameters instead of module-level constants, because the two `WebLayout` rungs this format ships
  * (desktop/narrow) each need their own gutter width and tick density, not one frame's fixed numbers.
  *
  * One addition the static beat's geometry has no reason to carry: each bar also gets a `hitY`/
@@ -114,8 +114,8 @@ export function pyramidGeometry(
   };
 }
 
-/** Rounded-thousands axis tick label — what the static frame's own axis prints, and all this genre
- *  prints unconditionally too: "330k". Unlike the static frame, this genre also carries the EXACT
+/** Rounded-thousands axis tick label — what the static frame's own axis prints, and all this format
+ *  prints unconditionally too: "330k". Unlike the static frame, this format also carries the EXACT
  *  per-band figure, but only on demand (`data-detail`) — see `exactCount` below. */
 export function thousands(v: number): string {
   return Math.round(v / 1000).toLocaleString("en-US") + "k";

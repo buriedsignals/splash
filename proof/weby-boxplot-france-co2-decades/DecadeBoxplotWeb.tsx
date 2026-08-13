@@ -39,7 +39,7 @@
  * toggles a `.cat` rectangle's own class and the shared `#tooltip` — no code path can hide or move
  * any of the above (`web-discipline.md`, "What must not become interactive").
  *
- * WHY NOT THE LINE GENRE'S NEAREST-BY-X HIT AREA. A box plot's x-axis is CATEGORICAL: eight
+ * WHY NOT THE LINE FORMAT'S NEAREST-BY-X HIT AREA. A box plot's x-axis is CATEGORICAL: eight
  * decades, each already owning a whole band of the plot's width, so "which decade is the pointer
  * nearest to, by pixel distance" is a strictly worse question than "which decade's own column is
  * the pointer inside." Each decade gets one hit rectangle (`.cat`) spanning the full plot height
@@ -75,7 +75,7 @@ const BAND_INSET = 6;
 /** The plot's height floor in CSS pixels. Height follows width through `aspect-ratio`, and at 375px
  *  that leaves roughly 160px of value axis for eight boxes whose whole argument is a falling
  *  median — too little to read a median's position against its neighbours'. This is this beat's own
- *  version of the genre's `PLOT_FLOOR_PX`. */
+ *  version of the format's `PLOT_FLOOR_PX`. */
 const MIN_PLOT_PX = 260;
 /** How many outliers a decade may carry before its per-point labels are dropped and hover carries
  *  them instead (`boxplot.md`). */

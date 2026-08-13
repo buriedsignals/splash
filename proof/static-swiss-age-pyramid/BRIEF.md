@@ -5,7 +5,7 @@ type: population-pyramid
 
 # Beat — Switzerland's population bulges at ages 55-59
 
-**Type:** population pyramid. **Medium/genre:** chart / static. **Channel:** article web, 900 x
+**Type:** population pyramid. **Medium/format:** chart / static. **Channel:** article web, 900 x
 820 (taller than the 900x560 default — a per-story FRAME choice, 21 age bands need more vertical
 room than the default gives).
 

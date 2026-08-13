@@ -1,7 +1,7 @@
 // twin/proof/weby-boxplot-france-co2-decades/boxplot-interaction.mjs
 //
 // This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
-// genre's nearest-by-x mechanic) and not `web-income-life-expectancy/scatter-interaction.mjs` (the
+// format's nearest-by-x mechanic) and not `web-income-life-expectancy/scatter-interaction.mjs` (the
 // scatter's nearest-by-2D-distance mechanic). `render-web.mjs` inlines this one instead, the same
 // way both of those runners inline their own.
 //
@@ -11,7 +11,7 @@
 // question is "which decade's own column is the pointer inside," which `DecadeBoxplotWeb.tsx`
 // already answers at build time by giving each decade its own full-height hit rectangle (`.cat`).
 // This script's job shrinks to plain per-element event wiring — no distance math at all, unlike
-// `nearestIndex`/`nearestPointIndex` in the other two genres' own scripts.
+// `nearestIndex`/`nearestPointIndex` in the other two formats' own scripts.
 //
 // Tooltip/`show()`/keyboard shape follows `scatter-interaction.mjs` closely on purpose (same
 // tooltip element, same hover/tap/keyboard parity, same `data-detail`/`aria-label` discipline) so a

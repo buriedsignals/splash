@@ -32,7 +32,7 @@ describe("map-web assets — the canon's shape, not a story's", () => {
     }
   });
 
-  it("should not carry the CO2 choropleth beat's own copy — this genre's own seed is a symbol map", async () => {
+  it("should not carry the CO2 choropleth beat's own copy — this format's own seed is a symbol map", async () => {
     const seed = await readFile(join(ASSETS, "MapWebSeed.tsx"), "utf8");
     for (const leak of [
       "CO₂",
@@ -46,13 +46,13 @@ describe("map-web assets — the canon's shape, not a story's", () => {
   });
 
   /**
-   * The behaviour half of this genre's verification, run rather than merely shipped. It drives a
+   * The behaviour half of this format's verification, run rather than merely shipped. It drives a
    * real browser with real pointer events, real clicks and real key presses — see the script's own
    * header for why nothing cheaper can catch the defect class it exists for (an overlay that
    * swallows hovers passes every dispatched-event and `.focus()` check ever written). It costs a
    * Chrome launch, which this file already pays for `--check` directly below.
    */
-  it("should pass every real-browser interaction check the genre claims", async () => {
+  it("should pass every real-browser interaction check the format claims", async () => {
     const proc = Bun.spawn(["bun", "scripts/verify-interaction.mjs"], {
       cwd: join(import.meta.dirname, ".."),
       stdout: "pipe",

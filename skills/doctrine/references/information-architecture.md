@@ -3,7 +3,7 @@
 Where `editorial-standard.md` says what a layer is *for* and `visual-system.md` says what it is
 allowed to *look like*, this file says how the layers of a single graphic are *arranged* — the
 spatial and sequential structure a reader moves through before they ever reach the data itself.
-This governs the static work happening in this sub-project directly: `chart-beat`'s static genre
+This governs the static work happening in this sub-project directly: `chart-beat`'s static format
 has no scroll, no reveal, no narrator — a reader gets one frame, and the frame's own structure is
 the only guide they get.
 
@@ -45,7 +45,7 @@ one order:
 5. **Source line.** Small, but never so small it fails the "support verification" job — see
    `anti-patterns.md`'s "tiny footer sources" entry. This file's *default* position is fixed at
    the bottom, in the same position across every graphic a newsroom ships, so a reader who has
-   learned where to look once never has to search for it again — but see "When a genre-scoped
+   learned where to look once never has to search for it again — but see "When a format-scoped
    file disagrees with this stack" below: a specific engine and format is allowed to place it
    elsewhere, and where one does, that placement wins over this default.
 
@@ -53,33 +53,33 @@ This is not an aesthetic preference for a particular stacking order — it is th
 reader's eye actually travels in a script that reads top-to-bottom, and a graphic that fights that
 order is spending part of its reader's attention on navigation instead of on the evidence.
 
-## When a genre-scoped file disagrees with this stack
+## When a format-scoped file disagrees with this stack
 
 This file states the *general* stack: the default zones and their default order, for a reader who
-has not yet learned any engine's specific habits. A **genre-scoped discipline file** — one written
+has not yet learned any engine's specific habits. A **format-scoped discipline file** — one written
 for a single engine and a single format, such as `chart-beat/references/static-discipline.md`
-for the static chart genre — is allowed to override a zone's default position when its own render
+for the static chart format — is allowed to override a zone's default position when its own render
 actually places it differently, because it sits closer to the real pixels than this file does.
 
-**Where the two disagree, the genre-scoped file wins.**
+**Where the two disagree, the format-scoped file wins.**
 
 **The worked example this section used to carry no longer exists, and that is worth recording
 rather than quietly replacing.** Until 2026-08-10 the live example was the source line: this file's
 default (item 5 above) fixes it at the bottom, and `static-discipline.md` placed it directly
-beneath the title for a static chart beat. The owner's feedback reversed the genre-scoped file
+beneath the title for a static chart beat. The owner's feedback reversed the format-scoped file
 (*"put the credits at the bottom of the visual"*), so `static-discipline.md` now says
 `height - PAD` too — and **the default is what won.** Not because the override mechanism failed:
-because the genre-scoped file had been describing what its component happened to draw rather than
+because the format-scoped file had been describing what its component happened to draw rather than
 what the format needed, which is the one way an override can be wrong.
 
-**As of 2026-08-10 no genre-scoped file overrides any zone in this stack.** The mechanism below
+**As of 2026-08-10 no format-scoped file overrides any zone in this stack.** The mechanism below
 stands unexercised, and it is still correct and still needed — a file that sits closer to the real
 pixels than this one does should be able to say so. A beat author who stops at this file's default
-without checking their engine's genre-scoped file still has not read the authoritative answer for
+without checking their engine's format-scoped file still has not read the authoritative answer for
 their own format; today the two simply agree.
 
-If a genre-scoped file is silent on a zone — true for most zones, most of the time — this file's
-default stands unchallenged. The override is narrow: it reaches only the zone the genre-scoped
+If a format-scoped file is silent on a zone — true for most zones, most of the time — this file's
+default stands unchallenged. The override is narrow: it reaches only the zone the format-scoped
 file actually speaks to, not licence to reorder the rest of the stack.
 
 ## Proximity encodes relatedness

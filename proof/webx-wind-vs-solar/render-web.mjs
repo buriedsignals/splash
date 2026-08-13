@@ -5,7 +5,7 @@
 // countries x two years (2015, 2024); re-verified here (row count, 2024 slice = 6 countries)
 // rather than trusted on sight. Only the 2024 rows feed the beat, same as the static sibling.
 //
-// SECOND BUILD: migrated to the genre's FLUID FRAME — `renderWeb` no longer takes a `layouts`
+// SECOND BUILD: migrated to the format's FLUID FRAME — `renderWeb` no longer takes a `layouts`
 // array (the two-rung design was overturned; see `GroupedBarWeb.tsx`'s own doc-comment).
 //
 // After the skill's `renderWeb` writes the self-contained HTML, this runner appends this beat's

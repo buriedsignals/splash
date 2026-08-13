@@ -1,9 +1,9 @@
 # Beat — Norway ran its grid on 99% renewables; Poland leaned on fossil fuel
 
-**Type:** stacked bar (100%-stacked). **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** stacked bar (100%-stacked). **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/static-electricity-mix-source` — same claim, same frozen data, a fresh
-component written for this genre's two-layout / baked-in-interaction shape, with its own
+component written for this format's two-layout / baked-in-interaction shape, with its own
 segment-hit interaction script.
 
 ## Claim

@@ -10,7 +10,7 @@ slots:
   - id: 1
     proves: "que la courbe est repassée sous son niveau de 1967"
     medium: chart
-    genre: static
+    format: static
     candidates: ["ligne 1950–2024 avec trait de repère à 1967", "colonnes par décennie", "ligne 1950–2024 avec le pic de 1973 en accent"]
     chosen: "ligne 1950–2024 avec trait de repère à 1967"
 ---

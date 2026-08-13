@@ -10,6 +10,10 @@
 // the local installation to one source of truth while making every Splash skill visible to Goose
 // and Codex.
 //
+// A private parent installer may pass `--namespace splash` to place the same
+// discovered skills below `~/.agents/skills/splash/`. The public Splash path
+// passes no namespace and keeps the flat layout below.
+//
 // Placement is by symlink. `skillIds` discovers directories containing `SKILL.md`; the installer
 // never maintains a second hard-coded inventory.
 //
@@ -178,14 +182,28 @@ function openDoor({ dir, doorId, record, dryRun }) {
  * `would-…` — which is what makes it safe for the setup page to ask, since that page reports the
  * store and never places links.
  */
-export function planPlacement({ root, home, dryRun = false }) {
+export function planPlacement({ root, home, namespace = "", dryRun = false }) {
+  if (namespace && !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(namespace))
+    throw new Error(`invalid skill namespace: ${namespace}`);
   const results = [];
   const record = (doorId, status, where, detail) => results.push({ doorId, status, where, detail });
   const ids = skillIds(root);
 
   // The canonical agents store: Goose, Gemini and Codex all read this flat shape.
   const agentsDoor = DOORS[0];
-  const agents = openDoor({ dir: agentsDoor.dir(home), doorId: agentsDoor.id, record, dryRun });
+  const agentsBase = openDoor({ dir: agentsDoor.dir(home), doorId: agentsDoor.id, record, dryRun });
+  let agents = agentsBase;
+  if (agentsBase && namespace) {
+    const namespaceDir = join(agentsBase, namespace);
+    if (dryRun && !existsSync(namespaceDir)) {
+      // The parent door may itself be a dry-run path that does not exist. Report
+      // the namespace plan without asking lstat to traverse that absent parent.
+      record(agentsDoor.id, "would-create", namespaceDir, "skill namespace does not exist yet");
+      agents = namespaceDir;
+    } else {
+      agents = openDoor({ dir: namespaceDir, doorId: agentsDoor.id, record, dryRun });
+    }
+  }
   if (agents)
     for (const id of ids)
       placeLink({ linkPath: join(agents, id), target: join(root, "skills", id), doorId: agentsDoor.id, record, dryRun });
@@ -202,8 +220,9 @@ if (import.meta.main) {
   const DRY_RUN = argv.includes("--dry-run");
   const ROOT = resolve(flag("--root", resolve(HERE, "..")));
   const HOME = resolve(flag("--home", homedir()));
+  const NAMESPACE = flag("--namespace", "");
 
-  const { ids, results } = planPlacement({ root: ROOT, home: HOME, dryRun: DRY_RUN });
+  const { ids, results } = planPlacement({ root: ROOT, home: HOME, namespace: NAMESPACE, dryRun: DRY_RUN });
 
   const width = Math.max(...results.map((r) => r.status.length));
   for (const r of results) {

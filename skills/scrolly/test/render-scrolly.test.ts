@@ -22,14 +22,14 @@ import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep, measureProgress } from "../assets/interaction.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
-// nowhere in this file directly — kept anyway, the same default-timeout bump every other genre's
+// nowhere in this file directly — kept anyway, the same default-timeout bump every other format's
 // own test file carries for the first file bun:test happens to load.
 setDefaultTimeout(20000);
 
 const SCRIPTS_DIR = join(import.meta.dirname, "..", "scripts");
 
 // ---------------------------------------------------------------------------
-// STEPS_META — the seed's own narrative arc, and the structural proof this genre earns its
+// STEPS_META — the seed's own narrative arc, and the structural proof this format earns its
 // existence by assembling DIFFERENT media, not by stepping four states of one chart.
 // ---------------------------------------------------------------------------
 
@@ -284,7 +284,7 @@ describe("DrawnGraphicFrame", () => {
     expect(used.has(accent.toLowerCase())).toBe(true);
   });
 
-  it("should draw at the genre's own FRAME size, never a hard-coded one", () => {
+  it("should draw at the format's own FRAME size, never a hard-coded one", () => {
     const ground = "#FFFFFF";
     const furniture = deriveFurniture(ground);
     const svg = renderToStaticMarkup(
@@ -313,7 +313,7 @@ describe("DrawnGraphicFrame", () => {
   });
 
   // Correction 7 (a full-bleed graphic can be COVER-cropped hard at either extreme of the aspect
-  // envelope this genre guarantees) — every element that carries meaning stays inside SAFE_AREA,
+  // envelope this format guarantees) — every element that carries meaning stays inside SAFE_AREA,
   // mechanically, not by eyeballing a screenshot. Every numeric coordinate is parsed straight out
   // of the rendered SVG string, not re-derived from the component's own formula, so a typo'd
   // literal in the component would be caught here exactly as a wrong formula would.

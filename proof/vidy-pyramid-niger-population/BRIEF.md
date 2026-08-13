@@ -11,7 +11,7 @@ fastest-growing population, not an aging one. Every successive five-year band, f
 at the top down to the 0-4 band at the bottom, is wider than the one before it: a textbook
 "youthquake" silhouette, monotonically expanding, with no bulge or plateau anywhere in the middle.
 
-**Medium / genre:** chart / video. **Type:** population pyramid — 21 five-year age bands (0-4
+**Medium / format:** chart / video. **Type:** population pyramid — 21 five-year age bands (0-4
 through 100+), each a mirrored pair of bars (male extending left, female extending right) from one
 shared central zero. Bands stay in their natural chronological sequence; the silhouette this
 sequence produces (an unbroken, wide-to-narrow taper) is the whole argument.
@@ -127,8 +127,8 @@ again when it becomes a label" names the exact defect (an Okabe-Ito vermillion l
 
 1080 × 1350 (4:5), taller than the corpus's square default — the same per-story override
 `../static-swiss-age-pyramid/`'s static beat already made for this type (900 × 820, taller than
-that genre's own default). 21 age bands need more vertical room than a square frame gives for a
-legible centre-gutter label at any genre's own minimum readable size.
+that format's own default). 21 age bands need more vertical room than a square frame gives for a
+legible centre-gutter label at any format's own minimum readable size.
 
 ## Source line
 

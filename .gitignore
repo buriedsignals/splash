@@ -13,6 +13,7 @@ node_modules
 # Committing one would make every install of the release believe it is already migrated.
 newsroom.json
 .splash-runtime
+.splash-instance-id
 .sdd/
 
 # packed delivery (scripts/pack-skills.mjs) — always derived from the repo, never committed.
@@ -27,4 +28,3 @@ newsroom.json
 # for: the defect is invisible from inside a working install, where the file is supposed to exist.
 NEWSROOM-PROFILE.md
 brand.json
-

@@ -157,7 +157,7 @@ describe("CHART_LAYOUT — the reclaimed band, and what the strip below the plot
 
   // What remains below the plot is not a reservation: it is the strip the x-axis labels occupy —
   // 8px under `plot.bottom` at a 15px type size, so roughly 25px of whatever box the frame fills.
-  // At the shortest track this genre is checked at (573px, the Grinnell beat at 375x812) that is
+  // At the shortest track this format is checked at (573px, the Grinnell beat at 375x812) that is
   // 4.4%, and the layout leaves 10%.
   for (const trackHeight of [821, 721, 573]) {
     it(`should leave the x-axis label strip room in a ${trackHeight}px-tall frame`, () => {
@@ -171,7 +171,7 @@ describe("CHART_LAYOUT — the reclaimed band, and what the strip below the plot
   // out of the middle, and a label straddling one of them is broken text for as long as the card is
   // at that row. A fitted frame can obey this at every width; a cropped one cannot (see
   // `DrawnGraphicFrame`'s own flow label). 0.13 of the frame, floored at 62px, is well outside a
-  // 410px card centred in any box this genre is checked at.
+  // 410px card centred in any box this format is checked at.
   it("should keep the y-axis gutter outside a centred card's own stripe", () => {
     for (const frameWidth of [1600, 1280, 600]) {
       const cardLeftEdge = (frameWidth - 410) / 2;
@@ -270,7 +270,7 @@ describe("ChartFrame", () => {
     expect(html).toContain('preserveAspectRatio="none"');
     expect(html).not.toContain("<text");
     // Type: every word is HTML at a fixed PIXEL size — never a font-size in viewBox units, which
-    // is the defect that made the web genres unreadable at 375px before they separated the two.
+    // is the defect that made the web formats unreadable at 375px before they separated the two.
     const fontSizes = [...html.matchAll(/font-size:([^;"]+)/g)].map((m) =>
       m[1].trim(),
     );

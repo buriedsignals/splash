@@ -1,6 +1,6 @@
 # Beat — Life expectancy gains, ten countries, 2000-2023 (web)
 
-**Medium/genre:** chart / web. **Type:** dumbbell (range plot). This is the WEB genre of the
+**Medium/format:** chart / web. **Type:** dumbbell (range plot). This is the WEB format of the
 same claim the STATIC beat (`proof/more-dumbbell-life-expectancy-gains/`) already draws — its own
 fresh geometry and its own fresh component, not an import of that beat's files (a beat never
 imports another beat's files; `chart-web/SKILL.md`'s "duplicate, do not link" ruling).
@@ -45,7 +45,7 @@ The static frame prints both endpoint VALUES beside each dot — 2000 in blue in
 vermillion — but it never prints the GAP itself as a number, for any of the 10 rows, except the
 two the title happens to name (Poland +5.0, United States +2.5 in prose). For the other 8 rows —
 France, Germany, Italy, Japan, Netherlands, Spain, Switzerland, United Kingdom — a reader has to
-eyeball the connector's pixel length and guess. That is exactly the honest gap this genre exists
+eyeball the connector's pixel length and guess. That is exactly the honest gap this format exists
 to close, and exactly the anti-pattern `web-discipline.md` warns against inverted: hovering a row
 should never just repeat the two values already printed beside its dots ("the same numbers
 repeated on demand") — it should supply the ONE thing not already stated, the gap.
@@ -58,7 +58,7 @@ The hit-test is per COUNTRY ROW, not per dot and not a shared nearest-point over
 ten rows already owns one non-overlapping horizontal band (`scaleBand`'s own bandwidth), so one
 invisible `.hit-row` rectangle per row — spanning the full plot width and that row's own band
 height — is wired directly to its own pointer/focus events (`dumbbell-interaction.mjs`). There is
-nothing to resolve "nearest" the way the line genre's shared `.hit-area` (nearest-by-x) or the
+nothing to resolve "nearest" the way the line format's shared `.hit-area` (nearest-by-x) or the
 scatter beat's shared `.hit-area` (nearest-by-2D-distance) both have to — a pointer anywhere
 inside the plot is inside exactly one row's band, unambiguous by construction. `tabIndex={0}`,
 `aria-label` and `data-detail` are baked into every hit-rect at SSR time, so a keyboard user or
@@ -68,7 +68,7 @@ vertically here (unlike the line/scatter beats' horizontal `ArrowLeft`/`ArrowRig
 order (top to bottom = gap-size descending) matches visual order top to bottom, so `ArrowDown`
 moves visually down exactly as expected.
 
-Everything the static genre already prints — title, source, legend, connectors, both dots, both
+Everything the static format already prints — title, source, legend, connectors, both dots, both
 endpoint value labels — stays exactly as unconditional SSR'd SVG. `dumbbell-interaction.mjs` only
 ever touches the `.hit-row` rectangles' own `class` and the shared `#tooltip`; it has no code path
 that can hide or move anything else.
@@ -127,7 +127,7 @@ run and observed, not assumed.
 
 ## Known gap, stated rather than hidden
 
-Same known cost `web-discipline.md` names for the line genre's own seed: reaching a specific row
+Same known cost `web-discipline.md` names for the line format's own seed: reaching a specific row
 by Tab alone (script absent) still means stepping through however many rows precede it — fine at
 10 rows, the same "slow but honest" tradeoff the seed's own doc names for its 75 points, not a
 defect unique to this beat.

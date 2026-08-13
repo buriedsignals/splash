@@ -7,7 +7,7 @@
 // This is `geo-discipline.md` rules 1, 2, 3, 4, 6, 7, 9, 11 and 12 in one script, the same list
 // `map-beat/scripts/bake-plate.mjs` states for its own build:
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
-//   2. the plate is fixed, so the web genre never re-renders tiles per interaction and shimmers;
+//   2. the plate is fixed, so the web format never re-renders tiles per interaction and shimmers;
 //   3. the shapes are baked to ordered pixel rings HERE — a provider basemap serves administrative
 //      boundary LINES, never polygons, so a choropleth's shapes can never come from the tiles;
 //   4. the subject/comparison label anchors are projected here too, by `map.project()`;
@@ -30,7 +30,7 @@
 // Baked at the EXACT pixel size `ChoroplethWeb.tsx`'s desktop layout displays it at (496), scaled
 // down uniformly for the narrow layout inside the SVG (`mapSize / geometry.frame.width`, applied to
 // both the plate `<image>` and every projected mark) — one plate, never baked twice, the same
-// pattern `map-web/assets/MapWebSeed.tsx` already proves for the symbol-map genre.
+// pattern `map-web/assets/MapWebSeed.tsx` already proves for the symbol-map format.
 //
 // Usage:
 //   bun proof/mapgen-choropleth-web/bake-plate.mjs --size 496   # → proof/mapgen-choropleth-web/plate

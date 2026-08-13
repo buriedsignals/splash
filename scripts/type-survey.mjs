@@ -1,5 +1,5 @@
 // Regenerates `skills/storyboard/references/type-survey.md` — every visual type this
-// toolchain holds a sheet for, what each is FOR in its own words, and which genres are proven on
+// toolchain holds a sheet for, what each is FOR in its own words, and which formats are proven on
 // disk for it.
 //
 //   bun scripts/type-survey.mjs           writes the survey
@@ -7,7 +7,7 @@
 //
 // WHY THIS EXISTS. Forty type sheets ship in this repository (32 chart, 8 map), each answering
 // what its type is for and when not to reach for it, and `twin/MATRIX.md` records which of them
-// are proven in which genre. Measured before this file was written, `grep -rn "references/types"
+// are proven in which format. Measured before this file was written, `grep -rn "references/types"
 // skills/storyboard/` and `grep -rn "MATRIX" skills/` BOTH returned nothing: the editorial
 // exchange had never heard of any of it. In the run that produced this work, three candidates were
 // offered and all three were stacked-or-grouped bars of the same three numbers.
@@ -21,7 +21,7 @@
 //
 // WHAT IT PROVABLY DOES NOT TELL YOU. Whether a type SUITS the story in front of you — that is the
 // exchange's judgement, made against the frozen profile. And "reachable" here means an artifact of
-// that genre exists on disk for that type somewhere in `proof/`; it is a coverage fact, never a
+// that format exists on disk for that type somewhere in `proof/`; it is a coverage fact, never a
 // quality one. Read `MATRIX.md`'s own header for the same caveat stated at more length.
 
 import { readdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
@@ -34,13 +34,13 @@ const TWIN = join(HERE, "..");
 const SKILLS = join(TWIN, "skills");
 
 // Where the sheets live, and the medium each set describes. `map-web` and `scrolly` hold
-// no sheets of their own: a map is a map whichever genre renders it.
+// no sheets of their own: a map is a map whichever format renders it.
 const SHEET_SETS = [
   { medium: "chart", dir: join(SKILLS, "chart-beat", "references", "types") },
   { medium: "map", dir: join(SKILLS, "map-beat", "references", "types") },
 ];
 
-const GENRES = ["static", "web", "video", "scrolly"];
+const FORMATS = ["static", "web", "video", "scrolly"];
 
 /** Lowercase word tokens, punctuation dropped — the shape both sides of the join are compared in. */
 function tokens(text) {
@@ -118,11 +118,11 @@ function readSheets() {
 }
 
 /**
- * Which genres are proven for a sheet, read the way `matrix.mjs` reads them and through its own
- * reader: an ARTIFACT EXISTS ON DISK, or the cell is empty. A brief declaring a genre proves
+ * Which formats are proven for a sheet, read the way `matrix.mjs` reads them and through its own
+ * reader: an ARTIFACT EXISTS ON DISK, or the cell is empty. A brief declaring a format proves
  * nothing.
  */
-function provenGenres(sheet, beats) {
+function provenFormats(sheet, beats) {
   const proven = new Set();
   for (const beat of beats) {
     if (!beat.type) continue;
@@ -131,9 +131,9 @@ function provenGenres(sheet, beats) {
       (alias) => sameTokens(alias, beatTokens) || sameTokens(alias, [...beatTokens].sort()),
     );
     if (!matches) continue;
-    for (const genre of beat.genres) proven.add(genre);
+    for (const format of beat.formats) proven.add(format);
   }
-  return GENRES.filter((g) => proven.has(g));
+  return FORMATS.filter((g) => proven.has(g));
 }
 
 function render(sheets, beats) {
@@ -148,10 +148,10 @@ function render(sheets, beats) {
     "could actually support — a type whose required shape the data cannot supply is listed to the",
     "journalist as not applicable, and why — and say of each whether this toolchain can reach it.",
     "",
-    "**\"Proven\" means an artifact of that genre EXISTS ON DISK** for that type, read through",
-    "`matrix.mjs`'s own reader. An empty genre column is not a refusal: reachability at the genre gate",
-    "is `genre-catalog.mjs`'s `genreGap(medium, genre)`, which answers for the medium as a whole. A",
-    "type with no proven genre is one nobody has rendered here yet, which is worth saying out loud",
+    "**\"Proven\" means an artifact of that format EXISTS ON DISK** for that type, read through",
+    "`matrix.mjs`'s own reader. An empty format column is not a refusal: reachability at the format gate",
+    "is `format-catalog.mjs`'s `formatGap(medium, format)`, which answers for the medium as a whole. A",
+    "type with no proven format is one nobody has rendered here yet, which is worth saying out loud",
     "rather than quietly omitting.",
     "",
     "The purpose column is each sheet's OWN opening sentence, verbatim. Read the sheet itself before",
@@ -161,15 +161,15 @@ function render(sheets, beats) {
 
   for (const medium of ["chart", "map"]) {
     const set = sheets.filter((s) => s.medium === medium);
-    const reachable = set.filter((s) => provenGenres(s, beats).length > 0);
+    const reachable = set.filter((s) => provenFormats(s, beats).length > 0);
     lines.push(
-      `## ${medium === "chart" ? "Chart" : "Map"} types — ${set.length} sheets, ${reachable.length} with at least one genre proven on disk`,
+      `## ${medium === "chart" ? "Chart" : "Map"} types — ${set.length} sheets, ${reachable.length} with at least one format proven on disk`,
       "",
-      "| type | what it is for | proven genres | sheet |",
+      "| type | what it is for | proven formats | sheet |",
       "|---|---|---|---|",
     );
     for (const sheet of set) {
-      const proven = provenGenres(sheet, beats);
+      const proven = provenFormats(sheet, beats);
       lines.push(
         `| **${sheet.title}** | ${sheet.purpose} | ${proven.length ? proven.join(", ") : "— none rendered here yet"} | \`${sheet.sheet}\` |`,
       );

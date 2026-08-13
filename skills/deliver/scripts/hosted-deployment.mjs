@@ -123,6 +123,9 @@ export function validateHostedDeployment(record) {
   text(record.updatedAt, "hosted deployment updatedAt");
   if (record.deploymentId !== undefined) text(record.deploymentId, "Cloudflare deployment ID");
   if (record.url !== undefined) text(record.url, "Cloudflare deployment URL");
+  if (record.deploymentUrl !== undefined) {
+    text(record.deploymentUrl, "Cloudflare immutable deployment URL");
+  }
   if (
     (record.state === "remote-complete" || record.state === "local-complete") &&
     (!record.deploymentId || !record.url)

@@ -1,5 +1,5 @@
 /**
- * The video genre of "The 2011 Tohoku earthquake was the most powerful..." — 8 seconds, 30fps,
+ * The video format of "The 2011 Tohoku earthquake was the most powerful..." — 8 seconds, 30fps,
  * 1080 × 1080. Same plate, same points, same radius scale as the still; what this file adds is the
  * order.
  *

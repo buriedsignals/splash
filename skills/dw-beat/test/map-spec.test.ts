@@ -307,6 +307,24 @@ describe("renameValueColumn", () => {
     const renamed = renameValueColumn(DATA, "co2Mt");
     expect(renamed).toBe(DATA);
   });
+
+  it("should preserve every comparison series when it renames the first one", () => {
+    const slope = [
+      { year: 2021, Norway: 54, Sweden: 52, UK: 5 },
+      { year: 2025, Norway: 64, Sweden: 62, UK: 9 },
+    ];
+    const renamed = renameValueColumn(slope, "Norway adoption");
+    expect(renamed).toEqual([
+      { year: 2021, "Norway adoption": 54, Sweden: 52, UK: 5 },
+      { year: 2025, "Norway adoption": 64, Sweden: 62, UK: 9 },
+    ]);
+  });
+
+  it("should reject a label that would overwrite another series", () => {
+    expect(() =>
+      renameValueColumn([{ year: 2021, Norway: 54, Sweden: 52 }], "Sweden"),
+    ).toThrow(/collides with another data column/);
+  });
 });
 
 describe("isBarEncoded", () => {
@@ -344,5 +362,18 @@ describe("computeYRange", () => {
     );
     const withoutIt = computeYRange(baseSpec());
     expect(withXRange).toEqual(withoutIt);
+  });
+
+  it("should span every series in the heat-pump slope instead of clipping the low countries", () => {
+    const [min, max] = computeYRange(
+      baseSpec({
+        data: [
+          { year: 2021, Norway: 54, Sweden: 52, UK: 5 },
+          { year: 2025, Norway: 64, Sweden: 62, UK: 9 },
+        ],
+      }),
+    );
+    expect(min).toBeLessThan(5);
+    expect(max).toBeGreaterThan(64);
   });
 });

@@ -1,5 +1,5 @@
 /**
- * The static genre of "Where 2024's earthquakes clustered" — 900 × 560, one frame, no order. A
+ * The static format of "Where 2024's earthquakes clustered" — 900 × 560, one frame, no order. A
  * HEX-GRID beat: raw epicentres binned into a regular tessellation so the eye reads density instead
  * of an unreadable smear of 14,000 overlapping dots. See
  * `map-beat/references/types/hex-grid.md`.

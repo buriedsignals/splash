@@ -71,7 +71,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
 import {
@@ -81,7 +81,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
-// genres read one copy. A histogram's x is a CONTINUUM, so it has no twin form to transpose into;
+// formats read one copy. A histogram's x is a CONTINUUM, so it has no twin form to transpose into;
 // what it has is a measured aspect range, and outside it the distribution stops being a shape.
 import {
   assertPlotAspect,
@@ -195,7 +195,7 @@ export function noteFor(size: string) {
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
- * of the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * of the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated, not imported from a sibling workspace or a skill).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;
@@ -516,7 +516,7 @@ export function HistogramVideo({
   // prop, for the same reason this file takes `ink`/`muted`/`grid` rather than deriving them:
   // that module reaches `contrast` through `render-still.mjs`, which loads a native rasteriser no
   // browser bundle can parse — measured, not assumed (webpack: "Module parse failed: Unexpected
-  // character" on the `.node` binary). One implementation of the rule, two genres.
+  // character" on the `.node` binary). One implementation of the rule, two formats.
   //
   // A MISSING VALUE THROWS rather than falling back to `muted`, which is what this beat drew before
   // and is exactly the 1.00:1 defect: a fallback here would restore it silently.
@@ -658,8 +658,8 @@ export function HistogramVideo({
         />
 
         {/* The bin-edge x-axis: ticks and labels at every bin boundary, in the variable's own
-            unit — the type's own requirement, not a genre choice
-            (`histogram.md`: "not bin index"). Kept sparse in weight and size, the video genre's
+            unit — the type's own requirement, not a format choice
+            (`histogram.md`: "not bin index"). Kept sparse in weight and size, the video format's
             own discipline (`motion-grammar.md`'s furniture-density rule), but every edge is
             present because a histogram whose x-axis omits an edge has hidden a bin boundary. */}
         {g.bars.map((b) => (

@@ -77,8 +77,8 @@ export function validateChartSpec(spec) {
     }
   }
 
-  if (spec.format !== undefined && spec.format !== "static" && spec.format !== "interactive") {
-    errors.push('format must be "static" or "interactive" — one pinned format per element');
+  if (spec.format !== undefined && spec.format !== "static" && spec.format !== "web") {
+    errors.push('format must be canonical Splash "static" or "web" — one pinned format per element');
   }
 
   if (spec.color !== undefined && !HEX_COLOR.test(spec.color)) {

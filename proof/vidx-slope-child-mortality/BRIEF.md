@@ -22,7 +22,7 @@ decision, it was a default.
 drop of three-quarters — even as the country recovered from the 1994 genocide and civil war, one of
 six countries compared at exactly two moments.
 
-**Medium / genre:** chart / video. **Type:** slope (slopegraph) — two vertical axes (1990, 2023),
+**Medium / format:** chart / video. **Type:** slope (slopegraph) — two vertical axes (1990, 2023),
 one line per country from its 1990 value to its 2023 value, position-encoded (no forced zero — the
 value axis is fitted to the readings, per `references/types/slope.md`). Two hues total: one accent
 (Rwanda), the rest muted context lines. Category labels sit in the side gutters at both ends,

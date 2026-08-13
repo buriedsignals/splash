@@ -1,16 +1,16 @@
 # Map-web discipline
 
-The rules this genre is written under. `doctrine`'s cross-cutting references
+The rules this format is written under. `doctrine`'s cross-cutting references
 (`editorial-standard.md`, `information-architecture.md`, `visual-system.md`) apply unchanged, and
-`geo-discipline.md` — the map craft's own twelve rules — applies unchanged too: this genre draws
+`geo-discipline.md` — the map craft's own twelve rules — applies unchanged too: this format draws
 from the same baked plate a static or video map beat draws from, so the bake rules (1, 2, 4, 6, 7,
 9, 12) all still bind. What this file adds is only what is true of a map that a reader can
 **interrogate**, **narrow**, and now **fill the width of its own container with**, and nothing this
-genre's first beat did not actually meet.
+format's first beat did not actually meet.
 
 ## Full width, genuinely
 
-The defect this section closes: the first version of this genre baked TWO fixed-pixel layouts
+The defect this section closes: the first version of this format baked TWO fixed-pixel layouts
 (860px, 360px) and swapped between them with a CSS media query. That is not responsive — it is two
 static posters with a light switch between them, and at any width other than 860 or 360 the beat
 either sat in a gutter or (worse) never filled the space it was given at all.
@@ -28,7 +28,7 @@ either sat in a gutter or (worse) never filled the space it was given at all.
   pixels horizontally without ever growing them vertically to match — a real distortion of the
   basemap, the exact thing this project's whole geo discipline exists to prevent. `aspect-ratio`
   (not a max-width, not a fixed height) is the one CSS property doing that job.
-- **No max-width anywhere in this genre's own CSS** (the only bound on the map is the window's own
+- **No max-width anywhere in this format's own CSS** (the only bound on the map is the window's own
   remaining height — "Fit the window" below — which is a bound on the SCREEN, not a fixed number of
   pixels chosen at authoring time). An earlier draft of this rewrite bounded the
   map's own display size with a `max-width`, reasoning that a raster plate should not be asked to
@@ -39,7 +39,7 @@ either sat in a gutter or (worse) never filled the space it was given at all.
   not a display-time cap — see below.
 - Point-name labels and the per-point hit target are HTML, absolutely positioned over the SVG by
   **percentage** of the frame — not fixed pixels — so they track the geometry continuously as the
-  container resizes, at every width, not just the two this genre used to ship. Their FONT SIZE stays
+  container resizes, at every width, not just the two this format used to ship. Their FONT SIZE stays
   a fixed CSS number regardless: see "Text is HTML, not SVG" below for why that is the one thing
   that must NOT scale with the container.
 
@@ -75,7 +75,7 @@ question") sits below the beat and is normal document reading, not scrolling *in
   CSS has no other way to state "bounded by both axes at once" for a non-replaced box — `max-height`
   on an `aspect-ratio` box clamps the height WITHOUT re-deriving the width, which distorts.
 - A plain `width: 100%` precedes the `min()` as the fallback for a browser with no container query
-  units: it fills the width, exactly as this genre did before, rather than collapsing.
+  units: it fills the width, exactly as this format did before, rather than collapsing.
 
 **One measured trap, or this costs an evening.** The stage's height must be **definite** for `cqh`
 to resolve. With `min-height` on `.map-web` instead of `height`, every `cqh` inside the stage
@@ -88,7 +88,7 @@ window the height binds first, so the map is drawn smaller than the full width a
 becomes margin. **The map is flush LEFT, not centred**, so its edge lines up with the title, the
 filter chips and the legend rather than floating away from them. The alternative — stretching the
 plate to fill the width — is not on the table at all: a non-uniform scale is a lie about distance
-and shape (`geo-discipline.md`), and this genre would rather draw a smaller true map than a larger
+and shape (`geo-discipline.md`), and this format would rather draw a smaller true map than a larger
 false one.
 
 **Point labels are allowed to spill past the frame.** `.mw-viewport` is `overflow: visible` when not
@@ -117,7 +117,7 @@ STRUCTURALLY FALSE of the fallback, and that is a trade rather than an oversight
 window's width**; unkeyed, the same page draws its square plate at 593×593, **37 %**. A square raster
 cannot fill a 2.64:1 box without a non-uniform scale, and a non-uniform scale is a lie about distance
 and shape — so the outcomes available for the fallback are "smaller and correct" or "full width and
-false", and this genre takes the first. The live layer has no plate aspect to preserve (the canvas IS
+false", and this format takes the first. The live layer has no plate aspect to preserve (the canvas IS
 the container), which is why `html.mw-live .mw-viewport` sets `aspect-ratio: auto !important` and the
 map takes the whole stage. What is common to both layers, and what B5.1 actually asked for, is that
 **the beat is never taller than the window**: measured at 1600/1024/768/375, the symbol beat's own
@@ -125,7 +125,7 @@ column ends at 884/752/1008/796 px against windows of 900/768/1024/812.
 
 **The ground is a baked raster plate, not vector geometry.** Stretching it to an arbitrary width
 either distorts the geography (a non-uniform scale — ruled out entirely, see above: `aspect-ratio`
-guarantees the scale this genre ever applies is uniform) or, if the display width exceeds the plate's
+guarantees the scale this format ever applies is uniform) or, if the display width exceeds the plate's
 own native resolution, softens it — the picture itself has fewer real pixels than the screen is
 asking it to cover. Two strategies were on the table:
 
@@ -133,7 +133,7 @@ asking it to cover. Two strategies were on the table:
   that resolution, accepting mild softening past it;
 - bake at a few discrete sizes and pick the nearest one at or above the container's actual width.
 
-**This genre takes the first.** The self-contained HTML this genre ships embeds every asset as a
+**This format takes the first.** The self-contained HTML this format ships embeds every asset as a
 `data:` URI at build time — there is no request a browser could make at display time to fetch a
 BIGGER asset for a wider container, the way a real `<img srcset>` fetching from a server could. A
 multi-size strategy would therefore have to embed ALL of its candidate sizes in the one file
@@ -149,7 +149,7 @@ the plate at ~1568 CSS px — an upscale of ~1.57×, mild and not visually distr
 do, where the same ratio would show). At 1024/768/375 the plate is at or BELOW its native
 resolution (a downscale, strictly crisp). This was `496` before this rewrite — deliberately raised,
 at the cost of a heavier bake and a larger embedded PNG, because the old size was tuned for an
-860px-wide fixed layout and would have visibly softened at any width this genre now actually ships.
+860px-wide fixed layout and would have visibly softened at any width this format now actually ships.
 
 **Where the bound genuinely lives, if one is needed at all: the bake's own resolution, not the
 display width.** If a future beat needs to look crisp at containers meaningfully wider than 1600px,
@@ -165,7 +165,7 @@ carries the library.
 **In a fluid SVG, text scales with the geometry.** A legend readable at 900px becomes oversized at
 1600px, and illegibly small at 375px — an SVG `<text>` element sized in the SAME `viewBox` units the
 plate and the marks are drawn in has no way to opt out of the transform the browser applies to the
-whole document to make it fill the container. This genre's OLD two-layout version dodged the problem
+whole document to make it fill the container. This format's OLD two-layout version dodged the problem
 by never actually being fluid (two fixed layouts, two fixed sets of hand-tuned font sizes) — the
 problem re-appeared the moment the SVG itself was made to scale continuously.
 
@@ -177,7 +177,7 @@ geometry (point labels, hit targets) but always sized with a fixed CSS `font-siz
 never changes because the CSS mechanism that scales the SVG (`width: 100%` inside an
 `aspect-ratio`-locked box) has no purchase on an HTML sibling laid out with normal document flow and
 `position: absolute` percentages. This is the SAME split `chart-web/references/web-discipline.md`
-describes for the chart genre, applied to a genre where the "geometry" is a raster plate instead of
+describes for the chart format, applied to a format where the "geometry" is a raster plate instead of
 a vector path — the principle (SVG = geometry and marks, HTML = everything that reads as language)
 does not change with the medium underneath it.
 
@@ -192,7 +192,7 @@ ability to read it just because the map got smaller.
 ## The accessibility question
 
 **A map is a spatial medium, and a screen-reader user has no spatial access to it.** A chart's own
-web genre can lean on a linear reading order — a series of points along an x-axis has a natural
+web format can lean on a linear reading order — a series of points along an x-axis has a natural
 "first, then next" a screen reader's own navigation already matches. A map has no such order: two
 regions are related by where they sit on a plane, and that relationship is not expressible as a
 sequence of DOM nodes no matter how carefully `tabIndex` is assigned to them. Tabbing through
@@ -212,7 +212,7 @@ Two answers were on the table for this beat, and only one of them is honest:
   read every fact the pattern is made of, in a stable order, with the same exactness a sighted
   reader gets from a hover.
 
-This genre SHIPS the second answer, as `RegionTable` in `assets/MapWebSeed.tsx`: the same thirteen
+This format SHIPS the second answer, as `RegionTable` in `assets/MapWebSeed.tsx`: the same thirteen
 `(name, value)` pairs the map draws, rendered as a real HTML `<table>`, captioned, with `<th
 scope="row">`/`<th scope="col">` so a screen reader's own table navigation (row-by-row,
 column-by-column) actually works on it, largest value first so "the first row" means something
@@ -229,7 +229,7 @@ wants the table writes one word.
 
 **State it plainly, because a default is what most beats will ship with.** A map is a spatial
 medium. A screen-reader user has no spatial access to it. The table was the answer to that fact —
-the only one this genre found that is honest — and **a beat that leaves it off has no answer.**
+the only one this format found that is honest — and **a beat that leaves it off has no answer.**
 Concretely, that reader loses:
 
 - **the complete set of readings.** With the table, they have all thirteen names and all thirteen
@@ -259,9 +259,9 @@ same idea goes wrong in practice:
   `<details>`/`<summary>`, which is not the same object the sentence above was warning about.
 - **A `<table>`, not an SVG text grid.** `role="table"`/`role="row"`/`role="cell"` on SVG nodes is
   unreliable across screen readers in exactly the way a real `<table>`, `<tr>`, `<th>`, `<td>` is
-  not — this genre's own SVG carries no text at ALL now (see "Text is HTML, not SVG"), so this
+  not — this format's own SVG carries no text at ALL now (see "Text is HTML, not SVG"), so this
   choice is not even a temptation any more; the table is HTML because the labels are HTML because
-  everything that reads as language in this genre is HTML.
+  everything that reads as language in this format is HTML.
 - **One value, one formatting, in one place.** `pointDetail` in `MapWebSeed.tsx` is the only
   function that turns a `{ name, value }` into the string a reader sees, called by the hit target's
   `aria-label`/`data-detail`/`title` AND by nothing else — the table calls `fr(point.value)`
@@ -276,10 +276,10 @@ se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The
 **collapsed by default on every map page, without exception**. He offered two ways — remove it, or
 hide it in an accordion.
 
-**This genre takes the accordion, and the REASON is the load-bearing half of this section.** Read the
+**This format takes the accordion, and the REASON is the load-bearing half of this section.** Read the
 two sections above before touching it: the table is the map's own accessible alternative. A map is a
 spatial medium; a screen-reader user has no spatial access to it; the ordered list of readings is the
-only honest answer this genre found, and "Two channels, not one" below says why the `.pt` buttons are
+only honest answer this format found, and "Two channels, not one" below says why the `.pt` buttons are
 not a substitute for it. **Deleting the table would trade a page-height problem for an accessibility
 regression.** Collapsing satisfies what was asked and keeps every reading one keystroke away. A later
 reader who meets a collapsed table and "fixes" it back open is undoing a ruling; a later reader who
@@ -353,7 +353,7 @@ target on its own, and now that the map is fluid across a much wider range of co
 PHYSICAL pixels at the narrow end regardless of how generous its own frame-unit radius was tuned to
 be (`HIT_TARGET_PX` in `MapWebSeed.tsx`'s own header note has the arithmetic). This is why the hit
 target is now a real HTML `<button>`, `28px` fixed CSS diameter, laid over the SVG by percentage
-position but NOT by percentage size — a legitimate touch/pointer target at every width this genre
+position but NOT by percentage size — a legitimate touch/pointer target at every width this format
 ships, decoupled entirely from how big or small the decorative mark it sits on happens to be drawn.
 
 ## Progressive enhancement: a native tooltip before the script runs
@@ -361,7 +361,7 @@ ships, decoupled entirely from how big or small the decorative mark it sits on h
 Every `.pt` button carries a native HTML `title` attribute holding the exact same string its
 `aria-label`/`data-detail` carry. `title` is a native browser affordance — most browsers show it as
 a plain tooltip on hover, with zero script, the HTML equivalent of the nested SVG `<title>` this
-genre used before its furniture moved out of the SVG. This means the ONE thing this genre's inline
+format used before its furniture moved out of the SVG. This means the ONE thing this format's inline
 script (`interaction.mjs`) actually adds on top of a no-JS page is positioning (a fixed,
 always-visible tooltip near the pointer instead of the browser's own delayed native one) and
 keyboard cycling (Arrow/Home/End between points) — not the base capability of "hover a point, learn
@@ -373,7 +373,7 @@ them.
 
 **A map beat may let a reader narrow what is shown** — this seed's own filter (`.mw-filter`, a
 `<fieldset>` of radios) narrows by region group. The one non-negotiable rule governing it is the
-same one that governs every other control this genre ships: **nothing argument-bearing may sit
+same one that governs every other control this format ships: **nothing argument-bearing may sit
 behind a filter.** The default, unfiltered view — "All regions" checked, exactly the state this
 beat renders with no interaction at all — must already show the whole claim the title makes; a
 filter lets a reader explore PAST the claim, never INTO it. Concretely: the "All regions" radio
@@ -387,7 +387,7 @@ distinct groups, and enough points per group, that narrowing to one is a genuine
 useful reading, not merely a smaller version of the same one. Do NOT add a filter to declutter a
 busy map, to hide outliers, or to work around a legend/table that "has too many rows" — every one of
 those is moving argument-bearing content behind an interaction under a different name, which this
-genre forbids regardless of the motive. This seed's own thirteen points across three regions is
+format forbids regardless of the motive. This seed's own thirteen points across three regions is
 close to the honest floor for the test to pass at all (`MapWebSeed.tsx` skips rendering the
 `<fieldset>` entirely when there is only one group, `groupsOf(points).length <= 1`) — it is included
 here to prove the mechanism works end to end, not as evidence that every beat needs one.
@@ -423,10 +423,10 @@ the two collisions one vocabulary makes possible (two groups slugging alike, or 
 `all`, the reserved id of the unfiltered option).
 
 This means the filter (like the zoom toggle below it) works identically with
-the page's own inline `<script>` running or absent: the ONLY modern-CSS assumption this genre now
+the page's own inline `<script>` running or absent: the ONLY modern-CSS assumption this format now
 makes is `:has()` (Chrome 105+/Safari 15.4+/Firefox 121+, long-shipped in every evergreen browser
 this self-contained HTML targets) — accepted rather than hand-rolling a JS-only fallback for a
-capability that, on anything older, degrades to exactly the guarantee this genre already makes for
+capability that, on anything older, degrades to exactly the guarantee this format already makes for
 JavaScript being off: the controls go inert, the default (unfiltered) view still renders complete.
 Native `<fieldset>`/radio semantics mean the filter's own keyboard reachability needs no extra work
 — Tab and Arrow keys already reach every option.
@@ -434,7 +434,7 @@ Native `<fieldset>`/radio semantics mean the filter's own keyboard reachability 
 **The table is filtered too, on purpose.** `RegionTable`'s rows carry the SAME `data-group` the
 map's points do, and the SAME CSS rule reaches both. This is not a second, weaker guarantee than
 "the table always renders complete" — with the default "All regions" radio checked, every row IS
-present, exactly as this genre has always required. A reader who narrows the filter gets the SAME
+present, exactly as this format has always required. A reader who narrows the filter gets the SAME
 narrower reading on both channels, never a map that says one thing and a table that still says
 another — "Two channels, not one" applied to filtering as much as to hover.
 
@@ -450,17 +450,17 @@ future reader should meet a decision with its cost attached rather than a page t
 other way:
 
 > **A map beat may, when the story needs it, offer bounded pan-and-zoom.** This collides directly
-> with this genre's own baked-plate approach, which is what makes the shipped HTML self-contained and
+> with this format's own baked-plate approach, which is what makes the shipped HTML self-contained and
 > free of any external request. Two ways to reconcile them were on the table:
 >
 > - reach for LIVE map tiles once a reader zooms past the baked plate's own resolution — rejected: it
 >   breaks self-containment (a request to a tile server at read time) and would ship a MapTiler key
 >   inside the delivered file, a real credential leak this project's own local-first, self-contained
 >   design exists to avoid;
-> - **a bounded pan-and-zoom over the SAME generously-baked plate this genre already ships, capped at
+> - **a bounded pan-and-zoom over the SAME generously-baked plate this format already ships, capped at
 >   a fixed multiplier a reader cannot exceed.**
 >
-> **This genre takes the second — the honest answer, and the only one that keeps the file
+> **This format takes the second — the honest answer, and the only one that keeps the file
 > self-contained.** … `.map-web-page:has(#mw-zoom-toggle:checked)` … grows `.mw-zoomable` to a FIXED
 > `ZOOM_SCALE` (`1.4`) — a reader cannot zoom further than that one step, so the plate never degrades
 > into unreadable blur.
@@ -481,7 +481,7 @@ also, in the owner's own words, an out-of-map button that should not exist (B6.1
 
 Two layers in one file (`assets/live-map.mjs`):
 
-1. `#mw-fallback` — the SSR'd beat exactly as this genre rendered it before: the baked plate as a
+1. `#mw-fallback` — the SSR'd beat exactly as this format rendered it before: the baked plate as a
    `data:` URI, the circles, the legend. Complete, script-free, request-free.
 2. `#mw-map` — an empty box filled with a live MapLibre map and swapped in **only** on
    `map.on("load")`. A style failure, a tile failure, a rotated key, no network or no JavaScript
@@ -492,7 +492,7 @@ SIBLING of both, never a child of either. Its first draft lived inside the fallb
 fallback took every label and every Tab stop with it — a total loss of keyboard reach on the exact
 path the ruling was meant to improve, visible only by looking at the live page.
 
-**The genre's stated rule survives verbatim, read against the fallback**: the unzoomed state is not a
+**The format's stated rule survives verbatim, read against the fallback**: the unzoomed state is not a
 preview of the real view — it IS the full claim.
 
 **What the live map fixes by construction rather than by tuning.** The hit area is the RENDERED
@@ -643,7 +643,7 @@ code** — clicking every chip in a real browser at 1600 × 900:
   B6.18b's furniture half, and it is deliberately NOT fixed here. Hiding it with one more CSS rule
   would make the page consistent and the editorial problem invisible; the honest answer is that a
   filter must not offer an option that excludes the subject, which is a decision about the beat, not
-  about this genre's code.
+  about this format's code.
 - **The accessible region table is unverified live.** The CSS rule that narrows it exists and is the
   same shape as the others, but this seed ships `regionTable: false`, so no table renders and the
   measurement above counted zero rows in every state. A beat that turns the table on should be
@@ -660,7 +660,7 @@ code** — clicking every chip in a real browser at 1600 × 900:
   beside the beat: *"MapTiler restyles, so a re-bake months later is a different picture under the
   same marks."* A live map has no frozen ground. A published article's map can change appearance
   years after publication with nobody touching the file, and the same beat's static and video
-  genres — which keep their plate — will drift away from their own web sibling. This is not
+  formats — which keep their plate — will drift away from their own web sibling. This is not
   recoverable by engineering. It is a property of the ruling.
 - **Reader IP addresses reach MapTiler on every article view**, and a newsroom CMS with a strict
   `Content-Security-Policy` may refuse `api.maptiler.com` outright. That newsroom sees the fallback.
@@ -697,8 +697,8 @@ complete fallback layer; **with only `MAPTILER_KEY` set it throws**, naming both
 Falling silently back to the placeholder there would ship a dead map to someone who believes they
 configured one, which is why the third state is loud rather than lenient.
 
-**The guard's three holes, closed 2026-08-10.** `AUDIT-W5-W6-map.md` §5.2 wrote a real key into
-three tracked files and watched the guard pass on all three: a tracked `.html` over 8 MB (skipped by
+**The guard's three holes, closed 2026-08-10.** A regression exercise wrote a real key into three
+tracked files and watched the guard pass on all three: a tracked `.html` over 8 MB (skipped by
 size), a tracked file named `.png` (skipped by extension), and **a key other than the one in
 `.env`** — which is precisely the key clause 4 says will be delivered. The scan is now chunked over
 BYTES with no size ceiling and no extension list, it looks for the delivery key by name as well, and
@@ -728,12 +728,12 @@ to earn a zoom control and concluded that this seed had not — `zoomable` staye
 `render-web.mjs` had a `SEED.zoomable` key. Ruling R1 removed the question: *a web map you cannot
 move through is a picture*, so every map × web beat is live and every one gets MapTiler's own
 control. There is no `zoomable` prop, no `mw-zoom-toggle`, and no out-of-map "Zoom in (2.2×,
-bounded)" button anywhere in this genre — B6.14b asked for that button's removal by name, and
+bounded)" button anywhere in this format — B6.14b asked for that button's removal by name, and
 `test/render-web.test.ts` pins its absence rather than its default.
 
 **What IS per beat is `SEED.live`.** Set it `false` for a beat that must stay request-free — an
 offline archive, a CMS whose Content-Security-Policy refuses `api.maptiler.com` — and the page ships
-as the fallback layer alone, exactly as this genre worked before the ruling.
+as the fallback layer alone, exactly as this format worked before the ruling.
 
 **And what is per beat, and derived rather than picked, is HOW FAR IN.** `leash()` bounds the reader
 at the zoom where the study set stops filling the frame, which is right for someone looking at the
@@ -789,7 +789,7 @@ the model predicts **202.5°**; letterboxed to the 1080×1080 stage its geograph
 captures committed and looked at. It bites only above 202.5° of longitude at that frame, so no beat
 in this tree except the four planet ones is affected at any export size.
 
-**What that leaves for THIS genre, and it is not free.** On the web there is no export size: the
+**What that leaves for THIS format, and it is not free.** On the web there is no export size: the
 container is whatever a CMS gives, so the letterbox has to be applied at runtime — `#mw-map` capped
 to `min(containerWidth × 360 / lonSpan, containerHeight)` for a world-extent beat, with the freed
 height going to the beat's own furniture rather than to the canvas. That is a change to the live
@@ -797,7 +797,7 @@ layer's box, in this skill, and it has NOT been made: the code that would carry 
 work by another chantier as this is written, and a doctrine file asserting a layout the components do
 not have is the exact failure this project has already been burnt by. So: **the decision is taken and
 recorded, the derivation is implemented and guarded in `map-beat/assets/geo.ts`
-(`maxStageHeightPx` / `stageBoxFor` / `assertStageServesGeography`), and the web genre's own
+(`maxStageHeightPx` / `stageBoxFor` / `assertStageServesGeography`), and the web format's own
 application of it is open.**
 
 **And one rule per mark type that only shows up at the bottom end.** A `radius: "ground"` layer — a
@@ -821,7 +821,7 @@ in the layer shares one radius. `groundRadiusExpression` therefore refuses a flo
 The title, the source, the legend caption, the legend's own reference marks and their labels, the
 subject's own note, and the caveat are all drawn unconditionally, exactly once, regardless of hover,
 focus, filter or zoom state — none of it is assembled or revealed by `interaction.mjs`, and none of
-it is hidden by any `:has()` rule this genre writes. The interaction layer's only job is the
+it is hidden by any `:has()` rule this format writes. The interaction layer's only job is the
 PER-POINT exact figure the legend's own reference sizes can only approximate; the filter's only job
 is narrowing which points are shown, never revealing new furniture; the zoom's only job is
 letting a reader look closer at a claim already fully stated at the unzoomed size. Nothing a reader
@@ -830,7 +830,7 @@ needs to receive the beat's own argument lives only behind any of the three.
 ## Verification
 
 The gotcha this skill's own `SKILL.md` names applies here in full: a static render can be checked
-with a PNG; the thing unique to THIS genre — does the beat genuinely fill its container at every
+with a PNG; the thing unique to THIS format — does the beat genuinely fill its container at every
 width without distorting the plate, does the type stay one size while the geometry scales, does
 hovering point X show point X's own value, does Tab reach every point AND every control (the filter
 radios, MapLibre's own NavigationControl), does the accessible table read correctly and stay in step
@@ -857,7 +857,7 @@ than against the page's own markup; a real click on each filter chip narrows the
 group and **changes the picture** (compared pixel to pixel); the default state shows all thirteen;
 Tab and Arrow reach and operate the chips; and the filter still narrows with **JavaScript disabled**.
 
-**Why it insists on real input.** This genre already shipped a defect of exactly the shape it exists
+**Why it insists on real input.** This format already shipped a defect of exactly the shape it exists
 to catch: an HTML overlay with no `pointer-events: none` swallowed every hover while keyboard focus
 kept working, because `.focus()` does not hit-test. A check written with `dispatchEvent`, `.focus()`
 or a read of `data-detail` PASSES in that broken world. This one was proven to fail in it: four

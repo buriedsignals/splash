@@ -1,7 +1,7 @@
 # Beat — the same 14,057 earthquakes, four maps, four different answers
 
 **Type:** dot density, hex grid, proportional symbol — three map types plus a second reading of the
-hex grid, carried by the scroll vehicle. **Medium/genre:** map / **scrolly**. **Channel:** article
+hex grid, carried by the scroll vehicle. **Medium/format:** map / **scrolly**. **Channel:** article
 web, one self-contained `render/quakes-four-maps.html` (1,651 KB: the plate, the marks and
 maplibre-gl all inlined), **four steps**, ONE camera reused by every step — **live MapTiler tiles**
 since 2026-08-10, with the baked plate kept underneath as the fallback.
@@ -52,7 +52,7 @@ vehicle is for.
   rather than the basemap; `geometry.json`'s `frameCorners` and `worldWidthPx` are what the live
   camera is derived from (see "The live basemap", below).
 - `geo-hex.ts`: this beat's own physical copy of `proof/mapgen-hexgrid-web/geo-hex.ts`, md5
-  `dec30d19e135e46d1356cd269097dc09`, byte-identical. The hex math does not change between genres.
+  `dec30d19e135e46d1356cd269097dc09`, byte-identical. The hex math does not change between formats.
   Everything NEW is in `quake-encodings.ts`.
 - **118 of the 14,175 catalogued events fall poleward of the frame** (64°S–80°N) and are not drawn.
   The credit line says so, and the figures are derived from `frameCorners` at render time rather than

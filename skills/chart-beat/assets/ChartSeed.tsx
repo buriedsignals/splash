@@ -99,8 +99,8 @@ export function tokens(typeScale: number) {
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
 /** How many labelled y gridlines a STATIC frame asks for. d3 treats it as a hint and returns the
  *  round values that actually fall inside the fitted range, so the answer is rarely exactly this
- *  number. This is the static genre's own density — conventional, so a reader who scrutinises can
- *  put a number on any point — not the sparse 2-3 tick axis the motion genre asks for
+ *  number. This is the static format's own density — conventional, so a reader who scrutinises can
+ *  put a number on any point — not the sparse 2-3 tick axis the motion format asks for
  *  (`static-discipline.md`, "Axis density"). */
 const Y_TICK_HINT = 5;
 /** How many x ticks the beat asks `tickStep` for. `tickStep(first, last, hint)` answers with the
@@ -162,7 +162,7 @@ export function yTickValues(data: Reading[], hint: number = Y_TICK_HINT): number
  * Smrdel's responsive line does the same thing in the same order — labels "progressively removed at
  * equal intervals" — via Horak et al. §2.4.6.
  *
- * Five stays the static genre's conventional density wherever the frame is read at arm's length
+ * Five stays the static format's conventional density wherever the frame is read at arm's length
  * (`static-discipline.md`, "Axis density"). This is not a global sparsening.
  */
 export function yTickHintFor(size: string): number {
@@ -177,7 +177,7 @@ export function yTickHintFor(size: string): number {
  *
  * This density is what makes a point the beat annotates but does not tick — a peak, a crossing —
  * locatable by eye against a regular grid, even though it is not itself one of the round values
- * (`static-discipline.md`, "Axis density"). It is not shared with the motion genre, which keeps
+ * (`static-discipline.md`, "Axis density"). It is not shared with the motion format, which keeps
  * its own sparse first/middle/last rule on purpose.
  */
 /**

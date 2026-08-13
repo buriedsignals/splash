@@ -2,7 +2,7 @@
  * The video beat of "China emits more CO₂ than the next five biggest emitters combined." —
  * 10 seconds, 30fps, 1080 × 1080.
  *
- * First bar-and-column written in the video genre. The type had a static sibling and a web sibling
+ * First bar-and-column written in the video format. The type had a static sibling and a web sibling
  * in this corpus and no video one, which is the gap this beat closes. Ten columns, one value each,
  * every length measured from a shared zero baseline — so this file's geometry (`columnGeometry`
  * below) is its own shape, not a copy of `LollipopVideo.tsx`'s row-band geometry (rows there,
@@ -12,8 +12,8 @@
  * `FONT_FAMILY`, `measureText`, `wrap` and `en` ARE this story's own copies of the other proof
  * workspaces' functions of the same name — not an import from any of them. The settled rule for a
  * workspace that needs something a skill has is to duplicate it, not reach back across the skill
- * boundary, and these four are specifically the VIDEO genre's browser-Canvas text measurer, not the
- * static genre's resvg one: the two are not interchangeable, so vendoring the wrong one would
+ * boundary, and these four are specifically the VIDEO format's browser-Canvas text measurer, not the
+ * static format's resvg one: the two are not interchangeable, so vendoring the wrong one would
  * mismeasure silently.
  *
  * THE MOTION PROBLEM (from `BRIEF.md`): the finding is not a property of any single column. It is
@@ -50,7 +50,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column. Same
 // 12 CSS px rule, different reading distance; that split is exactly what the table is per-craft for.
@@ -61,7 +61,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size at all is a fact about the type, not about the craft, so
-// there is one copy of it and the video genre reads the same one the static genre does. Named here
+// there is one copy of it and the video format reads the same one the static format does. Named here
 // rather than left implicit: `chart-video` carries no `type-at-size.mjs` of its own, and
 // adding a second copy of a table whose contents are measured aspect ranges would be the drift the
 // carried-table discipline exists to prevent.
@@ -189,7 +189,7 @@ export type Column = {
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy of
- * the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated rather than imported).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;

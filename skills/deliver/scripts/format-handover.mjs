@@ -29,7 +29,7 @@ import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-langua
 
 // `language` is deliberately not in this list: it has its own refusal, in `resolveScaffoldLanguage`,
 // which says where it is recorded and why it is never guessed. One check, in the place that owns it.
-const REQUIRED = ["genre", "placement", "alt", "credit"];
+const REQUIRED = ["format", "placement", "alt", "credit"];
 
 // WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,
 // which is what lets a paragraph this honest exist here at all without opening a free-text field.
@@ -171,7 +171,25 @@ const ROLE_BY_EXTENSION = {
   },
 };
 
+// Some hosted-delivery files share a generic extension with the page itself or with internal
+// receipts, but their newsroom role is specific. Match the canonical basename before falling back
+// to the extension table so HANDOVER.md tells the editor what to paste and what to keep.
+const ROLE_BY_BASENAME = {
+  en: {
+    "EMBED_CODE.html": "the iframe snippet to paste into the CMS",
+    "DEPLOYMENT.json":
+      "the deployment receipt linking the live output to its editable source and exact deployed version",
+  },
+  fr: {
+    "EMBED_CODE.html": "l'extrait iframe à coller dans le CMS",
+    "DEPLOYMENT.json":
+      "le reçu de déploiement qui relie le visuel en ligne à sa source modifiable et à sa version déployée exacte",
+  },
+};
+
 function roleFor(name, written) {
+  const named = ROLE_BY_BASENAME[written][name];
+  if (named) return named;
   const dot = name.lastIndexOf(".");
   const extension = dot === -1 ? "" : name.slice(dot).toLowerCase();
   const roles = ROLE_BY_EXTENSION[written];
@@ -182,17 +200,17 @@ function roleFor(name, written) {
 // their own recorded words is here, and nowhere else — a literal left in the body below is exactly
 // how this document came out half-English the first time.
 //
-// `genreNoun` renders the genre the beat was delivered in as a word rather than as this toolchain's
-// own token. An unknown genre falls back to the token — it is the value that was chosen, and
-// inventing a translation for a genre nobody has heard of would be worse than printing it plainly.
+// `formatNoun` renders the format the beat was delivered in as a word rather than as this toolchain's
+// own token. An unknown format falls back to the token — it is the value that was chosen, and
+// inventing a translation for a format nobody has heard of would be worse than printing it plainly.
 const COPY = {
   en: {
     title: "# What you have, and where it goes",
-    intro: (genre) => [
-      `This is the ${genre} form of this beat, delivered. Everything below is what you recorded during`,
+    intro: (format) => [
+      `This is the ${format} form of this beat, delivered. Everything below is what you recorded during`,
       "the exchange, read back — nothing here is new.",
     ],
-    genreNoun: { static: "still-image", web: "web-page", video: "video", scrolly: "scroll-driven" },
+    formatNoun: { static: "still-image", web: "web-page", video: "video", scrolly: "scroll-driven" },
     files: "## The files",
     placement: "## Where it goes in the article",
     alt: "## The alt text",
@@ -209,11 +227,11 @@ const COPY = {
   },
   fr: {
     title: "# Ce que vous avez, et où cela va",
-    intro: (genre) => [
-      `Voici ce visuel livré sous sa forme ${genre}. Tout ce qui suit est ce que vous avez enregistré`,
+    intro: (format) => [
+      `Voici ce visuel livré sous sa forme ${format}. Tout ce qui suit est ce que vous avez enregistré`,
       "pendant l'échange, relu — rien ici n'est nouveau.",
     ],
-    genreNoun: { static: "image fixe", web: "page web", video: "vidéo", scrolly: "au fil du défilement" },
+    formatNoun: { static: "image fixe", web: "page web", video: "vidéo", scrolly: "au fil du défilement" },
     files: "## Les fichiers",
     placement: "## Où cela va dans l'article",
     alt: "## Le texte alternatif",
@@ -243,7 +261,10 @@ function baseName(path) {
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it
  * looks complete.
  */
-export function formatHandover({ files, placement, alt, credit, caveat, genre, language, liveTiles = "none" }) {
+export function formatHandover({ files, placement, alt, credit, caveat, format, language, liveTiles = "none" }) {
+  if (Object.prototype.hasOwnProperty.call(arguments[0], "genre")) {
+    throw new Error("formatHandover does not accept genre; use the canonical format field");
+  }
   // A CLOSED vocabulary, checked rather than defaulted: an unrecognised state would silently drop
   // the paragraph that says a development key is shipping, which is the one thing here nobody may
   // fail to be told.
@@ -261,7 +282,7 @@ export function formatHandover({ files, placement, alt, credit, caveat, genre, l
       `this hand-over is written in ${scaffold.written} and has no paragraph for the ${JSON.stringify(liveTiles)} live-tile state — a state that exists in one language and not another would drop the paragraph rather than say it`,
     );
   }
-  const given = { genre, placement, alt, credit };
+  const given = { format, placement, alt, credit };
   const missing = REQUIRED.filter((field) => !given[field] || !String(given[field]).trim());
   if (missing.length > 0) {
     throw new Error(
@@ -286,7 +307,7 @@ export function formatHandover({ files, placement, alt, credit, caveat, genre, l
     // The notice comes FIRST, before a word of the document it is about: a journalist who recorded
     // `de` should read why this page is in English before reading the English.
     ...untranslatedNotice(scaffold),
-    ...copy.intro(copy.genreNoun[genre] ?? genre),
+    ...copy.intro(copy.formatNoun[format] ?? format),
     "",
     copy.files,
     "",

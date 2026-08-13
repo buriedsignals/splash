@@ -9,12 +9,12 @@ type: diverging-bar
 1990 — Croatia, by 0.03 tonnes (4.73 → 4.76). The other 26 all emit less: by 4.93 tonnes per person
 on average, and Luxembourg by 20.48, the largest fall in the union.
 
-**Medium / genre:** chart / **static**. **Type:** diverging bar — one row per country, signed values
+**Medium / format:** chart / **static**. **Type:** diverging bar — one row per country, signed values
 growing left and right out of a zero line, rows sorted from the largest rise to the largest fall.
 
 **Its siblings.** `vidz-diverging-bar-eu-per-capita` is the VIDEO of this same claim and was built
 first; `webz-diverging-bar-eu-per-capita` is the WEB one. The three together are the first complete
-type × genre row for the deviation family, which no genre in this corpus carried at all before the
+type × format row for the deviation family, which no format in this corpus carried at all before the
 video landed. Each is written fresh — no file here is imported from either sibling, and the frozen
 `data.csv` is a copy, so this beat can be rendered and audited on its own.
 
@@ -54,7 +54,7 @@ rendered output is typed.
 A headline that says "the only country" about a change that small owes the reader its size, so the
 subtitle gives both readings and calls the rise small.
 
-## What the STATIC genre owes here that the video did not
+## What the STATIC format owes here that the video did not
 
 This is not the video with the timing removed. A video can spend ten seconds introducing the zero
 line, growing each bar out of it and only then descending the average rule — at no single instant

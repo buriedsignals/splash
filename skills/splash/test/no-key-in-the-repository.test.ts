@@ -4,7 +4,7 @@
  * R1 put a live MapTiler key in the delivered HTML, knowingly: a web map you cannot move through is
  * a picture, and MapTiler's own documentation calls an API key *"a simple and easy-to-use
  * authentication for client-side use"*. It did NOT cover a second place the key would land. Every
- * map × web beat COMMITS its rendered HTML (`beat-genre-produces-artifact.test.ts` requires the
+ * map × web beat COMMITS its rendered HTML (`beat-format-produces-artifact.test.ts` requires the
  * artifact to exist on disk), so a naive implementation writes a live key into a dozen tracked
  * files — and the FJM deliverable is an MIT open-source release. A key pushed to a public
  * repository is found by scanners within minutes and stays in the history after any later removal.
@@ -105,7 +105,8 @@ function trackedFiles(): string[] {
     encoding: "utf8",
   })
     .split("\0")
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((rel) => existsSync(join(TWIN, rel)));
 }
 
 /**

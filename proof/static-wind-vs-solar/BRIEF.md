@@ -5,7 +5,7 @@ type: grouped-bar
 
 # Beat — Switzerland is the outlier: solar beats wind
 
-**Type:** grouped bar. **Medium/genre:** chart / static. **Channel:** article web —
+**Type:** grouped bar. **Medium/format:** chart / static. **Channel:** article web —
 **size: landscape (1920 x 1080)**.
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one

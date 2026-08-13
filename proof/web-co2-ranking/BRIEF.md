@@ -4,7 +4,7 @@
 European economies — essentially level with Sweden, and little more than half of Poland's, the
 highest of the group.
 
-**Medium / genre:** chart / web. **Type:** bar-and-column (ranking, vertical or horizontal columns,
+**Medium / format:** chart / web. **Type:** bar-and-column (ranking, vertical or horizontal columns,
 zero baseline, one bar per country, sorted descending by value).
 
 ## Data

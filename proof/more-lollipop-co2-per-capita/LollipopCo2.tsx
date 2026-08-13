@@ -106,7 +106,7 @@ function tokens(typeScale: number) {
   };
 }
 
-/** How many labelled gridlines the value axis asks for — the static genre's conventional density
+/** How many labelled gridlines the value axis asks for — the static format's conventional density
  *  in an article column (`static-discipline.md`, "Axis density"); three where the frame is read on
  *  a phone, which is removal-ladder rung R2, the only rung that gives budget back without removing
  *  anything vertical. */

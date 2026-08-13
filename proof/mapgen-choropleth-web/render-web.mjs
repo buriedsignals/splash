@@ -1,7 +1,7 @@
 // twin/proof/mapgen-choropleth-web/render-web.mjs
 //
 // This beat's own third rung — the same role `map-web/scripts/render-web.mjs` plays for the
-// symbol-map genre: bakes/loads the plate, joins the frozen csv to the shapes, checks the claim
+// symbol-map format: bakes/loads the plate, joins the frozen csv to the shapes, checks the claim
 // against the ACTUAL joined values (not just asserting the title is true), and turns the result
 // into ONE self-contained HTML file — one fluid SVG (geometry only) plus its HTML overlay and HTML
 // furniture, the always-rendered accessible table, one inlined interaction script, and — since
@@ -9,7 +9,7 @@
 // instead of a picture.
 //
 // WHAT CHANGED ON 2026-08-10, and both halves are one change:
-//   - R1: the page ships `live-map.mjs` (a byte-identical copy of the genre's own boot script, in
+//   - R1: the page ships `live-map.mjs` (a byte-identical copy of the format's own boot script, in
 //     this folder), maplibre-gl inlined, and a PLAN describing this beat's own layers. The baked
 //     plate is still shipped, as the fallback layer. `KEY_PLACEHOLDER` below is R1b: the key never
 //     enters the repository.
@@ -17,7 +17,7 @@
 //     media-query swap between two SSR'd frames — one fluid render, and `buildCss` gives the map
 //     whatever height the window has left. Measured before: 1705px of page in a 900px window.
 //
-// `renderMapWeb` below is this beat's own copy of the genre's generic machinery (nothing here
+// `renderMapWeb` below is this beat's own copy of the format's generic machinery (nothing here
 // imports across proof/ beats or out of a skill); everything under the CONFIG block is this SEED
 // beat's own words, data paths and claim.
 //
@@ -490,7 +490,7 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
  * file and writes it to disk.
  */
 /** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
- *  genre's — `discloseTable` refuses to invent one. */
+ *  format's — `discloseTable` refuses to invent one. */
 const TABLE_ROW_NOUN = "countries";
 
 /**
@@ -498,11 +498,11 @@ const TABLE_ROW_NOUN = "countries";
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -633,7 +633,7 @@ body {
    browser without 'svh', and errs one toolbar too tall rather than clipping.
    The accessible table below is the ONE thing deliberately outside this column: 41 rows do not fit
    in a window beside a map, and the two ways to force them in — shrink the map to a stamp, or put
-   the table behind a disclosure widget this genre forbids — are both worse than letting the linear
+   the table behind a disclosure widget this format forbids — are both worse than letting the linear
    reading follow the claim. See RegionTable's own doc-comment. */
 .map-web {
   width: 100%;
@@ -897,7 +897,7 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
   };
   // ONE anchor per region, computed here and read by both halves: the component turns it into a
   // percentage of the frame for the fallback, and `livePlan` unprojects it into lon/lat for the
-  // live camera. Two centroids computed in two spaces is exactly the class of defect this genre
+  // live camera. Two centroids computed in two spaces is exactly the class of defect this format
   // has already paid for once in radius and once in colour.
   const named = shapes.map((shape) => ({
     key: shape.key,

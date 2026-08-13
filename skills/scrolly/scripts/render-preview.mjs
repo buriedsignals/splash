@@ -4,7 +4,7 @@
 // Unlike `render-scrolly.mjs`'s own full page (which needs the seed's photograph embedded as a
 // data URI to stay self-contained), this preview renders STEPS_META's LAST entry — this seed's own
 // `DrawnGraphicFrame`, the "minimal graphic" that needs nothing else on disk — the same "one
-// informative still" convention every other genre's own preview keeps. This is also the render
+// informative still" convention every other format's own preview keeps. This is also the render
 // `test/canon.test.ts` runs with `--check` to prove the skill still renders standalone with nothing
 // else on disk: it reads only `assets/ScrollySeed.tsx` and this script, nothing outside this skill.
 //

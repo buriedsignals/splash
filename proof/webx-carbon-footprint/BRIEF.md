@@ -1,9 +1,9 @@
 # Beat — six in ten countries emit under 4 tonnes of CO2 per person
 
-**Type:** histogram. **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** histogram. **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/static-carbon-footprint-spread` — same claim, same frozen data, a fresh
-component written for this genre's two-layout / baked-in-interaction shape, with its own bin-hit
+component written for this format's two-layout / baked-in-interaction shape, with its own bin-hit
 interaction script and a widened, scrollable tooltip (see below).
 
 ## Claim
@@ -38,11 +38,11 @@ tooltip at 220px with `overflow-y: auto`; driven in Chrome at 1440×900 over the
 measured `clientHeight` 218 against `scrollHeight` 502 and `scrollTop` stayed 0 after a 200px
 wheel — **56.6% of the 127 names were unreachable**, hidden behind the very sentence that promised
 they were not. The scroll was dropped rather than repaired, because none of the three inputs this
-beat's alt text names could ever have driven it: the tooltip is `pointer-events: none` (the genre's
+beat's alt text names could ever have driven it: the tooltip is `pointer-events: none` (the format's
 stylesheet — it follows the pointer, so it must not swallow its own trigger's events), which sends
 the wheel to the bin underneath; a keyboard reader's focus stays on the bin, never on the tooltip;
 and a finger dragging inside a fixed overlay fights the page scroll. The tallest list renders 502px
-tall, which sits inside the window at every viewport this genre targets, and
+tall, which sits inside the window at every viewport this format targets, and
 `skills/splash/test/interaction-promises-are-kept.test.ts` turns red if any delivered tooltip
 hides content again — by scrolling or by running off the window.
 

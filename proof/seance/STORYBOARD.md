@@ -12,7 +12,7 @@ slots:
   - id: 1
     proves: "que les deux mouvements sont vrais en même temps : les émissions reculent en Afrique et en Asie pendant qu'elles avancent en Europe et aux États-Unis"
     medium: "chart"
-    genre: "static"
+    format: "static"
     candidates: ["deux courbes dans le temps", "petits multiples par région", "slope 2000 vers 2026"]
     chosen: "deux courbes dans le temps"
 ---

@@ -1,6 +1,6 @@
 # Beat — eleven international organisations in and around Geneva (web)
 
-**Type:** locator. **Medium/genre:** map / web. **Channel:** article web, one self-contained
+**Type:** locator. **Medium/format:** map / web. **Channel:** article web, one self-contained
 `locator.html`: a LIVE MapTiler map (ruling R1) over one 420 px baked plate
 (`bake-plate.mjs --size 420`) kept as the script-free fallback layer, one HTML overlay of names and
 hit targets, and an always-rendered table of all eleven organisations. One render, no second layout
@@ -52,7 +52,7 @@ are drawn unconditionally, so the claim survives with JavaScript off, offline, a
 key is rotated — that state is the baked plate, complete, with the table under it.
 
 **The map is live, and for this beat that is the point rather than a feature** (ruling R1,
-2026-08-10). `AUDIT-W5-W6-map.md` §4.2 measured the delivered page drawing **3 labels for 11
+2026-08-10). A regression measurement found the delivered page drawing **3 labels for 11
 organisations** while the family's video title says "All 11". The cause is not the label rule: the
 closest pair — the ILO and the International Social Security Association — is **13.3 m apart, which
 is 0.53 px** on this beat's own plate. No declutter separates two names that share a pixel; only a

@@ -6,7 +6,7 @@
 // copy of its own machinery — see `chart-beat/SKILL.md`, Architecture, "A beat does not
 // import this file from here" — so this file exists a third time rather than once, shared.
 //
-// The genre-specific addition below `renderStill` is what a photograph needs that a drawn chart
+// The format-specific addition below `renderStill` is what a photograph needs that a drawn chart
 // never does: reading a raster file's own intrinsic size and (for a JPEG) its EXIF orientation,
 // fitting it into a fixed box without cropping or stretching, encoding it as a `data:` URI so the
 // SVG this skill emits never references an external file, and refusing to render — loudly — past
@@ -389,7 +389,7 @@ export function measureText(text, options) {
 }
 
 /** Render one React element to an SVG on disk and a PNG beside it. Identical contract to the
- *  chart genre's own `renderStill` — see that file for why rasterising at a size the element was
+ *  chart format's own `renderStill` — see that file for why rasterising at a size the element was
  *  not drawn at is refused rather than silently scaled. */
 export async function renderStill({
   element,
@@ -437,7 +437,7 @@ function rasterise(svg, width, scale = 2) {
   return image.asPng();
 }
 
-// ===================== image-genre additions =====================
+// ===================== image-format additions =====================
 // Nothing below this line has a sibling in `chart-beat`. A photograph is a raster file this
 // skill did not draw, which is what all four of these exist to handle: reading its real size,
 // refusing one an image viewer would silently rotate, fitting it into a shared box without lying

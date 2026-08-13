@@ -10,7 +10,7 @@
 // having been quietly deleted.
 //
 // The straightforward reading of the ruling — delete the plate, ship a live map — throws away four
-// things this genre already proved, all measurable: a complete no-JS render, a page that works
+// things this format already proved, all measurable: a complete no-JS render, a page that works
 // offline, a page that works when the key lapses, and a guard suite that does not need the network.
 // None of that is required by the ruling and all of it is cheap to keep, so the page ships in two
 // layers:
@@ -83,7 +83,7 @@ export function planIsUnkeyed(plan) {
  * so it fits by its tighter axis.
  *
  * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
- * this genre's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
+ * this format's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
  * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
  * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
  * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
@@ -218,7 +218,7 @@ export function initLiveMap(win) {
   win.__mwMap = map;
 
   // B5.3, and the owner's instruction by name: MapTiler's OWN zoom and pan controls, not a button
-  // beside the map. The compass is off because no beat in this genre rotates.
+  // beside the map. The compass is off because no beat in this format rotates.
   map.addControl(new win.maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   map.on("style.load", function () {
@@ -294,7 +294,7 @@ export function initLiveMap(win) {
   return map;
 }
 
-/** The most room this genre ever leaves around the study set, in CSS pixels. A ceiling, not the
+/** The most room this format ever leaves around the study set, in CSS pixels. A ceiling, not the
  *  value — `fitPadding` below is what a fit actually uses. */
 export const MAX_FIT_PADDING_PX = 48;
 
@@ -309,7 +309,7 @@ export const MAX_FIT_PADDING_PX = 48;
  * Europe as a blob and five labels stacked on each other. The same camera at 375x812 is fine, so it
  * only appears on a short viewport, which is why nothing caught it.
  *
- * 9% of the shorter side keeps every container this genre has been driven at 1600 down to 768 at the
+ * 9% of the shorter side keeps every container this format has been driven at 1600 down to 768 at the
  * old 48 exactly, and hands a phone a padding proportional to what it has.
  */
 export function fitPadding(map) {
@@ -486,7 +486,7 @@ export function applyMarkScale(map, doc, plan) {
  * at two pixels still has a focus indicator a keyboard reader can see.
  *
  * There is deliberately no third number here. A halo derived from anything other than the mark's
- * own drawn radius is the "two numbers describing one circle" defect this genre has now paid for
+ * own drawn radius is the "two numbers describing one circle" defect this format has now paid for
  * twice — see `references/map-web-discipline.md`, "The class: one mark, two halves, two mechanisms".
  */
 const HALO_PAD_PX = 10;

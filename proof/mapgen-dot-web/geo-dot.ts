@@ -1,12 +1,12 @@
 /**
  * The pure half of the dot-density WEB beat: population csv parsing, the loud join, the dot-value
- * derivation, the seeded deterministic scatter, and — new in this genre — the per-country anchor a
+ * derivation, the seeded deterministic scatter, and — new in this format — the per-country anchor a
  * hit target sits on and the frame test that keeps every drawn dot inside the picture. No browser,
  * no rasteriser, no DOM.
  *
  * This is this beat's OWN copy; `proof/mapmore-dot-population` (the static sibling on the same data)
  * carries its own, and a beat never reaches into a sibling beat at runtime. What is added here, and
- * exists nowhere else, is `partsInFrame`, `cloudAnchor` and `en` — the web genre needs a place to
+ * exists nowhere else, is `partsInFrame`, `cloudAnchor` and `en` — the web format needs a place to
  * put a pointer target and an honest guarantee that no dot is scattered where the clip will eat it.
  */
 
@@ -230,7 +230,7 @@ export function scatterInParts(
   );
 }
 
-// ── The web genre's own additions ───────────────────────────────────────────────────────────────
+// ── The web format's own additions ───────────────────────────────────────────────────────────────
 
 /**
  * Drop the parts of a shape that lie entirely outside the frame, BEFORE the scatter allocates dots
@@ -280,7 +280,7 @@ export function partsInFrame(
  * Longitude is linear in pixel-x under Web Mercator; latitude needs the inverse Mercator formula,
  * because pixel-y is linear in Mercator-y and not in latitude itself.
  *
- * THE WEB GENRE NEEDS THIS AND THE OTHER TWO GENRES DO NOT. This beat's dots are rejection-sampled
+ * THE WEB FORMAT NEEDS THIS AND THE OTHER TWO FORMATS DO NOT. This beat's dots are rejection-sampled
  * in the plate's own PIXEL space (`scatterInParts`), which is the only space the country outlines
  * exist in after the bake; a live MapTiler map wants them in lon/lat. Nothing is re-scattered here —
  * the dots are the same dots, read back through the same projection that made them, so the live
@@ -374,7 +374,7 @@ export function cloudAnchor(points: Pt[], parts: Ring[][]): Pt {
  * This case is not a corner: with one dot standing for ~199,000 people, every country smaller than
  * that draws nothing at all. Liechtenstein, the Faroe Islands and Andorra are each under 100,000 and
  * get zero dots on this map — the still sibling ships the same silence. A dot map cannot show them,
- * but the web genre can still answer for them: they keep a hit target, an `aria-label`, a table row,
+ * but the web format can still answer for them: they keep a hit target, an `aria-label`, a table row,
  * and a sentence in the caveat saying they draw nothing, because on a map an absence reads as a zero.
  */
 export function shapeAnchor(parts: Ring[][]): Pt {

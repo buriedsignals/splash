@@ -122,7 +122,8 @@ function trackedWebPages(): string[] {
     out
       .split("\n")
       .filter(Boolean)
-      // A scrolly is a different genre with a different contract (`map-web-discipline.md`: a map on a
+      .filter((p) => existsSync(join(TWIN, p)))
+      // A scrolly is a different format with a different contract (`map-web-discipline.md`: a map on a
       // scrolly has no controls at all) and is out of this chantier's scope by instruction.
       .filter((p) => !p.includes("scrolly") && !p.includes("/drive/"))
   );
@@ -131,7 +132,7 @@ function trackedWebPages(): string[] {
 type Page = {
   path: string;
   html: string;
-  /** The control's own markup: a fieldset carrying this genre's filter class. */
+  /** The control's own markup: a fieldset carrying this format's filter class. */
   hasControl: boolean;
   /** The vocabulary on the drawn elements. */
   hasAttrs: boolean;
@@ -272,7 +273,7 @@ async function readVocabulary(
         // A radio with no `value` attribute reports `"on"`, which is the browser's default and not
         // a slug at all — the legacy map control has no `value`, so every option read as `"on"` and
         // a whole driven run was meaningless while looking busy. The id is the reliable source: the
-        // slug is what follows this genre's own filter prefix.
+        // slug is what follows this format's own filter prefix.
         .map((r) => ({
           id: r.id,
           slug:
@@ -413,7 +414,7 @@ describe("driven: a filtered value disappears whole", () => {
           // clicking the visually-hidden `<input>` directly would pass in a world where the pill is
           // covered by something and no reader could ever select it. `page.mouse.click` at the
           // label's own centre is what a pointer does; falling back to the input's own `.click()`
-          // only when the label has no box at all (a genre that draws the radio bare).
+          // only when the label has no box at all (a format that draws the radio bare).
           const box = await page.evaluate((id) => {
             const input = document.getElementById(id) as HTMLInputElement;
             const chip = (input.closest("label") ?? input) as HTMLElement;

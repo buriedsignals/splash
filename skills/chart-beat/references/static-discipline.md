@@ -77,7 +77,7 @@ chart library, which hands over a chart type with props, would cost everything i
 This rule was written the wrong way round in an earlier draft of this file: "ask for three y
 ticks, three x ticks — first, middle, last — because nobody reads the values between them off the
 axis, that's what the direct label is for." A render is what exposed why that is wrong for THIS
-genre. Two independent judges, shown a static chart beat next to an established engine's version
+format. Two independent judges, shown a static chart beat next to an established engine's version
 of the same data, picked this twin's render in every case on the strength of its comparison
 geometry — and named the same weakness against it every time: a three-tick x-axis whose middle
 tick is the series' array midpoint, an arbitrary year the story never mentions, so that apart from
@@ -89,10 +89,10 @@ at all. One judge could not locate 1997 or 1998 on a chart about them; another c
 any point the chart itself annotates or names.** A midpoint tick chosen by array index — `years[Math.floor(years.length / 2)]` — is worse than no midpoint tick at all, because it looks like a
 deliberate landmark and is actually an accident of how many rows the dataset happens to have.
 
-**This split is genre-scoped, not a correction that reaches every render this twin produces.**
+**This split is format-scoped, not a correction that reaches every render this twin produces.**
 Sparse ticks are still the right call for a chart that MOVES: `chart-video` follows a line as
 it draws, and a viewer watching motion reads position and change, not a printed axis — a dense
-grid competing with the reveal is noise, and that genre keeps its own three-tick rule
+grid competing with the reveal is noise, and that format keeps its own three-tick rule
 unchanged (`motion-grammar.md`). A static frame is the opposite case: it is the only rung of the
 render ladder a reader gets to scrutinise at their own pace, stationary, for as long as they like
 — exactly the reader `information-architecture.md`'s "one graphic, one idea, one density" is
@@ -201,7 +201,7 @@ every gutter in the chart is measured against a font nobody is looking at.
 Ruling R2: a static ships at **landscape 1920×1080** (YouTube, article web), **square 1080×1080**
 (social posts) or **portrait 1080×1920** (stories). One per beat, pinned at gate 2c and recorded on
 the slot. Web is not a fourth size — it fills whatever container the CMS gives it, which is the
-`chart-web` genre's whole subject and not this one's. The table is `scripts/sizes.mjs`.
+`chart-web` format's whole subject and not this one's. The table is `scripts/sizes.mjs`.
 
 **The rasteriser is to draw 1:1, and that is a decision with a loser — and it HAS NOT HAPPENED
 YET.** Measured 2026-08-11: `rasterise` still renders at `fitTo: { mode: "width", value: width * 2 }`

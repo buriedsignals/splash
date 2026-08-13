@@ -20,8 +20,8 @@ colour.
 publishes in; the journalist decides whether the graphic uses it. That decision is what `origin`
 records: `newsroom` or `journalist` means somebody chose, `default` means nobody did.
 
-**A face that cannot be resolved is REFUSED, never substituted.** Measured
-(`survey/typeface-feasibility.md` §1): resvg never errors on a family it cannot find — it renders
+**A face that cannot be resolved is REFUSED, never substituted.** Resvg never errors on a family
+it cannot find — it renders
 the fallback and reports nothing, as do Chrome and Canvas `measureText`. So `useTypeface` lays a
 probe string out in the recorded family and in a family that exists nowhere, and refuses when the
 two produce identical ink, naming the family and this file. A journalist told "this machine does

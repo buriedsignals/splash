@@ -369,7 +369,7 @@ export function initLiveQuakeMap(graphic, plan, options) {
     // below. This is a DELIBERATE DIFFERENCE from map × web, where R1 requires the controls — there
     // the reader's own exploration is the point; here the camera belongs to the piece, and a reader
     // who moved it would be looking at a world the marks are no longer registered with. Recorded as
-    // a distinction between the two genres rather than left as an omission.
+    // a distinction between the two formats rather than left as an omission.
     interactive: false,
     attributionControl: false,
     // A cross-fade between zoom levels is MapLibre answering a camera the reader is no longer at.

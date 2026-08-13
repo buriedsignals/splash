@@ -1,7 +1,7 @@
 # The motion grammar
 
 Where `visual-system.md` says what a layer is allowed to look like, this file says what it is
-allowed to **do over time**. It governs the video genre only — a beat whose output is frames, not
+allowed to **do over time**. It governs the video format only — a beat whose output is frames, not
 a single still. Everything in `editorial-standard.md`, `information-architecture.md` and
 `visual-system.md` still applies to every frame; a rule broken at frame 143 is broken.
 
@@ -88,22 +88,22 @@ sentence on screen, long enough to read that sentence.
 The held frame is the one a reader actually reads, the one that gets screenshotted, and the one a
 still export is taken from. A video that ends on its own last transition has no such frame.
 
-## Furniture's density is a genre decision, and this genre asks for less of it
+## Furniture's density is a format decision, and this format asks for less of it
 
 A static frame earns dense, conventional axis ticks precisely because a reader can stop and
 scrutinise it at their own pace — that rule, and the render that forced it, belong to the static
-genre's own discipline file, not this one. A moving frame earns the opposite: a viewer watching a
+format's own discipline file, not this one. A moving frame earns the opposite: a viewer watching a
 line draw reads its position and its change, not a printed axis, and a tick grid dense enough to be
 useful in a still is, in a build, one more layer competing with the reveal for attention it was not
-established to compete for. This genre's own line reveal draws with **no tick axis at all** — the
+established to compete for. This format's own line reveal draws with **no tick axis at all** — the
 sparsest version of the static rule, not a compromise of it.
 
-Carrying the static rule's density into this genre produces a specific, recognisable defect: a grid
+Carrying the static rule's density into this format produces a specific, recognisable defect: a grid
 busy enough to read on its own terms, undermining the very draw it was meant to support. Carrying
-this genre's sparseness the other way — into a static frame — produces the mirror defect: an axis so
+this format's sparseness the other way — into a static frame — produces the mirror defect: an axis so
 sparse a reader cannot locate the year the chart's own argument is about. Neither rule is correct in
-the other's genre; each is correct only in its own, and a beat author who reaches for "the axis rule"
-without first checking which genre they are drafting for is reaching for the wrong half of it.
+the other's format; each is correct only in its own, and a beat author who reaches for "the axis rule"
+without first checking which format they are drafting for is reaching for the wrong half of it.
 
 ## A label's reveal gates on its own mark, never on a master clock
 
@@ -153,7 +153,7 @@ frame. That check is a test, not a review comment.
 ## Anti-patterns of this file
 
 - **Motion added for energy.** Any build whose justification is that the piece "felt static". A
-  chart is allowed to be static; that is a whole genre.
+  chart is allowed to be static; that is a whole format.
 - **Ornament that encodes nothing, moving.** Particles, sweeps, glows, a shimmer travelling along
   the line, a gradient that animates. The parent anti-pattern with a clock attached.
 - **The accent before the thing it accents.** A highlight colour, an annotation, or a callout

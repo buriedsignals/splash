@@ -1,5 +1,5 @@
 /**
- * The static genre of "Geneva's international quarter" — 900 × 560, one frame, no order. A
+ * The static format of "Geneva's international quarter" — 900 × 560, one frame, no order. A
  * LOCATOR beat: position and category only, no magnitude, no rate, no gradient. See
  * `map-beat/references/types/locator.md`.
  */

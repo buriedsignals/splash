@@ -1,8 +1,8 @@
 /**
  * The web beat of "Germany generated 143 fewer terawatt-hours in 2024 than 2015" — the interactive
- * genre.
+ * format.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the format's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -18,7 +18,7 @@
  *
  * What hover/tap/keyboard-focus adds, and what it deliberately does NOT touch: every bar already
  * prints its own signed delta (or, for the two total bars, its own absolute value) directly above
- * itself, unconditionally — `references/types/waterfall.md`'s own rule, and nothing this genre's
+ * itself, unconditionally — `references/types/waterfall.md`'s own rule, and nothing this format's
  * doctrine allows gating behind interaction. What no frame can show without a reader doing
  * arithmetic by eye is the RUNNING LEVEL each delta bar produces — the sheet's own warning is that
  * "the chart implicitly asserts the closing total equals the opening total plus every signed step,"

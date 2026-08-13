@@ -1,6 +1,6 @@
 # Beat — eleven international organisations inside 4.4 km, and a 6 km search finds no more
 
-**Type:** locator. **Medium/genre:** map / **video** — the third genre for this type, beside the
+**Type:** locator. **Medium/format:** map / **video** — the third format for this type, beside the
 static beat (`proof/map-geneva-locator`) and the web one (`proof/mapgen-locator-web`).
 `render/locator.mp4`, 1080 × 1350, 30 fps, **380 frames = 12.67 s**, over a 660 × 660 baked plate
 frozen in `plate/`.
@@ -140,7 +140,7 @@ beside it.
   tick. The gap is on the screen as a gap.
 - **`render/frame-230.png`** — 4.86 km, eleven found: the last one has landed.
 - **`render/frame-265.png`** — 5.86 km, still eleven: the ring has grown most of a kilometre past
-  the last marker and the axis's final stretch carries no tick. This is the frame the static genre
+  the last marker and the axis's final stretch carries no tick. This is the frame the static format
   cannot produce.
 - **`render/frame-379.png`** — the last frame, identical to `render/final-frame.png`.
 

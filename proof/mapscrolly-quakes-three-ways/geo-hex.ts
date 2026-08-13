@@ -5,12 +5,12 @@
  *
  * This is this beat's OWN physical copy of `proof/map-quake-density/geo-hex.ts` — never imported
  * across `proof/` beats. The math is identical because the type's own rules do not change between
- * genres: a hex-grid still bins per point via `pixelToAxial` + cube rounding (every real coordinate
+ * formats: a hex-grid still bins per point via `pixelToAxial` + cube rounding (every real coordinate
  * maps to exactly one hex under axial rounding, so there is no bbox-edge gap for a boundary point to
  * fall into and be silently dropped — `references/types/hex-grid.md`'s "skip that padding and
  * points... land in the gap"), still grows cell size against the ACTUAL binned count rather than a
  * config guess, and still needs class breaks printed as numbers, not left to colour alone. What the
- * WEB genre adds on top of this pure core lives in `HexGridWeb.tsx` and `render-web.mjs`, not here.
+ * WEB format adds on top of this pure core lives in `HexGridWeb.tsx` and `render-web.mjs`, not here.
  */
 
 export type QuakePoint = {

@@ -1,6 +1,6 @@
 ---
 name: chart-beat
-description: Use to produce a chart beat — one visual with one thing to prove — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (pure geometry, furniture derived from the ground, direct annotation, one accent), the static discipline, and the render ladder's first rung. SP1 covers the static genre only.
+description: Use to produce a chart beat — one visual with one thing to prove — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (pure geometry, furniture derived from the ground, direct annotation, one accent), the static discipline, and the render ladder's first rung. SP1 covers the static format only.
 ---
 
 # chart-beat — write the chart, render the still, look at it
@@ -18,12 +18,12 @@ The PNG exists to be looked at. That is the point of the whole skill: the checkl
 Rendering the seed on a light ground and a dark ground is what caught this file's own first
 defect — a gap note that shouted louder than its subject.
 
-**SP1 scope: the static genre only.** Interactive and video chart beats are later sub-projects.
+**SP1 scope: the static format only.** Interactive and video chart beats are later sub-projects.
 `renderStill` is the first rung of the render ladder; the rungs above it do not exist yet.
 
 ## When to use
 
-- When a chosen candidate in a closed `STORYBOARD.md` has medium `chart` and genre `static`, and
+- When a chosen candidate in a closed `STORYBOARD.md` has medium `chart` and format `static`, and
   the beat's `BRIEF.md` has been written. No brief, no code.
 - To write a **new** component for this story. Read the seed to learn the shape, then write the
   beat. Do not import the seed, extend it, or add a prop to it.
@@ -74,8 +74,8 @@ plain `cp -r root-template/` install already carries them (`docs`: `splash/SKILL
 Architecture). A beat component, however deep under `stories/<slug>/beats/<n>-<name>/`, imports the
 installed copy by the root's own `#shared/*` subpath import, never a path into this or any other
 repository — see Quick start below. `splash`'s preflight fails loud, naming the missing file,
-if a root's packages resolve but its vendored `shared/` copy does not exist (the exact gap three
-independent trial agents hit — `TRIAL-THREE-BEATS.md` §4, `PROOF.md` §1). The **seed**
+if a root's packages resolve but its vendored `shared/` copy does not exist (a gap reproduced by
+three independent trial agents). The **seed**
 (`assets/ChartSeed.tsx`) is not part of this vendoring: it stays here, read as documentation, never
 copied into a root and never imported by a beat — see "How it works" step 1 and
 `references/seed-anatomy.md`.

@@ -14,7 +14,7 @@
 // `test/live-map.test.ts` against a keyed copy in a temp directory. §0 below asserts the reading
 // rather than trusting it.
 //
-// WHY REAL INPUT, AND WHY THAT IS THE WHOLE POINT. This genre already shipped one defect of exactly
+// WHY REAL INPUT, AND WHY THAT IS THE WHOLE POINT. This format already shipped one defect of exactly
 // the shape this file exists to catch: an HTML overlay without `pointer-events: none` sat on top of
 // the map and swallowed every hover, while keyboard focus still worked perfectly — because
 // `element.focus()` does not hit-test. A checker written the easy way (`el.dispatchEvent(new
@@ -49,7 +49,7 @@ import puppeteer from "puppeteer";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
 
-/** The four widths this genre's own proof covers, each paired with a plausible window HEIGHT —
+/** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
  *  height attached cannot ask it. */
 const VIEWPORTS = [
@@ -201,7 +201,7 @@ try {
 
   // ── 0. WHICH LAYER AM I MEASURING? ───────────────────────────────────────────────────────────
   // Asked first, and answered out loud, because the honest answer is "the fallback" and for a while
-  // nothing said so. Ruling R1 made this genre a live MapTiler map; the page rendered here carries
+  // nothing said so. Ruling R1 made this format a live MapTiler map; the page rendered here carries
   // the R1b PLACEHOLDER instead of a key, so `planIsUnkeyed` is true, `initLiveMap` returns at once
   // and `html.mw-live` is never set. Every check below therefore describes layer 1 — the baked
   // plate, its SVG circles, its HTML overlay — which is exactly the layer that has to keep working
@@ -209,7 +209,7 @@ try {
   //
   // What it is NOT is a check of the live map. That is `scripts/verify-live-map.mjs`, driven from
   // `test/live-map.test.ts` against a KEYED temp copy. The audit found this file described as the
-  // genre's behaviour check while it silently measured the other layer, so this assertion pins the
+  // format's behaviour check while it silently measured the other layer, so this assertion pins the
   // reading: if a keyed page were ever driven here, the aspect check at §1 would be asserting the
   // plate's shape against a canvas the ruling deliberately lets fill its container, and would fail
   // for the wrong reason.

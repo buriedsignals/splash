@@ -19,10 +19,10 @@
  *      label inside the empty corner of a filled area a collision. Each mark whose box intersects
  *      the label's is asked, at 25 points across the label's own rectangle, whether that point is
  *      inside its PAINTED fill (`isPointInFill`, in the mark's own SVG user space). A label carries
- *      an opaque ground chip in this genre, so a point inside a mark's fill is a hole punched in
+ *      an opaque ground chip in this format, so a point inside a mark's fill is a hole punched in
  *      that mark — the exact defect the pyramid's own build comment describes ("a white hole in the
  *      60-64 men's bar").
- *   2. **It is not printed on another run of type.** Every word this genre draws is collected by the
+ *   2. **It is not printed on another run of type.** Every word this format draws is collected by the
  *      class contract the shared stylesheet and the components agree on, and the annotation's box is
  *      tested against all of them. This is also the corpus's only measurement of label-vs-label
  *      overlap OUTSIDE video — the W3 audit's §4.5 records that the only such guard renders the
@@ -39,7 +39,7 @@
  *
  * WHAT IT DOES NOT COVER, and the two things it FOUND and does not fail.
  *   1. **It FAILS only on `.note.peak-label`.** Today that is `weby-population-pyramid-switzerland`
- *      and the genre's own seed. Every other `.note` in the corpus is measured and REPORTED, because
+ *      and the format's own seed. Every other `.note` in the corpus is measured and REPORTED, because
  *      three of them are already over something and none is this chantier's to change:
  *        - `webx-world-population` — "passed 1 billion in 1805" grazes the `#0B7A75` area's own
  *          edge, **1 of 25 sample points**, at 375, 768 and 1400. A real notch in the line, small.
@@ -167,7 +167,7 @@ const READ_ANNOTATIONS = (floor: number) => `(() => {
     catch (e) { return false; }
   };
   const leader = document.querySelector(".peak-leader-v");
-  // Every word this genre draws, by the class contract the shared stylesheet and every component
+  // Every word this format draws, by the class contract the shared stylesheet and every component
   // agree on. A label overlapping another label is unreadable whichever of the two you meant.
   const WORDS = ".chart-title, .chart-caveat, .chart-source, .chart-legend span, .axis-label," +
     " .note, .end-label, .band-label, .name-label, .crossing-label, .slope-label," +

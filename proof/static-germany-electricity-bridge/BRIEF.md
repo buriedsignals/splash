@@ -5,7 +5,7 @@ type: waterfall
 
 # Beat — Germany generated 143 fewer terawatt-hours in 2024 than 2015
 
-**Type:** waterfall. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
+**Type:** waterfall. **Medium/format:** chart / static. **Channel:** article web, 900 x 560.
 
 ## Claim
 

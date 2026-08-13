@@ -29,7 +29,7 @@
  *
  *   1. The `for (const layout of [desktop, narrow])` loop and both assertions inside it, in the
  *      form they had. There is one frame. A test that renders "the narrow layout" would have to
- *      invent a second frame this genre does not ship, which is contorting an assertion to keep
+ *      invent a second frame this format does not ship, which is contorting an assertion to keep
  *      it rather than replacing it.
  *   2. `should keep both gutters inside the frame` in its literal form (`hit-area` x > 0 and
  *      x + width < frame width). Asserting that TODAY would assert a BUG: the hit area is
@@ -37,18 +37,18 @@
  *      the plot resolves to a reading. The inequality it checked is now inverted by design.
  *   3. `should widen the right gutter to fit a longer end label rather than clip it`. The
  *      dedicated end-label gutter was removed by the redesign — the label now sits IN FRONT OF the
- *      plot as HTML with its own ground chip (`web-discipline.md`, "The one box this genre
+ *      plot as HTML with its own ground chip (`web-discipline.md`, "The one box this format
  *      allows"), so there is no gutter left to widen. The test was also already vacuous: it
  *      rendered a longer label and asserted only that the string was present, never that anything
  *      widened.
  *
  * The subject is still the CO₂ story's real composition rather than the seed. `seed-fluid-frame.
- * test.ts` covers the seed; this file's value is that the genre's contract is proven against a
- * beat somebody actually shipped, and that the web genre carries no second implementation of
+ * test.ts` covers the seed; this file's value is that the format's contract is proven against a
+ * beat somebody actually shipped, and that the web format carries no second implementation of
  * data-to-coordinates. Reaching into `proof/co2-suisse/` from a `test/` directory is the one
  * exemption `splash/test/no-cross-skill-imports.test.ts` grants.
  *
- * None of this is the genre's PROOF. A markup assertion cannot see a clipped label, a dead hover
+ * None of this is the format's PROOF. A markup assertion cannot see a clipped label, a dead hover
  * or a frame taller than the window — `scripts/verify-web.mjs` drives a real browser for that.
  * This file protects the structure so the mechanism cannot be silently deleted.
  */
@@ -158,7 +158,7 @@ function renderBeat(
 }
 
 /** The `<svg class="chart">` element's own markup, sliced out of the surrounding HTML furniture —
- *  the split this genre's whole redesign is built on, so most assertions below need to say which
+ *  the split this format's whole redesign is built on, so most assertions below need to say which
  *  side of it they are about. */
 function svgOf(markup: string) {
   const from = markup.indexOf("<svg");
@@ -169,7 +169,7 @@ function svgOf(markup: string) {
 }
 
 /** Every x/y coordinate the geometry actually draws at, as `{x, y}` pairs, from all four shapes
- *  this genre uses. `r` is folded into the extremes for circles, because a circle is clipped by
+ *  this format uses. `r` is folded into the extremes for circles, because a circle is clipped by
  *  its EDGE, not its centre — which is the entire reason `POINT_INSET` exists. */
 function drawnPoints(svg: string) {
   const pts: Array<{ x: number; y: number; what: string }> = [];
@@ -179,10 +179,10 @@ function drawnPoints(svg: string) {
     pts.push({ x: Number(m[1]), y: Number(m[3]), what: "line start" });
     pts.push({ x: Number(m[2]), y: Number(m[4]), what: "line end" });
   }
-  // Circle CENTRES, not edges. The radius is checked separately and per-axis, because the genre
+  // Circle CENTRES, not edges. The radius is checked separately and per-axis, because the format
   // makes an inset promise on x (`POINT_INSET`) and none on y — see "should keep every point's
   // CENTRE inside the box" below for the measurement and why folding `r` in here would assert a
-  // rule no component in this genre implements.
+  // rule no component in this format implements.
   //
   // The leading `\s` on each attribute is load-bearing, not tidiness: an unanchored `r="` also
   // matches the tail of `data-yea|r="1973"`, which made the first draft of this helper read a
@@ -214,7 +214,7 @@ describe("EmissionsWeb — the words", () => {
     expect(markup).toContain("<desc>Une courbe qui grimpe");
   });
 
-  it("should not flatten its children behind role=img on the SVG root the way the static genre does", () => {
+  it("should not flatten its children behind role=img on the SVG root the way the static format does", () => {
     // web-discipline.md, "One deliberate departure": role=img on the ROOT would silence every
     // focusable point below it. The points themselves are individually role="img" on purpose —
     // it is only the root svg element this rule is about. Re-aimed at the `<svg>` specifically:
@@ -335,7 +335,7 @@ describe("EmissionsWeb — nothing clipped (the old gutter invariant, re-express
 
   it("should keep every point's CENTRE inside the box, bounding the vertical overhang by its own radius", () => {
     // A DELIBERATELY WEAKER CLAIM ON THE VERTICAL AXIS THAN ON THE HORIZONTAL, and the reason is
-    // that the genre only ever made the horizontal promise. `POINT_INSET` insets the x-range on
+    // that the format only ever made the horizontal promise. `POINT_INSET` insets the x-range on
     // both sides; nothing insets y, because the fitted scale maps the data straight onto
     // `[height, 0]`. So a reading at the bottom of the fitted range sits within `r` of the floor
     // and its own hit circle overhangs it.
@@ -344,7 +344,7 @@ describe("EmissionsWeb — nothing clipped (the old gutter invariant, re-express
     // of a 460-unit box here, and 0.657 of 380 in `ChartWebSeed`. It is the INVISIBLE hit circle
     // (`fill="transparent"`), so nothing is cut at rest; what a reader can lose is a sliver of the
     // muted disc CSS paints while that lowest point is hovered or focused. Small, real, and the
-    // genre's own — not this beat's, and not something a skill test may quietly fix by asserting
+    // format's own — not this beat's, and not something a skill test may quietly fix by asserting
     // a rule no component implements. It is recorded in `references/web-discipline.md`,
     // "Nothing clipped", as a named gap.
     //
@@ -392,7 +392,7 @@ describe("EmissionsWeb — the frame's own proportions are measured, never assum
   };
 
   it("should size the y-axis gutter from a real measurement, not a constant", () => {
-    // The one gutter this genre still measures. It is a CSS grid track now rather than viewBox
+    // The one gutter this format still measures. It is a CSS grid track now rather than viewBox
     // padding, which is why the old assertion could not simply be kept — but "the label column is
     // wide enough for the labels that will sit in it" is the same claim, and it is still the one
     // worth making.
@@ -536,8 +536,8 @@ describe("nearestIndex", () => {
 });
 
 describe("crossingGeometry reuse (one geometry, three outputs)", () => {
-  it("should place this genre's points at the exact coordinates the static/video genres would compute", () => {
-    // The web genre must not carry a second implementation of data-to-coordinates. Calling the
+  it("should place this format's points at the exact coordinates the static/video formats would compute", () => {
+    // The web format must not carry a second implementation of data-to-coordinates. Calling the
     // shared core directly here, at the FRAME's own canonical box and the component's own inset,
     // and comparing to the coordinates the component actually drew, pins that there is only one.
     // Under the two-rung build this could only be checked against a hand-written padding object

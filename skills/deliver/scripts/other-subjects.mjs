@@ -1,6 +1,6 @@
 // THE OTHER SUBJECTS IN THE SAME ARTICLE — the second half of the closing offer.
 //
-// The owner, having read the genre offer: *"Ou même le relancer sur des sous-sujets de son article
+// The owner, having read the format offer: *"Ou même le relancer sur des sous-sujets de son article
 // qui seraient intéressants à transformer en visuel."* One article carries several things worth
 // drawing; the run draws one and ends.
 //
@@ -26,22 +26,22 @@
 // WHY IT IS RE-CHECKED RATHER THAN TRUSTED. A stored `reachable: yes` is a verdict about an hour
 // ago. A capability can close between the proposal and the delivery (a key expires, a token is
 // rotated), and the beat that WAS made may have consumed the angle. So the same verdicts that guard
-// the genre offer run again here, against the story as it stands now.
+// the format offer run again here, against the story as it stands now.
 
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { PRODUCIBLE_GENRES, capabilityGap } from "./another-genre.mjs";
+import { PRODUCIBLE_FORMATS, capabilityGap } from "./another-format.mjs";
 import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-language.mjs";
 
 export const SUBJECTS_FILE = "SUBJECTS.md";
 
-// The receipt for THIS question, beside `.another-genre`'s. Two questions close a delivery, and
+// The receipt for THIS question, beside `.another-format`'s. Two questions close a delivery, and
 // they are separate facts: a journalist can want the same beat as a video and want nothing else
 // from the article, or the reverse.
 export const SUBJECT_OFFER_RECEIPT = ".other-subjects";
 
 // This offer's own sentences, in each language it is made in — the same discipline as
-// `format-handover.mjs` and `another-genre.mjs`: no journalist-facing literal in the body below.
+// `format-handover.mjs` and `another-format.mjs`: no journalist-facing literal in the body below.
 const SUBJECT_COPY = {
   en: {
     nothingWaiting: [
@@ -92,9 +92,9 @@ const OUR_MODULE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)\b/;
  * run, so it is held to the same standard as every other journalist-facing string in this skill:
  * it must exist, it must be a sentence rather than a type name, and it may not name our own code.
  *
- * `medium` and `genre` are what the re-check needs. They are the angle's OWN best form, recorded
+ * `medium` and `format` are what the re-check needs. They are the angle's OWN best form, recorded
  * during the survey — not a promise: taking the subject starts a new beat, and that beat asks its
- * own medium/genre/size questions like any other.
+ * own medium/format/size questions like any other.
  */
 function validateSubject(subject, index) {
   const where = subject?.id ? `subject ${subject.id}` : `subject ${index + 1}`;
@@ -116,11 +116,11 @@ function validateSubject(subject, index) {
     );
   }
   const medium = String(subject?.medium ?? "").trim();
-  const genre = String(subject?.genre ?? "").trim();
-  if (!medium || !genre) {
-    throw new Error(`${where}: record the medium and genre this angle would take, so it can be re-checked before it is offered`);
+  const format = String(subject?.format ?? "").trim();
+  if (!medium || !format) {
+    throw new Error(`${where}: record the medium and format this angle would take, so it can be re-checked before it is offered`);
   }
-  return { id, learns, medium, genre };
+  return { id, learns, medium, format };
 }
 
 /**
@@ -153,7 +153,7 @@ export async function recordSurveyedSubjects({ storyDir, subjects }) {
       `  - id: ${row.id}`,
       `    learns: ${JSON.stringify(row.learns)}`,
       `    medium: ${row.medium}`,
-      `    genre: ${row.genre}`,
+      `    format: ${row.format}`,
     );
   }
   lines.push("---", "");
@@ -202,7 +202,7 @@ function isDrawn(id, beats) {
  *
  *   - `drawn`    — a beat already exists for it. Not offered; the journalist has it.
  *   - `closed`   — the medium's capability is shut now. Not offered; `opens` says what would open it.
- *   - `unreachable` — this toolchain has no producer for that medium × genre pair. Not offered.
+ *   - `unreachable` — this toolchain has no producer for that medium × format pair. Not offered.
  *   - `offered`  — still standing.
  */
 export async function otherSubjectsFor({ storyDir, capabilities = {} }) {
@@ -210,8 +210,8 @@ export async function otherSubjectsFor({ storyDir, capabilities = {} }) {
   const beats = await beatDirectories(storyDir);
 
   return subjects.map((subject) => {
-    const { id, learns, medium, genre } = subject;
-    if (isDrawn(id, beats)) return { id, learns, medium, genre, verdict: "drawn" };
+    const { id, learns, medium, format } = subject;
+    if (isDrawn(id, beats)) return { id, learns, medium, format, verdict: "drawn" };
 
     const gap = capabilityGap(capabilities, medium);
     if (gap) {
@@ -219,16 +219,16 @@ export async function otherSubjectsFor({ storyDir, capabilities = {} }) {
         id,
         learns,
         medium,
-        genre,
+        format,
         verdict: "closed",
         because: gap,
         opens: capabilities[medium]?.fill ?? "",
       };
     }
-    if (!PRODUCIBLE_GENRES[medium]?.includes(genre)) {
-      return { id, learns, medium, genre, verdict: "unreachable" };
+    if (!PRODUCIBLE_FORMATS[medium]?.includes(format)) {
+      return { id, learns, medium, format, verdict: "unreachable" };
     }
-    return { id, learns, medium, genre, verdict: "offered" };
+    return { id, learns, medium, format, verdict: "offered" };
   });
 }
 
@@ -244,7 +244,7 @@ export async function otherSubjectsFor({ storyDir, capabilities = {} }) {
  * Written in the story's own language (A25, ruling R4), read from `STORYBOARD.md` and never guessed.
  * `learns` is the journalist's own recorded sentence and is already in their language; only the
  * scaffold around it is translated here. The one line that is not is a `closed` row's `because`,
- * which preflight measures in English — recorded in `another-genre.mjs`'s `capabilityGap`.
+ * which preflight measures in English — recorded in `another-format.mjs`'s `capabilityGap`.
  */
 export function formatSubjectOffer(rows, { language } = {}) {
   const scaffold = resolveScaffoldLanguage(language);
@@ -274,7 +274,7 @@ export function formatSubjectOffer(rows, { language } = {}) {
 }
 
 /**
- * The answer, on disk, in the delivered beat's own export directory — the same shape as the genre
+ * The answer, on disk, in the delivered beat's own export directory — the same shape as the format
  * offer's receipt, and for the same reason: "the run never made the offer" has to be a state that
  * can be seen.
  *

@@ -4,8 +4,8 @@
 // What it pins: the ORDER of the exchange, and the one clause whose removal is the whole of A3.
 // `exchange.md`'s hand table used to end question 4 with "Also feeds channel and size" — which is
 // not a destination at all but a DECISION taken four movements early, at ③, before the survey at
-// ④ had named a single type. The run duly settled genre and size inside a hand question and showed
-// the journalist bars three times before asking whether this was a chart. Genre and size are now
+// ④ had named a single type. The run duly settled format and size inside a hand question and showed
+// the journalist bars three times before asking whether this was a chart. Format and size are now
 // movements ⑥ and ⑦, where the journalist is actually asked; re-add the clause and this reddens.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -69,15 +69,15 @@ describe("the exchange keeps its documented order", () => {
   // `fluid` for web and scrolly while `sizeGap` refused exactly that value and refused it without
   // ever naming it -- live, reachable, and it failed in the middle of the journey. So movement ⑦
   // now carries the set as an indented block, and this compares it against `proposeSizes` (what may
-  // be offered) AND `sizeGap` (what closes the gate), genre by genre. Prose greps could not do this
+  // be offered) AND `sizeGap` (what closes the gate), format by format. Prose greps could not do this
   // job: the original defect never wrote the string `size: fluid` at all, it wrote a sentence.
   //
   // RED, in a copy of the tree under /tmp, with `fluid` restored as movement ⑦'s value for web:
   //
   //   error: expect(received).toEqual(expected)
   //   Expected: []            Received: [ "fluid" ]
-  //   (fail) should state the same size set the gate enforces, genre by genre
-  it("should state the same size set the gate enforces, genre by genre", () => {
+  //   (fail) should state the same size set the gate enforces, format by format
+  it("should state the same size set the gate enforces, format by format", () => {
     const stated = new Map(
       [...EXCHANGE.matchAll(/^ {4}(static|video|web|scrolly): (.+)$/gm)].map((m) => [
         m[1],
@@ -85,10 +85,10 @@ describe("the exchange keeps its documented order", () => {
       ]),
     );
     expect([...stated.keys()].sort()).toEqual(["scrolly", "static", "video", "web"]);
-    for (const [genre, sizes] of stated) {
-      expect(sizes).toEqual(proposeSizes(genre));
-      for (const size of sizes) expect(sizeGap(genre, size, 1)).toBeNull();
-      if (sizes.length === 0) expect(sizeGap(genre, undefined, 1)).toBeNull();
+    for (const [format, sizes] of stated) {
+      expect(sizes).toEqual(proposeSizes(format));
+      for (const size of sizes) expect(sizeGap(format, size, 1)).toBeNull();
+      if (sizes.length === 0) expect(sizeGap(format, undefined, 1)).toBeNull();
     }
   });
 
@@ -108,13 +108,13 @@ describe("the exchange keeps its documented order", () => {
     expect(grounding).toBeLessThan(survey);
   });
 
-  it("should decide the medium before the genre, and the genre before the size", () => {
+  it("should decide the medium before the format, and the format before the size", () => {
     const medium = EXCHANGE.indexOf("## ⑤ The medium");
-    const genre = EXCHANGE.indexOf("## ⑥ The genre");
+    const format = EXCHANGE.indexOf("## ⑥ The format");
     const size = EXCHANGE.indexOf("## ⑦ The size");
     expect(medium).toBeGreaterThan(-1);
-    expect(genre).toBeGreaterThan(medium);
-    expect(size).toBeGreaterThan(genre);
+    expect(format).toBeGreaterThan(medium);
+    expect(size).toBeGreaterThan(format);
   });
 
   it("should end the reference loop in a question rather than a display", () => {

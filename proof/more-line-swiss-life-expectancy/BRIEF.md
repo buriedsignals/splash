@@ -5,7 +5,7 @@ type: line
 
 # Beat — Life expectancy in Switzerland rose 15 years since 1950
 
-**Type:** line. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+**Type:** line. **Medium/format:** chart / static. **Size:** landscape (1920 x 1080).
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
 that counts: `render.mjs` reads it with `readPinnedSize`. The `900 x 560` frame this beat used to

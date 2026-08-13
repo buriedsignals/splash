@@ -1,6 +1,6 @@
 # Beat — the 2011 Tohoku earthquake, the largest of 17 great western-Pacific quakes in the file
 
-**Type:** proportional symbol. **Medium/genre:** map / static **and** map / video (one component
+**Type:** proportional symbol. **Medium/format:** map / static **and** map / video (one component
 family, two outputs: `render/static.png` at 900 × 560 over a 496 px plate, and
 `render/quake-symbol.mp4` at 1080 × 1080, 30 fps, 240 frames = 8.0 s over a 620 px plate).
 

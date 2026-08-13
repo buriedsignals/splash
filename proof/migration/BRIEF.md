@@ -5,7 +5,7 @@ type: line
 
 # Beat — twice since 1991, more people left Switzerland than arrived
 
-**Type:** line (single series, crossing a reference). **Medium/genre:** chart / video.
+**Type:** line (single series, crossing a reference). **Medium/format:** chart / video.
 **Size:** square (1080 × 1080), 30 fps, **240 frames = 8.0 s**.
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one

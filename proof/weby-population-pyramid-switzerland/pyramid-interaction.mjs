@@ -1,7 +1,7 @@
 // twin/proof/weby-population-pyramid-switzerland/pyramid-interaction.mjs
 //
 // This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
-// genre's own copy, which resolves hover/tap by NEAREST-X over one shared `.hit-area` overlay) and
+// format's own copy, which resolves hover/tap by NEAREST-X over one shared `.hit-area` overlay) and
 // not `web-income-life-expectancy/scatter-interaction.mjs` (nearest-2D-point over one shared
 // overlay, for a cloud with no natural tiling). Neither mechanic fits here: `render-web.mjs`
 // bakes one `.row-hit` rect PER AGE BAND, sized to that band's own full row slot
@@ -81,7 +81,7 @@ export function initChart(plot, tooltip) {
   // entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for every web
   // beat). This layer adds the same detail box hover shows, plus ArrowUp/ArrowDown/Home/End to move
   // between rows without one Tab press per band — rows stack vertically, so Up/Down is this type's
-  // own natural axis (`web-discipline.md`'s per-genre convention: whichever key matches the chart's
+  // own natural axis (`web-discipline.md`'s per-format convention: whichever key matches the chart's
   // own layout direction), top = oldest, per this beat's own DOM order.
   rows.forEach((row, i) => {
     row.addEventListener("focus", function () {

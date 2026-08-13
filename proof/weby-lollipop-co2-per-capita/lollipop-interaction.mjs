@@ -1,7 +1,7 @@
 // twin/proof/weby-lollipop-co2-per-capita/lollipop-interaction.mjs
 //
 // This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
-// genre's nearest-by-x mechanic over one shared `.hit-area`) and not
+// format's nearest-by-x mechanic over one shared `.hit-area`) and not
 // `web-income-life-expectancy/scatter-interaction.mjs` (nearest-by-2D-distance over one shared
 // `.hit-area`). Neither generalises here: a lollipop's rows already tile the plot's full height as
 // disjoint, non-overlapping bands (`d3-scale`'s `scaleBand`), so there is nothing to resolve by
@@ -61,7 +61,7 @@ export function initChart(svg, tooltip) {
 
     // Keyboard: every row's rect is already `tabIndex={0}` at build time (works with this script
     // absent entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for
-    // the line genre). This layer adds the same detail box hover shows, plus ArrowUp/ArrowDown/
+    // the line format). This layer adds the same detail box hover shows, plus ArrowUp/ArrowDown/
     // Home/End to move between rows in their own printed (ranked) order without leaving focus.
     row.addEventListener("focus", function () {
       const rect = row.getBoundingClientRect();

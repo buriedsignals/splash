@@ -35,7 +35,7 @@
  * THE ROW-HEIGHT FLOOR. Height follows width through `aspect-ratio`, which is right for a line
  * chart and wrong for twenty-seven stacked rows: at 375px the frame's natural plot is ~250px and 27
  * rows inside it are 7px apart. `.chart-plot` carries an inline `min-height` of
- * `rows × MIN_ROW_PX` plus the two fixed rows — this beat's own version of the genre's
+ * `rows × MIN_ROW_PX` plus the two fixed rows — this beat's own version of the format's
  * `PLOT_FLOOR_PX`. It is set as high as the WINDOW FIT allows and no higher: the beat must still
  * fit 100dvh at 375 × 812, which is the rule that wins. See `BRIEF.md` for the measurement.
  *
@@ -280,9 +280,9 @@ export function DivergingBarWeb({
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
         ["--subject-band" as string]: subjectBand,
-        // Fixed CSS pixel type sizes, threaded as custom properties so the genre's shared stylesheet
+        // Fixed CSS pixel type sizes, threaded as custom properties so the format's shared stylesheet
         // stays generic while this beat still tunes its own scale. None of these ever changes with
-        // the viewBox's width — that is the whole point of the genre's redesign.
+        // the viewBox's width — that is the whole point of the format's redesign.
         ["--title-size" as string]: `${frame.title.fontSize}px`,
         ["--title-weight" as string]: frame.title.fontWeight,
         ["--subtitle-size" as string]: `${frame.caveat.fontSize}px`,

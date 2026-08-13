@@ -1,9 +1,23 @@
 ---
 name: storyboard
-description: Use to run the STORYBOARD phase of the doctrine twin — the editorial exchange (restitution, the confirmed takeaway, the journalist's hand, the reference loop, slots and candidates) that closes Gate 2 by writing STORYBOARD.md, never by conversation alone.
+description: Use to run the STORYBOARD phase of the doctrine twin — the editorial exchange, platform-neutral treatment selection, and conditional custom-or-Datawrapper choice that close Gate 2 by writing STORYBOARD.md, never by conversation alone.
 ---
 
 # storyboard — the editorial contract, closed into a file
+
+## Stop at every human gate
+
+At every human gate, present the decision and recommendation, then **end the turn**. Do not
+continue, self-approve, or treat silence as approval. At G2b, use the confirmed medium to recommend
+one reachable publication format, show the alternatives, ask which format Splash should produce
+first, and end the turn. Only the user's next message may supply `format:`. Before that reply, do
+not run the reference loop, choose a palette or treatment, write `reachable: yes`, or dispatch a
+producer.
+
+After a chart treatment is chosen, consult `references/datawrapper-chart-types.json` through
+`scripts/producer-gate.mjs`. If that treatment has a faithful Datawrapper implementation in the
+chosen format, present the custom-or-Datawrapper choice and end the turn again. Never ask this
+before treatment selection, and never ask it for an unmapped treatment.
 
 ## Overview
 
@@ -18,6 +32,13 @@ machine half of the contract: `parseStoryboard` reads the `STORYBOARD.md` a conv
 and `checkStoryboard` says whether Gate 2 has actually closed — a proposal the journalist never
 answered does not close it, no matter how the conversation reads.
 
+Persist a provisional slot before G2a with `id` and the confirmed claim in `proves`. Complete
+G2a → G2b → G2c for the first incomplete slot in array order before asking about the next slot.
+After candidate selection, resolve the conditional G2-producer gate for that slot before Gate 2
+closes.
+Use `scripts/storyboard.mjs`'s atomic writer for every creation or mutation of `STORYBOARD.md`;
+never rewrite the file ad hoc.
+
 The slots-with-candidates shape is why "the journalist wants one visual" and "the journalist wants
 a sequence" are the same object: one slot with three candidates (the same takeaway as a trajectory,
 as a comparison, as a map) is the first case; N slots with one candidate each, ordered, is the
@@ -30,8 +51,8 @@ never confirmed.
 
 `scripts/ground-claim.mjs`'s `groundTakeaway` is the second half of the machine contract: the
 confirmed takeaway is a claim about the frozen data, and nothing upstream of this skill ever
-checks it against that data. A takeaway can be false about its own numbers — a real trial
-(`twin/TRIAL-THREE-BEATS.md`) produced one that claimed a year was the lowest since a given year
+checks it against that data. A takeaway can be false about its own numbers — an earlier trial
+produced one that claimed a year was the lowest since a given year
 while the fetched series showed the opposite — and nothing in the toolkit caught it until this.
 `checkStoryboard` surfaces a claim the data actively contradicts as a gate error; a claim it
 cannot check comes back `unverifiable`, which is not an error — it is information the journalist
@@ -63,13 +84,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the genres proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
+| Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the formats proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
-| Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · genre · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
+| Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
-| Reachability | `scripts/genre-catalog.mjs` | `GENRE_CATALOG`, keyed on the **medium/genre PAIR**, and `genreGap(medium, genre)` — whether this kind of beat, in this genre, has both a producer and a delivery path. `genresFor(medium)` is what the genre gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
-| Proposal | `scripts/propose.mjs` | **Where the four verdicts are actually called.** `resolveGrounding` runs `groundTakeaway` at G1 and collapses its ARRAY of claim verdicts into the one `grounding:` scalar (`groundingScalar` refuses to close on `contradicted` without the journalist's own override reason); `proposeMediums` / `proposeGenres` / `proposeSizes` compute what may be offered at ⑤ / ⑥ / ⑦, each row carrying its refusal; `confirmReachable` is the ONE function that returns the `"yes"` a slot's `reachable:` records, and only after `genreGap` and `capabilityGap` both return `null`; `assertDistinctWays` refuses a candidate set that is one idea wearing three labels, and `formatCandidates` renders the menu FROM those options, so an unreachable pair cannot be offered |
+| Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
+| Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
+| Producer catalogue and gate | `references/datawrapper-chart-types.json`; `scripts/producer-gate.mjs` | Complete upstream `VisualizationType` inventory at its recorded source revision, conservative mappings from Splash treatments, the conditional custom-or-Datawrapper question, and validation of persisted `producer`/`datawrapperType` fields |
+| Proposal | `scripts/propose.mjs` | **Where the four verdicts are actually called.** `resolveGrounding` runs `groundTakeaway` at G1 and collapses its ARRAY of claim verdicts into the one `grounding:` scalar (`groundingScalar` refuses to close on `contradicted` without the journalist's own override reason); `proposeMediums` / `proposeFormats` / `proposeSizes` compute what may be offered at ⑤ / ⑥ / ⑦, each row carrying its refusal; `confirmFormatReachable` is the ONE function that returns the `"yes"` a slot's `reachable:` records, and only after `formatGap` and `capabilityGap` both return `null`; `assertDistinctWays` refuses a candidate set that is one idea wearing three labels, and `formatCandidates` renders the menu FROM those options, so an unreachable pair cannot be offered |
 | Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash`'s own function (see Files below), not an import |
 
 ## How it works (the shape)
@@ -78,13 +101,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    back, the confirmed takeaway **and its grounding at G1**, the journalist's hand (each question
    landing somewhere named, and no destination presuming a medium), the survey of every type this
    data could support and the advisory intent ranking in `references/chart-choice.md`, then the
-   three sub-gates in order — **medium (G2a), genre (G2b), size
-   (G2c)** — the reference loop, the palette, the slots-and-candidates proposal, the beat brief.
+   three sub-gates in order — **medium (G2a), format (G2b), size
+   (G2c)** — the reference loop, the palette, the slots-and-candidates proposal, the conditional
+   producer choice, and the beat brief.
    The order is the argument: each movement depends on the one before it. This is prose conducted
    in conversation — this skill's reference is what governs it, not code.
 2. **The exchange writes `STORYBOARD.md`**: YAML front matter (`takeaway`, the hand-of-the-journalist
    fields, the two recorded verdicts `grounding` and `reference`, `language`, and
-   `slots: [{id, proves, medium, genre, size, reachable, candidates, chosen}, ...]`) above the prose
+   `slots: [{id, proves, medium, format, size, reachable, candidates, chosen, producer,
+   datawrapperType}, ...]`) above the prose
    the journalist actually reads.
 
    **`language` is the story's own, as a code** (`fr`, `de-CH`) — ruling R4: it follows the ARTICLE
@@ -93,12 +118,12 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    the journalist reads: `deliver` writes `HANDOVER.md` and makes the closing offer in it, by
    READING this field. A hand-over came out in English on a French story for want of it.
 
-   **`size` is asked at G2c only where the genre has one** (ruling R2). A `static` or `video` beat
+   **`size` is asked at G2c only where the format has one** (ruling R2). A `static` or `video` beat
    ships at `landscape` (YouTube, article web), `square` (social posts) or `portrait` (stories), and
    the slot records which. A `web` beat is asked NOTHING at G2c and must carry no `size` — web is
    not a fourth size, it fills whatever container the CMS gives it, like an embed component; a
    `scrolly` has no single exported frame at all. `checkStoryboard` refuses all three ways: a size
-   this toolchain does not export, a sized genre with none, and an unsized genre carrying one.
+   this toolchain does not export, a sized format with none, and an unsized format carrying one.
    `splash/scripts/where.mjs` reads the same rule independently and words its refusals
    identically, and `splash/test/where.test.ts` compares the two string for string.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
@@ -109,19 +134,21 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 4. **`checkStoryboard(meta)`** names every reason the gate has not closed: a missing or unconfirmed
    takeaway, any missing hand-of-the-journalist field, a missing or unresolved `grounding` verdict,
    a missing `reference`, zero slots (nothing would be produced), a slot missing its `medium`,
-   `genre` or `size` (Gate 2's three sub-gates), a slot whose `reachable` is not `yes`, a slot with
+   `format` or `size` (Gate 2's three sub-gates), a slot whose `reachable` is not `yes`, a slot with
    nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify it against
    (malformed — a real choice can only be confirmed from a list that was actually shown), or a slot
-   whose `chosen` value is not one of its own listed `candidates`. An empty array is the only
+   whose `chosen` value is not one of its own listed `candidates`, or an eligible chart treatment
+   whose custom-or-Datawrapper decision is missing or inconsistent. `datawrapperType` is required
+   only for `producer: datawrapper`; unmapped treatments skip this human question and carry no
+   producer fields — absence is their canonical custom state. An empty array is the only
    "yes" — Gate 2 closes into this file, or it has not closed.
 
    **It takes ONE argument, and that is load-bearing.** It used to accept a `profile` and a
    `capabilities` argument and re-derive three expensive semantic checks from them —
-   `groundTakeaway`, `genreGap`, `capabilityGap`. `where.mjs`'s own Gate-2 reading has neither
+   `groundTakeaway`, `formatGap`, `capabilityGap`. `where.mjs`'s own Gate-2 reading has neither
    argument, so it could not run any of the three, and the two gates disagreed for real: `whereIs`
-   reported `production` on a storyboard this function was refusing
-   (`twin/FEEDBACK-2026-08-10.md`, A7/A14). Each check now runs ONCE, in the phase that owns it —
-   grounding at **G1**, genre and capability at **G2b** — and records its verdict into
+   reported `production` on a storyboard this function was refusing. Each check now runs ONCE, in the phase that owns it —
+   grounding at **G1**, format and capability at **G2b** — and records its verdict into
    `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`). Both gates read the record. Neither
    can run a check the other cannot, because neither runs one at all. Do not reintroduce a second
    argument here without adding the same reading to `where.mjs`; the parity test
@@ -144,15 +171,14 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
    **A number it can place in neither a range nor a total is `unverifiable`, never `contradicted`.**
    Reading "I could not place this number" as "the data refutes this number" refused every
-   part-to-whole takeaway ever written, and did refuse a real one
-   (`twin/FEEDBACK-2026-08-10.md`, A13). Only a value that contradicts a fact this function DID
+   part-to-whole takeaway ever written, including a real production case. Only a value that contradicts a fact this function DID
    establish — the year comparisons and the superlatives, which read real rows — stays
    `contradicted`. Everything else, including "first time" claims, comparisons the profile cannot
    resolve to a single value column, and phrasing shapes this function does not parse, comes back
    `unverifiable` with a reason, never silently `supported`.
 
 6. **`propose.mjs` is the seam that consults all of the above**, and until it existed there was
-   none: `grep -rn "genreGap(\|capabilityGap(\|groundTakeaway(" skills/` returned four lines and
+   none: `grep -rn "formatGap(\|capabilityGap(\|groundTakeaway(" skills/` returned four lines and
    all four were the definitions. `grounding:` and `reachable:` were recorded scalars both gates
    checked and no code produced — not trusted verdicts, unwritten ones. Each phase now calls the
    verdict it owns:
@@ -171,17 +197,26 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      a lower-ranked candidate is valid when its reason says why the higher surviving form lost.
      `proposeMediums({capabilities})` then marks a medium the environment has closed AT THE MEDIUM
      QUESTION, with what would open it.
-   - **⑥** — `proposeGenres({medium, capabilities})` returns every genre in the vocabulary, each
+   - **⑥** — `proposeFormats({medium, capabilities})` returns every format in the vocabulary, each
      marked reachable or not AND CARRYING ITS REFUSAL, so an absent pair is named rather than
-     quietly omitted. `confirmReachable({medium, genre, capabilities})` then produces the recorded
+     quietly omitted. Render those rows with `formatPublicationFormatGate`, send its output as the
+     final action of the turn, and wait. After the reply,
+     `confirmFormatReachable({medium, format, capabilities})` produces the recorded
      `"yes"`, or throws the refusal the journalist hears.
-   - **⑦** — `proposeSizes(genre)`: the three export sizes for a static or a video, none for a page
+   - **⑦** — `proposeSizes(format)`: the three export sizes for a static or a video, none for a page
      that fills its container.
    - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates all name the same type
      (the run offered three and all three were bars of the same three numbers), and
      `formatCandidates` renders the menu from the computed options — every candidate carrying the
      type sheet's own purpose sentence verbatim and the caller's reason why THIS story is worth
      seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all.
+   - **After ⑩, and only after the journalist chooses a treatment** —
+     `datawrapperMatch({medium, format, treatment})` checks the pinned provider catalogue. No match
+     means no extra question, no producer fields, and production remains custom. A match means
+     `formatProducerGate(...)` presents the Datawrapper-or-custom preference as the final action of
+     the turn. On the next reply, `confirmProducerChoice(...)` records either
+     `producer: custom`, or `producer: datawrapper` plus the exact `datawrapperType`. This is a
+     producer choice for the chosen treatment, never another treatment candidate.
 
 ## Quick start
 
@@ -191,7 +226,7 @@ import {
   parseStoryboard,
   checkStoryboard,
   groundTakeaway,
-  genreGap,
+  formatGap,
   capabilityGap,
 } from "./scripts/storyboard.mjs";
 
@@ -201,11 +236,11 @@ import {
 const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
 const claims = groundTakeaway(confirmedTakeaway, profile);
 
-// At G2b, once a medium and a genre have been offered and picked. The verdict is written into the
+// At G2b, once a medium and a format have been offered and picked. The verdict is written into the
 // slot as `reachable:`; a pair nothing can produce or deliver is refused HERE, at the gate, not
 // three phases downstream at deliver.
 const { capabilities } = await runPreflight({ root, env: process.env, fetchFn: fetch });
-const unreachable = genreGap(medium, genre) ?? capabilityGap(capabilities, medium);
+const unreachable = formatGap(medium, format) ?? capabilityGap(capabilities, medium);
 
 // And the gate itself, which re-derives none of it — one argument, recorded scalars only.
 const text = await readFile("stories/annemasse-rain/STORYBOARD.md", "utf8");
@@ -214,7 +249,7 @@ const errors = checkStoryboard(meta);
 
 if (errors.length > 0) {
   // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. An
-  // ungrounded takeaway, an unanswered reference loop, and a slot whose medium/genre/size were
+  // ungrounded takeaway, an unanswered reference loop, and a slot whose medium/format/size were
   // never chosen or never confirmed reachable are all among these reasons.
 } else {
   // meta.slots[*].chosen names the candidate production reads.
@@ -239,7 +274,7 @@ if (errors.length > 0) {
 - `references/exchange.md` — the movements, the hand-of-the-journalist questions with
   their destinations, and the discipline list. Read by every conversation running this phase.
 - `references/type-survey.md` — **generated, do not edit by hand.** Every type sheet in the tree,
-  what each is for in its own words, and which genres are proven on disk for it. Regenerate with
+  what each is for in its own words, and which formats are proven on disk for it. Regenerate with
   `bun scripts/type-survey.mjs` from `twin/`; `bun scripts/type-survey.mjs --check` fails on drift,
   and `test/type-survey.test.ts` runs that check. It exists as a generated copy because a script in
   this skill may not read `chart-beat/references/types/` — that path resolves inside another
@@ -248,30 +283,37 @@ if (errors.length > 0) {
   hard data refusals ahead of rank, fit ahead of reachability, and agent judgement ahead of an
   automatic dispatch rule. `test/chart-choice.test.ts` makes a new type sheet fail until the guide
   accounts for it.
+- `references/datawrapper-chart-types.json` — the complete Datawrapper visualization-type inventory
+  at the recorded upstream source revision, plus the deliberately conservative Splash-treatment
+  mappings that may open the producer preference gate. Unmapped treatments never trigger it.
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
+- `scripts/format-gate.mjs` — `formatPublicationFormatGate`, the complete G2b assistant turn.
+- `scripts/producer-gate.mjs` — `datawrapperMatch`, `producerGap`,
+  `formatProducerGate`, and `confirmProducerChoice`: eligibility, journalist-facing question, and
+  persisted-answer validation for the conditional G2-producer gate.
 - `scripts/propose.mjs` — `resolveGrounding`, `groundingScalar`, `typeSurvey`, `readTypeSurvey`,
-  `proposeMediums`, `proposeGenres`, `proposeSizes`, `confirmReachable`, `assertDistinctWays`,
-  `formatCandidates`. The one file that CALLS `groundTakeaway`, `genreGap` and `capabilityGap`.
+  `proposeMediums`, `proposeFormats`, `proposeSizes`, `confirmFormatReachable`, `assertDistinctWays`,
+  `formatCandidates`. The one file that CALLS `groundTakeaway`, `formatGap` and `capabilityGap`.
 - `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard the **G1 phase** calls
   through `propose.mjs`'s `resolveGrounding`. `checkStoryboard` does NOT call it and takes no
   profile: it reads the recorded `grounding:` scalar, which is what stops the two gates diverging.
 - `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard the **G2b phase**
-  calls through `propose.mjs` (`proposeMediums`, `proposeGenres`, `confirmReachable`), never
+  calls through `propose.mjs` (`proposeMediums`, `proposeFormats`, `confirmFormatReachable`), never
   `checkStoryboard`, which takes no `capabilities` argument either. This is a **carried copy** of `splash`'s own
   `capabilityGap` (`skills/splash/scripts/preflight.mjs`), not an import — a skill directory
-  has to stay copy-pasteable on its own, the same rule `genre-catalog.mjs` follows for
-  `deliver`'s `FORMS_BY_GENRE`. **Do not delete it as duplication**: `test/capability-gap-parity.test.ts`
+  has to stay copy-pasteable on its own, the same rule `format-catalog.mjs` follows for
+  `deliver`'s `FORMS_BY_FORMAT`. **Do not delete it as duplication**: `test/capability-gap-parity.test.ts`
   is the guard against the two copies drifting apart, and it is the reason this file is allowed to exist
   twice.
 - `test/storyboard.test.ts` — `bun:test` coverage, including a regression test locking the
   `null`/`~` sentinel resolution described in the gotcha above, and the medium/capability gate.
 - `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
-  Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it, and — its last block — the
+  Norway/Swiss regression cases that motivated it, and — its last block — the
   seam A13 actually lived in: `intake`'s own `profileTable` output fed to the real check. Every
   other fixture in that file hand-builds its columns, so deleting `sum` from `profileTable` used to
   leave the whole file green while the defect it was written for came back.
 - `test/propose.test.ts` — `bun:test` coverage for the proposal seam, opening with the walking
-  guard that gives this file its reason to exist: each of `groundTakeaway`, `genreGap` and
+  guard that gives this file its reason to exist: each of `groundTakeaway`, `formatGap` and
   `capabilityGap` must be called by a script other than its own definition. It strips comments
   before scanning, because its first draft stayed green through the mutation that deleted all three
   calls — `propose.mjs`'s header quotes the grep that found the hole, so the literals were sitting

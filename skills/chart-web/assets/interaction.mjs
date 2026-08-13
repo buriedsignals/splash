@@ -1,22 +1,22 @@
 // twin/skills/chart-web/assets/interaction.mjs
 //
-// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
-// per `doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").
 //
 // What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
 // `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
-// the static and video genres use, and baked into the SVG at build time. This script only reads
+// the static and video formats use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
 // beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
@@ -116,14 +116,14 @@ export function initChart(svg, tooltip) {
  * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
  * component draws immediately after a visible path — to hover, tap and keyboard focus.
  *
- * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this genre is a point or a box, and
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
  * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
  * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
  * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
  * ends (both values, the change between them, the category), which is exactly the thing a
  * per-endpoint tooltip cannot say however many endpoints it answers.
  *
- * `pointer-events: stroke` is the load-bearing property, and it is set in the genre's stylesheet
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
  * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
  * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
  * aims at the line they can see and hits a target twice the touch-target floor.
@@ -238,7 +238,7 @@ export function initLines(root, tooltip) {
 }
 
 /**
- * THE ENTRANCE TRIGGER — the whole of this genre's entrance that is script, and it is one class.
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
  *
  * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
  * number the entrance uses was computed server-side from the beat's own geometry and the entrance
@@ -246,7 +246,7 @@ export function initLines(root, tooltip) {
  * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
  * This function's entire job is to say WHEN, once, per figure.
  *
- * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This genre's delivery model is an embed: a CMS drops
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
  * the file into an article and the figure may sit two screens below the fold. An entrance that
  * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
  * two-second build they never saw — strictly worse than never having animated it. So the trigger is

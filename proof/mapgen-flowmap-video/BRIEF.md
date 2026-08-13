@@ -1,6 +1,6 @@
 # Beat — the Danube drawn in its own direction of travel, nine territories in crossing order
 
-**Type:** flow / route map. **Medium/genre:** map / video. **Channel:** `render/flowmap.mp4`,
+**Type:** flow / route map. **Medium/format:** map / video. **Channel:** `render/flowmap.mp4`,
 1080 × 1080, 30 fps, **326 frames = 10.87 s**, over a 940 × 420 baked plate; a static frame from the
 same component family ships alongside it (`render/static.png`).
 

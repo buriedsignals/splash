@@ -18,7 +18,7 @@
 // Rule 12 — the camera is chosen from the geography, not from a default: the study set's own extent
 // is longitude 97.05 → 166.38, latitude -12.52 → 46.59, and the box below pads that on every side so
 // no circle sits on the frame edge. It is the same box `proof/map-quake-symbol` bakes for its still
-// and its video, so the three genres of this story share one camera.
+// and its video, so the three formats of this story share one camera.
 //
 // SIZE: baked generously (1000 logical px, ~2000 physical at the capture's own 2x device pixel
 // ratio) and scaled UNIFORMLY within that by the page — never stretched. A stretched basemap is a

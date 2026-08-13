@@ -2,7 +2,7 @@
 
 Written 2026-08-09. **Read this before citing anything in this folder.**
 
-These are the three renders from the 2026-08-08 three-agent trial (`../../TRIAL-THREE-BEATS.md`).
+These are the three renders from a 2026-08-08 three-agent trial.
 Every one of them states something the data does not support. Two of the three render a series that
 exists **nowhere in this repository**, under the **Federal Statistical Office**'s name.
 
@@ -56,9 +56,8 @@ with the numbers they were given. What was wrong was the numbers.
 
 ## Why these were marked and not re-rendered
 
-`git ls-files twin/proof/trial` returns three PNGs and nothing else — no data, no component, no
-render script. The three agents each worked *"in its own Splash root outside the repo"*
-(`TRIAL-THREE-BEATS.md` §Method); those roots are gone, and beats B and C read their series from
+The folder contains three PNGs and no data, component, or render script. The three agents each
+worked in a separate Splash root outside the repository; those roots are gone, and beats B and C read their series from
 `/tmp/video-twin/`, which is gone too. Nothing in this repository can regenerate any of these three
 images. They are kept as the record of what three independent agents rendered on 2026-08-08 — which
 is what the trial was for — with their standing as evidence of any *number* removed by this notice.

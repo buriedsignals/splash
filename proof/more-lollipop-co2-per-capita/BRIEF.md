@@ -5,7 +5,7 @@ type: lollipop
 
 # Beat — Switzerland's per-capita CO2 emissions, 3rd-lowest of 15 European peers
 
-**Type:** lollipop. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+**Type:** lollipop. **Medium/format:** chart / static. **Size:** landscape (1920 x 1080).
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
 that counts: `render.mjs` reads it with `readPinnedSize`. The per-story `900 x 800` frame this beat

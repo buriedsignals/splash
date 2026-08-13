@@ -7,8 +7,8 @@
  * (`proof/vidx-line-life-expectancy/`) and the settled rule for a story that needs something a
  * skill has is to duplicate it, never reach back across the boundary. `FONT_FAMILY`,
  * `measureText`, `wrap` and `drawnSoFar` are this story's own copies of `EmissionsVideo.tsx`'s
- * functions of the same name, bodies identical on purpose — this is the video genre's own
- * browser-Canvas text measurer, not the static genre's resvg one.
+ * functions of the same name, bodies identical on purpose — this is the video format's own
+ * browser-Canvas text measurer, not the static format's resvg one.
  *
  * THE MOTION PROBLEM (`BRIEF.md`): two lines share one time axis and must draw at the SAME pace —
  * neither may lead the other, because the claim ("Switzerland stayed ahead") is about the whole

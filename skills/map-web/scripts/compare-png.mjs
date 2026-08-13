@@ -5,7 +5,7 @@
 // screenshots of the IDENTICAL self-contained HTML, launched back-to-back on the same machine, were
 // NOT always byte-identical — a handful of anti-aliased text-edge pixels differ between launches
 // even with `--font-render-hinting=none`/`--disable-lcd-text` set. The rendered PICTURE is what
-// this genre's own verification rule cares about (`references/map-web-discipline.md`,
+// this format's own verification rule cares about (`references/map-web-discipline.md`,
 // "Verification": prove it by screenshotting, not by measuring a value that contradicts the
 // screenshot) — a handful of sub-perceptible pixels differing between two runs of the SAME input is
 // not "the seed changed and the preview did not"; `committed.equals(png)` was answering a stricter,

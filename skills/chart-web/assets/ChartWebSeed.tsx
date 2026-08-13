@@ -5,9 +5,9 @@
  * chart beat, written out once so the next one can be written from scratch in the same shape.
  *
  * SECOND BUILD OF THIS SEED (see `references/web-discipline.md`, "Responsive behaviour" — the
- * genre's first build shipped two pre-rendered widths, 900px and 360px, swapped by a media query;
+ * format's first build shipped two pre-rendered widths, 900px and 360px, swapped by a media query;
  * the owner's own read of that output was that it did not fill its container, and asked for a
- * genuinely continuous fill instead). Five things this genre needs and this file demonstrates:
+ * genuinely continuous fill instead). Five things this format needs and this file demonstrates:
  *
  *   1. ONE geometry, rendered ONCE, that fills its container edge to edge and grows taller as it
  *      grows wider — never two discrete widths, never a fixed cap with empty gutters either side.
@@ -35,7 +35,7 @@
  *      never the thing that reveals it. Pure CSS (`:checked` + `:has()` on the figure) — no
  *      script is needed for it to work, and every native `<input type="radio">` is reachable and
  *      operable from the keyboard the same way any radio group always is. See `SKILL.md`, "When to
- *      use" for the test this genre applies before adding a filter to a real beat — most beats
+ *      use" for the test this format applies before adding a filter to a real beat — most beats
  *      should not have one.
  *
  * A seed is a real beat, not a mechanics demo (`references/web-discipline.md` was written against
@@ -46,7 +46,7 @@
  * different device writes its own component; adding a `variant` prop to this file is the failure
  * this seed exists to prevent.
  *
- * `WebFrame` lives here, not beside a story, because it describes this GENRE's own mechanics (one
+ * `WebFrame` lives here, not beside a story, because it describes this FORMAT's own mechanics (one
  * continuously-fluid frame, its own tick hints, its own fixed type scale) rather than any one
  * story's numbers. A story's own composition does NOT import it from here, though: unlike
  * `render-still.mjs`/`interaction.mjs`, which a real installed root vendors to `#shared/*`,
@@ -118,10 +118,10 @@ export type WebFrame = {
   label: { fontSize: number; fontWeight: number };
   note: { fontSize: number };
   filter: { fontSize: number };
-  /** How many y gridlines this frame asks for (d3 treats it as a hint, same as the static genre). */
+  /** How many y gridlines this frame asks for (d3 treats it as a hint, same as the static format). */
   yTickHint: number;
   /** How many x ticks `tickStep` derives a round interval from. Picked once, for the whole
-   *  continuous width range this genre now ships — see `references/web-discipline.md`,
+   *  continuous width range this format now ships — see `references/web-discipline.md`,
    *  "Responsive behaviour", for why tick density is not re-derived live as the frame resizes. */
   xTickHint: number;
   /** A regular gridline this close (in canonical SVG units, at `height`) to the reference is
@@ -132,7 +132,7 @@ export type WebFrame = {
 // ===== CONFIG — edit for your story =====
 // Everything between here and the closing marker is this beat's own words and its own editorial
 // calls — the next beat replaces every value below. Nothing beneath the marker (the `WebFrame`
-// instance aside, which is this genre's own tuned default) is specific to rainfall.
+// instance aside, which is this format's own tuned default) is specific to rainfall.
 const UNIT = "mm";
 const CAVEAT =
   "Annual total, measured at the sample town's official rain gauge.";
@@ -243,12 +243,12 @@ export function xTickValues(years: number[], hint: number): number[] {
 }
 
 /** The x-range is inset by this many SVG user units on each side — enough to clear the largest
- *  circle radius this genre draws (`.pt`'s own hit circle, r=5) — so the first/last point's own
+ *  circle radius this format draws (`.pt`'s own hit circle, r=5) — so the first/last point's own
  *  circle never sits flush against the `viewBox` edge. An SVG clips to its `viewBox` by default
  *  (no `overflow: visible` is set — adding one would let a point bleed into the neighbouring grid
  *  column instead), so without this inset the end point's own accent dot is silently clipped in
  *  half at any container width, caught only by a screenshot, never by the markup or a unit test —
- *  exactly the class of defect this genre's own gotcha section warns is invisible to anything but
+ *  exactly the class of defect this format's own gotcha section warns is invisible to anything but
  *  driving a real browser. */
 const POINT_INSET = 6;
 
@@ -282,7 +282,7 @@ export function chartGeometry(
 /** Consecutive-pair line segments, each carrying its own `period` (the arriving point's period —
  *  see this file's own doc-comment, item 5) so the filter can dim exactly the segments that leave
  *  the chosen range while the argument-bearing furniture around them stays untouched. Splitting the
- *  single path this genre used to draw into N-1 two-point segments costs nothing visually (round
+ *  single path this format used to draw into N-1 two-point segments costs nothing visually (round
  *  linecap/linejoin at shared endpoints reads identically to one continuous path) and is what makes
  *  per-segment CSS opacity possible without a script recomputing anything. */
 export function segments(
@@ -376,7 +376,7 @@ function pct(value: number, total: number): number {
 
 /**
  * ── THE HOVERABLE LINE ─────────────────────────────────────────────────────────────────────────
- * The component-side half of this genre's line primitive. Its other two halves live in the skill
+ * The component-side half of this format's line primitive. Its other two halves live in the skill
  * too: `initLines` in `assets/interaction.mjs` wires it, and `buildCss`'s `.line-hit` rule in
  * `scripts/render-web.mjs` carries the one load-bearing declaration, `pointer-events: stroke`.
  *
@@ -391,7 +391,7 @@ function pct(value: number, total: number): number {
  * `pointer-events: stroke` so the hit region is the stroke and not the bounding box — the bounding
  * box of a diagonal is mostly empty space, and a reader aiming at the line they can see would
  * otherwise be answered by a rectangle covering everything between the line and the frame.
- * `vectorEffect="non-scaling-stroke"` is not decoration either: under this genre's
+ * `vectorEffect="non-scaling-stroke"` is not decoration either: under this format's
  * `preserveAspectRatio="none"` a stroke stated in user units becomes an ellipse of the container's
  * own aspect ratio, so the twin would be 60px wide on an ultrawide frame and 8px on a phone.
  *
@@ -624,7 +624,7 @@ export function ChartWebSeed({
         ["--muted" as string]: muted,
         // Fixed CSS pixel type sizes, threaded from `frame` as custom properties so
         // `render-web.mjs`'s `buildCss` stays generic (it never reads a story's own `WebFrame`,
-        // the same invariant this genre has kept since its first build) while a story can still
+        // the same invariant this format has kept since its first build) while a story can still
         // tune its own scale by passing a different `frame`. None of these ever changes with the
         // viewBox's own width — that is the whole point of this redesign.
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -728,7 +728,7 @@ export function ChartWebSeed({
           // `Accessibility.getFullAXTree`: a root `<svg>` carrying a `<desc>` and nothing else comes
           // back as `SvgRoot` with `name: ""` — a description with nothing to announce it against,
           // which is why a bare `<desc>` is not reliably read out. `group` rather than `img`,
-          // because `img` is the role the ARIA spec makes children-presentational and this genre's
+          // because `img` is the role the ARIA spec makes children-presentational and this format's
           // whole keyboard contract lives in the focusable marks below.
           role="group"
           aria-label={title}
@@ -790,7 +790,7 @@ export function ChartWebSeed({
           {/* THE REVEAL. The curve is uncovered left to right by a clip whose rect grows from x=0
               — the same picture, frame for frame, as the video's `drawnSoFar` partial path, since
               the years ascend so the head advances monotonically in x. A CLIP and not a
-              `stroke-dashoffset`: a probe drove the dash form under this genre's own
+              `stroke-dashoffset`: a probe drove the dash form under this format's own
               `vector-effect="non-scaling-stroke"` and `preserveAspectRatio="none"` and it was 99 %
               drawn at t=0 — the two coordinate spaces disagree. See `render-web.mjs`'s
               `entranceCss`.
@@ -838,7 +838,7 @@ export function ChartWebSeed({
               under "2015–2019" they hung over an empty plot, pointing at a line that had stopped
               six years earlier, and the end label printed a number the narrowed view does not
               contain. That is the reader-facing contradiction this rework exists to prevent, one
-              layer up from the marks. Under the DIMMING this genre used to do it read as merely
+              layer up from the marks. Under the DIMMING this format used to do it read as merely
               faint; hiding makes it visible, which is the argument for hiding. */}
           {/* The peak MARK is outside the reveal's clip and fades in at the instant the head
               passes its own x — the video's mechanism exactly (its peak marker is an opacity gated
@@ -912,7 +912,7 @@ export function ChartWebSeed({
             argument, already stated (`references/web-discipline.md`, "What must not become
             interactive"). Each gets a small `--ground`-coloured chip (CSS) so it stays legible over
             whatever the line/gridlines put behind it, without reserving a permanent gutter for it —
-            the one box this genre allows, same reasoning as the `#tooltip` it already carries. */}
+            the one box this format allows, same reasoning as the `#tooltip` it already carries. */}
         <div className="overlay" aria-hidden="true">
           <span
             {...referenceLabelLayer.attrs}
@@ -984,7 +984,7 @@ export function ChartWebSeed({
   );
 }
 
-/** The genre's own single, continuously-fluid frame — replaces the first build's `DESKTOP_LAYOUT`/
+/** The format's own single, continuously-fluid frame — replaces the first build's `DESKTOP_LAYOUT`/
  *  `NARROW_LAYOUT` pair. One canonical geometry, stretched at render time; see this file's own
  *  doc-comment and `SKILL.md`'s "Tuning knobs" for what each number controls. */
 export const FRAME: WebFrame = {
@@ -1009,7 +1009,7 @@ export const FRAME: WebFrame = {
 // (`render-still.mjs`), which loads SVG only — it cannot lay out the HTML/CSS furniture
 // `ChartWebSeed` now draws around its geometry, because that furniture's entire reason to exist is
 // a live browser's own text layout. So this second, SVG-only component bakes the same words as SVG
-// `<text>`, the way this genre's first build drew everything — it is what makes a legible PNG
+// `<text>`, the way this format's first build drew everything — it is what makes a legible PNG
 // possible at all — and it is explicitly NOT what `render-web.mjs` ships to a reader: the actual
 // interactive beat never uses this component. One frame, one width, because a static image was
 // never two rungs to begin with (`SEED_LAYOUT` in this seed's first build only ever rendered one of
@@ -1070,8 +1070,8 @@ export function ChartWebPreviewSvg({
   // The plot starts below the CAVEAT, the last header line — never below the source, which now
   // sits at the frame's own bottom margin the way the shipped HTML has always drawn it (the
   // `<p class="chart-source">` is the figure's last child). This preview drew the source in the
-  // header while the genre it documents shipped it at the bottom, and had contradicted its own
-  // genre since it was written.
+  // header while the format it documents shipped it at the bottom, and had contradicted its own
+  // format since it was written.
   const plotTop = caveatBaseline + (caveatLines.length - 1) * 20 + 34;
   const plotBottom = plotTop + 340;
   // The frame is sized from its own contents here (this is a thumbnail, not an export size), so
@@ -1121,7 +1121,7 @@ export function ChartWebPreviewSvg({
   const shifted = points.map((p) => ({ ...p, ...shift(p) }));
   // `gridScale` is already ranged to `[plotBottom, plotTop]` above — reused here rather than
   // re-deriving the value→y ratio a second time, which is exactly the "two implementations of
-  // data-to-coordinates" this genre's own doc-comment (`chartGeometry`) warns against.
+  // data-to-coordinates" this format's own doc-comment (`chartGeometry`) warns against.
   const referenceY = gridScale(referenceValue);
   const peakPoint = shifted.find((p) => p.year === PEAK_YEAR);
   const end = shifted[shifted.length - 1];

@@ -1,7 +1,7 @@
 /**
- * The static genre of "La Suisse sous la moyenne européenne" — 900 × 560, one frame, no order.
+ * The static format of "La Suisse sous la moyenne européenne" — 900 × 560, one frame, no order.
  *
- * REPLACE ME. Do not parameterise me. This file seeds the static genre.
+ * REPLACE ME. Do not parameterise me. This file seeds the static format.
  *
  * What it draws: a baked basemap plate as one `<image>`, the study set as one path each, and the
  * beat's own furniture. There is no map here — `scripts/bake-plate.mjs` already spent the camera,
@@ -171,7 +171,7 @@ export function Co2MapStill({
   // anchored to different things: the title hangs off the top, and the caveat is the last line
   // before the bottom margin. The first render laid it out top-down with a fixed bar height and
   // pushed the caveat's second line off the canvas — the kind of clipped layer this twin's chart
-  // genre found four of in the engine it replaces, every one by eye and none by a test.
+  // format found four of in the engine it replaces, every one by eye and none by a test.
   const titleTop = PAD + TITLE.fontSize;
   const titleBottom = titleTop + (titleLines.length - 1) * TITLE.lead;
 

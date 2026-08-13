@@ -4,7 +4,7 @@
  * No browser, no rasteriser, no DOM.
  *
  * This is this beat's OWN copy — `proof/map-quake-symbol/geo-symbol.ts` (the static/video sibling on
- * the same file) and `skills/map-web/assets/geo-symbol.ts` (the genre's seed) each carry their
+ * the same file) and `skills/map-web/assets/geo-symbol.ts` (the format's seed) each carry their
  * own, and a beat never reaches into a sibling beat or out of a skill at runtime. What is new here,
  * and exists nowhere else, is `arcOf` — the filter dimension, DERIVED from each event's own
  * coordinates rather than typed into a column, so a row cannot be filed under an arc the map does
@@ -167,7 +167,7 @@ export function readingOrder<T extends { mag: number }>(rows: T[]): T[] {
  *
  * This is the opposite of `drawOrder`, and it is a measured decision rather than a taste. Two events
  * in this file — Singkil (M8.6, 2005) and Sinabang (M7.8, 2010) — sit 0.30° apart, about 33 km. A
- * hit target is a fixed 28 CSS px across at every width this genre ships, so at 1600px (where the
+ * hit target is a fixed 28 CSS px across at every width this format ships, so at 1600px (where the
  * plate draws ~19 px per degree) their centres are ~6 px apart: whichever button is later in the DOM
  * covers the other's own centre, and `document.elementFromPoint` at that centre returns the covering
  * button. Painting the largest LAST means the covered point is always the smaller one — never the

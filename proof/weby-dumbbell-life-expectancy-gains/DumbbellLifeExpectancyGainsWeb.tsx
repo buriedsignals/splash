@@ -21,12 +21,12 @@
  * reserved either side of the plot — `--lv-gutter` on the left, `--rv-gutter` on the right, both
  * measured in node from the widest string that will actually land there. The names get the first
  * track. Without the reserved tracks the outermost label runs off the frame at 375px, which is
- * exactly the defect class this genre's gotcha section says only a screenshot ever catches.
+ * exactly the defect class this format's gotcha section says only a screenshot ever catches.
  *
  * THE ROW-HEIGHT FLOOR. Height follows width through `aspect-ratio`, which is right for a line
  * chart and wrong for ten stacked rows: at 375px that leaves rows about 20px apart, under the point
  * where a 14px name and two 13px numbers read as one row rather than a smear. `.chart-plot` carries
- * an inline `min-height` of `rows x MIN_ROW_PX`, this beat's own version of the genre's
+ * an inline `min-height` of `rows x MIN_ROW_PX`, this beat's own version of the format's
  * `PLOT_FLOOR_PX`. The `<svg>`'s `preserveAspectRatio="none"` absorbs the difference.
  *
  * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`, so its
@@ -269,7 +269,7 @@ export function DumbbellLifeExpectancyGainsWeb({
           ["--rv-gutter" as string]: `${rightGutterPx}px`,
           ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
           aspectRatio: `${totalWidth} / ${totalHeight}`,
-          // This beat's own floor — see the doc-comment. Overrides the genre stylesheet's generic
+          // This beat's own floor — see the doc-comment. Overrides the format stylesheet's generic
           // PLOT_FLOOR_PX, which is sized for a single-line frame, not ten stacked rows.
           minHeight: `${rows.length * MIN_ROW_PX}px`,
         }}

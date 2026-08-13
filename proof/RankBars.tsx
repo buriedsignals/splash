@@ -166,7 +166,7 @@ export function RankBars({
   data: RankedCountry[];
   title: string;
   /** The caveat the framing exchange extracted — read directly under the title, ahead of the
-   *  claim it qualifies (`information-architecture.md`'s subtitle zone, and the static genre's own
+   *  claim it qualifies (`information-architecture.md`'s subtitle zone, and the static format's own
    *  override of where it sits — `static-discipline.md`, "The source under the header"). */
   limits: string;
   source: string;

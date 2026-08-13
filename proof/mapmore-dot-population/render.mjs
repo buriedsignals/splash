@@ -1,4 +1,4 @@
-// The render ladder for the dot-density (population) beat. Static genre only.
+// The render ladder for the dot-density (population) beat. Static format only.
 //
 // Usage:
 //   bun proof/mapmore-dot-population/render.mjs --still

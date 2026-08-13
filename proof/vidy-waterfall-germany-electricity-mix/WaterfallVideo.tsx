@@ -68,7 +68,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
 import {
@@ -78,7 +78,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
-// genres read one copy. A waterfall has no measured aspect range at a tall frame and no twin form —
+// formats read one copy. A waterfall has no measured aspect range at a tall frame and no twin form —
 // its bars sit on a RUNNING TOTAL, so rotating it would put a cumulative axis on a band scale — so
 // the two phone frames are refused by name rather than drawn at a shape nobody measured.
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
@@ -196,7 +196,7 @@ export type WaterfallStep = {
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
- * of the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * of the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated, not imported from a sibling workspace or a skill).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;

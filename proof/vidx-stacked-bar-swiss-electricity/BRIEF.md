@@ -20,7 +20,7 @@ this beat used to draw at was not a decision, it was a default.
 generation in 2000 (0.01 TWh of 66.1 TWh) — by 2024 they supplied 7.5% of a larger total (5.84 TWh
 of 78.4 TWh), a composition shift visible across four snapshots (2000, 2010, 2020, 2024).
 
-**Medium / genre:** chart / video. **Type:** stacked bar — one column per year, three segments
+**Medium / format:** chart / video. **Type:** stacked bar — one column per year, three segments
 summed into each (`references/types/stacked-bar.md`: "how the composition itself shifted... is this
 shape, not a grouped comparison"). Solar & wind sits on the shared zero baseline — the ONE band
 every column can be compared against by eye — because it is the series the claim is actually about;

@@ -1,6 +1,6 @@
 # Beat — Switzerland's population bulges at ages 55-59 (web)
 
-**Type:** population pyramid. **Medium/genre:** chart / web. **Channel:** article web, two
+**Type:** population pyramid. **Medium/format:** chart / web. **Channel:** article web, two
 pre-rendered layouts — 900px desktop, 360px narrow (`web-discipline.md`, "Responsive behaviour").
 
 ## Claim
@@ -35,7 +35,7 @@ The static frame's bars carry the argument entirely through length: a reader can
 widest, but the only numbers printed anywhere are the axis's rounded-thousands ticks ("330k",
 "660k") and one dashed annotation naming the peak band by name, never by its exact figure. Every one
 of the 21 bands × 2 sexes = 42 individual readings has a real, exact integer the static frame has no
-room to print without turning the chart into a table — that is exactly the gap this genre exists to
+room to print without turning the chart into a table — that is exactly the gap this format exists to
 close.
 
 The interactive unit chosen here is not a point (as in the line beat) and not a single dot (as in
@@ -47,10 +47,10 @@ band's own full row slot, reveals BOTH sexes' exact figures for that band in one
 per side": the pyramid's own claim ("which age is widest") is a per-row question about a combined
 total, so answering it per-side (hover the male bar, get only the male figure) would force the
 reader to hover twice and do the addition themselves — the exact redundant decoding work
-interaction in this genre is supposed to spare them (`web-discipline.md`, "What hover reveals").
+interaction in this format is supposed to spare them (`web-discipline.md`, "What hover reveals").
 
 This also changed the interaction MECHANIC from every other web beat built under this skill so far.
-The line genre's own `assets/interaction.mjs` resolves hover/tap by NEAREST-X over one shared
+The line format's own `assets/interaction.mjs` resolves hover/tap by NEAREST-X over one shared
 `.hit-area` overlay (correct when every reading has a distinct x and y carries the value); the
 scatter beat's own `scatter-interaction.mjs` resolves by nearest-2D-point over a shared overlay
 (needed because ~164 points scatter freely in both dimensions). Neither generalises here: the 21
@@ -147,11 +147,11 @@ attributes baked in at SSR time, not assembled by the script
 **One real bug caught by driving the browser, not by reading the markup**: the first keyboard check
 (step 3, first attempt) gave a wrong-looking result purely because of how the *test harness* reset
 focus (`page.click("body")` landing on the chart itself), not a defect in the beat. Recorded here
-per this genre's own "what went wrong, caught by looking" convention — a false alarm is still worth
+per this format's own "what went wrong, caught by looking" convention — a false alarm is still worth
 naming, because it is exactly the class of thing a screenshot alone would not have caught either way,
 and re-driving with a corrected click target is what actually settled it (100+ first, confirmed).
 
 No deviations from the build plan itself. One honest gap, the same class `web-discipline.md` already
-names for the line genre's own seed: 21 Tab stops with the script absent is slow for a keyboard user
+names for the line format's own seed: 21 Tab stops with the script absent is slow for a keyboard user
 who wants to reach a specific band quickly — a roving-tabindex version that collapses this to fewer
 stops is the natural next iteration and is not built here.

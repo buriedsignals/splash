@@ -80,7 +80,7 @@
  *      another file. Rule 2 accepts an out-family parameter because the same file always declares
  *      the const that feeds it; a hypothetical importer could pass anything.
  *   3. Whether the committed artifact is CURRENT. A correct default proves the next render lands in
- *      the right place, never that the last one did. `beat-genre-produces-artifact.test.ts` asks
+ *      the right place, never that the last one did. `beat-format-produces-artifact.test.ts` asks
  *      whether an artifact exists; nothing in the suite compares it against a fresh render, and for
  *      an mp4 nothing could cheaply.
  *   4. Scripts outside `proof/`. A SKILL's own seed renders (`skills/chart-web/scripts/

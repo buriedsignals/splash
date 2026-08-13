@@ -5,7 +5,7 @@ type: stacked-bar
 
 # Beat — Norway ran its grid on 99% renewables; Poland leaned on fossil fuel
 
-**Type:** stacked bar (100%-stacked). **Medium/genre:** chart / static. **Channel:** article web,
+**Type:** stacked bar (100%-stacked). **Medium/format:** chart / static. **Channel:** article web,
 900 x 560.
 
 ## Claim

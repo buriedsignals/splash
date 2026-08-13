@@ -3,7 +3,7 @@
 // This beat's own bake: one world camera, one basemap capture, every quake epicentre projected to
 // pixel space. Binning happens afterwards, in node, on the projected points (`geo-hex.ts`) —
 // `render-web.mjs` bakes first, bins second, the same order `proof/map-quake-density/render.mjs`
-// follows for its own static genre. Adapted from that beat's own `bake.mjs` (a point bake has no
+// follows for its own static format. Adapted from that beat's own `bake.mjs` (a point bake has no
 // polygon join — camera, water-colour override, idle-or-settle gate, then `map.project()` per
 // point) — this is this beat's OWN physical copy, sized for THIS beat's desktop web layout rather
 // than the static beat's 900×560 frame, and writing into its own `/tmp` namespace so concurrent

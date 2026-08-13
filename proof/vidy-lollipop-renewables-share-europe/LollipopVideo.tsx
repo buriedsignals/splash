@@ -53,7 +53,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
 import {
@@ -63,7 +63,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
-// genres read one copy. A lollipop's category axis is NOMINAL, so a tall frame asks for its twin
+// formats read one copy. A lollipop's category axis is NOMINAL, so a tall frame asks for its twin
 // FORM — rows running down the frame — which is the form this beat already draws.
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { LOLLIPOP_TIMING } from "./timing-contract";
@@ -153,7 +153,7 @@ export type Row = {
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
- * of the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * of the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated, not imported from a sibling workspace or a skill).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;

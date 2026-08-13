@@ -15,7 +15,7 @@
 // This is `doctrine/references/geo-discipline.md` rules 1, 2, 4, 6, 7 in one script (rule 3
 // does not apply — nothing here is a polygon):
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
-//   2. the plate is fixed, so both responsive layouts this genre ships never re-render tiles;
+//   2. the plate is fixed, so both responsive layouts this format ships never re-render tiles;
 //   4. each point's own label is placed at its OWN projected pixel, in this beat's own typography
 //      (done in `LocatorWeb.tsx`, not here — this script only projects and records);
 //   6. capture plumbing — `preserveDrawingBuffer`, `--use-gl=angle`, a resolved Chrome path;

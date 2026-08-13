@@ -1,12 +1,12 @@
 /**
- * Beat: per-capita CO₂ emissions, eight countries × seven decades (heatmap / matrix), web genre.
+ * Beat: per-capita CO₂ emissions, eight countries × seven decades (heatmap / matrix), web format.
  *
  * Written fresh from `references/types/heatmap.md`'s own description — region-by-year is the
  * type sheet's own worked example of what this type is FOR, so this beat draws exactly that shape:
  * one categorical axis (country), one temporal axis (decade), one quantitative value (average
  * annual tonnes CO₂ per capita) encoded as cell colour.
  *
- * What the web genre adds here, honestly, per `web-discipline.md`'s "What hover reveals": each
+ * What the web format adds here, honestly, per `web-discipline.md`'s "What hover reveals": each
  * cell prints its own ROUNDED value unconditionally wherever the cell has room for it (`heatmap.md`'s
  * own rule — "if exact numbers matter, put the value inside the cell too" — a coarse 56-cell grid
  * is exactly the case where the numbers ARE the story). Hover/focus adds the one thing the static
@@ -59,7 +59,7 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-/** This genre's single fluid frame, in this beat's own shape. Declared here rather than imported
+/** This format's single fluid frame, in this beat's own shape. Declared here rather than imported
  *  from the skill's seed for the reason that file's own doc-comment gives: a compile-time-only type
  *  has no `#shared/*` vendoring path, and a relative import across the skill boundary hard-codes
  *  this dev repository's own directory layout. Duplicate, do not link. */
@@ -77,7 +77,7 @@ export type HeatmapFrame = {
   cellSeparatorPx: number;
   /** Fixed CSS pixel row ABOVE the plot, for the decade headers — a margin, not part of the
    *  viewBox. A heatmap's column headers sit above its grid, which is the one place this beat's own
-   *  stylesheet departs from the genre's shared `.chart-plot` (whose axis row is below). */
+   *  stylesheet departs from the format's shared `.chart-plot` (whose axis row is below). */
   xAxisRowPx: number;
   /** Air between a row header and the first cell of its row. */
   gap: number;
@@ -106,7 +106,7 @@ export const FRAME: HeatmapFrame = {
   source: { fontSize: 13 },
   axis: { fontSize: 13 },
   // 11px, not the 13px the desktop rung used and not the 9px the narrow rung used. Measured against
-  // this beat's own widest value string at the narrowest plot this genre verifies at: at 13px the
+  // this beat's own widest value string at the narrowest plot this format verifies at: at 13px the
   // values are wider than the cell that holds them on a phone and would be dropped there entirely;
   // at 11px they clear it with air to spare, and 11px is the floor this project's own mobile-first
   // probe settled on. Nothing in between was picked by eye.

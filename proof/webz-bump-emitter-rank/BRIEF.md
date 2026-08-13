@@ -5,7 +5,7 @@ CO₂ emissions from fossil fuels and industry, passing five countries on the wa
 Japan (2006) and Russia (2009), and earlier the United Kingdom (1991) and Ukraine (1992), neither of
 which is still in the top ten.
 
-**Medium / genre:** chart / **web**. **Type:** bump (ranking-over-time) — one line per country, its
+**Medium / format:** chart / **web**. **Type:** bump (ranking-over-time) — one line per country, its
 vertical position its RANK rather than its value, rank 1 at the top.
 
 **Its siblings.** `proof/vidz-bump-emitter-rank/` is the same claim as a video and was written
@@ -13,14 +13,14 @@ first; `proof/static-bump-emitter-rank/` is the same claim as one still frame. A
 own frozen copy of the same file and derive every number in this document. **They are not one beat
 rendered three ways** — see below.
 
-## What this genre owes that the others do not
+## What this format owes that the others do not
 
 `references/types/bump.md` names the ceiling this type runs into: past a handful of entities "the
 tangle of crossing lines stops being readable as individual trajectories… reserve accent colour for
 the two or three lines the story is actually about and render the rest as unlabelled background
 context." The static frame answers that by labelling both ends of every line; the video answers it by
 drawing them one clock at a time. **Neither can answer "which grey line is that one, all the way
-across."** This genre can, and that is the whole of what it adds:
+across."** This format can, and that is the whole of what it adds:
 
 - **Tracing.** Point anywhere in the plot and the nearest reading answers — its country's whole line
   comes forward, the other neutrals recede, and the tooltip names the country, the year and its rank
@@ -117,7 +117,7 @@ India's crossings: United Kingdom 1991 · Ukraine 1992 · Germany 1999 · Japan 
 - **One accent line, not three**, because the recorded palette carries one accent.
 - **Every label is in page ink or muted — never in a line's own hue.** This type's named,
   previously-shipped accessibility failure is a tooltip or an end label painted in the line's own
-  accent on a dark ground; the tooltip here is the genre's shared `#tooltip`, ink on ground, and the
+  accent on a dark ground; the tooltip here is the format's shared `#tooltip`, ink on ground, and the
   country names are ink at every rank.
 - **Nothing whose SHAPE carries meaning is drawn inside the stretched `viewBox`.**
   `preserveAspectRatio="none"` is a non-uniform scale, so the crossing rings and the terminal dots

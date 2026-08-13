@@ -2,12 +2,16 @@
 // front matter is machine-checked; the prose beneath it is what the journalist actually reads.
 
 import { groundTakeaway } from "./ground-claim.mjs";
-import { genreGap } from "./genre-catalog.mjs";
+import { formatGap } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
+import { producerGap } from "./producer-gate.mjs";
+import { randomUUID } from "node:crypto";
+import { open, readFile, rename, rm, stat } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 
 // Still exported, and still this skill's own work — but no longer called by the GATE. Each is an
 // expensive semantic check owned by exactly one phase: `groundTakeaway` runs at G1, the moment the
-// takeaway is confirmed, and `genreGap`/`capabilityGap` run at the genre sub-gate G2b. Each records
+// takeaway is confirmed, and `formatGap`/`capabilityGap` run at the format sub-gate G2b. Each records
 // its resolved verdict into `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`), and BOTH
 // gates then read the recorded scalar.
 //
@@ -17,7 +21,7 @@ import { capabilityGap } from "./capability-gap.mjs";
 // `whereIs` reported `production` on a storyboard this function was refusing
 // (twin/FEEDBACK-2026-08-10.md, A7/A14). Neither gate can now run a check the other cannot, because
 // neither runs one at all: they read the same recorded fields.
-export { groundTakeaway, genreGap, capabilityGap };
+export { groundTakeaway, formatGap, capabilityGap };
 
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
@@ -28,9 +32,9 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
 
 // Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
-// EXPORT_SIZES / SIZED_GENRES below — but it stays in this list because the list is what the parity
+// EXPORT_SIZES / SIZED_FORMATS below — but it stays in this list because the list is what the parity
 // test generates its fixtures from, and a field removed from it is a field nobody tests.
-export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];
+export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
 
 // Ruling R2, read literally: landscape for YouTube and article web, portrait for stories, square
 // for social posts. Charts and maps alike, one model. The pixel dimensions are NOT here — they are
@@ -38,19 +42,19 @@ export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "ch
 // gate owns is whether the journalist chose a name the toolchain exports.
 export const EXPORT_SIZES = ["landscape", "square", "portrait"];
 
-// The genres that HAVE an export size, and therefore the ones a size is required for. `web` is
+// The formats that HAVE an export size, and therefore the ones a size is required for. `web` is
 // deliberately absent and that absence is R2's other half: web is not a fourth size, it fills
 // whatever container the CMS gives it, like an embed component. `scrolly` is absent for a related
 // but distinct reason — a scroll-driven piece has no single exported frame at all.
 //
 // This is why the requirement is conditional rather than flat. Before this, `size` was required of
-// EVERY slot, so a correct `genre: web` slot could not close gate 2 without naming a size that will
+// EVERY slot, so a correct `format: web` slot could not close gate 2 without naming a size that will
 // never be used, and a wrong one closed it by naming one. Both are the same defect: the toolchain
 // asking a question whose answer it will ignore.
-export const SIZED_GENRES = ["static", "video"];
+export const SIZED_FORMATS = ["static", "video"];
 
 /**
- * `null` when this GENRE and this SIZE go together; otherwise the one line the gate refuses in.
+ * `null` when this FORMAT and this SIZE go together; otherwise the one line the gate refuses in.
  *
  * The message text below is duplicated VERBATIM in `splash/scripts/where.mjs`, which reads
  * gate 2 independently and must not be able to disagree with this file about what it read. That
@@ -59,10 +63,10 @@ export const SIZED_GENRES = ["static", "video"];
  * cost this project a gate reporting `production` on a storyboard the other gate was refusing
  * (FEEDBACK-2026-08-10.md, A7/A14).
  */
-export function sizeGap(genre, size, id) {
-  const takesASize = SIZED_GENRES.includes(genre);
+export function sizeGap(format, size, id) {
+  const takesASize = SIZED_FORMATS.includes(format);
   if (!takesASize && size)
-    return `slot ${id}: a ${genre} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
+    return `slot ${id}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
   if (!takesASize) return null;
   if (!size) return `slot ${id}: size is missing — gate 2c never closed`;
   if (!EXPORT_SIZES.includes(size))
@@ -98,20 +102,22 @@ const SCALAR_VOCABULARY_GAP = {
     `grounding ${JSON.stringify(value)} is not a resolved verdict — expected supported, unverifiable, or overridden — "<reason>"`,
 };
 
-// Gate 2's three sub-gates, each recorded as it closes: the KIND (2a), then the genre within that
-// kind (2b), then the size within that genre (2c). A slot naming none of them is a slot the
+// Gate 2's three sub-gates, each recorded as it closes: the KIND (2a), then the format within that
+// kind (2b), then the size within that format (2c). A slot naming none of them is a slot the
 // journalist was never asked about — the run pinned "chart / static" in one undifferentiated move
 // and then offered three variants of the same bar.
-const SLOT_SUB_GATE = { medium: "2a", genre: "2b", size: "2c" };
+const SLOT_SUB_GATE = { medium: "2a", format: "2b", size: "2c" };
 
-// `reachable` carries the recorded verdict of genreGap + capabilityGap, run once at G2b by the
+// `reachable` carries the recorded verdict of formatGap + capabilityGap, run once at G2b by the
 // phase that owns them. The gate reads the record; it never re-runs the check, because the other
 // gate structurally cannot.
 const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
 
 function slotGap(field, id) {
+  if (field === "id") return "a provisional slot has no id — gate 2a cannot start";
+  if (field === "proves") return `slot ${id ?? "?"}: proves is missing — its confirmed claim was never persisted`;
   if (field === "chosen") return `slot ${id}: nothing chosen — gate 2 is not closed`;
-  if (field === "reachable") return `slot ${id}: this medium and genre were never confirmed reachable`;
+  if (field === "reachable") return `slot ${id}: this medium and format were never confirmed reachable`;
   const subGate = SLOT_SUB_GATE[field];
   return subGate
     ? `slot ${id}: ${field} is missing — gate ${subGate} never closed`
@@ -171,28 +177,264 @@ export function parseStoryboard(text) {
   let slots = null;
   let slot = null;
 
+  function assignUnique(target, key, value, label) {
+    if (Object.prototype.hasOwnProperty.call(target, key)) {
+      throw new Error(`${label} has duplicate key ${JSON.stringify(key)}`);
+    }
+    target[key] = value;
+  }
+
   for (const line of match[1].split(/\r?\n/)) {
     if (/^slots:\s*$/.test(line)) {
+      if (Object.prototype.hasOwnProperty.call(meta, "slots")) {
+        throw new Error('STORYBOARD.md has duplicate top-level key "slots"');
+      }
       slots = [];
       meta.slots = slots;
+      slot = null;
       continue;
     }
     if (slots && /^\s+-\s+/.test(line)) {
       slot = {};
       slots.push(slot);
       const first = /^\s+-\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (first) slot[first[1]] = scalar(first[2]);
+      if (first) assignUnique(slot, first[1], scalar(first[2]), "STORYBOARD.md slot");
       continue;
     }
     if (slot && /^\s{4,}[A-Za-z]+:/.test(line)) {
       const pair = /^\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      slot[pair[1]] = scalar(pair[2]);
+      assignUnique(slot, pair[1], scalar(pair[2]), "STORYBOARD.md slot");
       continue;
     }
     const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line);
-    if (pair) meta[pair[1]] = scalar(pair[2]);
+    if (pair) {
+      assignUnique(meta, pair[1], scalar(pair[2]), "STORYBOARD.md");
+      slot = null;
+    }
   }
-  return { meta, prose: match[2] };
+  let legacy = false;
+  for (const [index, parsedSlot] of (meta.slots ?? []).entries()) {
+    const hasFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "format");
+    const hasLegacyFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "genre");
+    if (!hasLegacyFormat) continue;
+    legacy = true;
+    const label = parsedSlot.id ?? String(index + 1);
+    if (hasFormat && parsedSlot.format !== parsedSlot.genre) {
+      throw new Error(
+        `slot ${label}: conflicting publication format fields: format is ${JSON.stringify(parsedSlot.format)} but legacy genre is ${JSON.stringify(parsedSlot.genre)}`,
+      );
+    }
+    if (!hasFormat) parsedSlot.format = parsedSlot.genre;
+    delete parsedSlot.genre;
+  }
+  const slotIds = new Set();
+  for (const parsedSlot of meta.slots ?? []) {
+    if (!parsedSlot.id) continue;
+    const id = String(parsedSlot.id);
+    if (slotIds.has(id)) throw new Error(`STORYBOARD.md has duplicate slot id ${JSON.stringify(id)}`);
+    slotIds.add(id);
+  }
+  return { meta, prose: match[2], legacy };
+}
+
+function documentParts(text) {
+  const match = /^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n?)([\s\S]*)$/.exec(text);
+  if (!match) throw new Error("STORYBOARD.md has no front matter");
+  return { opening: match[1], frontmatter: match[2], closing: match[3], prose: match[4] };
+}
+
+function linesWithEndings(text) {
+  const lines = text.match(/[^\r\n]*(?:\r\n|\n|$)/g) ?? [];
+  if (lines.at(-1) === "") lines.pop();
+  return lines;
+}
+
+function slotBlocks(lines) {
+  const blocks = [];
+  let inSlots = false;
+  let start = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^slots:\s*(?:\r?\n)?$/.test(line)) {
+      inSlots = true;
+      continue;
+    }
+    if (inSlots && /^\s+-\s+/.test(line)) {
+      if (start !== null) blocks.push({ start, end: index });
+      start = index;
+      continue;
+    }
+    if (inSlots && start !== null && /^\S/.test(line)) {
+      blocks.push({ start, end: index });
+      start = null;
+      inSlots = false;
+    }
+  }
+  if (start !== null) blocks.push({ start, end: lines.length });
+  return blocks;
+}
+
+function fieldInBlock(lines, block, key) {
+  for (let index = block.start; index < block.end; index += 1) {
+    const pattern = index === block.start
+      ? new RegExp(`^(\\s+-\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`)
+      : new RegExp(`^(\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`);
+    const match = pattern.exec(lines[index]);
+    if (match) return { index, match };
+  }
+  return null;
+}
+
+function removeFrontmatterLine(lines, index) {
+  const removedLastLine = index === lines.length - 1;
+  lines.splice(index, 1);
+  if (removedLastLine && lines.length > 0) {
+    lines[lines.length - 1] = lines[lines.length - 1].replace(/\r?\n$/, "");
+  }
+}
+
+function canonicalizeLegacyFormatKeys(text) {
+  parseStoryboard(text); // fail closed before changing a conflicting dual-field document
+  const parts = documentParts(text);
+  const lines = linesWithEndings(parts.frontmatter);
+  for (const block of slotBlocks(lines).reverse()) {
+    const canonical = fieldInBlock(lines, block, "format");
+    const legacy = fieldInBlock(lines, block, "genre");
+    if (!legacy) continue;
+    if (canonical) {
+      // A slot may legally begin `- genre: web` and carry a matching `format: web` later. The
+      // first line also owns the YAML list marker, so deleting it would turn the remaining fields
+      // into loose indentation under `slots:` and silently erase the slot on the next parse.
+      // Keep that list item in place as the canonical field and remove the later duplicate.
+      if (legacy.index === block.start) {
+        removeFrontmatterLine(lines, canonical.index);
+        lines[legacy.index] = lines[legacy.index].replace(/^(\s+-\s+)genre:/, "$1format:");
+      } else {
+        removeFrontmatterLine(lines, legacy.index);
+      }
+    } else {
+      lines[legacy.index] = lines[legacy.index].replace(/^(\s+(?:-\s+)?)genre:/, "$1format:");
+    }
+  }
+  return `${parts.opening}${lines.join("")}${parts.closing}${parts.prose}`;
+}
+
+function encodedScalar(value) {
+  if (Array.isArray(value)) return JSON.stringify(value);
+  const text = String(value);
+  return /^[A-Za-z0-9_.\/-]+$/.test(text) ? text : JSON.stringify(text);
+}
+
+function replaceTopLevel(lines, key, value) {
+  const index = lines.findIndex((line) => new RegExp(`^${key}:`).test(line));
+  if (value === null) {
+    if (index >= 0) lines.splice(index, 1);
+    return;
+  }
+  const ending = index >= 0 ? (/\r\n$/.test(lines[index]) ? "\r\n" : "\n") : (lines.some((line) => /\r\n$/.test(line)) ? "\r\n" : "\n");
+  const next = `${key}: ${encodedScalar(value)}${ending}`;
+  if (index >= 0) lines[index] = next;
+  else {
+    const slotsIndex = lines.findIndex((line) => /^slots:/.test(line));
+    lines.splice(slotsIndex >= 0 ? slotsIndex : lines.length, 0, next);
+  }
+}
+
+function replaceSlotField(lines, slotId, key, value) {
+  const block = slotBlocks(lines).find((candidate) => {
+    const id = fieldInBlock(lines, candidate, "id");
+    return id && scalar(id.match[3]) === String(slotId);
+  });
+  if (!block) throw new Error(`STORYBOARD.md has no slot ${JSON.stringify(String(slotId))}`);
+  const existing = fieldInBlock(lines, block, key);
+  if (value === null) {
+    if (existing) removeFrontmatterLine(lines, existing.index);
+    return;
+  }
+  const ending = existing
+    ? (existing.match[4] ?? "")
+    : (lines.some((line) => /\r\n$/.test(line)) ? "\r\n" : "\n");
+  if (existing) {
+    const prefix = existing.match[1];
+    lines[existing.index] = `${prefix}${key}: ${encodedScalar(value)}${ending}`;
+  } else {
+    const insertedAtEnd = block.end === lines.length;
+    if (insertedAtEnd && block.end > 0 && !/\r?\n$/.test(lines[block.end - 1])) {
+      lines[block.end - 1] += ending;
+    }
+    lines.splice(block.end, 0, `    ${key}: ${encodedScalar(value)}${insertedAtEnd ? "" : ending}`);
+  }
+}
+
+async function replaceAtomically(path, text, { beforeRename } = {}) {
+  const fileStat = await stat(path).catch((error) => {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  });
+  const tempPath = join(dirname(path), `.${basename(path)}.${process.pid}.${randomUUID()}.tmp`);
+  let handle;
+  try {
+    handle = await open(tempPath, "wx", fileStat?.mode);
+    await handle.writeFile(text, "utf8");
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await beforeRename?.(tempPath, path);
+    await rename(tempPath, path);
+  } finally {
+    await handle?.close().catch(() => {});
+    await rm(tempPath, { force: true });
+  }
+}
+
+/** Write a complete storyboard through the same atomic, canonical boundary used by mutations. */
+export async function writeStoryboardAtomic(path, text, hooks = {}) {
+  const canonical = canonicalizeLegacyFormatKeys(text);
+  const parsed = parseStoryboard(canonical);
+  if (parsed.legacy) throw new Error("the canonical storyboard writer produced a legacy format field");
+  await replaceAtomically(path, canonical, hooks);
+  return parsed;
+}
+
+/**
+ * Mutate recorded storyboard fields without reserializing the journalist's prose or unrelated
+ * front matter. Any explicit mutation also upgrades every legacy slot key to `format`.
+ */
+export async function mutateStoryboard(path, { topLevel = {}, slot } = {}, hooks = {}) {
+  if (Object.prototype.hasOwnProperty.call(topLevel, "genre") || Object.prototype.hasOwnProperty.call(slot?.fields ?? {}, "genre")) {
+    throw new Error("genre is accepted only while reading a legacy STORYBOARD.md; write format instead");
+  }
+  const slotFields = slot?.fields ?? {};
+  const reopensProducerGate = ["medium", "format", "chosen"].some((field) =>
+    Object.prototype.hasOwnProperty.call(slotFields, field),
+  );
+  if (
+    reopensProducerGate &&
+    (Object.prototype.hasOwnProperty.call(slotFields, "producer") ||
+      Object.prototype.hasOwnProperty.call(slotFields, "datawrapperType"))
+  ) {
+    throw new Error(
+      "medium, format, or treatment confirmation cannot also confirm a producer; close the post-treatment producer gate separately",
+    );
+  }
+  const original = await readFile(path, "utf8");
+  const canonical = canonicalizeLegacyFormatKeys(original);
+  const parts = documentParts(canonical);
+  const lines = linesWithEndings(parts.frontmatter);
+  for (const [key, value] of Object.entries(topLevel)) replaceTopLevel(lines, key, value);
+  if (slot) {
+    if (slot.id === undefined || slot.id === null) throw new Error("a storyboard slot mutation needs slot.id");
+    for (const [key, value] of Object.entries(slotFields)) replaceSlotField(lines, slot.id, key, value);
+    if (reopensProducerGate) {
+      replaceSlotField(lines, slot.id, "producer", null);
+      replaceSlotField(lines, slot.id, "datawrapperType", null);
+    }
+  }
+  const next = `${parts.opening}${lines.join("")}${parts.closing}${parts.prose}`;
+  const parsed = parseStoryboard(next);
+  if (parsed.legacy) throw new Error("the canonical storyboard mutation left a legacy format field");
+  await replaceAtomically(path, next, hooks);
+  return parsed;
 }
 
 // ONE argument, deliberately. Everything this gate reads is a resolved scalar already written into
@@ -224,7 +466,7 @@ export function checkStoryboard(meta) {
 
     for (const field of REQUIRED_SLOT_FIELDS) {
       // `size` is not a flat requirement — `sizeGap` owns it entirely, below, because whether it is
-      // required at all depends on the genre.
+      // required at all depends on the format.
       if (field === "size") continue;
       const value = slot[field];
       if (!value) {
@@ -235,7 +477,7 @@ export function checkStoryboard(meta) {
       if (vocabulary && !vocabulary(value)) errors.push(slotGap(field, slot.id));
     }
 
-    const gap = sizeGap(slot.genre, slot.size, slot.id);
+    const gap = sizeGap(slot.format, slot.size, slot.id);
     if (gap) errors.push(gap);
 
     // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
@@ -248,6 +490,9 @@ export function checkStoryboard(meta) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`);
     } else if (!candidates.includes(slot.chosen)) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
+    } else {
+      const gap = producerGap(slot);
+      if (gap) errors.push(gap);
     }
   }
   return errors;

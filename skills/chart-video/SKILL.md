@@ -1,13 +1,13 @@
 ---
 name: chart-video
-description: Use to produce a chart beat in the VIDEO genre — a short motion build of a chart that already exists as geometry, written under the motion grammar, driven by one editable timing contract, and verified by looking at the final frame before the mp4 and at four extracted frames after it. Carries the timing contract, the seed composition, and the render ladder's second rung.
+description: Use to produce a chart beat in the VIDEO format — a short motion build of a chart that already exists as geometry, written under the motion grammar, driven by one editable timing contract, and verified by looking at the final frame before the mp4 and at four extracted frames after it. Carries the timing contract, the seed composition, and the render ladder's second rung.
 ---
 
 # chart-video — write the edit, render the last frame first, then look at four
 
 ## Overview
 
-The video genre of a chart beat. It does not hold a chart: it holds **the edit**.
+The video format of a chart beat. It does not hold a chart: it holds **the edit**.
 
 A video beat adds exactly one thing to a chart that a still cannot have — an **order in time**. This
 skill carries its **seed** (`co2-suisse`); the stories that used to live here, `life-expectancy` and
@@ -51,11 +51,11 @@ against the first of these builds.
 
 ## When to use
 
-- When a closed `STORYBOARD.md` picks medium `chart` and genre **video**, and the beat's `BRIEF.md`
-  is written. No brief, no code — same rule as the static genre.
+- When a closed `STORYBOARD.md` picks medium `chart` and format **video**, and the beat's `BRIEF.md`
+  is written. No brief, no code — same rule as the static format.
 - When the argument has an **order**: a baseline the evidence is read against, a subject that lands,
   a sentence that only holds once the marks are on screen. A chart with no order in its argument is
-  a still, and a still is a whole genre — animating it anyway is the motion grammar's first
+  a still, and a still is a whole format — animating it anyway is the motion grammar's first
   anti-pattern.
 - **Not** to re-draw a chart that already exists as a still. Reuse its geometry. If the geometry is
   entangled with the still's rasteriser, split the pure core out first (that is what
@@ -87,7 +87,7 @@ but this directory.
 The same trap, one level up, for colour: `deriveFurniture` lives beside the rasteriser and cannot be
 called in the browser either. **Do not reimplement it in the composition.** `scripts/render-video.mjs`
 runs in node, calls the one implementation there, and passes `ink`/`muted`/`grid` in as input props.
-A second copy of the contrast escalation inside a composition is how two genres end up disagreeing
+A second copy of the contrast escalation inside a composition is how two formats end up disagreeing
 about what "muted" means on the same newsroom ground.
 
 ## Architecture
@@ -108,7 +108,7 @@ about what "muted" means on the same newsroom ground.
 video beat. That is a real, named gap and it is deliberate for this exploratory pass: adding them to
 the root template is a change to a different skill, and it drags a ~93 MB Chrome Headless Shell
 download into every journalist's install, which is a distribution decision, not a code decision.
-Whoever ships the video genre for real makes that call and moves the two packages.
+Whoever ships the video format for real makes that call and moves the two packages.
 
 ## How it works (the shape)
 

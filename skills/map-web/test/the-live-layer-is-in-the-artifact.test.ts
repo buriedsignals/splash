@@ -9,7 +9,7 @@
  *   - **zero** committed map HTML file contained `maplibregl`, `api.maptiler.com` or
  *     `NavigationControl`; every map the owner could open was the baked plate;
  *   - setting `render-web.mjs`'s `const liveBlock = live ? … ` to `const liveBlock = false ? …` —
- *     which strips maplibre-gl, the plan and the boot script out of every page this genre renders —
+ *     which strips maplibre-gl, the plan and the boot script out of every page this format renders —
  *     left **354 tests passing**. The whole of R1 was deletable in silence.
  *
  * So this file asserts the two facts nothing asserted: the renderer PUTS the live layer in the file
@@ -70,7 +70,7 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
  * layer is: the plan the boot script reads, the MapTiler style request R1 accepted, the placeholder
  * R1b requires in its place, the library's own constructor call, and the control the owner asked
  * for by name. `maplibregl` alone would not do — it appears inside the inlined library whether or
- * not this genre ever calls it.
+ * not this format ever calls it.
  */
 const LIVE_MARKERS = [
   'id="mw-live-plan"',
@@ -169,7 +169,7 @@ describe("the renderer puts the live map into the file it writes", () => {
   it("should put maplibre-gl, the plan and the boot script into the file it writes", async () => {
     const html = await buildLive();
     expect(html).toContain('id="mw-live-plan"');
-    // The boot script, by a line only this genre's own file carries.
+    // The boot script, by a line only this format's own file carries.
     expect(html).toContain("function initLiveMap(");
     // The library itself, by its own build banner rather than by a word that could be a comment.
     expect(html).toContain("maplibregl");
@@ -219,7 +219,7 @@ describe("the renderer puts the live map into the file it writes", () => {
   });
 
   it("should ship the seed itself live, not merely be capable of it", () => {
-    // `renderMapWeb` takes `live` as an argument, so every assertion above passes on a genre whose
+    // `renderMapWeb` takes `live` as an argument, so every assertion above passes on a format whose
     // every beat opted out. This is the line that says the seed opted in.
     expect(SEED.live).toBe(true);
   });
@@ -232,8 +232,8 @@ describe("the renderer puts the live map into the file it writes", () => {
  * decided by its PATH, not by a class name inside it. The three older beats
  * (`mapgen-choropleth-web`, `mapgen-hexgrid-web`, `mapgen-locator-web`) do not carry the seed's
  * `map-web-page` root class at all: they were still on the two-rung `layouts` markup, so a
- * class-based sweep found 2 of 5 and reported green over the three worst pages in the genre. The
- * genre's own root class is kept as a WIDENER below, so a beat living somewhere else is still
+ * class-based sweep found 2 of 5 and reported green over the three worst pages in the format. The
+ * format's own root class is kept as a WIDENER below, so a beat living somewhere else is still
  * caught, but the floor is the path list.
  */
 function committedMapWebPages(): { rel: string; html: string }[] {

@@ -20,7 +20,7 @@ naming ladder rung R0, rather than stretching ten columns into 1080 px and clipp
 nearly tripling — and now sit almost twice the 2023 world average (4.71 t), among five major
 emitters compared at both years.
 
-**Medium / genre:** chart / video. **Type:** grouped bar — one category per country (5), two bars
+**Medium / format:** chart / video. **Type:** grouped bar — one category per country (5), two bars
 per category (2000, 2023), value mapped to height from a shared zero baseline, one consistent hue
 per series across every group (`references/types/grouped-bar.md`: "a series that swaps position or
 colour between groups... breaks silently"). A reference rule (the 2023 world average) is laid down

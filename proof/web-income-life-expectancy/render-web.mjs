@@ -1,7 +1,7 @@
 // twin/proof/web-income-life-expectancy/render-web.mjs
 //
 // This beat's own WEB runner — the same shape `../co2-suisse/render-web.mjs` has: the story's own
-// constants, its own CSV reader, its own component, handed to the genre's generic machinery. It
+// constants, its own CSV reader, its own component, handed to the format's generic machinery. It
 // lives here, beside the story, not inside `skills/chart-web/scripts/render-web.mjs`, for the
 // exact reason that file's own header explains: a skill directory that imports a story workspace
 // does not build once copied, on its own, into a journalist's root.

@@ -1,7 +1,7 @@
 // twin/proof/webz-bump-emitter-rank/render-web.mjs
 //
 // This beat's own WEB runner — the shape `proof/web-co2-ranking/render-web.mjs` set: the story's own
-// constants, the story's own CSV reader, the story's own component, handed to the genre's generic
+// constants, the story's own CSV reader, the story's own component, handed to the format's generic
 // `renderWeb`. It lives beside the story, never inside the skill: a skill directory that imports a
 // story workspace stops building the moment it is copied on its own into a journalist's root.
 //
@@ -286,7 +286,7 @@ async function repair(outPath) {
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");
   html = html.replace("</body>", `<script>\n${interactionSource}\n</script>\n</body>`);
 
-  // This beat's own rules, after the genre's shared stylesheet.
+  // This beat's own rules, after the format's shared stylesheet.
   //
   // THE RINGS AND DOTS ARE HTML, at a fixed pixel size, because `preserveAspectRatio="none"` is a
   // non-uniform scale and an SVG circle under it is an ellipse of the container's own aspect ratio
@@ -357,7 +357,7 @@ svg.chart .line { transition: opacity 120ms ease; }
 .node { cursor: pointer; }
 svg.chart circle.node.node-active { fill: var(--muted); }
 .node:focus { outline: none; }
-/* The ring hugs the mark — outline-offset is 0, not the 2px the rest of this genre uses. An outline
+/* The ring hugs the mark — outline-offset is 0, not the 2px the rest of this format uses. An outline
    is a FIXED number of CSS pixels around a mark whose own size is in STRETCHED user units, so every
    pixel of offset has to be bought back as viewBox inset at the width where the horizontal scale is
    smallest (MARK_INSET_X, BumpWeb.tsx, carries the arithmetic). An SVG clips to its viewBox and

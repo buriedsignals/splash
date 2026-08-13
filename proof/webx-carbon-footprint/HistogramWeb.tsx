@@ -1,6 +1,6 @@
 /**
  * The web beat of "Six in ten countries emit under 4 tonnes of CO2 per person" — the interactive
- * genre.
+ * format.
  *
  * The question the brief poses by name for this type — "what does hovering a bin reveal that the
  * bars do not already show?" — is answered with the one thing a histogram's bars genuinely cannot
@@ -37,7 +37,7 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-/** This genre's single fluid frame, in this beat's own shape — declared here, not imported from the
+/** This format's single fluid frame, in this beat's own shape — declared here, not imported from the
  *  skill's seed: a compile-time-only type has no `#shared/*` vendoring path to travel by, and a
  *  relative import across the skill boundary hard-codes this dev repository's own layout. */
 export type HistogramFrame = {
@@ -57,7 +57,7 @@ export type HistogramFrame = {
 };
 
 export const FRAME: HistogramFrame = {
-  // A tall canonical box on purpose. Height follows width in this genre, so a wide window clamps to
+  // A tall canonical box on purpose. Height follows width in this format, so a wide window clamps to
   // the viewport regardless (the plot measured 669px at 1600x900 either way) while a narrow one gets
   // exactly what this ratio hands it: at 820x420 a 375px phone drew a 161px plot, in which the tail
   // bins — the whole point of a right-skewed distribution — were a one-pixel smear. Measured at

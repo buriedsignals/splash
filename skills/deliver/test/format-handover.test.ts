@@ -7,7 +7,7 @@ import {
 } from "../scripts/format-handover.mjs";
 
 const VALID = {
-  genre: "static",
+  format: "static",
   // The story's own language, read from STORYBOARD.md. This fixture asserts the English scaffold,
   // so it is an English story; the French one is driven below.
   language: "en",
@@ -20,6 +20,12 @@ const VALID = {
 };
 
 describe("formatHandover — what the journalist reads", () => {
+  it("should reject the legacy runtime field instead of maintaining two API vocabularies", () => {
+    expect(() =>
+      formatHandover({ ...VALID, genre: "static" } as any),
+    ).toThrow(/does not accept genre/);
+  });
+
   it("should name each file by basename and say what it is for", () => {
     const doc = formatHandover(VALID);
     expect(doc).toContain("`still.svg`");
@@ -27,6 +33,21 @@ describe("formatHandover — what the journalist reads", () => {
     expect(doc).toContain("`still.png`");
     // Never the absolute path of the machine that built it — that means nothing in a newsroom.
     expect(doc).not.toContain("/tmp/story/export");
+  });
+
+  it("should distinguish embed code and deployment provenance from a delivered web page", () => {
+    const doc = formatHandover({
+      ...VALID,
+      format: "web",
+      files: [
+        "/tmp/story/export/EMBED_URL.txt",
+        "/tmp/story/export/EMBED_CODE.html",
+        "/tmp/story/export/DEPLOYMENT.json",
+      ],
+    });
+    expect(doc).toContain("the iframe snippet to paste into the CMS");
+    expect(doc).toContain("linking the live output to its editable source");
+    expect(doc).not.toContain("`EMBED_CODE.html`** — the page itself");
   });
 
   it("should read back the placement, the alt, the credit and the caveat", () => {
@@ -115,7 +136,7 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
         "caveat",
         "credit",
         "files",
-        "genre",
+        "format",
         // `language` is the second parameter added on the same condition as `liveTiles`: it is a
         // recorded CODE, checked against a pattern and against a closed set of scaffolds — no
         // sentence a caller writes can be rendered through it, and nothing it carries reaches the

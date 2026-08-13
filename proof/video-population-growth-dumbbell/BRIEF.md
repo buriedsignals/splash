@@ -20,7 +20,7 @@ decision, it was a default.
 **Proves:** since 2000, Switzerland's population has grown faster than any of nine other European
 countries' — while Germany's and Poland's have barely moved.
 
-**Medium / genre:** chart / video. **Type:** dumbbell (range plot) — one row per country, two dots
+**Medium / format:** chart / video. **Type:** dumbbell (range plot) — one row per country, two dots
 (2000 index = 100, fixed for every row; 2023 index, the actual finding) joined by a connector whose
 LENGTH is the point, rows sorted by gap size descending. Position-encoded (no forced zero — the
 story is the gap between the two dots, not their distance from an origin).

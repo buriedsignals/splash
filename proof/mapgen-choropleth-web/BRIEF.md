@@ -1,6 +1,6 @@
 # Beat — the Faroe Islands emit 8.3× as much CO₂ per person as Albania (web)
 
-**Type:** choropleth. **Medium/genre:** map / web. **Channel:** article web, one self-contained
+**Type:** choropleth. **Medium/format:** map / web. **Channel:** article web, one self-contained
 `render/choropleth.html` (1 347 KB), plus an always-rendered table of all 41 readings.
 
 Since ruling **R1** (2026-08-10) the display surface is a **live MapTiler map** — MapTiler's own
@@ -28,7 +28,7 @@ the lowest. The map states a ranking, not a cause.
 - `co2-per-capita-2023.csv`: **41 rows**, `Code, Entity, Year, value`, every row Year = 2023, no
   duplicate codes. Value-for-value identical to
   `proof/mapgen-choropleth-video/co2-per-capita-2023.csv` (verified: 41 of 41 codes match, zero
-  numeric differences) — the same readings, a different claim and a different genre.
+  numeric differences) — the same readings, a different claim and a different format.
 - Kosovo is deliberately absent from the declared study set (Natural Earth `KOS` vs OWID
   `OWID_KOS`); aliasing it through to make a join pass would be the dishonest move.
 
@@ -72,7 +72,7 @@ beat survives with JavaScript off — and, since R1, with no key and no network 
 **Pan and zoom.** MapTiler's own NavigationControl, no out-of-map zoom button (B6.14b). The reader
 cannot pull back past the view the title makes its claim about (`minZoom` is the fitted zoom) and
 can come in **3.49 zoom levels** — derived, not chosen: the zoom that brings the smallest region
-this beat draws (Andorra, 2.5 frame units on the plate) up to the 28 px pointer target the genre
+this beat draws (Andorra, 2.5 frame units on the plate) up to the 28 px pointer target the format
 already uses. That is what makes the subject reachable at all: the Faroe Islands are ~2 px at the
 fit, and at max zoom hovering them answers "Faroe Islands : 13.0 tonnes of CO₂ per person"
 (driven, 1600×900).
@@ -105,11 +105,11 @@ one decimal.
   requests nothing.
 - **The accessible table sits below the one-window column**, not inside it: 41 rows cannot share a
   900 px window with a map without shrinking the map to a stamp or hiding the table behind a
-  disclosure widget this genre forbids. Total page height is 2 085 px at 1600×900, of which 868 px
+  disclosure widget this format forbids. Total page height is 2 085 px at 1600×900, of which 868 px
   is the beat and 1 157 px is the table.
 - **The live camera fills the stage, so a wide window shows more world than the plate did.**
   Measured at 1600×900: canvas 1566×658, fitted zoom 2.744, 164.4° of longitude visible against the
-  plate's 59°. That follows from the genre's own `html.mw-live .mw-viewport { aspect-ratio: auto }`
+  plate's 59°. That follows from the format's own `html.mw-live .mw-viewport { aspect-ratio: auto }`
   — a live map has no plate aspect to preserve — and it also widens the pan leash, which is the
   fitted VIEW. At 375×812 the container is nearly square and the framing matches the plate.
 

@@ -30,7 +30,7 @@
 //      `interactive: false` — no drag, no wheel, no keyboard pan, no NavigationControl — because on
 //      a scrolly the scroll already drives the camera and a reader-moved camera would be overridden
 //      by the next step's flight. This is a DIFFERENCE from map × web, where R1 requires the
-//      controls; it is recorded as a distinction between the two genres in
+//      controls; it is recorded as a distinction between the two formats in
 //      `scrolly/references/scrolly-discipline.md` rather than left as an omission.
 //
 // ONE IMPLEMENTATION, USED TWICE, like `map-drive.mjs` beside it: the pure half is imported in node

@@ -1,7 +1,7 @@
 // twin/proof/weby-small-multiples-co2-per-capita/small-multiples-interaction.mjs
 //
 // This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, the single-
-// panel line genre's own copy. `render-web.mjs` inlines this one instead (same substitution
+// panel line format's own copy. `render-web.mjs` inlines this one instead (same substitution
 // pattern `web-income-life-expectancy/render-web.mjs`'s `patchForThisBeat` uses).
 //
 // WHY A SECOND IMPLEMENTATION WAS NEEDED, NOT A REUSE: the skill's own `nearestIndex` resolves a
@@ -29,7 +29,7 @@
 // `assets/`, and there is no shared vendoring path a beat could reach it through.
 //
 // Keyboard: every point already carries `tabIndex={0}` at build time (works with this script
-// absent entirely, same invariant `web-discipline.md` states for the line genre). Tab moves
+// absent entirely, same invariant `web-discipline.md` states for the line format). Tab moves
 // through the DOM in document order — panel 1's 75 points, then panel 2's, then panel 3's, then
 // panel 4's, because that is the order the four `<g class="panel">` elements were written in the
 // SVG — so Tab naturally moves BETWEEN panels once a panel's own 75 points are exhausted, with no

@@ -18,7 +18,7 @@ record of what was rendered on 2026-08-08, not as evidence of any number.
 | `2-VIE--main-datawrapper.png` | **SUPERSEDED — false data, false credit** |
 | `2-VIE--main-chartnative.png` | **SUPERSEDED — false data, false credit** |
 | `1-CO2--*` (four files) | Sound — re-verified against frozen data, see §4 |
-| `video-*`, `ranking-*`, `map-*` | Outside this notice; see `../../AUDIT-2026-08-09.md` |
+| `video-*`, `ranking-*`, `map-*` | Outside this notice |
 
 ---
 
@@ -111,15 +111,13 @@ A faithful re-render is not available, for four reasons, each checkable:
 3. **Half of the eight are not ours to re-render.** `main-chartnative` and `main-datawrapper` were
    produced by separate agents in the established engine's own tree, one of them against a live
    Datawrapper API. They cannot be reproduced from this worktree at all.
-4. **One of them is deliberately a record of a build that no longer exists.** `COMPARISON.md`
-   describes `3-MIGRATION--twin.png` as *"the pre-switch build"* and scores it against
-   `3-MIGRATION--twin-d3.png` as the after. Re-rendering it with today's code would delete the
-   *before* half of that document's own argument.
+4. **One of them is deliberately a record of a build that no longer exists.**
+   `3-MIGRATION--twin.png` is the pre-switch build and `3-MIGRATION--twin-d3.png` is the after.
+   Re-rendering it with today's code would delete the *before* half of that comparison.
 
-Deleting them was the other option in the audit and is worse: `COMPARISON.md`'s findings are about
-**layout** — axis fitting, assertion-versus-geometry, where the one emphasised label lands — and
-those read the same whatever series is underneath. Deleting would leave prose citing images that no
-longer exist, which is less auditable, not more. So the pixels stay byte-identical as the record of
+Deleting them would erase evidence about **layout** — axis fitting, assertion-versus-geometry,
+where the one emphasised label lands — and those read the same whatever series is underneath. So
+the pixels stay byte-identical as the record of
 what was rendered, and this notice removes their standing as evidence of any number.
 
 ## 6. One more fact a reader should have

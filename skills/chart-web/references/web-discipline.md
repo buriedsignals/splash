@@ -1,13 +1,13 @@
 # Web discipline
 
-The rules the interactive chart genre is written under. There was no doctrine for this genre before
+The rules the interactive chart format is written under. There was no doctrine for this format before
 this file — it was written while building the first web beat (`proof/co2-suisse/EmissionsWeb.tsx`,
 the CO₂ story), the same way `static-discipline.md` was written against the first static beat and
 `motion-grammar.md` against the first video build. It was rewritten again against this skill's
 SECOND build, when the owner's own read of the first build's shipped output was that the frame did
 not fill its container — see "Responsive behaviour" below, which is the section this rewrite
 actually overturns; every other section in this file still holds from the first build. Every rule
-below is either a decision this genre needed and the others did not, or an explicit inheritance from
+below is either a decision this format needed and the others did not, or an explicit inheritance from
 `doctrine` stated so it is not silently assumed.
 
 ## What hover reveals that the static chart could not show
@@ -16,7 +16,7 @@ below is either a decision this genre needed and the others did not, or an expli
 repeated on demand.** `static-discipline.md`'s "Axis density" rule gives a static frame a
 conventional, dense grid — but even a dense grid on a long series only makes a handful of readings
 locatable to the pixel; it cannot label all of them without becoming a table wearing a line's
-clothes. That is the gap this genre closes: every reading gets an exact, on-demand value —
+clothes. That is the gap this format closes: every reading gets an exact, on-demand value —
 `data-detail="1967 · 32,5 Mt"` on every point, none of it printed by default, all of it one hover,
 tap or keyboard focus away.
 
@@ -24,7 +24,7 @@ This is also the test for what does NOT belong behind interaction. The title, th
 own label, the peak's muted marker, the subject's end label — none of these are things the static
 frame "had to omit." They are the argument, already stated, already visible. If a rule ever moves
 one of them behind a hover — or, since this skill's second build, behind a filter — that is
-decoration wearing this genre's clothes, not the thing this genre exists to add. See "What must not
+decoration wearing this format's clothes, not the thing this format exists to add. See "What must not
 become interactive" and "The filter obeys the same rule interaction does" below.
 
 **A notable year's exact figure is reachable on hover, even though the printed marker stays silent
@@ -34,7 +34,7 @@ own prose already states, printed a second time on the chart, is `anti-patterns.
 or values": redundant decoding work the reader did not ask for. Hover is opt-in: nothing is decoded
 until the reader chooses to ask this specific point what it was, and every OTHER point on the curve
 answers exactly the same kind of question the same way. Carving out one year as the sole exception
-that stays mute even on request would be arbitrary, not principled — the rule this genre needs is
+that stays mute even on request would be arbitrary, not principled — the rule this format needs is
 "printed nowhere by default," not "unknowable."
 
 ## Keyboard and touch
@@ -65,7 +65,7 @@ an afterthought layered on top of a mouse-first build:
 
 ## What survives with JavaScript disabled
 
-**Everything the static genre would have shipped for this same story survives untouched**: title,
+**Everything the static format would have shipped for this same story survives untouched**: title,
 caveat/limits, source line, the reference rule and its label, the muted notable-year marker, the
 full curve, the subject point and its end label. All of it is plain SSR'd markup — SVG for the
 geometry, HTML for the words — and nothing about the chart's own argument depends on the script
@@ -76,7 +76,7 @@ does not survive**: hover/tap detail on the individual points via the visual too
 `aria-label` via plain Tab (see above) — the one path that survives JS being off is, not
 coincidentally, the one this file spent the most words defending. For a newsroom that matters
 because a CMS iframe, an AMP page or a stripped reader-mode view is a real deployment target, not a
-hypothetical: this genre degrades to "the static beat, plus every reading silently reachable by a
+hypothetical: this format degrades to "the static beat, plus every reading silently reachable by a
 keyboard, plus a working filter," never to a blank frame.
 
 ## Responsive behaviour
@@ -103,7 +103,7 @@ fill a wider box and every `<text>` element inside it scales too — a title cor
 oversized at 1600px and unreadable at 400px. This is the real reason two fixed rungs existed: not to
 avoid recomputing geometry (a solved problem, see below), but to avoid this text-scaling defect,
 which two DISCRETE, independently-typeset frames genuinely does avoid. It does not, however, solve
-the more basic problem it was traded against — filling the container at all — and a genre that ships
+the more basic problem it was traded against — filling the container at all — and a format that ships
 public-facing web pages needs both.
 
 **The fix: split what scales from what does not, structurally, not with more rungs.** `ChartWebSeed`'s
@@ -136,7 +136,7 @@ instead, which is the one this rewrite closes.
 this date the header block (title + caveat) and the source line were the ONLY things given a
 reading-measure cap (`640px`, in `render-web.mjs`'s `buildCss`), on the argument that a long line of
 prose becomes unreadable at full bleed. That argument is not wrong about prose in the abstract. It
-was wrong about **what this genre is**. A chart-web beat is not a document: it is one graphic, and
+was wrong about **what this format is**. A chart-web beat is not a document: it is one graphic, and
 its title and its source are *furniture over that graphic*, not a paragraph beside it. At 1600px the
 title stopped in the left third of a chart running the full frame — which reads as a broken box, a
 layout that failed to stretch, not as a comfortable measure. The owner's feedback names exactly
@@ -155,7 +155,7 @@ What did NOT change: `.chart-header, .chart-filter, .chart-source { flex: 0 0 au
 window-fit rule below. Words are still never squeezed to make a chart fit; the chart is.
 
 **Cheap, not recomputed — the first build's own anti-pattern rule still holds.** Nothing about this
-redesign asks a script to measure anything on resize. The one thing this genre still measures in
+redesign asks a script to measure anything on resize. The one thing this format still measures in
 node is the y-axis gutter's own width (`yGutterPx` in `ChartWebSeed.tsx`) — computed ONCE, at build
 time, from the widest tick label at its own fixed font size, and set as a CSS custom property
 (`--y-gutter`) the grid track reads forever after. Tick density (`FRAME.yTickHint`/`xTickHint`),
@@ -165,12 +165,12 @@ assumed; decided once, not live" discipline the first build's own rejected anti-
 argued for. What is genuinely free, and happens on every resize with zero script involvement, is
 pure CSS: the browser's own layout engine resolves `width: 100%`, `aspect-ratio`, and every `%`-based
 `left`/`top` on the overlay's children — proportional math it already does for a responsive image,
-extended here to a chart. That is the "adapt cheaply" this genre requires, and it is a different
+extended here to a chart. That is the "adapt cheaply" this format requires, and it is a different
 claim from "adapt without a client-side layout engine recomputing gutters and tick counts," which
 this file continues to reject exactly as its first build did.
 
 **A reading that belongs to a LINE is reachable on the line.** Until B6.9 every hit surface in this
-genre was a point or a shared `.hit-area` rect resolved by nearest-x, and a slope chart's connector
+format was a point or a shared `.hit-area` rect resolved by nearest-x, and a slope chart's connector
 — which exists precisely to say what LINKS its two ends — could not be pointed at. The primitive is
 three pieces, all in this skill: a transparent stroked twin drawn immediately after the visible path
 (`hoverableLineProps` in `assets/ChartWebSeed.tsx`, duplicated into the beats that draw one and
@@ -191,7 +191,7 @@ two distances are equal and the answer between them is arbitrary.
 at a typed corner is the second form of the same mistake: `weby-population-pyramid-switzerland`'s
 peak annotation sat at `left: 0%, top: 0%`, twelve rows above the band it named, with a 600px dashed
 rule down the frame edge — and it overlapped nothing only because that corner happened to be empty,
-which nothing measured. The rule this genre now holds: **find the position from the marks**, at the
+which nothing measured. The rule this format now holds: **find the position from the marks**, at the
 width the label is actually drawn at, and let a `@container` step move it as the frame grows. Two
 things that cost a build each, recorded so they are not rediscovered: a VERTICAL distance converts
 through the plot's rendered HEIGHT, never through its width (the two differ whenever a `min-height`
@@ -213,12 +213,12 @@ separation this section already teaches, applied to that beat: geometry-only `<s
 HTML at a fixed pixel size. Both rungs, the media query, the cap and the second copy of `buildCss`
 retired together. `web-frame-is-fluid.test.ts` measures `.chart-figure` against the document at 1600
 and 3440 so a cap cannot come back in any spelling. (The five `mapgen-*-web` beats DO still cap at
-860–900px; they are the map genre, with their own frame contract and their own chantier.)
+860–900px; they are the map format, with their own frame contract and their own chantier.)
 
-**"Decided once" is about the ARITHMETIC, never about the answer — and this genre shipped that
+**"Decided once" is about the ARITHMETIC, never about the answer — and this format shipped that
 confusion once.** Deciding a type size or a tick *density* once is right: those are properties of
 the type, and the type does not stretch. Deciding a *de-collision* once is not, because whether two
-labels collide is a function of the width, and this genre has no single width. Measured on
+labels collide is a function of the width, and this format has no single width. Measured on
 `proof/webz-bump-emitter-rank`: its year-tick filter was evaluated server-side at
 `NARROWEST_VIEWPORT_PX = 375` — a 205px plot — and the tick it dropped there was dropped at every
 width, so a 3265px ultrawide axis read `1990 … 2015 2024` with a 797px hole in it where every other
@@ -262,7 +262,7 @@ A first pass at this redesign filled the container correctly and stopped there �
 1600px screenshot showed the title, the axis labels, the source line and the end-point mark all
 flush against the frame's own edge, which reads as unfinished rather than deliberate full-bleed.
 `FRAME_PAD_PX` (`render-web.mjs`, `24`) is a fixed inner margin applied once, to `.chart-figure`,
-so every word and every mark this genre draws has room to breathe at any width. FIXED, not a
+so every word and every mark this format draws has room to breathe at any width. FIXED, not a
 fraction of the container, for the same reason every type size in this file is fixed: a `%`- or
 `vw`-based inset shrinks toward nothing on a narrow frame or balloons on a wide one, and the whole
 point of this section is that spacing should read the same at 375px as it does at 1600px. Measured
@@ -322,7 +322,7 @@ and every one of the overflowing cases above now measures 0px of overflow.
 
 **The floor, and what happens under it.** `PLOT_FLOOR_PX` (`render-web.mjs`, `120`) is where the
 shrinking stops. It is set below the 153px the seed measures at 375px wide, so it cannot fire at any
-width this genre actually verifies at and cannot change a rendering that was already correct; only a
+width this format actually verifies at and cannot change a rendering that was already correct; only a
 window under roughly 300px tall reaches it, and such a window gets a scrollbar instead of a 20px
 strip pretending to be a line chart. It doubles as the override of flexbox's own `min-height: auto`,
 which would otherwise refuse to shrink the plot below its content size and re-open the overflow this
@@ -338,7 +338,7 @@ different rules; only the first is settled here.
 **NARROWED 2026-08-10 (W4 Task 5), under ruling R2.** The section above overturned the two-rung
 layout, and `seed-fluid-frame.test.ts` pinned the overturn as `expect(css).not.toContain("@media")`
 — twice. That assertion was right about the defect and wrong about the mechanism, and the difference
-matters because R2 makes this genre's job explicit: **web is not a fourth export size. It fills
+matters because R2 makes this format's job explicit: **web is not a fourth export size. It fills
 whatever container the CMS gives it, like an embed component.** Filling a 375px phone and filling a
 1600px article well are different instructions, and a width query is the only sentence CSS has for
 saying so. Forbidding the mechanism forces whoever implements the fill rule to DELETE the guard, and
@@ -368,7 +368,7 @@ anything nested in a query. See "The words take the same width as the graphic" a
 
 ## What `preserveAspectRatio="none"` costs, and the shape it will ruin
 
-**The stretch that makes this genre fluid is a NON-UNIFORM scale, and a non-uniform scale turns a
+**The stretch that makes this format fluid is a NON-UNIFORM scale, and a non-uniform scale turns a
 circle into an ellipse.** `preserveAspectRatio="none"` is what lets one `viewBox` fill any container
 without letterboxing; the price is that x and y are scaled by different factors, and every shape in
 the `<svg>` is distorted by exactly that difference. Nothing warns. It is invisible in the markup, it
@@ -386,7 +386,7 @@ the reader is being asked to see a cloud, and the roundness of the dots is part 
 density and its outliers — stretch them into ellipses and the cloud acquires a directional grain
 that is a pure artefact of the container's width. One migrating beat hit exactly this and moved its
 dots out of the `<svg>` into fixed-size HTML positioned in `%` over the same grid cell — the same
-split this genre already uses for every word. That is the general remedy: **anything whose shape
+split this format already uses for every word. That is the general remedy: **anything whose shape
 must survive belongs in the HTML layer, not in the stretched `viewBox`.**
 
 The test to apply, before drawing a mark as an SVG shape: *if this were 30% wider than tall, would
@@ -394,12 +394,12 @@ the reader be misled?* Gridline, no. Bar, no. Scatter dot, yes. Proportional cir
 encodes a value — emphatically yes, since the encoded quantity itself is what the distortion
 corrupts.
 
-## Nothing clipped — and the one edge this genre does not protect
+## Nothing clipped — and the one edge this format does not protect
 
 **An SVG clips to its `viewBox`.** No `overflow: visible` is set, and setting one would only move
 the problem into the neighbouring grid column, so a coordinate outside `[0, width] × [0, height]` is
 silently cut at every container width at once. That is why `POINT_INSET` exists: it insets the
-x-range on both sides by enough to clear the largest circle radius the genre draws, so a first or
+x-range on both sides by enough to clear the largest circle radius the format draws, so a first or
 last point never loses half its dot against the frame edge.
 
 **The x promise is kept; there is no y equivalent, and that is a real gap.** The fitted vertical
@@ -411,7 +411,7 @@ in `ChartWebSeed`; worst horizontal overhang **0.000** in both, which is `POINT_
 What a reader can actually lose is small: the overhanging circle is the INVISIBLE hit target
 (`fill="transparent"`), so nothing is cut at rest — only a sliver of the muted disc CSS paints while
 that lowest reading is hovered or focused. It is recorded here rather than quietly fixed because
-closing it means changing the y-range in every composition in the genre, which is a decision about
+closing it means changing the y-range in every composition in the format, which is a decision about
 the frame, not a test's to make. `test/render-web.test.ts` asserts the bound that keeps it small —
 every point's CENTRE inside the box, so the overhang can never exceed the radius — and says in the
 file why it does not assert more.
@@ -422,8 +422,8 @@ file why it does not assert more.
 
 **Rewritten 2026-08-10, on the owner's instruction: *"il faut que les filtres soient ajoutables et
 supprimables en fonction des besoins pour tous les types."*** Before it, a filter was an ad-hoc
-property of two genres and neither could be added or removed by a beat. This genre hard-wired ONE
-story's dimension into the genre's own stylesheet — `#period-early` / `#period-late`, ids belonging
+property of two formats and neither could be added or removed by a beat. This format hard-wired ONE
+story's dimension into the format's own stylesheet — `#period-early` / `#period-late`, ids belonging
 to the seed's rainfall beat — and the cost was measurable: **21 of 21 committed chart × web pages
 carried 12 lines of `.chart-filter` styling and 3 `#period-*` rules, and not one of them contained a
 `<fieldset class="chart-filter">`.** Dead control machinery in every delivered file, because the
@@ -483,7 +483,7 @@ prints 2025's own value; under "2015–2019" both hung over an empty plot beside
 stopped six years earlier, and the end label printed a number the narrowed view does not contain.
 The reference rule is different in kind — a horizontal line at 912 mm annotates a LEVEL, not a
 reading — so it is transversal furniture and stays drawn in every state, which is what "What must
-not become interactive" was always about. Under the DIMMING this genre used to do, the orphaned
+not become interactive" was always about. Under the DIMMING this format used to do, the orphaned
 annotations read as merely faint; hiding makes them visible, which is an argument FOR hiding.
 
 ### One overturn, kept with its cost attached: filtering HIDES, it no longer dims
@@ -496,7 +496,7 @@ reasons:
   still in the tab order, still answers a hover with its own value. "Everything that value drew
   disappears together" is not expressible as an opacity; the label left behind after its mark was
   hidden is the same defect one shade lighter.
-- **Two genres cannot mean two things by one word.** `map-web` has always removed. A vocabulary
+- **Two formats cannot mean two things by one word.** `map-web` has always removed. A vocabulary
   vendored into both that dimmed in one and removed in the other would be one name over two
   behaviours.
 
@@ -519,7 +519,7 @@ names Cuba, and under "Europe" that sentence is still printed while Cuba is off 
 with one more rule would make the page consistent and the editorial problem invisible; the honest
 answer is that a beat whose standfirst names three subjects should offer options that keep them, or
 accept that the standfirst describes the unfiltered view — which is a decision about the beat, not
-about this genre's code. (`map-web`'s discipline records the identical residue for its own
+about this format's code. (`map-web`'s discipline records the identical residue for its own
 subject sentence.)
 
 **Nothing argument-bearing may sit behind a filter — the same rule "What must not become
@@ -534,12 +534,12 @@ shipping one at all (most should not).
 **Mechanism: native controls, pure CSS, no script required.** One `<input type="radio"
 name="chart-filter">` per option, each with an `id` the generated stylesheet keys off
 (`.chart-figure:has(#chart-filter-europe:checked) …`). `:has()` — not the general sibling combinator
-this genre might otherwise reach for — because the radios sit inside `<label>`s inside a
+this format might otherwise reach for — because the radios sit inside `<label>`s inside a
 `<fieldset>`, never as a direct sibling of the plot it needs to reach; a sibling combinator cannot
-cross that nesting, `:has()` can, and is supported in every evergreen browser this genre targets.
+cross that nesting, `:has()` can, and is supported in every evergreen browser this format targets.
 Keyboard and touch parity fall out of using real `<input>` elements rather than inventing a custom
 widget: Tab reaches the group, arrow keys move within it, and a screen reader announces it as the
-radio group it is, all without a line of this genre's own script. The id, the `data-filter` token,
+radio group it is, all without a line of this format's own script. The id, the `data-filter` token,
 the selector and (on a map) the live layer's own `setFilter` value are ONE string from `slugOf`,
 because the last time two of those were derived differently a raw group name HTML-escaped into a
 selector emptied a whole map with nothing red.
@@ -548,7 +548,7 @@ selector emptied a whole map with nothing red.
 default radio dots with a bare word beside each, and the owner's read of it was that it looked like
 a placeholder — an unfinished form sitting under a finished chart. It is: a native radio carries the
 browser's own visual language, not the beat's, and a reader who has just been shown a considered
-chart reads it as work that stopped early. So this genre draws a **segmented control** — the three
+chart reads it as work that stopped early. So this format draws a **segmented control** — the three
 options inside one rounded track, the chosen one inverted — and the whole treatment is layered
 **on top of** working native radios rather than replacing them:
 
@@ -587,14 +587,14 @@ sits inside `@supports selector(:has(*))`. The checked state has to be expressed
 engine without `:has()` could not draw a checked pill at all — and would otherwise be left with
 three identical unlit pills over an invisible input, which is worse than no treatment. There, the
 whole block is dropped and the reader gets the plain native radios, which state their own
-checked-ness with no help. That is not a second design to maintain: it is the design this genre
+checked-ness with no help. That is not a second design to maintain: it is the design this format
 already had, and it is the same engine in which the dimming rule above could not have worked either.
 An `@supports` capability query is not a `@media` breakpoint — the "no rungs" rule above is
 untouched.
 
 **What the treatment does NOT cover, stated rather than hidden.** Forced-colors / high-contrast
 mode: the pill's background is overridden by the OS and the checked state loses its only signal.
-Nothing else in this genre honours forced colours either — the chart is SVG with explicit fills,
+Nothing else in this format honours forced colours either — the chart is SVG with explicit fills,
 which that mode does not touch — so handling it here alone would be a half-measure that made the
 control look covered while the chart beside it was not. It is a real gap, named here, not closed.
 
@@ -618,10 +618,10 @@ exception, and it is not really an exception: it was already drawn in the accent
 interaction, so hovering it — or dimming its period under the filter, which it never is, since the
 end point carries no `data-period` — changes nothing about what colour means.
 
-## The one box this genre allows, and why the rest of `static-discipline.md` still holds
+## The one box this format allows, and why the rest of `static-discipline.md` still holds
 
 `static-discipline.md`'s "every layer earns its place" rule calls out boxes and frames by name as
-things that usually fail the removal test. This genre allows two, both for the same structural
+things that usually fail the removal test. This format allows two, both for the same structural
 reason: unlike the chart's own furniture, each has to sit ON TOP of something else and stay legible
 regardless of what is under it. The `#tooltip` element follows the pointer and stays legible over
 whatever curve or gridline happens to be under it while a reading is being actively inspected
@@ -636,13 +636,13 @@ dashboard-chrome panel sitting on the canvas by default — which is the actual 
 `anti-patterns.md`'s "fake texture, glassmorphism, dashboard chrome" entry warns against. Every other
 rule in `static-discipline.md` — one accent, derived furniture, an honest fitted scale for a line,
 measured gutters, no root `<title>` (though see the next section for the one deliberate departure
-this genre takes there), direct end labels over a legend — applies to this genre's own chart
+this format takes there), direct end labels over a legend — applies to this format's own chart
 furniture completely unchanged.
 
-## One deliberate departure from the static genre's accessibility pattern
+## One deliberate departure from the static format's accessibility pattern
 
 `static-discipline.md` says: "no root `<title>`... use `role="img"` plus `<desc>` for the alt text."
-This genre keeps `<desc>`, drops `role="img"` from the SVG root, and puts **`role="group"` plus an
+This format keeps `<desc>`, drops `role="img"` from the SVG root, and puts **`role="group"` plus an
 `aria-label` carrying the beat's own headline** there instead. Two separate reasons, and the second
 one was missing for a long time.
 
@@ -670,14 +670,14 @@ depend on which of those two is true, not because `img` was proven to break anyt
 ## Verification
 
 **There is a script, and it is the evidence: `scripts/verify-web.mjs`.** This section used to state
-the rule and then leave the doing to whoever remembered — which is how a genre ends up with
+the rule and then leave the doing to whoever remembered — which is how a format ends up with
 "hover works" as a sentence somebody wrote after looking once. It now drives Chrome and reports 153
 measurements: the window fit at seven viewport sizes, real pointer events over every reading at two,
 real clicks on every filter option with scripting on AND with JavaScript disabled, and the control's
 own keyboard reach, focus ring and contrast. `bun skills/chart-web/scripts/verify-web.mjs
 --file <beat.html> --shots --out <dir>` — exit 0 only when every check passed.
 
-**It may only dispatch REAL input, and that constraint is the point.** This genre has already
+**It may only dispatch REAL input, and that constraint is the point.** This format has already
 shipped, once, a build where hover was completely dead: `.overlay` had no `pointer-events: none`, so
 it swallowed every mouse and touch event over the whole plot before `.hit-area` beneath it saw one.
 Nothing caught it. The markup was correct, every attribute a unit test could assert was present, and
@@ -712,12 +712,12 @@ eventually be forgotten. **Anything else in this project that drives a pointer m
 
 **Every check is conditional on the beat's own shape, and every skip is announced.** The first build
 of the verifier hard-coded the SEED's shape — `.pt` for a mark, `#period-late` for a filter — and was
-therefore unusable on most of the genre. Measured across the thirteen shipped web beats: all 13
+therefore unusable on most of the format. Measured across the thirteen shipped web beats: all 13
 carry `data-detail`, only 5 carry `.pt`, the hit element is variously `bin-hit`, `segment-hit`,
 `step-hit`, `bar-hit`, `hit-row` or `row-hit`, and **not one of them ships a filter** — which is the
 correct outcome of the three-part test above, not an omission. So:
 
-- Marks are discovered by **`[data-detail]`**, the genre's real contract: it is the attribute
+- Marks are discovered by **`[data-detail]`**, the format's real contract: it is the attribute
   `interaction.mjs` reads to fill the tooltip and the one thing every beat bakes server-side.
 - The filter checks **skip aloud** when a beat ships no `fieldset.chart-filter`, and the invariant
   they were really protecting — the default view dims nothing, every argument-bearing word is drawn
@@ -786,7 +786,7 @@ header, event by event, with each video ancestor beside it.
 **The mechanism belongs to the BEAT; the contract owns only when and in what order.** A line's
 reveal is a head advancing along its own path, a bar chart's is bars growing from a baseline, a
 pyramid's is two rows meeting. `ChartWebSeed.tsx` demonstrates one; it is not a general animator,
-for the same reason nothing else in this genre is.
+for the same reason nothing else in this format is.
 
 **Three rules that are not negotiable, and the last one is not a nicety.**
 
@@ -799,10 +799,10 @@ for the same reason nothing else in this genre is.
    Not an animation that completes in 0ms — the keyframes and their rules live entirely inside
    `@media (prefers-reduced-motion: no-preference)`, so under `reduce` there is nothing to resolve.
    This is `scrolly`'s precedent (put the animated property out of reach rather than overriding
-   it back), and it is the one place in this genre where "degrade gracefully" is a legal expectation.
+   it back), and it is the one place in this format where "degrade gracefully" is a legal expectation.
 
 **Measured, not chosen: the reveal is a clip wipe and not a `stroke-dashoffset`.** A probe drove the
-dash form under this genre's own `vector-effect="non-scaling-stroke"` and
+dash form under this format's own `vector-effect="non-scaling-stroke"` and
 `preserveAspectRatio="none"`: **99 % drawn at t=0 and 80 % at the end** — the two coordinate spaces
 disagree. The wipe tracked the clock exactly, and on a series monotone in x it is the same picture,
 frame for frame, as the video's `drawnSoFar`.

@@ -1,6 +1,6 @@
 # Beat — Poland now outpaces Germany, but everyone is down from their own peak
 
-**Type:** heatmap (matrix). **Medium/genre:** chart / web. **Channel:** article web, ONE fluid
+**Type:** heatmap (matrix). **Medium/format:** chart / web. **Channel:** article web, ONE fluid
 frame — the figure fills whatever container it is given, at any width, and its height follows from
 the grid's own aspect ratio inside the window-fit clamp. It used to ship two pre-rendered rungs
 (900px desktop / 375px narrow) under a 900px cap; see `Co2HeatmapWeb.tsx`'s own doc-comment for why

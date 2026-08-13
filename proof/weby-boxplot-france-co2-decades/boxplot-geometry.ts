@@ -5,7 +5,7 @@
  * files (`chart-web/SKILL.md`, "duplicate, do not link").
  *
  * Two differences from the static beat's own `summarizeDecade`/`boxplotGeometry`, both there
- * because this genre's hover/focus tooltip needs to say more than the static frame ever prints:
+ * because this format's hover/focus tooltip needs to say more than the static frame ever prints:
  *
  *   1. `summarizeDecade` here takes `{ year, value }` readings, not bare `number[]` — an outlier's
  *      own YEAR ("1 outlier: 9.54 t (1980)") is part of what hover reveals

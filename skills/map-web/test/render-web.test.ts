@@ -418,8 +418,8 @@ describe("RegionTable", () => {
 });
 
 /**
- * `renderMapWeb` — the genre's own machinery, exercised through the file it actually writes. These
- * assertions are about the HTML on disk, not about a React tree, because the two places this genre
+ * `renderMapWeb` — the format's own machinery, exercised through the file it actually writes. These
+ * assertions are about the HTML on disk, not about a React tree, because the two places this format
  * has been wrong were both in the assembly: a CSS selector that quoted a string the markup never
  * carried, and a table nobody chose to include.
  */
@@ -455,7 +455,7 @@ describe("renderMapWeb", () => {
 
   it("should render the table when the beat asks for it, with one row per point", async () => {
     // `tableRowNoun` is required alongside `regionTable` since B5.2: the table now ships inside a
-    // disclosure whose summary has to say what it holds, and nothing in the genre can invent that
+    // disclosure whose summary has to say what it holds, and nothing in the format can invent that
     // word. `the-value-table-is-collapsed.test.ts` owns the disclosure's own assertions.
     const html = await build({
       regionTable: true,
@@ -466,7 +466,7 @@ describe("renderMapWeb", () => {
   });
 
   it("should refuse to render a table the beat gave no word for", async () => {
-    // The invariant this genre keeps everywhere: nothing renders in a value nobody chose. A summary
+    // The invariant this format keeps everywhere: nothing renders in a value nobody chose. A summary
     // reading "Table of values — 3 undefined" would be worse than the throw.
     await expect(build({ regionTable: true })).rejects.toThrow(/tableRowNoun/);
   });

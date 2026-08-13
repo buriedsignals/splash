@@ -5,6 +5,20 @@ description: Use to run the doctrine twin end to end — recover a story's phase
 
 # splash — the orchestrator, sequencing and nothing else
 
+## Human gates stop the turn
+
+At every human gate, present the decision and recommendation, then **end the turn**. Do not
+continue, self-approve, or treat silence as approval. Act on the decision only after the user's
+next message. This applies explicitly to **G2b, the publication-format gate**: recommend one
+reachable choice, name Static / print, Interactive web, Video, and Scrollytelling with their
+trade-offs, ask which format to produce first, and end the turn. Do not select a treatment, research
+references, choose a palette, write `format:`, or dispatch production in that turn.
+
+The conditional G2-producer gate stops a later turn too. After the journalist chooses a chart
+treatment, `storyboard` checks its pinned Datawrapper mapping. When a faithful implementation
+exists for the chosen format, ask Datawrapper or custom and end the turn. When none exists, ask
+nothing and continue with the custom producer. Never ask for the producer before the treatment.
+
 ## Overview
 
 Runs the whole journey (spec §4) without ever holding it in memory. `whereIs(storyDir)`
@@ -25,10 +39,11 @@ no fifth**:
    can be satisfied by a fact readable *only* from a transcript is not really closed.
 4. **Dispatch to the craft skill.** This skill decides *which* skill runs next; it never runs the
    render itself. Production of any pixel, embed or video belongs entirely to the craft skill
-   matching the chosen candidate's medium and genre: `chart-beat` (`chart`, `static`),
+   matching the chosen candidate's medium and format: `chart-beat` (`chart`, `static`),
    `chart-web` (`chart`, `web`), `chart-video` (`chart`, `video`), `map-beat`
    (`map`, `static` or `video`) — plus `dw-beat`, the delegated Datawrapper path a chart
-   slot's `vehicle` can name instead of a bespoke component.
+   slot's persisted `producer: datawrapper` and `datawrapperType` can name instead of a bespoke
+   component.
 
 This skill **produces nothing at runtime** — no artifact of its own, ever. Its entire value is the
 sequencing discipline above and the test (`test/phases.test.ts`) that keeps this document and
@@ -37,9 +52,10 @@ had stopped producing.
 
 ## When to use
 
-- At the start of **every** turn of a doctrine-twin conversation, before doing anything else: call
-  `whereIs(storyDir)` and let its `phase` decide what runs next. Never assume the phase from what the
-  previous turn was doing.
+- At the start of every turn for an **existing** story, call `whereIs(storyDir)` and let its `phase`
+  decide what runs next. For a new story, preflight and `createStory({root, title})` must first create
+  the canonical directory and local `AGENTS.md`; then call `whereIs` for the first time. Never infer
+  the phase from what a previous turn was doing.
 - When a caller (human or agent) asks to skip a phase — refuse, and report `missing` verbatim.
   A missing prerequisite is **reported**, never argued around.
 - Once per session, before any story exists: run `runPreflight` (`scripts/preflight.mjs`) —
@@ -51,6 +67,19 @@ had stopped producing.
 - **Not** for writing a chart, a map, a brief, or an export. Those are `intake`,
   `storyboard`, the craft skill, and `deliver` respectively — this skill only decides
   which one of them runs next.
+
+## Recovering a published output for editor feedback
+
+Every new story carries its own `AGENTS.md`. A fresh session reads that file and follows one stable
+relationship: `beats/<outputId>/` is the editable production source, while
+`export/<outputId>/` is the current delivery and is never edited as source. Hosted deliveries add
+`DEPLOYMENT.json`, `EMBED_URL.txt`, `EMBED_CODE.html`, and `HANDOVER.md`; the deployment receipt
+names the editable source and the stable public URL. Record feedback in the beat, change the
+canonical source (or Datawrapper `spec.json`), rerender, obtain a new bound output review, then
+rematerialise the same form. Updating `FEEDBACK.md` is the durable trigger `whereIs` uses to reopen
+production, then delivery. A custom Cloudflare output keeps its per-output project URL;
+Datawrapper reuses the chart ID in `DATAWRAPPER.json` when production is rerun with the same
+`beatDir`.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -64,8 +93,10 @@ exports exist yet either — and this skill's own dispatch table would send the 
 at a storyboard that `storyboard`'s own `checkStoryboard` would refuse outright. `whereIs`
 closes the gap: `missingForGate2` (in `where.mjs`) holds a story in the `storyboard` phase, naming every
 reason in `missing`, until the takeaway **and** every hand field **and** every slot's `chosen` (each
-one actually drawn from its own listed `candidates`) are present — the real G2 condition, not a
-truthy takeaway standing in for it.
+one actually drawn from its own listed `candidates`) **and any conditional producer preference**
+are present — the real G2 condition, not a truthy takeaway standing in for it. Missing treatment
+selection is `G2-treatment`; a Datawrapper-eligible chosen treatment with no persisted choice is
+`G2-producer`.
 
 That condition is reimplemented in `where.mjs`'s own `missingForGate2`, not imported from
 `storyboard`'s `checkStoryboard` — this branch's runtime code never imports across a skill
@@ -92,17 +123,17 @@ different tests, and neither claims more than it proves:
 
   **Those fixtures are GENERATED, and that is the second half of this gotcha.** They used to be
   nine hand-typed strings, and a hand-typed list cannot know about a rule added after it was
-  written: three rules landed on `checkStoryboard` (grounding, genre, capability) and this suite
+  written: three rules landed on `checkStoryboard` (grounding, format, capability) and this suite
   stayed green through all three. Worse, the parity call itself read
   `checkStoryboard(meta).length === 0` — one argument — which switched the new rules off inside the
-  test that existed to compare them (`twin/FEEDBACK-2026-08-10.md`, A14). Both halves are closed:
+  test that existed to compare them. Both halves are closed:
   `checkStoryboard` genuinely takes one argument now, and the fixtures are built from ONE complete
   template mutated field by field, with the field list read from **both** gates' exported
   `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` and unioned. Add a required field to either side and
   its fixtures exist immediately; add it to only one side and the two gates disagree, loudly.
 
-- **The expensive semantic checks are not in either gate any more.** `groundTakeaway`, `genreGap`
-  and `capabilityGap` each run ONCE, in the phase that owns them — grounding at G1, genre and
+- **The expensive semantic checks are not in either gate any more.** `groundTakeaway`, `formatGap`
+  and `capabilityGap` each run ONCE, in the phase that owns them — grounding at G1, format and
   capability at G2b — and record a resolved scalar into `STORYBOARD.md` (`grounding:`, and the
   slot's `reachable:`). Both gates read the record. That is what closes this divergence class *by
   construction* rather than by vigilance: neither gate can run a check the other cannot, because
@@ -248,12 +279,12 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/genre/size/`reachable`/`chosen`) before ever reporting `production`. Past Gate 2 it walks the beats: `beatsAwaitingApproval` first — **nothing about `export/` may shorten the walk past it** — then `beatsAwaitingDelivery`, per beat, into `export/<beat>/`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
+| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/format/size/`reachable`/`chosen`, and the conditional `producer`/`datawrapperType` decision) before ever reporting `production`. It reports missing treatment selection as `G2-treatment` and a missing eligible provider choice as `G2-producer`. Past Gate 2 it walks the beats: `beatsAwaitingApproval` first — **nothing about `export/` may shorten the walk past it** — then the durable editor-feedback trigger (a valid review must bind the current `FEEDBACK.md` and render digests; delivery must bind that feedback/review/render tuple), then `beatsAwaitingDelivery`, per beat, into `export/<beat>/`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
 | Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents` |
 | Maintainer notes | `scripts/notes.mjs` | `recordMaintainerNote({storyDir, phase, note})` — appends to `stories/<slug>/NOTES-FOR-MAINTAINER.md`, creating it with its own header. Refuses an empty note, a note with no phase, and any path inside `export/` (that directory is what the newsroom receives). The other end of `formatHandover`'s throw |
-| Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
+| Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into, plus a story-local `AGENTS.md` that makes the editable-source and published-output relationship recoverable in a fresh session |
 
 ## How it works (the shape)
 
@@ -288,12 +319,18 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    `dependencies` or `newsroom-profile` is not `pass`/`declined`; this is the one point that halts
    the session, and it is mechanical, not a line of prose a caller has to remember to honour. A
    missing or rejected `MAPTILER_KEY` / `DATAWRAPPER_TOKEN` is **never** a blocker — it narrows
-   `capabilities`, reported honestly rather than worked around, and the genre gate (G2b) reads
+   `capabilities`, reported honestly rather than worked around, and the format gate (G2b) reads
    `capabilityGap` before it would otherwise offer a medium the environment cannot honour.
-2. **Recover the phase.** `read-file` the story's own directory tree via `whereIs(storyDir)`. Its
+2. **Create or recover the story workspace before phase recovery.** For a new story, call
+   `createStory({root, title})` exactly once before intake; do not make `stories/<slug>` or any of
+   its children ad hoc. This guarantees `source/`, `beats/`, `export/`, and the story-local
+   `AGENTS.md` exist before a craft skill receives the path. For an existing story, do not call the
+   new-story scaffolder again: call `ensureStoryGuidance({storyDir})` once so a pre-feature story
+   receives the missing file without overwriting existing instructions, then read its `AGENTS.md`.
+3. **Recover the phase.** `read-file` the story's own directory tree via `whereIs(storyDir)`. Its
    result is the entire input to every dispatch decision — nothing else is consulted, nothing is
    carried over from an earlier turn.
-3. **The phase table** (spec §4, folded onto the six phases `whereIs` actually recovers — Preflight
+4. **The phase table** (spec §4, folded onto the six phases `whereIs` actually recovers — Preflight
    has no story directory yet to read state from, and Assembly, for SP1's single-beat stories, does
    not yet need a recoverable state of its own):
 
@@ -301,12 +338,12 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    | --- | --- | --- | --- |
    | `intake` | Article and data frozen and profiled, silently — `intake` asks nothing. | — | `source/article.md`, `source/profile.json` |
    | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
-   | `storyboard` | Restitution, the journalist's hand, the survey, the medium/genre/size sub-gates, the reference loop, slots and candidates — `storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `genre` (G2b), `size` (G2c), `reachable: yes` and `chosen` drawn from its own `candidates` |
+   | `storyboard` | Restitution, the journalist's hand, the survey, the medium/format/size sub-gates, the reference loop, slots and candidates, then the conditional post-treatment producer preference — `storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c, G2-treatment, G2-producer when eligible | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `format` (G2b), `size` (G2c), `reachable: yes`, `chosen` drawn from its own `candidates`, and — only where the selected treatment maps faithfully to Datawrapper — `producer` plus `datawrapperType` |
    | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. Then **SURFACE THE ARTIFACT** — the file path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video — and ask approve-or-correct. That turn says **nothing about delivery**: the forms are `offerForms`' output and cannot be known before it runs. | G3, per beat | `beats/<n>-<slug>/APPROVED.md` |
-   | `delivery` | Per beat, `deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. The delivery closes by handing it over: which file goes where in the article, the alt text, the credit line, the one caveat. | **G4**, per beat | `export/<beat>/HANDOVER.md` (beside the chosen form's own files) |
+   | `delivery` | Per beat, `deliver` offers the forms its format allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. The delivery closes by handing it over: which file goes where in the article, the alt text, the credit line, the one caveat. | **G4**, per beat | `export/<beat>/HANDOVER.md` (beside the chosen form's own files) |
    | `done` | Terminal — **every** approved beat has been delivered. One delivered beat does not close a story that has two. | — | (`export/<beat>/` holds the chosen form, for each of them) |
 
-4. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
+5. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
    abstract verb, precisely so this doctrine can move to a different runtime without a rewrite.
    This skill uses four of spec §8's six verbs — `read-file` (a story's directory, `NEWSROOM.md`),
    `execute-shell` (the dependency check), `fetch` (the MapTiler and Datawrapper probes), and `invoke-skill` (every
@@ -319,15 +356,15 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    | --- | --- |
    | `intake` | `intake` |
    | `framing`, `storyboard` | `storyboard` (which itself reads `doctrine`'s reference set for the reference loop, movement ⑧) |
-   | `production` | the craft skill matching the chosen candidate's medium AND genre — the same pairs `storyboard`'s `GENRE_CATALOG` records: `chart-beat` (`chart`/`static`), `chart-web` (`chart`/`web`), `chart-video` (`chart`/`video`), `map-beat` (`map`/`static`, `map`/`video`), `map-web` (`map`/`web`), `image-beat` (`image`/`static`), `scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `dw-beat` instead of `chart-beat` when the slot's `vehicle` names the delegated Datawrapper path |
+   | `production` | the craft skill matching the chosen candidate's medium AND format — the same pairs `storyboard`'s `FORMAT_CATALOG` records: `chart-beat` (`chart`/`static`), `chart-web` (`chart`/`web`), `chart-video` (`chart`/`video`), `map-beat` (`map`/`static`, `map`/`video`), `map-web` (`map`/`web`), `image-beat` (`image`/`static`), `scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `dw-beat` when a chart slot records `producer: datawrapper`, using its persisted `datawrapperType` |
    | `delivery` | `deliver` |
    | `done` | nothing — report completion and stop |
 
-5. **Production's turn budget and stall** (spec §8): a beat gets **three cycles** — implement,
+6. **Production's turn budget and stall** (spec §8): a beat gets **three cycles** — implement,
    render, check against the pixel checklist, and if it fails, one targeted fix naming the cause.
    On the third failure, **stall**: hand back to the journalist with the gaps named and what was
    tried, rather than a fourth silent attempt or a self-declared win.
-6. **The never-list** — every one of these is an absolute, not a preference:
+7. **The never-list** — every one of these is an absolute, not a preference:
    - This skill **produces nothing itself** — no chart, no map, no video, no HTML. That is always
      the craft skill it dispatched to.
    - It **writes no ad-hoc script** to patch around a gap it finds.
@@ -411,7 +448,8 @@ if (missing.length > 0) {
 - `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` (a recorded
   `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
   one).
-- `scripts/new-story.mjs` — `slugify`, `createStory`.
+- `scripts/new-story.mjs` — `slugify`, `storyAgentGuidance`, `createStory`; creates the canonical
+  story directories and the story-local revision/resume instructions in `AGENTS.md`.
 - `scripts/notes.mjs` — `recordMaintainerNote`, the one path that writes
   `stories/<slug>/NOTES-FOR-MAINTAINER.md`. It appends, because a run finds more than one defect.
 - `scripts/splash-root.mjs` — `splashRoot(startDir)`, `splashEnvPath(startDir)`: the nearest
@@ -431,15 +469,14 @@ if (missing.length > 0) {
   and asserts the template declares every package actually imported, vendors every `#shared/` file
   actually imported, pins the same versions this repository pins, and declares whatever provides
   each binary a script spawns. Before that guard the template declared six packages against nine
-  imported, and a fresh root reported `ready: true` while only the static chart genre could run.
+  imported, and a fresh root reported `ready: true` while only the static chart format could run.
 - `assets/root-template/shared/chart-beat/{render-still.mjs,inspect-render.mjs}` — the
   vendored **mechanism** of `chart-beat` (never its seed — that stays in the skill, read as
   documentation, not copied). Physical copies, checked in, so the plain `cp -r root-template/`
   install carries them along with no extra step; a beat imports the copy that lands at
   `<root>/shared/chart-beat/render-still.mjs` as `#shared/chart-beat/render-still.mjs`,
   resolved by the root's own `package.json`, the same specifier regardless of how deep the beat
-  sits under `stories/<slug>/beats/<n>-<name>/`. This closes the gap named in `TRIAL-THREE-BEATS.md`
-  §4 and `PROOF.md` §1: a beat no longer imports craft code by an absolute path into this
+  sits under `stories/<slug>/beats/<n>-<name>/`. A beat therefore no longer imports craft code by an absolute path into this
   repository, so a fresh root works on a machine that has never seen it.
 - `test/{where,preflight,keys,newsroom,new-story}.test.ts` — `bun:test` coverage for each script
   above. `where.test.ts` also carries this skill's one deliberate exception to "no cross-skill

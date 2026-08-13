@@ -11,14 +11,14 @@ Japan (2006) and Russia (2009), and earlier the United Kingdom (1991) and Ukrain
 which is still in the top ten. Over the same window China took first place from the United States,
 in 2006.
 
-**Medium / genre:** chart / video. **Type:** bump (ranking-over-time) — one line per country, its
-vertical position its RANK rather than its value, rank 1 at the top. **No genre in this corpus had a
-bump chart before this beat**: it is a new row in the type × genre matrix, not a video sibling of an
+**Medium / format:** chart / video. **Type:** bump (ranking-over-time) — one line per country, its
+vertical position its RANK rather than its value, rank 1 at the top. **No format in this corpus had a
+bump chart before this beat**: it is a new row in the type × format matrix, not a video sibling of an
 existing static or web beat.
 
 **Why video, specifically.** A bump chart's finding is a crossing, and a crossing is two lines
 swapping places — a thing that happens over time. The type earns a motion build more directly than
-any type already in the video genre.
+any type already in the video format.
 
 ## Data
 

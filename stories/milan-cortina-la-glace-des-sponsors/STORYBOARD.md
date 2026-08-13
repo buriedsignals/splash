@@ -12,19 +12,21 @@ slots:
   - id: 1
     proves: "que la majorité du total échappe au sujet nommé dans le titre"
     medium: chart
-    genre: static
+    format: static
     size: landscape
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
     chosen: "Stacked bar"
+    producer: custom
   - id: 2
     proves: "que la même répartition tient sur les émissions elles-mêmes, pas seulement sur leur traduction en glace"
     medium: chart
-    genre: static
+    format: static
     size: landscape
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
     chosen: "Stacked bar"
+    producer: custom
 ---
 
 ## Ce que montre le visuel

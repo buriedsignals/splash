@@ -1,7 +1,7 @@
 /**
- * The video genre of "La Suisse sous la moyenne européenne" — 8 seconds, 30fps, 1080 × 1080.
+ * The video format of "La Suisse sous la moyenne européenne" — 8 seconds, 30fps, 1080 × 1080.
  *
- * REPLACE ME. Do not parameterise me. This file seeds the video genre.
+ * REPLACE ME. Do not parameterise me. This file seeds the video format.
  *
  * It is not a second map. The plate and the rings come from the same bake the still draws
  * (`scripts/bake-plate.mjs`), and the classes, the ramp and the scale come from the same `geo.ts`.
@@ -10,7 +10,7 @@
  *
  * Nothing here derives a furniture colour either — `deriveFurniture` sits beside a native
  * rasteriser that no browser bundle can load, so `scripts/render-map.mjs` calls it in node and
- * passes ink/muted/grid in as props. One implementation of the colour rule, two genres.
+ * passes ink/muted/grid in as props. One implementation of the colour rule, two formats.
  */
 
 import { Fragment } from "react";

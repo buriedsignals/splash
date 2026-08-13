@@ -69,7 +69,7 @@ import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 // The test-only cross-skill read this branch reserves for exactly this, as
-// `seed-reads-a-recorded-palette.test.ts` and `genre-shippability.test.ts` already do: the guard
+// `seed-reads-a-recorded-palette.test.ts` and `format-shippability.test.ts` already do: the guard
 // feeds each recorded answer to the REAL parser rather than re-implementing its rules.
 import { parseTypeface } from "../../chart-beat/scripts/render-still.mjs";
 

@@ -1,6 +1,6 @@
 // twin/proof/mapgen-dot-web/render-web.mjs
 //
-// The WEB genre of the dot-density map: the same 42-country World Bank file
+// The WEB format of the dot-density map: the same 42-country World Bank file
 // `proof/mapmore-dot-population` ships as a still, turned into ONE self-contained HTML file — a LIVE
 // MapTiler map (ruling R1) over a complete baked fallback: one fluid SVG carrying geometry only
 // (plate, outlines, ~3,000 dots), one HTML overlay carrying every word and every hit target, the
@@ -373,7 +373,7 @@ export function livePlan({
  * story's own countries.
  */
 /** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
- *  genre's — `discloseTable` refuses to invent one. */
+ *  format's — `discloseTable` refuses to invent one. */
 const TABLE_ROW_NOUN = "countries";
 
 /**
@@ -381,11 +381,11 @@ const TABLE_ROW_NOUN = "countries";
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -679,7 +679,7 @@ svg.map { display: block; width: 100%; height: 100%; }
 }
 
 /** A light neutral land fill, `ratio` of the way from ground toward ink — the same local mix the
- *  still sibling applies, so the two genres draw the same neutral. */
+ *  still sibling applies, so the two formats draw the same neutral. */
 function mixHex(ground, ink, ratio) {
   const ch = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const g = ch(ground);

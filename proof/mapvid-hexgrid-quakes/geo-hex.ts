@@ -477,7 +477,7 @@ export function dominantRegions(
     .map((g) => ({ ...g, share: g.count / places.length }));
 }
 
-// ── WHEN a cell filled up, which is the only question this beat's genre can answer ───────────────
+// ── WHEN a cell filled up, which is the only question this beat's format can answer ───────────────
 
 /**
  * Every kept row's `time` string, in the same order — and therefore at the same index — as

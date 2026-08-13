@@ -140,7 +140,7 @@ export function report(label, samples, stepCount) {
     // also not written as "the two never overlap": a NINTH correction is in flight at the time of
     // writing that puts the prose column back OVER the graphic as a full-frame layer, and an
     // assertion that encodes one correction's box model is an assertion that has to be rewritten by
-    // whoever lands the next one. What is true of the GENRE, in every arrangement it has had, is
+    // whoever lands the next one. What is true of the FORMAT, in every arrangement it has had, is
     // that the graphic starts at the frame's left edge and that the frame is covered to its right
     // edge — by the graphic alone, or by the graphic and the column beside it. Whether a panel is
     // painted OVER the graphic is not a layout question at all; it is the collision check below,

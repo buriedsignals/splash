@@ -46,7 +46,7 @@
  *    must not be read as "B4.1 is closed at every rung".
  * 3. THE STUDY-SET SIDE. Whether a camera CROPS what its beat is about is
  *    `camera-holds-the-study-set.test.ts`'s question, over the same files. Read them together.
- * 4. THE LIVE LAYER. These are baked cameras. What a reader can reach by panning is the web genre's
+ * 4. THE LIVE LAYER. These are baked cameras. What a reader can reach by panning is the web format's
  *    leash, guarded elsewhere.
  *
  * THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, never in this one — see the

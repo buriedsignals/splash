@@ -1,8 +1,8 @@
 # Beat — five countries hold 54.9 % of this map's population, and every dot can be asked what it stands for
 
-**Type:** dot density. **Medium/genre:** map / **web** — one self-contained `dot-population.html`,
+**Type:** dot density. **Medium/format:** map / **web** — one self-contained `dot-population.html`,
 drawn over a 1000 × 1000 plate frozen beside this brief (`plate/`, with its `geometry.json`). The
-static genre of the same file is `proof/mapmore-dot-population`; this is the missing web cell.
+static format of the same file is `proof/mapmore-dot-population`; this is the missing web cell.
 
 ## Claim
 
@@ -10,7 +10,7 @@ More than half the people on this map live in five countries — **Germany, the 
 France, Italy and Spain** — which together hold **327,522,303 of 596,770,599 people, 54.9 %**. Four
 countries would not do it (**46.8 %**), so five is the smallest set that clears half.
 
-## Why this type earns the WEB genre
+## Why this type earns the WEB format
 
 A dot map turns a value into TEXTURE. A reader sees where the mass is and cannot read a single number
 off it: no dot is labelled, no country can be, and the still's answer — a dot-value key and five
@@ -110,7 +110,7 @@ from the ground and the ink.
   Grouping by region or by EU membership would mean typing a classification into 42 rows that nothing
   in the beat could check, which is how a beat ships a claim it cannot audit.
 - **Accessible table — ON.** `regionTable: true`, deliberately, and this is the strongest case in the
-  genre: the encoding IS texture, so a reader without spatial access has no legend entry, no axis and
+  format: the encoding IS texture, so a reader without spatial access has no legend entry, no axis and
   no label from which to recover a single country's figure. Without the table they would have the dot
   value and nothing to apply it to. It also keeps the three countries that draw no dots at all.
 
@@ -180,7 +180,7 @@ and a pass on the committed placeholder file with no key at all.
   cannot avoid the neighbour.
 - **At 375 px the five labels crowd the middle of the map.** Each stays legible and each sits on its
   own country, but their boxes cover neighbours. The alternatives — a narrow-width breakpoint that
-  drops labels, or type that shrinks with the container — both break a rule this genre holds
+  drops labels, or type that shrinks with the container — both break a rule this format holds
   (nothing argument-bearing removed by width; type is one size at every width), so the crowding
   stands and is recorded here.
 

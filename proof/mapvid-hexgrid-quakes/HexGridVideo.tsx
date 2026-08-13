@@ -1,5 +1,5 @@
 /**
- * The video genre of "the Ring of Fire is redrawn every month" — 12.67s, 30fps, 1080 × 1080.
+ * The video format of "the Ring of Fire is redrawn every month" — 12.67s, 30fps, 1080 × 1080.
  *
  * Same plate, same binning and the same class scale as the static sibling (`proof/map-quake-
  * density`). What this file adds is the one thing a still cannot have and the ONLY reason this beat

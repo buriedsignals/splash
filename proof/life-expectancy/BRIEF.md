@@ -5,7 +5,7 @@ type: line
 
 # Beat — Switzerland lost 8.6 months of life expectancy in 2020 and took until 2023 to get it back
 
-**Type:** line (single series, dipping below and returning to a reference). **Medium/genre:** chart
+**Type:** line (single series, dipping below and returning to a reference). **Medium/format:** chart
 / video. **Size:** square (1080 × 1080), 30 fps, **240 frames = 8.0 s**.
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
@@ -163,5 +163,5 @@ The delivered square plot measures roughly **816 x 340, or 2.4:1**, and portrait
 outside `MEASURED_ASPECT.line`'s recorded 0.8–1.8. No guard fires, because `assertPlotAspect` is not
 wired into the video path. Wiring it as the table stands would refuse this beat's own **delivered**
 artifact, so it was not wired: the range, not the beat, is what needs re-measuring. The same
-observation, from a different beat and a different genre, is recorded in
+observation, from a different beat and a different format, is recorded in
 `proof/more-line-swiss-life-expectancy/BRIEF.md`.

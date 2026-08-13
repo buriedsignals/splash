@@ -4,12 +4,12 @@
 1990 — Croatia, by 0.03 tonnes (4.73 → 4.76). The other 26 all emit less, by 4.93 tonnes per person
 on average, and Luxembourg by 20.48, the largest fall in the union.
 
-**Medium / genre:** chart / **web**. **Type:** diverging bar — one row per country, signed values
+**Medium / format:** chart / **web**. **Type:** diverging bar — one row per country, signed values
 growing left and right out of a zero line, rows sorted from the largest rise to the largest fall.
 
 **Its siblings.** `vidz-diverging-bar-eu-per-capita` is the VIDEO of this same claim and was built
 first; `static-diverging-bar-eu-per-capita` is the STATIC one. The three together are the first
-complete type × genre row for the deviation family, which no genre in this corpus carried at all
+complete type × format row for the deviation family, which no format in this corpus carried at all
 before the video landed. Each is written fresh — no file here is imported from either sibling, and
 the frozen `data.csv` is a copy, so this beat can be rendered and audited on its own.
 
@@ -44,7 +44,7 @@ fell with none exactly flat. The title, the caveat, the rule's label, the subjec
 27 tooltips, all 27 `aria-label`s and the whole alt text are derived from that same computation —
 nothing in the rendered page is typed.
 
-## What the WEB genre owes here, and what it must not do
+## What the WEB format owes here, and what it must not do
 
 **The governing rule: the `<svg>` carries geometry only — zero `<text>` elements.** Every word is
 HTML positioned in `%` over the same grid cell, at a fixed pixel font size. Geometry stretches; type
@@ -132,7 +132,7 @@ Portugal and reports `1990: 4.5358243 · 2024: 3.4089074 · change −1.1269`. T
 it reads `Croatia: 4.7331753 tonnes per person in 1990, 4.764723 in 2024, change +0.0315`.
 
 **The overlay does not swallow the pointer.** A probe placed on the centre of the subject's own
-annotation — an `.overlay` child, the exact pixel class where this genre once shipped a completely
+annotation — an `.overlay` child, the exact pixel class where this format once shipped a completely
 dead hover while `.focus()` kept working — reports `rect.row-hit` as the topmost element and answers
 with Croatia's own reading, at both 1600 and 375.
 
@@ -192,5 +192,5 @@ grounds-by-coincidence hole, met in practice.
 
 Computed by `render-web.mjs` and shipped as the `<svg>`'s `<desc>`. `role="img"` is deliberately NOT
 set on the root — it would flatten the 27 individually focusable, individually labelled row rects
-into one opaque image, which is this genre's one documented departure from the static genre's
+into one opaque image, which is this format's one documented departure from the static format's
 accessibility pattern.

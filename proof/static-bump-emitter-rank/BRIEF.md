@@ -10,15 +10,15 @@ CO₂ emissions from fossil fuels and industry, passing five countries on the wa
 Japan (2006) and Russia (2009), and earlier the United Kingdom (1991) and Ukraine (1992), neither of
 which is still in the top ten.
 
-**Medium / genre:** chart / **static**. **Type:** bump (ranking-over-time) — one line per country,
+**Medium / format:** chart / **static**. **Type:** bump (ranking-over-time) — one line per country,
 its vertical position its RANK rather than its value, rank 1 at the top.
 
 **Its siblings.** `proof/vidz-bump-emitter-rank/` is the same claim as a video and was written
 first; `proof/webz-bump-emitter-rank/` is the same claim on the web. All three read their own frozen
 copy of the same file and derive every number in this document. **They are not one beat rendered
-three ways** — see "What this genre owes that the others do not" below.
+three ways** — see "What this format owes that the others do not" below.
 
-## What this genre owes that the others do not
+## What this format owes that the others do not
 
 `references/types/bump.md`: the argument of a bump chart IS the crossings, and "the type's whole
 reason to exist is that a reader can follow one line through them." The video gets that for free:

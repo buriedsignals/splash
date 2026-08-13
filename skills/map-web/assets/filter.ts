@@ -3,14 +3,14 @@
 // ONE FILTER VOCABULARY, DECLARED BY THE BEAT.
 //
 // WHY THIS FILE EXISTS, measured before it was written. Filters were an ad-hoc property of two
-// genres and neither could be added or removed by a beat:
+// formats and neither could be added or removed by a beat:
 //
 //   - `map-web` derived a filter from whether its points happened to carry more than one
 //     `group`. The legend said "Filter by region" whatever the dimension really was, and the hiding
 //     was FOUR hand-written selectors (`.pt`, `.point-label`, `svg.map circle[data-group]`,
 //     `.region-table tbody tr`) — four chances to forget the fifth kind of element, which is
 //     exactly how B6.18b happened: a filter hid the marks and left their labels on the map.
-//   - `chart-web` hard-wired ONE story's dimension into the genre's own stylesheet:
+//   - `chart-web` hard-wired ONE story's dimension into the format's own stylesheet:
 //     `#period-early` / `#period-late`, ids belonging to the seed's rainfall beat. Measured on the
 //     committed pages the day this file was written: **21 of 21 chart x web pages ship 12 lines of
 //     `.chart-filter` CSS and 3 `#period-*` dimming rules, and NOT ONE of them contains a
@@ -70,10 +70,10 @@
 // `:checked` mechanism that narrows the marks. The unfiltered option gets no note, because it IS
 // the claim. A reader can therefore never be looking at a subset that presents itself as the total.
 //
-// DUPLICATED, NEVER SHARED. This file is vendored byte-identical into every genre that can carry a
+// DUPLICATED, NEVER SHARED. This file is vendored byte-identical into every format that can carry a
 // reader-facing control, per the twin's method (`no-cross-skill-imports.test.ts`), and the copies
 // are held in step by `splash/test/filter-vocabulary-parity.test.ts`. Nothing in it names a
-// class, an id prefix or a genre: the scope selector and the id prefix are arguments, because
+// class, an id prefix or a format: the scope selector and the id prefix are arguments, because
 // `chart-web` scopes on `.chart-figure` and `map-web` on `.map-web-page`.
 
 /** One option: the beat's own words, and the data keys it keeps. */

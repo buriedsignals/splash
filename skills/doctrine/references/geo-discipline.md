@@ -1,7 +1,7 @@
 # Geo discipline
 
-The rules a **map** beat is written under, in either genre. `editorial-standard.md`,
-`information-architecture.md`, `visual-system.md` and — for the video genre —
+The rules a **map** beat is written under, in either format. `editorial-standard.md`,
+`information-architecture.md`, `visual-system.md` and — for the video format —
 `motion-grammar.md` all apply unchanged; a map is a graphic before it is a map. This file adds only
 what is true of maps and of nothing else, and it exists because each of these costs a day when you
 meet it for the first time in a render.
@@ -209,7 +209,7 @@ work removes them.
 
 So the camera is chosen first, from the geography and the study set, and the **layout is built
 around the plate that comes back** — text beside a square plate, not a plate stretched to fill a
-frame someone chose before looking. Both genres of a beat should share one camera: same bounds, two
+frame someone chose before looking. Both formats of a beat should share one camera: same bounds, two
 resolutions, one geometry.
 
 *Defect:* the first framing asked `fitBounds` for `[-11, 35] → [31, 66]` in a 900 × 560 frame and
@@ -224,8 +224,8 @@ stays true within one shape; it is not an answer to being asked for the same geo
 
 The cost of ignoring the third input is measured, not argued. `fitBounds` silently widens whichever
 axis does not bind: a Switzerland camera and a Lake Geneva camera each admit **≈2× the latitude
-their study set asked for in portrait** (×1.95 and ×2.08) against ×1.00 in landscape
-(`survey/map-camera.md`). On the web this is the same arithmetic wearing its other face — driving one
+their study set asked for in portrait** (×1.95 and ×2.08) against ×1.00 in landscape. On the web
+this is the same arithmetic wearing its other face — driving one
 live page at four viewports, a 1600×900 article column showed **3.2× the longitude the story asked
 for**, mostly ocean, while 768×1024 left the reader **0.27 of a zoom level** of room to move in.
 Re-measured 2026-08-10 across four live beats — the symbol seed, the quake symbols, the CO₂
@@ -336,7 +336,7 @@ region holds few events or was drawn small by the projection.
 URL at zoom 0.8 and at zoom 11.4 carries coastline at the planet rung, motorways and regional
 boundaries at the country rung and individual tracks at the city rung — the provider's vector tiles
 do it. A second style at wide extents would be a second cartography, and a beat whose plate and live
-map disagreed about the ground would break the swap the web genre depends on. Measured by looking at
+map disagreed about the ground would break the swap the web format depends on. Measured by looking at
 `basemap-planet.png`, `basemap-country.png` and `basemap-city.png`; this was the cheapest of the four
 questions and it needed no code.
 

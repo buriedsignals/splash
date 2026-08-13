@@ -30,7 +30,7 @@ with a third of the frame empty white to the right of bin 28. The tallest bar go
 **18.4:1**. Not one label moved, nothing was clipped, nothing collided, and the chart stopped making
 its point.
 
-This is the static path meeting the defect the web genre already names for itself
+This is the static path meeting the defect the web format already names for itself
 (`web-discipline.md:247-273`, `preserveAspectRatio="none"` distorting any mark whose SHAPE is the
 argument). Nobody had noticed it applies to a fixed-frame static as soon as the frame stops being
 fixed.
@@ -65,9 +65,8 @@ split is the finding.**
   bucket-B claim did not anticipate.**
 
 **4 — did anything outside {typeScale, tick hints, collision thresholds} need editing?**
-**TRUE**, on the strength of the eleven literals, and per the spec's own instruction that answer
-stops Task 1 until the spec is revised. The revision is in `specs/W4-export-sizes.md` §4 Task 3:
-the token list a beat must parameterise is not the seven named font/pad constants, it is
+**TRUE**, on the strength of the eleven literals. The resulting rule is that the token list a beat
+must parameterise is not the seven named font/pad constants, it is
 **every spacing number in the file**, which is why `sp()` exists. Nothing beyond that was needed:
 no bespoke label placement moved, no annotation was re-anchored, the median rule and its label were
 correct at all three sizes.

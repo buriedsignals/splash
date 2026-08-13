@@ -5,7 +5,7 @@
 // can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it keeps working
 // in a CMS iframe or a sandboxed embed that restricts module scripts). This is this beat's OWN copy
 // of `map-web/assets/interaction.mjs` — nothing under `proof/` imports out of a skill or across
-// beats. The genre's `live-map.mjs` sits beside it, byte-identical to the seed's; this file is the
+// beats. The format's `live-map.mjs` sits beside it, byte-identical to the seed's; this file is the
 // half that is allowed to know what a locator is.
 //
 // Each organisation's hit target is a real HTML `<button class="pt">` (`LocatorWeb.tsx`'s own header
@@ -26,7 +26,7 @@
 // is the no-JS answer, and `relabel` re-runs the SAME priority rule against the boxes the browser
 // actually measured, at every camera move and every resize.
 //
-// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: an interactive genre is
+// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: an interactive format is
 // verified by driving a real browser, not by asserting against a DOM emulation nobody looked at.
 
 /** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
@@ -57,7 +57,7 @@ export function initPoints(points, tooltip) {
   // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each marker is
   // already its own fixed-size hit target (`LocatorWeb.tsx`'s `HIT_TARGET_PX`), so no proximity
   // resolution is needed. Once the live map has loaded these buttons keep their keyboard role and
-  // lose their pointer-events (the genre's own CSS), and the canvas answers pointers instead — so
+  // lose their pointer-events (the format's own CSS), and the canvas answers pointers instead — so
   // the hit area becomes the rendered marker at every zoom rather than a fixed disc over it.
   points.forEach((point, i) => {
     point.addEventListener("pointerenter", function (evt) {

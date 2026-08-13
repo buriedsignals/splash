@@ -86,7 +86,7 @@ function wrap(
  * the drawing is rewritten, the same promise `chart-beat`'s `lineGeometry` makes.
  *
  * The frame's HEIGHT is derived from the content — how many photos, how long each caption wraps
- * to — never a fixed constant the way the chart genre's `FRAME` is: a photo essay is exactly as
+ * to — never a fixed constant the way the chart format's `FRAME` is: a photo essay is exactly as
  * tall as its own captions make it, and a fixed height would either clip a long caption or waste
  * space under a short one. `scripts/render-preview.mjs` calls this SAME function to learn the
  * height before calling `renderStill`, so the two never disagree about what gets drawn.

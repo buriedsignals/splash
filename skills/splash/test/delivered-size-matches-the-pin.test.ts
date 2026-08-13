@@ -49,7 +49,7 @@ const PROOF = join(TWIN, "proof");
  *
  * Measured 2026-08-11: 76 beats hold a `BRIEF.md`, and the count below is what remains unpinned as
  * four lots migrate in parallel. The rest are the migration — the remaining chart statics, the
- * remaining chart videos, the chart webs, the map and image genres, and the scrollys, which have no
+ * remaining chart videos, the chart webs, the map and image formats, and the scrollys, which have no
  * export size at all and are the reason this is a count of what is UNPINNED rather than a count of
  * what is wrong.
  *

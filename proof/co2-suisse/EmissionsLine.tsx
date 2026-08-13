@@ -9,7 +9,7 @@
  * Axis density and the limits subtitle are this file's own — not `crossing-geometry.ts`'s, and not
  * `EmissionsVideo.tsx`'s. `crossingGeometry`/`yTickValues` stay exactly as they were (still
  * imported for the fitted domain and the point/peak/end coordinates the video beat also reads),
- * because the motion genre keeps its own sparse three-tick axis on purpose
+ * because the motion format keeps its own sparse three-tick axis on purpose
  * (`static-discipline.md`, "Axis density") — this file layers a denser, static-only tick set and a
  * collision filter on top locally, rather than changing what the shared geometry hands back.
  */
@@ -40,7 +40,7 @@ const NOTE = { fontSize: 13, fontWeight: 400 };
 const UNIT = "Mt";
 
 /** How many y gridlines this static beat asks for — conventional density, not the sparse
- *  floor/reference/ceiling the motion genre keeps (`static-discipline.md`, "Axis density"). */
+ *  floor/reference/ceiling the motion format keeps (`static-discipline.md`, "Axis density"). */
 const Y_TICK_HINT = 5;
 /** How many x ticks `tickStep` derives a round interval from. On this beat's 1950-2024 span that
  *  answers a decade; the number is never hand-picked per story. */
@@ -155,7 +155,7 @@ export function EmissionsLine({
 
   // The fitted domain, read from the shared geometry's own scale — only its bounds. The tick SET
   // drawn from that domain is this static beat's own choice (see the file header): denser than the
-  // motion genre's, and with any regular tick that would crowd the reference dropped before it can
+  // motion format's, and with any regular tick that would crowd the reference dropped before it can
   // compete with the reference's own dashed rule and its own label.
   const [floor, , ceiling] = yTickValues(data, reference);
   // Y-axis-only provisional plot rectangle: top/bottom depend on the header block's height, which

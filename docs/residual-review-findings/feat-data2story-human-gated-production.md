@@ -6,7 +6,7 @@ of `feat/data2story-human-gated-production`, based directly on `rd-dev` at
 
 The delivery-hardening follow-ups recorded below are resolved. The only remaining
 verification item in this ledger is the explicitly credential-gated live
-MapTiler smoke; the broader product work remains tracked by the PRD.
+MapTiler smoke.
 
 ## Resolved 2026-08-11 — approval and QA binding
 
@@ -66,7 +66,3 @@ an outside beat, and an alternate export path left untouched.
   for the page's `mw-live` readiness marker. Diagnose the external map/style load
   before promoting that smoke to an every-push release gate; do not treat the
   secretless contract lane as evidence that the live map was driven.
-
-The broader evidence-package, context-acquisition, claim-trace, production-plan,
-and per-output state work remains tracked by
-`docs/splash/2026-08-10-data2story-human-gated-production-prd.md`.

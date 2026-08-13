@@ -1,6 +1,6 @@
 # Beat — Switzerland's per-capita CO2 emissions, 3rd-lowest of 15 European peers (web)
 
-**Type:** lollipop. **Medium/genre:** chart / web. **Channel:** article web, two responsive
+**Type:** lollipop. **Medium/format:** chart / web. **Channel:** article web, two responsive
 rungs — desktop 900px wide, narrow 360px wide (`web-discipline.md`, "Responsive behaviour": two
 pre-rendered layouts, no live reflow), each with a derived (not fixed) frame height so a wrapped
 title can never silently clip the plot below it.
@@ -103,7 +103,7 @@ interactive claim cannot be checked from a screenshot alone.
    gridline segments) were all still present and readable. All 15 `.row-hit` rects still carried
    their own `aria-label` (e.g. `"Belgium: 7.2798314 t, 2024"`) — a screen reader or keyboard user
    reaches every row's exact reading via plain Tab even with the interaction script entirely absent,
-   the same invariant `web-discipline.md` states for the line genre.
+   the same invariant `web-discipline.md` states for the line format.
 
 ## Source line
 

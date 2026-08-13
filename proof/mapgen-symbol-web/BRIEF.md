@@ -1,8 +1,8 @@
 # Beat — the biggest circle on this map is only 2.9 % wider than the next
 
-**Type:** proportional symbol. **Medium/genre:** map / **web** — one self-contained
+**Type:** proportional symbol. **Medium/format:** map / **web** — one self-contained
 `quake-symbol.html`, drawn over a 1000 × 1000 plate frozen beside this brief (`plate/`, with its
-`geometry.json`). The static and video genres of the same seventeen events are
+`geometry.json`). The static and video formats of the same seventeen events are
 `proof/map-quake-symbol`; this is the missing third cell.
 
 ## Claim
@@ -10,13 +10,13 @@
 Of the great earthquakes in this file, the 2011 Tohoku event is the largest — **magnitude 9.1**,
 against a next-largest of **8.6** — and **its circle is 2.87 % wider than that one**, about
 **1.25 pixels** at the plate's own scale. The ranking the map is about is not readable from the map.
-That is the claim, and it is why this beat exists in the web genre: hovering, focusing or reading the
+That is the claim, and it is why this beat exists in the web format: hovering, focusing or reading the
 table gives the exact magnitude the encoding cannot.
 
-## Why this type earns the WEB genre
+## Why this type earns the WEB format
 
 A still and a video can both SAY that magnitude is logarithmic and the circles barely differ; both
-of the siblings do. Neither can let a reader ask a circle what it is worth. This genre can, and the
+of the siblings do. Neither can let a reader ask a circle what it is worth. This format can, and the
 addition is not decoration — it is the only channel on which the beat's own comparison is legible.
 
 ## Data
@@ -25,7 +25,7 @@ addition is not decoration — it is the only channel on which the beat's own co
 - `quakes-symbol.csv`: **17 rows**, `time, mag, longitude, latitude, place` — the same frozen file
   `proof/map-quake-symbol` carries, copied so this beat reads only what is committed beside it.
 - Extent: longitude 97.05 → 166.38, latitude −12.52 → 46.59. The camera is `[[90,-19],[173,53]]`, the
-  same box the static and video siblings bake, so all three genres of this story share one camera.
+  same box the static and video siblings bake, so all three formats of this story share one camera.
 
 ## Exact values — computed by `render-web.mjs` at every render, never typed
 
@@ -66,9 +66,9 @@ an equal-AREA encoding, never a linear radius.
   2008 Sichuan quake, the only continental one in the file) — that is a fact about the data, not a
   filter designed around it. Pure CSS (`:checked` + `:has()`), so it works with JavaScript disabled.
   The default, "All arcs", is SSR'd checked: a reader who never touches it sees all seventeen.
-- **Bounded zoom — NOT shipped, and the reason is measured.** The genre's zoom exists for points too
+- **Bounded zoom — NOT shipped, and the reason is measured.** The format's zoom exists for points too
   dense to reach at the narrowest width. Here the worst pair is 34 km apart on a camera 83° wide:
-  at 1600px that is 6 px between centres against a 28 px target, and no bounded multiplier this genre
+  at 1600px that is 6 px between centres against a 28 px target, and no bounded multiplier this format
   would allow closes it. A control that looks like it solves the problem and does not is worse than
   no control; the answer is the table and the keyboard, both of which reach every event.
 - **Accessible table — ON.** `regionTable: true`, deliberately. Seventeen magnitudes whose circles

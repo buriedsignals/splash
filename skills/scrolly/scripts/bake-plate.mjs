@@ -9,7 +9,7 @@
 // skill may import out of it. This is this skill's OWN copy of a bake — deliberately duplicated
 // from the shape `map-web/scripts/bake-plate.mjs` ships, never an import of it.
 //
-// Two deliberate departures from the sibling map genre's own bake, both because this is a LOCATOR
+// Two deliberate departures from the sibling map format's own bake, both because this is a LOCATOR
 // plate rather than a data surface:
 //   - the basemap's own place labels are KEPT. `geo-discipline.md` rule 9 ("quiet the plate") exists
 //     because a layer doing none of the beat's five jobs is noise; here the beat's whole job is
@@ -65,7 +65,7 @@ const settleMs = Number(flag("--settle", "15000"));
 const keyPath = flag("--env", join(process.cwd(), ".env"));
 
 /** Headless Chrome has to be FOUND before it can be gated. Resolve the candidates in order and
- *  fail naming every path looked in — a duplicate of the sibling genres' own resolver. */
+ *  fail naming every path looked in — a duplicate of the sibling formats' own resolver. */
 function resolveChrome() {
   const candidates = [];
   if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
@@ -86,7 +86,7 @@ function resolveChrome() {
   return found;
 }
 
-// A DUPLICATE of the key-alias resolution the sibling map genres carry, not an import.
+// A DUPLICATE of the key-alias resolution the sibling map formats carry, not an import.
 const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
 
 function parseEnvFile(text) {

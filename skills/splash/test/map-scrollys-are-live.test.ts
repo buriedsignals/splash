@@ -6,10 +6,10 @@
  * vois aucun canvas dans le DOM. Or il faut tout le temps utiliser MapTiler."* He was right —
  * `maplibregl`, `api.maptiler.com` and `<canvas>` were all **0** on all three committed pages, and
  * `AUDIT-W5-W6-map.md` §5.6 had already measured what that class of gap is worth: the whole live
- * layer could be deleted from the map × web genre and **354 tests stayed green**.
+ * layer could be deleted from the map × web format and **354 tests stayed green**.
  *
  * `skills/map-web/test/the-live-layer-is-in-the-artifact.test.ts` closed that for map × web.
- * This file is its scrolly sibling, and it asserts one thing more, because the two genres were
+ * This file is its scrolly sibling, and it asserts one thing more, because the two formats were
  * ruled differently on the same day and the difference is the kind that gets "fixed" by a later
  * agent who reads it as an omission:
  *
@@ -72,7 +72,7 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
  * The map scrollys, by PATH, named rather than discovered.
  *
  * Named, because a sweep that finds nothing to do passes — and that is precisely the state
- * `AUDIT-W5-W6-map.md` found: it reported "0 of 9" for a genre whose guard did not exist. A beat
+ * `AUDIT-W5-W6-map.md` found: it reported "0 of 9" for a format whose guard did not exist. A beat
  * that stops committing its rendered file has to redden here rather than quietly leave the list.
  */
 const MAP_SCROLLY_PAGES = [
@@ -84,7 +84,7 @@ const MAP_SCROLLY_PAGES = [
 /**
  * What a live map scrolly must contain, each string chosen so it can only be there because the live
  * layer is. `maplibregl` alone would not do — it appears throughout the inlined library whether or
- * not this genre ever calls it — so the markers are the CALL SITES this genre's own duplicated
+ * not this format ever calls it — so the markers are the CALL SITES this format's own duplicated
  * `live-scroll-map.mjs` makes: the constructor, the warm, the MapTiler request R1 accepts, and the
  * placeholder R1b requires in the key's place.
  */
@@ -98,7 +98,7 @@ const LIVE_MARKERS = [
 /**
  * What a map scrolly must NOT contain: a control CONSTRUCTION. The class name alone is worthless as
  * a signal — `NavigationControl` appears twice in every page here because the library exports it —
- * so what is banned is this genre's own `new win.maplibregl.NavigationControl`, which is the exact
+ * so what is banned is this format's own `new win.maplibregl.NavigationControl`, which is the exact
  * line `map-web/assets/live-map.mjs` carries and which R1 requires THERE.
  */
 const CONTROL_MARKERS = [

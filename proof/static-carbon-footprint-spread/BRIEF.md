@@ -5,7 +5,7 @@ type: histogram
 
 # Beat — six in ten countries emit under 4 tonnes of CO2 per person
 
-**Type:** histogram. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+**Type:** histogram. **Medium/format:** chart / static. **Size:** landscape (1920 x 1080).
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
 that counts: `render.mjs` reads it with `readPinnedSize`. The prose line used to be the only record

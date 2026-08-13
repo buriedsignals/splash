@@ -138,7 +138,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    sitting inside the files a new beat is copied from. `splash/test/seed-reads-a-recorded-palette.test.ts`
    walks for those runners and keeps the row at 12.
 
-   The beat row went from 21 to 76 the same day, genre by genre. The **second** column is the honest
+   The beat row went from 21 to 76 the same day, format by format. The **second** column is the honest
    half: 18 beats still name a colour of their own beyond the two contrast poles, and every one of
    them is a map — the basemap's own water and land paint baked into its plate, the no-data grey,
    and the territory cycle the three flow beats hold in `geo-flow.ts`. Whether a journalist should
@@ -233,7 +233,7 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 - `test/palette.test.ts` — the proposal, the conventions, the scoring, the remedy, and the reader's
   refusal to default.
 - `test/format-proposal.test.ts` — the rendered question, in each of its three shapes.
-- `../../scripts/palette-reach.mjs` — how far the recorded answer reaches, counted per genre and
+- `../../scripts/palette-reach.mjs` — how far the recorded answer reaches, counted per format and
   per beat, with what each beat still names of its own.
 - `../../scripts/two-palette-proof.mjs` — the same question answered on the rendered pixels: every
   beat drawn twice under two palettes, with the count of beats whose data ink actually moved.

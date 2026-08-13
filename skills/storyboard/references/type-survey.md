@@ -8,18 +8,18 @@ to read aloud: it is the ground the medium question stands on. Name the types th
 could actually support — a type whose required shape the data cannot supply is listed to the
 journalist as not applicable, and why — and say of each whether this toolchain can reach it.
 
-**"Proven" means an artifact of that genre EXISTS ON DISK** for that type, read through
-`matrix.mjs`'s own reader. An empty genre column is not a refusal: reachability at the genre gate
-is `genre-catalog.mjs`'s `genreGap(medium, genre)`, which answers for the medium as a whole. A
-type with no proven genre is one nobody has rendered here yet, which is worth saying out loud
+**"Proven" means an artifact of that format EXISTS ON DISK** for that type, read through
+`matrix.mjs`'s own reader. An empty format column is not a refusal: reachability at the format gate
+is `format-catalog.mjs`'s `formatGap(medium, format)`, which answers for the medium as a whole. A
+type with no proven format is one nobody has rendered here yet, which is worth saying out loud
 rather than quietly omitting.
 
 The purpose column is each sheet's OWN opening sentence, verbatim. Read the sheet itself before
 writing the beat — the sheet is where the trap that type falls into is written down.
 
-## Chart types — 32 sheets, 17 with at least one genre proven on disk
+## Chart types — 32 sheets, 17 with at least one format proven on disk
 
-| type | what it is for | proven genres | sheet |
+| type | what it is for | proven formats | sheet |
 |---|---|---|---|
 | **Area (and stacked area)** | A single-series area chart is a line chart with the space beneath it filled. | static, web, video | `chart-beat/references/types/area.md` |
 | **Bar and column** | One value per category, encoded as the LENGTH of a rectangle from a shared baseline. | static, web, video | `chart-beat/references/types/bar-and-column.md` |
@@ -54,9 +54,9 @@ writing the beat — the sheet is where the trap that type falls into is written
 | **Treemap** | A treemap answers "how does a total break down, when the pieces ALSO belong to groups worth keeping together" — area encodes each item's value, and items sharing a group are laid out as contiguous tiles, so the group itself reads as a visible region of the frame, not just a shared colour scattered across the page. | — none rendered here yet | `chart-beat/references/types/treemap.md` |
 | **Waterfall (bridge)** | A waterfall chart shows how a starting total arrives at an ending total through a sequence of signed steps — a revenue build, a budget variance, an opening-to-closing balance. | static, web, video | `chart-beat/references/types/waterfall.md` |
 
-## Map types — 8 sheets, 6 with at least one genre proven on disk
+## Map types — 8 sheets, 6 with at least one format proven on disk
 
-| type | what it is for | proven genres | sheet |
+| type | what it is for | proven formats | sheet |
 |---|---|---|---|
 | **Cartogram** | A cartogram answers "how big is this region's VALUE," honestly, by distorting each region's own area to be proportional to a number — trading recognisable geography for magnitude a reader can compare at a glance. | — none rendered here yet | `map-beat/references/types/cartogram.md` |
 | **Choropleth** | A choropleth answers "which of these named regions is proportionally worse or better off," where the regions are a partition the reader already recognises — countries, states, districts. | static, web, video, scrolly | `map-beat/references/types/choropleth.md` |

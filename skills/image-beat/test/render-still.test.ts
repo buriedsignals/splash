@@ -62,7 +62,7 @@ describe("measureText — this skill's own copy", () => {
   });
 });
 
-// ---- genre-specific additions: no sibling in chart-beat's own copy ----
+// ---- format-specific additions: no sibling in chart-beat's own copy ----
 
 describe("readImageMeta", () => {
   it("should read a real sample PNG's own intrinsic size from its IHDR chunk", async () => {

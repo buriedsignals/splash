@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` both have: the story's own constants, its own CSV reader, its own
-// component, handed to the genre's generic `renderWeb`. It lives here, beside the story, not inside
+// component, handed to the format's generic `renderWeb`. It lives here, beside the story, not inside
 // `skills/chart-web/scripts/render-web.mjs`, for the exact reason that file's own header
 // explains: a skill directory that imports a story workspace does not build once copied, on its
 // own, into a journalist's root.
@@ -14,7 +14,7 @@
 //      (`BRIEF.md`); leaving the French tag would misdeclare the page's language to assistive tech
 //      for no reason connected to this story.
 //   2. The inlined interaction script is swapped for this directory's OWN `pyramid-interaction.mjs`,
-//      and a small CSS override is appended. Both exist because this genre's own generic
+//      and a small CSS override is appended. Both exist because this format's own generic
 //      `assets/interaction.mjs` resolves hover/tap by nearest-X over one shared `.hit-area`
 //      overlay — wrong here, where the interactive unit is a whole ROW (both sexes at once), not a
 //      single point, and the 21 rows already tile the plot exactly (see
@@ -66,7 +66,7 @@ function inlineable(moduleSource) {
 
 /** CSS appended after the skill's own generic stylesheet — the skill's generic `.pt`/`.hit-area`
  *  rules never match anything this beat draws (this beat's class is `.row-hit`, not `.pt`), so
- *  every rule this genre needs for its own interactive element is stated here, not inherited. Fill
+ *  every rule this format needs for its own interactive element is stated here, not inherited. Fill
  *  stays transparent always — see `SwissAgePyramidWeb.tsx`'s own doc-comment: a hover fill would
  *  paint OVER the bars and the band label the row-hit rect sits on top of (needed there for full
  *  pointer coverage). A stroke outline framing the whole row highlights it without hiding anything

@@ -1,7 +1,7 @@
 # Splash
 
 Local-first visual journalism for newsrooms. Splash turns reporting material and
-data into web, video, print, and static visual outputs while keeping source files,
+data into web, video, scrollytelling, and static visual outputs while keeping source files,
 editorial decisions, rendered drafts, approvals, and delivery artifacts in a
 journalist-owned working directory.
 
@@ -13,12 +13,20 @@ doctrine-twin implementation is now the product baseline on `main`.
 Splash is a skill pack used through an AI assistant rather than a hosted
 application. Its workflow freezes supplied reporting material, develops a
 storyboard, produces real draft visuals, waits for human approval, and exports a
-format-specific handover. The current Data2Story redesign is specified in
-[`docs/splash/2026-08-10-data2story-human-gated-production-prd.md`](docs/splash/2026-08-10-data2story-human-gated-production-prd.md).
+format-specific handover.
 
 The implementation is local-first: stories live under `stories/`, credentials
 stay in the installed Splash root, and every delivery is a file or directory the
 newsroom controls.
+
+## Migration note: publication format
+
+As of 2026-08-14, Splash calls the `static`, `web`, `video`, and `scrolly` choice
+`format` throughout its canonical story and JavaScript contracts. Legacy
+`STORYBOARD.md` slots containing `genre` remain readable and are upgraded to
+`format` on their next explicit storyboard write; old JavaScript symbol names are
+not retained. Historical `.another-genre` delivery receipts remain readable,
+while new answers are written to `.another-format`.
 
 ## Tech stack
 
@@ -67,24 +75,50 @@ not commit `.env` or real keys.
 
 Splash itself runs locally. Delivery is selected per approved output: owned
 files and source bundles remain local, CMS insertion produces an insertion
-package, and hosted embeds use the configured deployment provider. A completed
-delivery is written to `stories/<story>/export/<beat>/` with `HANDOVER.md` and a
-delivery receipt.
+package, and “Deploy and receive embed code” automatically publishes a web
+output to Cloudflare Pages. Cloudflare is an implementation detail, not another
+editorial question. Each hosted output gets a stable per-output project URL, an
+iframe snippet, and a deployment receipt. A later approved revision updates the
+same URL.
+
+Each installation persists `stories/.splash-instance-id` locally so two Splash roots using the
+same Cloudflare account cannot derive the same Pages project from common story/output slugs. Each
+story then keeps editable and delivered material separate:
+
+```text
+stories/
+  .splash-instance-id                local deployment namespace; never commit
+  <story>/
+    AGENTS.md                         revision instructions for a fresh session
+    source/                           frozen reporting material
+    STORYBOARD.md                     editorial decisions and producer choice
+    beats/<outputId>/                 canonical editable visual source
+      renders/                        current review target
+      spec.json                       Datawrapper source spec, when delegated
+      DATAWRAPPER.json                reusable Datawrapper chart ID, when delegated
+    export/<outputId>/                current delivered form; never edit as source
+      HANDOVER.md
+      DEPLOYMENT.json                 hosted deployment → editable beat link
+      EMBED_URL.txt
+      EMBED_CODE.html
+```
+
+For editor feedback, start with the story's `AGENTS.md` and the relevant
+`DEPLOYMENT.json`, edit the matching beat, render and approve it again, then
+materialise the same delivery form. `beats/<outputId>/FEEDBACK.md` is the durable trigger that makes
+a fresh `whereIs` session reopen production and then delivery. Local delivery keeps the prior export
+intact until replacement completes; a remotely completed Cloudflare operation may precede the local
+receipt and is reconciled from the hosted-operation record on retry.
 
 ## Documentation
 
 - [`AGENTS.md`](AGENTS.md) — repository workflow and product constraints
-- [Data2Story production PRD](docs/splash/2026-08-10-data2story-human-gated-production-prd.md)
-  — active requirements and remaining work
-- [Consolidation status](docs/splash/data2story-consolidation-status.html) —
-  readable HTML overview of what landed and what remains
 - [Residual findings](docs/residual-review-findings/feat-data2story-human-gated-production.md)
-  — completed hardening and outstanding live verification
+  — completed delivery hardening and outstanding live verification
 - [`skills/splash/SKILL.md`](skills/splash/SKILL.md) — orchestration and
   human-gated workflow
 - [`skills/deliver/SKILL.md`](skills/deliver/SKILL.md) — delivery forms,
   safeguards, and handover contract
-- `survey/` — dated design and host-compatibility measurements
 - `proof/` — rendered examples and parity proofs
 
 ## Project structure
@@ -96,7 +130,6 @@ stories/      Local story workspaces and artifacts
 installer/    Local installer, configurator, and doctor
 scripts/      Repository checks and generated matrices
 proof/        Rendered proof cases
-survey/       Design and compatibility research
 docs/         Product requirements and decisions
 ```
 

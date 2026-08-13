@@ -1,6 +1,6 @@
 // twin/skills/map-web/scripts/render-web.mjs
 //
-// The map genre's own third rung, the same role `chart-web/scripts/render-web.mjs` plays for
+// The map format's own third rung, the same role `chart-web/scripts/render-web.mjs` plays for
 // charts: rung one and two of a map beat are the still and the video
 // (`map-beat/scripts/render-map.mjs`); this turns the SAME baked plate into one self-contained
 // HTML file — one fluid SVG (geometry only) plus its full HTML overlay (furniture, controls), the
@@ -14,7 +14,7 @@
 // out of it; `splash/test/no-cross-skill-imports.test.ts` fails loud on any specifier that
 // does).
 //
-// `renderMapWeb` below is the genre's own machinery and knows nothing of any one story: it takes
+// `renderMapWeb` below is the format's own machinery and knows nothing of any one story: it takes
 // the component, the accessible-table component and the props to call the first with, as
 // arguments — never reaches for one story's own constants by name. Everything under it (the
 // CONFIG block, `ensurePlate`, `render`, the CLI block) is the runner for THIS SKILL'S OWN SEED —
@@ -50,7 +50,7 @@ const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 // Everything between here and the closing marker is the SEED beat's own words and defaults — what
 // a journalist writing their own map-web beat replaces wholesale. Everything else in this file —
 // `renderMapWeb` and its `{ component, table, props, outDir, name, regionTable }` signature,
-// `inlineable`, `escapeHtml`, `assertDistinctSlugs`, `buildCss` — is this genre's own mechanics and
+// `inlineable`, `escapeHtml`, `assertDistinctSlugs`, `buildCss` — is this format's own mechanics and
 // is left alone.
 // The colours are the one part of `SEED` that is not words: READ back from this skill's own
 // `PALETTE.md`, exactly as a beat reads its story's answer.
@@ -81,7 +81,7 @@ const SEED = {
   // on costs one word here; every `.pt` button keeps its own `aria-label` either way.
   regionTable: false,
   // What the collapsed disclosure's own summary calls its rows (B5.2). It is a beat's word, not a
-  // genre's: "metro areas" here, "countries" on a choropleth, "cells" on a hex grid. `discloseTable`
+  // format's: "metro areas" here, "countries" on a choropleth, "cells" on a hex grid. `discloseTable`
   // refuses to invent one.
   tableRowNoun: "metro areas",
 };
@@ -256,11 +256,11 @@ export function separationHeadroom(points, radiusOf) {
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -399,11 +399,11 @@ function assertDistinctSlugs(groups) {
  * computed — see that file's own header note on why it is shared rather than re-derived here).
  * Each group gets one `:has()` rule that hides every `.pt`/`.point-label`/table row NOT tagged with
  * it — pure CSS, so the filter (like the zoom toggle below it) works identically with the page's
- * own inline `<script>` absent entirely. `:has()` is the one modern-CSS assumption this genre now
+ * own inline `<script>` absent entirely. `:has()` is the one modern-CSS assumption this format now
  * makes (Chrome 105+/Safari 15.4+/Firefox 121+, all long-shipped in every evergreen browser this
  * self-contained HTML is built for) — accepted rather than hand-rolling a JS-only fallback for a
  * capability that only degrades to "the filter/zoom controls are inert, the unfiltered/unzoomed
- * view still renders complete" on anything older, which is exactly the guarantee this genre already
+ * view still renders complete" on anything older, which is exactly the guarantee this format already
  * makes for JavaScript being off.
  */
 function buildCss({ ground, accent, ink, muted, groups, frame }) {
@@ -559,7 +559,7 @@ body {
    a shape it was not baked for is a lie about distance and shape (geo-discipline.md), so it is not
    one of the outcomes here; a smaller, correct map is. The plain 'width: 100%' above the 'min()'
    is the fallback for a browser without container query units — it fills the width, exactly as this
-   genre did before, rather than collapsing. */
+   format did before, rather than collapsing. */
 .mw-viewport {
   position: relative;
   width: 100%;
@@ -748,7 +748,7 @@ async function loadPlate(plateDir) {
 
 /** The seed beat's own runner: bakes the plate if missing, reads the seed's own points, hands the
  *  seed component and `RegionTable` (imported above from this skill's own `assets/`) to the
- *  genre's generic `renderMapWeb`. */
+ *  format's generic `renderMapWeb`. */
 async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   await ensurePlate(plateDir);
   const { geometry, plate } = await loadPlate(plateDir);

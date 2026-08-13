@@ -1,5 +1,5 @@
 /**
- * The video genre of "Poland emits more than double Sweden's per-capita CO2" — 8 seconds, 30fps,
+ * The video format of "Poland emits more than double Sweden's per-capita CO2" — 8 seconds, 30fps,
  * 1080 × 1080.
  *
  * The plate and the parts come from the same bake the still draws (`bake.mjs`), and the classes,
@@ -9,7 +9,7 @@
  *
  * Nothing here derives a furniture colour either — `deriveFurniture` sits beside a native
  * rasteriser that no browser bundle can load, so `render.mjs` calls it in node and passes
- * ink/muted/grid in as props. One implementation of the colour rule, two genres.
+ * ink/muted/grid in as props. One implementation of the colour rule, two formats.
  */
 
 import { Fragment } from "react";

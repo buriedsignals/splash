@@ -5,7 +5,7 @@
  * Written fresh from `references/types/small-multiples.md` — this is NOT four independent line
  * beats stitched together: the type's own non-negotiable rule ("what has to stay identical across
  * every panel: the scale — same domain, same axis, same units, on every single panel, full stop")
- * governs the geometry below, and the video genre's own motion grammar governs the ORDER the four
+ * governs the geometry below, and the video format's own motion grammar governs the ORDER the four
  * panels arrive in (`motion-grammar.md`, "The order is chronological, or it is argumentative").
  * Own pure geometry (`panelGeometry`), own `measureText`/`wrap`/`drawnSoFar` (duplicated, not
  * imported — this story lives outside any skill's boundary, in `proof/`, the same rule

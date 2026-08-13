@@ -30,7 +30,7 @@ render that was already stretched. It is used as given here, and it is reported.
 **Proves:** since 1990, Switzerland's life expectancy at birth has stayed continuously above
 France's — both countries crossed 80 years, and by 2023 they sit within a year of each other.
 
-**Medium / genre:** chart / video. **Type:** line (two series) — the video genre's own copy of
+**Medium / format:** chart / video. **Type:** line (two series) — the video format's own copy of
 `chart-video`'s seed shape (a series drawn against a fitted, non-zero axis) extended to two
 series drawn together, which is what earns this beat its own component rather than a third copy of
 a single-line beat: the type's own documented trap (`references/types/line.md`, "The trap that's

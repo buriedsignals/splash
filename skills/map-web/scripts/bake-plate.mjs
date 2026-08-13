@@ -1,6 +1,6 @@
 // twin/skills/map-web/scripts/bake-plate.mjs
 //
-// The bake for the web genre's proportional-symbol seed: one camera, one basemap capture, one
+// The bake for the web format's proportional-symbol seed: one camera, one basemap capture, one
 // file of projected point positions. No polygon rings and no data join — a symbol map has neither
 // (`map-beat/references/types/proportional-symbol.md`: "there is no data JOIN for this
 // type") — so this is a lighter bake than a choropleth's: points in, projected pixels out.
@@ -11,7 +11,7 @@
 // This is `doctrine/references/geo-discipline.md` rules 1, 2, 4, 6 in one script (rule 3 does
 // not apply — nothing here is a polygon) — read before touching this file:
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
-//   2. the plate is fixed, so the two responsive layouts this genre ships never re-render tiles;
+//   2. the plate is fixed, so the two responsive layouts this format ships never re-render tiles;
 //   4. each point's own label is placed at its OWN projected pixel, in this beat's own typography;
 //   6. capture plumbing — `preserveDrawingBuffer`, `--use-gl=angle`, a resolved Chrome path.
 // Rule 7 (water reads as a blue tint, never grey) applies here MORE than to a choropleth: a
@@ -79,7 +79,7 @@ const keyPath = flag("--env", splashEnvPath(import.meta.dirname));
 
 /**
  * Headless Chrome has to be FOUND before it can be gated (rule 6). puppeteer's own download is
- * missing on a clean install often enough that the chart genre wrote the same note; this resolves
+ * missing on a clean install often enough that the chart format wrote the same note; this resolves
  * the candidates in order and fails naming every path it looked in.
  */
 function resolveChrome() {

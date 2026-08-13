@@ -8,7 +8,7 @@
 // WHAT THIS BEAT IS, AND WHY IT IS MOSTLY COMPOSITION RATHER THAN NEW MECHANISM. The owner, 2026-08-10:
 // *"Pour le multiple, essaye de mélanger de tout : des charts avec navigations, des maps avec
 // navigations et des images"* — and then, on how it is driven: *"La navigation se fait au scroll,
-// c'est une sorte de mix de tout"*, and *"C'est genre un assemblage."* So this beat carries THREE
+// c'est une sorte de mix de tout"*, and *"C'est format un assemblage."* So this beat carries THREE
 // media in one story and navigates INSIDE the chart and INSIDE the map while each holds the screen,
 // and it does both from ONE signal.
 //

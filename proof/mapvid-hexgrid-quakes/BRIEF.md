@@ -1,6 +1,6 @@
 # Beat — the Ring of Fire is not one bad day: the densest cell shook on 360 days out of 366
 
-**Type:** hex grid (spatial bins). **Medium/genre:** map / **video** — the third genre for this
+**Type:** hex grid (spatial bins). **Medium/format:** map / **video** — the third format for this
 type, beside the static beat (`proof/map-quake-density`) and the web one
 (`proof/mapgen-hexgrid-web`). `render/hexgrid.mp4`, 1080 × 1080, 30 fps, **380 frames = 12.67 s**,
 over a 940 × 540 baked plate frozen in `plate/`.
@@ -11,7 +11,7 @@ over a 940 × 540 baked plate frozen in `plate/`.
 delivered across a whole year are the same shade of grey.** The static and web siblings cannot tell
 those two worlds apart — no static encoding can, because the quantity they draw has already been
 summed over time. Playing the year apart is the measurement, and it is the only measurement this
-genre adds. That is the test the scrolly skill states and this beat had to pass: every frame of the
+format adds. That is the test the scrolly skill states and this beat had to pass: every frame of the
 reveal shows a different picture, and the difference between two frames is the argument.
 
 ## Claim
@@ -32,7 +32,7 @@ its events — the two ways "not one bad day" could be false of a different cata
 - `quakes-density.csv`: **14,175 rows**, the same frozen export the static and web siblings read,
   copied here so this beat's render resolves every input inside its own directory.
 - **14,073 of the 14,175 are on-frame**; 102 fall poleward of the plate's own 61°S–78°N.
-- The `time` column is used here and nowhere else in this type's other two genres. Every row's date
+- The `time` column is used here and nowhere else in this type's other two formats. Every row's date
   is read in **UTC**, because the catalogue is written in UTC and reading it in a local zone would
   move events across midnight — and, once a year, across the year boundary.
 
@@ -74,7 +74,7 @@ mean before one exists) → `reveal` 60–270 (**2024 plays, one day at a time, 
 → `subject` 270–290 (the densest cell outlined and named) → `conclusion` 290–320 → `hold` 320–380
 (2.0 s of stillness). Contract-checked; `hold` ends exactly on frame 380.
 
-## The accessibility trap this type has in the video genre, and how it is closed
+## The accessibility trap this type has in the video format, and how it is closed
 
 "Has not happened yet" must never read as "there is nothing here". A hexagon that has not appeared is
 one whose first magnitude-4 event has not been catalogued yet — and three things on the frame say so

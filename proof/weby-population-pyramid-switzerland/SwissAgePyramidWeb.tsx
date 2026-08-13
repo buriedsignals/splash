@@ -33,7 +33,7 @@
  *
  * THE ROW-HEIGHT FLOOR. Height follows width through `aspect-ratio`, which at 375px would put 21
  * bands about 8px apart — half the height of the 11px label each one has to hold. `.chart-plot`
- * carries an inline `min-height` of `bands x MIN_ROW_PX`, this beat's own version of the genre's
+ * carries an inline `min-height` of `bands x MIN_ROW_PX`, this beat's own version of the format's
  * `PLOT_FLOOR_PX`.
  *
  * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`. Its
@@ -70,7 +70,7 @@ const MIN_ROW_PX = 17;
  *  inset; the leader's own LENGTH is derived (see `peakAnnotation`) and is what used to be wrong. */
 const LEADER_X = 6;
 
-/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this genre at, and the two
+/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this format at, and the two
  *  halves of `FRAME_PAD_PX` the skill's own stylesheet puts inside it. Duplicated from the skill,
  *  not linked: a beat may not import a skill's internals, and a beat that silently tracked a change
  *  to them would be worse. */
@@ -104,7 +104,7 @@ export type WebFrame = {
   note: { fontSize: number; fontWeight: number };
   /** Horizontal padding either side of the widest age-band label, inside the central gutter — the
    *  gutter's own width is MEASURED from the real label strings plus this padding, never a fixed
-   *  guess, because a fixed number is exactly what clipped a label the first time this genre's own
+   *  guess, because a fixed number is exactly what clipped a label the first time this format's own
    *  line beat was driven. */
   bandLabelPad: number;
   /** How many round ticks each mirrored half-axis is hinted to produce. Decided ONCE, at the

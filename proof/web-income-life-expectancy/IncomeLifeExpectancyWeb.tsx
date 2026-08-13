@@ -21,7 +21,7 @@
  * cloud of stretched ellipses is a different picture from a cloud of dots. So every dot is an HTML
  * element positioned by `%` at a FIXED pixel diameter: it lands exactly where the geometry put it,
  * and it stays round at 375px and at 3440px alike. The dot's SIZE is furniture; only its POSITION is
- * geometry, and this genre's whole rule is that those two things scale differently.
+ * geometry, and this format's whole rule is that those two things scale differently.
  *
  * That also decides the interaction: `scatter-interaction.mjs` resolves a pointer to the nearest dot
  * by real screen distance (see that file), not by x alone the way the skill's own shared script
@@ -65,7 +65,7 @@ type LabelOffset = {
 };
 type NamedLayout = Record<"CHE" | "USA" | "CUB", LabelOffset>;
 
-/** This genre's single fluid frame, in this beat's own shape — declared here, not imported from the
+/** This format's single fluid frame, in this beat's own shape — declared here, not imported from the
  *  skill's seed (no `#shared/*` vendoring path exists for a compile-time-only type; duplicate, do
  *  not link). */
 export type ScatterFrame = {
@@ -92,7 +92,7 @@ export type ScatterFrame = {
 
 export const FRAME: ScatterFrame = {
   // A taller canonical box than the other beats carry, and deliberately: height follows width in
-  // this genre, so a wide window clamps to the viewport anyway (the plot measured 683px at
+  // this format, so a wide window clamps to the viewport anyway (the plot measured 683px at
   // 1600x900 either way) while a narrow one gets exactly what this ratio gives it. At 820x460 a
   // 375px phone drew a 184px plot and 164 dots packed into a blob; this ratio draws ~250px of the
   // same cloud, which is the difference between a shape and a smudge. Measured at three viewports,

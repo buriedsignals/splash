@@ -9,7 +9,7 @@
 // hemisphere, three at continent, three at city, and NOTHING at country or region — the two rungs a
 // local newsroom asks for most. The W5 audit measured that hole twice and it was still empty. A
 // camera that has never been run at a scale is a camera nobody has tested, and every constant this
-// genre carries was tuned by eye against the one extent its own beat happened to have.
+// format carries was tuned by eye against the one extent its own beat happened to have.
 //
 // This drives the SAME machinery — the same `fitBounds`, the same MapTiler style, the same capture
 // gate, the same `extentFacts` — at six cameras derived from one frozen catalogue, and writes down

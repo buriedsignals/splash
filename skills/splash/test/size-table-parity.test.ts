@@ -14,7 +14,7 @@
  * IT READS BY `import()`, NOT BY PARSING TEXT. A table is data; comparing its rendered values is
  * the only comparison worth making, and a text scan would go red on a reordered key. Runtime code
  * in this branch never crosses a skill boundary, and this is the test-only exception that rule
- * reserves — the same one `genre-shippability.test.ts:1-8` and `where.test.ts` already use.
+ * reserves — the same one `format-shippability.test.ts:1-8` and `where.test.ts` already use.
  *
  * ── WHAT IT DELIBERATELY DOES NOT COMPARE, AND WHY ──────────────────────────────────────────────
  *

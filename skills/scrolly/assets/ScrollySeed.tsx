@@ -3,12 +3,12 @@
  *
  * This is not a chart type and it is not a scrollytelling framework. It is the wiring of one
  * scroll-driven beat, written out once so the next one can be written from scratch in the same
- * shape. A scrolly is a VEHICLE, not a fourth genre of chart — and, just as importantly, not a
- * second copy of a genre that already exists: a single chart stepped through several reveal states
+ * shape. A scrolly is a VEHICLE, not a fourth format of chart — and, just as importantly, not a
+ * second copy of a format that already exists: a single chart stepped through several reveal states
  * is not what earns this vehicle its keep, because a single beat that only ever shows one chart
  * should animate instead (see this skill's own `SKILL.md`, "When to use"). What a scrolly earns its
  * existence by doing is ASSEMBLING DIFFERENT MEDIA behind one narrative — which is exactly what a
- * single beat, of any one genre, cannot do on its own.
+ * single beat, of any one format, cannot do on its own.
  *
  * **This seed carries FOUR TRACKS, and that is the point of the file.** An IMAGE track (a raster
  * scene), a DRAWN track (a schematic), a MAP track (a baked basemap plate with the gauge marked on
@@ -23,13 +23,13 @@
  *     mechanics demo. A real beat replaces all of it.
  *   - The GENERIC scaffold that assembles whatever frame a step is handed — `renderScrolly` in
  *     `scripts/render-scrolly.mjs`, `pickActiveStep`/`initScrolly` in `assets/interaction.mjs` — is
- *     this genre's own machinery and knows nothing written here. It never reads `frameKind`, never
+ *     this format's own machinery and knows nothing written here. It never reads `frameKind`, never
  *     asks whether a step's frame is a photo, a diagram, a chart or a map; it only ever renders the
  *     `ReactElement` a step hands it and toggles which one is on screen.
  *     `scripts/render-scrolly.mjs`'s own seed runner (behind its labelled CONFIG seam) is the ONE
  *     place that reads `frameKind` and turns each `STEPS_META` entry into that finished element.
  *
- * Three things this genre needs that neither the static nor the web genre does:
+ * Three things this format needs that neither the static nor the web format does:
  *
  *   1. Every step's own frame is SSR'd once, as a complete, self-contained fragment (an `<img>`, an
  *      `<svg>`, or a `<div>` holding both) — never a live DOM node the browser mutates. The
@@ -49,7 +49,7 @@
  * its own data contradicted).
  *
  * No frame component below imports the rasteriser (`deriveFurniture`/`measureText`), the same
- * invariant the other genres' seeds keep: `ink`/`muted`/`grid` are props, derived once in node by
+ * invariant the other formats' seeds keep: `ink`/`muted`/`grid` are props, derived once in node by
  * whatever runner calls these components.
  */
 
@@ -61,7 +61,7 @@ import { dayAndMonth, group } from "./gauge-data.ts";
 // Everything between here and the closing marker is this beat's own words and its own editorial
 // calls — the next beat replaces every value below.
 
-/** The facts every step's own prose is written against — this beat's, not the genre's. */
+/** The facts every step's own prose is written against — this beat's, not the format's. */
 export type SeedFacts = { station: Station; gauge: GaugeFacts };
 
 export type ScrollyStepMeta = {
@@ -197,7 +197,7 @@ export const CHART_LAYOUT = {
   plot: { left: 0.13, right: 0.96, top: 0.17, bottom: 0.9 },
   /** The geometry-only viewBox the plot's own SVG stretches across (`preserveAspectRatio="none"`):
    *  geometry stretches with the box, type does not — every word on this frame is HTML at a fixed
-   *  pixel size, the separation the web genres in this project already ship. */
+   *  pixel size, the separation the web formats in this project already ship. */
   viewBox: { width: 1000, height: 500 },
 } as const;
 
@@ -243,7 +243,7 @@ export function ImageFrame({ src }: { src: string }) {
 /**
  * The DRAWN track. A schematic of the instrument — no axis, no plotted value, nothing a reader
  * could read a number off. It paints only with `ground`/`ink`/`muted`/`accent`, the closed-palette
- * rule every genre in this project keeps, and every element that carries meaning sits inside
+ * rule every format in this project keeps, and every element that carries meaning sits inside
  * `SAFE_AREA` by construction, so COVER's own crop and the prose lane can both never reach it.
  * Only the bank and water fills — plain colour, no text — are free to bleed past it.
  */

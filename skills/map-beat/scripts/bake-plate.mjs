@@ -6,7 +6,7 @@
 //
 // This is `geo-discipline.md` rules 1, 2, 3, 4, 6 and 11 in one script:
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
-//   2. the plate is fixed, so no genre re-renders tiles per frame and shimmers;
+//   2. the plate is fixed, so no format re-renders tiles per frame and shimmers;
 //   3. the shapes are baked to ordered pixel rings HERE — a provider basemap serves administrative
 //      boundary LINES, never polygons, so a choropleth's shapes can never come from the tiles;
 //   4. the anchors a label will hang from are projected here too, by `map.project()`;
@@ -80,7 +80,7 @@ const keyPath = flag("--env", splashEnvPath(import.meta.dirname));
 
 /**
  * Headless Chrome has to be FOUND before it can be gated (rule 6). puppeteer's own download is
- * missing on a clean install often enough that the chart genre wrote the same note; this resolves
+ * missing on a clean install often enough that the chart format wrote the same note; this resolves
  * the candidates in order and fails naming every path it looked in.
  */
 function resolveChrome() {

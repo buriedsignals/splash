@@ -1,29 +1,32 @@
 ---
 name: dw-beat
-description: Use to produce a Datawrapper chart beat — the default, thin producer for an ordinary static chart — by mapping the editorial phases' output (confirmed takeaway, hand-of-the-journalist fields, house colour, data, annotations) straight onto the Datawrapper v3 API and taking back an owned PNG or a published embed URL. Rendering is delegated; this skill holds no geometry, no seed component, and no chart-type registry.
+description: Use to produce a Datawrapper chart beat after the journalist chooses Datawrapper for an eligible storyboard treatment — map the editorial contract onto the Datawrapper v3 API, persist the provider chart ID, and take back an owned PNG or published web artifact. Rendering is delegated; this skill holds no geometry or seed component.
 ---
 
 # dw-beat — the thin one, because rendering is delegated
 
 ## Overview
 
-Under this project's producer matrix, Datawrapper is the **default** path for a static chart: a
-newsroom without an equipped team hits this producer far more often than a bespoke one, precisely
-because it is thin — no geometry to write, no furniture to derive, no render ladder to climb. Where
+Datawrapper is a **selected delegated producer**, not the default and not a chart-treatment
+candidate. `storyboard` first lets the journalist choose the treatment without regard to platform;
+only when that treatment maps faithfully to a pinned Datawrapper type does it ask Datawrapper or
+custom. This skill runs when that answer is Datawrapper. It stays thin — no geometry to write, no
+furniture to derive, no render ladder to climb. Where
 `chart-beat` writes a component and renders it locally, `dw-beat` sends a mapped
 `ChartSpec` to `api.datawrapper.de` and gets back either a PNG it downloads and owns (`format:
-"static"`) or a published embed URL (`format: "interactive"`). There is no third option: this
+"static"`) or a published embed URL (`format: "web"`). At the provider boundary only, Splash maps
+`web` to Datawrapper's own `interactive` value. There is no third option: this
 project pins one format per element, and this skill never builds both.
 
-The skill is exactly four scripts: **validate** the `ChartSpec` (fail loud on anything unrecognised),
+The production path has four jobs: **validate** the `ChartSpec` (fail loud on anything unrecognised),
 **map** it onto Datawrapper's own metadata shape (`scripts/map-spec.mjs` — editorial intent in,
 Datawrapper field names out, the same code path regardless of chart type), **call** the five real
-API endpoints in order (`scripts/dw-client.mjs`), and **orchestrate** that sequence into one owned
-artifact (`scripts/produce.mjs`). Nothing here holds a chart-type registry — `spec.chartType` is
-whatever Datawrapper type id the editorial phase already chose (`"d3-lines"`, `"d3-bars"`, ...),
-passed straight through. If a future need ever grows a `switch (spec.chartType)` in this skill's own
-code, that is the signal this skill has stopped being thin and needs to say so, not quietly become
-one.
+provider operations in order (`scripts/dw-client.mjs`), and **orchestrate** that sequence into one owned
+artifact (`scripts/produce.mjs`). The complete provider inventory and the conservative mapping live
+upstream in `storyboard/references/datawrapper-chart-types.json`; this skill receives the persisted
+`datawrapperType` as `spec.chartType` and passes it through. If a future need ever grows a
+`switch (spec.chartType)` in this skill's own code, that is the signal this skill has stopped being
+thin and needs to say so, not quietly become one.
 
 The one capability worth building this properly for: Datawrapper's line-chart engine carries a
 **`range-annotations`** key, separate from `text-annotations` — a drawn reference rule or shaded
@@ -33,8 +36,9 @@ back under this level" and a rule *shows* it.
 
 ## When to use
 
-- When a chosen candidate in a closed `STORYBOARD.md` has medium `chart` and the journalist wants
-  the default, delegated rendering path rather than a bespoke component — the ordinary case.
+- When a chosen candidate in a closed `STORYBOARD.md` has medium `chart`, records
+  `producer: datawrapper`, and names the catalogued `datawrapperType` that becomes
+  `spec.chartType`.
 - To turn the editorial phases' own output directly into a `ChartSpec`: `takeaway` is the confirmed
   takeaway, `limits` is the caveat line, `credit`/`effectiveDate` are the hand-of-the-journalist
   source fields `storyboard` already collects (`HAND` in `storyboard/scripts/
@@ -90,8 +94,8 @@ established it.
 | Validation | `scripts/validate-spec.mjs` | `validateChartSpec(spec)` — fails loud, listing every problem at once, on an unknown top-level field, a missing required one, or a malformed annotation entry |
 | Mapping | `scripts/map-spec.mjs` | `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation` — editorial `ChartSpec` in, Datawrapper `metadata.describe`/`metadata.visualize` out. The one file that knows Datawrapper's own field names |
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
-| API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — five thin, real HTTP calls, `fetchFn` injectable for tests, never mocked in the one place that actually runs against the network |
-| Orchestrator | `scripts/produce.mjs` | `produce(spec, {outDir, size, token, fetchFn})` — validate → map → create → set data → patch metadata → publish → (static: export at the chosen size + check the returned PNG's own IHDR against it + write) |
+| API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchChart`/`patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — thin real HTTP calls with hard request and response-body deadlines; `fetchFn` is injectable for deterministic contract tests and the credential-gated checks use the real network |
+| Orchestrator | `scripts/produce.mjs` | `produce(spec, {storiesRoot, storyId, outputId, name, size, token, fetchFn})` — resolve the canonical beat, serialize same-beat revisions, validate → write `spec.json` → create or reuse the chart ID in `DATAWRAPPER.json` (persisting `state: prepared` before follow-up calls) → set data → patch title/type/language/metadata → publish → write `renders/<name>.html` for web or export and verify `renders/<name>.png` for static → advance the receipt to `state: local-complete`. `{outDir}` remains only as the legacy one-shot compatibility shape |
 | Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that confirms the candidate range-annotation shape by rendering it — run for real, live-confirmed (`references/range-annotation-shape.md` §2) |
 | Proof | `scripts/prove-co2.mjs` | The real case: Swiss territorial CO₂, 1950-2024, a range annotation at the 1967 level |
 
@@ -108,11 +112,19 @@ established it.
    always run through the same two functions no matter what `chartType` is. Every chart also gets
    `metadata.publish["force-attribution"]: false`, and — unless `isBarEncoded(spec.chartType)` — a
    `visualize["custom-range-y"]` fitted to the data instead of the zero-anchored default.
-3. **One real chart, five calls, in order:** `POST /v3/charts` (create) → `PUT .../data` (the CSV) →
+3. **One real chart, then the same chart on revision.** The first run calls
+   `POST /v3/charts` (create) → `PUT .../data` (the CSV) →
    `PATCH /v3/charts/{id}` (the mapped metadata) → `POST .../publish` (always — `format:
-   "interactive"` needs the URL this returns, and `format: "static"`'s export needs a published
-   chart too) → for `format: "static"` only, `GET .../export/png`, written to `<outDir>/<name>.png`.
-4. **One format, never both.** `format: "interactive"` returns the published `publicUrl` and never
+   "web"` needs the URL this returns, and `format: "static"`'s export needs a published
+   chart too) → for `format: "static"` only, `GET .../export/png`. With `beatDir`, the run writes
+   `spec.json`, `DATAWRAPPER.json`, and `renders/<name>.*`. A later run in that same directory reads
+   the receipt, skips chart creation, updates and republishes the same chart ID, and refreshes the
+   render. Editor feedback therefore changes the existing published visual instead of creating an
+   orphaned replacement. The receipt is written in `state: prepared` immediately after a successful
+   create response, before data upload or publication, so a later failure can reuse that ID. A
+   timeout or connection loss on the initial create response remains provider-ambiguous because no
+   chart ID is available locally; do not claim that case has been reconciled.
+4. **One format, never both.** `format: "web"` returns the published `publicUrl` and never
    calls export; `format: "static"` writes the PNG and never returns a bare embed. This mirrors the
    rest of this project's single-format-per-element rule (`STORYBOARD.md`'s `chosen` slot), not a
    Datawrapper-specific idea.
@@ -139,8 +151,11 @@ const spec = {
 };
 
 const result = await produce(spec, {
-  outDir: "/tmp/dw-beat",
+  storiesRoot: "stories",
+  storyId: "swiss-co2",
+  outputId: "1-co2-line",
   name: "co2",
+  size: "landscape",
   token: process.env.DATAWRAPPER_TOKEN,
   fetchFn: fetch,
 });
@@ -154,7 +169,7 @@ const result = await produce(spec, {
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many real API calls one `produce` run makes | `4` (`interactive`) or `5` (`static`, adds export) | `produce.mjs` |
+| How many real API calls one `produce` run makes | First run: `4` for web or `5` for static; a resumed beat makes one fewer because it reuses `DATAWRAPPER.json`'s chart ID instead of creating another chart | `produce.mjs` |
 | Default reference-line weight | `2` px (`strokeWidth`) | `buildRangeAnnotation`, `map-spec.mjs` |
 | Default reference-line style | `"solid"` (`strokeType`) | `buildRangeAnnotation` |
 | Opacity for a drawn line vs a shaded band | `100` / `20` | `buildRangeAnnotation` |
@@ -181,8 +196,12 @@ const result = await produce(spec, {
   `splash/test/size-table-parity.test.ts`. This copy carries **no `typeScale`**, and that
   absence is the point: Datawrapper lays out its type server-side, so there is no local number for a
   scale to multiply — the parity guard is written present-and-valid-or-absent for exactly this.
-- `scripts/produce.mjs` — `produce`, the orchestrator; also runnable as
-  `bun run scripts/produce.mjs <spec.json> <outDir> [static|interactive]`.
+- `scripts/produce.mjs` — `produce`, the canonical beat orchestrator and persisted
+  `spec.json`/`DATAWRAPPER.json` contract. The revision-safe CLI is
+  `bun run scripts/produce.mjs <storiesRoot> <storyId> <outputId> [static|web] [size] --story-output`;
+  it derives the beat path, loads, and reuses the beat receipt. Without `--story-output`, the
+  legacy one-shot `<spec.json> <outDir>` shape remains
+  available but is not a published-chart revision path.
 - `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed
   (`references/range-annotation-shape.md` §2).
 - `scripts/prove-co2.mjs` — the real Swiss CO₂ proof case, fetching Our World in Data directly.

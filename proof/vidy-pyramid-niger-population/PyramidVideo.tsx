@@ -14,9 +14,9 @@
  * across the boundary).
  *
  * FRAME: 1080 × 1350 (4:5), taller than the corpus's square default — the same per-story override
- * `../static-swiss-age-pyramid/`'s static beat already made (900 × 820, taller than that genre's own
+ * `../static-swiss-age-pyramid/`'s static beat already made (900 × 820, taller than that format's own
  * default): 21 age bands need more vertical room than a square frame gives for a legible per-band
- * gutter label at any genre's own minimum readable size.
+ * gutter label at any format's own minimum readable size.
  *
  * THE MOTION PROBLEM (from `BRIEF.md`): every one of Niger's 21 age bands is a mirrored pair of
  * bars around one shared central zero, and the bands run in a real, fixed sequence (age) that must
@@ -59,7 +59,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
 import {
@@ -69,7 +69,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
-// genres read one copy. A population pyramid has no measured aspect range at a tall frame — its
+// formats read one copy. A population pyramid has no measured aspect range at a tall frame — its
 // argument is the SHAPE of two mirrored distributions, exactly the property the portrait probe
 // proved no counter here can see — so the two phone frames are refused by name.
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
@@ -177,7 +177,7 @@ export type Band = { ageBand: string; male: number; female: number };
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
- * of the video genre's browser-Canvas text measurer (see the file doc-comment for why it is
+ * of the video format's browser-Canvas text measurer (see the file doc-comment for why it is
  * duplicated, not imported from a sibling workspace or a skill).
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;
@@ -375,7 +375,7 @@ export function PyramidVideo({
     throw new Error(`need at least two age bands, got ${data.length}`);
 
   // Display order: oldest at the top, youngest at the bottom — the same reversal
-  // `../static-swiss-age-pyramid/SwissAgePyramid.tsx` documents for the static genre of this same
+  // `../static-swiss-age-pyramid/SwissAgePyramid.tsx` documents for the static format of this same
   // type. The data's own natural order (youngest first) is preserved end to end up to this one,
   // deliberate, commented step; nothing downstream re-sorts by value.
   const displayBands = [...data].reverse();

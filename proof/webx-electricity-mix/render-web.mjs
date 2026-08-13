@@ -3,7 +3,7 @@
 // This beat's own WEB runner. `data.csv` is the frozen OWID export (copied from
 // `proof/static-electricity-mix-source/data.csv`, the already-verified static sibling) — 6 rows,
 // one per country, 2024 only; re-verified here (row count, entity set) rather than trusted on
-// sight. `contrast` is imported from the skill's own `render-still.mjs` (the machinery this genre
+// sight. `contrast` is imported from the skill's own `render-still.mjs` (the machinery this format
 // already centralises the colour rule in) to precompute each fixed segment colour's own
 // ink-on-fill, once, rather than re-deriving it inside the component.
 //

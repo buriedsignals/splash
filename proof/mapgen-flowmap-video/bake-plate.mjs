@@ -1,8 +1,8 @@
-// The bake for THIS beat's flow-map (route), video genre: one camera over the Danube corridor, one
+// The bake for THIS beat's flow-map (route), video format: one camera over the Danube corridor, one
 // basemap capture, the route line and the crossed territories' shapes all projected to pixel space.
 //
 // Camera: the SAME real bounds as `proof/mapmore-flow-danube/bake.mjs` (`geo-discipline.md` rule 12
-// — "the camera is decided by the geography", not the frame someone picked; both genres of a beat
+// — "the camera is decided by the geography", not the frame someone picked; both formats of a beat
 // should share one camera). What differs is the VIEWPORT this beat bakes at: the static sibling
 // baked a 900×420 landscape box for a 960×780 landscape frame; this beat's video is a 1080×1080
 // square frame, so its map box is placed inside that square rather than filling it edge to edge
@@ -12,7 +12,7 @@
 //
 // A SECOND deliberate simplification from the two-resolution convention `map-beat/SKILL.md`
 // documents (still @496, video @620): this beat's still (rung 1) and video (rungs 2–3) draw their
-// map box at the EXACT SAME pixel size, 940×420, so ONE bake serves both genres. Nothing in
+// map box at the EXACT SAME pixel size, 940×420, so ONE bake serves both formats. Nothing in
 // `geo-discipline.md` rule 2 requires two resolutions — only that a plate is drawn at the exact size
 // it was baked at, which one bake trivially satisfies for both here. This halves the network/bake
 // cost with no loss of correctness.

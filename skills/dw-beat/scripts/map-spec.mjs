@@ -19,17 +19,20 @@ const TEXT_ANNOTATION_CONNECTOR_LINE_OFF = {
   targetPadding: 4,
 };
 
-// The first column is the x/category axis, the second is the value series a chart's colour and a
-// range annotation's off-axis span are read from. A beat with more than two columns (small
-// multiples, several series) still gets a sensible single accent and a sensible span from this —
-// widening it to a per-series colour map is a real future need, not a guess to make now (Files).
+// The first column is the x/category axis and every remaining column is a value series. The first
+// value series carries the single editorial accent today, but domains and uploaded data must cover
+// every series: clipping or dropping a comparison series would change the selected treatment.
 function columns(data) {
   const keys = Object.keys(data[0]);
-  return { xKey: keys[0], yKey: keys[1] };
+  return { xKey: keys[0], yKey: keys[1], valueKeys: keys.slice(1) };
 }
 
-function domain(data, key) {
-  const values = data.map((row) => Number(row[key]));
+function domain(data, keys) {
+  const selected = Array.isArray(keys) ? keys : [keys];
+  const values = data
+    .flatMap((row) => selected.map((key) => Number(row[key])))
+    .filter(Number.isFinite);
+  if (values.length === 0) throw new Error("a chart domain needs at least one numeric value");
   return [Math.min(...values), Math.max(...values)];
 }
 
@@ -60,9 +63,16 @@ export function humanizeColumnName(key) {
 // metadata refers to, or Datawrapper silently fails to match them. Only the value column is
 // renamed — the x/category column is left alone.
 export function renameValueColumn(data, seriesLabel) {
-  const { xKey, yKey } = columns(data);
+  const { yKey, valueKeys } = columns(data);
   if (yKey === seriesLabel) return data;
-  return data.map((row) => ({ [xKey]: row[xKey], [seriesLabel]: row[yKey] }));
+  if (valueKeys.includes(seriesLabel)) {
+    throw new Error(`seriesLabel ${JSON.stringify(seriesLabel)} collides with another data column`);
+  }
+  return data.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [key === yKey ? seriesLabel : key, value]),
+    ),
+  );
 }
 
 // A bar/column mark encodes its value by LENGTH from a baseline, so the axis must keep zero in
@@ -83,8 +93,10 @@ const Y_RANGE_PAD = 0.08;
 // to include any y-axis range annotation's own value so a reference rule always lands inside the
 // plot rather than at its floor or off it entirely.
 export function computeYRange(spec, { pad = Y_RANGE_PAD } = {}) {
-  const { yKey } = columns(spec.data);
-  const values = spec.data.map((row) => Number(row[yKey]));
+  const { valueKeys } = columns(spec.data);
+  const values = spec.data
+    .flatMap((row) => valueKeys.map((key) => Number(row[key])))
+    .filter(Number.isFinite);
   for (const entry of spec.rangeAnnotations ?? []) {
     if ((entry.axis ?? "y") !== "y") continue;
     values.push(entry.value);
@@ -132,7 +144,7 @@ export function buildTextAnnotation(entry, id) {
 // far edge on its own axis, just clear of the line). Both come from this one function so a beat
 // never has to remember the pairing is required.
 export function buildRangeAnnotation(entry, index, data, houseColor) {
-  const { xKey, yKey } = columns(data);
+  const { xKey, valueKeys } = columns(data);
   const axis = entry.axis ?? "y";
   const display = entry.display ?? (entry.to !== undefined ? "range" : "line");
   const color = entry.color ?? houseColor;
@@ -147,7 +159,7 @@ export function buildRangeAnnotation(entry, index, data, houseColor) {
     position = { x0: xMin, x1: xMax, y0: entry.value, y1: entry.to ?? entry.value };
     labelPosition = { x: xMax, y: entry.value };
   } else {
-    const [yMin, yMax] = domain(data, yKey);
+    const [yMin, yMax] = domain(data, valueKeys);
     position = { x0: entry.value, x1: entry.to ?? entry.value, y0: yMin, y1: yMax };
     labelPosition = { x: entry.value, y: yMax };
   }

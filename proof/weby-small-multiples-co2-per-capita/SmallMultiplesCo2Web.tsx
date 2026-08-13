@@ -35,12 +35,12 @@
  * mechanism is `preserveAspectRatio="none"` stretching a `viewBox` to fill a CSS box. One SVG
  * spanning four panels would have to carry the gutters and gaps BETWEEN panels inside that
  * viewBox, so they would stretch with the geometry — and the gaps and gutters are furniture, which
- * this genre keeps at a fixed pixel size. Four boxes in a CSS grid put the gaps where CSS can hold
+ * this format keeps at a fixed pixel size. Four boxes in a CSS grid put the gaps where CSS can hold
  * them fixed and let each panel's own geometry stretch inside its own cell.
  *
  * THE PLOT FLOOR. Height follows width through `aspect-ratio`, which at 375px leaves each panel
  * about 45px of line. `.chart-plot` carries an inline `min-height`, this beat's own version of the
- * genre's `PLOT_FLOOR_PX`, so a phone gets short panels rather than illegible ones.
+ * format's `PLOT_FLOOR_PX`, so a phone gets short panels rather than illegible ones.
  *
  * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`, so its
  * figures are English: `formatTonnes` prints `12.4` with a decimal POINT. There is no `fr` in this
@@ -267,7 +267,7 @@ export function SmallMultiplesCo2Web({
         {/* The alt text lives on the grid, once, rather than on any one panel's `<svg>` — it
             describes all four. `role="img"` is NOT set anywhere in this beat: it would flatten the
             300 individually-named readings below into one opaque image (`web-discipline.md`, "One
-            deliberate departure from the static genre's accessibility pattern"). */}
+            deliberate departure from the static format's accessibility pattern"). */}
         <p className="visually-hidden">{alt}</p>
 
         {panels.map((p) => {

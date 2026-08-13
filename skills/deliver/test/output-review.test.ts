@@ -85,6 +85,36 @@ describe("OutputReview v1", () => {
     ).toThrow(/rendered draft changed/);
   });
 
+  it("binds a replacement approval to the exact editor-feedback request", async () => {
+    await writeFile(join(beatDir, "FEEDBACK.md"), "Move the annotation above the line.");
+    expect(() =>
+      requireApprovedOutput({
+        beatDir,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).toThrow(/current editor feedback/);
+
+    const review = await approveCurrentOutput(beatDir, { reviewId: "review-feedback" });
+    expect(review.feedbackDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(() =>
+      requireApprovedOutput({
+        beatDir,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).not.toThrow();
+
+    await writeFile(join(beatDir, "FEEDBACK.md"), "Move it below the line instead.");
+    expect(() =>
+      requireApprovedOutput({
+        beatDir,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).toThrow(/current editor feedback/);
+  });
+
   it("invalidates approval for a different plan version or finding set", () => {
     expect(() =>
       requireApprovedOutput({

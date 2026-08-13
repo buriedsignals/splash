@@ -195,6 +195,46 @@ describe("planPlacement, the report's own source", () => {
     expect(again.results.every((r) => r.status === "ok")).toBe(true);
   });
 
+  it("should place private parent installs below one product namespace", () => {
+    const namespaced = join(lab, "namespaced-home");
+    mkdirSync(namespaced, { recursive: true });
+
+    const placed = planPlacement({
+      root,
+      home: namespaced,
+      namespace: "splash",
+      dryRun: false,
+    });
+
+    expect(placed.results.some((r) => r.status === "linked")).toBe(true);
+    expect(
+      existsSync(
+        join(
+          namespaced,
+          ".agents",
+          "skills",
+          "splash",
+          "palette",
+          "SKILL.md",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(join(namespaced, ".agents", "skills", "palette")),
+    ).toBe(false);
+  });
+
+  it("should reject an invalid private namespace", () => {
+    expect(() =>
+      planPlacement({
+        root,
+        home,
+        namespace: "../splash",
+        dryRun: true,
+      }),
+    ).toThrow("invalid skill namespace");
+  });
+
   it("should refuse a user-managed agents skills directory", () => {
     const blocked = join(lab, "blocked-home");
     const managed = join(lab, "someone-elses-skills");

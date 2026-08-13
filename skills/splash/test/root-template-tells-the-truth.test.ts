@@ -7,7 +7,7 @@
  * invisible to preflight by construction.** Measured before this guard existed, the template
  * declared six packages while the tree imported nine, and vendored two `#shared/` files while the
  * tree imported four. A freshly installed root reported `dependencies: pass`, `ready: true`, and
- * could render exactly one of the four genres — every video, map, web and scrolly beat died at
+ * could render exactly one of the four formats — every video, map, web and scrolly beat died at
  * module load, after the journalist had been told the environment was fine.
  *
  * So this guard WALKS the tree and derives the requirement, rather than restating it. That is not
@@ -35,7 +35,7 @@
  *      tree it installs is the same failure with the two files swapped.
  *
  *   4. every binary a script SPAWNS out of `node_modules/.bin/` is provided by a declared
- *      dependency. Spawning is invisible to an import scan, and it is how the video genre runs:
+ *      dependency. Spawning is invisible to an import scan, and it is how the video format runs:
  *      three skill scripts and eighteen proof beats exec `node_modules/.bin/remotion`, which is
  *      shipped by `@remotion/cli` — a package NOTHING imports, so rule 1 alone would never ask for
  *      it, and a root without it fails at spawn with ENOENT rather than at module load.

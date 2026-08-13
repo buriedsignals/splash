@@ -1,7 +1,7 @@
 # Beat — three media, one glacier: four photographs, a live map, and the record they sit in
 
 **Type:** mixed scrolly (photograph sequence + live map + line chart), all three navigated by one scroll.
-**Medium/genre:** image + map + chart / **scrolly**. **Channel:** article web, one self-contained
+**Medium/format:** image + map + chart / **scrolly**. **Channel:** article web, one self-contained
 `render/three-media-one-glacier.html` (2.6 MB — four photographs and MapLibre inlined), **seven
 steps**, three media, two handovers.
 
@@ -9,7 +9,7 @@ steps**, three media, two handovers.
 
 The owner, 2026-08-10: *"Pour le multiple, essaye de mélanger de tout : des charts avec navigations,
 des maps avec navigations et des images."* Then, on how it is driven: *"La navigation se fait au
-scroll, c'est une sorte de mix de tout."* Then, on how it should be built: *"C'est genre un
+scroll, c'est une sorte de mix de tout."* Then, on how it should be built: *"C'est format un
 assemblage."*
 
 That is **form 2 containing form 1** — ruling R5. Six scrolly beats already exist on disk and none of

@@ -1,7 +1,7 @@
 # Beat — Grinnell Glacier from Mount Gould: four photographs, 71 years, one viewpoint
 
 **Type:** photograph sequence (repeat photography), carried by the scroll vehicle.
-**Medium/genre:** image / **scrolly**. **Channel:** article web, one self-contained
+**Medium/format:** image / **scrolly**. **Channel:** article web, one self-contained
 `render/grinnell-glacier.html` (1,562 KB, four photographs inlined), **four steps**, one viewpoint.
 
 ## Read this first: what is finished here, and what is not

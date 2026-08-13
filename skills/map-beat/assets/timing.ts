@@ -6,7 +6,7 @@
  * `chart-video/assets/timing.ts`. A copy, not an import, because a skill never reaches across
  * another skill's boundary at runtime — the copy is guarded byte-identical to its source by
  * `splash/test/root-template-shared.test.ts`, so it cannot drift silently. The six editorial
- * events and the structural rules are the motion grammar's, not the chart genre's, and a second
+ * events and the structural rules are the motion grammar's, not the chart format's, and a second
  * copy of `checkTiming` would be two engines quietly disagreeing about what "the conclusion cannot
  * precede its evidence" means — which is exactly what the guard test prevents.
  * What is local to a beat is its EDIT, which is the object below.

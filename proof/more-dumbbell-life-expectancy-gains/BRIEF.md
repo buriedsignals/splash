@@ -5,7 +5,7 @@ type: dumbbell
 
 # Beat — Life expectancy gains, ten countries, 2000-2023
 
-**Type:** dumbbell (range plot). **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+**Type:** dumbbell (range plot). **Medium/format:** chart / static. **Size:** landscape (1920 x 1080).
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
 that counts: `render.mjs` reads it with `readPinnedSize`. The per-story `900 x 860` frame this beat

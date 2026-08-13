@@ -1,12 +1,12 @@
 /**
  * The WEB beat of "India has risen from eighth to third among the world's biggest CO₂ emitters" —
- * the interactive genre, the fluid frame.
+ * the interactive format, the fluid frame.
  *
- * WHAT THIS GENRE ADDS TO THIS TYPE, and it is the type's own reason to exist.
+ * WHAT THIS FORMAT ADDS TO THIS TYPE, and it is the type's own reason to exist.
  * `references/types/bump.md`: past a handful of entities "the tangle of crossing lines stops being
  * readable as individual trajectories". A still frame answers that by labelling both ends of every
  * line and captioning the crossings it is about; it cannot answer "which grey line is that one, all
- * the way across". A video answers it by drawing them. **This genre answers it by letting the
+ * the way across". A video answers it by drawing them. **This format answers it by letting the
  * reader do it**: point at any line, anywhere, and that line comes forward while the others recede,
  * and the tooltip names its country, the year under the pointer and its rank that year. Following
  * one line through a crossing IS the type, and here the reader performs it.
@@ -19,7 +19,7 @@
  *
  * AND THE ACCENT NEVER DIMS. Tracing recedes the other lines to make one legible; the subject's own
  * line and its crossing marks stay at full strength in every state, because the accent is reserved
- * for the subject and an interaction that could hide the argument would be the defect this genre's
+ * for the subject and an interaction that could hide the argument would be the defect this format's
  * own doctrine names. Written as CSS in `render-web.mjs`'s appended rules, not as a script branch.
  *
  * GEOMETRY-ONLY SVG. Not one `<text>` element lives inside the `<svg>`: the rank column, the year
@@ -29,7 +29,7 @@
  *
  * AND THE CIRCLES ARE HTML TOO. `preserveAspectRatio="none"` is a NON-UNIFORM scale, so an SVG
  * `<circle>` becomes an ellipse by exactly the container's own width-to-height ratio — measured
- * across this genre's verified widths, a crossing ring drawn in the `<svg>` would read as a flat
+ * across this format's verified widths, a crossing ring drawn in the `<svg>` would read as a flat
  * lozenge at 1600px and a tall one at 375px. `web-discipline.md`'s own remedy is used here:
  * "anything whose shape must survive belongs in the HTML layer". The rings and terminal dots are
  * fixed-size HTML spans in the overlay, positioned in `%` over the same box. The only circles left
@@ -59,7 +59,7 @@ export type Crossing = {
   drawn: boolean;
 };
 
-/** This genre's single fluid frame, in this beat's own shape. Declared here rather than imported
+/** This format's single fluid frame, in this beat's own shape. Declared here rather than imported
  *  from the skill's seed for the reason that file's own doc-comment gives: a compile-time-only type
  *  has no `#shared/*` vendoring path, and a relative import across the skill boundary hard-codes
  *  this dev repository's own directory layout. Duplicate, do not link. */
@@ -116,7 +116,7 @@ export const FRAME: BumpFrame = {
  *
  * WHY THE TWO AXES DIFFER, and why neither is 6. The ring is a FIXED 2px of CSS, the mark is r=5 in
  * STRETCHED user units, so the inset each axis needs is `5 + 2 / scale` at the SMALLEST scale that
- * axis ever takes. Measured across the seven viewports this genre verifies at: the horizontal scale
+ * axis ever takes. Measured across the seven viewports this format verifies at: the horizontal scale
  * bottoms out at 375px wide (a 210px plot over a 760-unit box, 0.276), which asks for 5 + 7.2 =
  * 12.2; the vertical scale bottoms out at the same viewport (a 339px plot over a 340-unit box,
  * 0.997), which asks for 5 + 2.0 = 7.0. The values below carry a margin over each. A single
@@ -184,10 +184,10 @@ export function assertLabelRowsAreDistinct(
     );
 }
 
-/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this genre at, and the two
+/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this format at, and the two
  *  halves of `FRAME_PAD_PX` the skill's own stylesheet puts inside it. Named here rather than
  *  written into an expression because they are the pair every collision decision below is made
- *  against — this genre ships ONE layout for every width, so the width where the room runs out is
+ *  against — this format ships ONE layout for every width, so the width where the room runs out is
  *  the width that decides. Duplicated from the skill, not linked: a beat may not import a skill's
  *  internals, and a beat that silently tracked a change to them would be worse. */
 const NARROWEST_VIEWPORT_PX = 375;
@@ -226,7 +226,7 @@ export type YearTick = {
  * WHICH YEARS THE AXIS PRINTS, AS A FUNCTION OF HOW WIDE THE PLOT ACTUALLY IS.
  *
  * THE DEFECT THIS REPLACES, which the owner reported by opening the file: the first build took this
- * decision ONCE, server-side, at the narrowest viewport this genre verifies at — and then shipped
+ * decision ONCE, server-side, at the narrowest viewport this format verifies at — and then shipped
  * that one answer to every width. 2020 collides with 2024 on a 205px phone plot, so 2020 was dropped
  * from the markup entirely and a 3440px screen showed a 797px hole in an otherwise five-yearly axis.
  * The rule was right; the coordinate system was wrong. Nothing here is decided at one width any
@@ -438,9 +438,9 @@ export function BumpWeb({
   });
   const subjectLine = g.lines[subjectIndex];
 
-  // THE PLOT AT THE NARROWEST VIEWPORT THIS GENRE VERIFIES AT, in CSS pixels. Every decision below
+  // THE PLOT AT THE NARROWEST VIEWPORT THIS FORMAT VERIFIES AT, in CSS pixels. Every decision below
   // that could collide — a caption's side, a year tick's survival — is made ONCE, here, against the
-  // width where the room runs out. That is this genre's own "decided once, not live" rule: there
+  // width where the room runs out. That is this format's own "decided once, not live" rule: there
   // are no rungs and no media queries, so the narrow case is the case that decides.
   const narrowestPlotPx =
     NARROWEST_VIEWPORT_PX - FRAME_PAD_TOTAL_PX - rankGutterPx - nameGutterPx;
@@ -573,7 +573,7 @@ export function BumpWeb({
         ["--note-size" as string]: `${frame.note.fontSize}px`,
       }}
     >
-      {/* The tick plan, as the only thing in this genre that a static stylesheet cannot hold: one
+      {/* The tick plan, as the only thing in this format that a static stylesheet cannot hold: one
           `@container` threshold per year, derived from the measured strings above. `dangerouslySet`
           because React escapes `"` in a text child and the attribute selectors carry quotes; the
           content is this component's own numbers and years, never a caller's string. */}

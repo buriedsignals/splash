@@ -56,7 +56,7 @@ describe("image-beat — the canon's assets", () => {
 
   it("should not carry another story's own copy", async () => {
     const seed = await readFile(join(ASSETS, "ImageBeatSeed.tsx"), "utf8");
-    // Distinctive phrases from other genres' own seeds — a copy-paste leak, not this seed's words.
+    // Distinctive phrases from other formats' own seeds — a copy-paste leak, not this seed's words.
     for (const leak of [
       "Annemasse",
       "MeteoSwiss",

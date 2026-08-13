@@ -1,6 +1,6 @@
 /**
  * "The Danube touches ten countries on its way to the Black Sea, nine of them shown here" — the
- * STILL genre (rung 1) of
+ * STILL format (rung 1) of
  * THIS beat, whose main event is the VIDEO. Rendered and looked at first, per this project's own
  * "look at the still before spending a video render" discipline — same claim, same camera, same
  * map box (940 × 420, see `bake-plate.mjs`) as `FlowMapVideo.tsx` will draw, one frame, no order.

@@ -5,7 +5,7 @@
  *
  * Written fresh for this beat, not imported from `../more-small-multiples-co2-per-capita/`: a
  * skill/beat never imports another beat's files (`chart-web/SKILL.md`, "duplicate, do not
- * link"), and that beat is a different genre (video) besides. The SHAPE below intentionally
+ * link"), and that beat is a different format (video) besides. The SHAPE below intentionally
  * mirrors that video beat's own `panelGeometry` — same shared-domain rule, same panel-slot
  * origin math — because both are honest readings of `small-multiples.md`'s one non-negotiable
  * rule ("same domain, same axis, same units, on every single panel, full stop"), not a copy.

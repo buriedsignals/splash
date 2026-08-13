@@ -219,7 +219,7 @@ export function bumpGeometry(
  * The property that makes a name column safe at either end of a bump chart: in one year, the drawn
  * countries hold DISTINCT ranks, so two labels in the same column can never land on the same row.
  * Proven on the real ranks rather than assumed, because "labels survive without hover" is this
- * genre's whole job and a duplicated rank would silently stack two names on one line.
+ * format's whole job and a duplicated rank would silently stack two names on one line.
  */
 export function assertLabelRowsAreDistinct(
   tracks: Track[],

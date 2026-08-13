@@ -5,7 +5,7 @@ type: small-multiples
 
 # Beat — Poland's per-capita emissions have overtaken Germany's
 
-**Type:** small multiples (four line panels). **Medium/genre:** chart / video.
+**Type:** small multiples (four line panels). **Medium/format:** chart / video.
 **Size:** landscape (1920 × 1080), 11 s at 30 fps.
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one

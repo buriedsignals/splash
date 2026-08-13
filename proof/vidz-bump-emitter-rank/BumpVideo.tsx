@@ -2,14 +2,14 @@
  * The video beat of "India has risen from eighth to third among the world's biggest CO₂ emitters."
  * — 10 seconds, 30fps, 1080 × 1080.
  *
- * First bump chart in this corpus, in any genre. Vertical position is RANK — row 1 at the top —
+ * First bump chart in this corpus, in any format. Vertical position is RANK — row 1 at the top —
  * never a value, so `bumpGeometry` below is its own shape and shares nothing with the line beats'
  * value scales: there is no domain to fit, no zero to anchor, and no magnitude anywhere in the
  * drawing.
  *
  * `FONT_FAMILY`, `measureText`, `wrap` and `en` ARE this story's own copies of the other proof
  * workspaces' functions of the same name — not an import from any of them, per the duplicate-do-
- * not-link rule. They are the VIDEO genre's browser-Canvas measurer, not the static genre's resvg
+ * not-link rule. They are the VIDEO format's browser-Canvas measurer, not the static format's resvg
  * one; the two are not interchangeable.
  *
  * THE MOTION PROBLEM (from `BRIEF.md`): a crossing is two lines swapping places, so it exists only
@@ -43,7 +43,7 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/chart-video/timing.ts";
-// The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
+// The VIDEO format's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
 import {
@@ -53,7 +53,7 @@ import {
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
-// genres read one copy. A bump chart has no measured aspect range and no twin form — its x is
+// formats read one copy. A bump chart has no measured aspect range and no twin form — its x is
 // TIME, which resists rotation for the same reason a line's does — so the two phone frames are
 // refused here, by name, rather than drawn at a shape nobody measured.
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";

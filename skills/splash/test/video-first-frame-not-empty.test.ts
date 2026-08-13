@@ -12,7 +12,7 @@
  * it. The cause was one line repeated per beat: the `establish` event starts at frame 0, so
  * `progressOf(0, timing.establish)` is exactly 0, and the title/source group was gated on it —
  * `opacity={0}` on the only thing drawn that early. Measured before the fix: 19 of the 22 mp4s
- * under `proof/` returned ZERO pixels differing from white at frame 0. `beat-genre-produces-
+ * under `proof/` returned ZERO pixels differing from white at frame 0. `beat-format-produces-
  * artifact.test.ts` is the direct ancestor of this file and says in its own header that its size
  * floor "cannot open a file and judge what's inside it"; this is the narrowest useful thing that
  * can be judged inside it, and only that.
@@ -97,7 +97,7 @@ import { join, relative } from "node:path";
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
 
 // Evidence ABOUT the experiment, not a beat's own production — the same exclusion, for the same
-// reason, as `beat-genre-produces-artifact.test.ts`.
+// reason, as `beat-format-produces-artifact.test.ts`.
 const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
 
 // A floor, not a check. 0.25% of the frame. Smallest real frame 0 measured in this corpus: 4.68%.

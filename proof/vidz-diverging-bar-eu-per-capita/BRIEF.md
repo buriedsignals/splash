@@ -4,9 +4,9 @@
 1990 — Croatia, by 0.03 tonnes (4.73 → 4.76). The other 26 all emit less, by 4.93 tonnes per person
 on average, and Luxembourg by 20.48, the largest fall in the union.
 
-**Medium / genre:** chart / video. **Type:** diverging bar — one row per country, signed values
+**Medium / format:** chart / video. **Type:** diverging bar — one row per country, signed values
 growing left and right out of a zero line, rows sorted from the largest rise to the largest fall.
-**No genre in this corpus had a diverging bar before this beat**: it is a new row in the type × genre
+**No format in this corpus had a diverging bar before this beat**: it is a new row in the type × format
 matrix, the deviation family's first appearance, not a video sibling of an existing beat.
 
 **Frame:** 1080 × 1350, portrait. Twenty-seven rows in a 1080 × 1080 square would leave each row

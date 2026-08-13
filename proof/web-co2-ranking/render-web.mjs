@@ -1,7 +1,7 @@
 // twin/proof/web-co2-ranking/render-web.mjs
 //
 // This beat's own WEB runner — the same shape `proof/co2-suisse/render-web.mjs` has: the story's
-// own constants, the story's own CSV reader, the story's own component, handed to the genre's
+// own constants, the story's own CSV reader, the story's own component, handed to the format's
 // generic `renderWeb`. It lives here, beside the story, never inside the skill — a skill directory
 // that imports a story workspace does not build once it is copied on its own into a journalist's
 // root, the exact bug `proof/co2-suisse/render-web.mjs`'s own header note names.
@@ -131,9 +131,9 @@ async function repair(outPath) {
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");
   html = html.replace("</body>", `${ownScript}</body>`);
 
-  // This beat's own rules, after the genre's shared stylesheet. A ranking chart labels BOTH sides of
+  // This beat's own rules, after the format's shared stylesheet. A ranking chart labels BOTH sides of
   // its bars — the category on the left, the printed value at each bar's own end on the right — so
-  // the genre's `[y-gutter] [plot]` grid gains a third column here, both label tracks a fixed pixel
+  // the format's `[y-gutter] [plot]` grid gains a third column here, both label tracks a fixed pixel
   // width measured from the real strings. And ten rows of names need a real number of CSS pixels
   // whatever the container's width, which is what `--min-plot-h` (derived in the component) buys.
   const ownCss = `

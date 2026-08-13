@@ -1,7 +1,7 @@
 /**
- * The web beat of "World population passed 8 billion in 2022" — the interactive genre.
+ * The web beat of "World population passed 8 billion in 2022" — the interactive format.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the format's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that

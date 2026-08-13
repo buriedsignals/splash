@@ -1,5 +1,5 @@
 /**
- * THE FILTER VOCABULARY IS ONE VOCABULARY, IN EVERY GENRE THAT CAN CARRY A CONTROL.
+ * THE FILTER VOCABULARY IS ONE VOCABULARY, IN EVERY FORMAT THAT CAN CARRY A CONTROL.
  *
  * `assets/filter.ts` is duplicated per skill and never imported across them — the twin's method
  * (`no-cross-skill-imports.test.ts`), which buys copy-pasteability and pays for it with the risk
@@ -10,7 +10,7 @@
  *
  * Written the same day the vocabulary was: before it, `map-web` derived its filter from
  * whether points happened to carry more than one `group`, and `chart-web` hard-wired one
- * story's `#period-early`/`#period-late` into the genre's stylesheet — two mechanisms, neither
+ * story's `#period-early`/`#period-late` into the format's stylesheet — two mechanisms, neither
  * declarable by a beat, one of which shipped dead CSS in 21 of 21 committed pages.
  */
 
@@ -66,11 +66,11 @@ describe("the two copies are one file", () => {
     expect(map.slice(1).join("\n")).toBe(chart.slice(1).join("\n"));
   });
 
-  it("neither copy names a genre's own class or id prefix — the scope is an argument", () => {
+  it("neither copy names a format's own class or id prefix — the scope is an argument", () => {
     for (const path of COPIES) {
       const source = readFileSync(path, "utf8");
-      // The doc-comment names both genres deliberately (it explains what it is vendored into);
-      // the CODE must not, or one copy would draw the other genre's control.
+      // The doc-comment names both formats deliberately (it explains what it is vendored into);
+      // the CODE must not, or one copy would draw the other format's control.
       const code = source
         .split("\n")
         .filter(

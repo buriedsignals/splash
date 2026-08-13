@@ -1,5 +1,5 @@
 /**
- * The static genre of "Poland emits more than double Sweden's per-capita CO2" — 900 × 560, one
+ * The static format of "Poland emits more than double Sweden's per-capita CO2" — 900 × 560, one
  * frame, no order.
  *
  * What it draws: a baked basemap plate as one `<image>`, the 41-country study set as one path

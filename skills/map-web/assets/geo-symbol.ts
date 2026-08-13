@@ -1,12 +1,12 @@
 /**
- * The pure half of the map-web genre: no browser, no rasteriser, no DOM. A proportional-symbol
+ * The pure half of the map-web format: no browser, no rasteriser, no DOM. A proportional-symbol
  * beat has no polygon and no data JOIN the way a choropleth does — every point either has a
  * coordinate and a value, or it is not in the study set at all — so the risk this file guards
  * against is different from `map-beat/assets/geo.ts`'s: not a silent no-data miss, but a
- * silently unreadable legend or an unreachable point. Both genres could in principle share one
+ * silently unreadable legend or an unreachable point. Both formats could in principle share one
  * `geo.ts`, but nothing under a skill may import out of it (`splash/test/no-cross-skill-imports.test.ts`
  * fails loud on any specifier that does), so this is this skill's OWN copy of the parts a symbol
- * map actually needs — trimmed to what this genre draws, not a mirror of the choropleth's file.
+ * map actually needs — trimmed to what this format draws, not a mirror of the choropleth's file.
  */
 
 export type SymbolPoint = {

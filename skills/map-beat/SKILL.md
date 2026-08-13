@@ -1,6 +1,6 @@
 ---
 name: map-beat
-description: Use to produce a MAP beat — one map with one thing to prove — in either genre, static or video, by WRITING a bespoke component under doctrine and looking at the render. Carries the bake (one camera, one basemap plate, one file of projected geometry), the join that fails loud, the class scale that makes a comparison legible, and one worked beat in each genre.
+description: Use to produce a MAP beat — one map with one thing to prove — in either format, static or video, by WRITING a bespoke component under doctrine and looking at the render. Carries the bake (one camera, one basemap plate, one file of projected geometry), the join that fails loud, the class scale that makes a comparison legible, and one worked beat in each format.
 ---
 
 # map-beat — bake the camera once, then draw an image and some coordinates
@@ -15,10 +15,10 @@ MapTiler style in headless Chrome, gates on `idle` or a bounded settle, screensh
 basemap **plate**, and projects the beat's shapes into that plate's pixel space with
 `map.project()`. After it runs there is no map anywhere in this skill: the still draws an `<image>`
 and some `<path>`s through resvg, and the video draws the same image and the same paths through
-Remotion. One camera, one geometry, two genres.
+Remotion. One camera, one geometry, two formats.
 
-Both genres ship here, unlike the chart engine where video is a separate skill. A map beat's
-static and video genres differ only in an **order in time**, and they must not drift apart on the
+Both formats ship here, unlike the chart engine where video is a separate skill. A map beat's
+static and video formats differ only in an **order in time**, and they must not drift apart on the
 camera; keeping them in one skill is what makes "same bounds, two resolutions" a fact rather than
 an intention.
 
@@ -59,7 +59,7 @@ and record which fired.
 | --- | --- | --- |
 | Doctrine | `doctrine/references/geo-discipline.md` | The twelve rules: bounded gating, fixed plate, baked geometry, projected labels, the loud join, capture plumbing, no-data as texture, the accent in a choropleth, the quiet plate, the reveal's order, ring culling, camera-before-layout |
 | Bake | `scripts/bake-plate.mjs` | One camera: plate PNG + `geometry.json` (pixel rings + projected anchors), culled and thinned |
-| Pure core | `assets/geo.ts` | The study set, the alias table, the join, the classes, the ramp, `scalePosition`, ring arithmetic, the claim check. No browser, no rasteriser — which is why BOTH genres can import it |
+| Pure core | `assets/geo.ts` | The study set, the alias table, the join, the classes, the ramp, `scalePosition`, ring arithmetic, the claim check. No browser, no rasteriser — which is why BOTH formats can import it |
 | Static | `assets/Co2MapStill.tsx` | One beat, 900 × 560, text column beside a square plate |
 | Video | `assets/Co2MapVideo.tsx` | The same beat with an order. Exports `arrivalProgress`, the reveal's stagger, testable without a browser |
 | Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **imported** from `chart-video`, never re-implemented |
@@ -80,7 +80,7 @@ gets either.
 MapLibre is loaded from a CDN by the bake page, so **an installed Splash root cannot bake a plate**.
 That is a real, named gap, and it is deliberate: adding a headless browser to every journalist's
 install is a distribution decision, not a code decision — the same call `chart-video` left open
-for Remotion. Whoever ships the map genre for real makes it. `MAPTILER_KEY` comes from `twin/.env`.
+for Remotion. Whoever ships the map format for real makes it. `MAPTILER_KEY` comes from `twin/.env`.
 
 ## How it works (the shape)
 
@@ -162,12 +162,12 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 - `scripts/render-preview.mjs` — renders THIS skill's static seed from THIS skill's sample data.
   Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` mode for verification. Automakes the plate if missing.
-- `assets/geo.ts` — the pure core. Imported by both genres and by the tests.
+- `assets/geo.ts` — the pure core. Imported by both formats and by the tests.
 - `assets/Co2MapStill.tsx` — the static beat. **Replace per story.** Lays its column out from both
   ends and throws if the two halves meet, because an overlap is what a reader sees first. **The
   credit is the last line before the bottom margin** (`chart-beat/references/static-discipline.md`,
   "The source on the frame's bottom margin"), carrying the basemap credit with it, unsplit — so on
-  this genre it is never a translation of a `<text>`: the source joining the bottom half pushes the
+  this format it is never a translation of a `<text>`: the source joining the bottom half pushes the
   whole bottom stack (caveat, no-data swatch, legend bar, caption) up by exactly the credit block's
   own height, and the plate does not move. When the stack then stops fitting, the fix is to LOWER
   `MAP_Y` — the header gave back the row the source used to occupy — and the beat's own fit guard
@@ -191,10 +191,10 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   ceiling. Three mutations are recorded at its foot with the output they produced.
 - `test/timing.test.ts` — every structural rule of the motion grammar, green on the shipped timing
   and red on a timing mutated to break exactly that rule.
-- `test/canon.test.ts` — validation that both genre seeds carry the canon's marker wording and
-  explicit genre labels, and that sample data exists with sufficient variation.
+- `test/canon.test.ts` — validation that both format seeds carry the canon's marker wording and
+  explicit format labels, and that sample data exists with sufficient variation.
 - **No departed beats.** Nothing has ever moved out of this skill: it ships exactly two seeds, one
-  per genre (`Co2MapStill.tsx`, `Co2MapVideo.tsx`), and both are listed above. The story workspaces
+  per format (`Co2MapStill.tsx`, `Co2MapVideo.tsx`), and both are listed above. The story workspaces
   under `proof/` (`co2-suisse`, `life-expectancy`, `migration`) are CHART beats belonging to the
   chart skills — nothing to do with this one.
 

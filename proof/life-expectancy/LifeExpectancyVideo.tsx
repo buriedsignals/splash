@@ -11,8 +11,8 @@
  * `EmissionsVideo.tsx`'s functions of the same name, not an import from it — this story lives
  * outside `chart-video`'s skill boundary now (`proof/life-expectancy/`), and the settled rule
  * for a story that needs something a skill has is to duplicate it, not reach back across the
- * boundary. The bodies are identical on purpose: both are the video genre's browser-Canvas text
- * measurer, not the static genre's resvg one (`#shared/chart-beat/render-still.mjs`) — the
+ * boundary. The bodies are identical on purpose: both are the video format's browser-Canvas text
+ * measurer, not the static format's resvg one (`#shared/chart-beat/render-still.mjs`) — the
  * two are not interchangeable, so vendoring the wrong one would silently mismeasure.
  *
  * THE MOTION PROBLEM: the confirmed subject is 2020, the dip — but 2020 sits four years before the

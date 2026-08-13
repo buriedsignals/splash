@@ -1,6 +1,6 @@
 # Beat — 2024's magnitude-4+ earthquakes are not spread evenly: one hex cell holds 1,724 of them
 
-**Type:** hex grid (spatial bins). **Medium/genre:** map / static. **Channel:** article web,
+**Type:** hex grid (spatial bins). **Medium/format:** map / static. **Channel:** article web,
 900 × 728 (frame height derived from the plate), over an 836 × 480 baked plate (`bake.mjs --width 836 --height 480`, bounds
 `[-20, -60] → [340, 78]` — Pacific-centred, seam in the mid-Atlantic).
 

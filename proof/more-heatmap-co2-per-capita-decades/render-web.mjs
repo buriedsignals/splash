@@ -1,17 +1,17 @@
 // twin/proof/more-heatmap-co2-per-capita-decades/render-web.mjs
 //
-// This beat's own WEB runner — the shape every other beat in this genre uses: the story's own
+// This beat's own WEB runner — the shape every other beat in this format uses: the story's own
 // constants, the story's own CSV reader, the story's own component, handed to the skill's generic
 // `renderWeb` (`skills/chart-web/scripts/render-web.mjs`).
 //
 // IT USED TO BE A SECOND COPY OF THAT FUNCTION, and that is the whole of B6.2. This file carried
 // its own `buildCss` — with `.chart-figure { max-width: 900px }` and a `@media` rung boundary —
 // because the component it drove was a two-rung, words-inside-the-SVG build that could not be
-// widened without magnifying its own type. `Co2HeatmapWeb.tsx` is now on the genre's fluid frame
+// widened without magnifying its own type. `Co2HeatmapWeb.tsx` is now on the format's fluid frame
 // (geometry-only SVG, every word HTML at a fixed pixel size), so the second stylesheet, the second
 // SSR loop, the cap and the media query all retire together and this runner is 100 lines shorter.
-// The genre's shared `buildCss` is the one that ships, which is what makes "fills its container"
-// a property of the genre rather than of this beat.
+// The format's shared `buildCss` is the one that ships, which is what makes "fills its container"
+// a property of the format rather than of this beat.
 //
 // After the skill's `renderWeb` writes the self-contained HTML, this runner does two story-owned
 // repairs in place, the same two the bump beat's runner owns:
@@ -20,7 +20,7 @@
 //      `<script>` — a grid of already-discrete cells needs no nearest-point-by-x resolution, and
 //      the skill's own script (which runs first, finds no `.pt` circles, and is a harmless no-op)
 //      is built for points strung along one line.
-//   2. Appends this beat's own CSS: the column-header row ABOVE the plot (the genre's shared
+//   2. Appends this beat's own CSS: the column-header row ABOVE the plot (the format's shared
 //      `.chart-plot` puts its axis row below), the legend row, and the in-cell value's own type.
 //
 // `renderWeb` hard-codes `<html lang="fr">`; this beat's words are English, so the runner patches
@@ -190,10 +190,10 @@ async function repair(outPath) {
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");
   html = html.replace("</body>", `<script>\n${interactionSource.replace(/^export /gm, "")}\n</script>\n</body>`);
 
-  // This beat's own rules, after the genre's shared stylesheet.
+  // This beat's own rules, after the format's shared stylesheet.
   //
   // THE COLUMN HEADERS SIT ABOVE THE GRID, which is the one structural departure a heatmap forces:
-  // the genre's shared `.chart-plot` is `grid-template-rows: 1fr var(--x-axis-h)` — an axis row
+  // the format's shared `.chart-plot` is `grid-template-rows: 1fr var(--x-axis-h)` — an axis row
   // BELOW the geometry — and a matrix names its columns above them. The three track assignments
   // below re-point the same four children (`.y-axis`, `svg.chart`, `.overlay`, `.x-axis`) at the
   // flipped rows; nothing else about the shared grid changes, and the `%` positions the component

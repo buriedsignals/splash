@@ -5,7 +5,7 @@ type: small-multiples
 
 # Beat — solar's rise in the EU's six largest countries, panel by panel
 
-**Type:** small multiples (six line panels). **Medium/genre:** chart / static. **Channel:**
+**Type:** small multiples (six line panels). **Medium/format:** chart / static. **Channel:**
 article web, 900 x 620 (taller than the 560 default — two rows of panels plus a shared x-axis
 band do not fit the default frame without squeezing the panels below a readable height).
 

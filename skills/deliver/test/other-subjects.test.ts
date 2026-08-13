@@ -1,5 +1,5 @@
 /**
- * THE OTHER SUBJECTS IN THE SAME ARTICLE — the owner, 2026-08-10, having read the genre offer:
+ * THE OTHER SUBJECTS IN THE SAME ARTICLE — the owner, 2026-08-10, having read the format offer:
  * *"Ou même le relancer sur des sous-sujets de son article qui seraient intéressants à transformer
  * en visuel."*
  *
@@ -48,8 +48,8 @@ import {
 } from "../scripts/other-subjects.mjs";
 import {
   deliveryClosed,
-  recordGenreAnswer,
-} from "../scripts/another-genre.mjs";
+  recordFormatAnswer,
+} from "../scripts/another-format.mjs";
 import { exportDirFor as canonicalExportDirFor } from "../scripts/deliver.mjs";
 import { materialiseLegacyV1 } from "../scripts/delivery-compat-v1.mjs";
 import {
@@ -80,20 +80,20 @@ const SURVEYED = [
     learns:
       "combien de la fonte totale revient aux Jeux eux-mêmes plutôt qu'à leurs sponsors",
     medium: "chart",
-    genre: "static",
+    format: "static",
   },
   {
     id: "ou-fond-la-glace",
     learns:
       "où se trouvent les glaciers que cette fonte concerne, et à quelle distance des sites",
     medium: "map",
-    genre: "static",
+    format: "static",
   },
   {
     id: "trente-ans-de-fonte",
     learns: "comment cette seule année se compare aux trente qui la précèdent",
     medium: "chart",
-    genre: "video",
+    format: "video",
   },
 ];
 
@@ -155,7 +155,7 @@ describe("the survey's output is kept, in the story's own directory", () => {
       "trente-ans-de-fonte",
     ]);
     expect(read[1]!.learns).toBe(SURVEYED[1]!.learns);
-    expect(read[2]!.genre).toBe("video");
+    expect(read[2]!.format).toBe("video");
   });
 
   it("should refuse a name where a reason belongs", async () => {
@@ -167,7 +167,7 @@ describe("the survey's output is kept, in the story's own directory", () => {
             id: "a-bar-chart",
             learns: "Stacked bar",
             medium: "chart",
-            genre: "static",
+            format: "static",
           },
         ],
       }),
@@ -184,7 +184,7 @@ describe("the survey's output is kept, in the story's own directory", () => {
             learns:
               "this one needs skills/map-beat and a bigger camera than we have",
             medium: "map",
-            genre: "static",
+            format: "static",
           },
         ],
       }),
@@ -200,7 +200,7 @@ describe("the survey's output is kept, in the story's own directory", () => {
             id: "Où fond la glace",
             learns: "where the ice that melts actually is",
             medium: "map",
-            genre: "static",
+            format: "static",
           },
         ],
       }),
@@ -259,7 +259,7 @@ describe("every angle is re-checked before it is offered", () => {
           learns:
             "ce que le glacier montrait il y a trente ans, image après image",
           medium: "image",
-          genre: "video",
+          format: "video",
         },
       ],
     });
@@ -338,14 +338,14 @@ describe("what the journalist reads at the end of their run", () => {
 
 describe("a delivered beat is not finished until BOTH halves of the offer are answered", () => {
   it("should name the offer that never happened", async () => {
-    // THE FIXTURE. The article carried three angles, one was delivered, and the run ended: no genre
+    // THE FIXTURE. The article carried three angles, one was delivered, and the run ended: no format
     // offer, no subject offer. This is the run, exactly.
     await recordSurveyedSubjects({ storyDir, subjects: SURVEYED });
     const beatDir = await makeBeat("1-glace-des-sponsors");
     const exportDir = exportDirFor(storyDir, "1-glace-des-sponsors");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -354,23 +354,23 @@ describe("a delivered beat is not finished until BOTH halves of the offer are an
     const state = await deliveryClosed(exportDir);
     expect(state.closed).toBe(false);
     expect(state.missing).toEqual([
-      "this beat was delivered and never offered in another genre",
+      "this beat was delivered and never offered in another format",
       "this beat was delivered and the article's other subjects were never offered",
     ]);
   });
 
-  it("should still be open when only the genre half was answered", async () => {
+  it("should still be open when only the format half was answered", async () => {
     await recordSurveyedSubjects({ storyDir, subjects: SURVEYED });
     const beatDir = await makeBeat("1-glace-des-sponsors");
     const exportDir = exportDirFor(storyDir, "1-glace-des-sponsors");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
     });
-    await recordGenreAnswer({ exportDir, answer: "declined" });
+    await recordFormatAnswer({ exportDir, answer: "declined" });
 
     const state = await deliveryClosed(exportDir);
     expect(state.closed).toBe(false);
@@ -384,12 +384,12 @@ describe("a delivered beat is not finished until BOTH halves of the offer are an
     const exportDir = exportDirFor(storyDir, "1-glace-des-sponsors");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
     });
-    await recordGenreAnswer({ exportDir, answer: "declined" });
+    await recordFormatAnswer({ exportDir, answer: "declined" });
     await recordSubjectAnswer({ exportDir, answer: "none" });
 
     expect(await deliveryClosed(exportDir)).toMatchObject({
@@ -403,7 +403,7 @@ describe("a delivered beat is not finished until BOTH halves of the offer are an
     const exportDir = exportDirFor(storyDir, "1-glace-des-sponsors");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -426,12 +426,12 @@ describe("taking a subject starts a new beat in the same story", () => {
     const firstExport = exportDirFor(storyDir, "1-glace-des-sponsors");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir: first,
       exportDir: firstExport,
       handover,
     });
-    await recordGenreAnswer({ exportDir: firstExport, answer: "declined" });
+    await recordFormatAnswer({ exportDir: firstExport, answer: "declined" });
     await recordSubjectAnswer({
       exportDir: firstExport,
       answer: "taken",
@@ -448,7 +448,7 @@ describe("taking a subject starts a new beat in the same story", () => {
     const secondExport = exportDirFor(storyDir, "2-trente-ans-de-fonte");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir: second,
       exportDir: secondExport,
       handover,
@@ -478,12 +478,12 @@ describe("taking a subject starts a new beat in the same story", () => {
     const exportDir = exportDirFor(storyDir, "1-glace-des-sponsors");
     const written = await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
     });
     expect(written.some((p) => p.includes(".other-subjects"))).toBe(false);
-    expect(written.some((p) => p.includes(".another-genre"))).toBe(false);
+    expect(written.some((p) => p.includes(".another-format"))).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 // twin/proof/mapgen-symbol-web/render-web.mjs
 //
-// The WEB genre of the proportional-symbol map: the same seventeen USGS events
+// The WEB format of the proportional-symbol map: the same seventeen USGS events
 // `proof/map-quake-symbol` ships as a still and as a video, turned into ONE self-contained HTML
 // file — one fluid SVG carrying geometry only, one HTML overlay carrying every word and every
 // control, the accessible table this beat opts into, one inlined interaction script, and no external
@@ -9,7 +9,7 @@
 // This is this beat's OWN copy of `map-web/scripts/render-web.mjs`'s machinery, adapted to this
 // beat's component and its filter dimension. Nothing here imports out of a skill or across beats,
 // except `#shared/chart-beat/render-still.mjs` for `readPalette` — the one module in this tree
-// that reads a recorded colour answer, which every genre draws from.
+// that reads a recorded colour answer, which every format draws from.
 //
 // EVERY NUMBER A READER SEES IS COMPUTED HERE, from the frozen csv, and printed to the console
 // before the render. Nothing is typed: the event count, the year window, the magnitudes, the
@@ -206,7 +206,7 @@ export function separationHeadroom(points, radiusOf) {
 }
 
 /** What the collapsed disclosure's own summary calls its rows (B5.2). A beat's word, not a
- *  genre's — `discloseTable` refuses to invent one. */
+ *  format's — `discloseTable` refuses to invent one. */
 const TABLE_ROW_NOUN = "earthquakes";
 
 /**
@@ -214,11 +214,11 @@ const TABLE_ROW_NOUN = "earthquakes";
  * valeurs qui se trouve en dessous, ou alors cache-les dans un accordéon, et pour tous."* The value
  * table is COLLAPSED by default on every map page, without exception.
  *
- * He offered two ways out and this genre takes the second, and the REASON matters more than the
+ * He offered two ways out and this format takes the second, and the REASON matters more than the
  * choice — without it a later reader meets a collapsed table and "fixes" it back open. The table is
  * the map's own accessible alternative (`references/map-web-discipline.md`, "The accessibility
  * question"): a map is a spatial medium, a screen-reader user has no spatial access to it, and the
- * ordered list of readings is the only honest answer this genre found. Deleting it would trade a
+ * ordered list of readings is the only honest answer this format found. Deleting it would trade a
  * page-height problem for an accessibility regression. Collapsed is what he asked for AND keeps the
  * data reachable.
  *
@@ -713,7 +713,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const palette = readPalette(HERE, { stopAt: resolve(HERE, "..", "..") });
   console.log(`palette from ${palette.source} — ground ${palette.ground}, accent ${palette.accent}, chosen by ${palette.origin}`);
 
-  // The furniture is kept SHORT on purpose. This genre gives the map whatever height the window has
+  // The furniture is kept SHORT on purpose. This format gives the map whatever height the window has
   // left once every word has taken its own, so a sentence that wraps to five lines on a phone is
   // paid for in map. Measured at 375 x 812 with a first, wordier draft: 535px of furniture and a
   // 180px map — the stage's own floor, a map smaller than the text describing it.

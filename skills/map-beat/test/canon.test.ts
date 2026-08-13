@@ -13,7 +13,7 @@ describe("map-beat assets — the canon's shape, not a story's", () => {
     expect(video).toContain("REPLACE ME. Do not parameterise me.");
   });
 
-  it("should carry sample data both genres can render on their own", async () => {
+  it("should carry sample data both formats can render on their own", async () => {
     const raw = await readFile(
       join(ASSETS, "sample-data", "regions.json"),
       "utf8",

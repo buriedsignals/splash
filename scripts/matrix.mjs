@@ -1,4 +1,4 @@
-// Regenerates `twin/MATRIX.md` — which visual type is proven in which genre, and by which beat.
+// Regenerates `twin/MATRIX.md` — which visual type is proven in which format, and by which beat.
 //
 //   bun scripts/matrix.mjs           writes MATRIX.md
 //   bun scripts/matrix.mjs --check   fails if MATRIX.md has drifted from the tree
@@ -6,19 +6,19 @@
 // WHY THIS IS A SCRIPT AND NOT A HAND-WRITTEN TABLE. A matrix typed by hand is a claim about 65
 // directories that nobody re-checks, and this project has measured what that costs: a count of
 // "11 orphan stills" was reported, repeated four times across one night, written into HANDOVER.md,
-// and turned out to be **one** the first time anybody ran the check. The same night, a "video genre
+// and turned out to be **one** the first time anybody ran the check. The same night, a "video format
 // covers 12 types" line in the same file was stale by two. A table that cannot be regenerated is a
 // table that is wrong and does not know it.
 //
-// WHAT IT COUNTS, and the one judgement it makes. A beat proves a type in a genre when the
+// WHAT IT COUNTS, and the one judgement it makes. A beat proves a type in a format when the
 // ARTIFACT EXISTS ON DISK — a PNG, a self-contained HTML, an mp4. A `BRIEF.md` that declares a
-// genre proves nothing: an audit found five beats declaring a genre with no artifact rendered, and
+// format proves nothing: an audit found five beats declaring a format with no artifact rendered, and
 // from the outside nothing distinguished them.
 //
 // The judgement: a video beat's final frame is NOT counted as static proof. It is a by-product of
 // that beat's own reveal, not a chart framed to be read at rest, and counting it inflates the
 // static column with images nobody designed for stillness. A beat earns the static column when its
-// own `Medium/genre:` line says so.
+// own `Medium/format:` line says so.
 //
 // A scrolly is detected by reading the page, not by its folder name — the scroll scaffold leaves
 // `data-step`/`step-panel` in the delivered HTML.
@@ -68,11 +68,11 @@ export function readBeats() {
       const text = readFileSync(brief, "utf8");
       type = typeName(/\*\*Type:\*\*\s*([^.]+)/.exec(text)?.[1] || "");
       // Tolerant on spacing and emphasis, strict on meaning. The corpus writes this label three
-      // ways — `**Medium/genre:**`, `**Medium / genre:**`, and with the value itself bolded
+      // ways — `**Medium/format:**`, `**Medium / format:**`, and with the value itself bolded
       // (`chart / **static**`). The first draft of this reader matched only the first spelling and
       // silently reported two real static beats as missing, which is how a generated table lies
       // more convincingly than a hand-written one: it looks measured. Spacing is not semantics.
-      medium = (/\*\*Medium\s*\/\s*genre:\*\*\s*([^.]+)/.exec(text)?.[1] || "")
+      medium = (/\*\*Medium\s*\/\s*format:\*\*\s*([^.]+)/.exec(text)?.[1] || "")
         .toLowerCase()
         .replace(/\*/g, "");
     }
@@ -82,37 +82,37 @@ export function readBeats() {
     const html = files.filter((f) => f.endsWith(".html"));
     const scrolly = html.some((f) => /data-step|step-panel/.test(readFileSync(f, "utf8")));
 
-    const genres = new Set();
+    const formats = new Set();
     const declaresStatic = /static/.test(medium);
     // `frame-*.png` are extracted verification frames; `preview.png` belongs to a skill's seed.
     if (declaresStatic && files.some((f) => f.endsWith(".png") && !/preview|frame-/.test(f)))
-      genres.add("static");
-    if (html.length && !scrolly) genres.add("web");
-    if (scrolly) genres.add("scrolly");
-    if (files.some((f) => f.endsWith(".mp4"))) genres.add("video");
+      formats.add("static");
+    if (html.length && !scrolly) formats.add("web");
+    if (scrolly) formats.add("scrolly");
+    if (files.some((f) => f.endsWith(".mp4"))) formats.add("video");
 
-    beats.push({ name, type, medium, genres });
+    beats.push({ name, type, medium, formats });
   }
   return beats;
 }
 
-const GENRES = ["static", "web", "video", "scrolly"];
+const FORMATS = ["static", "web", "video", "scrolly"];
 const isMap = (b) => b.medium.startsWith("map") || b.name.startsWith("map");
 
 function render(beats) {
   const lines = [
-    "# The type × genre matrix",
+    "# The type × format matrix",
     "",
     "**Generated — do not edit by hand.** `bun scripts/matrix.mjs` rewrites this file;",
     "`bun scripts/matrix.mjs --check` fails if it has drifted from the tree.",
     "",
-    "A cell names the beat whose ARTIFACT EXISTS ON DISK. A brief that declares a genre without a",
+    "A cell names the beat whose ARTIFACT EXISTS ON DISK. A brief that declares a format without a",
     "rendered artifact counts for nothing here — five beats once did exactly that, and from the",
     "outside nothing distinguished them. A video beat's final frame is not counted as static proof:",
     "it is a by-product of that beat's reveal, not a chart framed to be read at rest.",
     "",
-    "This is a coverage map, never a quality one. Whether these artifacts are CORRECT is what the",
-    "`AUDIT-*.md` files are for.",
+    "This is a coverage map, never a quality one. Correctness is established separately by the",
+    "test suite and direct review of the rendered artifacts.",
     "",
   ];
 
@@ -120,7 +120,7 @@ function render(beats) {
     const set = beats.filter(pick).filter((b) => b.type);
     const types = [...new Set(set.map((b) => b.type))].sort();
     const covered = types.filter((t) =>
-      GENRES.slice(0, 3).every((g) => set.some((b) => b.type === t && b.genres.has(g))),
+      FORMATS.slice(0, 3).every((g) => set.some((b) => b.type === t && b.formats.has(g))),
     );
     lines.push(
       `## ${label} — ${types.length} types, ${set.length} beats`,
@@ -132,7 +132,7 @@ function render(beats) {
     );
     for (const t of types) {
       const cell = (g) =>
-        set.filter((b) => b.type === t && b.genres.has(g)).map((b) => b.name).join("<br>") || "—";
+        set.filter((b) => b.type === t && b.formats.has(g)).map((b) => b.name).join("<br>") || "—";
       lines.push(`| **${t}** | ${cell("static")} | ${cell("web")} | ${cell("video")} | ${cell("scrolly")} |`);
     }
     lines.push("");

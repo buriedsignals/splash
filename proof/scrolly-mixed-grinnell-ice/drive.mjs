@@ -2,7 +2,7 @@
 //
 // Why this is not the usual sampled probe: a probe that jumps to a position, waits, and asks the DOM
 // what it thinks measures the SETTLED state, and a reader only ever sees the transition. Five rounds
-// of this genre passed exactly that way while the owner watched frames arrive at the wrong moment.
+// of this format passed exactly that way while the owner watched frames arrive at the wrong moment.
 // So this run scrolls in small increments with NO settle wait, records what is actually painted at
 // every increment, and then goes back UP — the direction a step machine built out of enter/exit
 // events usually breaks in, because only one of those two events is normally wired.

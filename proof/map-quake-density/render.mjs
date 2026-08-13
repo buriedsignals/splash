@@ -1,4 +1,4 @@
-// The render ladder for the hex-grid beat. Static genre only.
+// The render ladder for the hex-grid beat. Static format only.
 //
 // Usage:
 //   bun proof/map-quake-density/render.mjs --still

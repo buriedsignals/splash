@@ -31,7 +31,7 @@ derives from `#E69F00` by walking it toward the ground's opposite pole in 2% ste
 the first step that clears. Nobody invented it; it is the beat's own colour, darkened until a reader
 can see it. The floor was not lowered and the beat was not exempted.
 
-**This moves the render**, and it is the only beat in the chart-web genre where it does. The solar
+**This moves the render**, and it is the only beat in the chart-web format where it does. The solar
 bars, the solar legend swatch and the `--accent` custom property all go from `#E69F00` to `#C68900`:
 the same hue, visibly darker, against an unchanged white ground and unchanged blue wind bars. No
 geometry, no text and no layout changes — the before and after HTML differ only in that hex.

@@ -165,7 +165,7 @@ describe("nothing caps the chart frame's own width", () => {
   // overturned was a two-RUNG layout: a second pre-rendered arrangement that a width query swapped
   // in, so the beat had two shapes and a reader saw whichever the query picked. `@media` is not
   // that. It is the only way CSS can say "this container is narrower than the content needs", and
-  // ruling R2 requires exactly that sentence for the web genre — web is not a fourth export size,
+  // ruling R2 requires exactly that sentence for the web format — web is not a fourth export size,
   // it fills whatever container the CMS gives it, and filling a 375px-wide phone is a different
   // instruction from filling a 1600px article well.
   //
@@ -287,14 +287,14 @@ describe("nothing caps the chart frame's own width", () => {
     expect(paddingMatch).not.toBeNull();
     const px = Number(paddingMatch![1]);
     expect(px).toBeGreaterThan(0);
-    // Fixed CSS pixels, never a fraction of the container — this genre's own "type/spacing is a
+    // Fixed CSS pixels, never a fraction of the container — this format's own "type/spacing is a
     // fixed value, only geometry stretches" rule, extended to the frame's inner margin. A `%`- or
     // `vw`-based inset would either shrink toward nothing on a narrow frame or balloon on a wide
     // one; a modest fixed value reads as deliberate at every width instead (see this file's own
     // 1600/1024/768/375px screenshots).
     expect(figureRule).not.toMatch(/padding:[^;]*%/);
     expect(figureRule).not.toMatch(/padding:[^;]*vw/);
-    // Small enough that it cannot "eat" the narrowest width this genre verifies at (375px) — an
+    // Small enough that it cannot "eat" the narrowest width this format verifies at (375px) — an
     // explicit ceiling so a future edit cannot silently turn this back into the large-fixed-value
     // failure mode the beat's own report warns against.
     expect(px).toBeLessThan(48);
@@ -382,8 +382,8 @@ describe("the beat fits the visible window", () => {
     const px = Number(floor![1]);
     // Above zero, because `min-height: 0` would also satisfy flexbox's own min-height:auto
     // override while allowing a 3px "chart"; and below the 153px the seed measures at the
-    // narrowest width this genre verifies (375px), so the floor can never fire on a window this
-    // genre actually ships to and change a rendering that was already correct.
+    // narrowest width this format verifies (375px), so the floor can never fire on a window this
+    // format actually ships to and change a rendering that was already correct.
     expect(px).toBeGreaterThan(0);
     expect(px).toBeLessThan(153);
   });

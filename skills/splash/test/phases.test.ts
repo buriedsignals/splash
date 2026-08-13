@@ -43,7 +43,7 @@ afterEach(async () => {
 
 // Gate-2-complete, matching what where.mjs's missingForGate2 actually requires: a confirmed
 // takeaway, all six hand-of-the-journalist fields, the two recorded verdicts (`grounding` from G1,
-// `reference` from the reference loop), and a slot carrying its medium, genre, size, recorded
+// `reference` from the reference loop), and a slot carrying its medium, format, size, recorded
 // reachability, and a chosen candidate drawn from its own listed candidates.
 const confirmedStoryboard = `---
 takeaway: "Rainfall fell by a third in ten years."
@@ -57,8 +57,9 @@ grounding: supported
 reference: "The Pudding, redraft — mid-table deviation"
 slots:
   - id: 1
+    proves: "Rainfall fell by a third in ten years."
     medium: chart
-    genre: static
+    format: static
     size: landscape
     reachable: yes
     chosen: trajectory
@@ -165,7 +166,7 @@ describe("the orchestrator's prose and its code agree", () => {
     const named = backticked.filter((id) => present.includes(id));
 
     // The negative half: a token SHAPED like a craft-skill id but absent from disk is a stale
-    // dispatch target. The shapes are the two the tree actually uses — a medium-and-genre pair
+    // dispatch target. The shapes are the two the tree actually uses — a medium-and-format pair
     // (`chart-beat`, `map-web`, `chart-video`) — plus anything already known to be a sibling.
     const claimed = backticked.filter((id) =>
       /^(chart|map|image|dw)-(beat|web|video)$/.test(id),

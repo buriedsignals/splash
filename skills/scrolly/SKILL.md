@@ -1,6 +1,6 @@
 ---
 name: scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). A VEHICLE, not a fourth chart format — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
 ---
 
 # scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
@@ -31,7 +31,7 @@ this element got wrong. Read it before writing a second scrolly beat.
 - When a closed `STORYBOARD.md` picks a scroll-driven interactive for a beat whose argument is
   genuinely told across **different kinds of evidence** — a scene, then a map, then a chart —
   narrated as one sequence. That is what this vehicle is FOR: assembling media a single beat, of any
-  one genre, cannot assemble on its own.
+  one format, cannot assemble on its own.
 - **If every step would show the same chart, do not reach for this skill — animate the beat
   instead.** A scrolly that steps four states of one chart is not a vehicle carrying different
   media; it is a duplicate of a beat that already exists under `chart-web` or
@@ -44,12 +44,12 @@ this element got wrong. Read it before writing a second scrolly beat.
   scaffold never asks what that element is.
 - **Not** a moving camera. The map track shows one baked plate; a scroll-driven `flyTo` would mean
   either a live map in the delivered file or one plate per waypoint — see
-  `references/scrolly-discipline.md`, "What this genre does not attempt."
+  `references/scrolly-discipline.md`, "What this format does not attempt."
 - **Not** a registry or a dispatcher. A scrolly carries beats; it is not a new kind of beat.
 
 ## The one gotcha that will waste your day (read first)
 
-**A SCROLLY CHECKED BY JUMPING TO SCROLL POSITIONS IS NOT CHECKED.** This genre shipped five rounds
+**A SCROLLY CHECKED BY JUMPING TO SCROLL POSITIONS IS NOT CHECKED.** This format shipped five rounds
 of corrections verified that way — teleport to 25 offsets, wait for the page to settle, read the
 state — and every number came back perfect: one frame at opacity 1, every other at 0, one panel at a
 time, all four steps in order, 25 out of 25, at three widths, on five beats. Driven CONTINUOUSLY
@@ -146,11 +146,11 @@ residue.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/scrolly-discipline.md` | What the card covers and the three things that follow from measuring it; why the card is an overlay that enters no measurement of the visual (the tenth correction); the fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the sticky model and the two-cell split kept as history because nine rounds of corrections are only legible against them; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
+| Doctrine | `references/scrolly-discipline.md` | What the card covers and the three things that follow from measuring it; why the card is an overlay that enters no measurement of the visual (the tenth correction); the fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the sticky model and the two-cell split kept as history because nine rounds of corrections are only legible against them; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this format does not attempt; verification |
 | Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (the beat's four-step arc: id, `frameKind`, prose-as-a-function), the four frame components (`ImageFrame`, `DrawnGraphicFrame`, `MapFrame`, `ChartFrame`), and the placement constants: `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `FRAME`, `CHART_LAYOUT` |
 | Seed data | `assets/gauge-data.ts` | `parseRdb`, `parseReadings`, `readStation`, `deriveFacts`, `group`, `dayAndMonth` — the beat's own reading layer. Nothing here draws; nothing that draws computes a fact |
 | Interaction | `assets/interaction.mjs` | `pickActiveStep` and `measureProgress` (both pure, both unit-tested) + `initScrolly` (on every scroll of the card layer, measures every panel against the lane — which IS that layer's own scrollport, covering the graphic edge to edge — toggles `.active` on the winning step and frame, and publishes `data-progress` — the continuous fractional index a consumer scrubs a visual against). Nothing hides a panel any more. No `IntersectionObserver` — see the file's own header. `initAll` runs it |
-| Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name, proseLane })` — the genre's MEDIA-AGNOSTIC machinery. It SSRs each `frame`, wraps it generically, builds the overlap scaffold and the lane, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `DRAWN_VARIANT`, `buildFrame` (the ONE place that reads `frameKind`), `render` (this seed's own runner) |
+| Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name, proseLane })` — the format's MEDIA-AGNOSTIC machinery. It SSRs each `frame`, wraps it generically, builds the overlap scaffold and the lane, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `DRAWN_VARIANT`, `buildFrame` (the ONE place that reads `frameKind`), `render` (this seed's own runner) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one basemap capture, one projected pixel — run once, committed. Since the ruling of 2026-08-10 (`references/scrolly-discipline.md`, "A map on a scrolly is LIVE") the plate is the FALLBACK layer under live MapTiler tiles, not the whole map; the committed HTML carries the `__MAPTILER_KEY__` placeholder and `deliver` substitutes at delivery |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
 | Verify | `scripts/verify-scrolly.mjs` | The guard that watches a CONTINUOUS scroll: a `requestAnimationFrame` recorder installed before anything moves, then assertions A-G (the page never scrolls; the graphic and header never move; every step's frame is painted, in order; each step is handed `active` once; the graphic settles; at most two panels share the lane; **no panel is ever painted over the graphic**; **the prose TRAVELS** — a real sweep per panel and no held offset; and **the visual EVOLVES** — `data-progress` present, monotonic, spanning the piece, moving on the frames where the step does not, and in lock-step with it) plus reduced motion and JS-off. Runnable by hand on any rendered scrolly |
@@ -280,7 +280,7 @@ real beat writes its own runner in that same shape — never editing this skill'
   the deliberate overlap; the `bottom`-sticky trap and the two-cell split, both kept as history;
   scenery cropped vs evidence fitted; a map track without a live map; the reading measure on the
   prose and never on `.scrolly`; how prose-over-graphic contrast is measured; what survives with JS
-  off; reduced motion; what this genre does not attempt; verification.
+  off; reduced motion; what this format does not attempt; verification.
 - `assets/ScrollySeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat. `STEPS_META` is its four-step arc; `ImageFrame`, `DrawnGraphicFrame`, `MapFrame`
   and `ChartFrame` are its four frame components; `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `FRAME`
@@ -296,7 +296,7 @@ real beat writes its own runner in that same shape — never editing this skill'
 - `assets/sample-data/potomac-plate.json` — the plate's own size and the station's projected pixel.
 - `assets/sample-data/basin-photo.png` — the seed's illustrated scene, authored by
   `scripts/build-sample-photo.mjs` from flat shapes (nothing fetched, nothing to credit).
-- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim. `pickActiveStep`
+- `assets/interaction.mjs` — the one script this format ships, inlined verbatim. `pickActiveStep`
   (pure, unit-tested) backs `initScrolly`, which measures every panel against the card layer's own
   scrollport on every scroll of it. Its header carries the measurement that removed the
   `IntersectionObserver`, and the one that removed the second decision.

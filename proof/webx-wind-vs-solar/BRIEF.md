@@ -1,9 +1,9 @@
 # Beat — Switzerland is the outlier: solar beats wind
 
-**Type:** grouped bar. **Medium/genre:** chart / web. **Channel:** article web.
+**Type:** grouped bar. **Medium/format:** chart / web. **Channel:** article web.
 
 Web sibling of `proof/static-wind-vs-solar` — same claim, same frozen data, a fresh component
-written for this genre's two-layout / baked-in-interaction shape, with its own hit-target
+written for this format's two-layout / baked-in-interaction shape, with its own hit-target
 interaction script rather than the skill's nearest-point one (see `GroupedBarWeb.tsx`'s own
 header comment for why).
 

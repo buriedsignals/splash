@@ -24,7 +24,7 @@ model has a named target instead of an abstract rule to approximate.
 **A sixth document, `motion-grammar.md`, arrived with the video sub-project.** It was deliberately
 absent while SP1 was static-only — a motion grammar with no motion build to govern is drafted in
 the abstract — and it was written against `chart-video`'s first real 8-second build, the way
-the rest of this set is written against real static ones. It governs the video genre only: what a
+the rest of this set is written against real static ones. It governs the video format only: what a
 layer is allowed to *do over time*, the order a reveal follows, and the timing contract every
 window in a build derives from.
 
@@ -91,7 +91,7 @@ skill's own output has to survive.
 | Failures | `references/anti-patterns.md` | Named recurring failures of the standard, structure and system, one entry each, with the rule each one violates |
 | Targets | `references/reference-set.md` | Verified, published, standalone newsroom graphics, each indexed by its **argument structure** — the key the reference loop looks a row up by — and carrying a link, a locator, and one transferable lesson |
 | Check | `scripts/check-reference-set.mjs` | `checkReferenceSet(markdown)` — the list of reasons a reference table is not usable; empty means every row is |
-| Motion | `references/motion-grammar.md` | The video genre only — data arriving is the motion event, chronological or argumentative order, the pause on the baseline, the subject as a distinct event, the conclusion after its evidence, the final hold, and the editorial timing contract |
+| Motion | `references/motion-grammar.md` | The video format only — data arriving is the motion event, chronological or argumentative order, the pause on the baseline, the subject as a distinct event, the conclusion after its evidence, the final hold, and the editorial timing contract |
 
 ## How it works (the shape)
 
@@ -211,18 +211,18 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
   "placeholder data and annotations" — a process illustration, not published evidence) and a Reuters
   social-preview card whose lesson asserted a mechanic (two lines crossing repeatedly across
   labelled years) the actual cropped card cannot show.
-- `references/motion-grammar.md` — the video genre's rules, written against `chart-video`'s
+- `references/motion-grammar.md` — the video format's rules, written against `chart-video`'s
   first real build. Read by any beat whose output is frames. Its one departure from
   `information-architecture.md` is deliberate and argued in place: in a video the takeaway is the
   **conclusion event**, not furniture, because time is the stack and the reader does not choose
-  their own reading order. Also states which two rules are genre-scoped and why applying either one
-  outside its own genre produces a named defect: axis/tick density (dense for a static frame a
-  reader can scrutinise at their own pace, sparse — this genre's own line reveal draws with none at
+  their own reading order. Also states which two rules are format-scoped and why applying either one
+  outside its own format produces a named defect: axis/tick density (dense for a static frame a
+  reader can scrutinise at their own pace, sparse — this format's own line reveal draws with none at
   all — for a frame the reader cannot pause), and an end-label's reveal (gated on the mark's own
   local progress and positioned at its current location, never gated on a signal describing the
   whole composition and pinned to the mark's eventual, final one — the mistake that shipped
   independently in both a scroll-driven build and a timed one).
-- `references/geo-discipline.md` — the rules a map beat is written under, in either genre. Includes
+- `references/geo-discipline.md` — the rules a map beat is written under, in either format. Includes
   the three-colour basemap discipline (water as a blue tint, land as a very light neutral, no-data as
   a distinct mid-grey — a flat colour, not the textured hatching an earlier draft of this rule
   called for, corrected here because hatching reads illegibly at the size a no-data region is

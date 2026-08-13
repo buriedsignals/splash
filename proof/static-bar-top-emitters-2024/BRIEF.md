@@ -5,7 +5,7 @@ type: column
 
 # Beat — China emitted more CO₂ in 2024 than the next five countries put together
 
-**Type:** bar and column (ranking, vertical columns). **Medium/genre:** chart / static.
+**Type:** bar and column (ranking, vertical columns). **Medium/format:** chart / static.
 **Channel:** article web — **size: landscape (1920 x 1080)**.
 
 The size is in the front matter above as well as in that sentence, and the front matter is the one
@@ -36,19 +36,19 @@ text. In particular:
 - **"69% of the world total"** is the ten summed over the `OWID_WRL` row of the same frozen file
   (38.6 bn t) — a figure OWID itself publishes, not a world total assembled by hand.
 
-## Its sibling in the video genre
+## Its sibling in the video format
 
-The **video** genre carries the same claim, in `proof/vidz-bar-column-top-emitters/`, written
+The **video** format carries the same claim, in `proof/vidz-bar-column-top-emitters/`, written
 independently and in parallel by another hand from the same public dataset. Neither imports the
 other's files: this beat has its own frozen CSV, its own geometry and its own component, per
 `chart-web/SKILL.md`'s "duplicate, do not link" ruling and the precedent
-`weby-dumbbell-life-expectancy-gains` already sets for a claim drawn in two genres.
+`weby-dumbbell-life-expectancy-gains` already sets for a claim drawn in two formats.
 
 The two are worth reading side by side precisely because they are the same argument in two media,
 and they solve the comparison differently: the video introduces the five-country sum as a rule the
 viewer watches cross the leading column, while a static frame has no "afterwards" — so this beat
 draws the rule and the caption at once, and moves the caption clear of the subject's own label
-instead. That difference is the genre, not a disagreement.
+instead. That difference is the format, not a disagreement.
 
 ## Subject and accent
 

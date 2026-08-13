@@ -3,7 +3,7 @@
  *
  * The owner asked for it by name on the slope beat: *"a full hover tooltip on the connecting line,
  * giving the information that links the two ends."* Before this, `pointer-events: stroke` appeared
- * nowhere in the tree outside spec prose, and every hit surface in this genre was either one shared
+ * nowhere in the tree outside spec prose, and every hit surface in this format was either one shared
  * `.hit-area` rect resolved by nearest-x or a per-point target. A reading that belongs to the line —
  * both ends AND the change between them — had nowhere to live.
  *
@@ -44,7 +44,7 @@
  *      `claims-grounded-in-data.test.ts` is the file that asks whether it matches the frozen CSV.
  *
  * THE MUTATIONS, both run in a copy of the tree under `/tmp/line-mut/`, never here.
- *   (a) THE PRIMITIVE BROKEN — `pointer-events: stroke` removed from `.line-hit` in the genre's own
+ *   (a) THE PRIMITIVE BROKEN — `pointer-events: stroke` removed from `.line-hit` in the format's own
  *       `buildCss`, and the beat re-rendered in the copy:
  *
  *         0 pass · 1 fail

@@ -6,7 +6,7 @@
 // bridge's arithmetic is REPLAYED before rendering — `references/types/waterfall.md`'s own
 // non-negotiable check, and the same one the static sibling's own `render.mjs` runs.
 //
-// SECOND BUILD: migrated to the genre's FLUID FRAME — `renderWeb` no longer takes a `layouts`
+// SECOND BUILD: migrated to the format's FLUID FRAME — `renderWeb` no longer takes a `layouts`
 // array (the two-rung design was overturned; see `WaterfallWeb.tsx`'s own doc-comment).
 //
 // Usage:  bun proof/webx-germany-bridge/render-web.mjs [outDir] [--data <csv>]

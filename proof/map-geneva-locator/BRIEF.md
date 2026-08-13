@@ -1,6 +1,6 @@
 # Beat — eleven international organisations, three tiers, inside 4.4 km of central Geneva
 
-**Type:** locator. **Medium/genre:** map / static. **Channel:** article web, 900 × 560, over a
+**Type:** locator. **Medium/format:** map / static. **Channel:** article web, 900 × 560, over a
 496 × 496 baked plate (`bake.mjs --size 496`, bounds `[6.09, 46.165] → [6.225, 46.26]`).
 
 ## Claim

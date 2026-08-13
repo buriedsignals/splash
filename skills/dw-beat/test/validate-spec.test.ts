@@ -52,7 +52,7 @@ describe("validateChartSpec", () => {
     }
   });
 
-  it("should reject a format that is not static or interactive", () => {
+  it("should reject a format that is not canonical static or web", () => {
     const spec = baseSpec({ format: "video" });
     expect(() => validateChartSpec(spec)).toThrow(/format must be/);
   });

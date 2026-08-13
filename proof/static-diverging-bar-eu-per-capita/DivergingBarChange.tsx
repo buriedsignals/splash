@@ -10,7 +10,7 @@
  * word this frame has to hold at once. A still has one instant. Every consequence below follows
  * from that.
  *
- * WHAT THIS GENRE OWES THAT THE VIDEO DID NOT.
+ * WHAT THIS FORMAT OWES THAT THE VIDEO DID NOT.
  *
  * 1. EVERY LABEL LEGIBLE AT REST, SIMULTANEOUSLY. The video's value labels faded in one row at a
  *    time and rode their own bar's growing tip, so the crowded band around the average rule was

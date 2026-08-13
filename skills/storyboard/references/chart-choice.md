@@ -22,7 +22,7 @@ dependency.
 4. Prefer the form that makes the claim visible through the strongest suitable channel. Shared
    position or length leads when the reader needs precise comparison. Angle, area and colour lead
    only when composition, hierarchy, geography or pattern is the claim.
-5. Reachability is checked after editorial fit. Check `references/type-survey.md` for proven genres
+5. Reachability is checked after editorial fit. Check `references/type-survey.md` for proven formats
    and current reachability. A type being unproven in this repository does not make it a worse
    editorial fit. Say that the route is unproven, then either build it or state the compromise made
    by moving down the list.
@@ -232,7 +232,7 @@ At movement ④ and again in each candidate's reason, keep the account short and
 - the narrow intent;
 - the first applicable type and the type-sheet condition it satisfies;
 - any higher-ranked type removed by the data shape or displaced by a story-specific reason;
-- whether the chosen medium and genre are reachable now;
+- whether the chosen medium and format are reachable now;
 - the sheet that must govern production.
 
 This account is enough for the journalist to correct the reasoning without making them operate the

@@ -1,13 +1,13 @@
 // twin/proof/weby-dumbbell-life-expectancy-gains/dumbbell-geometry.ts
 //
 // Pure geometry: rows to dot pairs on one shared linear scale, plus each row's own vertical band
-// (`scaleBand`) — the WEB genre's hit-rects need each row's own band top/bottom, not just a y
+// (`scaleBand`) — the WEB format's hit-rects need each row's own band top/bottom, not just a y
 // centre, to size the per-row hit-test rectangle `references/types/dumbbell.md` and this beat's
 // own `DumbbellLifeExpectancyGainsWeb.tsx` both describe. Data to coordinates only — no colour, no
 // font, no label — the same boundary the STATIC sibling's own `dumbbellGeometry`
 // (`proof/more-dumbbell-life-expectancy-gains/DumbbellLifeExpectancyGains.tsx`) keeps, rewritten
 // fresh here rather than imported: a beat never imports another beat's files
-// (`chart-web/SKILL.md`'s "duplicate, do not link" ruling), and this genre's own hit-test
+// (`chart-web/SKILL.md`'s "duplicate, do not link" ruling), and this format's own hit-test
 // needs the band's own top/bottom, which the static beat's geometry never had to return.
 
 import { extent } from "d3-array";
@@ -69,7 +69,7 @@ export function dumbbellGeometry(
       y2000: r.y2000,
       y2023: r.y2023,
       rowY: bandTop + band.bandwidth() / 2,
-      // The web genre's own addition over the static sibling: each row's own band edges, so a
+      // The web format's own addition over the static sibling: each row's own band edges, so a
       // per-row hit-rect can be sized to exactly that row's vertical slice, never overlapping its
       // neighbours and never a fixed-height guess.
       bandTop,

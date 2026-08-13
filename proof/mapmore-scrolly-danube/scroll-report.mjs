@@ -439,7 +439,7 @@ export function report(label, samples, stepCount) {
       problems.push(
         `the DOCUMENT itself has scroll distance at scrollY=${s.scrollY} — the page must not scroll`,
       );
-    // THE GRAPHIC FILLS WHAT IS LEFT OF THE FRAME. What is true of the GENRE, in every arrangement
+    // THE GRAPHIC FILLS WHAT IS LEFT OF THE FRAME. What is true of the FORMAT, in every arrangement
     // it has had, is that the graphic starts at the frame's left edge and that the frame is covered
     // to its right edge — by the graphic alone, or by the graphic and the column beside it. Whether
     // a panel is painted OVER the graphic is not a layout question at all; it is the collision check

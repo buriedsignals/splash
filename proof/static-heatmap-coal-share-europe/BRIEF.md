@@ -1,6 +1,6 @@
 # Beat — coal's retreat across Europe's most coal-dependent power systems
 
-**Type:** heatmap (matrix). **Medium/genre:** chart / static. **Channel:** article web,
+**Type:** heatmap (matrix). **Medium/format:** chart / static. **Channel:** article web,
 900 x 760 (taller than the 560 default — twelve rows of near-square cells plus a colour legend do
 not fit the default frame without the cells reading as a smear).
 

@@ -15,7 +15,7 @@
 // SSRs it ONCE and stops mapping over layouts entirely.
 //
 // It runs in node, which is why it is the piece that derives the furniture colours and measures
-// the one gutter this genre still measures (the y-axis label column — see `ChartWebSeed.tsx`):
+// the one gutter this format still measures (the y-axis label column — see `ChartWebSeed.tsx`):
 // `deriveFurniture`/`measureText` live beside a native rasteriser in this skill's OWN
 // `./render-still.mjs` — a copy of `chart-beat`'s, because a skill never imports another
 // skill — which no browser bundle can load. Deriving here and passing ink/muted/grid/measure in as
@@ -23,16 +23,16 @@
 // exactly the pattern `render-video.mjs` already set; the copies are kept in step by
 // `splash/test/helper-parity.test.ts`.
 //
-// `renderWeb` below is the genre's own machinery and knows nothing of any one story: it takes the
+// `renderWeb` below is the format's own machinery and knows nothing of any one story: it takes the
 // component and the props to call it with as arguments, and it never reaches into the component's
 // own returned markup — the SSR'd `<figure>` (geometry SVG, HTML furniture, filter, all of it) is
-// dropped into the page body verbatim. `buildCss` below is the genre's shared stylesheet: the
+// dropped into the page body verbatim. `buildCss` below is the format's shared stylesheet: the
 // structural CSS grid, the fluid sizing rule, the tooltip — and, ONLY for a beat that declared one
 // (`assets/filter.ts`), the filter's own chrome and its generated `:checked` hiding rules —
 // every class name a component targets (`.chart-figure`, `.chart-plot`, `.seg`, `.pt`, `.axis-label`,
 // `.note`, `.end-label`, `.hit-area`, `#tooltip`) is a documented CONTRACT between this file and
 // `ChartWebSeed.tsx`-shaped components, the same contract `.pt`/`.hit-area`/`#tooltip` already were
-// in this genre's first build. Everything under the CONFIG marker (the CONFIG block, `render`, the
+// in this format's first build. Everything under the CONFIG marker (the CONFIG block, `render`, the
 // CLI block) is the runner for THIS SKILL'S OWN SEED — `assets/ChartWebSeed.tsx`, drawn from
 // `assets/sample-data/` — which is the same "the skill's script hosts its own worked values behind
 // a labelled seam" shape Tom's own reference skills use (`map-explainer/scripts/prep-geo.mjs`'s
@@ -40,7 +40,7 @@
 //
 // It is the seed's runner and not a story's for one hard reason: NOTHING IN THIS FILE MAY IMPORT OUT
 // OF THIS SKILL. A real beat writes its own runner in this shape beside its own story
-// (`proof/co2-suisse/render-web.mjs` is exactly that from this genre's first build), importing its
+// (`proof/co2-suisse/render-web.mjs` is exactly that from this format's first build), importing its
 // own component and its own props; `renderWeb` itself does not change for it.
 //
 // Usage:  bun skills/chart-web/scripts/render-web.mjs [outDir] [--data <json>]
@@ -64,8 +64,8 @@ import {
   seedFilterDeclaration,
 } from "../assets/ChartWebSeed.tsx";
 
-/** This genre's own scope selector and radio-id prefix — the two arguments `filter.ts` refuses to
- *  know about, because the same vocabulary is vendored into a genre that scopes on `.map-web-page`.
+/** This format's own scope selector and radio-id prefix — the two arguments `filter.ts` refuses to
+ *  know about, because the same vocabulary is vendored into a format that scopes on `.map-web-page`.
  *  Declared once here so the stylesheet, the markup's ids and the guard all read one pair. */
 const FILTER_SCOPE = ".chart-figure";
 const FILTER_ID_PREFIX = "chart-filter";
@@ -76,7 +76,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // Everything between here and the closing marker is the SEED beat's own words and defaults: what a
 // journalist writing their own web beat replaces wholesale. Everything else in this file — `renderWeb`
 // and its `{ component, props, outDir, name }` signature, `inlineable`, `escapeHtml`, `buildCss` —
-// is this genre's own mechanics and is left alone.
+// is this format's own mechanics and is left alone.
 // The colours are the one part of `SEED` that is not words: they are read back from this
 // skill's own `PALETTE.md` with `readPalette`, exactly as a beat reads its story's answer.
 const SEED_PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
@@ -196,7 +196,7 @@ function escapeHtml(text) {
 }
 
 /**
- * The genre's shared stylesheet — see this file's own header comment for the class-name contract
+ * The format's shared stylesheet — see this file's own header comment for the class-name contract
  * every `ChartWebSeed.tsx`-shaped component relies on. Nothing here is a literal hex outside the
  * furniture custom properties this function itself sets from the derived colours; every type size
  * is a FIXED CSS pixel value (either hard-coded below, e.g. `.chart-title`'s `24px`... no — read
@@ -204,7 +204,7 @@ function escapeHtml(text) {
  * figure's own inline style) so nothing here ever tracks the `<svg>`'s `viewBox` width.
  */
 // The frame's own inner margin -- FIXED, never a fraction of container width, on purpose: this
-// genre's whole redesign is "type/spacing stays a fixed CSS value, only the plot geometry
+// format's whole redesign is "type/spacing stays a fixed CSS value, only the plot geometry
 // stretches" (see web-discipline.md, "Responsive behaviour"), and an inset is furniture, not
 // geometry. A value big enough to read as deliberate at 1600px (24px) is still a small, safe
 // fraction of a 375px frame (~6%) rather than the large-fixed-value failure mode that would eat a
@@ -217,8 +217,8 @@ const FRAME_PAD_PX = 24;
 // figure's flex column (see `buildCss` below): when the frame's preferred height — header + filter +
 // the plot at its canonical `aspect-ratio` + source line — exceeds the visible window, the plot
 // absorbs every pixel of the shortfall and nothing else moves. This number is where that absorption
-// stops. Measured, not guessed: the seed's own natural plot height at the narrowest width this genre
-// verifies at (375px) is 153px, so a floor BELOW that can never fire on any window this genre
+// stops. Measured, not guessed: the seed's own natural plot height at the narrowest width this format
+// verifies at (375px) is 153px, so a floor BELOW that can never fire on any window this format
 // actually ships to, and only a pathologically short window (roughly under 300px of viewport
 // height) reaches it. Reaching it is deliberate: a window too short for a legible chart gets a
 // scrollbar, which is honest, rather than a 20px strip pretending to be a line chart.
@@ -240,7 +240,7 @@ const PLOT_FLOOR_PX = 120;
  *     page, still in the tab order, still answers a hover with its own value. "Everything that
  *     value drew disappears together" is not expressible as an opacity; the label left behind after
  *     its mark was hidden (B6.18b) is the same defect one shade lighter.
- *   - **Two genres cannot mean two things by one word.** `map-web` has always removed. A
+ *   - **Two formats cannot mean two things by one word.** `map-web` has always removed. A
  *     vocabulary vendored into both that dimmed in one and removed in the other would be one name
  *     over two behaviours, which is the thing this whole rework exists to end.
  *
@@ -299,9 +299,9 @@ const FILTER_CHROME_CSS = `
    change is its parent <label>), so an engine without :has() could not draw a checked pill at
    all -- and rather than leave such an engine with identical unlit pills and a hidden input, the
    entire block is dropped there and the reader gets the plain native radios above, which state
-   their own checked-ness without any help. That is the same engine in which this genre's hiding
+   their own checked-ness without any help. That is the same engine in which this format's hiding
    rules could not work either, so the fallback is not a second design to maintain -- it is the
-   design this genre already had.
+   design this format already had.
    The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
    reserved for the subject (visual-system.md), and a control that borrowed it would make the one
    colour that means something in this frame also mean "you clicked here". ink/ground is the
@@ -311,7 +311,7 @@ const FILTER_CHROME_CSS = `
    would shift sideways every time the reader changed their mind.
    NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
    background is overridden by the OS and the checked state loses its only signal. Nothing else in
-   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   this format honours forced colours either (the chart is SVG with explicit fills, which that mode
    does not touch), so handling it here alone would be a half-measure -- see
    references/web-discipline.md. */
 @supports selector(:has(*)) {
@@ -392,7 +392,7 @@ const FILTER_CHROME_CSS = `
  * an inset or a `stroke-dashoffset` — the first four because they are layout and would move the
  * words around the graphic, and the last because it was MEASURED not to work: a probe drove
  * `pathLength="1"` + `stroke-dasharray: 1` + an animated `stroke-dashoffset` on a path carrying this
- * genre's own `vector-effect="non-scaling-stroke"`, under this genre's own
+ * format's own `vector-effect="non-scaling-stroke"`, under this format's own
  * `preserveAspectRatio="none"`, and the line was already 99 % drawn at t=0 and had reached only 80 %
  * at the end. The two coordinate spaces disagree. The wipe was driven in the same probe and tracked
  * the clock exactly (9 % / 24 % / 50 % / 75 % / 99 % at 200/500/1000/1500/2000ms).
@@ -441,7 +441,7 @@ function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = 
   // THE SAME GATE THE FILTER PAYS, for the same reason. `entrance` is not a flag a runner sets: it
   // is read back off the SSR'd markup by `renderWeb` below — true only when the beat's own
   // component actually tagged layers. A beat that tags none ships not one byte of the block above,
-  // which is the difference between a genre a beat may decline and a genre every page pays for.
+  // which is the difference between a format a beat may decline and a format every page pays for.
   const entranceRules = entrance ? entranceCss() : "";
   return `
 :root {
@@ -528,7 +528,7 @@ ${filterChrome}
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
      give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
      letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
      chart the reader has seen.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
@@ -614,7 +614,7 @@ ${entranceRules}
 
 /** The seed beat's own runner: reads the seed's own `{ year, value }` series, builds its props, hands
  *  the seed component and its `FRAME` (`ChartWebSeed`, `FRAME`, imported above from this skill's own
- *  `assets/`) to the genre's generic `renderWeb`. */
+ *  `assets/`) to the format's generic `renderWeb`. */
 async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const data = JSON.parse(await readFile(dataPath, "utf8"));
   if (data.length < 2)

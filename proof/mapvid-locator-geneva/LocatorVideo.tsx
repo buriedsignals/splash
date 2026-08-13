@@ -1,5 +1,5 @@
 /**
- * The video genre of "a 6 km search around central Geneva finds eleven, and stops finding at
+ * The video format of "a 6 km search around central Geneva finds eleven, and stops finding at
  * 4.4 km" — 12.67s, 30fps, 1080 × 1350.
  *
  * Same plate and same eleven points as the static sibling (`proof/map-geneva-locator`) and the web

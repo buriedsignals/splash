@@ -15,17 +15,15 @@
 // named the file in step 3 — a plain content-addressed key, not a real signature. Wrangler computes
 // that key with blake3 (`packages/deploy-helpers/src/deploy/helpers/hash.ts`), which is not
 // available here without a new dependency (this skill's own boundary: `twin/skills/deliver/`
-// only, nothing added to the shared root's package.json). PROVEN against the live API before
-// writing this comment: an arbitrary sha256-derived 32-hex-char key, run through this exact
-// sequence, uploads, deploys, and serves byte-identical content back — Cloudflare's endpoint never
-// checks that the key is blake3, only that the same key names the same bytes at upload and at
-// manifest time. `contentHash` below keeps the same SHAPE (hash of base64(content) + extension,
+// only, nothing added to the shared root's package.json). The API contract uses the key as the
+// content address shared by upload and manifest. `contentHash` below keeps Wrangler's key SHAPE
+// (hash of base64(content) + extension,
 // truncated to 32 hex) for readability, on a different algorithm, because only the shape needs to
 // match, not the exact function.
 //
 // One deploy is one file, always named `index.html` (or `index.<ext>`) in the manifest, so the
 // returned deployment URL alone — no path to append — is the whole embed link. A beat's owned
-// artifact under `<beatDir>/renders/` is genre "web"'s single self-contained HTML file; nothing
+// artifact under `<beatDir>/renders/` is format "web"'s single self-contained HTML file; nothing
 // here inspects its name beyond that there must be exactly one.
 
 import {
@@ -33,19 +31,245 @@ import {
   readHostedDeployment,
   writeHostedDeployment,
 } from "./hosted-deployment.mjs";
+import { createHash, randomUUID } from "node:crypto";
+import { lstat, readFile, readdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const API = "https://api.cloudflare.com/client/v4";
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 
-// ===== CONFIG — edit for your story =====
-// The project a beat's hosted embeds land in, if the caller does not name its own. One Cloudflare
-// Pages project can hold many deployments — each `deployFile` call makes a new one, each with its
-// own stable, never-overwritten URL — so sharing this default across stories costs nothing and
-// avoids asking every beat to invent a project name. A story that wants its own project (a
-// newsroom that would rather see "annemasse-rain" than this skill's own name in its Cloudflare
-// dashboard) passes `projectName` to `deployFile`/`materialise` and this default is never read.
-const DEFAULT_PROJECT_NAME = "deliver-proof";
-// =========================================
+const MAX_PROJECT_NAME = 58;
+const PROJECT_STEM_LENGTH = 28;
+const PROJECT_DIGEST_LENGTH = 20;
+export const DEPLOYMENT_RECEIPT_SCHEMA_VERSION = 2;
+
+export const SPLASH_INSTANCE_FILE = ".splash-instance-id";
+const INSTANCE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function readInstanceId(path) {
+  const stat = await lstat(path);
+  if (stat.isSymbolicLink() || !stat.isFile()) {
+    throw new Error(`Splash instance identity must be a regular file: ${path}`);
+  }
+  const value = (await readFile(path, "utf8")).trim();
+  if (!INSTANCE_ID.test(value)) throw new Error(`Splash instance identity is invalid at ${path}`);
+  return value;
+}
+
+async function optionalStat(path) {
+  try { return await lstat(path); } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function receiptText(value, label) {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function receiptSegment(value, label) {
+  receiptText(value, label);
+  if (value === "." || value === ".." || value.includes("/") || value.includes("\\") || value.includes("\0")) {
+    throw new Error(`${label} must be one path segment`);
+  }
+  return value;
+}
+
+/** Validate the versioned public deployment receipt; v1 is read-only migration input. */
+export function validateDeploymentReceipt(receipt, { storyId, outputId } = {}) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+    throw new Error("deployment receipt must be a JSON object");
+  }
+  if (receipt.provider !== "cloudflare-pages") {
+    throw new Error("deployment receipt has an unsupported provider");
+  }
+  if (![1, DEPLOYMENT_RECEIPT_SCHEMA_VERSION].includes(receipt.schemaVersion)) {
+    throw new Error(`deployment receipt has unsupported schemaVersion ${JSON.stringify(receipt.schemaVersion)}`);
+  }
+  if (storyId !== undefined && receipt.storyId !== storyId) {
+    throw new Error("deployment receipt belongs to a different story");
+  }
+  if (outputId !== undefined && receipt.outputId !== outputId) {
+    throw new Error("deployment receipt belongs to a different output");
+  }
+
+  if (receipt.schemaVersion === 1) {
+    if (receipt.splashInstanceId !== undefined) {
+      if (!INSTANCE_ID.test(receipt.splashInstanceId)) {
+        throw new Error("deployment receipt has an invalid Splash instance ID");
+      }
+    } else if (!(receipt.legacySharedProject === true && receipt.stableAcrossRevisions === false)) {
+      throw new Error("legacy deployment receipt lacks an explicit migration marker");
+    }
+    return receipt;
+  }
+
+  receiptSegment(receipt.storyId, "deployment storyId");
+  receiptSegment(receipt.outputId, "deployment outputId");
+  receiptSegment(receipt.projectName, "Cloudflare Pages project name");
+  receiptText(receipt.deploymentId, "Cloudflare deployment ID");
+  receiptText(receipt.reviewId, "deployment review ID");
+  if (!/^sha256:[0-9a-f]{64}$/.test(receipt.draftDigest)) {
+    throw new Error("deployment receipt has an invalid draft digest");
+  }
+  for (const field of ["editableSource", "renderedArtifact", "currentDelivery", "publishedAt"]) {
+    receiptText(receipt[field], `deployment ${field}`);
+  }
+  if (!INSTANCE_ID.test(receipt.splashInstanceId ?? "")) {
+    throw new Error("deployment receipt has an invalid Splash instance ID");
+  }
+  if (receipt.stableAcrossRevisions !== true) {
+    throw new Error("current deployment receipt must promise a stable revision URL");
+  }
+  const stable = stableProjectUrl(receipt.projectName);
+  if (validatedDeploymentUrl(receipt.publicUrl, receipt.projectName, "deployment public URL") !== stable) {
+    throw new Error("deployment receipt public URL is not the stable project URL");
+  }
+  validatedDeploymentUrl(
+    receipt.immutableDeploymentUrl,
+    receipt.projectName,
+    "deployment immutable URL",
+  );
+  return receipt;
+}
+
+export async function readDeploymentReceipt(path, expected = {}) {
+  const stat = await lstat(path);
+  if (stat.isSymbolicLink() || !stat.isFile()) {
+    throw new Error(`deployment receipt must be a regular file: ${path}`);
+  }
+  let receipt;
+  try {
+    receipt = JSON.parse(await readFile(path, "utf8"));
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(`deployment receipt is not valid JSON: ${path}`, { cause: error });
+    }
+    throw error;
+  }
+  return validateDeploymentReceipt(receipt, expected);
+}
+
+// Recover the ignored installation namespace from versioned deployment receipts after a copied or
+// restored workspace. Explicit legacy receipts are the one allowed no-namespace case: their next
+// approved deployment intentionally migrates to a new stable project once.
+async function deploymentInstanceIds(storiesRoot) {
+  const root = await lstat(storiesRoot);
+  if (root.isSymbolicLink() || !root.isDirectory()) {
+    throw new Error(`stories root must be a real directory: ${storiesRoot}`);
+  }
+  const ids = new Set();
+  for (const story of await readdir(storiesRoot, { withFileTypes: true })) {
+    if (!story.isDirectory()) continue;
+    const exportRoot = join(storiesRoot, story.name, "export");
+    const exportStat = await optionalStat(exportRoot);
+    if (!exportStat) continue;
+    if (exportStat.isSymbolicLink() || !exportStat.isDirectory()) {
+      throw new Error(`story export root must be a real directory: ${exportRoot}`);
+    }
+    for (const output of await readdir(exportRoot, { withFileTypes: true })) {
+      if (!output.isDirectory()) continue;
+      const path = join(exportRoot, output.name, "DEPLOYMENT.json");
+      const stat = await optionalStat(path);
+      if (!stat) continue;
+      if (stat.isSymbolicLink() || !stat.isFile()) {
+        throw new Error(`deployment receipt must be a regular file: ${path}`);
+      }
+      const receipt = await readDeploymentReceipt(path, {
+        storyId: story.name,
+        outputId: output.name,
+      });
+      if (receipt.splashInstanceId !== undefined) {
+        if (!INSTANCE_ID.test(receipt.splashInstanceId)) {
+          throw new Error(`deployment receipt has an invalid Splash instance ID: ${path}`);
+        }
+        ids.add(receipt.splashInstanceId);
+      } else if (!(receipt.legacySharedProject === true && receipt.stableAcrossRevisions === false)) {
+        throw new Error(`deployment history cannot recover its Splash instance ID: ${path}`);
+      }
+    }
+  }
+  if (ids.size > 1) throw new Error("deployment history contains conflicting Splash instance IDs");
+  return [...ids][0] ?? null;
+}
+
+/** Persist one deployment namespace per Splash root so separate installs cannot share a project. */
+export async function resolveSplashInstanceId(storiesRoot) {
+  const path = join(storiesRoot, SPLASH_INSTANCE_FILE);
+  try {
+    const recorded = await readInstanceId(path);
+    const recovered = await deploymentInstanceIds(storiesRoot);
+    if (recovered && recovered !== recorded) {
+      throw new Error("Splash instance identity conflicts with existing deployment history");
+    }
+    return recorded;
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  const id = (await deploymentInstanceIds(storiesRoot)) ?? randomUUID();
+  try {
+    await writeFile(path, `${id}\n`, { flag: "wx", mode: 0o600 });
+    return id;
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    return readInstanceId(path);
+  }
+}
+
+// One Pages project per installation and output. The stable project URL then becomes the embed contract: publishing
+// a reviewed revision updates that URL in place, while Cloudflare keeps the immutable deployment
+// URL in the receipt for rollback/audit. The short digest prevents two long slugs with the same
+// truncated prefix from colliding. This is derived from story/output identity and is never a
+// journalist-facing provider question.
+export function cloudflareProjectName(instanceId, storyId, outputId) {
+  const identity = `${instanceId ?? ""}\0${storyId ?? ""}\0${outputId ?? ""}`;
+  if (!INSTANCE_ID.test(instanceId ?? "") || !storyId || !outputId) {
+    throw new Error("a Cloudflare project name needs a persisted Splash instance ID, storyId, and outputId");
+  }
+  const stem = `${storyId}-${outputId}`
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, PROJECT_STEM_LENGTH)
+    .replace(/-+$/g, "");
+  const digest = createHash("sha256").update(identity).digest("hex").slice(0, PROJECT_DIGEST_LENGTH);
+  const project = `splash-${stem || "visual"}-${digest}`;
+  if (project.length > MAX_PROJECT_NAME || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(project)) {
+    throw new Error(`could not derive a valid Cloudflare Pages project name from ${storyId}/${outputId}`);
+  }
+  return project;
+}
+
+function stableProjectUrl(projectName) {
+  return `https://${projectName}.pages.dev`;
+}
+
+function providerPathSegment(value, label) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/.test(value)) {
+    throw new Error(`${label} must be one Cloudflare provider path segment`);
+  }
+  return encodeURIComponent(value);
+}
+
+function validatedDeploymentUrl(value, projectName, label) {
+  let url;
+  try { url = new URL(value); } catch {
+    throw new Error(`${label} is not a valid Cloudflare Pages URL`);
+  }
+  const stableHost = `${projectName}.pages.dev`;
+  if (
+    url.protocol !== "https:" || url.username || url.password || url.port ||
+    (url.hostname !== stableHost && !url.hostname.endsWith(`.${stableHost}`))
+  ) {
+    throw new Error(`${label} does not belong to Cloudflare Pages project ${projectName}`);
+  }
+  return url.toString().replace(/\/$/, "");
+}
 
 const CONTENT_TYPES = {
   html: "text/html; charset=utf-8",
@@ -63,14 +287,12 @@ export function contentTypeFor(fileName) {
   return CONTENT_TYPES[ext] ?? "application/octet-stream";
 }
 
-// Both env vars named in this project's own instructions, read here — never in splash's own
-// `scripts/keys.mjs`, which this skill does not import (no cross-skill imports, runtime or
-// otherwise; `splash`'s own `capabilities.hostedEmbed` row stays hardcoded closed until that
-// skill's own maintainers wire it to this one — not this file's call to make, and out of this
-// change's scope). Presence only, deliberately: a live probe belongs at deploy time (`materialise`
+// Both env vars named in this project's own instructions, read here without a cross-skill runtime
+// import. Splash preflight probes the same capability independently; this delivery check remains
+// a local presence decision. A live provider call belongs at deploy time (`materialise`
 // already makes a real network call there, and a rejected token surfaces as a real API error) —
-// `offerForms` stays synchronous and fast, so a form can be listed or withheld without a network
-// round trip on every call. A present-but-wrong token still lists the form; it fails loudly the
+// `offerForms` stays synchronous and fast, so a form can be enabled or disabled without a network
+// round trip on every call. A present-but-wrong token still enables the form; it fails loudly the
 // moment `materialise` actually tries to use it, never silently.
 export function resolveCloudflareCredentials(env) {
   const accountId = env.CLOUDFLARE_ACCOUNT_ID;
@@ -151,7 +373,7 @@ async function cf(
 // Same hash SHAPE Cloudflare's own manifest expects (see this file's header comment) — a
 // content-addressed key derived from the file's own bytes and extension, on sha256 (native to
 // Bun's `CryptoHasher`) rather than blake3 (not available here without a new dependency). Proven
-// against the live API to work exactly like Wrangler's own blake3 key would.
+// against deterministic request-contract tests; a current credential-gated smoke remains separate.
 function contentHash(buffer, extension) {
   const base64 = buffer.toString("base64");
   return new Bun.CryptoHasher("sha256")
@@ -164,9 +386,11 @@ function contentHash(buffer, extension) {
 // 409 naming Cloudflare's own "already exists" error code (8000002) is swallowed, not thrown —
 // every OTHER failure (a bad token, an account mismatch) still throws, naming what Cloudflare said.
 async function ensureProject({ accountId, apiToken, projectName, fetchFn, timeoutMs }) {
+  const account = providerPathSegment(accountId, "Cloudflare account ID");
+  providerPathSegment(projectName, "Cloudflare Pages project name");
   try {
     await cf(
-      `/accounts/${accountId}/pages/projects`,
+      `/accounts/${account}/pages/projects`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
@@ -181,15 +405,14 @@ async function ensureProject({ accountId, apiToken, projectName, fetchFn, timeou
 }
 
 /**
- * Uploads exactly one file to a Cloudflare Pages project via direct upload, and returns the live
- * deployment's own URL — stable and never overwritten by a later `deployFile` call (each call
- * makes a new deployment with its own id-scoped subdomain), unlike the project's bare
- * `<project>.pages.dev` domain, which always points at whichever deployment was most recent.
+ * Uploads exactly one file to a Cloudflare Pages project via direct upload. Returns both the
+ * stable project URL, which keeps existing embeds current across approved revisions, and the
+ * deployment-specific URL retained in the operation record for diagnosis and provenance.
  */
 export async function deployFile({
   accountId,
   apiToken,
-  projectName = DEFAULT_PROJECT_NAME,
+  projectName,
   filePath,
   fileName,
   recordDir,
@@ -200,6 +423,8 @@ export async function deployFile({
   timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   fetchFn = fetch,
 }) {
+  const account = providerPathSegment(accountId, "Cloudflare account ID");
+  const project = providerPathSegment(projectName, "Cloudflare Pages project name");
   const buffer = Buffer.from(await Bun.file(filePath).arrayBuffer());
   const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
   const hash = contentHash(buffer, extension);
@@ -228,8 +453,30 @@ export async function deployFile({
 
   const recorded = await readHostedDeployment(binding);
   if (recorded?.record.state === "remote-complete" || recorded?.record.state === "local-complete") {
+    // Completed operation records are durable recovery state, not authority by themselves. Verify
+    // the recorded deployment against Cloudflare before allowing it to suppress publication.
+    const remote = await cf(
+      `/accounts/${account}/pages/projects/${project}/deployments/${providerPathSegment(recorded.record.deploymentId, "Cloudflare deployment ID")}`,
+      { headers: { Authorization: `Bearer ${apiToken}` } },
+      fetchFn,
+      { timeoutMs },
+    );
+    const deployment = remote.result;
+    if (
+      deployment?.id !== recorded.record.deploymentId ||
+      deployment?.deployment_trigger?.metadata?.commit_hash !== deploymentKey
+    ) {
+      throw new Error("recorded Cloudflare deployment no longer matches its operation binding");
+    }
+    const url = stableProjectUrl(projectName);
+    const deploymentUrl = validatedDeploymentUrl(
+      deployment.url,
+      projectName,
+      "reconciled immutable deployment URL",
+    );
     return {
-      url: recorded.record.url,
+      url,
+      deploymentUrl,
       deploymentId: recorded.record.deploymentId,
       deploymentKey,
       recordPath: recorded.path,
@@ -243,7 +490,7 @@ export async function deployFile({
     recorded?.record.state === "ambiguous"
   ) {
     const deployments = await cf(
-      `/accounts/${accountId}/pages/projects/${projectName}/deployments?per_page=100`,
+      `/accounts/${account}/pages/projects/${project}/deployments?per_page=100`,
       { headers: { Authorization: `Bearer ${apiToken}` } },
       fetchFn,
       { timeoutMs },
@@ -253,14 +500,22 @@ export async function deployFile({
         candidate?.deployment_trigger?.metadata?.commit_hash === deploymentKey,
     );
     if (deployment?.id && deployment?.url) {
+      const url = stableProjectUrl(projectName);
+      const deploymentUrl = validatedDeploymentUrl(
+        deployment.url,
+        projectName,
+        "Cloudflare immutable deployment URL",
+      );
       const completed = await writeHostedDeployment(binding, "remote-complete", {
         deploymentId: deployment.id,
-        url: deployment.url,
+        url,
+        deploymentUrl,
         reconciledAt: new Date().toISOString(),
         ambiguousReason: undefined,
       });
       return {
-        url: deployment.url,
+        url,
+        deploymentUrl: deployment.url,
         deploymentId: deployment.id,
         deploymentKey,
         recordPath: completed.path,
@@ -279,14 +534,15 @@ export async function deployFile({
 
   const { jwt } = (
     await cf(
-      `/accounts/${accountId}/pages/projects/${projectName}/upload-token`,
+      `/accounts/${account}/pages/projects/${project}/upload-token`,
       { headers: { Authorization: `Bearer ${apiToken}` } },
       fetchFn,
       { timeoutMs },
     )
   ).result;
 
-  await cf(
+  const missing = (
+    await cf(
     "/pages/assets/check-missing",
     {
       method: "POST",
@@ -295,25 +551,31 @@ export async function deployFile({
     },
     fetchFn,
     { timeoutMs },
-  );
+    )
+  ).result;
+  if (!Array.isArray(missing)) {
+    throw new Error("Cloudflare check-missing response did not contain a hash list");
+  }
 
-  await cf(
-    "/pages/assets/upload",
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
-      body: JSON.stringify([
-        {
-          key: hash,
-          value: buffer.toString("base64"),
-          metadata: { contentType: contentTypeFor(fileName) },
-          base64: true,
-        },
-      ]),
-    },
-    fetchFn,
-    { timeoutMs },
-  );
+  if (missing.includes(hash)) {
+    await cf(
+      "/pages/assets/upload",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+        body: JSON.stringify([
+          {
+            key: hash,
+            value: buffer.toString("base64"),
+            metadata: { contentType: contentTypeFor(fileName) },
+            base64: true,
+          },
+        ]),
+      },
+      fetchFn,
+      { timeoutMs },
+    );
+  }
 
   const formData = new FormData();
   // Always served at the deployment's own root — the whole point of naming every upload
@@ -332,7 +594,7 @@ export async function deployFile({
   let deployment;
   try {
     deployment = await cf(
-      `/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+      `/accounts/${account}/pages/projects/${project}/deployments`,
       { method: "POST", headers: { Authorization: `Bearer ${apiToken}` }, body: formData },
       fetchFn,
       { timeoutMs, ambiguousOnFailure: true },
@@ -359,13 +621,19 @@ export async function deployFile({
 
   const completed = await writeHostedDeployment(binding, "remote-complete", {
     deploymentId: deployment.result.id,
-    url: deployment.result.url,
+    url: stableProjectUrl(projectName),
+    deploymentUrl: validatedDeploymentUrl(
+      deployment.result.url,
+      projectName,
+      "Cloudflare immutable deployment URL",
+    ),
     remoteCompletedAt: new Date().toISOString(),
     failureReason: undefined,
   });
 
   return {
-    url: deployment.result.url,
+    url: completed.record.url,
+    deploymentUrl: deployment.result.url,
     deploymentId: deployment.result.id,
     deploymentKey,
     recordPath: completed.path,

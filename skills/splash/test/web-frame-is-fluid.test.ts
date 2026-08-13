@@ -1,7 +1,7 @@
 /**
  * A CHART-WEB BEAT FILLS THE CONTAINER IT IS GIVEN. NO CAP, NO RUNG.
  *
- * The genre's second build replaced "one SVG per pre-rendered width, swapped by a media query" with
+ * The format's second build replaced "one SVG per pre-rendered width, swapped by a media query" with
  * ONE fluid frame: geometry stretches, type does not. The owner's own read of the capped build is
  * the reason it exists — *the visual must take the full available width* — and the failure mode is
  * specific and visible: a `.chart-figure` capped at 900px inside a 1600px window leaves 700px of
@@ -13,16 +13,16 @@
  * boundary, eleven months after the redesign that removed them everywhere else. Nothing measured it,
  * so nothing said so.
  *
- * WHAT THIS ASSERTS, driven rather than read: for every delivered artifact carrying this genre's own
+ * WHAT THIS ASSERTS, driven rather than read: for every delivered artifact carrying this format's own
  * contract class `.chart-figure`, at 1600 and at 3440, **the figure's rendered width is the
  * document's own width**. It is a measurement in a browser, so a cap expressed as `max-width`, as a
  * fixed `width`, as a rung swapped in by a media query, or as a wrapper around the figure all fail
  * it identically — the guard does not care how the cap was written, only that the reader gets one.
  *
  * SCOPE, stated so it is not trusted past it.
- *   1. `.chart-figure` ONLY. The map genre's own root is `.map-figure` / `.map-web-page` and five
+ *   1. `.chart-figure` ONLY. The map format's own root is `.map-figure` / `.map-web-page` and five
  *      map beats DO still cap (860 or 900px of a 1600px window, measured). They are a different
- *      genre with a different frame contract and a chantier of their own; a guard that failed them
+ *      format with a different frame contract and a chantier of their own; a guard that failed them
  *      here would be asserting a rule nobody has yet decided applies to them.
  *   2. TWO WIDTHS. A frame that fills at 1600 and 3440 and breaks at 900 is not caught.
  *   3. IT SAYS NOTHING ABOUT HEIGHT. `.chart-figure`'s window-fit clamp (`max-height: 100dvh`) is
@@ -58,7 +58,7 @@ const PROOF = join(TWIN, "proof");
 setDefaultTimeout(600000);
 
 /** Wide, and wider. 1600 is the width the owner's own capped screenshot was taken at; 3440 is where
- *  a cap is most obviously a defect and where the genre's own verification already drives. */
+ *  a cap is most obviously a defect and where the format's own verification already drives. */
 const WIDTHS = [1600, 3440];
 
 /** How far short of the document a figure may render before it counts as capped. One CSS pixel of

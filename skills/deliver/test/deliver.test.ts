@@ -18,11 +18,13 @@ import {
   substituteKeys,
   mapKeyState,
 } from "../scripts/deliver.mjs";
+import { cloudflareProjectName } from "../scripts/deploy-embed.mjs";
 import {
   offerFormsLegacyV1,
   materialiseLegacyV1,
 } from "../scripts/delivery-compat-v1.mjs";
 import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
+import { readFileSync } from "node:fs";
 import { replacementArtifacts } from "../scripts/delivery-replacement.mjs";
 import {
   approveCurrentOutput,
@@ -125,55 +127,74 @@ describe("offerForms — Gate 3 before Gate 4", () => {
   it("should refuse to name a single form before the beat has been approved", async () => {
     await rm(join(beatDir, OUTPUT_REVIEW_FILE));
     expect(() =>
-      offerForms({ beatDir, medium: "chart", genre: "static" }),
+      offerForms({ beatDir, medium: "chart", format: "static" }),
     ).toThrow(/no bound review/);
   });
 
   it("should say what it looked for, so the refusal is actionable", async () => {
     await rm(join(beatDir, OUTPUT_REVIEW_FILE));
     expect(() =>
-      offerForms({ beatDir, medium: "chart", genre: "static" }),
+      offerForms({ beatDir, medium: "chart", format: "static" }),
     ).toThrow(/OUTPUT-REVIEW\.json/);
   });
 
   it("should refuse a call that names no beat directory at all", () => {
-    expect(() => offerForms({ medium: "chart", genre: "static" })).toThrow(
+    expect(() => offerForms({ medium: "chart", format: "static" })).toThrow(
       /needs the beat directory/,
     );
   });
 
   it("should require the caller's current plan binding", () => {
     expect(() =>
-      offerFormsWithReview({ beatDir, medium: "chart", genre: "static" }),
+      offerFormsWithReview({ beatDir, medium: "chart", format: "static" }),
     ).toThrow(/current planVersion/);
   });
 
   it("should refuse a render changed after review", async () => {
     await writeFile(join(beatDir, "renders", "still.png"), "changed-png");
     expect(() =>
-      offerForms({ beatDir, medium: "chart", genre: "static" }),
+      offerForms({ beatDir, medium: "chart", format: "static" }),
     ).toThrow(/rendered draft changed/);
   });
 });
 
 describe("offerForms", () => {
+  it("should keep the G4 prompt explicitly about a delivery form, not publication format", () => {
+    const skill = readFileSync(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
+    expect(skill).toContain("Which delivery form should Splash provide?");
+    expect(skill).toMatch(/does not call this a publication-format choice/);
+  });
+
+  it("should reject the legacy runtime field even when canonical format is also present", () => {
+    expect(() =>
+      offerFormsWithReview({
+        beatDir,
+        medium: "chart",
+        format: "static",
+        genre: "static",
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).toThrow(/does not accept genre/);
+  });
+
   it("should offer the owned file, a CMS insertion, and the source bundle for a static chart", () => {
-    const ids = offerForms({ beatDir, medium: "chart", genre: "static" }).map(
+    const ids = offerForms({ beatDir, medium: "chart", format: "static" }).map(
       (f) => f.id,
     );
     expect(ids).toEqual(["owned-file", "cms-insertion", "source-bundle"]);
   });
 
-  // The owner names source-bundle in none of the three per-genre lists they asked for: it is a
+  // The owner names source-bundle in none of the three per-format lists they asked for: it is a
   // developer artifact. It is KEPT, because it works and a newsroom with a developer wants it, and
   // TAGGED, so the delivery question can offer the journalist-facing forms as the real choice and
   // mention this one in a line below them.
-  it("should tag the source bundle as a developer artifact, in every genre, and tag nothing else", () => {
-    for (const genre of ["static", "web", "video", "scrolly"]) {
+  it("should tag the source bundle as a developer artifact, in every format, and tag nothing else", () => {
+    for (const format of ["static", "web", "video", "scrolly"]) {
       for (const form of offerForms({
         beatDir,
         medium: "chart",
-        genre,
+        format,
         env: {},
       })) {
         expect(form.audience).toBe(
@@ -185,7 +206,7 @@ describe("offerForms", () => {
 
   it("should never offer an embed for a static beat", () => {
     expect(
-      offerForms({ beatDir, medium: "chart", genre: "static" }).map(
+      offerForms({ beatDir, medium: "chart", format: "static" }).map(
         (f) => f.id,
       ),
     ).not.toContain("embed");
@@ -195,105 +216,124 @@ describe("offerForms", () => {
     for (const form of offerForms({
       beatDir,
       medium: "chart",
-      genre: "static",
+      format: "static",
     })) {
       expect(form.gives.split(/\s+/).length).toBeGreaterThan(4);
     }
   });
 
-  // Direct coverage of the genre-rejection path itself — the three tests above only ever call
-  // offerForms with genre "static", so none of them would notice if this check stopped reading
-  // the given genre at all. "print" stands in for a genre this project has never built a producer
-  // for — unlike "video", which is now a real, deliverable genre (see the tests below).
-  it("should refuse to offer anything for a genre it does not know", () => {
+  it("should not promise an SVG when a static producer only made a PNG", () => {
+    const owned = offerForms({ beatDir, medium: "chart", format: "static" }).find(
+      (form) => form.id === "owned-file",
+    );
+    expect(owned.gives).toContain("PNG");
+    expect(owned.gives).toContain("when the producer made one");
+    expect(owned.gives).not.toContain("a PNG and an SVG");
+  });
+
+  // Direct coverage of the format-rejection path itself — the three tests above only ever call
+  // offerForms with format "static", so none of them would notice if this check stopped reading
+  // the given format at all. "print" stands in for a format this project has never built a producer
+  // for — unlike "video", which is now a real, deliverable format (see the tests below).
+  it("should refuse to offer anything for a format it does not know", () => {
     expect(() =>
-      offerForms({ beatDir, medium: "chart", genre: "print" }),
+      offerForms({ beatDir, medium: "chart", format: "print" }),
     ).toThrow("print");
   });
 
-  it("should offer the owned file, the source bundle, and a CMS insertion for a web chart with no Cloudflare credentials", () => {
-    const ids = offerForms({
+  it("should keep hosted delivery visible but disabled when Cloudflare is not configured", () => {
+    const forms = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: {},
-    }).map((f) => f.id);
-    expect(ids).toEqual(["owned-file", "source-bundle", "cms-insertion"]);
+    });
+    expect(forms.map((form) => form.id)).toEqual([
+      "owned-file",
+      "source-bundle",
+      "embed",
+      "cms-insertion",
+    ]);
+    expect(forms.find((form) => form.id === "embed")).toMatchObject({
+      available: false,
+      reason: expect.stringContaining("CLOUDFLARE_ACCOUNT_ID"),
+    });
   });
 
   it("should offer the owned file, a CMS insertion, and the source bundle for a video chart", () => {
     const ids = offerForms({
       beatDir,
       medium: "chart",
-      genre: "video",
+      format: "video",
       env: {},
     }).map((f) => f.id);
     expect(ids).toEqual(["owned-file", "cms-insertion", "source-bundle"]);
   });
 
   // A hosted embed serves a PAGE. A static beat's PNG and a video beat's mp4 are not pages, so
-  // "embed" stays wired to the two genres that ship one. cms-insertion is different — it prepares a
-  // payload around a file, which those genres do have — and widening it was the follow-up this
+  // "embed" stays wired to the two formats that ship one. cms-insertion is different — it prepares a
+  // payload around a file, which those formats do have — and widening it was the follow-up this
   // file's own comment had promised.
   it("should never offer an embed for static or video — neither ships a page to host", () => {
-    for (const genre of ["static", "video"]) {
-      const ids = offerForms({ beatDir, medium: "chart", genre, env: {} }).map(
+    for (const format of ["static", "video"]) {
+      const ids = offerForms({ beatDir, medium: "chart", format, env: {} }).map(
         (f) => f.id,
       );
       expect(ids).not.toContain("embed");
     }
   });
 
-  it("should never offer the hosted embed for a web chart when no Cloudflare credential is set", () => {
-    const ids = offerForms({
+  it("should disable the hosted embed for a web chart when no Cloudflare credential is set", () => {
+    const embed = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: {},
-    }).map((f) => f.id);
-    expect(ids).not.toContain("embed");
+    }).find((form) => form.id === "embed");
+    expect(embed?.available).toBe(false);
   });
 
-  it("should never offer the hosted embed when only the account id is set, missing the token", () => {
-    const ids = offerForms({
+  it("should disable the hosted embed when only the account id is set, missing the token", () => {
+    const embed = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: { CLOUDFLARE_ACCOUNT_ID: "acct" },
-    }).map((f) => f.id);
-    expect(ids).not.toContain("embed");
+    }).find((form) => form.id === "embed");
+    expect(embed).toMatchObject({ available: false, reason: expect.stringContaining("CLOUDFLARE_API_TOKEN") });
   });
 
-  it("should never offer the hosted embed when only the token is set, missing the account id", () => {
-    const ids = offerForms({
+  it("should disable the hosted embed when only the token is set, missing the account id", () => {
+    const embed = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: { CLOUDFLARE_API_TOKEN: "tok" },
-    }).map((f) => f.id);
-    expect(ids).not.toContain("embed");
+    }).find((form) => form.id === "embed");
+    expect(embed).toMatchObject({ available: false, reason: expect.stringContaining("CLOUDFLARE_ACCOUNT_ID") });
   });
 
   it("should offer the hosted embed for a web chart once both Cloudflare credentials are set", () => {
-    const ids = offerForms({
+    const forms = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
-    }).map((f) => f.id);
-    expect(ids).toEqual([
+    });
+    expect(forms.map((form) => form.id)).toEqual([
       "owned-file",
       "source-bundle",
       "embed",
       "cms-insertion",
     ]);
+    expect(forms.find((form) => form.id === "embed")?.available).toBe(true);
   });
 
   it("should describe the CMS insertion form honestly, naming that nothing is inserted automatically", () => {
     const cmsForm = offerForms({
       beatDir,
       medium: "chart",
-      genre: "web",
+      format: "web",
       env: {},
     }).find((f) => f.id === "cms-insertion");
     expect(cmsForm?.gives).toMatch(/not yet wired to a live CMS/);
@@ -301,6 +341,36 @@ describe("offerForms", () => {
 });
 
 describe("materialise", () => {
+  it("should reject a caller-supplied Cloudflare project name on the canonical API", async () => {
+    await expect(
+      materialiseWithReview({
+        form: "owned-file",
+        format: "static",
+        beatDir,
+        projectName: "shared-project",
+        handover,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).rejects.toThrow(/does not accept projectName/);
+    expect(await readdir(exportDir)).toEqual([]);
+  });
+
+  it("should reject the legacy runtime field before touching an existing delivery", async () => {
+    await expect(
+      materialiseWithReview({
+        form: "owned-file",
+        format: "static",
+        genre: "static",
+        beatDir,
+        handover,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).rejects.toThrow(/does not accept genre/);
+    expect(await readdir(exportDir)).toEqual([]);
+  });
+
   it("should enforce approval when materialise is called directly and preserve the last export", async () => {
     await writeFile(join(exportDir, "previous.txt"), "last-good");
     await rm(join(beatDir, OUTPUT_REVIEW_FILE));
@@ -308,7 +378,7 @@ describe("materialise", () => {
     await expect(
       materialiseWithReview({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -329,7 +399,7 @@ describe("materialise", () => {
     await expect(
       materialiseWithReview({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -349,7 +419,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir: outside,
         handover,
@@ -371,7 +441,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -395,7 +465,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir: join(linkedStory, "beats", "1-linked"),
         exportDir: exportDirFor(linkedStory, "1-linked"),
         handover,
@@ -412,7 +482,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -431,7 +501,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -452,7 +522,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -471,7 +541,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "source-bundle",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -490,7 +560,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "web",
+        format: "web",
         beatDir,
         exportDir,
         handover,
@@ -512,7 +582,7 @@ describe("materialise", () => {
   it("should serialize concurrent materialisations for the same output", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -530,7 +600,7 @@ describe("materialise", () => {
 
     const first = materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -545,7 +615,7 @@ describe("materialise", () => {
     await firstAtRename;
     const second = materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -570,7 +640,7 @@ describe("materialise", () => {
 
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -584,7 +654,7 @@ describe("materialise", () => {
   it("should write only the owned file when that form is chosen", async () => {
     const written = await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -611,7 +681,7 @@ describe("materialise", () => {
 
     const written = await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -627,7 +697,7 @@ describe("materialise", () => {
   it("should write a runnable bundle only when the source form is chosen", async () => {
     await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -644,7 +714,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -652,16 +722,16 @@ describe("materialise", () => {
     ).rejects.toThrow("not an offered form");
   });
 
-  // A form id that exists under one genre must not be accepted for a different genre just
-  // because the id matches — the check is on the {form, genre} PAIR, never on the form id
-  // alone. "owned-file" is a real id in FORMS_BY_GENRE.static, but genre "print" offers nothing
+  // A form id that exists under one format must not be accepted for a different format just
+  // because the id matches — the check is on the {form, format} PAIR, never on the form id
+  // alone. "owned-file" is a real id in FORMS_BY_FORMAT.static, but format "print" offers nothing
   // (no producer or delivery table for it), so it must be refused exactly like an id that never
   // existed anywhere.
-  it("should refuse a form that exists for a different genre than the one given", async () => {
+  it("should refuse a form that exists for a different format than the one given", async () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "print",
+        format: "print",
         beatDir,
         exportDir,
         handover,
@@ -674,7 +744,7 @@ describe("materialise", () => {
   it("should leave an already-delivered form untouched when a later choice is refused", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -683,7 +753,7 @@ describe("materialise", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         handover,
@@ -706,7 +776,7 @@ describe("materialise", () => {
 
     const written = await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -728,7 +798,7 @@ describe("materialise", () => {
   it("should clear a previous choice's files when a different form is materialised next", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -737,7 +807,7 @@ describe("materialise", () => {
 
     await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -753,7 +823,7 @@ describe("materialise", () => {
   it("should ship a build script that genuinely runs and bundles the component", async () => {
     await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       handover,
@@ -772,13 +842,13 @@ describe("materialise", () => {
   });
 
   // The generic materialise path (both branches) must honour "web" and "video" exactly as it
-  // does "static" — this is the defect the genre table fix closes: before it, both genres threw
+  // does "static" — this is the defect the format table fix closes: before it, both formats threw
   // "not an offered form" for every form id, however the renders/ directory was populated.
-  for (const genre of ["web", "video"]) {
-    it(`should write only the owned file for a ${genre} beat when that form is chosen`, async () => {
+  for (const format of ["web", "video"]) {
+    it(`should write only the owned file for a ${format} beat when that form is chosen`, async () => {
       const written = await materialise({
         form: "owned-file",
-        genre,
+        format,
         beatDir,
         exportDir,
         handover,
@@ -792,10 +862,10 @@ describe("materialise", () => {
       expect(written).toHaveLength(3);
     });
 
-    it(`should write a runnable bundle for a ${genre} beat when the source form is chosen`, async () => {
+    it(`should write a runnable bundle for a ${format} beat when the source form is chosen`, async () => {
       await materialise({
         form: "source-bundle",
-        genre,
+        format,
         beatDir,
         exportDir,
         handover,
@@ -808,11 +878,13 @@ describe("materialise", () => {
   }
 });
 
-// A fake of the same four-call Cloudflare sequence `test/deploy-embed.test.ts` exercises directly
+// A fake of the same project-create and direct-upload sequence `test/deploy-embed.test.ts` exercises directly
 // — duplicated rather than imported, the same "a skill's own test files don't share fixtures
 // across files" shape the rest of this codebase already uses. This is only ever reached through
 // `materialise`, so it only needs to prove the plumbing gets there and back with the right URL.
-function fakeCloudflare() {
+function fakeCloudflare({ varyDeployments = false } = {}) {
+  let deploymentNumber = 0;
+  const deployments = new Map<string, { id: string; url: string; commitHash: string }>();
   const fetchFn = async (url: string, init?: RequestInit) => {
     const path = new URL(url).pathname;
     if (path.endsWith("/upload-token")) {
@@ -835,15 +907,39 @@ function fakeCloudflare() {
       );
     }
     if (path.endsWith("/deployments") && init?.method === "POST") {
+      deploymentNumber++;
+      const parts = path.split("/");
+      const projectName = parts[parts.indexOf("projects") + 1];
+      const tag = varyDeployments ? `deploy-${deploymentNumber}` : "deadbeef";
+      const deployment = {
+        id: `deployment-${deploymentNumber}`,
+        url: `https://${tag}.${projectName}.pages.dev`,
+        commitHash: (init!.body as FormData).get("commit_hash") as string,
+      };
+      deployments.set(deployment.id, deployment);
       return new Response(
         JSON.stringify({
           success: true,
           result: {
-            id: "deployment-1",
-            url: "https://deadbeef.some-project.pages.dev",
+            id: deployment.id,
+            url: deployment.url,
+            aliases: [`https://${projectName}.pages.dev`],
           },
         }),
       );
+    }
+    const deploymentMatch = path.match(/\/deployments\/(deployment-\d+)$/);
+    if (deploymentMatch && init?.method !== "POST") {
+      const deployment = deployments.get(deploymentMatch[1]);
+      if (!deployment) throw new Error(`fakeCloudflare: missing ${deploymentMatch[1]}`);
+      return new Response(JSON.stringify({
+        success: true,
+        result: {
+          id: deployment.id,
+          url: deployment.url,
+          deployment_trigger: { metadata: { commit_hash: deployment.commitHash } },
+        },
+      }));
     }
     if (path.endsWith("/projects") && init?.method === "POST") {
       return new Response(JSON.stringify({ success: true, result: {} }));
@@ -855,7 +951,7 @@ function fakeCloudflare() {
   return fetchFn;
 }
 
-describe("materialise — hosted embed and CMS insertion (web genre)", () => {
+describe("materialise — hosted embed and CMS insertion (web format)", () => {
   let webTempRoot: string, webBeatDir: string, webExportDir: string;
   beforeEach(async () => {
     webTempRoot = await mkdtemp(join(tmpdir(), "web-beat-"));
@@ -877,19 +973,20 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "web",
+        format: "web",
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: {},
         handover,
       }),
     ).rejects.toThrow("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN");
+    expect(await Bun.file(join(webTempRoot, ".splash-instance-id")).exists()).toBe(false);
   });
 
-  it("should write only EMBED_URL.txt, holding the live deployment URL, when the embed form is chosen", async () => {
+  it("should write the stable URL, iframe code, and deployment receipt when deploy is chosen", async () => {
     const written = await materialise({
       form: "embed",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
@@ -902,19 +999,76 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     const files = (await readdir(webExportDir)).filter(
       (f) => !f.startsWith("."),
     );
-    expect(files.sort()).toEqual(["EMBED_URL.txt", "HANDOVER.md"]);
+    expect(files.sort()).toEqual([
+      "DEPLOYMENT.json",
+      "EMBED_CODE.html",
+      "EMBED_URL.txt",
+      "HANDOVER.md",
+    ]);
     const url = await Bun.file(join(webExportDir, "EMBED_URL.txt")).text();
-    expect(url.trim()).toBe("https://deadbeef.some-project.pages.dev");
+    const instanceId = (await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")).trim();
+    const projectName = cloudflareProjectName(instanceId, "story", "1-rainfall-web");
+    expect(url.trim()).toBe(`https://${projectName}.pages.dev`);
+    expect(await Bun.file(join(webExportDir, "EMBED_CODE.html")).text()).toContain(
+      `<iframe src="https://${projectName}.pages.dev/"`,
+    );
+    expect(JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"))).toMatchObject({
+      schemaVersion: 2,
+      provider: "cloudflare-pages",
+      storyId: "story",
+      outputId: "1-rainfall-web",
+      projectName,
+      publicUrl: `https://${projectName}.pages.dev`,
+      immutableDeploymentUrl: `https://deadbeef.${projectName}.pages.dev`,
+      editableSource: "beats/1-rainfall-web/",
+      stableAcrossRevisions: true,
+    });
     expect(written).toEqual([
       join(webExportDir, "EMBED_URL.txt"),
+      join(webExportDir, "EMBED_CODE.html"),
+      join(webExportDir, "DEPLOYMENT.json"),
       join(webExportDir, "HANDOVER.md"),
     ]);
+  });
+
+  it("should keep the public URL stable across two approved revisions", async () => {
+    const fetchFn = fakeCloudflare({ varyDeployments: true });
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn,
+      handover,
+    });
+    const first = JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"));
+
+    await writeFile(
+      join(webBeatDir, "renders", "rainfall.html"),
+      "<!doctype html><html><body><h1>revised rainfall</h1></body></html>",
+    );
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn,
+      handover,
+    });
+    const second = JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"));
+
+    expect(second.publicUrl).toBe(first.publicUrl);
+    expect(second.projectName).toBe(first.projectName);
+    expect(second.splashInstanceId).toBe(first.splashInstanceId);
+    expect(second.immutableDeploymentUrl).not.toBe(first.immutableDeploymentUrl);
   });
 
   it("should reuse a successful remote deployment after local publication fails", async () => {
     await materialise({
       form: "owned-file",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       handover,
@@ -931,7 +1085,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "web",
+        format: "web",
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
@@ -958,7 +1112,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
 
     await materialise({
       form: "embed",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
@@ -968,7 +1122,11 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
 
     expect(deploymentPosts).toBe(1);
     expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).text()).toContain(
-      "https://deadbeef.some-project.pages.dev",
+      `https://${cloudflareProjectName(
+        (await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")).trim(),
+        "story",
+        "1-rainfall-web",
+      )}.pages.dev`,
     );
     expect(JSON.parse(await readFile(join(exportRoot, recordName), "utf8"))).toMatchObject({
       state: "local-complete",
@@ -981,7 +1139,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     await expect(
       materialise({
         form: "embed",
-        genre: "web",
+        format: "web",
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
@@ -994,7 +1152,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
   it("should write a CMS-INSERTION.md document, never touch a network, when cms-insertion is chosen", async () => {
     const written = await materialise({
       form: "cms-insertion",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: {},
@@ -1021,7 +1179,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
   it("should honour a caller-supplied cms option, building a livingdocs insertion instead of the we-publish default", async () => {
     await materialise({
       form: "cms-insertion",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: {},
@@ -1033,12 +1191,12 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     expect(doc).toContain("real-article-id");
   });
 
-  it("should refuse to materialise cms-insertion when renders/ holds two files of the genre's own kind", async () => {
+  it("should refuse to materialise cms-insertion when renders/ holds two files of the format's own kind", async () => {
     await writeFile(join(webBeatDir, "renders", "extra.html"), "<p>extra</p>");
     await expect(
       materialise({
         form: "cms-insertion",
-        genre: "web",
+        format: "web",
         beatDir: webBeatDir,
         exportDir: webExportDir,
         env: {},
@@ -1050,7 +1208,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
   it("should clear a previously materialised embed when cms-insertion is chosen next", async () => {
     await materialise({
       form: "embed",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
@@ -1059,11 +1217,11 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     });
     expect(
       (await readdir(webExportDir)).filter((f) => !f.startsWith(".")).sort(),
-    ).toEqual(["EMBED_URL.txt", "HANDOVER.md"]);
+    ).toEqual(["DEPLOYMENT.json", "EMBED_CODE.html", "EMBED_URL.txt", "HANDOVER.md"]);
 
     await materialise({
       form: "cms-insertion",
-      genre: "web",
+      format: "web",
       beatDir: webBeatDir,
       exportDir: webExportDir,
       env: {},
@@ -1079,7 +1237,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
 // A static beat legitimately holds TWO rendered files -- still.png and still.svg -- and the
 // single-file guard read that as ambiguity, which is why cms-insertion could not be offered for
 // static at all. It is not ambiguity: for an insertion the vector is the answer and the raster is
-// the fallback, and a per-genre preference table is the difference between "two files" and a
+// the fallback, and a per-format preference table is the difference between "two files" and a
 // decision.
 describe("ownedFileForInsertion — which file goes to the CMS", () => {
   it("should pick the SVG from a static beat that holds both an SVG and a PNG", async () => {
@@ -1091,7 +1249,7 @@ describe("ownedFileForInsertion — which file goes to the CMS", () => {
     expect(await ownedFileForInsertion(beatDir, "static")).toBe("still.png");
   });
 
-  it("should name what it found when nothing matches the genre's own kind", async () => {
+  it("should name what it found when nothing matches the format's own kind", async () => {
     await rm(join(beatDir, "renders", "still.svg"));
     await rm(join(beatDir, "renders", "still.png"));
     await expect(ownedFileForInsertion(beatDir, "static")).rejects.toThrow(
@@ -1108,7 +1266,7 @@ describe("ownedFileForInsertion — which file goes to the CMS", () => {
     );
   });
 
-  it("should refuse a genre it holds no preference for rather than guess", async () => {
+  it("should refuse a format it holds no preference for rather than guess", async () => {
     await expect(ownedFileForInsertion(beatDir, "print")).rejects.toThrow(
       /no insertion preference/,
     );
@@ -1122,7 +1280,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
   it("should be written beside the chosen form, naming every delivered file", async () => {
     const written = await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       env: {},
@@ -1139,7 +1297,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
   it("should say which file goes to the CMS, not merely list them", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       env: {},
@@ -1153,7 +1311,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
   it("should read back the placement, the alt text, the credit line and the caveat", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       env: {},
@@ -1169,7 +1327,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
   it("should be written for the source bundle too, not only the owned file", async () => {
     const written = await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir,
       env: {},
@@ -1192,7 +1350,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         env: {},
@@ -1204,7 +1362,7 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir,
         env: {},
@@ -1256,14 +1414,14 @@ describe("a story has more than one beat", () => {
   it("should keep the first beat's delivered files when a second beat delivers", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir: exportDirFor(multiBeatStoryDir, "1-rainfall"),
       handover,
     });
     await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir: beatTwo,
       exportDir: exportDirFor(multiBeatStoryDir, "2-temperature"),
       handover,
@@ -1280,14 +1438,14 @@ describe("a story has more than one beat", () => {
   it("should give each beat its own directory under export/", async () => {
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir: exportDirFor(multiBeatStoryDir, "1-rainfall"),
       handover,
     });
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir: beatTwo,
       exportDir: exportDirFor(multiBeatStoryDir, "2-temperature"),
       handover,
@@ -1307,7 +1465,7 @@ describe("a story has more than one beat", () => {
     await expect(
       materialise({
         form: "owned-file",
-        genre: "static",
+        format: "static",
         beatDir,
         exportDir: shared,
         handover,
@@ -1321,14 +1479,14 @@ describe("a story has more than one beat", () => {
     const mine = exportDirFor(multiBeatStoryDir, "1-rainfall");
     await materialise({
       form: "owned-file",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir: mine,
       handover,
     });
     await materialise({
       form: "source-bundle",
-      genre: "static",
+      format: "static",
       beatDir,
       exportDir: mine,
       handover,
@@ -1459,7 +1617,7 @@ describe("the key rule reads the artifact, not the environment", () => {
 
     await materialise({
       form: "owned-file",
-      genre: "web",
+      format: "web",
       beatDir,
       exportDir,
       env: { MAPTILER_KEY: "development-key" },
@@ -1482,7 +1640,7 @@ describe("the key rule reads the artifact, not the environment", () => {
 
     await materialise({
       form: "owned-file",
-      genre: "web",
+      format: "web",
       beatDir,
       exportDir,
       env: {},
@@ -1501,7 +1659,7 @@ describe("the key rule reads the artifact, not the environment", () => {
 
     await materialise({
       form: "owned-file",
-      genre: "web",
+      format: "web",
       beatDir,
       exportDir,
       env: { MAPTILER_KEY: "development-key" },
@@ -1522,7 +1680,7 @@ describe("the key rule reads the artifact, not the environment", () => {
 
     const written = await materialise({
       form: "owned-file",
-      genre: "web",
+      format: "web",
       beatDir,
       exportDir,
       env: { MAPTILER_KEY: "development-key" },

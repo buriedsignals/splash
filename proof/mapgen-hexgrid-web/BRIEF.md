@@ -1,6 +1,6 @@
 # Beat — 2024's earthquakes cluster on plate boundaries: the densest hex holds 1,374 of them (web)
 
-**Type:** hex grid (spatial bins). **Medium/genre:** map / web. **Channel:** article web, one
+**Type:** hex grid (spatial bins). **Medium/format:** map / web. **Channel:** article web, one
 self-contained `hex-grid.html` — a LIVE MapTiler map (ruling R1) over one 836 × 520 baked plate that
 stays as the fallback layer, plus an always-rendered table of every non-empty cell.
 
@@ -75,8 +75,8 @@ densest-first, each naming the regions its own events are catalogued under, are 
 
 ## R1 — the live layer, added 2026-08-10
 
-*"Une carte web qu'on ne peut pas parcourir est une image."* `AUDIT-W5-W6-map.md` §5.6 measured what
-that was worth here: the delivered `hex-grid.html` contained no `maplibregl`, no `api.maptiler.com`
+*"Une carte web qu'on ne peut pas parcourir est une image."* The original delivered
+`hex-grid.html` contained no `maplibregl`, no `api.maptiler.com`
 and no `NavigationControl`. The whole ruling was deletable in silence.
 
 The page now ships the seed's three layers: `#mw-map` (a live MapLibre map, swapped in on

@@ -1,0 +1,41 @@
+{
+  "rowCount": 50,
+  "columns": [
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 10,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "iso3",
+      "type": "text",
+      "missing": 0,
+      "distinct": 10,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 2021,
+      "max": 2025,
+      "sum": 101150
+    },
+    {
+      "name": "households_with_heat_pump_pct",
+      "type": "number",
+      "missing": 0,
+      "distinct": 30,
+      "min": 3,
+      "max": 64,
+      "sum": 1237
+    }
+  ]
+}

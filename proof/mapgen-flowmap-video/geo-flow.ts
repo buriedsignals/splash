@@ -8,7 +8,7 @@
  * This is a PHYSICAL COPY of `proof/mapmore-flow-danube/geo-flow.ts` — same real river, same real
  * territories, the same pure functions — not an import: this project's own rule is that a beat
  * under `proof/` never reaches into a sibling beat at runtime (see that file's own header). What
- * this beat's video genre adds on top is `cumulativeKm`'s arc-length numbers actually being used
+ * this beat's video format adds on top is `cumulativeKm`'s arc-length numbers actually being used
  * (the static beat computed them "for reporting only"; this beat's growing line and its
  * territory-arrival windows are driven by them).
  *
@@ -115,7 +115,7 @@ export function territoriesCrossed(
 
 // ── Arc length (haversine) ─────────────────────────────────────────────────────────────────────
 //
-// The static sibling beat computes this "for reporting only". This beat's video genre actually
+// The static sibling beat computes this "for reporting only". This beat's video format actually
 // DRIVES the drawing with it: the growing "travelled" line is a fraction of `cumulativeKm`'s total,
 // not a frame-count or an SVG stroke-dash hack — the latter would grow proportional to the SCREEN
 // length of each segment, which is not the same as the REAL geographic distance once the route's
@@ -560,7 +560,7 @@ export function keepRing(ring: PixelRing, frame: Frame, margin = 40): boolean {
  * the segment straddling the target distance, rather than snapping to the nearest sample, so the
  * growing line's tip moves smoothly frame to frame instead of jumping in ~2.6 km (911-point) steps.
  *
- * This is the function the video genre needs and the static genre never did: the static beat draws
+ * This is the function the video format needs and the static format never did: the static beat draws
  * the WHOLE route in one frame, so it never had to ask "how much of it, so far".
  */
 export function travelledPath(

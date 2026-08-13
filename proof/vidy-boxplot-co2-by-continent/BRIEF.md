@@ -22,7 +22,7 @@ was a default.
 the Americas specifically, the United States and Canada each emit more than 4× the region's own
 median, well outside the ordinary spread the rest of the group sits in.
 
-**Medium / genre:** chart / video. **Type:** box plot — one box-and-whiskers per continent, computed
+**Medium / format:** chart / video. **Type:** box plot — one box-and-whiskers per continent, computed
 from a real per-country five-number summary (not a single pre-aggregated number per group).
 Position-encoded (no forced zero — the value axis shows the actual spread of the data, per the type
 doctrine).

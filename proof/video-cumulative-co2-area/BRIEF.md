@@ -20,7 +20,7 @@ rather than a missing id.
 **Proves:** more than half of every tonne of CO2 Switzerland has ever emitted (since records begin
 in 1858) has been released since 1986.
 
-**Medium / genre:** chart / video. **Type:** area (single series) — a genuinely cumulative quantity
+**Medium / format:** chart / video. **Type:** area (single series) — a genuinely cumulative quantity
 (a running total can only ever go up), so the fill is the correct claim here, not a style choice:
 the shape being drawn IS an accumulated stock. Zero baseline, non-negotiable.
 

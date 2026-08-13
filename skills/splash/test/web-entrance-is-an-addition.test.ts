@@ -1,7 +1,7 @@
 /**
  * THE ENTRANCE IS AN ADDITION — it is never the thing that makes the graphic readable.
  *
- * B3.1 asked for "an entrance animation for the whole graphic" on the web genre, and when asked
+ * B3.1 asked for "an entrance animation for the whole graphic" on the web format, and when asked
  * what style, the owner answered *"dans le même style que la vidéo"*. So the web entrance replays
  * the video's own choreography (`chart-video/assets/timing.ts`'s five leading events, copied
  * into `chart-web/assets/entrance.ts` and rescaled) rather than inventing a second grammar.
@@ -35,7 +35,7 @@
  *      is already at 1 and every segment is already hit-testable.
  *   3. ONLY `opacity` AND `transform` ARE ANIMATED. Read off the page's own `@keyframes` blocks —
  *      never a layout property, never `stroke-dashoffset` (the form that was MEASURED not to work
- *      under this genre's `non-scaling-stroke`; see `render-web.mjs`'s `entranceCss`).
+ *      under this format's `non-scaling-stroke`; see `render-web.mjs`'s `entranceCss`).
  *   4. AT LEAST THREE DISTINCT DELAYS, or no entrance at all. This is the clause that mechanically
  *      refuses the one-layer fade — "motion added for energy",
  *      `doctrine/references/motion-grammar.md`'s first anti-pattern, with a CSS property
@@ -53,7 +53,7 @@
  * AND THE HALF THAT IS NOT ABOUT MOTION AT ALL: a page that declares NO entrance must ship none of
  * its cost — no keyframes, no rules, not a line. That is the same gate the filter vocabulary earned
  * the hard way (`filters-are-declared-or-absent.test.ts`: 21 of 21 pages shipping styling for a
- * control none of them had), applied before this genre could repeat it.
+ * control none of them had), applied before this format could repeat it.
  *
  * WHY THE PAGE IS PUT BELOW A FOLD. The trigger is the whole point of clause 4's sibling rule — an
  * embed can sit two screens down an article, and an entrance that plays on load plays to nobody. So
@@ -66,7 +66,7 @@
  *
  *   1. WHETHER THE ORDER CHOSEN IS THE ARGUMENT'S ORDER. It can see that furniture precedes the
  *      reference precedes the marks; it cannot see whether the mark called "the subject" is the one
- *      the takeaway is about. That is a person watching it once, which is what the video genre also
+ *      the takeaway is about. That is a person watching it once, which is what the video format also
  *      relies on.
  *   2. ONE ENGINE. Chrome. `transform-box`, `:has()` and `IntersectionObserver` are all Baseline;
  *      none is verified here on Safari or Firefox.
@@ -171,6 +171,12 @@ function committedChartWebPages(): Subject[] {
     .split("\n")
     .filter(Boolean)
     .filter((p) => !p.includes("/drive/"))
+    // Story workspaces and their delivered renders are historical records, not the maintained
+    // proof corpus this exact pending-list census governs.
+    .filter((p) => !p.startsWith("stories/"))
+    // Colocated Jujutsu can leave a working-copy deletion visible to Git's compatibility index
+    // until the change is recorded. The current tree, not that stale index entry, is the subject.
+    .filter((p) => existsSync(join(TWIN, p)))
     .map((p) => ({ label: p, html: readFileSync(join(TWIN, p), "utf8") }))
     .filter((s) => s.html.includes('class="chart-figure"'));
 }

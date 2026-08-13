@@ -1,6 +1,6 @@
 // twin/skills/scrolly/assets/interaction.mjs
 //
-// The one script this genre ships, inlined verbatim into the self-contained HTML by
+// The one script this format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-scrolly.mjs` (which strips the `export` keyword from each top-level declaration,
 // the same trick `chart-web/scripts/render-web.mjs` already uses, so this file can also sit as
 // a plain classic `<script>` — no `type="module"`, so it keeps working in a CMS iframe or a
@@ -8,7 +8,7 @@
 //
 // `pickActiveStep` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/render-scrolly.test.ts`). `initScrolly`/`initAll` are DOM wiring and are NOT unit-tested
-// here: per `doctrine`'s own verification rule, an interactive genre is verified by driving a
+// here: per `doctrine`'s own verification rule, an interactive format is verified by driving a
 // real browser, not by asserting against a DOM emulation nobody looked at
 // (`references/scrolly-discipline.md`, "Verification").
 //

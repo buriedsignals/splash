@@ -21,7 +21,7 @@ nothing colliding. The 1080 x 1080 this beat used to draw at was not a decision,
 expectancy at birth (78.0 years) of any of them — below every single peer, including several with
 lower income — despite having the fifth-highest GDP per capita in the same group.
 
-**Medium / genre:** chart / video. **Type:** scatter — both axes measured (GDP per capita on x,
+**Medium / format:** chart / video. **Type:** scatter — both axes measured (GDP per capita on x,
 life expectancy on y), position is the entire encoding, neither axis forced to zero
 (`references/types/scatter.md`: "a position chart, the direct opposite of a bar's length
 encoding"). One named subject (United States); every other point reads as the shape of the cloud,

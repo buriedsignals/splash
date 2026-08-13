@@ -1,5 +1,5 @@
 /**
- * The video genre of "From the Black Forest to the Black Sea" — 10.87s, 30fps, 1080 × 1080. Same
+ * The video format of "From the Black Forest to the Black Sea" — 10.87s, 30fps, 1080 × 1080. Same
  * plate, same route, same territories as `FlowMapStill.tsx`; what this file adds is the one thing a
  * still cannot have: an ORDER. Every window below derives from `timing.ts`; there is no frame
  * literal in this file.
@@ -16,7 +16,7 @@
  *
  * Nothing here derives a furniture colour either — `deriveFurniture` sits beside a native
  * rasteriser no browser bundle can load, so `render-map.mjs` calls it in node and passes
- * ink/muted/grid in as props. One implementation of the colour rule, two genres.
+ * ink/muted/grid in as props. One implementation of the colour rule, two formats.
  */
 
 import { Fragment } from "react";
@@ -206,7 +206,7 @@ export function FlowMapVideo({
     CONCLUSION,
   );
 
-  // The legend: identical wrap logic to `FlowMapStill.tsx`, so the two genres never disagree about
+  // The legend: identical wrap logic to `FlowMapStill.tsx`, so the two formats never disagree about
   // how many rows nine territories take.
   const chipGap = 18;
   const rowHeight = 26;
@@ -253,7 +253,7 @@ export function FlowMapVideo({
   // everything gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform
   // pulls as the thumbnail before anyone presses play, and a blank poster frame is a beat that
   // says nothing.
-  // The PLATE still fades in over `establish` — the basemap is this genre's axis furniture, the
+  // The PLATE still fades in over `establish` — the basemap is this format's axis furniture, the
   // frame the route will be read in, and it has nothing to say before the route does. So do the
   // things drawn on it: the dashed full route and the legend.
   const plateOpacity = interpolate(establish, [0, 1], [0, 1], {

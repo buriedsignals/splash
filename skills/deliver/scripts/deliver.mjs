@@ -1,16 +1,22 @@
 // Lazy by design: nothing is built before the journalist has chosen. `offerForms` and
-// `materialise` both read `FORMS_BY_GENRE` — one source of truth keyed by genre — so
-// "not an offered form" can never drift from what was actually offered FOR THAT GENRE. A form
-// id that happens to exist under one genre is not automatically valid for another; the check
-// is always on the {form, genre} pair, never on the form id alone.
+// `materialise` both read `FORMS_BY_FORMAT` — one source of truth keyed by format — so
+// "not an offered form" can never drift from what was actually offered FOR THAT FORMAT. A form
+// id that happens to exist under one format is not automatically valid for another; the check
+// is always on the {form, format} pair, never on the form id alone.
 
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { basename, join, relative } from "node:path";
-import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
+import {
+  cloudflareProjectName,
+  DEPLOYMENT_RECEIPT_SCHEMA_VERSION,
+  deployFile,
+  resolveSplashInstanceId,
+  resolveCloudflareCredentials,
+} from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
-import { GENRE_OFFER_RECEIPT, PENDING } from "./another-genre.mjs";
+import { FORMAT_OFFER_RECEIPT, PENDING } from "./another-format.mjs";
 import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 import { requireApprovedOutput } from "./output-review.mjs";
 import {
@@ -24,23 +30,24 @@ import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identi
 
 const REACT_VERSION = "^19.1.0";
 
-// Every genre this skill knows how to deliver, and the forms it can honestly offer for each.
+// Every format this skill knows how to deliver, and the forms it can honestly offer for each.
 // `medium` is accepted on `offerForms`'s own interface for its future (a map beat's forms will not
 // always read identically to a chart beat's), but is not yet branched on — "static", "web" and
 // "video" mean the same thing to a chart beat and a map beat today.
 //
-// A genre only belongs here once a producer actually renders it AND this table can name honest
-// forms for it — see `storyboard/scripts/genre-catalog.mjs` for the mirrored fact this table
-// is one half of, and `skills/splash/test/genre-shippability.test.ts` for the drift test that
+// A format only belongs here once a producer actually renders it AND this table can name honest
+// forms for it — see `storyboard/scripts/format-catalog.mjs` for the mirrored fact this table
+// is one half of, and `skills/splash/test/format-shippability.test.ts` for the drift test that
 // keeps the two halves from disagreeing. "web" and "video" were added here after the defect they
 // exist to fix: chart-web and chart-video both shipped complete, tested producers before
 // this table knew what to do with their output, so a chosen "web" or "video" slot could not be
 // delivered at all.
-export const FORMS_BY_GENRE = {
+export const FORMS_BY_FORMAT = {
   static: {
     "owned-file": {
       label: "The file itself",
-      gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
+      gives:
+        "the approved static render files the newsroom owns outright — PNG, with SVG when the producer made one — nothing else to run",
     },
     // The follow-up this file's own comment promised. "static"/"video" were left without
     // cms-insertion because it had not been proven for them; the `gives` below is the web row's
@@ -53,7 +60,7 @@ export const FORMS_BY_GENRE = {
     },
     "source-bundle": {
       label: "Runnable source",
-      // A DEVELOPER artifact. The owner names it in none of the three per-genre lists they asked
+      // A DEVELOPER artifact. The owner names it in none of the three per-format lists they asked
       // for; it is kept, because it works and a newsroom with a developer wants it, and demoted, so
       // the delivery question offers the journalist-facing forms as the real choice and mentions
       // this one in a line below them.
@@ -75,13 +82,13 @@ export const FORMS_BY_GENRE = {
         "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
     // The two forms that are NOT an owned file — the newsroom gets a URL or a document, never a
-    // copy. `embed` stays wired to the two genres that ship a PAGE ("web", "scrolly"), because a
-    // PNG and an mp4 are not pages. `cms-insertion` is now offered in every genre: it prepares a
-    // payload around ONE file, and `ownedFileForInsertion` says which file that is per genre.
+    // copy. `embed` stays wired to the two formats that ship a PAGE ("web", "scrolly"), because a
+    // PNG and an mp4 are not pages. `cms-insertion` is now offered in every format: it prepares a
+    // payload around ONE file, and `ownedFileForInsertion` says which file that is per format.
     embed: {
-      label: "Hosted embed",
+      label: "Deploy and receive embed code",
       gives:
-        "a live URL on Cloudflare Pages serving this beat's own HTML byte-for-byte, no newsroom hosting required",
+        "a stable live URL and iframe snippet; Splash publishes the page to Cloudflare automatically and approved revisions update the same embed address",
     },
     "cms-insertion": {
       label: "CMS insertion",
@@ -92,7 +99,7 @@ export const FORMS_BY_GENRE = {
   // A scrolly delivers one self-contained HTML page, exactly as "web" does — the scroll scaffold,
   // its steps and its interaction are all inlined in that single file — so its forms are web's
   // four, with the wording saying which kind of page it is. `offerForms` used to THROW on this
-  // genre while `scrolly` shipped as a complete skill and `twin/MATRIX.md` recorded a real
+  // format while `scrolly` shipped as a complete skill and `twin/MATRIX.md` recorded a real
   // scrolly beat on disk: the producer existed, the delivery did not, and the journalist met the
   // wall at the last phase.
   scrolly: {
@@ -108,9 +115,9 @@ export const FORMS_BY_GENRE = {
         "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
     embed: {
-      label: "Hosted embed",
+      label: "Deploy and receive embed code",
       gives:
-        "a live URL on Cloudflare Pages serving this scroll-driven page byte-for-byte, no newsroom hosting required",
+        "a stable live URL and iframe snippet; Splash publishes the scroll-driven page to Cloudflare automatically and approved revisions update the same embed address",
     },
     "cms-insertion": {
       label: "CMS insertion",
@@ -137,20 +144,26 @@ export const FORMS_BY_GENRE = {
   },
 };
 
+function rejectLegacyFormatOption(options, apiName) {
+  if (Object.prototype.hasOwnProperty.call(options, "genre")) {
+    throw new Error(`${apiName} does not accept genre; use the canonical format field`);
+  }
+}
+
 /**
- * `env` gates the credential-backed "embed" form: `resolveCloudflareCredentials` is a PRESENCE
+ * `env` annotates the credential-backed "embed" form: `resolveCloudflareCredentials` is a PRESENCE
  * check only (no network call here — `offerForms` stays synchronous and cheap to call on every
- * turn). A missing `CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_API_TOKEN` removes "embed" from the list
- * silently — never throws, never crashes the journey — so a journalist with no Cloudflare account
- * still sees every other form their genre allows. A PRESENT-but-wrong credential still lists the
- * form; `materialise` is where a real network call happens, and a rejected token fails loudly
+ * turn). Missing credentials keep the form visible but disabled with the concrete setup reason,
+ * while every other form remains available. A PRESENT-but-wrong credential leaves the form
+ * enabled; `materialise` is where a real network call happens, and a rejected token fails loudly
  * there instead. "cms-insertion" needs no credential (nothing it does calls a network — see
- * `references/cms-insertion.md`), so it is never filtered by `env`.
+ * `references/cms-insertion.md`).
  */
 export function offerForms(options) {
+  rejectLegacyFormatOption(options, "offerForms");
   const {
     medium,
-    genre,
+    format,
     storiesRoot,
     storyId,
     outputId,
@@ -158,10 +171,10 @@ export function offerForms(options) {
     findingIds,
     env = process.env,
   } = options;
-  const forms = FORMS_BY_GENRE[genre];
+  const forms = FORMS_BY_FORMAT[format];
   if (!forms) {
-    const known = Object.keys(FORMS_BY_GENRE).join(", ");
-    throw new Error(`this skill delivers ${known} only, got ${JSON.stringify(genre)}`);
+    const known = Object.keys(FORMS_BY_FORMAT).join(", ");
+    throw new Error(`this skill delivers ${known} only, got ${JSON.stringify(format)}`);
   }
   if (Object.hasOwn(options, "beatDir") || Object.hasOwn(options, "exportDir")) {
     throw new Error(
@@ -177,9 +190,17 @@ export function offerForms(options) {
   requireApprovedOutput({ beatDir: identity.beatDir, planVersion, findingIds });
 
   const hasCloudflare = Boolean(resolveCloudflareCredentials(env));
-  return Object.keys(forms)
-    .filter((id) => id !== "embed" || hasCloudflare)
-    .map((id) => ({ id, ...forms[id] }));
+  return Object.keys(forms).map((id) =>
+    id === "embed" && !hasCloudflare
+      ? {
+          id,
+          ...forms[id],
+          available: false,
+          reason:
+            "Cloudflare hosted delivery is not configured; add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN, then retry this form.",
+        }
+      : { id, ...forms[id], available: true },
+  );
 }
 
 // Recursively copies one directory's contents into another, collecting every file path
@@ -354,7 +375,7 @@ async function singleOwnedFile(beatDir) {
   return entries[0].name;
 }
 
-// Which of a beat's rendered files is the one to INSERT, per genre, in preference order. A static
+// Which of a beat's rendered files is the one to INSERT, per format, in preference order. A static
 // beat legitimately holds two — `still.png` and `still.svg` — and `singleOwnedFile` refused that as
 // ambiguity, which is why cms-insertion could not be offered for static at all. It is not
 // ambiguity: for an insertion the vector is the answer and the raster is the fallback, and saying
@@ -369,11 +390,11 @@ const INSERTION_PREFERENCE = {
   video: [".mp4"],
 };
 
-export async function ownedFileForInsertion(beatDir, genre) {
-  const preference = INSERTION_PREFERENCE[genre];
+export async function ownedFileForInsertion(beatDir, format) {
+  const preference = INSERTION_PREFERENCE[format];
   if (!preference) {
     throw new Error(
-      `no insertion preference for genre ${JSON.stringify(genre)} — known: ${Object.keys(INSERTION_PREFERENCE).join(", ")}`,
+      `no insertion preference for format ${JSON.stringify(format)} — known: ${Object.keys(INSERTION_PREFERENCE).join(", ")}`,
     );
   }
   const names = (await readdir(join(beatDir, "renders"), { withFileTypes: true }))
@@ -390,7 +411,7 @@ export async function ownedFileForInsertion(beatDir, genre) {
     }
   }
   throw new Error(
-    `nothing in ${join(beatDir, "renders")} matches what a ${genre} beat inserts (${preference.join(" then ")}) — found ${names.length ? names.join(", ") : "nothing"}`,
+    `nothing in ${join(beatDir, "renders")} matches what a ${format} beat inserts (${preference.join(" then ")}) — found ${names.length ? names.join(", ") : "nothing"}`,
   );
 }
 
@@ -454,27 +475,42 @@ async function refuseToWipeAnotherBeat(exportDir, outputId) {
 const HANDOVER_REQUIRED =
   "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (language, placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: language is STORYBOARD.md's `language:` field, placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.";
 
-function validateHandover(handover, genre) {
+function validateHandover(handover, format) {
   if (!handover) throw new Error(HANDOVER_REQUIRED);
   // Validate all journalist-facing fields before a build or remote deployment begins. The real
   // document is rendered again with the delivered filenames and live-tile state inside staging.
-  formatHandover({ ...handover, genre, files: ["pending-delivery"], liveTiles: "none" });
+  formatHandover({ ...handover, format, files: ["pending-delivery"], liveTiles: "none" });
 }
 
-async function withHandover(written, { exportDir, genre, handover, states = [] }) {
+async function withHandover(written, { exportDir, format, handover, states = [] }) {
   if (!handover) throw new Error(HANDOVER_REQUIRED);
   const path = join(exportDir, "HANDOVER.md");
   await writeFile(
     path,
-    formatHandover({ ...handover, genre, files: written, liveTiles: costliestState(states) }),
+    formatHandover({ ...handover, format, files: written, liveTiles: costliestState(states) }),
   );
   written.push(path);
   return written;
 }
 
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export function embedCodeFor(url, title) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "https:") throw new Error("an embed URL must use HTTPS");
+  if (!title) throw new Error("an embed iframe needs a non-empty title");
+  return `<iframe src="${escapeHtmlAttribute(parsed.href)}" title="${escapeHtmlAttribute(title)}" loading="lazy" style="width:100%;height:600px;border:0" allowfullscreen></iframe>\n`;
+}
+
 async function materialiseInto({
   form,
-  genre,
+  format,
   beatDir,
   exportDir,
   env = process.env,
@@ -483,15 +519,19 @@ async function materialiseInto({
   cms,
   handover,
   hostedOperation,
+  deploymentNamespace,
+  storyId,
   outputId,
+  planVersion,
+  findingIds,
 }) {
-  // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
-  // some other genre must not be accepted here just because it happens to share a name. Reading
-  // the same FORMS_BY_GENRE table offerForms reads means a form genre two adds under a
-  // different genre is refused automatically, with no separate list to keep in sync.
-  const forms = FORMS_BY_GENRE[genre];
+  // Validate the {form, format} PAIR, not the form id in isolation — a form id that exists for
+  // some other format must not be accepted here just because it happens to share a name. Reading
+  // the same FORMS_BY_FORMAT table offerForms reads means a form format two adds under a
+  // different format is refused automatically, with no separate list to keep in sync.
+  const forms = FORMS_BY_FORMAT[format];
   if (!forms || !forms[form]) {
-    throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
+    throw new Error(`${form} is not an offered form for format ${JSON.stringify(format)}`);
   }
 
   // This function writes only into a new private staging directory. Clearing that directory keeps
@@ -505,11 +545,11 @@ async function materialiseInto({
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(exportDir, DELIVERY_RECEIPT), `${receiptOutputId}\n`);
   // A DELIVERED BEAT IS NOT A FINISHED ONE until the journalist has been offered the same beat in
-  // the other genres and has answered — taken one or declined, both clean. The offer is written
+  // the other formats and has answered — taken one or declined, both clean. The offer is written
   // `pending` here, at the moment the delivery lands, so "the run never made the offer" is a state
-  // on disk rather than a habit that can be forgotten. `deliveryClosed` reads it; `recordGenreAnswer`
+  // on disk rather than a habit that can be forgotten. `deliveryClosed` reads it; `recordFormatAnswer`
   // replaces it with the answer. A dotfile, for the same reason as the receipt above.
-  await writeFile(join(exportDir, GENRE_OFFER_RECEIPT), `${PENDING}\n`);
+  await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), `${PENDING}\n`);
   // The other half of the same closing offer: the article's own other subjects. Pending for the
   // same reason and answered the same way — including `none`, when the article carried nothing else.
   await writeFile(join(exportDir, SUBJECT_OFFER_RECEIPT), `${PENDING}\n`);
@@ -520,11 +560,11 @@ async function materialiseInto({
 
   if (form === "owned-file") {
     await copyTree(join(beatDir, "renders"), exportDir, written, { env, states });
-    return withHandover(written, { exportDir, genre, handover, states });
+    return withHandover(written, { exportDir, format, handover, states });
   }
 
   if (form === "embed") {
-    // offerForms already hides "embed" when a credential is absent — reaching this branch
+    // offerForms keeps "embed" visible but disabled when a credential is absent — reaching this branch
     // without one means a caller invoked materialise directly, bypassing offer-then-wait. That is
     // a real error, not a silent skip: unlike offerForms (which must never crash the journey),
     // materialise is the point a chosen form either happens for real or fails loudly.
@@ -539,7 +579,19 @@ async function materialiseInto({
     // can never boot. Written into the export directory first so what is deployed is a real file on
     // disk that can be inspected, never a string only this function ever saw.
     const stagedPath = join(exportDir, fileName);
-    const hosted = await readFile(join(beatDir, "renders", fileName), "utf8");
+    const sourcePath = join(beatDir, "renders", fileName);
+    const hosted = await readFile(sourcePath, "utf8");
+    const confirmedBytes = await readFile(sourcePath, "utf8");
+    if (confirmedBytes !== hosted) {
+      throw new Error("the hosted render changed while it was being staged; obtain a new bound review");
+    }
+    const hostedApproval = requireApprovedOutput({ beatDir, planVersion, findingIds });
+    if (
+      hostedApproval.id !== hostedOperation.reviewId ||
+      hostedApproval.draftDigest !== hostedOperation.draftDigest
+    ) {
+      throw new Error("the hosted render review changed before remote publication");
+    }
     states.push(mapKeyState(hosted, env));
     await writeFile(stagedPath, substituteKeys(hosted, env));
     const deployment = await deployFile({
@@ -564,11 +616,41 @@ async function materialiseInto({
     const urlPath = join(exportDir, "EMBED_URL.txt");
     await writeFile(urlPath, `${deployment.url}\n`);
     written.push(urlPath);
-    return withHandover(written, { exportDir, genre, handover, states });
+    const codePath = join(exportDir, "EMBED_CODE.html");
+    await writeFile(codePath, embedCodeFor(deployment.url, handover.alt));
+    written.push(codePath);
+    const deploymentPath = join(exportDir, "DEPLOYMENT.json");
+    await writeFile(
+      deploymentPath,
+      `${JSON.stringify(
+        {
+          schemaVersion: DEPLOYMENT_RECEIPT_SCHEMA_VERSION,
+          provider: "cloudflare-pages",
+          splashInstanceId: deploymentNamespace,
+          storyId,
+          outputId,
+          projectName,
+          publicUrl: deployment.url,
+          immutableDeploymentUrl: deployment.deploymentUrl,
+          deploymentId: deployment.deploymentId,
+          reviewId: hostedOperation.reviewId,
+          draftDigest: hostedOperation.draftDigest,
+          editableSource: `beats/${outputId}/`,
+          renderedArtifact: `beats/${outputId}/renders/${fileName}`,
+          currentDelivery: `export/${outputId}/`,
+          stableAcrossRevisions: true,
+          publishedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    written.push(deploymentPath);
+    return withHandover(written, { exportDir, format, handover, states });
   }
 
   if (form === "cms-insertion") {
-    const fileName = await ownedFileForInsertion(beatDir, genre);
+    const fileName = await ownedFileForInsertion(beatDir, format);
     const inserted = await readFile(join(beatDir, "renders", fileName), "utf8");
     states.push(mapKeyState(inserted, env));
     const insertionHtml = substituteKeys(inserted, env);
@@ -603,7 +685,7 @@ ${JSON.stringify(insertion, null, 2)}
     const docPath = join(exportDir, "CMS-INSERTION.md");
     await writeFile(docPath, doc);
     written.push(docPath);
-    return withHandover(written, { exportDir, genre, handover, states });
+    return withHandover(written, { exportDir, format, handover, states });
   }
 
   for (const entry of await readdir(beatDir, { withFileTypes: true })) {
@@ -641,7 +723,7 @@ ${JSON.stringify(insertion, null, 2)}
   );
   written.push(manifestPath);
 
-  return withHandover(written, { exportDir, genre, handover, states });
+  return withHandover(written, { exportDir, format, handover, states });
 }
 
 /**
@@ -651,25 +733,42 @@ ${JSON.stringify(insertion, null, 2)}
  * compatibility adapter and never select a replacement target.
  */
 export async function materialise(options) {
-  const { form, genre, handover, planVersion, findingIds } = options;
-  const forms = FORMS_BY_GENRE[genre];
+  rejectLegacyFormatOption(options, "materialise");
+  if (Object.hasOwn(options, "projectName")) {
+    throw new Error(
+      "materialise does not accept projectName; Cloudflare project identity is derived from storyId and outputId",
+    );
+  }
+  const { form, format, handover, planVersion, findingIds } = options;
+  const forms = FORMS_BY_FORMAT[format];
   if (!forms || !forms[form]) {
-    throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
+    throw new Error(`${form} is not an offered form for format ${JSON.stringify(format)}`);
   }
   if (Object.hasOwn(options, "beatDir") || Object.hasOwn(options, "exportDir")) {
     throw new Error(
       "materialise accepts storiesRoot, storyId, and outputId; legacy paths require delivery-compat-v1",
     );
   }
+  if (form === "embed" && !resolveCloudflareCredentials(options.env ?? process.env)) {
+    throw new Error(
+      "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must both be set to materialise the embed form",
+    );
+  }
 
   let paths = resolveDeliveryIdentity(options);
   requireApprovedOutput({ beatDir: paths.beatDir, planVersion, findingIds });
-  validateHandover(handover, genre);
+  validateHandover(handover, format);
 
   await mkdir(paths.exportRoot, { recursive: true });
   // The root may not have existed during the first check. Canonicalize it after creation and
   // before the lock or any recursive replacement operation can use it.
   paths = resolveDeliveryIdentity(options);
+  const deploymentNamespace = form === "embed"
+    ? await resolveSplashInstanceId(paths.storiesRoot)
+    : null;
+  const hostedProjectName = form === "embed"
+    ? cloudflareProjectName(deploymentNamespace, paths.storyId, paths.outputId)
+    : null;
 
   return withDeliveryLock(
     paths.exportDir,
@@ -702,6 +801,8 @@ export async function materialise(options) {
           ...options,
           beatDir: paths.beatDir,
           exportDir: stagingDir,
+          projectName: hostedProjectName,
+          deploymentNamespace,
           outputId: paths.outputId,
           hostedOperation,
         });
@@ -722,14 +823,17 @@ export async function materialise(options) {
             planVersion: approval.planVersion,
             draftDigest: approval.draftDigest,
             findingIds: approval.findingIds,
+            ...(approval.feedbackDigest ? { feedbackDigest: approval.feedbackDigest } : {}),
             form,
-            genre,
+            format,
             ...(hostedOperation?.result
               ? {
                   hostedDeployment: {
                     deploymentKey: hostedOperation.result.deploymentKey,
                     deploymentId: hostedOperation.result.deploymentId,
                     url: hostedOperation.result.url,
+                    deploymentUrl: hostedOperation.result.deploymentUrl,
+                    projectName: hostedProjectName,
                     record: basename(hostedOperation.result.recordPath),
                   },
                 }

@@ -41,12 +41,12 @@
  * of them carries `data-detail`. That attribute is also the honest source for WHAT the tooltip
  * should say: it is baked server-side from the beat's own frozen data, so comparing the tooltip's
  * text against it is a comparison against the beat's own numbers, not against anything this test
- * invents. Discovering by class would have missed six genres and quietly passed them.
+ * invents. Discovering by class would have missed six formats and quietly passed them.
  *
  * WHAT COUNTS AS A PROMISE, and why the bar is two-sided. A promise is read ONLY from text a screen
  * reader actually reads: the figure's `<desc>`, a `.visually-hidden`/`.sr-only` block, the
  * `.chart-caveat`/`figcaption`/`.chart-note` line, and an `aria-label` on a `figure`/`svg` ROOT. It
- * is never read from `<script>` or `<style>` — this matters more than it sounds: the genre's own
+ * is never read from `<script>` or `<style>` — this matters more than it sounds: the format's own
  * interaction module is INLINED into every delivered file, and its doc-comments say "hover, tap and
  * keyboard" in twenty-three of the twenty-four artifacts, including every one that promises the
  * reader nothing at all. A guard that grepped the file text would have found a promise everywhere
@@ -114,7 +114,7 @@
  *      person reading, which is not the same as being guarded.
  *   2. IT DOES NOT CHECK WHICH mark a POINTER resolved to. Measured, exact-match holds on 23 of 24
  *      artifacts but not on `mapgen-dot-web`, where hovering a dot's own centre legitimately
- *      resolves to a neighbouring dot 2px away — the map genres resolve by nearest mark, and dots
+ *      resolves to a neighbouring dot 2px away — the map formats resolve by nearest mark, and dots
  *      overlap. Asserting exact identity for hover would fail a sound artifact, so assertion 2
  *      (membership in the artifact's own detail set) is what stands in its place. A resolver that
  *      answers with the WRONG-but-real neighbour is therefore not caught; a resolver that answers
@@ -149,7 +149,7 @@
  *      and it is the owner's own B6.14a — its hit elements sit at a country's anchor and the
  *      country's polygon carries no key, so a probe 60px inside France is MEASURED BY NOBODY, and
  *      closing it means ruling R1's `queryRenderedFeatures` rewrite. The larger gap is the whole
- *      CHART × WEB genre: seventeen artifacts, `grep -c data-key` = **0** in every one of them,
+ *      CHART × WEB format: seventeen artifacts, `grep -c data-key` = **0** in every one of them,
  *      because that renderer's hit element is a transparent full-height `<rect class="bin-hit">`
  *      and no drawn mark is keyed at all. The argument that the band is deliberately wider than
  *      the mark it stands for is a good one and it is an argument, not a measurement.
@@ -463,7 +463,7 @@ function markCensus() {
 }
 
 /** The accessible text a screen reader reads, and NOTHING else — never `<script>`, never `<style>`,
- *  never a mark's own label. See the header: the genre's interaction module is inlined into every
+ *  never a mark's own label. See the header: the format's interaction module is inlined into every
  *  artifact and its comments say "hover, tap and keyboard" in 23 of 24 files. */
 function accessibleProse(): string[] {
   const parts: string[] = [];
@@ -518,7 +518,7 @@ export function promisesIn(prose: string[]): {
 // ── driving ───────────────────────────────────────────────────────────────────────────────────
 
 /** Indices to probe: first, middle, last. Replacements are drawn from the rest of the list when one
- *  of those cannot be brought into the window, so a genre that clips its edge marks is still
+ *  of those cannot be brought into the window, so a format that clips its edge marks is still
  *  measured on three real ones rather than silently on none. */
 function probeOrder(count: number): number[] {
   const preferred = [...new Set([0, Math.floor(count / 2), count - 1])].filter(
@@ -758,7 +758,7 @@ function summary(r: ArtifactReport): string {
  * edge-derivable mark at all. The other 24 were green by vacuum, `mapgen-dot-web` — the one beat
  * the owner reported for this mechanism (B6.14a) — among them.
  *
- * Making all 29 derivable is not this guard's work and cannot be: for the chart-web genre it means
+ * Making all 29 derivable is not this guard's work and cannot be: for the chart-web format it means
  * `chart-web` emitting a `data-key` on its drawn marks, and for `mapgen-dot-web` it means
  * ruling R1's `queryRenderedFeatures` rewrite. What IS this guard's work is that the vacuum stops
  * being invisible. So each artifact records WHETHER any of its marks can be edge-measured at all,
@@ -819,10 +819,10 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
   //    own polygon carries no key, so "a probe 60px inside France answers nothing" is measured by
   //    nobody. Closing it is ruling R1's `queryRenderedFeatures` rewrite of that layer.
   "proof/mapgen-dot-web/dot-population.html": { measurable: false, probed: 3 },
-  // ── chart × web: the genre emits NO `data-key` anywhere — 0 occurrences in every one of these
+  // ── chart × web: the format emits NO `data-key` anywhere — 0 occurrences in every one of these
   //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
   //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"
-  //    cannot arise the way it did on the map genres. That is an argument about the renderer, not
+  //    cannot arise the way it did on the map formats. That is an argument about the renderer, not
   //    a measurement: nothing here proves it, and until `chart-web` keys its drawn marks
   //    nothing can.
   "proof/co2-suisse/co2.html": { measurable: false, probed: 3 },

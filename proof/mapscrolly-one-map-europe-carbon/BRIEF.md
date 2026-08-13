@@ -1,6 +1,6 @@
 # One map, four readings — CO₂ per person across 41 European countries, 2023
 
-**Type:** choropleth, carried by the scroll vehicle. **Medium/genre:** map / **scrolly**.
+**Type:** choropleth, carried by the scroll vehicle. **Medium/format:** map / **scrolly**.
 **Channel:** article web, one self-contained `render/one-map-four-readings.html`, **four steps**,
 one map and four cameras.
 
@@ -9,7 +9,7 @@ once per step. Nothing is redrawn and nothing is re-projected: it is the same 41
 over one live MapTiler basemap, seen from four places.
 
 *(The `**Type:**` line above was missing until 2026-08-10, which is why this beat was invisible to
-`MATRIX.md`'s coverage tables — recorded as a gap under B8.3 in `FEEDBACK-2026-08-10.md`.)*
+`MATRIX.md`'s coverage tables.)*
 
 Sibling beat, deliberately the OTHER form: `mapscrolly-quakes-three-ways` shows one subject through
 four ENCODINGS and the comparison is its argument. This one navigates inside a single map.
@@ -53,7 +53,7 @@ always MapTiler. **The basemap is live.**
 >
 > **Ruling R1 put map × WEB on live MapTiler tiles, and it does not reach here, because the two are
 > not the same problem.** A free-pan map's set of camera positions is INFINITE — the reader chooses
-> it — and no bake can hold an infinite set, which is exactly why R1 is right about that genre. A
+> it — and no bake can hold an infinite set, which is exactly why R1 is right about that format. A
 > scrolly's camera is **authored**: four positions, known at build time, on one continuous path
 > between them. A finite, known set is precisely what a plate can hold. Three consequences decided it:
 >
@@ -101,7 +101,7 @@ le scrolly, le scroll pilote et la map doit prendre toute la largeur."* The map 
 `interactive: false` — no drag, no wheel, no double-click zoom, no keyboard pan, no
 `NavigationControl`. This is a deliberate DIFFERENCE from map × web, where R1 requires the controls
 because there the reader IS the camera; here the scroll is, and a reader-moved camera would be taken
-back by the next step. Recorded as a distinction between the two genres in
+back by the next step. Recorded as a distinction between the two formats in
 `scrolly/references/scrolly-discipline.md`, so it is not later "fixed".
 
 **The map takes the whole frame.** Live tiles fill the container edge to edge, which is what makes

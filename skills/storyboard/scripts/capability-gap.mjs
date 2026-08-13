@@ -1,6 +1,6 @@
 // A DUPLICATE of splash's own `capabilityGap` (`skills/splash/scripts/preflight.mjs`),
 // not an import — a skill directory has to stay copy-pasteable on its own (the same rule
-// `genre-catalog.mjs`'s own header applies to deliver's `FORMS_BY_GENRE`, and the rule
+// `format-catalog.mjs`'s own header applies to deliver's `FORMS_BY_FORMAT`, and the rule
 // `splash/SKILL.md`'s gotcha documents for `where.mjs` reimplementing `checkStoryboard`'s
 // gate: two independent readings of one rule, cross-checked by a test, never unified by an import).
 //

@@ -7,9 +7,9 @@ import {
   readTypeSurvey,
   typeSurvey,
   proposeMediums,
-  proposeGenres,
+  proposeFormats,
   proposeSizes,
-  confirmReachable,
+  confirmFormatReachable,
   assertDistinctWays,
   formatCandidates,
 } from "../scripts/propose.mjs";
@@ -35,7 +35,7 @@ const mapClosed = {
 // THE HOLE THIS FILE EXISTS TO CLOSE.
 //
 // Measured before `propose.mjs` was written:
-//   grep -rn "genreGap(\|capabilityGap(\|groundTakeaway(" skills/ --include=*.mjs
+//   grep -rn "formatGap(\|capabilityGap(\|groundTakeaway(" skills/ --include=*.mjs
 //   -> 4 lines, all four of them the definitions.
 //
 // `grounding:` and `reachable:` are recorded scalars BOTH Gate-2 readings check, and both gates
@@ -52,7 +52,7 @@ const mapClosed = {
 //   Expected: > 0   Received: 0
 //
 //   (fail) the verdicts are consulted > groundTakeaway is called by something other than its own definition
-//   (fail) the verdicts are consulted > genreGap is called by something other than its own definition
+//   (fail) the verdicts are consulted > formatGap is called by something other than its own definition
 //   (fail) the verdicts are consulted > capabilityGap is called by something other than its own definition
 //   ... and 8 more, every one of them a promise this file makes about the proposal
 //    16 pass, 11 fail
@@ -62,7 +62,7 @@ describe("the verdicts are consulted", () => {
   // COMMENTS STRIPPED BEFORE SCANNING, and that is not tidiness. The first draft of this guard
   // scanned the raw text and stayed GREEN through the mutation that deleted all three calls —
   // because the header of `propose.mjs` QUOTES the grep that found the hole, so the literals
-  // `groundTakeaway(`, `genreGap(` and `capabilityGap(` were all sitting in a comment. A guard
+  // `groundTakeaway(`, `formatGap(` and `capabilityGap(` were all sitting in a comment. A guard
   // that a comment can satisfy is worse than none.
   const code = (text: string) =>
     text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
@@ -71,7 +71,7 @@ describe("the verdicts are consulted", () => {
     .filter((f) => f.endsWith(".mjs"))
     .map((f) => ({ file: f, text: code(readFileSync(join(scriptsDir, f), "utf8")) }));
 
-  for (const verdict of ["groundTakeaway", "genreGap", "capabilityGap"]) {
+  for (const verdict of ["groundTakeaway", "formatGap", "capabilityGap"]) {
     it(`${verdict} is called by something other than its own definition`, () => {
       const callers = sources.filter(
         ({ text }) =>
@@ -180,22 +180,22 @@ describe("the survey — what could be made of this data", () => {
 
   // "Proven on disk" is a COVERAGE fact, never a reachability one, and the two must not collapse
   // into each other: a type nobody has rendered here yet is worth saying out loud.
-  it("should keep an unrendered type's proven genres empty rather than inventing one", () => {
+  it("should keep an unrendered type's proven formats empty rather than inventing one", () => {
     const rows = readTypeSurvey(
       [
         "## Chart types",
-        "| type | what it is for | proven genres | sheet |",
+        "| type | what it is for | proven formats | sheet |",
         "|---|---|---|---|",
         "| **Beeswarm** | Every raw observation on one axis. | — none rendered here yet | `chart-beat/references/types/beeswarm.md` |",
         "| **Bar and column** | One value per category. | static, web | `chart-beat/references/types/bar-and-column.md` |",
       ].join("\n"),
     );
-    expect(rows[0].provenGenres).toEqual([]);
-    expect(rows[1].provenGenres).toEqual(["static", "web"]);
+    expect(rows[0].provenFormats).toEqual([]);
+    expect(rows[1].provenFormats).toEqual(["static", "web"]);
   });
 });
 
-describe("medium, then genre, then size — each verified before it is offered", () => {
+describe("medium, then format, then size — each verified before it is offered", () => {
   it("should mark a medium closed by the environment, at the medium question, with what would open it", () => {
     const map = proposeMediums({ capabilities: mapClosed }).find(
       (m) => m.medium === "map",
@@ -211,31 +211,31 @@ describe("medium, then genre, then size — each verified before it is offered",
 
   it("should offer scrolly for every medium that has a producer for it", () => {
     for (const medium of ["chart", "map", "image"]) {
-      const scrolly = proposeGenres({ medium }).find((g) => g.genre === "scrolly");
+      const scrolly = proposeFormats({ medium }).find((g) => g.format === "scrolly");
       expect(scrolly?.reachable).toBe(true);
       expect(scrolly?.producer).toBe("scrolly");
     }
   });
 
-  // An absent pair is NAMED as absent at the genre gate rather than quietly omitted — that is the
+  // An absent pair is NAMED as absent at the format gate rather than quietly omitted — that is the
   // whole reason the catalog is keyed on the pair.
-  it("should name the genres a medium cannot reach, not omit them", () => {
-    const genres = proposeGenres({ medium: "image" });
-    expect(genres.map((g) => g.genre).sort()).toEqual([
+  it("should name the formats a medium cannot reach, not omit them", () => {
+    const formats = proposeFormats({ medium: "image" });
+    expect(formats.map((g) => g.format).sort()).toEqual([
       "scrolly",
       "static",
       "video",
       "web",
     ]);
-    const video = genres.find((g) => g.genre === "video");
+    const video = formats.find((g) => g.format === "video");
     expect(video?.reachable).toBe(false);
     expect(video?.why).toContain("for image it can reach static, scrolly");
   });
 
-  it("should close every genre of a medium the environment has shut, with the same reason", () => {
-    for (const genre of proposeGenres({ medium: "map", capabilities: mapClosed })) {
-      expect(genre.reachable).toBe(false);
-      expect(genre.why).toContain("MAPTILER_KEY is not set");
+  it("should close every format of a medium the environment has shut, with the same reason", () => {
+    for (const format of proposeFormats({ medium: "map", capabilities: mapClosed })) {
+      expect(format.reachable).toBe(false);
+      expect(format.why).toContain("MAPTILER_KEY is not set");
     }
   });
 
@@ -247,22 +247,22 @@ describe("medium, then genre, then size — each verified before it is offered",
   });
 });
 
-describe("confirmReachable — the recorded verdict, computed", () => {
+describe("confirmFormatReachable — the recorded verdict, computed", () => {
   it("should hand back the exact string the slot records, for a pair that is genuinely wired", () => {
-    expect(confirmReachable({ medium: "chart", genre: "scrolly" })).toBe("yes");
-    expect(confirmReachable({ medium: "map", genre: "web" })).toBe("yes");
-    expect(confirmReachable({ medium: "image", genre: "static" })).toBe("yes");
+    expect(confirmFormatReachable({ medium: "chart", format: "scrolly" })).toBe("yes");
+    expect(confirmFormatReachable({ medium: "map", format: "web" })).toBe("yes");
+    expect(confirmFormatReachable({ medium: "image", format: "static" })).toBe("yes");
   });
 
   it("should refuse a pair with no producer, naming what that medium can reach", () => {
-    expect(() => confirmReachable({ medium: "image", genre: "video" })).toThrow(
+    expect(() => confirmFormatReachable({ medium: "image", format: "video" })).toThrow(
       /for image it can reach static, scrolly/,
     );
   });
 
   it("should refuse a pair the environment has closed, naming the key", () => {
     expect(() =>
-      confirmReachable({ medium: "map", genre: "static", capabilities: mapClosed }),
+      confirmFormatReachable({ medium: "map", format: "static", capabilities: mapClosed }),
     ).toThrow(/MAPTILER_KEY is not set/);
   });
 });
@@ -296,8 +296,8 @@ describe("the candidates are genuinely different ways of seeing it", () => {
     const text = formatCandidates({
       medium: "chart",
       candidates: [
-        { type: "Stacked bar", genre: "static", why: "the total and its parts in one mark" },
-        { type: "Waterfall (bridge)", genre: "static", why: "the losses read as steps to the total" },
+        { type: "Stacked bar", format: "static", why: "the total and its parts in one mark" },
+        { type: "Waterfall (bridge)", format: "static", why: "the losses read as steps to the total" },
       ],
     });
     const sheetSentence = typeSurvey().find(
@@ -312,8 +312,8 @@ describe("the candidates are genuinely different ways of seeing it", () => {
       formatCandidates({
         medium: "chart",
         candidates: [
-          { type: "Stacked bar", genre: "static", why: "the total and its parts" },
-          { type: "Waterfall (bridge)", genre: "static", why: "  " },
+          { type: "Stacked bar", format: "static", why: "the total and its parts" },
+          { type: "Waterfall (bridge)", format: "static", why: "  " },
         ],
       }),
     ).toThrow(/carries no reason/);
@@ -327,8 +327,8 @@ describe("the candidates are genuinely different ways of seeing it", () => {
       formatCandidates({
         medium: "image",
         candidates: [
-          { type: "Locator", genre: "video", why: "the route, animated" },
-          { type: "Choropleth", genre: "static", why: "the regions shaded" },
+          { type: "Locator", format: "video", why: "the route, animated" },
+          { type: "Choropleth", format: "static", why: "the regions shaded" },
         ],
       }),
     ).toThrow(/not one this toolchain can produce or deliver yet/);

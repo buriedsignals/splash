@@ -7,7 +7,7 @@ one of them from decaying into a form.
 
 **The order is the argument.** Every movement below depends on the one before it, and the run this
 document was rewritten after got three of them backwards: the takeaway was grounded *after* the
-journalist had already picked a treatment; medium, genre and size were pinned in one undifferentiated
+journalist had already picked a treatment; medium, format and size were pinned in one undifferentiated
 move; and the palette proposed the newsroom's colours before the subject's. Each is a decision taken
 before the thing it depends on. Do not reorder these to save a turn.
 
@@ -74,14 +74,14 @@ medium existed.
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
 
 The placement question used to carry a second clause — *"also feeds channel and size"* — and that
-clause was not a destination at all, it was a **decision taken out of order**: genre and size settled
+clause was not a destination at all, it was a **decision taken out of order**: format and size settled
 at movement ③, before ④ had named a single type. It is now movements ⑥ and ⑦, where the journalist
 is actually asked. Placement keeps only its editorial half.
 
 ### When the answer is "I don't know" or "none"
 
-The first journalist session (`twin/JOURNALIST-TEST-RESULT.md`) found the defect these questions had
-been shipped with: when the answer was absence — "I don't know", "not yet decided" — the exchange
+The first journalist session found the defect these questions had been shipped with: when the
+answer was absence — "I don't know", "not yet decided" — the exchange
 recorded the absence and moved on. That is harvesting, not accompaniment. These questions exist to
 help the journalist think, not to extract a field from them; when they do not have an answer, the
 system's job is to **propose one, with its reasoning, and let the journalist accept it, adjust it, or
@@ -127,7 +127,7 @@ rank only the types this story's frozen profile can actually support. Then name:
 - a type the profile **cannot** supply the shape for, said as *not applicable, and why* (a slope
   needs exactly two moments; a bump needs a rank per period; a choropleth needs a region key);
 - of each remaining type, whether it is **reachable** — `proposeMediums({capabilities})` and
-  `proposeGenres({medium, capabilities})` (`scripts/propose.mjs`) run `genreGap` and
+  `proposeFormats({medium, capabilities})` (`scripts/propose.mjs`) run `formatGap` and
   `capabilityGap` for you and hand back every row with its own refusal attached. A medium closed by
   a missing key is said HERE, with what would open it, not three movements later.
 
@@ -148,20 +148,29 @@ several labels over one idea.
 *Which KIND of visual is this?* Chart, map, or image — validated by the journalist before anything
 narrower is discussed, because everything narrower depends on it. Carry a recommendation, with the
 reason, drawn from ④. `proposeMediums({capabilities})` is the honest list: each medium with the
-genres it reaches, the type sheets this toolchain holds for it, and — if the environment has closed
+formats it reaches, the type sheets this toolchain holds for it, and — if the environment has closed
 it — the sentence saying so.
 
 Lands in the slot's `medium:`.
 
-## ⑥ The genre — G2b
+## ⑥ The format — G2b
 
-*Static, web, video, or scrolly?* Offered **only where reachable for the medium just chosen** —
-`proposeGenres({medium, capabilities})` returns all four with a `reachable` flag and a `why`, so a
-genre this medium cannot reach is named as absent rather than quietly omitted (`image` reaches
+This movement is a hard turn boundary. Present one recommendation and the complete publication-
+format choice, ask which Splash should produce first, then **end the turn**. Nothing from ⑦–⑩ may
+appear in that assistant message. A preference in `context.md` changes the recommendation; it never
+answers the question.
+
+*Static / print, Interactive web, Video, or Scrollytelling?* Offered **only where reachable for the medium just chosen** —
+`proposeFormats({medium, capabilities})` returns all four with a `reachable` flag and a `why`, so a
+format this medium cannot reach is named as absent rather than quietly omitted (`image` reaches
 `static` and `scrolly`; it has no web or video producer, and the journalist hears that here).
+Render the turn with
+`formatPublicationFormatGate({recommended, rationale, options: proposeFormats({medium, capabilities})})`,
+send that output unchanged, and stop.
 
-Record `genre:` and take `reachable:` from **`confirmReachable({medium, genre, capabilities})`** —
-the one function that produces that `"yes"`, and only after `genreGap` and `capabilityGap` have both
+After the journalist replies, record `format:` and take `reachable:` from
+**`confirmFormatReachable({medium, format, capabilities})`** —
+the one function that produces that `"yes"`, and only after `formatGap` and `capabilityGap` have both
 returned `null`. It throws the refusal otherwise, so an unreachable pair cannot be handed a yes to
 write down. **That recorded verdict is what both Gate-2 readings check**, and neither gate re-runs
 the check — see `scripts/storyboard.mjs`'s header for why that matters. Until `propose.mjs` existed
@@ -177,7 +186,7 @@ carries no `size:` field. Never record a fluid size: both Gate-2 readings refuse
 no 'fluid' size"*), and this very line used to name it as the value for web and scrolly — a refusal
 a model earned mid-journey by following the instructions it was given.
 
-The set, exactly as `proposeSizes(genre)` computes it and `sizeGap` enforces it — `exchange-shape.test.ts`
+The set, exactly as `proposeSizes(format)` computes it and `sizeGap` enforces it — `exchange-shape.test.ts`
 compares this line against both, so it cannot drift into naming a value the gate refuses again:
 
     static: landscape, square, portrait
@@ -185,9 +194,9 @@ compares this line against both, so it cannot drift into naming a value the gate
     web: none
     scrolly: none
 
-`proposeSizes(genre)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
+`proposeSizes(format)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
 state it and say so** — "this ships landscape; portrait and square are not built yet" — rather than
-staging a question with one answer. Where it has more, ask. Where it is EMPTY the genre takes no
+staging a question with one answer. Where it has more, ask. Where it is EMPTY the format takes no
 size at all and none is recorded. Either way widening the set later widens a set and re-plumbs
 nothing.
 
@@ -221,7 +230,7 @@ Lands in `PALETTE.md`.
 ## ⑩ The storyboard proposal, and the beat brief
 
 Slots and candidates, presented **as readable narrative, not a table of specs**: what each proves,
-its medium, its genre, its size, and one line of why. `formatCandidates({medium, candidates,
+its medium, its format, its size, and one line of why. `formatCandidates({medium, candidates,
 capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate carries
 the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that way,
 which is required, because a candidate with no reason is a name in a list. A candidate whose pair the
@@ -231,13 +240,30 @@ Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly 
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate
 2 has not actually closed no matter what the conversation implied.
 
+### After the treatment is chosen — custom or Datawrapper, conditionally
+
+Treatment selection above is platform-neutral. Only after the journalist has chosen a treatment,
+check it with `datawrapperMatch({medium, format, treatment})` from
+`scripts/producer-gate.mjs` against `references/datawrapper-chart-types.json`.
+
+- No mapping, or a format Datawrapper cannot fulfil: ask nothing. The absence of producer fields is
+  the canonical custom state for an unmapped treatment; continue because Datawrapper was never a
+  faithful option for this chosen treatment.
+- A faithful mapping: render `formatProducerGate(...)`, ask whether the journalist prefers
+  Datawrapper or a custom build, and **end the turn**. Do not run production in the same turn.
+- On the next reply: persist `producer: custom`, or persist `producer: datawrapper` together with
+  the catalogue's exact `datawrapperType`. Validate it through `confirmProducerChoice(...)`.
+
+Never fold this preference into the candidate menu. The journalist first chooses the chart that
+best proves the claim regardless of platform; only then do they choose how that chart is made.
+
 **And what the journalist DROPPED is written down too, before this movement ends.** The angles this
 survey found and the storyboard did not keep are the article's other sub-subjects — already found,
 already grounded, already checked reachable — and they used to live in this conversation and die
 with it. `recordSurveyedSubjects({storyDir, subjects})`
 (`skills/deliver/scripts/other-subjects.mjs`) writes every angle ④ turned up, kept or dropped,
 into `stories/<slug>/SUBJECTS.md`: an `id` that could name a beat directory, the `medium` and
-`genre` it would take, and `learns` — what the READER would learn from it, in a sentence, because a
+`format` it would take, and `learns` — what the READER would learn from it, in a sentence, because a
 type name is not a reason to draw something. It is read back at the very end of the run, re-checked
 against the story as it then stands, and offered: *"Ou même le relancer sur des sous-sujets de son
 article qui seraient intéressants à transformer en visuel"* (the owner, 2026-08-10). Nothing here is

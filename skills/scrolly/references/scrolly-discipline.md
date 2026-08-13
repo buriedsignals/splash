@@ -1,6 +1,6 @@
 # Scrolly discipline
 
-The rules the scroll-driven vehicle is written under. There was no doctrine for this genre before
+The rules the scroll-driven vehicle is written under. There was no doctrine for this format before
 this file — it was written while building this skill's own first seed, then REWRITTEN against the
 same seed's second build after two structural corrections, REWRITTEN AGAIN against the third (the
 composition, and the crossfade mechanism, both corrected in the same round), REWRITTEN A FOURTH TIME
@@ -23,7 +23,7 @@ belong to" question, answered twice). The reading measure was never wrong for th
 header, and the step panel already fixed in the fourth round — only for the graphic that happened to
 share a parent with it. REWRITTEN A SEVENTH TIME against a round that fixed a defect the sixth round's
 own full-bleed fix made ROUTINE rather than exceptional: a full-bleed graphic gets COVER-cropped hard
-at the width/height extremes this genre's own full-bleed shape now guarantees it will actually meet,
+at the width/height extremes this format's own full-bleed shape now guarantees it will actually meet,
 and `DrawnGraphicFrame`'s own annotations (a label, a tick, the reading dot) were never designed
 against that crop — see "Nothing annotated can be cropped," below, for the geometry and the
 mechanically-enforced `SAFE_AREA` that fixes it. REWRITTEN AN EIGHTH TIME against the round that reversed the SEVENTH's
@@ -38,7 +38,7 @@ collision it re-opens is answered by the card being OPAQUE and measured rather t
 things never meeting (see "What the card covers," at the top of this file, for what was measured on
 a continuous scroll in both directions at three widths, the two width regimes, the step height, and
 the band the frames used to reserve — now reclaimed in the seed). Every rule below is either a
-decision this genre needed and the others did not, or an explicit inheritance from `doctrine`
+decision this format needed and the others did not, or an explicit inheritance from `doctrine`
 stated so it is not silently assumed. Every section below describes the CURRENT code, not a remedy it once used and no
 longer does — a stale section here is what this file's own corrections exist to stop being ("The one
 gotcha" and "Measuring prose over the graphic" are unchanged since the second build and remain
@@ -499,7 +499,7 @@ graphic was `position: sticky`, so:
 
 The header is row 1, OUTSIDE the scroller, so it is fixed by construction rather than by a
 `position` keyword that has to be got right. The graphic is not positioned from the scroll at all,
-so it cannot lag behind it. The deliberate overlap this genre is built on survives unchanged — it is
+so it cannot lag behind it. The deliberate overlap this format is built on survives unchanged — it is
 now two absolutely-positioned layers sharing one box instead of a negative margin cancelling a
 sticky reservation, which is the same picture with one fewer number to keep in step.
 
@@ -642,7 +642,7 @@ meeting is legible" — which the next section covers.
 
 **A panel that LOOKS opaque does not, by itself, prove the text on it is legible against everything
 that might be behind it.** The project owner's own instruction: *"measure the contrast where text
-actually crosses the graphic; do not assume a panel background settles it."* This genre answers that
+actually crosses the graphic; do not assume a panel background settles it."* This format answers that
 literally, not by eye:
 
 1. Every step's own prose sits inside a `.step-panel` painted **fully opaque**, `background:
@@ -656,7 +656,7 @@ literally, not by eye:
    left is ink-on-ground — the SAME pairing `deriveFurniture`
    (`doctrine/references/visual-system.md`'s own escalation rule) already computes and
    guarantees for every other piece of furniture in this twin. This is not a new rule invented for
-   this genre; it is the SAME rule `visual-system.md` states for a mark's colour reused as a label
+   this format; it is the SAME rule `visual-system.md` states for a mark's colour reused as a label
    ("A mark's colour is measured again when it becomes a label") — prose sitting over a drawing is
    exactly that situation, a second measurement owed because the pairing changed (page ground → a
    panel over a graphic), even though the mechanism computing it is identical.
@@ -710,7 +710,7 @@ graphic fills the viewport it is pinned in").** The THIRD build's own `640px`/`c
 living on `.scrolly`, was ALSO still capping the sticky GRAPHIC to the same narrow column as the
 prose — nobody had asked, since the third build set that rule for the assembly as a whole, whether
 the graphic specifically should be narrow too. It should not: *all web visuals must take the full
-width* is a house-wide rule this genre had never actually satisfied for its own sticky ground. Fixed
+width* is a house-wide rule this format had never actually satisfied for its own sticky ground. Fixed
 by MOVING the reading-measure constraint off `.scrolly` (now unconstrained — no `max-width`, no
 padding) and onto the two things that were then taken to be prose: `.scrolly-header` (its own
 `max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 6vw, 56px) 0` — the exact values
@@ -791,7 +791,7 @@ was made, in a round that had not yet re-examined width.)
 as long as it is pinned, not a capped band with page visible past its bottom edge. This does not
 distort anything: `ImageFrame` already paints with `object-fit: cover` and `DrawnGraphicFrame` with
 `preserveAspectRatio="xMidYMid slice"` — both CROP to whatever box they are given rather than
-stretch, the same trade-off every full-bleed frame in this genre already makes at every width it
+stretch, the same trade-off every full-bleed frame in this format already makes at every width it
 ships. A taller box only means more of the artwork's own edges are cropped away to cover it; nothing
 in the artwork itself is squashed or stretched. `FRAME`'s own native aspect (640×900, ≈0.71) is
 portrait already, so a `100vh`-tall box — now also full VIEWPORT width, not the narrower column this
@@ -884,7 +884,7 @@ two NON-adjacent-to-an-end steps to miscompute. `STEPS_META` (`assets/ScrollySee
 FOUR steps — a photograph, then three narrated readings on the same drawn instrument (an ordinary
 day, a flood day, a dry spell, sharing one parameterised `DrawnGraphicFrame` — see that component's
 own doc-comment for why moving an illustrated water level is not the "data-driven reveal" this
-genre's own diagram is barred from) — and `test/render-scrolly.test.ts` locks the mechanism at 4, 6
+format's own diagram is barred from) — and `test/render-scrolly.test.ts` locks the mechanism at 4, 6
 and 8 steps, not just the seed's own 4:
 
 - `pickActiveStep` (pure, no DOM) is tested with the winner at the LAST position and at the MIDDLE
@@ -948,7 +948,7 @@ be purely reinforcing: neither `ImageFrame` nor `DrawnGraphicFrame` introduces a
 claim that is not also in that step's own paragraph. This is the inverse of
 `chart-web/references/web-discipline.md`'s "what hover reveals" rule (there, interaction adds
 detail the static frame had no room for); here, the graphic never carries detail the prose does not
-already carry, because the graphic is the one layer this genre allows to go unheard by assistive
+already carry, because the graphic is the one layer this format allows to go unheard by assistive
 technology.
 
 ## The graphic is fixed; only the text moves
@@ -1123,7 +1123,7 @@ from, so the letterbox is a colour someone chose rather than a default.
 
 **And a chart's type does not scale with its box.** The chart frame's SVG carries geometry only,
 stretched with `preserveAspectRatio="none"`; every word is HTML at a fixed pixel size positioned in
-percentages over the same box — the separation the two web genres in this project already ship
+percentages over the same box — the separation the two web formats in this project already ship
 ("geometry stretches; type does not"). A 15px tick label stays 15px at 375px and at 1600px.
 
 **One number in that layout is a `max()`, not a percentage, and driving found out why.** The
@@ -1141,7 +1141,7 @@ The owner drove the three map scrollys on disk and reported the fact: *"j'ai l'i
 scrolly map n'utilise pas MapTiler correctement, je ne vois aucun canvas dans le DOM. Or il faut
 tout le temps utiliser MapTiler."* He was right — `grep maplibregl` over every committed map-scrolly
 page returned 0, and there was no `<canvas>` in any of them. He had already ruled the same way for
-map × web (R1). **A map uses MapTiler, in every genre, including this one.**
+map × web (R1). **A map uses MapTiler, in every format, including this one.**
 
 **The argument the plate was kept for was real, and it is answered rather than dismissed.** A free-pan
 map's set of camera positions is infinite, which is why R1 is unarguable there; a scrolly's cameras
@@ -1201,7 +1201,7 @@ delivery. Two decisions are worth copying:
   Continuous-tone imagery is the one medium JPEG is built for; the drawn and chart frames stay
   vector, where the same trade would be a real loss.
 
-## What this genre does not attempt
+## What this format does not attempt
 
 **A moving camera.** The map track shows one baked plate. A scroll-driven `flyTo` between waypoints
 would mean either a live map in the delivered file (no longer self-contained, and shipping a key) or
@@ -1216,12 +1216,12 @@ regardless (see above), but the animated GRAPHIC advancing on command is not. Th
 gap, the same register `web-discipline.md`'s own "Known cost, not hidden" section keeps for its
 75-Tab-stops limitation.
 
-**Stepping a single chart through several reveal states.** This genre's own `SKILL.md`, "When to
+**Stepping a single chart through several reveal states.** This format's own `SKILL.md`, "When to
 use," states this as the primary reason to reach for a DIFFERENT tool: a scrolly earns its existence
 by assembling media a single beat cannot assemble on its own; a chart stepped through several states
 belongs to `chart-web`, which animates on its own. This skill's own `test/canon.test.ts` locks
 the seed itself to at least three visibly different `frameKind`s — and specifically to carrying a
-`map` and a `chart` — so this genre's own worked example never regresses into the shape it exists to
+`map` and a `chart` — so this format's own worked example never regresses into the shape it exists to
 redirect a reader away from. Two kinds was the earlier floor, and it was too weak: a picture and a
 diagram are media no other skill here produces, so a seed carrying only those demonstrated the
 mechanism without ever demonstrating the point. A map and a chart are media other skills DO produce
@@ -1275,7 +1275,7 @@ at 375×812, against 162-187px for the last panel and 42-80% held offsets before
 ---
 
 Older claims, kept for the history above and superseded wherever the two disagree. Applied by
-driving a real browser, not by reading the markup or trusting a screenshot taken before scrolling. `doctrine` states this as a universal rule, and this genre is the reason it exists
+driving a real browser, not by reading the markup or trusting a screenshot taken before scrolling. `doctrine` states this as a universal rule, and this format is the reason it exists
 in the first place: this skill's own first build passed a static look at the rendered HTML (title
 present, every frame present, every `<p>` present, one `.active` class present) and still shipped
 the sticky-reservation defect this file describes — a defect visible only once a script actually

@@ -8,8 +8,8 @@
 // It runs in node, which is why it is the piece that derives the furniture colours: `deriveFurniture`
 // lives in the still script beside a native rasteriser that no browser bundle can load. Deriving
 // here and passing ink/muted/grid in as input props keeps ONE implementation of the colour rule for
-// both genres — the alternative was a second copy of the contrast escalation inside the composition,
-// which is exactly how two genres drift apart.
+// both formats — the alternative was a second copy of the contrast escalation inside the composition,
+// which is exactly how two formats drift apart.
 //
 // Usage:  bun skills/chart-video/scripts/render-video.mjs [--still-only] [--data <csv>] [--out <dir>]
 

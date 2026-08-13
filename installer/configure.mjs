@@ -66,6 +66,9 @@ const flag = (name, fallback) => {
 const HEADLESS = argv.includes("--headless");
 const ROOT = resolve(flag("--root", resolve(HERE, "..")));
 const HOME = resolve(flag("--home", homedir()));
+const SKILL_NAMESPACE = flag("--skill-namespace", "");
+if (SKILL_NAMESPACE && !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(SKILL_NAMESPACE))
+  throw new Error(`invalid skill namespace: ${SKILL_NAMESPACE}`);
 const IDLE_MS = Number(flag("--idle-ms", String(30 * 60 * 1000)));
 
 const { recordKey, probeMapTiler, probeDatawrapper, probeCloudflare } = await import(
@@ -241,7 +244,7 @@ function doorsSection() {
   const detected = detectHosts({ home: HOME });
   let plan;
   try {
-    plan = planPlacement({ root: ROOT, home: HOME, dryRun: true });
+    plan = planPlacement({ root: ROOT, home: HOME, namespace: SKILL_NAMESPACE, dryRun: true });
   } catch (error) {
     return `<h2>The doors your AI hosts read</h2>
       <p class="note">The placement could not be read: ${esc(error.message)}</p>`;

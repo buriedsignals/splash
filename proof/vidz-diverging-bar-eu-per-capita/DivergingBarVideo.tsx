@@ -3,7 +3,7 @@
  * 10 seconds, 30fps, 1080 × 1350 (portrait: twenty-seven rows need the height, and 1080 × 1080
  * would give each row 24px to hold a country name).
  *
- * First diverging bar in this corpus, in any genre — a new row in the type × genre matrix rather
+ * First diverging bar in this corpus, in any format — a new row in the type × format matrix rather
  * than a video sibling of an existing beat. Twenty-seven rows of SIGNED values growing left and
  * right out of a zero line, so `divergingGeometry` below is its own shape: unlike the column beat's
  * scale it does not start at zero, it CONTAINS zero, and unlike the lollipop's it has to place a
@@ -11,7 +11,7 @@
  *
  * `FONT_FAMILY`, `measureText`, `wrap` and `en` ARE this story's own copies of the other proof
  * workspaces' functions of the same name — not an import from any of them, per the duplicate-do-
- * not-link rule. They are the VIDEO genre's browser-Canvas measurer, not the static genre's resvg
+ * not-link rule. They are the VIDEO format's browser-Canvas measurer, not the static format's resvg
  * one; the two are not interchangeable.
  *
  * THE MOTION PROBLEM (from `BRIEF.md`): the finding is a sign, not a size — which side of zero each

@@ -1,4 +1,4 @@
-// The render ladder for the flow-map (route) beat. Static genre only.
+// The render ladder for the flow-map (route) beat. Static format only.
 //
 // Usage:
 //   bun proof/mapmore-flow-danube/render.mjs --still

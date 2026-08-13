@@ -1,7 +1,7 @@
 // twin/skills/scrolly/scripts/verify-scrolly.mjs
 //
 // THE GUARD THAT WATCHES A CONTINUOUS SCROLL, and the reason it exists is that the instrument this
-// genre had been verified with could not see the defect that broke every beat on disk.
+// format had been verified with could not see the defect that broke every beat on disk.
 //
 // WHAT THE OLD INSTRUMENT DID, AND WHY IT PASSED A BROKEN VEHICLE. Every round of this skill was
 // checked by jumping to N discrete scroll offsets, waiting for things to settle, and reading the
@@ -147,13 +147,13 @@ export function resolveChrome() {
   const found = candidates.find((c) => existsSync(c));
   if (!found)
     throw new Error(
-      `no Chrome to drive — looked at ${candidates.join(", ")}. This genre is verified by driving a ` +
+      `no Chrome to drive — looked at ${candidates.join(", ")}. This format is verified by driving a ` +
         `real browser and by nothing else; there is no fallback that would prove anything.`,
     );
   return found;
 }
 
-/** Desktop, laptop, phone — the three shapes this genre is checked at. */
+/** Desktop, laptop, phone — the three shapes this format is checked at. */
 export const WIDTHS = [
   { w: 1600, h: 900 },
   { w: 1280, h: 800 },

@@ -196,7 +196,7 @@ export function declutterLabels<T extends { key: string; priority: number }>(
   return shown;
 }
 
-// ── HOW FAR, which is the quantity this beat's video genre is about ──────────────────────────────
+// ── HOW FAR, which is the quantity this beat's video format is about ──────────────────────────────
 
 /**
  * Great-circle distance in kilometres on a sphere of mean radius 6371.0088 km — the same figure the

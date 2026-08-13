@@ -1,6 +1,6 @@
 /**
  * The web beat of "Of these ten European countries, Germany cut per-capita CO₂ emissions the
- * furthest since 1990" — the interactive genre, a slopegraph over ten countries and two discrete
+ * furthest since 1990" — the interactive format, a slopegraph over ten countries and two discrete
  * periods (1990, 2024).
  *
  * Not a second chart: the coordinates come from `./slope-geometry.ts` (`slopeGeometry`, `fmt`), the
@@ -41,7 +41,7 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-/** This genre's own single fluid frame, in this beat's own shape. Declared here rather than
+/** This format's own single fluid frame, in this beat's own shape. Declared here rather than
  *  imported from the skill's seed: a compile-time-only type has no `#shared/*` vendoring path, and
  *  a relative import across the skill boundary hard-codes this dev repository's own layout.
  *  Duplicate, do not link — the ruling this file's first build already documented for `WebLayout`. */
@@ -187,7 +187,7 @@ function pct(value: number, total: number): number {
 
 /**
  * ── THE HOVERABLE LINE ─────────────────────────────────────────────────────────────────────────
- * The component-side half of this genre's line primitive. Its other two halves live in the skill
+ * The component-side half of this format's line primitive. Its other two halves live in the skill
  * too: `initLines` in `assets/interaction.mjs` wires it, and `buildCss`'s `.line-hit` rule in
  * `scripts/render-web.mjs` carries the one load-bearing declaration, `pointer-events: stroke`.
  *
@@ -202,7 +202,7 @@ function pct(value: number, total: number): number {
  * `pointer-events: stroke` so the hit region is the stroke and not the bounding box — the bounding
  * box of a diagonal is mostly empty space, and a reader aiming at the line they can see would
  * otherwise be answered by a rectangle covering everything between the line and the frame.
- * `vectorEffect="non-scaling-stroke"` is not decoration either: under this genre's
+ * `vectorEffect="non-scaling-stroke"` is not decoration either: under this format's
  * `preserveAspectRatio="none"` a stroke stated in user units becomes an ellipse of the container's
  * own aspect ratio, so the twin would be 60px wide on an ultrawide frame and 8px on a phone.
  *
@@ -416,7 +416,7 @@ export function SlopeWeb({
       {/* The header block, with a fixed row of air beneath it: the period captions sit ABOVE the
           plot's own top edge (they caption its two columns, so they must line up with them), and
           without this gap they print straight through the caveat at a narrow width. Fixed pixels,
-          because a caption is furniture and furniture in this genre does not stretch. */}
+          because a caption is furniture and furniture in this format does not stretch. */}
       <div className="chart-header" style={{ marginBottom: 26 }}>
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
@@ -462,7 +462,7 @@ export function SlopeWeb({
           // nothing else: measured in Chrome through `Accessibility.getFullAXTree`, the node came
           // back as `SvgRoot` with `name: ""` — a description with no name to hang it on, which is
           // why a bare `<desc>` is not reliably announced. `role="group"` gives it a name while
-          // leaving every focusable mark below it in the tree, which is what this genre's whole
+          // leaving every focusable mark below it in the tree, which is what this format's whole
           // keyboard contract depends on. (`role="img"` was measured too, on this same file: Chrome
           // did NOT prune the marks under it — all ten stayed unignored — so the "it would flatten
           // every descendant" reason two of these components state is not what Chrome does. It is

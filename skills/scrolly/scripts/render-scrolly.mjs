@@ -13,7 +13,7 @@
 // itself, straight into the CSS custom properties every panel and header reads) keeps ONE
 // implementation of the colour rule per render.
 //
-// `renderScrolly` below is this genre's OWN MACHINERY and knows nothing of any one story, and —
+// `renderScrolly` below is this format's OWN MACHINERY and knows nothing of any one story, and —
 // this is the part correction earned tonight — nothing of any one MEDIUM either. It takes an array
 // of `{ id, prose, frame }` and never asks what `frame` is a picture of: not a chart, not a photo,
 // not a diagram. It only ever calls `renderToStaticMarkup` on the `ReactElement` it was handed and
@@ -46,7 +46,7 @@ import { deriveFacts, parseReadings, readStation } from "../assets/gauge-data.ts
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------------------------
-// GENERIC SCAFFOLD — this genre's own mechanics. Media-agnostic: reads no field off a step but
+// GENERIC SCAFFOLD — this format's own mechanics. Media-agnostic: reads no field off a step but
 // `id`, `prose` and `frame`. Nothing below this line may reference `frameKind`, `ImageFrame` or
 // `DrawnGraphicFrame` by name — that is the CONFIG seam's job, further down this file.
 // ---------------------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ function buildCss({ ground, ink, muted, grid, proseLane }) {
   --prose-gutter: clamp(16px, 6vw, 56px);
 }
 * { box-sizing: border-box; }
-/* THE PAGE DOES NOT SCROLL, and that is the whole model this genre now runs on. The component is
+/* THE PAGE DOES NOT SCROLL, and that is the whole model this format now runs on. The component is
    exactly one frame tall; the ONLY thing in the document with scroll distance is
    \`.scrolly-steps\`, the prose column. See references/scrolly-discipline.md, "The graphic is fixed
    and the page does not scroll," for the seventh correction that replaced the sticky model and for
@@ -290,7 +290,7 @@ body {
    The eighth correction's split was a sound answer to a real defect — an opaque panel travelling a
    box it SHARES with the graphic crosses every part of that graphic at some offset, and no
    reservation survives a travelling occluder — and it is not the form. Two cells make a collision
-   impossible by never letting the two things meet; this genre's whole grammar is that they DO meet
+   impossible by never letting the two things meet; this format's whole grammar is that they DO meet
    and that meeting is legible. So the collision is answered the other way: the card is fully
    OPAQUE, painted with the exact \`--ground\` this render's furniture was derived from, and
    \`renderScrolly\` asserts ink-on-ground clears 4.5:1 before it writes a byte. Wherever the card
@@ -344,7 +344,7 @@ body {
 .step-frame img,
 .step-frame svg { display: block; width: 100%; height: 100%; }
 /* Reduced motion: a reader who asks for no animation gets no animation — the swap becomes an
-   instant cut instead of a fade. This is the ONLY animated property this genre ships, and it only
+   instant cut instead of a fade. This is the ONLY animated property this format ships, and it only
    ever plays at a STEP BOUNDARY (when \`assets/interaction.mjs\`'s \`initScrolly\` moves the \`active\`
    class) — never continuously from scroll position, which is what made the graphic itself, not just
    its swap, look like it was still in motion the whole time a reader scrolled through a step. */
@@ -461,7 +461,7 @@ body {
 /* THE READING MEASURE, once the frame is wide enough for the card to be comfortably narrower than
    it. 586px is where a 410px card stops being 70% of the frame (see \`.step\`, above, for why 70% is
    the line and what the in-between shape measured); 600px is that with a little room, and it is
-   also below every desktop and laptop this genre is checked at. */
+   also below every desktop and laptop this format is checked at. */
 @media (min-width: 600px) {
   .step { padding: 0 var(--prose-gutter); }
   .step-panel { max-width: min(46ch, 100%); }
@@ -567,7 +567,7 @@ function buildFrame(meta, ctx) {
 // =========================================
 
 /** The seed beat's own runner: reads its own frozen files off disk, DERIVES every fact its prose
- *  claims from them, embeds the two rasters as data URIs (the self-contained-HTML rule this genre
+ *  claims from them, embeds the two rasters as data URIs (the self-contained-HTML rule this format
  *  keeps for every asset — an SVG frame gets it for free just by being SSR'd inline), and hands
  *  `renderScrolly` the four built frames plus their resolved prose. */
 async function render({ outDir, name = OUTPUT_NAME }) {

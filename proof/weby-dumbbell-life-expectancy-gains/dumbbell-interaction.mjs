@@ -1,7 +1,7 @@
 // twin/proof/weby-dumbbell-life-expectancy-gains/dumbbell-interaction.mjs
 //
 // This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
-// genre's `nearestIndex`-by-x mechanic, wrong here) and not
+// format's `nearestIndex`-by-x mechanic, wrong here) and not
 // `web-income-life-expectancy/scatter-interaction.mjs` (nearest-by-2D-distance over a shared
 // `.hit-area`, also wrong here). `render-web.mjs` inlines THIS file instead, the same way both of
 // those other beats swap the skill's generic script for their own.
@@ -73,7 +73,7 @@ export function initChart(svg, tooltip) {
 
     // Keyboard: every row is already `tabIndex={0}` at build time (works with this script absent
     // entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for the
-    // line genre). This layer adds the same detail box hover shows, plus
+    // line format). This layer adds the same detail box hover shows, plus
     // ArrowUp/ArrowDown/Home/End to move between rows without leaving focus — rows stack
     // vertically here, unlike the line/scatter beats' horizontal ArrowLeft/ArrowRight.
     row.addEventListener("focus", function () {

@@ -27,7 +27,7 @@
  * across the whole `twin/` tree (`node_modules`/`.git` excluded) — deliberately loose: it confirms a
  * file with that name exists somewhere a reasonable reader would expect, not that this exact row
  * points at one particular copy. Several skills keep duplicate, unlinked copies of the same
- * filename by design (`render-still.mjs` exists once per genre — see `no-cross-skill-imports.test.ts`
+ * filename by design (`render-still.mjs` exists once per format — see `no-cross-skill-imports.test.ts`
  * itself), so a bare name resolving against a DIFFERENT skill's copy is a real, accepted gap in this
  * guard's precision, not an oversight — see the numbered list below.
  *
@@ -156,7 +156,7 @@
  * 5. A Tuning-knobs row whose "Where" column names only a bare constant and no file at all, relying
  *    on an earlier row's file by the document's own prose convention, is skipped outright — seven
  *    such rows exist in this corpus today (`CO2_TIMING`/`MAP_TIMING` repeats, `checkStoryboard`
- *    alone, `FORMS_BY_GENRE` alone, `MAP_TIMING` alone, `checkStoryboard` alone again, "this
+ *    alone, `FORMS_BY_FORMAT` alone, `MAP_TIMING` alone, `checkStoryboard` alone again, "this
  *    document, `Overview`"). See the TUNING-KNOBS section above for why a carry-over was rejected.
  * 6. A Tuning-knobs row that names its constant in the "Knob" column instead of "Where" — the exact
  *    shape `` `40` (`PAD`) | `ChartSeed.tsx` `` takes, where "Where" carries only the file — is also

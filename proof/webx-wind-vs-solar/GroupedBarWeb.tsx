@@ -1,7 +1,7 @@
 /**
- * The web beat of "Switzerland is the outlier: solar beats wind" — the interactive genre.
+ * The web beat of "Switzerland is the outlier: solar beats wind" — the interactive format.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the format's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -20,7 +20,7 @@
  * the nearest of many points along ONE continuous axis, built for a line. Twelve already-large,
  * already-labelled bars have nothing to interpolate between; every bar is its own direct hit
  * target, the same reasoning `proof/web-co2-ranking/RankingWeb.tsx` gives for its own rows.
- * `render-web.mjs` still calls the genre's generic `renderWeb` (the one way in) and lets it inline
+ * `render-web.mjs` still calls the format's generic `renderWeb` (the one way in) and lets it inline
  * `interaction.mjs` as a harmless no-op (no `.pt` circles here), then appends this beat's own
  * `./grouped-bar-interaction.mjs` as a second inline script.
  *

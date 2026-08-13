@@ -1,6 +1,6 @@
 # Beat — half of this map's people live in 5 of its 42 countries
 
-**Type:** dot density. **Medium/genre:** map / **video** — the second genre for this type, beside
+**Type:** dot density. **Medium/format:** map / **video** — the second format for this type, beside
 the static beat (`proof/mapmore-dot-population`), which until now was the only one.
 `render/dot-density.mp4`, 1080 × 1440, 30 fps, **380 frames = 12.67 s**, over a 936 × 827 baked
 plate frozen in `plate/`.
@@ -85,7 +85,7 @@ count is never ambiguous) → `subject` 270–290 (the five labelled) → `concl
 The half-way crossing lands at **frame 85** — 12% of the reveal, 5 countries of 42 — and that frame
 is committed as evidence.
 
-## The accessibility trap this type has in the video genre, and how it is closed
+## The accessibility trap this type has in the video format, and how it is closed
 
 "Not yet drawn" must not read as "nobody lives here". Every one of the 42 countries is outlined and
 filled with neutral land from `reference`, BEFORE the first dot exists, so an empty country is
@@ -116,7 +116,7 @@ beside it.
   and meter not yet faded in. Not blank, which 19 mp4s in this repository once were.
 - **`render/frame-70.png`** — two countries in, the meter a fifth of the way.
 - **`render/frame-85.png`** — **the beat**: "5 of 42 countries drawn", the bar just past the half
-  line, "54.9% of 596,770,599 people". This is the image the static genre cannot produce.
+  line, "54.9% of 596,770,599 people". This is the image the static format cannot produce.
 - **`render/frame-160.png`** — "20 of 42 countries drawn", 91.0%: fifteen more countries have added
   36 points, and the flattening is visible.
 - **`render/frame-275.png`** — the five labelled on their own clusters.

@@ -22,7 +22,7 @@ for hydropower = **171.69**, which is all renewables and not the trio. 271.45 ÷
 beat's own stated proof. Nothing rendered changes — the video's title says "outpaced", which the
 1.58× supports, and its three drawn totals reproduce exactly.)*
 
-**Medium / genre:** chart / video. **Type:** waterfall (bridge) — one opening total bar (2010), one
+**Medium / format:** chart / video. **Type:** waterfall (bridge) — one opening total bar (2010), one
 closing total bar (2023), and eight signed steps in between, each a source's generation delta
 between the two years. Bars float from the previous running total; connectors link each bar's end
 to the next bar's start; category order is thematic story order (renewables first, then the fossil

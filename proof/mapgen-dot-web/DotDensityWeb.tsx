@@ -1,8 +1,8 @@
 /**
- * The WEB genre of a dot-density map: the same 42-country population file `proof/mapmore-dot-population`
- * draws as a still, in the one genre a still cannot be — a map a reader can INTERROGATE.
+ * The WEB format of a dot-density map: the same 42-country population file `proof/mapmore-dot-population`
+ * draws as a still, in the one format a still cannot be — a map a reader can INTERROGATE.
  *
- * WHY THIS TYPE EARNS THE WEB GENRE. A dot map's weakness is exactly the thing this genre fixes. It
+ * WHY THIS TYPE EARNS THE WEB FORMAT. A dot map's weakness is exactly the thing this format fixes. It
  * turns a value into TEXTURE: a reader sees where the mass is and cannot read a single number off it,
  * because no dot is labelled and no country can be. The still's answer is a dot-value key ("1 dot =
  * N people") and five direct labels, which is as far as fixed ink goes. Here, hovering or focusing
@@ -52,7 +52,7 @@ import { readingOrder, en, type Pt } from "./geo-dot";
 export const NAMED = ["DEU", "GBR", "FRA", "ITA", "ESP"];
 // ==========================================
 
-// ===== Genre mechanics =====
+// ===== Format mechanics =====
 /** One dot's radius, as a FRACTION of the bake's own frame width — not a pixel count, because the
  *  SVG scales with the container and a fixed pixel radius would be one size at one width only.
  *  Measured rather than inherited: the still sibling's 1.15px radius on its own 860px frame became a
@@ -158,7 +158,7 @@ export function DotDensityWeb({
               fallback, so the swap is one `hidden` flip and never a half-drawn state. */}
           <div id="mw-map" className="mw-live-map" />
 
-          {/* LAYER 2 — the baked plate, complete and script-free. The rule this genre has always
+          {/* LAYER 2 — the baked plate, complete and script-free. The rule this format has always
               stated survives verbatim, read against this layer: the unzoomed state is not a preview
               of the real view, it IS the full claim. */}
           <div id="mw-fallback" className="mw-fallback">
@@ -332,9 +332,9 @@ function ringPath(parts: Pt[][][]): string {
  * The accessibility answer, and on THIS beat it is not optional.
  *
  * A map is a spatial medium and a screen-reader user has no spatial access to it; a hover tooltip is
- * not an answer, because it requires knowing where to point before you can ask. The genre makes this
+ * not an answer, because it requires knowing where to point before you can ask. The format makes this
  * table opt-in per beat and this beat opts IN. A dot map is the strongest case for it in the whole
- * genre: the encoding IS texture, so there is no legend entry, no axis and no label from which a
+ * format: the encoding IS texture, so there is no legend entry, no axis and no label from which a
  * reader without spatial access could recover a single country's population. Without the table they
  * would have the dot value and nothing to apply it to.
  *

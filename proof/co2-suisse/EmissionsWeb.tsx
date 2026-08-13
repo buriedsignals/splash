@@ -1,10 +1,10 @@
 /**
- * The web beat of "CO₂ suisse, retour au niveau de 1967" — the interactive genre.
+ * The web beat of "CO₂ suisse, retour au niveau de 1967" — the interactive format.
  *
  * Not a second chart: the coordinates and the number formatting come from
  * `./crossing-geometry.ts`, the same pure core the static beat (`EmissionsLine.tsx`, this same
  * directory) and the video beat (`chart-video/assets/EmissionsVideo.tsx`) already share. What
- * this file adds is the one thing neither of those genres has — a reader who can ask the chart a
+ * this file adds is the one thing neither of those formats has — a reader who can ask the chart a
  * question and get an answer back, without anything the static frame already states being gated
  * behind that ask. Read `chart-web/references/web-discipline.md` for the rules this file is
  * written under before changing it.
@@ -32,7 +32,7 @@
  * `chart-beat/scripts/render-still.mjs`, beside a native rasteriser
  * (`EmissionsVideo.tsx`'s own doc-comment explains why that module cannot be imported from a file
  * meant to run anywhere but node) — `render-web.mjs` derives the furniture and measures the one
- * gutter this genre still measures (the y-axis label column) in node, and passes the results in as
+ * gutter this format still measures (the y-axis label column) in node, and passes the results in as
  * props. `measure` below is that function, threaded in rather than imported.
  *
  * `wrap` is kept and still exported although this component no longer calls it (its furniture is
@@ -51,7 +51,7 @@ import {
 
 const UNIT = "Mt";
 
-/** `WebFrame` describes the GENRE's own mechanics — one continuously-fluid frame, its own tick
+/** `WebFrame` describes the FORMAT's own mechanics — one continuously-fluid frame, its own tick
  *  hints, its own fixed type scale — rather than this story's numbers. It is declared here rather
  *  than imported from `chart-web/assets/ChartWebSeed.tsx`: a compile-time-only type has no
  *  `#shared/*` vendoring path to travel by, and a relative import reaching from a story across the
@@ -75,15 +75,15 @@ export type WebFrame = {
   label: { fontSize: number; fontWeight: number };
   note: { fontSize: number };
   /** How many x ticks `tickStep` derives a round interval from. Picked ONCE, for the whole
-   *  continuous width range this genre now ships — tick density is not re-derived live as the frame
+   *  continuous width range this format now ships — tick density is not re-derived live as the frame
    *  resizes (`references/web-discipline.md`, "Responsive behaviour"). Four, not the seed's six:
    *  this beat spans 75 years, and a step of ten put eight year labels in the ~250px of plot a
    *  375px phone actually has, which overlapped. A step of twenty (1960/1980/2000/2020) is legible
-   *  at every width this genre verifies at — measured in a browser at 375px, not assumed. */
+   *  at every width this format verifies at — measured in a browser at 375px, not assumed. */
   xTickHint: number;
 };
 
-/** The genre's own single, continuously-fluid frame — replaces this file's first build's
+/** The format's own single, continuously-fluid frame — replaces this file's first build's
  *  `DESKTOP_LAYOUT`/`NARROW_LAYOUT` pair. One canonical geometry, stretched at render time. */
 export const FRAME: WebFrame = {
   width: 900,
@@ -290,7 +290,7 @@ export function EmissionsWeb({
           sits near the top of the frame) both land on the caveat at a narrow width — measured in a
           browser at 375px, where "pic de 1973" printed straight through "aviation internationale".
           A fixed pixel value, not a fraction of the width: it is furniture, and furniture in this
-          genre does not stretch. */}
+          format does not stretch. */}
       <div className="chart-header" style={{ marginBottom: 22 }}>
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{limits}</p>
@@ -330,7 +330,7 @@ export function EmissionsWeb({
           preserveAspectRatio="none"
           fontFamily="Helvetica, Arial, sans-serif"
         >
-          {/* Deliberately no `role="img"` on the root (unlike the static genre): that role flattens
+          {/* Deliberately no `role="img"` on the root (unlike the static format): that role flattens
               every descendant into one opaque image for assistive tech, which is correct for a
               static beat and wrong for this one — the per-point circles below need to stay
               individually reachable and individually named. */}

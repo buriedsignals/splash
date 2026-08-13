@@ -25,9 +25,9 @@
  * chart and wrong for fifteen stacked rows: at 375px the frame is ~240px of plot, and fifteen rows
  * inside it are 16px apart — below the point where a 14px name is legible beside its own dot. So
  * `.chart-plot` carries an inline `min-height` of `rows x MIN_ROW_PX`, this beat's own version of
- * the genre's `PLOT_FLOOR_PX`: the plot may stretch taller than its canonical ratio at a narrow
+ * the format's `PLOT_FLOOR_PX`: the plot may stretch taller than its canonical ratio at a narrow
  * width, never shorter than its rows can be read at. The `<svg>`'s `preserveAspectRatio="none"`
- * absorbs the difference exactly as it absorbs the gutter drift the genre already documents.
+ * absorbs the difference exactly as it absorbs the gutter drift the format already documents.
  *
  * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`
  * (`render-web.mjs`'s `patchForThisBeat`), so its figures are English too: `formatValue` prints
@@ -57,7 +57,7 @@
  * hover/tap/focus on each rect directly, plus ArrowUp/ArrowDown/Home/End to step between rows.
  *
  * This component never imports the rasteriser: `ink`/`muted`/`grid`/`measure` are props, derived
- * once in node by whatever runner calls it (`render-web.mjs`'s call into the genre's `renderWeb`).
+ * once in node by whatever runner calls it (`render-web.mjs`'s call into the format's `renderWeb`).
  */
 
 import {
@@ -194,7 +194,7 @@ export function LollipopCo2Web({
         ["--accent" as string]: accent,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
-        // Fixed CSS pixel type sizes, threaded as custom properties so the genre's shared
+        // Fixed CSS pixel type sizes, threaded as custom properties so the format's shared
         // stylesheet stays generic while this beat still tunes its own scale. None of these ever
         // changes with the viewBox's width — that is the whole point of the redesign.
         ["--title-size" as string]: `${frame.title.fontSize}px`,
@@ -220,7 +220,7 @@ export function LollipopCo2Web({
           ["--r-gutter" as string]: `${rGutterPx}px`,
           ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
           aspectRatio: `${totalWidth} / ${totalHeight}`,
-          // This beat's own floor — see the doc-comment. Overrides the genre stylesheet's generic
+          // This beat's own floor — see the doc-comment. Overrides the format stylesheet's generic
           // PLOT_FLOOR_PX, which is sized for a single-line frame, not fifteen stacked rows.
           minHeight: `${rows.length * MIN_ROW_PX}px`,
         }}
@@ -264,7 +264,7 @@ export function LollipopCo2Web({
 
           {/* Value-axis gridlines, vertical because the value axis runs left-to-right. Drawn whole:
               the value labels above them are HTML now, each on its own `--ground` chip (the one box
-              this genre allows), so a gridline passing behind a label is covered by the label's own
+              this format allows), so a gridline passing behind a label is covered by the label's own
               backing rather than cut into segments in user units a fixed-pixel label cannot be
               measured against. */}
           {ticks.map((tick) => (
@@ -308,7 +308,7 @@ export function LollipopCo2Web({
 
           {/* Interaction layer — one hit-rect PER ROW, spanning the full plot width and that row's
               own band height, invisible at rest. `tabIndex`, `aria-label` and `data-detail` (the
-              full-precision reading this genre's own hover honestly adds) are baked in server-side,
+              full-precision reading this format's own hover honestly adds) are baked in server-side,
               so the no-JS frame is still keyboard-reachable row by row with
               `./lollipop-interaction.mjs` absent entirely. That script only ever touches a
               `.row-hit`'s own class and the shared `#tooltip`. */}

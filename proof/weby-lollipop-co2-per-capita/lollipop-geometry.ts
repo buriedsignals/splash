@@ -6,7 +6,7 @@
  * Structurally the web sibling of `proof/more-lollipop-co2-per-capita/LollipopCo2.tsx`'s own
  * `lollipopGeometry` (the static beat of this exact claim) — not imported from there (a beat never
  * imports another beat's files, `SKILL.md`'s "duplicate, do not link" ruling), and adapted to this
- * genre's own frame shape: `tickHint` is passed in per call rather than fixed at module scope, so
+ * format's own frame shape: `tickHint` is passed in per call rather than fixed at module scope, so
  * the one fluid frame states its own density explicitly (`web-discipline.md`, "Cheap, not
  * recomputed": the hint is decided ONCE, at the canonical width, and never re-derived as the frame
  * stretches).
@@ -137,7 +137,7 @@ export function formatValueFine(v: number): string {
  * required the label's WIDTH in the same user units the gridline is drawn in — which the fluid
  * frame no longer has: the label is HTML at a fixed pixel size while the gridline lives in a
  * `viewBox` that stretches, so the two cannot be compared at build time at all. The collision is
- * closed the way the genre already closes it for its own reference/peak/end labels instead: each
+ * closed the way the format already closes it for its own reference/peak/end labels instead: each
  * value label carries a `--ground` chip behind it (`.value-label`, `render-web.mjs`'s `EXTRA_CSS`)
  * and simply covers whatever passes underneath, at every container width, with nothing measured.
  */
