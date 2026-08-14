@@ -29,3 +29,7 @@ and the newsroom simply has one accent.
 on a visual, with `{source}` where each story's own source goes. Preflight reads it back so a
 journalist is not asked to invent a credit line per story. Leave it out and nothing breaks —
 preflight then says plainly that no house convention is recorded and credit is asked per story.
+`cloudflareAccountId` is OPTIONAL and non-secret: the 32-character account id used to validate a
+separately stored Cloudflare token. The token itself never belongs in this file.
+`cmsKind` and `cmsEndpoint` are OPTIONAL and must be recorded together. They describe the newsroom's
+Livingdocs or We.Publish service without storing its credential; no CMS token belongs here.

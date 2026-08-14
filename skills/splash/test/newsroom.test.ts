@@ -44,6 +44,25 @@ describe("validateNewsroom", () => {
     expect(validateNewsroom(parseNewsroom(COMPLETE))).toEqual([]);
   });
 
+  it("should accept only bounded non-secret service configuration", () => {
+    const profile = {
+      ...parseNewsroom(COMPLETE),
+      cloudflareAccountId: "0123456789abcdef0123456789abcdef",
+      cmsKind: "we-publish",
+      cmsEndpoint: "https://cms.example.test/graphql",
+    };
+    expect(validateNewsroom(profile)).toEqual([]);
+    expect(validateNewsroom({ ...profile, cloudflareAccountId: "not-an-account" })).toContain(
+      "cloudflareAccountId must be the 32-character hexadecimal account id",
+    );
+    expect(validateNewsroom({ ...profile, cmsEndpoint: "https://token@example.test/api" })).toContain(
+      "cmsEndpoint must be a full HTTP or HTTPS URL without embedded credentials",
+    );
+    expect(validateNewsroom({ ...profile, cmsEndpoint: "" })).toContain(
+      "cmsKind and cmsEndpoint must be configured together",
+    );
+  });
+
   it("should name every missing field rather than the first one", () => {
     const errors = validateNewsroom({ name: "X" });
     expect(errors).toContain("url is missing");

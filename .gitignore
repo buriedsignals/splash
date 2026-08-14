@@ -5,6 +5,10 @@ exports/
 # dependencies (never track — includes symlinked node_modules in worktrees)
 node_modules
 
+# Engine's lock-bound dependency receipt lives beside node_modules. It must stay ignored so the
+# generic clean-checkout update guard does not reject every correctly installed Splash checkout.
+.splash-bun-install.json
+
 # git worktrees created by the harness (EnterWorktree)
 .claude/worktrees/
 .splash-preflight.json

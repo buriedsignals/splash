@@ -155,6 +155,30 @@ describe("deriveCharter — fields resolve with their evidence attached", () => 
     });
     expect(fetchCount).toBe(2); // the page itself, plus exactly one stylesheet
   });
+
+  it("should resolve relative stylesheets against the checked final page URL after a redirect", async () => {
+    const requested: string[] = [];
+    const fetchFn = async (url: string) => {
+      requested.push(url);
+      if (requested.length === 1) {
+        return {
+          ok: true,
+          status: 200,
+          url: "https://www.example.test/news/",
+          async text() {
+            return '<html lang="en"><head><link rel="stylesheet" href="house.css"></head></html>';
+          },
+        };
+      }
+      return new Response("body{background:#fff}", { status: 200 });
+    };
+    const proposal = await deriveCharter({ url: "https://example.test/", fetchFn });
+    expect(proposal.url).toBe("https://www.example.test/news/");
+    expect(requested).toEqual([
+      "https://example.test/",
+      "https://www.example.test/news/house.css",
+    ]);
+  });
 });
 
 describe("deriveCharter — never writes anything", () => {

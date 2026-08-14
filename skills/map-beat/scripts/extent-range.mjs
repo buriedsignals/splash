@@ -34,7 +34,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
 import {
   EARTH_CIRCUMFERENCE_KM,

@@ -26,9 +26,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { readStation } from "../assets/gauge-data.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -36,10 +36,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** The camera's own centre is READ from the frozen USGS site file, never typed here — the same
  *  rule the beat's prose keeps. A coordinate re-typed into a bake script is a coordinate that can
  *  drift from the one the beat credits, and nothing would notice. */
-const STATION = readStation(
-  await readFile(join(HERE, "../assets/sample-data/potomac-station.rdb"), "utf8"),
-);
-
 /** Zoom 9 puts roughly 200 km of the Potomac valley across the plate — enough that a reader who
  *  has never heard of Point of Rocks can place it against Frederick, Leesburg and the river's own
  *  bends, which is the only job this frame has. */
@@ -58,11 +54,29 @@ const width = Number(flag("--width", "1000"));
 const height = Number(flag("--height", "640"));
 const outDir = flag("--out", join(HERE, "../assets/sample-data"));
 const settleMs = Number(flag("--settle", "15000"));
+const sealedBrowserPath = flag("--browser", null);
+const sealedMaplibreJsPath = flag("--maplibre-js", null);
+const sealedMaplibreCssPath = flag("--maplibre-css", null);
+const sealedStylePath = flag("--style-json", null);
+const sealedMapTilerEnv = argv.includes("--maptiler-env");
+const stationPath = flag("--station", join(HERE, "../assets/sample-data/potomac-station.rdb"));
+const sealedRuntimeValues = [sealedBrowserPath, sealedMaplibreJsPath, sealedMaplibreCssPath];
+const sealed = sealedRuntimeValues.some(Boolean) || Boolean(sealedStylePath) || sealedMapTilerEnv;
+if (sealed && (!sealedRuntimeValues.every(Boolean) || Boolean(sealedStylePath) === sealedMapTilerEnv)) {
+  throw new Error("sealed scrolly map bake requires --browser, --maplibre-js, --maplibre-css, and exactly one of --style-json or --maptiler-env");
+}
+if (sealedBrowserPath && (!isAbsolute(sealedBrowserPath) || !existsSync(sealedBrowserPath))) {
+  throw new Error(`sealed Chrome is not an existing absolute path: ${sealedBrowserPath}`);
+}
+if (!isAbsolute(stationPath) || !existsSync(stationPath)) {
+  throw new Error(`station data is not an existing absolute path: ${stationPath}`);
+}
+const STATION = readStation(await readFile(stationPath, "utf8"));
 // Resolved from the WORKING DIRECTORY, never by walking up out of this skill's own directory — a
 // skill copied into a journalist's root sits at a different depth, and this skill's own canon test
 // fails any specifier that leaves its directory. The environment wins over the file when both
 // carry a key.
-const keyPath = flag("--env", join(process.cwd(), ".env"));
+const keyPath = sealed ? null : flag("--env", join(process.cwd(), ".env"));
 
 /** Headless Chrome has to be FOUND before it can be gated. Resolve the candidates in order and
  *  fail naming every path looked in — a duplicate of the sibling formats' own resolver. */
@@ -177,22 +191,24 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
 }
 
 const names = ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES];
-const fromProcess = names.map((name) => process.env[name]).find(Boolean);
-const fromFile = existsSync(keyPath)
+const sealedStyle = sealedStylePath ? JSON.parse(await readFile(sealedStylePath, "utf8")) : null;
+const fromProcess = sealedStyle ? undefined : names.map((name) => process.env[name]).find(Boolean);
+const fromFile = !sealed && existsSync(keyPath)
   ? (() => {
       const env = parseEnvFile(readFileSync(keyPath, "utf8"));
       return names.map((name) => env[name]).find(Boolean);
     })()
   : undefined;
 const key = fromProcess ?? fromFile;
-if (!key)
+if (!key && !sealedStyle && sealed) throw new Error("sealed scrolly map bake did not receive MAPTILER_KEY from Engine");
+if (!key && !sealedStyle)
   throw new Error(
     `no MapTiler key. Looked for ${names.join(", ")} in the environment and in ${keyPath}`,
   );
 
 const browser = await puppeteer.launch({
   headless: true,
-  executablePath: resolveChrome(),
+  executablePath: sealedBrowserPath ?? resolveChrome(),
   args: [
     "--use-gl=angle",
     "--use-angle=swiftshader",
@@ -203,21 +219,32 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 await page.setViewport({ width, height, deviceScaleFactor: 2 });
-await page.setContent(
-  `<!doctype html><html><head>
+if (sealed) {
+  await page.setContent(
+    `<!doctype html><html><head>
+<style>html,body{margin:0;padding:0}#map{width:${width}px;height:${height}px}</style>
+</head><body><div id="map"></div></body></html>`,
+    { waitUntil: "load" },
+  );
+  await page.addStyleTag({ path: sealedMaplibreCssPath });
+  await page.addScriptTag({ path: sealedMaplibreJsPath });
+} else {
+  await page.setContent(
+    `<!doctype html><html><head>
 <link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
 <script src="${MAPLIBRE}"></script>
 <style>html,body{margin:0;padding:0}#map{width:${width}px;height:${height}px}</style>
 </head><body><div id="map"></div></body></html>`,
-  { waitUntil: "load" },
-);
+    { waitUntil: "load" },
+  );
+}
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, zoom, centre, settleMs, width, height }) => {
+  async ({ key, style, styleDefinition, zoom, centre, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
-      style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
+      style: styleDefinition ?? `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
@@ -269,7 +296,7 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: CAMERA.style, zoom: CAMERA.zoom, centre: [STATION.lon, STATION.lat], settleMs, width, height },
+  { key, style: CAMERA.style, styleDefinition: sealedStyle, zoom: CAMERA.zoom, centre: [STATION.lon, STATION.lat], settleMs, width, height },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);

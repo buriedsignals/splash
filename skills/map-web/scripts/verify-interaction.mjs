@@ -45,7 +45,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
 

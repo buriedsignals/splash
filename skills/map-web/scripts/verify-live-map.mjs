@@ -79,7 +79,7 @@
 import { existsSync, readdirSync, readFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
 
 /** The two shapes. The first is wide enough that a square plate's scale and the camera's disagree

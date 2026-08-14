@@ -11,8 +11,13 @@ function names(text: string) {
 }
 
 describe("the environment example", () => {
-  it("documents the canonical names accepted by the installer", async () => {
-    expect(names(await readFile(EXAMPLE, "utf8"))).toEqual([
+  it("is migration-only while retaining the canonical legacy names", async () => {
+    const text = await readFile(EXAMPLE, "utf8");
+    expect(text).toContain(
+      "Do not copy this file for a new managed installation",
+    );
+    expect(text).toContain("operating-system");
+    expect(names(text)).toEqual([
       "MAPTILER_KEY",
       "MAPTILER_DELIVERY_KEY",
       "DATAWRAPPER_TOKEN",

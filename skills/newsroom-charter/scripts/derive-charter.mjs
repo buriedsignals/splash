@@ -166,8 +166,9 @@ export async function deriveCharter({
   }
 
   const html = page.text;
+  const resolvedPageURL = page.url ?? url;
   const inlineCss = extractInlineStyleBlocks(html);
-  const stylesheetHrefs = extractStylesheetHrefs(html, url).slice(0, maxStylesheets);
+  const stylesheetHrefs = extractStylesheetHrefs(html, resolvedPageURL).slice(0, maxStylesheets);
 
   const sheets = await Promise.all(
     stylesheetHrefs.map(async (href) => ({ href, ...(await fetchWithTimeout(href, { timeoutMs, fetchFn })) })),
@@ -208,7 +209,7 @@ export async function deriveCharter({
 
   return {
     ok: true,
-    url,
+    url: resolvedPageURL,
     fields,
     unresolved,
     nothingFurther,

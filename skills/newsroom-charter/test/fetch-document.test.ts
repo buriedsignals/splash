@@ -9,6 +9,7 @@ describe("fetchWithTimeout", () => {
     expect(result).toEqual({
       ok: true,
       status: 200,
+      url: "https://example.test",
       text: "<html>hi</html>",
       error: null,
     });

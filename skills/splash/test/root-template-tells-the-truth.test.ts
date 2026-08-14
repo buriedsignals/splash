@@ -18,8 +18,9 @@
  * FOUR THINGS IT ASSERTS, each with the mutation that reddens it (all four run and verified in a
  * copy of the tree under /tmp — invariant 4 of PLAN-2026-08-10.md):
  *
- *   1. every BARE import specifier anywhere under skills/, proof/ and shared/ is declared in the
- *      template's `dependencies`.
+ *   1. every BARE import specifier in installed production skills and shared code is declared in
+ *      the template's `dependencies`. Proofs and test directories use root devDependencies and are
+ *      deliberately outside the journalist install contract.
  *      MUTATION: delete "remotion" from root-template/package.json.
  *      Before this guard, that mutation changed nothing at all — which was the proof it was missing.
  *
@@ -36,7 +37,7 @@
  *
  *   4. every binary a script SPAWNS out of `node_modules/.bin/` is provided by a declared
  *      dependency. Spawning is invisible to an import scan, and it is how the video format runs:
- *      three skill scripts and eighteen proof beats exec `node_modules/.bin/remotion`, which is
+ *      production skill scripts exec `node_modules/.bin/remotion`, which is
  *      shipped by `@remotion/cli` — a package NOTHING imports, so rule 1 alone would never ask for
  *      it, and a root without it fails at spawn with ENOENT rather than at module load.
  *      MUTATION: delete "@remotion/cli" from root-template/package.json.
@@ -45,11 +46,9 @@
  *
  *   - A specifier CONSTRUCTED AT RUNTIME. This is a static text scan; it never evaluates anything.
  *     Same boundary `no-cross-skill-imports.test.ts` states for itself, for the same reason.
- *   - A dependency reached over the NETWORK rather than resolved. Measured, and it is real here:
- *     `maplibre-gl` is referenced 41 times and imported ZERO times — every map bake pulls it from
- *     `unpkg.com/maplibre-gl@4.7.1` at render time. It is therefore correctly absent from the
- *     template, and a hand-written list would very likely have added it. What it actually needs is
- *     outbound network at bake time, which no manifest can express and preflight does not check.
+ *   - A dependency reached over the NETWORK rather than resolved. That remains outside a package
+ *     manifest. MapLibre itself is now installed and passed to the closed map operations locally;
+ *     provider tiles remain a separate network capability.
  *   - Whether the declared version RESOLVES or is compatible. That is `bun install`'s job, and the
  *     clean-room install is what proves it.
  *   - Whether the packages are actually INSTALLED in a given root. That is preflight's job — and
@@ -66,11 +65,20 @@ const TWIN = join(SPLASH_TWIN, "..", "..");
 const TEMPLATE = join(SPLASH_TWIN, "assets", "root-template");
 const TEMPLATE_SHARED = join(TEMPLATE, "shared");
 
-// Where a journalist's own tree comes from. `shared/` is included because the vendored copies are
-// themselves modules a beat loads, so their imports are the root's imports too.
-const WALKED = ["skills", "proof", "shared"];
+// Production code in a journalist install. `shared/` is included because the vendored copies are
+// themselves modules a beat loads. Proofs and test directories are development-only.
+const WALKED = ["skills", "shared"];
 
 const SOURCE_EXT = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
+
+describe("Engine's installed dependency receipt stays update-safe", () => {
+  it("keeps the generated receipt out of Git's clean-checkout update guard", async () => {
+    const ignored = (await readFile(join(TWIN, ".gitignore"), "utf8"))
+      .split(/\r?\n/)
+      .map((line) => line.trim());
+    expect(ignored).toContain(".splash-bun-install.json");
+  });
+});
 
 async function* sourceFiles(dir: string): AsyncGenerator<string> {
   let entries;
@@ -80,7 +88,7 @@ async function* sourceFiles(dir: string): AsyncGenerator<string> {
     return;
   }
   for (const e of entries) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
+    if (e.name === "node_modules" || e.name === ".git" || e.name === "test") continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) yield* sourceFiles(p);
     else if (SOURCE_EXT.test(e.name)) yield p;
@@ -354,6 +362,10 @@ describe("the root template pins what this repository pins", () => {
         drift.push(`${name}: template ${version} vs tree ${here}`);
     }
     expect(drift.sort()).toEqual([]);
+  });
+
+  it("should carry exactly the canonical production dependency inventory", () => {
+    expect(templatePkg.dependencies ?? {}).toEqual(twinPkg.dependencies ?? {});
   });
 });
 

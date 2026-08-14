@@ -28,6 +28,13 @@ upstream in `storyboard/references/datawrapper-chart-types.json`; this skill rec
 `switch (spec.chartType)` in this skill's own code, that is the signal this skill has stopped being
 thin and needs to say so, not quietly become one.
 
+In an Engine-managed installation, the production call is `bsig run splash datawrapper-produce`
+with story identity, format, and size in bounded JSON on stdin. Engine verifies the adopted checkout
+and injects only the broker-backed `DATAWRAPPER_TOKEN` into `scripts/sealed-produce.mjs`; the model,
+MCP app, terminal command, and story files never carry it. Calling `produce(..., {token})` directly
+is the implementation and test interface retained underneath that boundary, not the managed
+credential workflow.
+
 The one capability worth building this properly for: Datawrapper's line-chart engine carries a
 **`range-annotations`** key, separate from `text-annotations` — a drawn reference rule or shaded
 band at a fixed value, not just a floating label asserting one. `scripts/map-spec.mjs` exposes it
@@ -128,42 +135,22 @@ established it.
    calls export; `format: "static"` writes the PNG and never returns a bare embed. This mirrors the
    rest of this project's single-format-per-element rule (`STORYBOARD.md`'s `chosen` slot), not a
    Datawrapper-specific idea.
-5. **No token, no run.** `produce` throws before making a single network call if `token` is falsy —
-   never a silent fallback to an unrendered stand-in.
+5. **No token, no run.** The managed path receives the token only from Engine's credential broker.
+   The underlying `produce` API still throws before making a single network call if its internally
+   supplied token is falsy — never a silent fallback to an unrendered stand-in.
 
-## Quick start
+## Managed production
 
-```js
-import { produce } from "./scripts/produce.mjs";
+Write the reviewed specification to
+`<storiesRoot>/<storyId>/beats/<outputId>/spec.json`, then invoke the closed operation. For example:
 
-const spec = {
-  takeaway: "En 2024, la Suisse a émis moins de CO₂ sur son territoire qu'en 1967.",
-  limits: "Émissions territoriales uniquement.",
-  credit: "Global Carbon Budget 2025, via Our World in Data",
-  effectiveDate: "données 2024",
-  language: "fr-FR",
-  color: "#0B7A75",
-  chartType: "d3-lines",
-  format: "static",
-  seriesLabel: "Émissions de CO₂ (Mt)", // never the raw "co2Mt" column name
-  data: swissCo2Since1950, // [{ year, co2Mt }, ...]
-  rangeAnnotations: [{ value: 32.5, label: "Niveau de 1967 (32,5 Mt)" }],
-};
-
-const result = await produce(spec, {
-  storiesRoot: "stories",
-  storyId: "swiss-co2",
-  outputId: "1-co2-line",
-  name: "co2",
-  size: "landscape",
-  token: process.env.DATAWRAPPER_TOKEN,
-  fetchFn: fetch,
-});
-// result.pngPath — open it and look at it. Did the rule draw at 32.5, with its label?
+```bash
+printf '%s\n' '{"storyId":"swiss-co2","outputId":"1-co2-line","parameters":{"format":"static","size":"landscape"}}' \
+  | bsig run splash datawrapper-produce
 ```
 
-`scripts/prove-co2.mjs` is exactly this, wired to a real Our World in Data fetch:
-`bun run scripts/prove-co2.mjs`.
+The command contains no credential. `scripts/prove-co2.mjs` and the direct `produce` CLI remain
+maintainer proof and compatibility surfaces; they are not new-install instructions.
 
 ## Tuning knobs
 
@@ -201,7 +188,8 @@ const result = await produce(spec, {
   `bun run scripts/produce.mjs <storiesRoot> <storyId> <outputId> [static|web] [size] --story-output`;
   it derives the beat path, loads, and reuses the beat receipt. Without `--story-output`, the
   legacy one-shot `<spec.json> <outDir>` shape remains
-  available but is not a published-chart revision path.
+  available but is not a published-chart revision path. Managed production enters through
+  `scripts/sealed-produce.mjs` and Engine's `datawrapper-produce` operation instead.
 - `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed
   (`references/range-annotation-shape.md` §2).
 - `scripts/prove-co2.mjs` — the real Swiss CO₂ proof case, fetching Our World in Data directly.

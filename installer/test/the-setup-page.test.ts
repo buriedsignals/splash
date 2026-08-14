@@ -129,6 +129,7 @@ beforeAll(async () => {
     [
       "bun",
       join(INSTALLER, "configure.mjs"),
+      "--legacy-plaintext",
       "--root",
       root,
       "--home",

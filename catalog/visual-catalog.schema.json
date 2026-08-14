@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://buriedsignals.com/splash/visual-catalog.schema.json",
+  "title": "Splash visual catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "catalogId",
+    "mediums",
+    "formats",
+    "capabilities",
+    "deliveryForms",
+    "producers",
+    "delegatedProducers",
+    "formatPairs",
+    "treatments"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": 1 },
+    "catalogId": { "$ref": "#/$defs/id" },
+    "mediums": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/namedDescription" }
+    },
+    "formats": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/namedDescription" }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "deliveryForms": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/deliveryForm" }
+    },
+    "producers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/producer" }
+    },
+    "delegatedProducers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/delegatedProducer" }
+    },
+    "formatPairs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/formatPair" }
+    },
+    "treatments": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/treatment" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "idArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "namedDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "requiredCredentials",
+        "requiredSettings",
+        "repairAction",
+        "unavailableReason"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "requiredCredentials": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+        },
+        "requiredSettings": { "$ref": "#/$defs/idArray" },
+        "repairAction": { "const": "open-readiness" },
+        "unavailableReason": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "deliveryForm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "requiredCapabilities"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "requiredCapabilities": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "skill"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "skill": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" }
+      }
+    },
+    "delegatedProducer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "producer", "capability", "medium", "formats"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "producer": { "$ref": "#/$defs/id" },
+        "capability": { "$ref": "#/$defs/id" },
+        "medium": { "$ref": "#/$defs/id" },
+        "formats": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "sizeRule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "options"],
+          "properties": {
+            "kind": { "const": "required" },
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": ["landscape", "square", "portrait"] }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "none" } }
+        }
+      ]
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "promise"],
+      "properties": {
+        "kind": { "enum": ["none", "explore", "motion", "scroll"] },
+        "promise": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "formatPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "medium",
+        "format",
+        "producer",
+        "sizeRule",
+        "interaction",
+        "deliveryForms",
+        "requiredCapabilities",
+        "optionalCapabilities",
+        "runtimePrerequisites",
+        "browserPrerequisites"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "medium": { "$ref": "#/$defs/id" },
+        "format": { "$ref": "#/$defs/id" },
+        "producer": { "$ref": "#/$defs/id" },
+        "sizeRule": { "$ref": "#/$defs/sizeRule" },
+        "interaction": { "$ref": "#/$defs/interaction" },
+        "deliveryForms": { "$ref": "#/$defs/idArray" },
+        "requiredCapabilities": { "$ref": "#/$defs/idArray" },
+        "optionalCapabilities": { "$ref": "#/$defs/idArray" },
+        "runtimePrerequisites": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["bun", "production-dependencies"] }
+        },
+        "browserPrerequisites": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "const": "engine-managed-chromium" }
+        }
+      }
+    },
+    "dataShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "requires"],
+      "properties": {
+        "summary": { "$ref": "#/$defs/nonEmptyString" },
+        "requires": { "$ref": "#/$defs/idArray" }
+      }
+    },
+    "treatment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "medium", "label", "reference", "dataShape", "formats", "state"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "medium": { "$ref": "#/$defs/id" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "reference": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+/(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\\.md$"
+        },
+        "dataShape": { "$ref": "#/$defs/dataShape" },
+        "formats": { "$ref": "#/$defs/idArray" },
+        "state": { "enum": ["selectable", "proof-only"] },
+        "disabledReason": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "proof-only" } }, "required": ["state"] },
+          "then": { "required": ["disabledReason"] },
+          "else": { "not": { "required": ["disabledReason"] } }
+        }
+      ]
+    }
+  }
+}

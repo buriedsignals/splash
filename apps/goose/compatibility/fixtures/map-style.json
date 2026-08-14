@@ -1,0 +1,12 @@
+{
+  "version": 8,
+  "name": "Splash deterministic closure fixture",
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#dce8ef" }
+    }
+  ]
+}

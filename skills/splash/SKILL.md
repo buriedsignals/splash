@@ -36,8 +36,8 @@ no fifth**:
 3. **Make each gate close into a file.** A gate is "closed" when the file it writes exists and is
    valid — never when a conversation merely reads as though it agreed. `storyboard`'s own
    gotcha about a truthy-but-not-confirmed takeaway is a direct instance of this rule: a gate that
-   can be satisfied by a fact readable *only* from a transcript is not really closed.
-4. **Dispatch to the craft skill.** This skill decides *which* skill runs next; it never runs the
+   can be satisfied by a fact readable _only_ from a transcript is not really closed.
+4. **Dispatch to the craft skill.** This skill decides _which_ skill runs next; it never runs the
    render itself. Production of any pixel, embed or video belongs entirely to the craft skill
    matching the chosen candidate's medium and format: `chart-beat` (`chart`, `static`),
    `chart-web` (`chart`, `web`), `chart-video` (`chart`, `video`), `map-beat`
@@ -110,7 +110,7 @@ different tests, and neither claims more than it proves:
 
 - **Every branch of `missingForGate2` is pinned directly** in `test/where.test.ts` (missing hand
   field, empty slots, an unchosen slot, a chosen value with no `candidates` key at all, a chosen
-  value present but off the candidate list) — this catches a break in `where.mjs`'s *own* logic,
+  value present but off the candidate list) — this catches a break in `where.mjs`'s _own_ logic,
   the same way any other function's tests would.
 - **A second, narrower test proves the two implementations still agree with each other.** Runtime
   code never crosses a skill boundary — this one test does, for exactly this reason: it imports
@@ -135,8 +135,8 @@ different tests, and neither claims more than it proves:
 - **The expensive semantic checks are not in either gate any more.** `groundTakeaway`, `formatGap`
   and `capabilityGap` each run ONCE, in the phase that owns them — grounding at G1, format and
   capability at G2b — and record a resolved scalar into `STORYBOARD.md` (`grounding:`, and the
-  slot's `reachable:`). Both gates read the record. That is what closes this divergence class *by
-  construction* rather than by vigilance: neither gate can run a check the other cannot, because
+  slot's `reachable:`). Both gates read the record. That is what closes this divergence class _by
+  construction_ rather than by vigilance: neither gate can run a check the other cannot, because
   neither runs one. Do not give `checkStoryboard` a second argument again.
 
 ## Preflight establishes what is possible — it does not validate an environment
@@ -151,13 +151,13 @@ offer a medium or a delivery form.
 
 **A key gates a capability, never the session.**
 
-| key | opens | when required |
-| --- | --- | --- |
-| `MAPTILER_KEY` | map beats | only if the story has a map |
-| `DATAWRAPPER_TOKEN` | Datawrapper beats | only if the story uses one |
-| Cloudflare Pages | the hosted embed delivery form | never blocks the session — but it IS probed, like the other two, and it opens a real delivery form |
+| key                 | opens                          | when required                                                                                      |
+| ------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `MAPTILER_KEY`      | map beats                      | only if the story has a map                                                                        |
+| `DATAWRAPPER_TOKEN` | Datawrapper beats              | only if the story uses one                                                                         |
+| Cloudflare Pages    | the hosted embed delivery form | never blocks the session — but it IS probed, like the other two, and it opens a real delivery form |
 
-That third row used to read *"not yet built: this row is hardcoded closed, never probed"*, and it was
+That third row used to read _"not yet built: this row is hardcoded closed, never probed"_, and it was
 false in both halves: `runPreflight` calls `probeCloudflare` with both credentials
 (`scripts/preflight.mjs`), and `deliver`'s `offerForms` lists the `embed` form for a web or
 scrolly beat whenever they resolve. A model reading that row told a journalist a hosted embed was
@@ -183,15 +183,30 @@ unavailable while `offerForms` would have offered it — **a delivery constraint
   instead of being told its whole environment is broken; a chart-only story never calls this with
   `"map"` at all, so a missing map key never reaches it.
 
-**Both naming conventions are accepted.** This project's own names (`MAPTILER_KEY`,
-`DATAWRAPPER_TOKEN`) stay canonical; `resolveEnvKey` (`scripts/keys.mjs`) also accepts the sibling
-engine's own names as aliases — `MAPTILER_API_KEY` / `REMOTION_MAPTILER_KEY` / `VITE_MAPTILER_KEY`
-for the map key, `DATAWRAPPER_API_TOKEN` for the Datawrapper token (measured directly in that
-repository's scripts, not guessed) — so a `.env` that already works for the engine does not
-silently report `missing` here. The canonical name always wins when both happen to be set. Same
-remedy the main repository used for its own `ATELIER_*`→`SPLASH_*` rename
-(`process.env.SPLASH_X ?? process.env.ATELIER_X`, canonical first) — a repeated inline idiom, not a
-shared module, and this project follows the same shape rather than inventing a registry for it.
+**Engine owns the production credential names and values.** `MAPTILER_KEY`,
+`MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
+by the Splash Readiness app. The journalist enters them only in its protected loopback setup page;
+Engine validates and stores them through the operating-system credential broker, then hydrates only
+the closed operation that requires one. `resolveEnvKey` still accepts historical aliases when an
+explicit legacy root is inspected or run during migration. That is read-only compatibility input,
+not the setup path and not a reason to ask for a credential in chat.
+
+**Managed map production is declarative, not a disguised seed script.** After a map treatment and
+format are confirmed, write `beats/<outputId>/MAP-BAKE.json` using
+`references/managed-map-bake.md`. The closed `map-bake` operation accepts only the story/output
+identity and that contract's SHA-256 digest. Engine verifies the contract and its story-local
+geography/data digests before it releases `MAPTILER_KEY`, then uses only its recorded browser and
+the installed local MapLibre files. Outputs are immutable and digest-addressed beneath the beat.
+Never dispatch the fixed Europe or Potomac proof cameras for an unrelated story.
+
+**The Goose chooser is a view of the same Storyboard gates, not another state machine.** After the
+journalist confirms the exact Engine-inspected story path in the app session, À-la-carte reads only
+the current canonical gate and presents its reachable catalogue choices in stable order. Focus,
+filtering, details, setup links, cancellation, and app closure write nothing. An app-only Confirm
+must carry the observed story, catalogue, and capability revisions through the shared selection
+service; conflicts refresh instead of guessing. Changing publication format or treatment is a
+separate explicit rewind. If app-only tools are unavailable, keep using this skill's textual human
+gate rather than treating a model call as confirmation.
 
 **The newsroom's identity gets three honest outcomes, not two.** `newsroom-profile` in `checks` is:
 
@@ -233,10 +248,10 @@ accent. Two rules make the plural safe rather than merely wider:
   non-text contrast floor; a failing accent is shown failing, with the nearest passing variant
   offered beside it and never applied.
 
-**Installing a fresh root leaves it at `missing` unless the installer answers it.** The root
-template ships `NEWSROOM.example.md`, never `NEWSROOM.md`, so a root created by hand reliably fails
-preflight on a file nobody was told to create. `installer/configure.mjs` closes that: the setup page
-collects the fields and writes `NEWSROOM.md` itself, after validating it with this same reader — and
+**A fresh managed install leaves the newsroom at `missing` until the journalist answers it.** The
+tracked template is an example, never the active profile. The Readiness app starts
+`installer/configure.mjs` through Engine; its protected setup page writes the manifest-owned external
+`NEWSROOM.md` after validating it with this same reader — and
 it OFFERS the derivation rather than only naming it: `POST /derive` runs newsroom-charter
 against the newsroom's own address and shows every proposed value beside the declaration it was read
 from, filling the empty fields and leaving each undeclared one as a named question. It proposes;
@@ -245,46 +260,45 @@ invoke newsroom-charter (derive from the newsroom's own website, or record a dec
 path lands `NEWSROOM.md` in a resolved state; the example file left un-renamed is the one shape that
 never resolves.
 
-## The install, and the one directory it all hangs off
+## The Engine-managed development install and its data boundaries
 
-**A Splash root is ONE directory that is five things at once**, and it has to be, because each of
-the five resolves paths independently:
+The development setup is one command backed by an Engine plan/apply transaction, with distinct
+owned locations. Release provenance is reserved in the manifest but is not enforced while Splash is
+still changing:
 
-| It is | Who depends on that |
-| --- | --- |
-| the package `bun install` runs in | every `import` in every beat |
-| the owner of the single `.env` | `recordKey`, and every producer that reads a key |
-| the `#shared/*` resolution root | every beat's craft import, at any depth |
-| the parent of `stories/` | `createStory`, `whereIs` |
-| what the hosts' symlinks point into | Goose, Gemini, Codex |
+| State                                                                             | Authority                                                 |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| explicitly adopted current checkout and complete current lockfile dependency tree | Engine removable install state                            |
+| browser compatible with the current Puppeteer dependency                          | Engine runtime state                                      |
+| direct skill projections from the adopted checkout                                 | Engine transaction + projection ledger                    |
+| story directories                                                                 | Engine-created, manifest-owned external data-bearing root |
+| `NEWSROOM.md`                                                                     | manifest-owned external data-bearing configuration        |
+| provider credentials and validation receipts                                      | Engine's operating-system credential broker               |
+| `extensions.splash`                                                               | Engine's revision-checked Goose configuration transaction |
 
-They were not one directory before, and that is exactly how a producer came to read the DEVELOPER's
-`.env` while a journalist's key sat unread in their own root — both Bun and Node resolve a symlink
-before computing `import.meta.url`, so a symlinked install made the old fixed climb (`../../../.env`)
-land in the checkout. `scripts/splash-root.mjs` replaces the climb with a search for the nearest
-ancestor declaring `#shared/*`, which is correct in the checkout AND in an installed root, and
-throws rather than guessing when there is none. `test/the-key-has-one-home.test.ts` proves the
-producers and `recordKey` name the same file.
+Operations run the installed checkout in place with package installation and automatic `.env`
+loading disabled. They receive only their declared credential IDs and the canonical external paths.
+No per-run copy of the checkout, dependency tree, Bun runtime, or browser is made.
+The flat skill links are reconciled inside the same Engine apply and uninstall transaction; the
+legacy `place-skills.mjs` CLI is not a second managed installer.
+The shell wrapper does not create the stories root ahead of Engine; a missing root is created by the
+adoption step and removed again if that transaction rolls back while it is still empty.
 
-Installing is therefore `installer/install.sh`, and it copies the template, the fifteen skills and
-the installer into that one root. It contains **no keys and receives none**: secrets are typed
-into `installer/configure.mjs`, a page served on 127.0.0.1, so nothing reaches shell history — and
-each key is PROBED against its real service before it is written, at `0600`. `installer/place-skills.mjs`
-then wires the shared `~/.agents/skills/` store those hosts read, and the generated `splash-doctor`
-(`installer/doctor.mjs`) checks the wiring preflight structurally cannot see — the links, the skill
-front matter, `bun` on a login shell's PATH, a browser — and then hands the last word to
-`runPreflight` rather than re-deciding anything it owns.
+`scripts/splash-root.mjs`, `recordKey`, the root template, and the plaintext branch of
+`installer/configure.mjs` remain bounded legacy compatibility for an existing copied root. They do
+not define a new managed install. New setup uses the Readiness app and broker-backed controller; it
+never asks the journalist to paste a key into a terminal or conversation.
 
 ## Architecture
 
-| Layer | File | Role |
-| --- | --- | --- |
-| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/format/size/`reachable`/`chosen`, and the conditional `producer`/`datawrapperType` decision) before ever reporting `production`. It reports missing treatment selection as `G2-treatment` and a missing eligible provider choice as `G2-producer`. Past Gate 2 it walks the beats: `beatsAwaitingApproval` first — **nothing about `export/` may shorten the walk past it** — then the durable editor-feedback trigger (a valid review must bind the current `FEEDBACK.md` and render digests; delivery must bind that feedback/review/render tuple), then `beatsAwaitingDelivery`, per beat, into `export/<beat>/`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
-| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
-| Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
-| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents` |
-| Maintainer notes | `scripts/notes.mjs` | `recordMaintainerNote({storyDir, phase, note})` — appends to `stories/<slug>/NOTES-FOR-MAINTAINER.md`, creating it with its own header. Refuses an empty note, a note with no phase, and any path inside `export/` (that directory is what the newsroom receives). The other end of `formatHandover`'s throw |
-| Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into, plus a story-local `AGENTS.md` that makes the editable-source and published-output relationship recoverable in a fresh session |
+| Layer                | File                                                       | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase recovery       | `scripts/where.mjs`                                        | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/format/size/`reachable`/`chosen`, and the conditional `producer`/`datawrapperType` decision) before ever reporting `production`. It reports missing treatment selection as `G2-treatment` and a missing eligible provider choice as `G2-producer`. Past Gate 2 it walks the beats: `beatsAwaitingApproval` first — **nothing about `export/` may shorten the walk past it** — then the durable editor-feedback trigger (a valid review must bind the current `FEEDBACK.md` and render digests; delivery must bind that feedback/review/render tuple), then `beatsAwaitingDelivery`, per beat, into `export/<beat>/`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
+| Preflight            | `scripts/preflight.mjs`                                    | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing                                                                                                                                                                  |
+| Credential boundary  | Engine record broker + `installer/setup/engine-bridge.mjs` | Lists non-secret metadata/status, validates and atomically replaces one record through bounded stdin, and hydrates only closed operations. `scripts/keys.mjs` retains provider probes and the explicitly legacy `recordKey` writer; production setup never invokes that writer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Charter reader       | `scripts/newsroom.mjs`                                     | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Maintainer notes     | `scripts/notes.mjs`                                        | `recordMaintainerNote({storyDir, phase, note})` — appends to `stories/<slug>/NOTES-FOR-MAINTAINER.md`, creating it with its own header. Refuses an empty note, a note with no phase, and any path inside `export/` (that directory is what the newsroom receives). The other end of `formatHandover`'s throw                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Workspace scaffolder | `scripts/new-story.mjs`                                    | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into, plus a story-local `AGENTS.md` that makes the editable-source and published-output relationship recoverable in a fresh session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## How it works (the shape)
 
@@ -294,7 +308,6 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    nine phases later, from `palette` — long past the point where a wrong value could still
    have been corrected — and heard about a closed key only as a restriction, with no moment at
    which it could be opened. Three things are STATED, and one is ASKED, in one turn:
-
    - **The newsroom's identity, read back.** `checkNewsroom` now carries the parsed `profile` on
      its check. State the values and which are present. On `missing`, offer the three branches by
      name: derive it with **newsroom-charter** (it measures the newsroom's own website) ·
@@ -302,18 +315,17 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
      field) · decline, recorded. On `pass`, still say what it holds — a profile whose values were
      assumed rather than measured is exactly what a journalist can correct here and nowhere later.
    - **Credits.** The profile's optional seventh field, `credit`, is the newsroom's standing
-     convention. When it is absent, say so plainly — *"no house credit convention is recorded, so
-     credit is asked per story"* (it is already hand field 5) — rather than leaving the journalist
+     convention. When it is absent, say so plainly — _"no house credit convention is recorded, so
+     credit is asked per story"_ (it is already hand field 5) — rather than leaving the journalist
      to discover it at movement ③.
-   - **The capabilities, with what would open each.** Every row carries a `fill` naming its own
-     environment variable, where the key is obtained, and the file it goes in.
+   - **The capabilities, with what would open each.** Every row names its provider and acquisition
+     page. It never asks for or carries the value.
 
-   Then, **when any capability row is closed, ask ONCE**: *"these are closed — paste a key now, or
-   continue without them."* `recordKey` (`scripts/keys.mjs`) writes what is given into the root
-   `.env` and never echoes it; re-probe **that one capability**; move on either way. Say in the same
-   turn that a key pasted into a chat is a secret in a transcript, which is outside this
-   toolchain's reach. One question, one re-probe, "continue" always available. It never branches,
-   never installs, and never blocks.
+   When any capability row is closed, offer the Readiness app's **Set up credentials and newsroom**
+   action once, or continue without that optional capability. Never ask the journalist to paste a
+   credential into chat or a terminal. The protected page verifies and saves each provider
+   independently through Engine, clears the input, and leaves the multi-provider session open until
+   the journalist chooses Done. Refresh status after it closes.
 
    Call `assertPreflightReady` right after — it throws, naming every blocker, exactly when
    `dependencies` or `newsroom-profile` is not `pass`/`declined`; this is the one point that halts
@@ -321,6 +333,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    missing or rejected `MAPTILER_KEY` / `DATAWRAPPER_TOKEN` is **never** a blocker — it narrows
    `capabilities`, reported honestly rather than worked around, and the format gate (G2b) reads
    `capabilityGap` before it would otherwise offer a medium the environment cannot honour.
+
 2. **Create or recover the story workspace before phase recovery.** For a new story, call
    `createStory({root, title})` exactly once before intake; do not make `stories/<slug>` or any of
    its children ad hoc. This guarantees `source/`, `beats/`, `export/`, and the story-local
@@ -334,14 +347,14 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    has no story directory yet to read state from, and Assembly, for SP1's single-beat stories, does
    not yet need a recoverable state of its own):
 
-   | Phase | What happens | Gate | File the gate closes into |
-   | --- | --- | --- | --- |
-   | `intake` | Article and data frozen and profiled, silently — `intake` asks nothing. | — | `source/article.md`, `source/profile.json` |
-   | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
-   | `storyboard` | Restitution, the journalist's hand, the survey, the medium/format/size sub-gates, the reference loop, slots and candidates, then the conditional post-treatment producer preference — `storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c, G2-treatment, G2-producer when eligible | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `format` (G2b), `size` (G2c), `reachable: yes`, `chosen` drawn from its own `candidates`, and — only where the selected treatment maps faithfully to Datawrapper — `producer` plus `datawrapperType` |
-   | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. Then **SURFACE THE ARTIFACT** — the file path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video — and ask approve-or-correct. That turn says **nothing about delivery**: the forms are `offerForms`' output and cannot be known before it runs. | G3, per beat | `beats/<n>-<slug>/APPROVED.md` |
-   | `delivery` | Per beat, `deliver` offers the forms its format allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. The delivery closes by handing it over: which file goes where in the article, the alt text, the credit line, the one caveat. | **G4**, per beat | `export/<beat>/HANDOVER.md` (beside the chosen form's own files) |
-   | `done` | Terminal — **every** approved beat has been delivered. One delivered beat does not close a story that has two. | — | (`export/<beat>/` holds the chosen form, for each of them) |
+   | Phase        | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                    | Gate                                                       | File the gate closes into                                                                                                                                                                                                                                                                                                                                                                                 |
+   | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `intake`     | Article and data frozen and profiled, silently — `intake` asks nothing.                                                                                                                                                                                                                                                                                                                                                                         | —                                                          | `source/article.md`, `source/profile.json`                                                                                                                                                                                                                                                                                                                                                                |
+   | `framing`    | Intent named, the editorial exchange opens, `STORYBOARD.md` is created.                                                                                                                                                                                                                                                                                                                                                                         | G1                                                         | `STORYBOARD.md` (created)                                                                                                                                                                                                                                                                                                                                                                                 |
+   | `storyboard` | Restitution, the journalist's hand, the survey, the medium/format/size sub-gates, the reference loop, slots and candidates, then the conditional post-treatment producer preference — `storyboard`'s exchange completes the contract.                                                                                                                                                                                                           | G1, G2a, G2b, G2c, G2-treatment, G2-producer when eligible | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `format` (G2b), `size` (G2c), `reachable: yes`, `chosen` drawn from its own `candidates`, and — only where the selected treatment maps faithfully to Datawrapper — `producer` plus `datawrapperType` |
+   | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. Then **SURFACE THE ARTIFACT** — the file path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video — and ask approve-or-correct. That turn says **nothing about delivery**: the forms are `offerForms`' output and cannot be known before it runs. | G3, per beat                                               | `beats/<n>-<slug>/APPROVED.md`                                                                                                                                                                                                                                                                                                                                                                            |
+   | `delivery`   | Per beat, `deliver` offers the forms its format allows; the journalist chooses; only that one is materialised — into that beat's OWN `export/<beat>/`, never a directory shared with another beat. The delivery closes by handing it over: which file goes where in the article, the alt text, the credit line, the one caveat.                                                                                                                 | **G4**, per beat                                           | `export/<beat>/HANDOVER.md` (beside the chosen form's own files)                                                                                                                                                                                                                                                                                                                                          |
+   | `done`       | Terminal — **every** approved beat has been delivered. One delivered beat does not close a story that has two.                                                                                                                                                                                                                                                                                                                                  | —                                                          | (`export/<beat>/` holds the chosen form, for each of them)                                                                                                                                                                                                                                                                                                                                                |
 
 5. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
    abstract verb, precisely so this doctrine can move to a different runtime without a rewrite.
@@ -352,13 +365,13 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
    for a new reference) — naming a verb this skill never itself performs would be decoration, not
    vocabulary:
 
-   | Phase | `invoke-skill` |
-   | --- | --- |
-   | `intake` | `intake` |
-   | `framing`, `storyboard` | `storyboard` (which itself reads `doctrine`'s reference set for the reference loop, movement ⑧) |
-   | `production` | the craft skill matching the chosen candidate's medium AND format — the same pairs `storyboard`'s `FORMAT_CATALOG` records: `chart-beat` (`chart`/`static`), `chart-web` (`chart`/`web`), `chart-video` (`chart`/`video`), `map-beat` (`map`/`static`, `map`/`video`), `map-web` (`map`/`web`), `image-beat` (`image`/`static`), `scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `dw-beat` when a chart slot records `producer: datawrapper`, using its persisted `datawrapperType` |
-   | `delivery` | `deliver` |
-   | `done` | nothing — report completion and stop |
+   | Phase                   | `invoke-skill`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+   | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `intake`                | `intake`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+   | `framing`, `storyboard` | `storyboard` (which itself reads `doctrine`'s reference set for the reference loop, movement ⑧)                                                                                                                                                                                                                                                                                                                                                                                                        |
+   | `production`            | the craft skill matching the chosen candidate's medium AND format — the same pairs `storyboard`'s `FORMAT_CATALOG` records: `chart-beat` (`chart`/`static`), `chart-web` (`chart`/`web`), `chart-video` (`chart`/`video`), `map-beat` (`map`/`static`, `map`/`video`), `map-web` (`map`/`web`), `image-beat` (`image`/`static`), `scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `dw-beat` when a chart slot records `producer: datawrapper`, using its persisted `datawrapperType` |
+   | `delivery`              | `deliver`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+   | `done`                  | nothing — report completion and stop                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 6. **Production's turn budget and stall** (spec §8): a beat gets **three cycles** — implement,
    render, check against the pixel checklist, and if it fails, one targeted fix naming the cause.
@@ -388,7 +401,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
      where to put what it had just refused.
    - It **never states a delivery constraint that did not come from `offerForms`.** Delivery's
      forms are that function's output; anything said about them before it runs is a guess. The run
-     guessed twice, both times wrongly, once *inside* the Gate-3 approval question — and had to
+     guessed twice, both times wrongly, once _inside_ the Gate-3 approval question — and had to
      retract it. `offerForms` now requires the beat's `APPROVED.md` and throws without it, so
      calling it early fails loudly instead of licensing a guess.
    - **A missing prerequisite is reported and never designed around.** (`scripts/preflight.mjs`
@@ -425,17 +438,17 @@ if (missing.length > 0) {
 
 ## Tuning knobs
 
-| Want | Knob | Where |
-| --- | --- | --- |
-| How many phases the state machine recognises | `6` (`intake`, `framing`, `storyboard`, `production`, `delivery`, `done`) | `scripts/where.mjs` |
-| How many responsibilities this skill holds | `4`, and no fifth | this document, `Overview` |
-| Source files intake must freeze before leaving `intake` | `2` (`article.md`, `profile.json`) | `whereIs` |
-| Hand-of-the-journalist fields `whereIs` itself requires before leaving `storyboard` | `6` (`HAND.length` — mirrors `storyboard`'s own `HAND` constant) | `scripts/where.mjs` |
-| What a beat needs before the story can be `done` | `2` files of its own — `beats/<n>/APPROVED.md` (G3) and `export/<beat>/HANDOVER.md` (G4). Both are checked per beat, never story-wide | `beatsAwaitingApproval` / `beatsAwaitingDelivery`, `scripts/where.mjs` |
-| Turns a beat gets before production stalls | `3` | spec §8, `How it works` step 5 |
-| Hard stops preflight recognises | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them | `scripts/preflight.mjs`, `runPreflight` |
-| Capabilities preflight reports | `3` (`map`, `datawrapper`, `hostedEmbed`) | `scripts/preflight.mjs`, `runPreflight` |
-| Newsroom identity outcomes | `4` (`pass`, `missing`, `declined`, `fail`) — `pass`/`declined` both count as answered | `scripts/preflight.mjs`, `checkNewsroom` |
+| Want                                                                                | Knob                                                                                                                                  | Where                                                                  |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| How many phases the state machine recognises                                        | `6` (`intake`, `framing`, `storyboard`, `production`, `delivery`, `done`)                                                             | `scripts/where.mjs`                                                    |
+| How many responsibilities this skill holds                                          | `4`, and no fifth                                                                                                                     | this document, `Overview`                                              |
+| Source files intake must freeze before leaving `intake`                             | `2` (`article.md`, `profile.json`)                                                                                                    | `whereIs`                                                              |
+| Hand-of-the-journalist fields `whereIs` itself requires before leaving `storyboard` | `6` (`HAND.length` — mirrors `storyboard`'s own `HAND` constant)                                                                      | `scripts/where.mjs`                                                    |
+| What a beat needs before the story can be `done`                                    | `2` files of its own — `beats/<n>/APPROVED.md` (G3) and `export/<beat>/HANDOVER.md` (G4). Both are checked per beat, never story-wide | `beatsAwaitingApproval` / `beatsAwaitingDelivery`, `scripts/where.mjs` |
+| Turns a beat gets before production stalls                                          | `3`                                                                                                                                   | spec §8, `How it works` step 5                                         |
+| Hard stops preflight recognises                                                     | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them                                                       | `scripts/preflight.mjs`, `runPreflight`                                |
+| Capabilities preflight reports                                                      | `3` (`map`, `datawrapper`, `hostedEmbed`)                                                                                             | `scripts/preflight.mjs`, `runPreflight`                                |
+| Newsroom identity outcomes                                                          | `4` (`pass`, `missing`, `declined`, `fail`) — `pass`/`declined` both count as answered                                                | `scripts/preflight.mjs`, `checkNewsroom`                               |
 
 ## Files
 
@@ -455,15 +468,15 @@ if (missing.length > 0) {
 - `scripts/splash-root.mjs` — `splashRoot(startDir)`, `splashEnvPath(startDir)`: the nearest
   ancestor declaring `#shared/*`. Duplicated byte-for-byte into every craft skill that reads a key
   (never imported across a boundary), and guarded by `test/the-key-has-one-home.test.ts`.
-- `../../installer/` — `install.sh` (one static, key-free script), `configure.mjs` (the 127.0.0.1
-  setup page: keys probed live, written at `0600`, never on a command line; it also runs the charter
-  derivation with its evidence, REPORTS the doors rather than asking about them, and collects the
-  CMS credential), `place-skills.mjs` (the shared agents store — and the module `configure.mjs` reads `DOORS`,
-  `HOSTS`, `detectHosts` and `planPlacement` from, so the doors are written down once),
-  `doctor.mjs` (host wiring, then delegates to `runPreflight`).
+- `../../installer/` — `configure.mjs` defaults to the broker-backed 127.0.0.1 controller; its
+  `setup/` modules own the Engine stdin boundary, canonical newsroom CAS writer, safe legacy import,
+  and outbound derivation policy. `doctor.mjs` is only a thin handoff to
+  `bsig doctor --product splash`. `install.sh`, `place-skills.mjs`, and the plaintext configurator
+  branch are development or compatibility surfaces around the Engine plan; they are not a second
+  production authority.
 - `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its
   `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md`,
-  `shared/`. The template is the *manifest half* of the install; `installer/` (below) is the rest.
+  `shared/`. The template is the _manifest half_ of the install; `installer/` (below) is the rest.
   What the template declares is what `checkDependencies` validates a root against, which makes the
   check circular by construction — so `test/root-template-tells-the-truth.test.ts` WALKS the tree
   and asserts the template declares every package actually imported, vendors every `#shared/` file

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Splash</title>
+    <style>
+      /*__SPLASH_CSS__*/
+    </style>
+  </head>
+  <body>
+    <main aria-labelledby="title">
+      <header>
+        <p class="eyebrow">Visual journalism workspace</p>
+        <h1 id="title">Splash</h1>
+      </header>
+      <nav aria-label="Splash destinations">
+        <button type="button" data-route="readiness" aria-current="page">
+          Readiness
+        </button>
+        <button type="button" data-route="choose">Choose visual</button>
+      </nav>
+      <p
+        id="announcement"
+        class="notice"
+        role="status"
+        aria-live="polite"
+        tabindex="-1"
+      >
+        Connecting to Splash…
+      </p>
+
+      <section id="readiness" data-panel aria-labelledby="readiness-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Pre-flight</p>
+            <h2 id="readiness-title">Readiness</h2>
+          </div>
+          <span id="runtime-state" class="pill">Checking</span>
+        </div>
+        <section aria-labelledby="blockers-title">
+          <h3 id="blockers-title">Must be resolved</h3>
+          <ul id="blockers" class="stack">
+            <li>Waiting for current status.</li>
+          </ul>
+        </section>
+        <section aria-labelledby="capabilities-title">
+          <h3 id="capabilities-title">Optional capabilities</h3>
+          <div id="credentials" class="stack"></div>
+        </section>
+        <div class="actions">
+          <button id="refresh" type="button" disabled>Refresh status</button>
+          <button id="setup" class="primary" type="button" disabled>
+            Set up credentials and newsroom
+          </button>
+        </div>
+        <p class="quiet">
+          Credentials are entered only in the protected page on this computer,
+          never in this MCP view or chat.
+        </p>
+      </section>
+
+      <section id="choose" data-panel aria-labelledby="choose-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Story workspace</p>
+            <h2 id="choose-title">Choose visual</h2>
+          </div>
+          <span id="story-state" class="pill">Unbound</span>
+        </div>
+        <p id="story-detail">
+          Ask the model to nominate a story. Engine will inspect it without
+          changing it, then you confirm the exact location here.
+        </p>
+        <div class="choice-modes" role="group" aria-label="Choice mode">
+          <button id="mode-a-la-carte" type="button" aria-pressed="true">
+            À la carte
+          </button>
+          <button id="mode-storyboard" type="button" aria-pressed="false">
+            Storyboard recommendation
+          </button>
+        </div>
+        <div id="pending-story"></div>
+        <div class="actions">
+          <button id="review-story" type="button" disabled>
+            Review nominated story
+          </button>
+          <button id="load-selection" type="button" disabled>
+            Refresh choices
+          </button>
+        </div>
+        <section aria-labelledby="choice-title">
+          <h3 id="choice-title">Visual options</h3>
+          <p id="choice-detail" class="empty">
+            Options remain unavailable until a story is confirmed in this
+            session.
+          </p>
+          <div id="choice-root"></div>
+        </section>
+      </section>
+    </main>
+    <script type="module">
+      /*__SPLASH_APP__*/
+    </script>
+  </body>
+</html>

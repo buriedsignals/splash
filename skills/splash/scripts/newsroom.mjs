@@ -3,7 +3,7 @@
 // The five fields every profile must carry by name. `language` is deliberately NOT among them: a
 // newsroom publishes in one language or in several, and the requirement is that AT LEAST ONE is
 // recorded — under either name (see `newsroomLanguages`). Everything else is unchanged.
-const FIELDS = ["name", "url", "brandColor", "ground", "typefaces"];
+export const REQUIRED_FIELDS = ["name", "url", "brandColor", "ground", "typefaces"];
 
 // The OPTIONAL fields. None of them is in FIELDS on purpose — every `NEWSROOM.md` written before
 // each of them existed, and every recorded `declined` stub, stays valid. `parseNewsroom` reads any
@@ -28,6 +28,11 @@ const FIELDS = ["name", "url", "brandColor", "ground", "typefaces"];
 //                 one that misses the 3:1 floor — a longer list is not a way past the floor.
 export const OPTIONAL_FIELDS = ["credit", "languages", "language", "accents"];
 
+// Non-secret service configuration belongs beside the newsroom profile, never in the credential
+// broker. These camel-case names are intentionally distinct from their legacy environment names.
+// Tokens are absent: a service enters this list only when its value is safe to show in setup/status.
+export const SERVICE_FIELDS = ["cloudflareAccountId", "cmsKind", "cmsEndpoint"];
+
 const HEX = /^#[0-9a-fA-F]{6}$/;
 // `fr`, `de-CH`, `en-GB`. Deliberately not a full BCP-47 grammar: this rejects the mistakes a
 // person actually makes in a text field (a language NAME, a stray semicolon, an empty item) and
@@ -48,9 +53,19 @@ export function parseNewsroom(text) {
   if (!match) throw new Error("NEWSROOM.md has no front matter");
   const profile = {};
   for (const line of match[1].split(/\r?\n/)) {
-    const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line.trim());
+    const pair = /^([A-Za-z][A-Za-z0-9]*):\s*(.*)$/.exec(line.trim());
     if (!pair) continue;
-    profile[pair[1]] = pair[2].replace(/^["']|["']$/g, "").trim();
+    const raw = pair[2].trim();
+    if (raw.startsWith('"') && raw.endsWith('"')) {
+      try {
+        profile[pair[1]] = JSON.parse(raw);
+        continue;
+      } catch {
+        // Validation reports the resulting value; parsing remains backward compatible with the
+        // historical permissive reader instead of silently dropping the field.
+      }
+    }
+    profile[pair[1]] = raw.replace(/^["']|["']$/g, "").trim();
   }
   return profile;
 }
@@ -101,7 +116,7 @@ export function isDeclinedProfile(profile) {
 
 export function validateNewsroom(profile) {
   const errors = [];
-  for (const field of FIELDS) {
+  for (const field of REQUIRED_FIELDS) {
     if (!profile[field]) errors.push(`${field} is missing`);
   }
 
@@ -129,6 +144,30 @@ export function validateNewsroom(profile) {
   }
   for (const accent of list(profile?.accents)) {
     if (!HEX.test(accent)) errors.push(`accents must each be #rrggbb, got ${JSON.stringify(accent)}`);
+  }
+
+  const cloudflareAccountId = (profile?.cloudflareAccountId ?? "").trim();
+  if (cloudflareAccountId && !/^[0-9a-f]{32}$/i.test(cloudflareAccountId)) {
+    errors.push("cloudflareAccountId must be the 32-character hexadecimal account id");
+  }
+
+  const cmsKind = (profile?.cmsKind ?? "").trim();
+  const cmsEndpoint = (profile?.cmsEndpoint ?? "").trim();
+  if (cmsKind && !["livingdocs", "we-publish"].includes(cmsKind)) {
+    errors.push(`cmsKind must be livingdocs or we-publish, got ${JSON.stringify(cmsKind)}`);
+  }
+  if (Boolean(cmsKind) !== Boolean(cmsEndpoint)) {
+    errors.push("cmsKind and cmsEndpoint must be configured together");
+  }
+  if (cmsEndpoint) {
+    try {
+      const parsed = new URL(cmsEndpoint);
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+        throw new Error("unsupported endpoint");
+      }
+    } catch {
+      errors.push("cmsEndpoint must be a full HTTP or HTTPS URL without embedded credentials");
+    }
   }
   return errors;
 }

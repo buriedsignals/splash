@@ -14,6 +14,13 @@ first, and end the turn. Only the user's next message may supply `format:`. Befo
 not run the reference loop, choose a palette or treatment, write `reachable: yes`, or dispatch a
 producer.
 
+When Goose can render the Splash app, Storyboard mode may show that same gate through the shared
+chooser. `recommendVisualChoice` ranks only the currently reachable U7 options against confirmed
+Storyboard fields and the frozen profile, names unresolved requirements and transparent ties, and
+never writes. The journalist still presses the separate app-only Confirm; focus, recommendation,
+silence, timeout, dismissal, or a model message does not supply the answer. Without app-only tools,
+use the textual gate above.
+
 After a chart treatment is chosen, consult `references/datawrapper-chart-types.json` through
 `scripts/producer-gate.mjs`. If that treatment has a faithful Datawrapper implementation in the
 chosen format, present the custom-or-Datawrapper choice and end the turn again. Never ask this
@@ -92,7 +99,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
 | Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
 | Producer catalogue and gate | `references/datawrapper-chart-types.json`; `scripts/producer-gate.mjs` | Complete upstream `VisualizationType` inventory at its recorded source revision, conservative mappings from Splash treatments, the conditional custom-or-Datawrapper question, and validation of persisted `producer`/`datawrapperType` fields |
-| Proposal | `scripts/propose.mjs` | **Where the four verdicts are actually called.** `resolveGrounding` runs `groundTakeaway` at G1 and collapses its ARRAY of claim verdicts into the one `grounding:` scalar (`groundingScalar` refuses to close on `contradicted` without the journalist's own override reason); `proposeMediums` / `proposeFormats` / `proposeSizes` compute what may be offered at ⑤ / ⑥ / ⑦, each row carrying its refusal; `confirmFormatReachable` is the ONE function that returns the `"yes"` a slot's `reachable:` records, and only after `formatGap` and `capabilityGap` both return `null`; `assertDistinctWays` refuses a candidate set that is one idea wearing three labels, and `formatCandidates` renders the menu FROM those options, so an unreachable pair cannot be offered |
+| Proposal | `scripts/propose.mjs` | **Where the four verdicts are actually called.** `resolveGrounding` runs `groundTakeaway` at G1 and collapses its ARRAY of claim verdicts into the one `grounding:` scalar (`groundingScalar` refuses to close on `contradicted` without the journalist's own override reason); `proposeMediums` / `proposeFormats` / `proposeSizes` compute what may be offered at ⑤ / ⑥ / ⑦, each row carrying its refusal; `confirmFormatReachable` is the ONE function that returns the `"yes"` a slot's `reachable:` records, and only after `formatGap` and `capabilityGap` both return `null`; `assertDistinctWays` refuses a candidate set that is one idea wearing three labels; `formatCandidates` renders the textual menu; `recommendVisualChoice` adds a deterministic, revision-bound advisory order for the graphical view without treating proof coverage as fit or confirmation |
 | Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash`'s own function (see Files below), not an import |
 
 ## How it works (the shape)
@@ -210,6 +217,11 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      `formatCandidates` renders the menu from the computed options — every candidate carrying the
      type sheet's own purpose sentence verbatim and the caller's reason why THIS story is worth
      seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all.
+     The graphical variant passes those same currently reachable choices to
+     `recommendVisualChoice({model, profile})`. Its scored facts come only from confirmed
+     `STORYBOARD.md` fields and `source/profile.json`; unknown data-shape requirements remain named
+     as unresolved, and equal scores retain catalogue order while disclosing the tie. Reading or
+     rejecting this advice writes nothing.
    - **After ⑩, and only after the journalist chooses a treatment** —
      `datawrapperMatch({medium, format, treatment})` checks the pinned provider catalogue. No match
      means no extra question, no producer fields, and production remains custom. A match means

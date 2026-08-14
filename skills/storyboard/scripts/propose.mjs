@@ -22,13 +22,17 @@
 // WHAT IT DELIBERATELY DOES NOT DECIDE. Whether a type SUITS this story is the exchange's
 // judgement, made against the frozen profile with the type's own sheet open — this file supplies
 // the ground (what exists, what it is for, what is reachable) and refuses the unreachable. It does
-// not rank, does not choose, and never writes a slot.
+// `formatCandidates` does not rank, choose, or write a slot. The graphical helper added below may
+// order already-reachable rows as revision-bound advice, but it remains read-only and discloses
+// unresolved requirements and ties.
 
 import { groundTakeaway } from "./ground-claim.mjs";
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import visualCatalog from "../references/visual-catalog.json" with { type: "json" };
 
 // ---------------------------------------------------------------------------------------------
 // G1 — the grounding verdict
@@ -139,6 +143,336 @@ export function knownMediums() {
 
 export function knownFormats() {
   return [...new Set(Object.keys(FORMAT_CATALOG).map((pair) => pair.split("/")[1]))];
+}
+
+// ---------------------------------------------------------------------------------------------
+// The canonical catalogue — one normalized generated copy, expanded only for a caller that needs
+// treatment × format rows. Proof coverage stays evidence; it never changes structural selection.
+// ---------------------------------------------------------------------------------------------
+
+export const VISUAL_CATALOG_REVISION = visualCatalog.catalogRevision;
+
+const CATALOG_CAPABILITY_KEYS = {
+  "hosted-embed": "hostedEmbed",
+  "map-delivery": "mapDelivery",
+};
+
+function observedCapability(capabilities, id) {
+  return capabilities[id] ?? capabilities[CATALOG_CAPABILITY_KEYS[id]] ?? null;
+}
+
+function availabilityFor(required, capabilities, capabilityRows) {
+  for (const id of required) {
+    const observed = observedCapability(capabilities, id);
+    if (observed?.available === false) {
+      const metadata = capabilityRows.get(id);
+      return {
+        available: false,
+        cause: "capability",
+        reason: observed.reason || metadata.unavailableReason,
+        repairAction: metadata.repairAction,
+        capability: id,
+      };
+    }
+  }
+  return { available: true, cause: null, reason: null, repairAction: null, capability: null };
+}
+
+/**
+ * One stable row per treatment/format. Missing capability observations preserve the existing
+ * host-neutral structural view; an explicit closed observation disables only dependent rows.
+ */
+export function visualCatalogueEntries({ capabilities = {} } = {}) {
+  const pairs = new Map(visualCatalog.formatPairs.map((row) => [`${row.medium}/${row.format}`, row]));
+  const producers = new Map(visualCatalog.producers.map((row) => [row.id, row]));
+  const deliveryForms = new Map(visualCatalog.deliveryForms.map((row) => [row.id, row]));
+  const capabilityRows = new Map(visualCatalog.capabilities.map((row) => [row.id, row]));
+  const entries = [];
+  for (const treatment of visualCatalog.treatments) {
+    for (const format of treatment.formats) {
+      const pair = pairs.get(`${treatment.medium}/${format}`);
+      const structural = treatment.state === "proof-only"
+        ? {
+            available: false,
+            cause: "proof-only",
+            reason: treatment.disabledReason,
+            repairAction: null,
+            capability: null,
+          }
+        : availabilityFor(pair.requiredCapabilities, capabilities, capabilityRows);
+      entries.push({
+        id: `${treatment.id}.${format}`,
+        label: treatment.label,
+        optionLabel: `${treatment.label} · ${pair.label}`,
+        medium: treatment.medium,
+        format,
+        treatmentId: treatment.id,
+        treatment: treatment.label,
+        purpose: treatment.purpose,
+        dataShape: treatment.dataShape,
+        state: treatment.state,
+        proofFormats: treatment.proofFormats,
+        provenInThisFormat: treatment.proofFormats.includes(format),
+        sizeRule: pair.sizeRule,
+        interaction: pair.interaction,
+        producer: producers.get(pair.producer),
+        producerAlternatives: visualCatalog.delegatedProducers.flatMap((delegated) =>
+          delegated.mappings
+            .filter((mapping) => mapping.treatmentId === treatment.id && mapping.format === format)
+            .map((mapping) => ({
+              id: delegated.id,
+              label: delegated.label,
+              producer: producers.get(delegated.producer),
+              providerTypes: mapping.providerTypes,
+              defaultProviderType: mapping.defaultProviderType,
+              ...availabilityFor([delegated.capability], capabilities, capabilityRows),
+            })),
+        ),
+        requiredCapabilities: pair.requiredCapabilities,
+        optionalCapabilities: pair.optionalCapabilities.map((id) => ({
+          id,
+          ...availabilityFor([id], capabilities, capabilityRows),
+        })),
+        deliveryForms: pair.deliveryForms.map((id) => {
+          const form = deliveryForms.get(id);
+          return {
+            ...form,
+            ...availabilityFor(form.requiredCapabilities, capabilities, capabilityRows),
+          };
+        }),
+        ...structural,
+      });
+    }
+  }
+  return entries;
+}
+
+export function visualCatalogueEntry(id, options) {
+  return visualCatalogueEntries(options).find((row) => row.id === id) ?? null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Advisory ranking for the graphical Storyboard view. This never writes, never widens the current
+// gate, and never treats proof coverage as evidence that a treatment suits the story. It scores only
+// enabled U7 choices against confirmed Storyboard fields and the frozen intake profile, preserving
+// canonical order as an explicit tie-break rather than hiding a tie behind model confidence.
+// ---------------------------------------------------------------------------------------------
+
+export const RECOMMENDATION_SCHEMA_VERSION = "splash-recommendation/v1";
+
+function stable(value) {
+  if (Array.isArray(value)) return value.map(stable);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+}
+
+function digest(value) {
+  return `sha256:${createHash("sha256").update(JSON.stringify(stable(value))).digest("hex")}`;
+}
+
+function profileFacts(profile) {
+  const columns = Array.isArray(profile?.columns)
+    ? profile.columns.slice(0, 512).flatMap((column) => {
+        if (!column || typeof column.name !== "string" || !["number", "text", "date", "boolean"].includes(column.type)) return [];
+        return [{
+          name: column.name.slice(0, 256),
+          normalizedName: column.name.toLowerCase(),
+          type: column.type,
+          distinct: Number.isSafeInteger(column.distinct) ? column.distinct : null,
+          min: typeof column.min === "number" && Number.isFinite(column.min) ? column.min : null,
+          max: typeof column.max === "number" && Number.isFinite(column.max) ? column.max : null,
+        }];
+      })
+    : [];
+  const numeric = columns.filter((column) => column.type === "number");
+  const text = columns.filter((column) => column.type === "text");
+  const temporal = columns.filter((column) =>
+    column.type === "date" || /(^|_)(date|time|year|month|day|week|quarter)($|_)/.test(column.normalizedName),
+  );
+  const regional = columns.filter((column) =>
+    /(^|_)(country|iso2|iso3|region|state|province|county|district|postcode|postal|geoid)($|_)/.test(column.normalizedName),
+  );
+  const latitude = columns.some((column) => /(^|_)(lat|latitude)($|_)/.test(column.normalizedName));
+  const longitude = columns.some((column) => /(^|_)(lon|lng|longitude)($|_)/.test(column.normalizedName));
+  return {
+    rowCount: Number.isSafeInteger(profile?.rowCount) && profile.rowCount >= 0 ? profile.rowCount : null,
+    columns,
+    numeric,
+    text,
+    temporal,
+    regional,
+    geographicPoints: latitude && longitude,
+  };
+}
+
+function requirementFinding(requirement, facts) {
+  const numeric = facts.numeric.length > 0;
+  const categorical = facts.text.length > 0;
+  const temporal = facts.temporal.length > 0;
+  const regional = facts.regional.length > 0;
+  const raw = numeric && facts.rowCount !== null && facts.rowCount >= 5;
+  const nonnegative = numeric && facts.numeric.every((column) => column.min !== null && column.min >= 0);
+  const positive = numeric && facts.numeric.every((column) => column.min !== null && column.min > 0);
+  const tests = {
+    "numeric-value": [numeric, `${facts.numeric.length} numeric column(s)`],
+    "numeric-series": [numeric, `${facts.numeric.length} numeric column(s)`],
+    "continuous-value": [numeric, `${facts.numeric.length} numeric column(s)`],
+    count: [numeric, `${facts.numeric.length} numeric column(s)`],
+    "unit-conversion": [numeric, `${facts.numeric.length} numeric column(s)`],
+    "nonnegative-value": [nonnegative, "numeric minima are non-negative"],
+    "positive-value": [positive, "numeric minima are positive"],
+    "signed-value": [facts.numeric.some((column) => column.min < 0 && column.max > 0), "a numeric column crosses zero"],
+    "numeric-pair": [facts.numeric.length >= 2, `${facts.numeric.length} numeric columns`],
+    "multiple-series": [facts.numeric.length >= 2, `${facts.numeric.length} numeric columns`],
+    "few-series": [facts.numeric.length >= 1 && facts.numeric.length <= 6, `${facts.numeric.length} numeric columns`],
+    categorical: [categorical, `${facts.text.length} text column(s)`],
+    "few-categories": [facts.text.some((column) => column.distinct !== null && column.distinct <= 12), "a text column has at most 12 distinct values"],
+    temporal: [temporal, `${facts.temporal.length} temporal column(s)`],
+    "calendar-date": [temporal, `${facts.temporal.length} temporal column(s)`],
+    "ordered-axis": [temporal, `${facts.temporal.length} temporal column(s)`],
+    "two-moments": [facts.temporal.some((column) => column.distinct === null || column.distinct >= 2), "a temporal column has at least two values"],
+    "geographic-regions": [regional, `${facts.regional.length} regional identifier column(s)`],
+    "region-join": [regional, `${facts.regional.length} regional identifier column(s)`],
+    "place-labels": [regional, `${facts.regional.length} regional identifier column(s)`],
+    "geographic-points": [facts.geographicPoints, "latitude and longitude columns are both present"],
+    "raw-observations": [raw, `${facts.rowCount ?? "unknown"} profiled rows`],
+    distribution: [raw, `${facts.rowCount ?? "unknown"} profiled rows with numeric values`],
+    rank: [numeric && categorical, "numeric and categorical columns are both present"],
+    "ordered-categories": [numeric && categorical, "numeric and categorical columns are both present"],
+    "part-to-whole": [facts.numeric.length >= 2 && nonnegative, "multiple non-negative numeric columns are present"],
+    "repeatable-schema": [facts.columns.length > 0, `${facts.columns.length} profiled columns`],
+  };
+  const result = tests[requirement];
+  if (!result) return null;
+  return {
+    matched: result[0] === true,
+    source: "source/profile.json",
+    fact: result[0] === true ? result[1] : `profile does not establish ${requirement.replaceAll("-", " ")}`,
+  };
+}
+
+function evidenceText(model) {
+  return Object.entries(model?.evidence ?? {})
+    .flatMap(([field, value]) => typeof value === "string" ? [`${field}: ${value}`] : [])
+    .join("\n")
+    .toLowerCase();
+}
+
+function explicitSignal(text, signals) {
+  return signals.some((signal) => new RegExp(`\\b${signal}\\b`, "i").test(text));
+}
+
+function rankChoice(choice, index, model, facts) {
+  const matchedEvidence = [];
+  const unresolvedRequirements = [];
+  const tradeoffs = [];
+  let score = 0;
+  const text = evidenceText(model);
+  if (choice.kind === "medium") {
+    if (choice.value === "map" && (facts.regional.length || facts.geographicPoints)) {
+      score += 5;
+      matchedEvidence.push({ source: "source/profile.json", fact: "geographic identifiers are present" });
+    }
+    if (choice.value === "chart" && facts.numeric.length) {
+      score += 2;
+      matchedEvidence.push({ source: "source/profile.json", fact: `${facts.numeric.length} numeric column(s) are present` });
+    }
+    if (choice.value === "image" && explicitSignal(text, ["photo", "photograph", "image", "portrait"])) {
+      score += 5;
+      matchedEvidence.push({ source: "STORYBOARD.md", fact: "a confirmed field explicitly names photographic evidence" });
+    }
+  } else if (choice.kind === "format") {
+    const signals = {
+      static: ["static", "print"],
+      web: ["interactive", "web", "hover", "explore", "embed"],
+      video: ["video", "motion", "animation"],
+      scrolly: ["scrolly", "scroll", "scrolling"],
+    }[choice.value] ?? [];
+    if (explicitSignal(text, signals)) {
+      score += 5;
+      matchedEvidence.push({ source: "STORYBOARD.md", fact: `a confirmed field explicitly signals ${choice.label}` });
+    } else if (choice.value === "static") {
+      score += 1;
+      tradeoffs.push("No confirmed field requires interaction or motion; static is the least demanding reachable format.");
+    }
+    if (choice.browserPrerequisites?.length) tradeoffs.push("This format uses the managed browser runtime.");
+  } else if (choice.kind === "size") {
+    if (choice.value && explicitSignal(text, [choice.value])) {
+      score += 5;
+      matchedEvidence.push({ source: "STORYBOARD.md", fact: `a confirmed field explicitly names ${choice.value}` });
+    } else if (choice.value === "landscape") {
+      score += 1;
+      tradeoffs.push("No confirmed placement field names an aspect ratio; landscape is the stable editorial default.");
+    }
+  } else if (choice.kind === "treatment") {
+    for (const requirement of choice.dataShape?.requires ?? []) {
+      const finding = requirementFinding(requirement, facts);
+      if (!finding) {
+        unresolvedRequirements.push(requirement);
+      } else if (finding.matched) {
+        score += 2;
+        matchedEvidence.push({ source: finding.source, fact: `${requirement.replaceAll("-", " ")}: ${finding.fact}` });
+      } else {
+        score -= 1;
+        unresolvedRequirements.push(requirement);
+      }
+    }
+    if (!choice.dataShape?.requires?.length) unresolvedRequirements.push("no machine-readable data-shape requirements");
+  } else if (choice.kind === "producer") {
+    if (choice.value === "datawrapper" && explicitSignal(text, ["datawrapper"])) {
+      score += 5;
+      matchedEvidence.push({ source: "STORYBOARD.md", fact: "a confirmed field explicitly requests Datawrapper" });
+    } else if (choice.value === "custom") {
+      score += 1;
+      tradeoffs.push("No confirmed field requires delegation; Custom preserves the full Splash visual contract.");
+    }
+  }
+  return {
+    optionId: choice.id,
+    score,
+    canonicalIndex: index,
+    matchedEvidence,
+    unresolvedRequirements,
+    tradeoffs,
+  };
+}
+
+export function recommendVisualChoice({ model, profile = {} } = {}) {
+  if (!model || model.schemaVersion !== "splash-selection/v1") throw new Error("recommendation requires a current Splash selection model");
+  const facts = profileFacts(profile);
+  const ranking = (model.choices ?? [])
+    .map((choice, index) => ({ choice, index }))
+    .filter(({ choice }) => choice.enabled === true)
+    .map(({ choice, index }) => rankChoice(choice, index, model, facts))
+    .sort((a, b) => b.score - a.score || a.canonicalIndex - b.canonicalIndex)
+    .map((row, index) => ({ ...row, rank: index + 1 }));
+  const top = ranking[0] ?? null;
+  const tied = Boolean(top && ranking[1] && ranking[1].score === top.score);
+  if (top && tied) {
+    top.tradeoffs.push("The top choices have equal evidence scores; stable catalogue order breaks the tie.");
+  } else if (top && top.matchedEvidence.length === 0) {
+    top.tradeoffs.push("This is a conservative fallback because confirmed evidence does not positively distinguish the choices.");
+  }
+  const profileProjection = {
+    rowCount: facts.rowCount,
+    columns: facts.columns.map(({ name, type, distinct, min, max }) => ({ name, type, distinct, min, max })),
+  };
+  const profileRevision = digest(profileProjection);
+  const selectionRevisions = {
+    storyRevision: model.revisions.story,
+    catalogRevision: model.revisions.catalogue,
+    capabilityGeneration: model.revisions.capabilities,
+  };
+  const revision = digest({ selectionRevisions, profileRevision, ranking });
+  return {
+    schemaVersion: RECOMMENDATION_SCHEMA_VERSION,
+    revision,
+    selectionRevisions,
+    profileRevision,
+    recommendedOptionId: top?.optionId ?? null,
+    tied,
+    ranking,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -20,8 +20,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
-import puppeteer from "puppeteer";
+import { isAbsolute, join } from "node:path";
+import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
 import {
   CO2_STUDY,
@@ -72,11 +72,24 @@ const size = Number(flag("--size", "620"));
 const outDir = flag("--out", `/tmp/map-twin/plate-${size}`);
 const shapesPath = flag("--shapes", "/tmp/map-twin/ne50.geojson");
 const settleMs = Number(flag("--settle", "15000"));
+const sealedBrowserPath = flag("--browser", null);
+const sealedMaplibreJsPath = flag("--maplibre-js", null);
+const sealedMaplibreCssPath = flag("--maplibre-css", null);
+const sealedStylePath = flag("--style-json", null);
+const sealedMapTilerEnv = argv.includes("--maptiler-env");
+const sealedRuntimeValues = [sealedBrowserPath, sealedMaplibreJsPath, sealedMaplibreCssPath];
+const sealed = sealedRuntimeValues.some(Boolean) || Boolean(sealedStylePath) || sealedMapTilerEnv;
+if (sealed && (!sealedRuntimeValues.every(Boolean) || Boolean(sealedStylePath) === sealedMapTilerEnv)) {
+  throw new Error("sealed map bake requires --browser, --maplibre-js, --maplibre-css, and exactly one of --style-json or --maptiler-env");
+}
+if (sealedBrowserPath && (!isAbsolute(sealedBrowserPath) || !existsSync(sealedBrowserPath))) {
+  throw new Error(`sealed Chrome is not an existing absolute path: ${sealedBrowserPath}`);
+}
 // The Splash root's own `.env` — the same file `recordKey` writes a journalist's key into. This
 // used to be a fixed three-level climb (`../../../.env`), which is `twin/.env` in this checkout and
 // the DEVELOPER's `.env` anywhere the skills are installed as a symlink, because both Bun and Node
 // resolve the link before computing `import.meta.url`. See `splash-root.mjs`.
-const keyPath = flag("--env", splashEnvPath(import.meta.dirname));
+const keyPath = sealed ? null : flag("--env", splashEnvPath(import.meta.dirname));
 
 /**
  * Headless Chrome has to be FOUND before it can be gated (rule 6). puppeteer's own download is
@@ -210,9 +223,17 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
 // the stage that works instead of silently delivering 203° of world.
 assertStageServesGeography(size, size, BEAT.bounds[1][0] - BEAT.bounds[0][0]);
 
-const env = parseEnvFile(await readFile(keyPath, "utf8"));
-const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
-if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
+const env = sealed ? {} : parseEnvFile(await readFile(keyPath, "utf8"));
+const sealedStyle = sealedStylePath ? JSON.parse(await readFile(sealedStylePath, "utf8")) : null;
+const key = sealedStyle
+  ? null
+  : sealed
+    ? process.env.MAPTILER_KEY ?? ""
+    : env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
+if (!key && !sealedStyle) {
+  if (sealed) throw new Error("sealed MapTiler bake did not receive MAPTILER_KEY from Engine");
+  throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
+}
 
 // ── The shapes, keyed the way Natural Earth actually keys them ─────────────────────────────────
 const collection = JSON.parse(await readFile(shapesPath, "utf8"));
@@ -243,7 +264,7 @@ const payload = CO2_STUDY.map((code) => {
 // ── The capture ────────────────────────────────────────────────────────────────────────────────
 const browser = await puppeteer.launch({
   headless: true,
-  executablePath: resolveChrome(),
+  executablePath: sealedBrowserPath ?? resolveChrome(),
   args: [
     "--use-gl=angle",
     "--use-angle=swiftshader",
@@ -254,21 +275,32 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
-await page.setContent(
-  `<!doctype html><html><head>
+if (sealed) {
+  await page.setContent(
+    `<!doctype html><html><head>
+<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
+</head><body><div id="map"></div></body></html>`,
+    { waitUntil: "load" },
+  );
+  await page.addStyleTag({ path: sealedMaplibreCssPath });
+  await page.addScriptTag({ path: sealedMaplibreJsPath });
+} else {
+  await page.setContent(
+    `<!doctype html><html><head>
 <link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
 <script src="${MAPLIBRE}"></script>
 <style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
 </head><body><div id="map"></div></body></html>`,
-  { waitUntil: "load" },
-);
+    { waitUntil: "load" },
+  );
+}
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs, width, height }) => {
+  async ({ key, style, styleDefinition, bounds, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
-      style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
+      style: styleDefinition ?? `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
@@ -314,7 +346,7 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: size },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);

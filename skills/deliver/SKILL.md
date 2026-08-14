@@ -15,6 +15,14 @@ planVersion, findingIds, env, fetchFn, cms})` writes exactly the chosen form. Bo
 derive the source and `export/<outputId>/` destination from the separately declared stories root
 and stable IDs; neither accepts a caller-selected source or recursive replacement path.
 
+For a managed installation, these JavaScript APIs remain the implementation layer. Any delivery
+that needs a credential crosses Engine's closed stdin boundary: `maptiler-delivery` for the final
+client-publishable map key and `cloudflare-deploy` for the complete **Deploy and receive embed
+code** form. Engine verifies the adopted checkout, validates the structured story/output/review
+request before reading a credential, and injects only that operation's broker record into
+`scripts/sealed-operation.mjs`. Do not source a repository `.env` or pass a key in chat, argv, or a
+story file.
+
 **Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
 every format offers both. `embed` (the journalist-facing **Deploy and receive embed code** form)
 and `cms-insertion` (a prepared
@@ -26,13 +34,11 @@ deterministic provider-contract tests, but the current release still requires a 
 two-revision Cloudflare smoke test** (see "How it works" below). **`cms-insertion`
 is NOT proven against a live CMS** — no We.Publish or Livingdocs endpoint exists anywhere in this
 toolchain to call. It builds and guards a real mutation payload, documents it, and says so in the
-document it writes. Since the installer, a journalist's own CMS choice and credentials DO have a
-home — `CMS_KIND`, `CMS_ENDPOINT` and `CMS_TOKEN` in the root `.env`, written at `0600` through the
-same `recordKey` path as every other secret, the kind checked against `CMS_KINDS` so nothing can be
-recorded that `buildInsertion` would throw on. That changes where the answer lives and nothing else:
-those three names are deliberately NOT probed (there is no instance to probe), they open no
-capability row in `runPreflight`, and this form still writes a file describing the mutation rather
-than sending it. A stored credential is not a proven integration. Read "How it works", step 3, before assuming either behaves like the other two.
+document it writes. Managed setup does not collect `CMS_TOKEN`, and Engine registers no CMS
+credential or CMS operation. Older copied roots may still contain legacy CMS names, but they open no
+capability row and are not a production integration. This form writes a file describing the mutation
+rather than sending it. A stored legacy value is not a proven integration. Read "How it works",
+step 3, before assuming either behaves like the other two.
 
 **The forms are offered, then WAITED on. Silence is not a choice.** A conversation running this
 phase asks **“Which delivery form should Splash provide?”**, presents the list `offerForms` returns,
@@ -141,7 +147,8 @@ remain untouched on disk.
    returning an empty or partial list, so a caller can never mistake "no forms for this format yet"
    for "this beat has nothing to deliver". For a known format it returns every form in that format's
    table, in the same order every time, each carrying an `id`, a `label`, and a `gives` long enough
-   to inform a real choice. When `resolveCloudflareCredentials(env)` finds
+   to inform a real choice. In managed production, `env` is the isolated operation environment
+   constructed by Engine. When `resolveCloudflareCredentials(env)` finds
    `CLOUDFLARE_ACCOUNT_ID` or `CLOUDFLARE_API_TOKEN` missing, `embed` remains visible with
    `available: false` and a concrete setup reason. This is a PRESENCE check, not a live probe —
    `offerForms` stays synchronous and cheap to call on every turn; a present-but-wrong token leaves
@@ -341,7 +348,11 @@ all three shapes the offer usually takes.
 which key their page carries and what it costs them. Never as a refusal, never with a route around
 one — the state is a fact about their file, and the decision to create a restricted key is theirs.
 
-## Quick start
+## Library and compatibility example
+
+The example below documents the pure offer/materialisation API used by tests and older textual
+flows. In a managed installation, keep the offer and human gate, then send the confirmed structured
+request through Engine for any key-bearing form; never populate `env` from a checkout `.env`.
 
 ```js
 import { offerForms, materialise, exportDirFor } from "./scripts/deliver.mjs";
@@ -363,8 +374,8 @@ const forms = offerForms({
   findingIds,
 });
 // present `forms` (id, label, gives, available, reason) to the journalist here, and wait for an
-// available choice. "embed" remains visible with available:false and setup guidance until both
-// CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are set.
+// available choice. "embed" remains visible with available:false and setup guidance until Engine
+// reports that the Cloudflare account and broker-backed token are ready.
 
 const written = await materialise({
   ...identity,

@@ -1,4 +1,8 @@
 #!/usr/bin/env bun
+// DEFAULT: Engine-backed local setup. Credential candidates go over bounded stdin to `bsig` and
+// are stored by the operating-system broker; newsroom configuration is written separately with a
+// revision-checked atomic writer. The historical `.env` writer remains temporarily available only
+// as `--legacy-plaintext` for an installation that has not yet been adopted by Engine.
 // THE CONFIGURATOR — a local page on 127.0.0.1, and the reason it is a page and not a prompt.
 //
 // Copied deliberately from Spotlight's installer, whose own rationale is worth repeating verbatim
@@ -41,7 +45,7 @@
 //      one. The report
 //      is read from `place-skills.mjs` itself (which hosts, which doors, what the placement would
 //      do), never from a second list kept here, and it is asked in DRY-RUN: this page reports the
-//      store, `place-skills.mjs` places the links.
+//      store while Engine's apply transaction owns the links.
 //
 //   C. **It collects the CMS credential.** `deliver` builds We.Publish and Livingdocs mutation
 //      shapes and sends neither, and there was nowhere for an endpoint or a token to live. Now
@@ -70,6 +74,45 @@ const SKILL_NAMESPACE = flag("--skill-namespace", "");
 if (SKILL_NAMESPACE && !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(SKILL_NAMESPACE))
   throw new Error(`invalid skill namespace: ${SKILL_NAMESPACE}`);
 const IDLE_MS = Number(flag("--idle-ms", String(30 * 60 * 1000)));
+
+const ENGINE_SETUP = argv.includes("--engine-setup") || !argv.includes("--legacy-plaintext");
+if (ENGINE_SETUP) {
+  const bsig = flag("--bsig", Bun.which("bsig") ?? "");
+  if (!bsig) throw new Error("Engine setup requires --bsig <absolute path> or bsig on PATH");
+  const newsroomPath = resolve(flag("--newsroom-path", join(HOME, ".config", "splash", "NEWSROOM.md")));
+  const { createEngineBridge } = await import("./setup/engine-bridge.mjs");
+  const { startSetupController } = await import("./setup/controller.mjs");
+  const controller = await startSetupController({
+    engineBridge: createEngineBridge({ executable: resolve(bsig) }),
+    newsroomPath,
+    legacyEnvPath: join(ROOT, ".env"),
+    idleMs: IDLE_MS,
+  });
+  console.log(`SPLASH_CONFIGURE_URL=${controller.url}`);
+  if (!HEADLESS) {
+    const opener = process.platform === "darwin"
+      ? Bun.which("open")
+      : process.platform === "win32"
+        ? Bun.which("rundll32.exe")
+        : Bun.which("xdg-open");
+    if (opener) {
+      const args = process.platform === "win32"
+        ? [opener, "url.dll,FileProtocolHandler", controller.url]
+        : [opener, controller.url];
+      try {
+        const opened = Bun.spawn(args, { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+        opened.exited.then((code) => {
+          if (code !== 0) console.error("Splash setup could not open the browser; use the printed local URL.");
+        });
+      } catch {
+        console.error("Splash setup could not open the browser; use the printed local URL.");
+      }
+    } else {
+      console.error("Splash setup found no platform URL opener; use the printed local URL.");
+    }
+  }
+  await controller.closed;
+} else {
 
 const { recordKey, probeMapTiler, probeDatawrapper, probeCloudflare } = await import(
   join(ROOT, "skills", "splash", "scripts", "keys.mjs")
@@ -143,10 +186,9 @@ const KEY_FIELDS = [
   },
 ];
 
-// The newsroom's own CMS. Same `recordKey` path, same 0600 file, same canonical-name refusal — and
-// deliberately NOT the same verification, because there is none to be had (see keys.mjs). Every
-// line of help text below has to keep that distinction visible: this buys a home for the
-// credential, not a proven integration.
+// Copied-root plaintext compatibility only. Managed setup registers no CMS credential because no
+// live CMS operation exists. This branch retains the historical `recordKey`/0600 behavior without
+// presenting it as the Engine-backed production path.
 const CMS_FIELDS = [
   {
     name: "CMS_KIND",
@@ -230,9 +272,8 @@ const DOOR_STATUS = {
   ok: "already wired",
   linked: "wired",
   created: "created",
-  "would-link": "not wired yet — the installer wires this at step 5",
-  "would-relink": "points somewhere else — the installer repoints it at step 5",
-  "would-create": "this directory does not exist yet — the installer creates it at step 5",
+  "would-link": "not wired yet — the Engine transaction wires this before activation",
+  "would-create": "this directory does not exist yet — the Engine transaction creates it before activation",
 };
 
 /**
@@ -295,9 +336,10 @@ function doorsSection() {
   return `<h2>The skill store your AI hosts read</h2>
 <p class="lede">There is no question here, and that is deliberate: the supported hosts read the
 same flat skill store, so the installer wires it unconditionally. What follows is
-what it found and what it will do — read from <code>installer/place-skills.mjs</code>, the script
-that actually does the placing. <strong>This page places nothing</strong>; it asked that script for
-its plan without letting it touch anything.</p>
+what it found and what the same path rules allow — read from
+<code>installer/place-skills.mjs</code>. The canonical installer performs the mutation inside its
+Engine apply transaction. <strong>This page places nothing</strong>; it asked the compatibility
+module for a dry-run report.</p>
 <table><tr><th>Host</th><th>On this machine</th><th>Door it reads</th></tr>${hostRows}</table>
 <p class="lede">A host is spotted by the configuration directory it creates, which is evidence and
 not proof — a directory left behind by an uninstall reads exactly the same.</p>
@@ -738,3 +780,4 @@ server.listen(0, "127.0.0.1", () => {
   if (!HEADLESS) Bun.spawn(["open", `http://127.0.0.1:${port}/`]);
   idle = setTimeout(() => server.close(() => process.exit(0)), IDLE_MS);
 });
+}

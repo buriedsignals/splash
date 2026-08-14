@@ -16,33 +16,25 @@
 // the point: `formatGap` refuses the pair at the FORMAT GATE, in the journalist's own terms, instead
 // of letting them discover it at the last phase. Do not add a row to make a table look complete.
 //
-// This is a REIMPLEMENTATION of deliver's own knowledge, not an import of it — a skill
-// directory has to stay copy-pasteable on its own, so no runtime code here may cross into
-// deliver (the same rule `splash/SKILL.md`'s gotcha documents for `where.mjs` and
-// `storyboard`'s own `checkStoryboard`: two independent readings of one rule, cross-checked
-// by a test, not unified by an import). The concrete defect this table exists to close: a
+// This is generated into Storyboard from the repository's canonical visual catalogue. Runtime
+// code still reads only its own local reference — never another skill or the repository root — so
+// the skill remains copy-pasteable. The generator parity-checks producers and delivery forms
+// against the implementation before it emits this copy. The concrete defect this table exists to
+// close remains: a
 // journalist asked for a visual "for the web", the storyboard pinned format `web`, `chart-web`
 // already rendered it end to end — and `deliver` threw at the very last phase because
 // `FORMS_BY_FORMAT` had never heard of `"web"`. Nothing before that moment said so.
 //
-// `skills/splash/test/format-shippability.test.ts` is the drift test that keeps this table
-// honest: for every pair it asserts the `producerSkill` directory exists on disk, that the skill's
-// own `SKILL.md` front matter NAMES ITSELF as that skill and names the medium (the assertion
-// without which a wrong-producer row would still pass, since both directories exist), and that
-// `delivered: true` matches a real key in deliver's `FORMS_BY_FORMAT` — in both directions, so
-// a producer added without matching delivery (or the reverse) turns that test red.
-export const FORMAT_CATALOG = {
-  "chart/static": { producerSkill: "chart-beat", delivered: true },
-  "chart/web": { producerSkill: "chart-web", delivered: true },
-  "chart/video": { producerSkill: "chart-video", delivered: true },
-  "chart/scrolly": { producerSkill: "scrolly", delivered: true },
-  "map/static": { producerSkill: "map-beat", delivered: true },
-  "map/web": { producerSkill: "map-web", delivered: true },
-  "map/video": { producerSkill: "map-beat", delivered: true },
-  "map/scrolly": { producerSkill: "scrolly", delivered: true },
-  "image/static": { producerSkill: "image-beat", delivered: true },
-  "image/scrolly": { producerSkill: "scrolly", delivered: true },
-};
+// `skills/splash/test/format-shippability.test.ts` independently checks the generated rows against
+// producer front matter and `deliver` in both directions.
+import visualCatalog from "../references/visual-catalog.json" with { type: "json" };
+
+export const FORMAT_CATALOG = Object.fromEntries(
+  visualCatalog.formatPairs.map((row) => [
+    row.pair,
+    { producerSkill: row.producerSkill, delivered: row.delivered },
+  ]),
+);
 
 /** Every format this toolchain can reach for a given medium — what the format gate may offer. */
 export function formatsFor(medium) {

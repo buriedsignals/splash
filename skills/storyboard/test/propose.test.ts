@@ -12,6 +12,7 @@ import {
   confirmFormatReachable,
   assertDistinctWays,
   formatCandidates,
+  recommendVisualChoice,
 } from "../scripts/propose.mjs";
 
 // The frozen profile shape `intake`'s `profileTable` produces, with the run's own numbers:
@@ -69,7 +70,10 @@ describe("the verdicts are consulted", () => {
 
   const sources = readdirSync(scriptsDir)
     .filter((f) => f.endsWith(".mjs"))
-    .map((f) => ({ file: f, text: code(readFileSync(join(scriptsDir, f), "utf8")) }));
+    .map((f) => ({
+      file: f,
+      text: code(readFileSync(join(scriptsDir, f), "utf8")),
+    }));
 
   for (const verdict of ["groundTakeaway", "formatGap", "capabilityGap"]) {
     it(`${verdict} is called by something other than its own definition`, () => {
@@ -102,11 +106,15 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
 
   it("should read unverifiable when nothing in the takeaway could be placed at all", () => {
     const resolved = resolveGrounding("Le glacier recule depuis 2003", {
-      columns: [{ name: "surface", type: "number", min: 40, max: 90, sum: 500 }],
+      columns: [
+        { name: "surface", type: "number", min: 40, max: 90, sum: 500 },
+      ],
     });
     expect(resolved.verdict).toBe("unverifiable");
     expect(resolved.supported.length).toBe(0);
-    expect(resolved.detail).toContain("nothing was confirmed and nothing was refuted");
+    expect(resolved.detail).toContain(
+      "nothing was confirmed and nothing was refuted",
+    );
   });
 
   it("should read unverifiable, not supported, for a takeaway with no checkable claim in it", () => {
@@ -155,13 +163,19 @@ describe("groundingScalar — contradicted never closes G1", () => {
 
   it("should write the override in the vocabulary both gates read", () => {
     expect(
-      groundingScalar(refuted, { override: "the series was revised after publication" }),
+      groundingScalar(refuted, {
+        override: "the series was revised after publication",
+      }),
     ).toBe('overridden — "the series was revised after publication"');
   });
 
   it("should pass a resolved verdict straight through", () => {
-    expect(groundingScalar({ verdict: "supported", detail: "" })).toBe("supported");
-    expect(groundingScalar({ verdict: "unverifiable", detail: "" })).toBe("unverifiable");
+    expect(groundingScalar({ verdict: "supported", detail: "" })).toBe(
+      "supported",
+    );
+    expect(groundingScalar({ verdict: "unverifiable", detail: "" })).toBe(
+      "unverifiable",
+    );
   });
 });
 
@@ -204,14 +218,17 @@ describe("medium, then format, then size — each verified before it is offered"
     expect(map?.why).toContain("MAPTILER_KEY is not set");
     // and the chart medium is untouched by a map key nobody asked for
     expect(
-      proposeMediums({ capabilities: mapClosed }).find((m) => m.medium === "chart")
-        ?.reachable,
+      proposeMediums({ capabilities: mapClosed }).find(
+        (m) => m.medium === "chart",
+      )?.reachable,
     ).toBe(true);
   });
 
   it("should offer scrolly for every medium that has a producer for it", () => {
     for (const medium of ["chart", "map", "image"]) {
-      const scrolly = proposeFormats({ medium }).find((g) => g.format === "scrolly");
+      const scrolly = proposeFormats({ medium }).find(
+        (g) => g.format === "scrolly",
+      );
       expect(scrolly?.reachable).toBe(true);
       expect(scrolly?.producer).toBe("scrolly");
     }
@@ -233,7 +250,10 @@ describe("medium, then format, then size — each verified before it is offered"
   });
 
   it("should close every format of a medium the environment has shut, with the same reason", () => {
-    for (const format of proposeFormats({ medium: "map", capabilities: mapClosed })) {
+    for (const format of proposeFormats({
+      medium: "map",
+      capabilities: mapClosed,
+    })) {
       expect(format.reachable).toBe(false);
       expect(format.why).toContain("MAPTILER_KEY is not set");
     }
@@ -249,20 +269,30 @@ describe("medium, then format, then size — each verified before it is offered"
 
 describe("confirmFormatReachable — the recorded verdict, computed", () => {
   it("should hand back the exact string the slot records, for a pair that is genuinely wired", () => {
-    expect(confirmFormatReachable({ medium: "chart", format: "scrolly" })).toBe("yes");
-    expect(confirmFormatReachable({ medium: "map", format: "web" })).toBe("yes");
-    expect(confirmFormatReachable({ medium: "image", format: "static" })).toBe("yes");
+    expect(confirmFormatReachable({ medium: "chart", format: "scrolly" })).toBe(
+      "yes",
+    );
+    expect(confirmFormatReachable({ medium: "map", format: "web" })).toBe(
+      "yes",
+    );
+    expect(confirmFormatReachable({ medium: "image", format: "static" })).toBe(
+      "yes",
+    );
   });
 
   it("should refuse a pair with no producer, naming what that medium can reach", () => {
-    expect(() => confirmFormatReachable({ medium: "image", format: "video" })).toThrow(
-      /for image it can reach static, scrolly/,
-    );
+    expect(() =>
+      confirmFormatReachable({ medium: "image", format: "video" }),
+    ).toThrow(/for image it can reach static, scrolly/);
   });
 
   it("should refuse a pair the environment has closed, naming the key", () => {
     expect(() =>
-      confirmFormatReachable({ medium: "map", format: "static", capabilities: mapClosed }),
+      confirmFormatReachable({
+        medium: "map",
+        format: "static",
+        capabilities: mapClosed,
+      }),
     ).toThrow(/MAPTILER_KEY is not set/);
   });
 });
@@ -282,22 +312,36 @@ describe("the candidates are genuinely different ways of seeing it", () => {
 
   it("should accept two genuinely different types, because two honest ways beat three fake ones", () => {
     expect(
-      assertDistinctWays([{ type: "Stacked bar" }, { type: "Waterfall (bridge)" }]),
+      assertDistinctWays([
+        { type: "Stacked bar" },
+        { type: "Waterfall (bridge)" },
+      ]),
     ).toBe(true);
   });
 
   it("should refuse a candidate that does not name its type at all", () => {
-    expect(() => assertDistinctWays([{ why: "it looks nice" }, { type: "Bar and column" }])).toThrow(
-      /must name the type/,
-    );
+    expect(() =>
+      assertDistinctWays([
+        { why: "it looks nice" },
+        { type: "Bar and column" },
+      ]),
+    ).toThrow(/must name the type/);
   });
 
   it("should render each candidate with the sheet's own purpose sentence, verbatim", () => {
     const text = formatCandidates({
       medium: "chart",
       candidates: [
-        { type: "Stacked bar", format: "static", why: "the total and its parts in one mark" },
-        { type: "Waterfall (bridge)", format: "static", why: "the losses read as steps to the total" },
+        {
+          type: "Stacked bar",
+          format: "static",
+          why: "the total and its parts in one mark",
+        },
+        {
+          type: "Waterfall (bridge)",
+          format: "static",
+          why: "the losses read as steps to the total",
+        },
       ],
     });
     const sheetSentence = typeSurvey().find(
@@ -312,7 +356,11 @@ describe("the candidates are genuinely different ways of seeing it", () => {
       formatCandidates({
         medium: "chart",
         candidates: [
-          { type: "Stacked bar", format: "static", why: "the total and its parts" },
+          {
+            type: "Stacked bar",
+            format: "static",
+            why: "the total and its parts",
+          },
           { type: "Waterfall (bridge)", format: "static", why: "  " },
         ],
       }),
@@ -332,5 +380,105 @@ describe("the candidates are genuinely different ways of seeing it", () => {
         ],
       }),
     ).toThrow(/not one this toolchain can produce or deliver yet/);
+  });
+});
+
+describe("advisory graphical ranking", () => {
+  const baseModel = {
+    schemaVersion: "splash-selection/v1",
+    revisions: {
+      story: "sha256:story",
+      catalogue: "sha256:catalogue",
+      capabilities: "sha256:capabilities",
+    },
+    evidence: {
+      proves: "Adoption rose across five annual observations.",
+      comparison: "2021 against 2025",
+      placement: "after the third paragraph",
+    },
+  };
+  const profile = {
+    rowCount: 50,
+    columns: [
+      { name: "country", type: "text", distinct: 10 },
+      { name: "year", type: "number", distinct: 5, min: 2021, max: 2025 },
+      { name: "adoption_pct", type: "number", distinct: 30, min: 3, max: 64 },
+    ],
+  };
+
+  it("ranks only reachable choices from confirmed fields and the frozen profile", () => {
+    const result = recommendVisualChoice({
+      profile,
+      model: {
+        ...baseModel,
+        choices: [
+          {
+            id: "chart.line",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["numeric-series", "ordered-axis"] },
+          },
+          {
+            id: "chart.boxplot",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["distribution"] },
+          },
+          {
+            id: "chart.contour",
+            kind: "treatment",
+            enabled: false,
+            proofOnly: true,
+            dataShape: { requires: ["continuous-field"] },
+          },
+        ],
+      },
+    });
+    expect(result.recommendedOptionId).toBe("chart.line");
+    expect(result.ranking.map((row) => row.optionId)).toEqual([
+      "chart.line",
+      "chart.boxplot",
+    ]);
+    expect(result.ranking[0].matchedEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "source/profile.json" }),
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain("proofFormats");
+  });
+
+  it("makes ties explicit and changes the advisory revision when frozen evidence changes", () => {
+    const model = {
+      ...baseModel,
+      choices: [
+        {
+          id: "chart.bar",
+          kind: "treatment",
+          enabled: true,
+          dataShape: { requires: ["categorical", "numeric-value"] },
+        },
+        {
+          id: "chart.dot",
+          kind: "treatment",
+          enabled: true,
+          dataShape: { requires: ["categorical", "numeric-value"] },
+        },
+      ],
+    };
+    const first = recommendVisualChoice({ model, profile });
+    const repeated = recommendVisualChoice({ model, profile });
+    expect(first).toEqual(repeated);
+    expect(first.tied).toBe(true);
+    expect(first.recommendedOptionId).toBe("chart.bar");
+    expect(first.ranking[0].tradeoffs.join(" ")).toContain(
+      "stable catalogue order",
+    );
+
+    const changed = recommendVisualChoice({
+      model,
+      profile: { ...profile, rowCount: 51 },
+    });
+    expect(changed.profileRevision).not.toBe(first.profileRevision);
+    expect(changed.revision).not.toBe(first.revision);
   });
 });

@@ -1,0 +1,1735 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "splash.visual-catalog",
+  "catalogRevision": "sha256:569532e17b0ab933a826a582a3ff18dcde33891cf04d69581659cc61b32572d7",
+  "mediums": [
+    {
+      "id": "chart",
+      "label": "Chart",
+      "description": "Values encoded as position, length, area, colour, or connection."
+    },
+    {
+      "id": "map",
+      "label": "Map",
+      "description": "A spatial claim in which location or geographic shape is part of the evidence."
+    },
+    {
+      "id": "image",
+      "label": "Photograph",
+      "description": "Journalist-supplied photographs with explicit alt text, credit, and rights."
+    }
+  ],
+  "formats": [
+    {
+      "id": "static",
+      "label": "Static image",
+      "description": "A fixed visual designed to be read at rest."
+    },
+    {
+      "id": "web",
+      "label": "Interactive web",
+      "description": "A self-contained page a reader can interrogate with pointer, touch, or keyboard."
+    },
+    {
+      "id": "video",
+      "label": "Video",
+      "description": "A short fixed-duration motion build with one controlled reveal."
+    },
+    {
+      "id": "scrolly",
+      "label": "Scroll-driven story",
+      "description": "A fixed visual that changes through explicit prose-led scroll steps."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "map",
+      "label": "Map production",
+      "requiredCredentials": [
+        "MAPTILER_KEY"
+      ],
+      "requiredSettings": [],
+      "repairAction": "open-readiness",
+      "unavailableReason": "Map production needs a verified MapTiler key."
+    },
+    {
+      "id": "map-delivery",
+      "label": "Restricted live-map delivery",
+      "requiredCredentials": [
+        "MAPTILER_DELIVERY_KEY"
+      ],
+      "requiredSettings": [],
+      "repairAction": "open-readiness",
+      "unavailableReason": "A restricted MapTiler delivery key is needed to keep the live map layer in a published page; the baked fallback can still be delivered."
+    },
+    {
+      "id": "datawrapper",
+      "label": "Datawrapper production",
+      "requiredCredentials": [
+        "DATAWRAPPER_TOKEN"
+      ],
+      "requiredSettings": [],
+      "repairAction": "open-readiness",
+      "unavailableReason": "The delegated Datawrapper producer needs a verified Datawrapper token."
+    },
+    {
+      "id": "hosted-embed",
+      "label": "Hosted embed delivery",
+      "requiredCredentials": [
+        "CLOUDFLARE_API_TOKEN"
+      ],
+      "requiredSettings": [
+        "cloudflare-account-id"
+      ],
+      "repairAction": "open-readiness",
+      "unavailableReason": "Hosted embed delivery needs a verified Cloudflare token and the confirmed newsroom account ID."
+    }
+  ],
+  "deliveryForms": [
+    {
+      "id": "owned-file",
+      "label": "The file itself",
+      "requiredCapabilities": []
+    },
+    {
+      "id": "cms-insertion",
+      "label": "CMS insertion",
+      "requiredCapabilities": []
+    },
+    {
+      "id": "source-bundle",
+      "label": "Runnable source",
+      "requiredCapabilities": []
+    },
+    {
+      "id": "embed",
+      "label": "Deploy and receive embed code",
+      "requiredCapabilities": [
+        "hosted-embed"
+      ]
+    }
+  ],
+  "producers": [
+    {
+      "id": "chart-beat",
+      "label": "Custom static chart",
+      "skill": "chart-beat"
+    },
+    {
+      "id": "chart-web",
+      "label": "Custom interactive chart",
+      "skill": "chart-web"
+    },
+    {
+      "id": "chart-video",
+      "label": "Custom chart video",
+      "skill": "chart-video"
+    },
+    {
+      "id": "map-beat",
+      "label": "Custom static or video map",
+      "skill": "map-beat"
+    },
+    {
+      "id": "map-web",
+      "label": "Custom interactive map",
+      "skill": "map-web"
+    },
+    {
+      "id": "image-beat",
+      "label": "Custom photograph beat",
+      "skill": "image-beat"
+    },
+    {
+      "id": "scrolly",
+      "label": "Custom scroll-driven story",
+      "skill": "scrolly"
+    },
+    {
+      "id": "dw-beat",
+      "label": "Datawrapper",
+      "skill": "dw-beat"
+    }
+  ],
+  "delegatedProducers": [
+    {
+      "id": "datawrapper",
+      "label": "Datawrapper",
+      "producer": "dw-beat",
+      "capability": "datawrapper",
+      "medium": "chart",
+      "formats": [
+        "static",
+        "web"
+      ],
+      "mappings": [
+        {
+          "treatmentId": "chart.area",
+          "format": "static",
+          "providerTypes": [
+            "d3-area"
+          ],
+          "defaultProviderType": "d3-area"
+        },
+        {
+          "treatmentId": "chart.area",
+          "format": "web",
+          "providerTypes": [
+            "d3-area"
+          ],
+          "defaultProviderType": "d3-area"
+        },
+        {
+          "treatmentId": "chart.bar-and-column",
+          "format": "static",
+          "providerTypes": [
+            "d3-bars",
+            "column-chart"
+          ],
+          "defaultProviderType": "d3-bars"
+        },
+        {
+          "treatmentId": "chart.bar-and-column",
+          "format": "web",
+          "providerTypes": [
+            "d3-bars",
+            "column-chart"
+          ],
+          "defaultProviderType": "d3-bars"
+        },
+        {
+          "treatmentId": "chart.bullet",
+          "format": "static",
+          "providerTypes": [
+            "d3-bars-bullet"
+          ],
+          "defaultProviderType": "d3-bars-bullet"
+        },
+        {
+          "treatmentId": "chart.bullet",
+          "format": "web",
+          "providerTypes": [
+            "d3-bars-bullet"
+          ],
+          "defaultProviderType": "d3-bars-bullet"
+        },
+        {
+          "treatmentId": "chart.dumbbell",
+          "format": "static",
+          "providerTypes": [
+            "d3-range-plot"
+          ],
+          "defaultProviderType": "d3-range-plot"
+        },
+        {
+          "treatmentId": "chart.dumbbell",
+          "format": "web",
+          "providerTypes": [
+            "d3-range-plot"
+          ],
+          "defaultProviderType": "d3-range-plot"
+        },
+        {
+          "treatmentId": "chart.grouped-bar",
+          "format": "static",
+          "providerTypes": [
+            "d3-bars-grouped",
+            "grouped-column-chart"
+          ],
+          "defaultProviderType": "d3-bars-grouped"
+        },
+        {
+          "treatmentId": "chart.grouped-bar",
+          "format": "web",
+          "providerTypes": [
+            "d3-bars-grouped",
+            "grouped-column-chart"
+          ],
+          "defaultProviderType": "d3-bars-grouped"
+        },
+        {
+          "treatmentId": "chart.line",
+          "format": "static",
+          "providerTypes": [
+            "d3-lines"
+          ],
+          "defaultProviderType": "d3-lines"
+        },
+        {
+          "treatmentId": "chart.line",
+          "format": "web",
+          "providerTypes": [
+            "d3-lines"
+          ],
+          "defaultProviderType": "d3-lines"
+        },
+        {
+          "treatmentId": "chart.pie-and-donut",
+          "format": "static",
+          "providerTypes": [
+            "d3-pies",
+            "d3-donuts"
+          ],
+          "defaultProviderType": "d3-pies"
+        },
+        {
+          "treatmentId": "chart.pie-and-donut",
+          "format": "web",
+          "providerTypes": [
+            "d3-pies",
+            "d3-donuts"
+          ],
+          "defaultProviderType": "d3-pies"
+        },
+        {
+          "treatmentId": "chart.population-pyramid",
+          "format": "static",
+          "providerTypes": [
+            "d3-bars-split"
+          ],
+          "defaultProviderType": "d3-bars-split"
+        },
+        {
+          "treatmentId": "chart.population-pyramid",
+          "format": "web",
+          "providerTypes": [
+            "d3-bars-split"
+          ],
+          "defaultProviderType": "d3-bars-split"
+        },
+        {
+          "treatmentId": "chart.scatter",
+          "format": "static",
+          "providerTypes": [
+            "d3-scatter-plot"
+          ],
+          "defaultProviderType": "d3-scatter-plot"
+        },
+        {
+          "treatmentId": "chart.scatter",
+          "format": "web",
+          "providerTypes": [
+            "d3-scatter-plot"
+          ],
+          "defaultProviderType": "d3-scatter-plot"
+        },
+        {
+          "treatmentId": "chart.slope",
+          "format": "static",
+          "providerTypes": [
+            "d3-lines"
+          ],
+          "defaultProviderType": "d3-lines"
+        },
+        {
+          "treatmentId": "chart.slope",
+          "format": "web",
+          "providerTypes": [
+            "d3-lines"
+          ],
+          "defaultProviderType": "d3-lines"
+        },
+        {
+          "treatmentId": "chart.stacked-bar",
+          "format": "static",
+          "providerTypes": [
+            "d3-bars-stacked",
+            "stacked-column-chart"
+          ],
+          "defaultProviderType": "d3-bars-stacked"
+        },
+        {
+          "treatmentId": "chart.stacked-bar",
+          "format": "web",
+          "providerTypes": [
+            "d3-bars-stacked",
+            "stacked-column-chart"
+          ],
+          "defaultProviderType": "d3-bars-stacked"
+        },
+        {
+          "treatmentId": "chart.waterfall",
+          "format": "static",
+          "providerTypes": [
+            "waterfall"
+          ],
+          "defaultProviderType": "waterfall"
+        },
+        {
+          "treatmentId": "chart.waterfall",
+          "format": "web",
+          "providerTypes": [
+            "waterfall"
+          ],
+          "defaultProviderType": "waterfall"
+        }
+      ]
+    }
+  ],
+  "formatPairs": [
+    {
+      "id": "chart.static",
+      "label": "Static chart",
+      "medium": "chart",
+      "format": "static",
+      "producer": "chart-beat",
+      "sizeRule": {
+        "kind": "required",
+        "options": [
+          "landscape",
+          "square",
+          "portrait"
+        ]
+      },
+      "interaction": {
+        "kind": "none",
+        "promise": "A fixed chart that states its evidence without reader interaction."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "cms-insertion",
+        "source-bundle"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [],
+      "pair": "chart/static",
+      "producerSkill": "chart-beat",
+      "delivered": true
+    },
+    {
+      "id": "chart.web",
+      "label": "Interactive chart",
+      "medium": "chart",
+      "format": "web",
+      "producer": "chart-web",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "explore",
+        "promise": "Every reading can expose an exact value by hover, tap, or keyboard while the static argument remains readable without JavaScript."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "chart/web",
+      "producerSkill": "chart-web",
+      "delivered": true
+    },
+    {
+      "id": "chart.video",
+      "label": "Chart video",
+      "medium": "chart",
+      "format": "video",
+      "producer": "chart-video",
+      "sizeRule": {
+        "kind": "required",
+        "options": [
+          "landscape",
+          "square",
+          "portrait"
+        ]
+      },
+      "interaction": {
+        "kind": "motion",
+        "promise": "A fixed-duration build reveals one argument in a controlled order and ends on a readable held frame."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "cms-insertion",
+        "source-bundle"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "chart/video",
+      "producerSkill": "chart-video",
+      "delivered": true
+    },
+    {
+      "id": "chart.scrolly",
+      "label": "Scroll-driven chart",
+      "medium": "chart",
+      "format": "scrolly",
+      "producer": "scrolly",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "scroll",
+        "promise": "An opaque prose card advances a fixed chart through explicit steps while the page scrolls."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "chart/scrolly",
+      "producerSkill": "scrolly",
+      "delivered": true
+    },
+    {
+      "id": "map.static",
+      "label": "Static map",
+      "medium": "map",
+      "format": "static",
+      "producer": "map-beat",
+      "sizeRule": {
+        "kind": "required",
+        "options": [
+          "landscape",
+          "square",
+          "portrait"
+        ]
+      },
+      "interaction": {
+        "kind": "none",
+        "promise": "A fixed map with one baked camera and a complete legend."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "cms-insertion",
+        "source-bundle"
+      ],
+      "requiredCapabilities": [
+        "map"
+      ],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "map/static",
+      "producerSkill": "map-beat",
+      "delivered": true
+    },
+    {
+      "id": "map.web",
+      "label": "Interactive map",
+      "medium": "map",
+      "format": "web",
+      "producer": "map-web",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "explore",
+        "promise": "A reader can move through the map, retrieve exact values by pointer or keyboard, and use a linear accessible table; a baked fallback remains without JavaScript."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [
+        "map"
+      ],
+      "optionalCapabilities": [
+        "map-delivery"
+      ],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "map/web",
+      "producerSkill": "map-web",
+      "delivered": true
+    },
+    {
+      "id": "map.video",
+      "label": "Map video",
+      "medium": "map",
+      "format": "video",
+      "producer": "map-beat",
+      "sizeRule": {
+        "kind": "required",
+        "options": [
+          "landscape",
+          "square",
+          "portrait"
+        ]
+      },
+      "interaction": {
+        "kind": "motion",
+        "promise": "A fixed camera and geometry build one spatial argument in a controlled order and hold the complete map at the end."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "cms-insertion",
+        "source-bundle"
+      ],
+      "requiredCapabilities": [
+        "map"
+      ],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "map/video",
+      "producerSkill": "map-beat",
+      "delivered": true
+    },
+    {
+      "id": "map.scrolly",
+      "label": "Scroll-driven map",
+      "medium": "map",
+      "format": "scrolly",
+      "producer": "scrolly",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "scroll",
+        "promise": "Prose-led steps advance one fixed map while the live layer remains leashed to the subject and the baked fallback remains available."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [
+        "map"
+      ],
+      "optionalCapabilities": [
+        "map-delivery"
+      ],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "map/scrolly",
+      "producerSkill": "scrolly",
+      "delivered": true
+    },
+    {
+      "id": "image.static",
+      "label": "Static photograph beat",
+      "medium": "image",
+      "format": "static",
+      "producer": "image-beat",
+      "sizeRule": {
+        "kind": "required",
+        "options": [
+          "landscape",
+          "square",
+          "portrait"
+        ]
+      },
+      "interaction": {
+        "kind": "none",
+        "promise": "A fixed, uncropped photograph sequence with journalist-supplied words, alt text, and credit."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "cms-insertion",
+        "source-bundle"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [],
+      "pair": "image/static",
+      "producerSkill": "image-beat",
+      "delivered": true
+    },
+    {
+      "id": "image.scrolly",
+      "label": "Scroll-driven photograph story",
+      "medium": "image",
+      "format": "scrolly",
+      "producer": "scrolly",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "scroll",
+        "promise": "Journalist-supplied photographs advance through explicit prose-led steps without automatic description or cropping."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ],
+      "pair": "image/scrolly",
+      "producerSkill": "scrolly",
+      "delivered": true
+    }
+  ],
+  "treatments": [
+    {
+      "id": "chart.area",
+      "medium": "chart",
+      "label": "Area (and stacked area)",
+      "reference": "chart-beat/references/types/area.md",
+      "dataShape": {
+        "summary": "One or more numeric series along a shared ordered axis; stacked areas also require a meaningful additive total.",
+        "requires": [
+          "numeric-series",
+          "ordered-axis"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A single-series area chart is a line chart with the space beneath it filled.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.bar-and-column",
+      "medium": "chart",
+      "label": "Bar and column",
+      "reference": "chart-beat/references/types/bar-and-column.md",
+      "dataShape": {
+        "summary": "One numeric value per category measured from a shared baseline.",
+        "requires": [
+          "categorical",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "One value per category, encoded as the LENGTH of a rectangle from a shared baseline.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.beeswarm",
+      "medium": "chart",
+      "label": "Beeswarm",
+      "reference": "chart-beat/references/types/beeswarm.md",
+      "dataShape": {
+        "summary": "Raw observations with one numeric measure; optional groups must preserve every observation.",
+        "requires": [
+          "numeric-value",
+          "raw-observations"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A beeswarm shows every raw observation on one shared value axis, with no aggregation and no overlap — the \"show your data\" distribution chart.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.boxplot",
+      "medium": "chart",
+      "label": "Box plot",
+      "reference": "chart-beat/references/types/boxplot.md",
+      "dataShape": {
+        "summary": "A distribution, or a valid five-number summary, for each category.",
+        "requires": [
+          "categorical",
+          "distribution"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A box plot compresses a distribution into a five-number summary — minimum, first quartile, median, third quartile, maximum — and draws it as a box with whiskers, one per category.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.bullet",
+      "medium": "chart",
+      "label": "Bullet",
+      "reference": "chart-beat/references/types/bullet.md",
+      "dataShape": {
+        "summary": "An actual value and a comparable target for each measure, with optional ordered performance ranges.",
+        "requires": [
+          "actual-and-target",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A bullet chart answers \"did this hit its target\" for one or more measures, each on its own row: a single bar grows from zero to the actual value, a tick mark shows the target it was measured against, and a neutral backdrop can carry qualitative zones (poor / ok / good) behind the bar.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.bump",
+      "medium": "chart",
+      "label": "Bump (ranking-over-time)",
+      "reference": "chart-beat/references/types/bump.md",
+      "dataShape": {
+        "summary": "Ranks for multiple named entities at each point on an ordered axis.",
+        "requires": [
+          "multiple-series",
+          "ordered-axis",
+          "rank"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A bump chart answers \"who overtook whom, and when\" among several competitors ranked over multiple periods — a league table's season, a chart's weekly top-ten, a poll's changing front-runners.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.calendar-heatmap",
+      "medium": "chart",
+      "label": "Calendar heatmap",
+      "reference": "chart-beat/references/types/calendar-heatmap.md",
+      "dataShape": {
+        "summary": "A real date and numeric value for each observed day.",
+        "requires": [
+          "calendar-date",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A calendar heatmap answers \"when, across a real calendar, did this value run high or low\" by laying one cell per day into a fixed weekday-by-week grid and colouring each cell by its value — the same value-to-colour idea as a matrix heatmap, but with the grid's structure fixed to the calendar itself rather than free to be any two categorical axes.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.connected-scatter",
+      "medium": "chart",
+      "label": "Connected scatter",
+      "reference": "chart-beat/references/types/connected-scatter.md",
+      "dataShape": {
+        "summary": "Two numeric measures and an explicit order for every observation in one path.",
+        "requires": [
+          "numeric-pair",
+          "ordered-axis"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A connected scatter answers \"what path did these two measures trace together, over time\" — unlike a plain scatter, whose points have no inherent order, here each point IS ordered (usually by time) and the points are joined into a single path, so loops, reversals, and doubling-back all become visible shapes instead of a static cloud.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.diverging-bar",
+      "medium": "chart",
+      "label": "Diverging bar",
+      "reference": "chart-beat/references/types/diverging-bar.md",
+      "dataShape": {
+        "summary": "One signed numeric value per category around a meaningful zero.",
+        "requires": [
+          "categorical",
+          "signed-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A diverging bar answers \"who gained and who lost, and by how much\" for a set of categories whose values are SIGNED — net job change by sector, vote swing by district, temperature anomaly by year.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.diverging-stacked-bar",
+      "medium": "chart",
+      "label": "Diverging stacked bar (Likert)",
+      "reference": "chart-beat/references/types/diverging-stacked-bar.md",
+      "dataShape": {
+        "summary": "Ordered response shares for each item, including an explicit neutral category where one exists.",
+        "requires": [
+          "categorical",
+          "ordered-responses",
+          "part-to-whole"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A diverging stacked bar answers \"how did opinion split, for many items at once, when the response scale itself has a neutral middle\" — a survey's strongly-disagree-to-strongly-agree results, one row per question, segments stacked outward from a shared centre instead of from a shared zero.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.dot-strip",
+      "medium": "chart",
+      "label": "Dot strip",
+      "reference": "chart-beat/references/types/dot-strip.md",
+      "dataShape": {
+        "summary": "Raw numeric observations grouped into named categories.",
+        "requires": [
+          "categorical",
+          "numeric-value",
+          "raw-observations"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A dot strip lays one horizontal lane per category and marks every raw observation in that category as a dot positioned by its own value, with a small deterministic jitter and enough transparency that overlapping points still show through each other — plus one neutral tick per lane marking that category's mean.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.dumbbell",
+      "medium": "chart",
+      "label": "Dumbbell (range plot)",
+      "reference": "chart-beat/references/types/dumbbell.md",
+      "dataShape": {
+        "summary": "Exactly two comparable numeric values for each category.",
+        "requires": [
+          "categorical",
+          "numeric-pair"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A dumbbell chart answers \"how big is the gap between two values, for each of several categories, and which categories have the biggest gap\" — one row per category, two dots (one per series) joined by a connecting line whose LENGTH is the point.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.gantt",
+      "medium": "chart",
+      "label": "Gantt",
+      "reference": "chart-beat/references/types/gantt.md",
+      "dataShape": {
+        "summary": "A named item with a valid start and end on one shared time scale.",
+        "requires": [
+          "interval",
+          "temporal"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A Gantt chart draws each item as a bar spanning its own start to its own end on one shared, to-scale time axis, one row per item — answering \"when did this happen, how long did it take, and what overlapped with what.\" That's a job a plain event timeline can't do: a timeline of instants can show WHEN something happened but has no way to show DURATION or overlap between concurrent items; a Gantt bar's length is specifically standing in for elapsed time, which is the one thing this type exists to make visible.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.grouped-bar",
+      "medium": "chart",
+      "label": "Grouped bar",
+      "reference": "chart-beat/references/types/grouped-bar.md",
+      "dataShape": {
+        "summary": "A small fixed set of comparable numeric series repeated across categories.",
+        "requires": [
+          "categorical",
+          "multiple-series",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A small number of series placed side by side within each category, so a reader can make two comparisons off one chart: within a group (this series here against that one, same category) and across groups (this series here against itself over there, a different category).",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.heatmap",
+      "medium": "chart",
+      "label": "Heatmap (matrix)",
+      "reference": "chart-beat/references/types/heatmap.md",
+      "dataShape": {
+        "summary": "Two categorical or temporal dimensions and one numeric value per cell.",
+        "requires": [
+          "matrix",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A heatmap lays a grid across two categorical (or temporal) dimensions — day by hour, region by year — and encodes a third, quantitative value as the colour of each cell.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.histogram",
+      "medium": "chart",
+      "label": "Histogram",
+      "reference": "chart-beat/references/types/histogram.md",
+      "dataShape": {
+        "summary": "Raw observations of one continuous numeric variable, or explicitly defined contiguous bins.",
+        "requires": [
+          "continuous-value",
+          "distribution"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A histogram bins one continuous variable into contiguous intervals and draws a bar per bin whose height is the count that landed there.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.line",
+      "medium": "chart",
+      "label": "Line",
+      "reference": "chart-beat/references/types/line.md",
+      "dataShape": {
+        "summary": "One or more numeric series on a shared ordered axis, usually time.",
+        "requires": [
+          "numeric-series",
+          "ordered-axis"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A continuous series read against an ordered axis, almost always time, encoded as position and joined into a single stroke that reads as one trend.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ]
+    },
+    {
+      "id": "chart.lollipop",
+      "medium": "chart",
+      "label": "Lollipop",
+      "reference": "chart-beat/references/types/lollipop.md",
+      "dataShape": {
+        "summary": "One non-negative numeric magnitude per category from a meaningful zero baseline.",
+        "requires": [
+          "categorical",
+          "nonnegative-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A lollipop chart is a bar chart's thin sibling: same job (rank or compare a magnitude per category), same baseline-at-zero rule, same everything about the encoding — just a thin stem and a dot standing in for the solid rectangle.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.marimekko",
+      "medium": "chart",
+      "label": "Marimekko (mosaic plot)",
+      "reference": "chart-beat/references/types/marimekko.md",
+      "dataShape": {
+        "summary": "Group shares of a grand total plus each group's internal part-to-whole composition.",
+        "requires": [
+          "hierarchical",
+          "part-to-whole"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A Marimekko shows two nested part-to-whole proportions at once: column WIDTH encodes each group's share of the grand total, and the segments stacked inside each column encode that group's own internal composition — so a single cell's AREA is the joint share, group-size × internal-split, in one glance.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.parallel-coordinates",
+      "medium": "chart",
+      "label": "Parallel coordinates",
+      "reference": "chart-beat/references/types/parallel-coordinates.md",
+      "dataShape": {
+        "summary": "Several numeric variables measured for every item, with an explicit scale for each axis.",
+        "requires": [
+          "multivariate",
+          "numeric-value",
+          "raw-observations"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "Parallel coordinates lay several variables out as parallel vertical axes, each keeping its OWN independent scale, with one item drawn as a single polyline crossing every axis in turn — so the crossing pattern of many items' lines reveals trade-offs a table of the same numbers hides: an item that's high on one axis and low on the next shows up as a visibly steep diagonal, and a cluster of similarly-shaped items shows up as a bundle of near-parallel lines.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.pictogram",
+      "medium": "chart",
+      "label": "Pictogram (isotype)",
+      "reference": "chart-beat/references/types/pictogram.md",
+      "dataShape": {
+        "summary": "A non-negative count and an explicit units-per-icon conversion that does not encode value by icon size.",
+        "requires": [
+          "count",
+          "unit-conversion"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A pictogram states a magnitude as a countable row of equal-size icons, where ONE icon always stands for a stated number of units and count — never icon size — carries the value.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.pie-and-donut",
+      "medium": "chart",
+      "label": "Pie and donut",
+      "reference": "chart-beat/references/types/pie-and-donut.md",
+      "dataShape": {
+        "summary": "A small number of non-negative parts that exhaust one fixed whole.",
+        "requires": [
+          "few-categories",
+          "part-to-whole"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A pie (or donut — same chart, a hole in the middle and a total in it) answers exactly one question: of a fixed whole, what share does each part hold, when there are few enough parts that the reader can hold all of them in view at once.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.population-pyramid",
+      "medium": "chart",
+      "label": "Population pyramid",
+      "reference": "chart-beat/references/types/population-pyramid.md",
+      "dataShape": {
+        "summary": "Exactly two comparable groups measured across the same ordered bands.",
+        "requires": [
+          "numeric-pair",
+          "ordered-categories"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A population pyramid is two back-to-back bar charts sharing a central category axis: ordered bands run up the middle, one group's bars extend left, the other's right, each bar's length a magnitude on the same scale.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.radar",
+      "medium": "chart",
+      "label": "Radar (spider)",
+      "reference": "chart-beat/references/types/radar.md",
+      "dataShape": {
+        "summary": "The same numeric variables and compatible radial scales for a small number of items.",
+        "requires": [
+          "few-series",
+          "multivariate",
+          "numeric-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A radar chart plots several variables as axes radiating from a shared centre, each on the SAME radial scale, with one item's readings across all axes joined into a closed polygon — so the shape of that polygon is the read: a balanced item draws a regular shape, a lopsided one draws a spiky or lobsided one.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.sankey",
+      "medium": "chart",
+      "label": "Sankey",
+      "reference": "chart-beat/references/types/sankey.md",
+      "dataShape": {
+        "summary": "Directed flows between ordered stages with non-negative magnitudes and conserved meaning.",
+        "requires": [
+          "directed-flow",
+          "nonnegative-value",
+          "staged-network"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A sankey diagram answers \"how does a quantity flow and split as it moves through a sequence of stages\" — energy from source to sector, users from signup to churn, a budget from allocation to spend — with each stage laid out as its own column of nodes and ribbons flowing between them whose THICKNESS is proportional to the amount flowing.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.scatter",
+      "medium": "chart",
+      "label": "Scatter (and bubble)",
+      "reference": "chart-beat/references/types/scatter.md",
+      "dataShape": {
+        "summary": "Two continuous numeric measures for every observation; a bubble variant needs a third positive size measure.",
+        "requires": [
+          "numeric-pair",
+          "raw-observations"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A scatter plot answers one question: as one continuous variable moves, what happens to another, across every unit at once.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.slope",
+      "medium": "chart",
+      "label": "Slope (slopegraph)",
+      "reference": "chart-beat/references/types/slope.md",
+      "dataShape": {
+        "summary": "Exactly two comparable moments for each named category.",
+        "requires": [
+          "categorical",
+          "numeric-pair",
+          "two-moments"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A slope chart answers \"who moved, in which direction, and by how much, between exactly two moments\" — for many categories at once.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.small-multiples",
+      "medium": "chart",
+      "label": "Small multiples",
+      "reference": "chart-beat/references/types/small-multiples.md",
+      "dataShape": {
+        "summary": "A repeatable chart schema across facets that can share scales or explicitly disclose scale differences.",
+        "requires": [
+          "facets",
+          "repeatable-schema"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "Small multiples isn't a chart type — it's a layout decision: instead of forcing every group into one crowded chart, repeat the same small chart once per category, panel after panel, all built the same way.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.stacked-bar",
+      "medium": "chart",
+      "label": "Stacked bar",
+      "reference": "chart-beat/references/types/stacked-bar.md",
+      "dataShape": {
+        "summary": "Additive numeric series within each category, where both the total and composition are meaningful.",
+        "requires": [
+          "categorical",
+          "multiple-series",
+          "part-to-whole"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "Several series summed into one bar per category, so a single mark carries both the total (the bar's full length) and the composition (each segment's own length within it).",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "chart.streamgraph",
+      "medium": "chart",
+      "label": "Streamgraph",
+      "reference": "chart-beat/references/types/streamgraph.md",
+      "dataShape": {
+        "summary": "Several non-negative series over an ordered axis where overall rhythm matters more than exact lookup.",
+        "requires": [
+          "multiple-series",
+          "nonnegative-value",
+          "ordered-axis"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A streamgraph shows many overlapping time series stacked with no fixed baseline — bands can wiggle up and down around a shifting centre rather than growing from a flat zero line — so the READ is the overall rhythm and relative flow of many series at once, not the exact value of any one band at any one point.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.treemap",
+      "medium": "chart",
+      "label": "Treemap",
+      "reference": "chart-beat/references/types/treemap.md",
+      "dataShape": {
+        "summary": "Non-negative parts nested in meaningful groups, with values that sum within the hierarchy.",
+        "requires": [
+          "hierarchical",
+          "nonnegative-value",
+          "part-to-whole"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A treemap answers \"how does a total break down, when the pieces ALSO belong to groups worth keeping together\" — area encodes each item's value, and items sharing a group are laid out as contiguous tiles, so the group itself reads as a visible region of the frame, not just a shared colour scattered across the page.",
+      "proofFormats": []
+    },
+    {
+      "id": "chart.waterfall",
+      "medium": "chart",
+      "label": "Waterfall (bridge)",
+      "reference": "chart-beat/references/types/waterfall.md",
+      "dataShape": {
+        "summary": "A starting total, an ordered sequence of signed deltas, and an arithmetically consistent ending total.",
+        "requires": [
+          "ordered-axis",
+          "signed-value",
+          "starting-and-ending-total"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A waterfall chart shows how a starting total arrives at an ending total through a sequence of signed steps — a revenue build, a budget variance, an opening-to-closing balance.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "map.cartogram",
+      "medium": "map",
+      "label": "Cartogram",
+      "reference": "map-beat/references/types/cartogram.md",
+      "dataShape": {
+        "summary": "Region geometry, adjacency that matters to the story, and a non-negative value used to distort area.",
+        "requires": [
+          "geographic-regions",
+          "nonnegative-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A cartogram answers \"how big is this region's VALUE,\" honestly, by distorting each region's own area to be proportional to a number — trading recognisable geography for magnitude a reader can compare at a glance.",
+      "proofFormats": []
+    },
+    {
+      "id": "map.choropleth",
+      "medium": "map",
+      "label": "Choropleth",
+      "reference": "map-beat/references/types/choropleth.md",
+      "dataShape": {
+        "summary": "Joinable named-region geometry and a normalized rate, share, or intensity rather than a raw count.",
+        "requires": [
+          "geographic-regions",
+          "normalized-value",
+          "region-join"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A choropleth answers \"which of these named regions is proportionally worse or better off,\" where the regions are a partition the reader already recognises — countries, states, districts.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ]
+    },
+    {
+      "id": "map.contour-isoline",
+      "medium": "map",
+      "label": "Contour / isoline",
+      "reference": "map-beat/references/types/contour-isoline.md",
+      "dataShape": {
+        "summary": "Dense georeferenced samples of a genuinely continuous field, sufficient to justify interpolation.",
+        "requires": [
+          "continuous-field",
+          "dense-spatial-samples"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "proof-only",
+      "disabledReason": "The doctrine reference is retained, but Splash has no shipped contour/isoline implementation; choose a supported map treatment instead.",
+      "purpose": "A contour (isoline) map answers \"where does this continuous field cross a given value\" — elevation, temperature, air pressure, rainfall, travel-time-from-a-point — by drawing lines that connect every point sharing the same value, the way topographic elevation lines do.",
+      "proofFormats": []
+    },
+    {
+      "id": "map.dot-density",
+      "medium": "map",
+      "label": "Dot density",
+      "reference": "map-beat/references/types/dot-density.md",
+      "dataShape": {
+        "summary": "Joinable region polygons and non-negative totals whose within-region dot positions are explicitly synthetic.",
+        "requires": [
+          "count",
+          "geographic-regions",
+          "region-join"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A dot-density map answers \"where inside these regions is this concentrated\" — population, cases, production — at a texture level: dense clusters of dots read as dense clusters of the thing, sparse areas read as sparse, without forcing the reader to decode a single number per region the way a choropleth does.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ]
+    },
+    {
+      "id": "map.flow-map",
+      "medium": "map",
+      "label": "Flow map (route)",
+      "reference": "map-beat/references/types/flow-map.md",
+      "dataShape": {
+        "summary": "One ordered route geometry or waypoint sequence whose path and direction are part of the claim.",
+        "requires": [
+          "geographic-route",
+          "ordered-axis"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A flow/route map answers \"what path did this take, and what did it pass through, in order\" — a ship's voyage, a migration corridor, an evacuation route, a supply chain's journey — where the sequence of places crossed is itself part of the claim, not just the endpoints.",
+      "proofFormats": [
+        "static",
+        "video",
+        "scrolly"
+      ]
+    },
+    {
+      "id": "map.hex-grid",
+      "medium": "map",
+      "label": "Hex grid (spatial binning)",
+      "reference": "map-beat/references/types/hex-grid.md",
+      "dataShape": {
+        "summary": "Enough raw georeferenced events to support spatial aggregation into a regular grid.",
+        "requires": [
+          "dense-spatial-events",
+          "geographic-points"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A hex-grid map answers \"where is this cluster of scattered EVENTS actually densest,\" by aggregating raw points — incidents, sightings, transactions — into a regular grid of cells so the eye sees a smooth density surface instead of an unreadable smear of thousands of overlapping dots.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "map.locator",
+      "medium": "map",
+      "label": "Locator",
+      "reference": "map-beat/references/types/locator.md",
+      "dataShape": {
+        "summary": "Named point locations with valid coordinates and optional categories, but no value encoded by marker size.",
+        "requires": [
+          "geographic-points",
+          "place-labels"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A locator answers \"where, exactly\" — it names a set of places relevant to the story (the sites of an event, the stops on an itinerary, the hometowns of people quoted) with nothing more than position and, optionally, a category.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "map.proportional-symbol",
+      "medium": "map",
+      "label": "Proportional symbol (symbol / bubble map)",
+      "reference": "map-beat/references/types/proportional-symbol.md",
+      "dataShape": {
+        "summary": "Named point locations with valid coordinates and a positive numeric magnitude at each place.",
+        "requires": [
+          "geographic-points",
+          "positive-value"
+        ]
+      },
+      "formats": [
+        "static",
+        "web",
+        "video",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "A proportional symbol map answers \"how big is this quantity AT this specific place\" — a city's population, an earthquake's magnitude, a plant's output — where the geography is a set of POINTS, not a partition of area.",
+      "proofFormats": [
+        "static",
+        "web",
+        "video"
+      ]
+    },
+    {
+      "id": "image.photograph-sequence",
+      "medium": "image",
+      "label": "Photograph sequence",
+      "reference": "image-beat/references/image-discipline.md",
+      "dataShape": {
+        "summary": "Journalist-supplied image files in an explicit order, each with rights, alt text, caption, and credit supplied by the journalist.",
+        "requires": [
+          "alt-text",
+          "image-files",
+          "image-rights",
+          "photo-credit"
+        ]
+      },
+      "formats": [
+        "static",
+        "scrolly"
+      ],
+      "state": "selectable",
+      "purpose": "Journalist-supplied image files in an explicit order, each with rights, alt text, caption, and credit supplied by the journalist.",
+      "proofFormats": [
+        "scrolly"
+      ]
+    }
+  ]
+}

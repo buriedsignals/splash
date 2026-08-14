@@ -113,7 +113,7 @@
 //
 // Usage: bun skills/scrolly/scripts/verify-scrolly.mjs <file.html> [more.html...] [--width=W]
 
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";

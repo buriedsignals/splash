@@ -2,7 +2,8 @@
  * THE DOORS ARE REPORTED, NOT ASKED ABOUT — and reported from ONE source of truth.
  *
  * The owner expected the setup page to ask a question per AI host, and there correctly is none:
- * Goose, Codex and Gemini share one agents store, so `place-skills.mjs` wires it unconditionally.
+ * Goose, Codex and Gemini share one agents store, so Engine wires it unconditionally; the
+ * `place-skills.mjs` module supplies the setup page's matching dry-run report.
  * But a page that then says nothing leaves him unable to tell a wired install
  * from an unwired one, or to see that a placement was REFUSED (a symlinked skills directory, a
  * name collision) — and a refusal is the one thing that install never works around.
@@ -81,6 +82,7 @@ beforeAll(async () => {
     [
       "bun",
       join(INSTALLER, "configure.mjs"),
+      "--legacy-plaintext",
       "--root",
       root,
       "--home",
@@ -162,7 +164,7 @@ describe("the doors the page reports", () => {
 
   it("should place nothing while rendering the report", () => {
     // The collision must still be the journalist's file — the page reports,
-    // `place-skills.mjs` places.
+    // Engine places; `place-skills.mjs` supplies the same dry-run path rules.
     expect(
       readFileSync(join(home, ".agents", "skills", "palette"), "utf8"),
     ).toBe("a file the journalist put here");

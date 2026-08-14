@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // THE SHARED SKILL STORE. Goose, Codex and Gemini all discover flat skill directories under
-// `~/.agents/skills/`, so Splash places exactly one symlink per shipped skill there:
+// `~/.agents/skills/`, so Splash projects exactly one symlink per shipped skill there:
 //
 //   `~/.agents/skills/<id> → <root>/skills/<id>`
 //
@@ -15,7 +15,9 @@
 // passes no namespace and keeps the flat layout below.
 //
 // Placement is by symlink. `skillIds` discovers directories containing `SKILL.md`; the installer
-// never maintains a second hard-coded inventory.
+// never maintains a second hard-coded inventory. The canonical development install performs the
+// mutation inside Engine's apply/uninstall transaction. This module remains the setup page's dry-run
+// reporter and a compatibility CLI for older unmanaged checkouts.
 //
 // TWO DEFENSIVE RULES STOLEN OUTRIGHT FROM SPOTLIGHT'S INSTALLER, both of which exist because it
 // learned them the hard way:
@@ -40,7 +42,7 @@
 // are the installer's own, outside `skills/`, so the rule does not reach them — see that guard's
 // own header for what it walks.)
 
-import { existsSync, lstatSync, readlinkSync, symlinkSync, unlinkSync, mkdirSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readlinkSync, symlinkSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -136,11 +138,8 @@ function placeLink({ linkPath, target, doorId, record, dryRun }) {
       record(doorId, "ok", linkPath, "already points here");
       return;
     }
-    if (dryRun) {
-      record(doorId, "would-relink", linkPath, `${existing} → ${target}`);
-      return;
-    }
-    unlinkSync(linkPath);
+    record(doorId, "refused", linkPath, `points at ${existing}, which is not this checkout — not removed`);
+    return;
   }
 
   if (dryRun) {
@@ -183,7 +182,7 @@ function openDoor({ dir, doorId, record, dryRun }) {
  * store and never places links.
  */
 export function planPlacement({ root, home, namespace = "", dryRun = false }) {
-  if (namespace && !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(namespace))
+  if (namespace && !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(namespace))
     throw new Error(`invalid skill namespace: ${namespace}`);
   const results = [];
   const record = (doorId, status, where, detail) => results.push({ doorId, status, where, detail });

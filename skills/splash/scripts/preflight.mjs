@@ -8,35 +8,32 @@ import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.m
 import { probeMapTiler, probeDatawrapper, probeCloudflare, resolveEnvKey } from "./keys.mjs";
 
 const ROOT_TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "root-template");
-const ROOT_TEMPLATE_PACKAGE_JSON = join(ROOT_TEMPLATE_DIR, "package.json");
-
 // Craft skills vendor their mechanism (never their seed — see chart-beat/SKILL.md) into the
 // root template's own shared/ directory, checked in, so `cp -r root-template/` carries it along.
 // This is that vendored tree's location — the manifest of what a real root must also have.
-const ROOT_TEMPLATE_SHARED_DIR = join(ROOT_TEMPLATE_DIR, "shared");
-
 async function exists(path) {
   try { await stat(path); return true; } catch { return false; }
 }
 
-async function declaredDependencyNames() {
-  const pkg = JSON.parse(await readFile(ROOT_TEMPLATE_PACKAGE_JSON, "utf8"));
+async function declaredDependencyNames(templateRoot) {
+  const pkg = JSON.parse(await readFile(join(templateRoot, "package.json"), "utf8"));
   return Object.keys(pkg.dependencies ?? {});
 }
 
 // Every vendored craft file the template ships, relative to its own shared/ directory — derived
 // by walking the template rather than a hand-kept list, so a new craft skill that vendors its
 // mechanism is covered the moment its files land in the template, with no change here.
-async function declaredSharedFiles() {
+async function declaredSharedFiles(templateRoot) {
+  const sharedRoot = join(templateRoot, "shared");
   let entries;
   try {
-    entries = await readdir(ROOT_TEMPLATE_SHARED_DIR, { recursive: true, withFileTypes: true });
+    entries = await readdir(sharedRoot, { recursive: true, withFileTypes: true });
   } catch {
     return [];
   }
   return entries
     .filter((entry) => entry.isFile())
-    .map((entry) => relative(ROOT_TEMPLATE_SHARED_DIR, join(entry.parentPath ?? entry.path, entry.name)));
+    .map((entry) => relative(sharedRoot, join(entry.parentPath ?? entry.path, entry.name)));
 }
 
 // A present node_modules is not a working install, the same discipline the MapTiler check
@@ -76,15 +73,15 @@ function resolveDepInTree(name, root) {
   return existsSync(join(root, "node_modules", name, "package.json"));
 }
 
-async function checkDependencies(root) {
+async function checkDependencies(root, templateRoot) {
   if (!(await exists(join(root, "node_modules")))) {
     return { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" };
   }
 
-  const declared = await declaredDependencyNames();
+  const declared = await declaredDependencyNames(templateRoot);
   const unresolvedPackages = declared.filter((name) => !resolveDepInTree(name, root));
 
-  const declaredShared = await declaredSharedFiles();
+  const declaredShared = await declaredSharedFiles(templateRoot);
   const missingShared = [];
   for (const relPath of declaredShared) {
     if (!(await exists(join(root, "shared", relPath)))) {
@@ -115,10 +112,10 @@ async function checkDependencies(root) {
 // short of the six required fields. `declined` behaves like `pass` for readiness below — a
 // considered "no" is exactly as closed a question as a "yes"; the whole point of recording it is
 // that neither one is a silent default a later reader could mistake for a bug and "fix".
-async function checkNewsroom(root) {
-  let text;
-  try {
-    text = await readFile(join(root, "NEWSROOM.md"), "utf8");
+async function checkNewsroom(newsroomPath) {
+	let text;
+	try {
+		text = await readFile(newsroomPath, "utf8");
   } catch {
     // The file could not be read at all: missing, or inaccessible. Not a parse question.
     return {
@@ -167,18 +164,18 @@ async function checkNewsroom(root) {
 // `fill` is what turns a report into an OFFER. Every reason string already names the exact variable
 // ("MAPTILER_KEY is not set"), and yet there was no code path anywhere in this toolchain that
 // accepted a key from a journalist — so a closed capability closed for the whole session with no
-// moment at which it could be opened. `fill` says the variable, where the key comes from, and the
-// file it goes in; `recordKey` (scripts/keys.mjs) is where an answer lands. It is carried on OPEN
-// rows too: a row is a description of a capability, not of a failure.
+// moment at which it could be opened. `fill` now names the Engine credential ID, provider, and the
+// protected Readiness setup action. The legacy recordKey writer is deliberately not a production
+// remedy. `fill` is carried on OPEN rows too: a row describes a capability, not only a failure.
 async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn, fill }) {
   const key = resolveEnvKey(env, canonicalEnv);
   const result = await probeFn(key, fetchFn);
   return { id, opens, available: result.ok, reason: result.detail, fill };
 }
 
-export async function runPreflight({ root, env, fetchFn }) {
-  const dependencies = await checkDependencies(root);
-  const newsroom = await checkNewsroom(root);
+export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEMPLATE_DIR, newsroomPath = join(root, "NEWSROOM.md") }) {
+	const dependencies = await checkDependencies(root, templateRoot);
+	const newsroom = await checkNewsroom(newsroomPath);
   const checks = [dependencies, newsroom];
 
   const capabilities = {
@@ -189,7 +186,7 @@ export async function runPreflight({ root, env, fetchFn }) {
       env,
       probeFn: probeMapTiler,
       fetchFn,
-      fill: "MAPTILER_KEY — a free key from maptiler.com/cloud (Account → Keys), written into the .env at the Splash root",
+      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys), then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
     }),
     datawrapper: await checkCapability({
       id: "datawrapper",
@@ -198,7 +195,7 @@ export async function runPreflight({ root, env, fetchFn }) {
       env,
       probeFn: probeDatawrapper,
       fetchFn,
-      fill: "DATAWRAPPER_TOKEN — an API token from app.datawrapper.de/account/api-tokens, written into the .env at the Splash root",
+      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
     }),
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
@@ -212,7 +209,7 @@ export async function runPreflight({ root, env, fetchFn }) {
         opens: "the hosted embed delivery form",
         available: result.ok,
         reason: result.detail,
-        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — the account id from dash.cloudflare.com and a token with Pages:Edit, both written into the .env at the Splash root",
+        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom, then verify and save a Pages token under Credentials in Splash Readiness setup",
       };
     })(),
   };

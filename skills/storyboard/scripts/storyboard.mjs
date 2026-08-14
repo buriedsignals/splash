@@ -5,9 +5,10 @@ import { groundTakeaway } from "./ground-claim.mjs";
 import { formatGap } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { producerGap } from "./producer-gate.mjs";
-import { randomUUID } from "node:crypto";
-import { open, readFile, rename, rm, stat } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { lstat, open, readFile, rename, rm, stat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import { acquireTargetLock } from "./target-lock.mjs";
 
 // Still exported, and still this skill's own work — but no longer called by the GATE. Each is an
 // expensive semantic check owned by exactly one phase: `groundTakeaway` runs at G1, the moment the
@@ -23,7 +24,14 @@ import { basename, dirname, join } from "node:path";
 // neither runs one at all: they read the same recorded fields.
 export { groundTakeaway, formatGap, capabilityGap };
 
-const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
+const HAND = [
+  "subject",
+  "comparison",
+  "limits",
+  "placement",
+  "credit",
+  "effectiveDate",
+];
 
 // Every story-level scalar Gate 2 requires. `where.mjs` exports the same list, spelled
 // independently — the deliberate duplicate, cross-checked by `splash/test/where.test.ts`,
@@ -34,7 +42,15 @@ export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
 // Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
 // EXPORT_SIZES / SIZED_FORMATS below — but it stays in this list because the list is what the parity
 // test generates its fixtures from, and a field removed from it is a field nobody tests.
-export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
+export const REQUIRED_SLOT_FIELDS = [
+  "id",
+  "proves",
+  "medium",
+  "format",
+  "size",
+  "reachable",
+  "chosen",
+];
 
 // Ruling R2, read literally: landscape for YouTube and article web, portrait for stories, square
 // for social posts. Charts and maps alike, one model. The pixel dimensions are NOT here — they are
@@ -92,7 +108,8 @@ function isResolvedGrounding(value) {
 // "<field> is missing" — which is what the six HAND fields have always read as.
 const SCALAR_GAP = {
   grounding: "grounding is missing — the takeaway was never grounded at G1",
-  reference: "reference is missing — the reference loop never closed into a field",
+  reference:
+    "reference is missing — the reference loop never closed into a field",
 };
 
 // The scalars whose VALUE is checked, not merely their presence.
@@ -114,10 +131,14 @@ const SLOT_SUB_GATE = { medium: "2a", format: "2b", size: "2c" };
 const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
 
 function slotGap(field, id) {
-  if (field === "id") return "a provisional slot has no id — gate 2a cannot start";
-  if (field === "proves") return `slot ${id ?? "?"}: proves is missing — its confirmed claim was never persisted`;
-  if (field === "chosen") return `slot ${id}: nothing chosen — gate 2 is not closed`;
-  if (field === "reachable") return `slot ${id}: this medium and format were never confirmed reachable`;
+  if (field === "id")
+    return "a provisional slot has no id — gate 2a cannot start";
+  if (field === "proves")
+    return `slot ${id ?? "?"}: proves is missing — its confirmed claim was never persisted`;
+  if (field === "chosen")
+    return `slot ${id}: nothing chosen — gate 2 is not closed`;
+  if (field === "reachable")
+    return `slot ${id}: this medium and format were never confirmed reachable`;
   const subGate = SLOT_SUB_GATE[field];
   return subGate
     ? `slot ${id}: ${field} is missing — gate ${subGate} never closed`
@@ -198,7 +219,8 @@ export function parseStoryboard(text) {
       slot = {};
       slots.push(slot);
       const first = /^\s+-\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (first) assignUnique(slot, first[1], scalar(first[2]), "STORYBOARD.md slot");
+      if (first)
+        assignUnique(slot, first[1], scalar(first[2]), "STORYBOARD.md slot");
       continue;
     }
     if (slot && /^\s{4,}[A-Za-z]+:/.test(line)) {
@@ -214,8 +236,14 @@ export function parseStoryboard(text) {
   }
   let legacy = false;
   for (const [index, parsedSlot] of (meta.slots ?? []).entries()) {
-    const hasFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "format");
-    const hasLegacyFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "genre");
+    const hasFormat = Object.prototype.hasOwnProperty.call(
+      parsedSlot,
+      "format",
+    );
+    const hasLegacyFormat = Object.prototype.hasOwnProperty.call(
+      parsedSlot,
+      "genre",
+    );
     if (!hasLegacyFormat) continue;
     legacy = true;
     const label = parsedSlot.id ?? String(index + 1);
@@ -231,7 +259,10 @@ export function parseStoryboard(text) {
   for (const parsedSlot of meta.slots ?? []) {
     if (!parsedSlot.id) continue;
     const id = String(parsedSlot.id);
-    if (slotIds.has(id)) throw new Error(`STORYBOARD.md has duplicate slot id ${JSON.stringify(id)}`);
+    if (slotIds.has(id))
+      throw new Error(
+        `STORYBOARD.md has duplicate slot id ${JSON.stringify(id)}`,
+      );
     slotIds.add(id);
   }
   return { meta, prose: match[2], legacy };
@@ -240,7 +271,12 @@ export function parseStoryboard(text) {
 function documentParts(text) {
   const match = /^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n?)([\s\S]*)$/.exec(text);
   if (!match) throw new Error("STORYBOARD.md has no front matter");
-  return { opening: match[1], frontmatter: match[2], closing: match[3], prose: match[4] };
+  return {
+    opening: match[1],
+    frontmatter: match[2],
+    closing: match[3],
+    prose: match[4],
+  };
 }
 
 function linesWithEndings(text) {
@@ -276,9 +312,10 @@ function slotBlocks(lines) {
 
 function fieldInBlock(lines, block, key) {
   for (let index = block.start; index < block.end; index += 1) {
-    const pattern = index === block.start
-      ? new RegExp(`^(\\s+-\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`)
-      : new RegExp(`^(\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`);
+    const pattern =
+      index === block.start
+        ? new RegExp(`^(\\s+-\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`)
+        : new RegExp(`^(\\s+)${key}:(\\s*)(.*?)(\\r?\\n)?$`);
     const match = pattern.exec(lines[index]);
     if (match) return { index, match };
   }
@@ -308,12 +345,18 @@ function canonicalizeLegacyFormatKeys(text) {
       // Keep that list item in place as the canonical field and remove the later duplicate.
       if (legacy.index === block.start) {
         removeFrontmatterLine(lines, canonical.index);
-        lines[legacy.index] = lines[legacy.index].replace(/^(\s+-\s+)genre:/, "$1format:");
+        lines[legacy.index] = lines[legacy.index].replace(
+          /^(\s+-\s+)genre:/,
+          "$1format:",
+        );
       } else {
         removeFrontmatterLine(lines, legacy.index);
       }
     } else {
-      lines[legacy.index] = lines[legacy.index].replace(/^(\s+(?:-\s+)?)genre:/, "$1format:");
+      lines[legacy.index] = lines[legacy.index].replace(
+        /^(\s+(?:-\s+)?)genre:/,
+        "$1format:",
+      );
     }
   }
   return `${parts.opening}${lines.join("")}${parts.closing}${parts.prose}`;
@@ -331,7 +374,14 @@ function replaceTopLevel(lines, key, value) {
     if (index >= 0) lines.splice(index, 1);
     return;
   }
-  const ending = index >= 0 ? (/\r\n$/.test(lines[index]) ? "\r\n" : "\n") : (lines.some((line) => /\r\n$/.test(line)) ? "\r\n" : "\n");
+  const ending =
+    index >= 0
+      ? /\r\n$/.test(lines[index])
+        ? "\r\n"
+        : "\n"
+      : lines.some((line) => /\r\n$/.test(line))
+        ? "\r\n"
+        : "\n";
   const next = `${key}: ${encodedScalar(value)}${ending}`;
   if (index >= 0) lines[index] = next;
   else {
@@ -345,7 +395,10 @@ function replaceSlotField(lines, slotId, key, value) {
     const id = fieldInBlock(lines, candidate, "id");
     return id && scalar(id.match[3]) === String(slotId);
   });
-  if (!block) throw new Error(`STORYBOARD.md has no slot ${JSON.stringify(String(slotId))}`);
+  if (!block)
+    throw new Error(
+      `STORYBOARD.md has no slot ${JSON.stringify(String(slotId))}`,
+    );
   const existing = fieldInBlock(lines, block, key);
   if (value === null) {
     if (existing) removeFrontmatterLine(lines, existing.index);
@@ -353,16 +406,26 @@ function replaceSlotField(lines, slotId, key, value) {
   }
   const ending = existing
     ? (existing.match[4] ?? "")
-    : (lines.some((line) => /\r\n$/.test(line)) ? "\r\n" : "\n");
+    : lines.some((line) => /\r\n$/.test(line))
+      ? "\r\n"
+      : "\n";
   if (existing) {
     const prefix = existing.match[1];
     lines[existing.index] = `${prefix}${key}: ${encodedScalar(value)}${ending}`;
   } else {
     const insertedAtEnd = block.end === lines.length;
-    if (insertedAtEnd && block.end > 0 && !/\r?\n$/.test(lines[block.end - 1])) {
+    if (
+      insertedAtEnd &&
+      block.end > 0 &&
+      !/\r?\n$/.test(lines[block.end - 1])
+    ) {
       lines[block.end - 1] += ending;
     }
-    lines.splice(block.end, 0, `    ${key}: ${encodedScalar(value)}${insertedAtEnd ? "" : ending}`);
+    lines.splice(
+      block.end,
+      0,
+      `    ${key}: ${encodedScalar(value)}${insertedAtEnd ? "" : ending}`,
+    );
   }
 }
 
@@ -371,7 +434,10 @@ async function replaceAtomically(path, text, { beforeRename } = {}) {
     if (error?.code === "ENOENT") return null;
     throw error;
   });
-  const tempPath = join(dirname(path), `.${basename(path)}.${process.pid}.${randomUUID()}.tmp`);
+  const tempPath = join(
+    dirname(path),
+    `.${basename(path)}.${process.pid}.${randomUUID()}.tmp`,
+  );
   let handle;
   try {
     handle = await open(tempPath, "wx", fileStat?.mode);
@@ -387,11 +453,41 @@ async function replaceAtomically(path, text, { beforeRename } = {}) {
   }
 }
 
+export function storyboardRevision(text) {
+  return `sha256:${createHash("sha256")
+    .update("splash-storyboard-revision-v1\0")
+    .update(text)
+    .digest("hex")}`;
+}
+
+async function readStableStoryboard(path) {
+  const before = await lstat(path);
+  if (!before.isFile() || before.isSymbolicLink() || before.size > 2 << 20) {
+    throw new Error("STORYBOARD.md must be a bounded real file, not a symlink");
+  }
+  const text = await readFile(path, "utf8");
+  const after = await lstat(path);
+  if (
+    !after.isFile() ||
+    after.isSymbolicLink() ||
+    before.dev !== after.dev ||
+    before.ino !== after.ino ||
+    before.size !== after.size ||
+    before.mtimeMs !== after.mtimeMs
+  ) {
+    throw new Error("STORYBOARD.md changed while it was being read");
+  }
+  return text;
+}
+
 /** Write a complete storyboard through the same atomic, canonical boundary used by mutations. */
 export async function writeStoryboardAtomic(path, text, hooks = {}) {
   const canonical = canonicalizeLegacyFormatKeys(text);
   const parsed = parseStoryboard(canonical);
-  if (parsed.legacy) throw new Error("the canonical storyboard writer produced a legacy format field");
+  if (parsed.legacy)
+    throw new Error(
+      "the canonical storyboard writer produced a legacy format field",
+    );
   await replaceAtomically(path, canonical, hooks);
   return parsed;
 }
@@ -400,9 +496,14 @@ export async function writeStoryboardAtomic(path, text, hooks = {}) {
  * Mutate recorded storyboard fields without reserializing the journalist's prose or unrelated
  * front matter. Any explicit mutation also upgrades every legacy slot key to `format`.
  */
-export async function mutateStoryboard(path, { topLevel = {}, slot } = {}, hooks = {}) {
-  if (Object.prototype.hasOwnProperty.call(topLevel, "genre") || Object.prototype.hasOwnProperty.call(slot?.fields ?? {}, "genre")) {
-    throw new Error("genre is accepted only while reading a legacy STORYBOARD.md; write format instead");
+function renderStoryboardMutation(original, { topLevel = {}, slot } = {}) {
+  if (
+    Object.prototype.hasOwnProperty.call(topLevel, "genre") ||
+    Object.prototype.hasOwnProperty.call(slot?.fields ?? {}, "genre")
+  ) {
+    throw new Error(
+      "genre is accepted only while reading a legacy STORYBOARD.md; write format instead",
+    );
   }
   const slotFields = slot?.fields ?? {};
   const reopensProducerGate = ["medium", "format", "chosen"].some((field) =>
@@ -417,14 +518,16 @@ export async function mutateStoryboard(path, { topLevel = {}, slot } = {}, hooks
       "medium, format, or treatment confirmation cannot also confirm a producer; close the post-treatment producer gate separately",
     );
   }
-  const original = await readFile(path, "utf8");
   const canonical = canonicalizeLegacyFormatKeys(original);
   const parts = documentParts(canonical);
   const lines = linesWithEndings(parts.frontmatter);
-  for (const [key, value] of Object.entries(topLevel)) replaceTopLevel(lines, key, value);
+  for (const [key, value] of Object.entries(topLevel))
+    replaceTopLevel(lines, key, value);
   if (slot) {
-    if (slot.id === undefined || slot.id === null) throw new Error("a storyboard slot mutation needs slot.id");
-    for (const [key, value] of Object.entries(slotFields)) replaceSlotField(lines, slot.id, key, value);
+    if (slot.id === undefined || slot.id === null)
+      throw new Error("a storyboard slot mutation needs slot.id");
+    for (const [key, value] of Object.entries(slotFields))
+      replaceSlotField(lines, slot.id, key, value);
     if (reopensProducerGate) {
       replaceSlotField(lines, slot.id, "producer", null);
       replaceSlotField(lines, slot.id, "datawrapperType", null);
@@ -432,9 +535,50 @@ export async function mutateStoryboard(path, { topLevel = {}, slot } = {}, hooks
   }
   const next = `${parts.opening}${lines.join("")}${parts.closing}${parts.prose}`;
   const parsed = parseStoryboard(next);
-  if (parsed.legacy) throw new Error("the canonical storyboard mutation left a legacy format field");
+  if (parsed.legacy)
+    throw new Error(
+      "the canonical storyboard mutation left a legacy format field",
+    );
+  return { next, parsed };
+}
+
+export async function mutateStoryboard(path, mutation = {}, hooks = {}) {
+  const original = await readFile(path, "utf8");
+  const { next, parsed } = renderStoryboardMutation(original, mutation);
   await replaceAtomically(path, next, hooks);
   return parsed;
+}
+
+/**
+ * Graphical confirmation boundary. The adjacent cross-process lock stays held from the final stable
+ * reread and revision comparison through the fsynced temporary write and atomic rename.
+ */
+export async function mutateStoryboardRevisioned(
+  path,
+  mutation = {},
+  { expectedRevision, acquireLock = acquireTargetLock, beforeRename } = {},
+) {
+  if (!/^sha256:[0-9a-f]{64}$/.test(expectedRevision ?? "")) {
+    throw new Error("expected storyboard revision is required");
+  }
+  if (basename(path) !== "STORYBOARD.md")
+    throw new Error("the revisioned writer requires STORYBOARD.md");
+  const lock = await acquireLock(path);
+  try {
+    const original = await readStableStoryboard(path);
+    if (storyboardRevision(original) !== expectedRevision) {
+      const conflict = new Error(
+        "STORYBOARD.md changed since the selection view loaded",
+      );
+      conflict.code = "REVISION_CONFLICT";
+      throw conflict;
+    }
+    const { next, parsed } = renderStoryboardMutation(original, mutation);
+    await replaceAtomically(path, next, { beforeRename });
+    return { ...parsed, revision: storyboardRevision(next) };
+  } finally {
+    await lock.release();
+  }
 }
 
 // ONE argument, deliberately. Everything this gate reads is a resolved scalar already written into
@@ -455,7 +599,8 @@ export function checkStoryboard(meta) {
       continue;
     }
     const vocabulary = SCALAR_VOCABULARY[field];
-    if (vocabulary && !vocabulary(value)) errors.push(SCALAR_VOCABULARY_GAP[field](value));
+    if (vocabulary && !vocabulary(value))
+      errors.push(SCALAR_VOCABULARY_GAP[field](value));
   }
 
   const slots = meta.slots ?? [];
@@ -474,7 +619,8 @@ export function checkStoryboard(meta) {
         continue;
       }
       const vocabulary = SLOT_VOCABULARY[field];
-      if (vocabulary && !vocabulary(value)) errors.push(slotGap(field, slot.id));
+      if (vocabulary && !vocabulary(value))
+        errors.push(slotGap(field, slot.id));
     }
 
     const gap = sizeGap(slot.format, slot.size, slot.id);
@@ -487,9 +633,13 @@ export function checkStoryboard(meta) {
     // this is malformed, not legitimate, and refuses on its own, distinct from a mismatch.
     if (!slot.chosen) continue;
     if (candidates.length === 0) {
-      errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`);
+      errors.push(
+        `slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`,
+      );
     } else if (!candidates.includes(slot.chosen)) {
-      errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
+      errors.push(
+        `slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`,
+      );
     } else {
       const gap = producerGap(slot);
       if (gap) errors.push(gap);

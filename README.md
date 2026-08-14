@@ -15,9 +15,9 @@ application. Its workflow freezes supplied reporting material, develops a
 storyboard, produces real draft visuals, waits for human approval, and exports a
 format-specific handover.
 
-The implementation is local-first: stories live under `stories/`, credentials
-stay in the installed Splash root, and every delivery is a file or directory the
-newsroom controls.
+The implementation is local-first: stories and newsroom configuration live outside the replaceable
+Splash checkout, credentials stay in the operating system's protected store through Engine, and
+every delivery is a file or directory the newsroom controls.
 
 ## Migration note: publication format
 
@@ -38,8 +38,7 @@ while new answers are written to `.another-format`.
 
 ## Quick start
 
-Prerequisites: macOS or Linux (Windows through WSL), Git, and
-[Bun](https://bun.sh/).
+Prerequisites: macOS or Linux, an installed `bsig` Engine, and [Bun](https://bun.sh/).
 
 From the repository root:
 
@@ -50,32 +49,42 @@ bun run matrix:check
 bun run survey:check
 ```
 
-To install a local newsroom copy without automatically opening a browser:
+To activate the current development checkout:
 
 ```bash
-bash installer/install.sh --headless
+bash installer/install.sh
 ```
 
-`--headless` still starts the local configurator and prints its URL. For an
-unattended install that defers newsroom and credential setup, use
-`bash installer/install.sh --skip-configure` instead.
+The command runs one Engine apply transaction: it adopts that checkout, installs its complete current
+dependency and browser payload, runs a no-value smoke check, projects flat skill links from that live
+checkout into `~/.agents/skills/`, and registers Splash with Goose when Goose is present. A failure in
+any of those steps rolls back the transaction; there is no post-commit skill installer or copied
+skill runtime. Engine also creates a missing external stories root inside that transaction; the shell
+wrapper does not create installation state ahead of apply. It keeps stories under
+`~/.local/share/splash-stories/` and newsroom configuration at
+`~/.config/splash/NEWSROOM.md`; use `--root` or `--stories-root` to choose explicit absolute paths.
+Development setup uses the checkout and lockfile currently under test; rerun the same command after
+intentional changes. It does not download Engine, freeze a Splash source revision, or require a
+signed Splash release.
+For the canonical manifest, runtime, data-path, and Goose-registration health check, run
+`bsig doctor --product splash` (or the compatibility handoff `bun installer/doctor.mjs`).
 
-The installer defaults to `~/Splash`, installs dependencies, places flat skill
-links in `~/.agents/skills/` for Goose, Codex, and Gemini, and creates
-`splash-doctor`. It does not create a separate Goose link or a root Claude link.
-Use `--root <path>` to choose a different local root.
+## Credentials
 
-## Environment variables
+New setup stores supported provider credentials through Engine's operating-system credential broker.
+The Splash Readiness interface links to each provider's key page and accepts values on a separate
+loopback-only setup page, outside MCP arguments and model context. A root `.env` is legacy migration
+input only; do not create one for a new setup or commit real keys.
 
-Copy `.env.example` to `.env` in the installed Splash root. The available values
-cover MapTiler, Datawrapper, Cloudflare Pages, and optional CMS credentials. Do
-not commit `.env` or real keys.
+Map craft remains bespoke, but its provider-bearing bake is a fixed Engine operation rather than a
+terminal key workflow. Each beat supplies a strict story-local `MAP-BAKE.json`; Engine verifies its
+camera, GeoJSON/data digests, managed browser, and installed runtime before hydrating `MAPTILER_KEY`.
 
 ## Deployment and delivery
 
 Splash itself runs locally. Delivery is selected per approved output: owned
-files and source bundles remain local, CMS insertion produces an insertion
-package, and “Deploy and receive embed code” automatically publishes a web
+files and source bundles remain local, CMS insertion produces a local insertion
+package but does not call a CMS, and “Deploy and receive embed code” automatically publishes a web
 output to Cloudflare Pages. Cloudflare is an implementation detail, not another
 editorial question. Each hosted output gets a stable per-output project URL, an
 iframe snippet, and a deployment receipt. A later approved revision updates the

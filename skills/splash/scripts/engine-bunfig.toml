@@ -1,0 +1,2 @@
+# Engine-launched child entrypoints must not discover a checkout bunfig or load .env files.
+env = false

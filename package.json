@@ -10,22 +10,31 @@
     "matrix": "bun scripts/matrix.mjs",
     "matrix:check": "bun scripts/matrix.mjs --check",
     "survey": "bun scripts/type-survey.mjs",
-    "survey:check": "bun scripts/type-survey.mjs --check"
+    "survey:check": "bun scripts/type-survey.mjs --check",
+    "catalog": "bun scripts/visual-catalog.mjs",
+    "catalog:check": "bun scripts/visual-catalog.mjs --check"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@puppeteer/browsers": "2.13.2",
     "@remotion/cli": "4.0.507",
     "@resvg/resvg-js": "^2.6.2",
-    "@types/d3-array": "3.2.2",
-    "@types/d3-scale": "4.0.9",
-    "@types/d3-shape": "3.1.8",
-    "@types/react": "^19.1.8",
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
     "maplibre-gl": "4.7.1",
-    "puppeteer": "^24.10.0",
+    "puppeteer-core": "24.43.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "remotion": "4.0.507"
+    "remotion": "4.0.507",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/d3-array": "3.2.2",
+    "@types/d3-scale": "4.0.9",
+    "@types/d3-shape": "3.1.8",
+    "@types/react": "^19.1.8",
+    "puppeteer": "24.43.1"
   }
 }

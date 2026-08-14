@@ -165,13 +165,28 @@ describe("runPreflight — dependencies and the newsroom's identity are the only
     expect(report.ready).toBe(false);
   });
 
-  it("should be ready when dependencies resolve and NEWSROOM.md is complete, even with no keys set at all", async () => {
+	it("should be ready when dependencies resolve and NEWSROOM.md is complete, even with no keys set at all", async () => {
     await installEverything();
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
     expect(report.ready).toBe(true);
-    expect(report.blockers).toEqual([]);
-  });
+		expect(report.blockers).toEqual([]);
+	});
+
+	it("reads newsroom identity from the Engine-owned external path, not the source checkout", async () => {
+		await installEverything();
+		await writeFile(join(root, "NEWSROOM.md"), "---\nname: wrong checkout identity\n---\n");
+		const newsroomRoot = await mkdtemp(join(tmpdir(), "splash-newsroom-"));
+		try {
+			const newsroomPath = join(newsroomRoot, "NEWSROOM.md");
+			await writeFile(newsroomPath, complete);
+			const report = await runPreflight({ root, newsroomPath, env: {}, fetchFn: okFetch });
+			expect(report.ready).toBe(true);
+			expect(report.checks.find((c) => c.id === "newsroom-profile")?.profile?.name).toBe("Heidi.news");
+		} finally {
+			await rm(newsroomRoot, { recursive: true, force: true });
+		}
+	});
 });
 
 describe("runPreflight — the newsroom's identity has three honest outcomes, not two", () => {
@@ -489,10 +504,9 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(report.ready).toBe(false);
   });
 
-  // PREFLIGHT OFFERS, it does not only report. Before this, every reason string named the exact
-  // variable and there was nowhere for an answer to go: DATAWRAPPER_TOKEN closed a whole story's
-  // delegated path with no moment at which it could have been opened.
-  it("should carry, on every capability row, a fill line naming that row's own environment variable", async () => {
+  // PREFLIGHT OFFERS, it does not accept the value. New setup routes to the protected Engine page;
+  // the retained legacy .env writer must never reappear in canonical guidance.
+  it("should carry, on every capability row, an Engine setup remedy naming that row's own credential ID", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
     const expected: Record<string, string> = {
@@ -507,8 +521,8 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       const row = report.capabilities[id];
       expect(row.fill).toBeTruthy();
       expect(row.fill).toContain(variable);
-      // Where the key comes from, and where it goes — a variable name alone is not an offer.
-      expect(row.fill).toContain(".env");
+      expect(row.fill).toContain("Splash Readiness");
+      expect(row.fill).not.toContain(".env");
     }
   });
 

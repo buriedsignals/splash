@@ -1,7 +1,8 @@
 // storyboard's FORMAT_CATALOG (the table the format gate reads, in
-// storyboard/scripts/format-catalog.mjs) is a REIMPLEMENTATION of facts that live for real
-// elsewhere: whether a producer skill exists on disk, whether it is the RIGHT producer for that
-// medium, and whether deliver's own FORMS_BY_FORMAT actually offers forms for that format.
+// storyboard/scripts/format-catalog.mjs) is generated from the canonical visual catalogue. This
+// test independently verifies the generated copy against facts that live for real elsewhere:
+// whether a producer skill exists on disk, whether it is the RIGHT producer for that medium, and
+// whether deliver's own FORMS_BY_FORMAT actually offers forms for that format.
 // Runtime code never crosses a skill boundary in this branch (no-cross-skill-imports.test.ts) —
 // this file is the test-only exception that rule reserves for exactly this purpose (see
 // where.test.ts's own comment on the same pattern), reading deliver's real table and the
@@ -46,6 +47,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FORMAT_CATALOG } from "../../storyboard/scripts/format-catalog.mjs";
 import { FORMS_BY_FORMAT } from "../../deliver/scripts/deliver.mjs";
+import visualCatalog from "../../storyboard/references/visual-catalog.json" with { type: "json" };
+import { EXPORT_SIZES, SIZED_FORMATS } from "../../storyboard/scripts/storyboard.mjs";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 
@@ -57,6 +60,10 @@ function frontMatter(skill: string): string {
 }
 
 describe("storyboard's format catalog agrees with what actually ships", () => {
+  it("should expose exactly the generated catalogue's medium/format pairs", () => {
+    expect(Object.keys(FORMAT_CATALOG)).toEqual(visualCatalog.formatPairs.map((row) => row.pair));
+  });
+
   for (const [pair, row] of Object.entries(FORMAT_CATALOG)) {
     const [medium, format] = pair.split("/");
 
@@ -97,6 +104,16 @@ describe("storyboard's format catalog agrees with what actually ships", () => {
         ([pair, row]) => pair.endsWith(`/${format}`) && row.delivered,
       );
       expect(delivered.length).toBeGreaterThan(0);
+    });
+  }
+
+  for (const row of visualCatalog.formatPairs) {
+    it(`should keep ${row.pair}'s size rule identical to the canonical storyboard gate`, () => {
+      if (SIZED_FORMATS.includes(row.format)) {
+        expect(row.sizeRule).toEqual({ kind: "required", options: EXPORT_SIZES });
+      } else {
+        expect(row.sizeRule).toEqual({ kind: "none" });
+      }
     });
   }
 });

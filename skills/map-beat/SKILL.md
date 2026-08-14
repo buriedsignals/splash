@@ -76,11 +76,15 @@ of darkening on a charcoal ground, with no branch to get that wrong), and the ac
 entirely on the subject: its outline, its label, its mark on the legend. Nothing else on the map
 gets either.
 
-**Where the map dependencies live.** `puppeteer` is a devDependency of `twin/package.json`, and
-MapLibre is loaded from a CDN by the bake page, so **an installed Splash root cannot bake a plate**.
-That is a real, named gap, and it is deliberate: adding a headless browser to every journalist's
-install is a distribution decision, not a code decision — the same call `chart-video` left open
-for Remotion. Whoever ships the map format for real makes it. `MAPTILER_KEY` comes from `twin/.env`.
+**Where the map dependencies live.** The managed development install now includes `puppeteer-core`,
+MapLibre, and an Engine-recorded compatible browser as part of the complete root runtime. The bake
+has a sealed mode that accepts only that browser, the installed local MapLibre files, and an
+Engine-injected `MAPTILER_KEY`; it does not need a CDN script or checkout `.env`. This file's camera,
+study set, and shapes remain a worked seed and are never dispatched as arbitrary production. For a
+real story, write the declarative `beats/<outputId>/MAP-BAKE.json` described by Splash's
+`references/managed-map-bake.md`, then use the closed `bsig run splash map-bake` operation. Engine
+validates the treatment, camera, geography, data, expected outputs, and input digests before it
+hydrates the key and its recorded browser.
 
 ## How it works (the shape)
 

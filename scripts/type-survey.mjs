@@ -27,7 +27,7 @@
 import { readdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readBeats } from "./matrix.mjs";
+import { PROOF_FORMATS, readBeats } from "./matrix.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TWIN = join(HERE, "..");
@@ -39,8 +39,6 @@ const SHEET_SETS = [
   { medium: "chart", dir: join(SKILLS, "chart-beat", "references", "types") },
   { medium: "map", dir: join(SKILLS, "map-beat", "references", "types") },
 ];
-
-const FORMATS = ["static", "web", "video", "scrolly"];
 
 /** Lowercase word tokens, punctuation dropped — the shape both sides of the join are compared in. */
 function tokens(text) {
@@ -97,7 +95,7 @@ function purposeSentence(text, file) {
   return paragraph;
 }
 
-function readSheets() {
+export function readTypeSheets() {
   const sheets = [];
   for (const { medium, dir } of SHEET_SETS) {
     for (const name of readdirSync(dir).sort()) {
@@ -122,7 +120,7 @@ function readSheets() {
  * reader: an ARTIFACT EXISTS ON DISK, or the cell is empty. A brief declaring a format proves
  * nothing.
  */
-function provenFormats(sheet, beats) {
+export function provenFormats(sheet, beats) {
   const proven = new Set();
   for (const beat of beats) {
     if (!beat.type) continue;
@@ -133,7 +131,7 @@ function provenFormats(sheet, beats) {
     if (!matches) continue;
     for (const format of beat.formats) proven.add(format);
   }
-  return FORMATS.filter((g) => proven.has(g));
+  return PROOF_FORMATS.filter((g) => proven.has(g));
 }
 
 function render(sheets, beats) {
@@ -180,17 +178,22 @@ function render(sheets, beats) {
   return lines.join("\n");
 }
 
-const target = join(SKILLS, "storyboard", "references", "type-survey.md");
-const built = render(readSheets(), readBeats());
+export function buildTypeSurvey() {
+  return render(readTypeSheets(), readBeats());
+}
 
-if (process.argv.includes("--check")) {
-  const current = existsSync(target) ? readFileSync(target, "utf8") : "";
-  if (current !== built) {
-    console.error("type-survey.md has drifted from the tree. Run: bun scripts/type-survey.mjs");
-    process.exit(1);
+if (import.meta.main) {
+  const target = join(SKILLS, "storyboard", "references", "type-survey.md");
+  const built = buildTypeSurvey();
+  if (process.argv.includes("--check")) {
+    const current = existsSync(target) ? readFileSync(target, "utf8") : "";
+    if (current !== built) {
+      console.error("type-survey.md has drifted from the tree. Run: bun scripts/type-survey.mjs");
+      process.exit(1);
+    }
+    console.log("type-survey.md matches the tree.");
+  } else {
+    writeFileSync(target, built);
+    console.log(`wrote ${target}`);
   }
-  console.log("type-survey.md matches the tree.");
-} else {
-  writeFileSync(target, built);
-  console.log(`wrote ${target}`);
 }

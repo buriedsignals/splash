@@ -1,4 +1,6 @@
-// Real key probes. A present key is not a working key.
+// Real key probes plus the copied-root compatibility writer. A present key is not a working key.
+// Managed setup and production use Engine's record broker and closed operations; they never call
+// `recordKey` or treat this environment resolver as the credential authority.
 
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -26,8 +28,8 @@ import { join } from "node:path";
 // where its absence shows honestly (the placeholder travels through and the live layer never
 // boots).
 //
-// `CMS_KIND` / `CMS_ENDPOINT` / `CMS_TOKEN` are the newsroom's own CMS, and they are a home for an
-// answer rather than a capability. `deliver/scripts/cms-insert.mjs` builds the We.Publish and
+// `CMS_KIND` / `CMS_ENDPOINT` / `CMS_TOKEN` are retained for copied-root compatibility only.
+// `deliver/scripts/cms-insert.mjs` builds the We.Publish and
 // Livingdocs mutation SHAPES and sends neither — the `cms-insertion` delivery form writes a file
 // describing the mutation, because no instance of either CMS exists anywhere in this project. So
 // there was nowhere for a journalist's endpoint or token to go at all, and the first person to wire
@@ -35,9 +37,10 @@ import { join } from "node:path";
 //
 // They have NO PROBE, for the same reason `MAPTILER_DELIVERY_KEY` has none and stated even more
 // plainly: there is no instance to probe. Every other key here is verified against its real service
-// before it is written, and a CMS credential cannot meet that standard today — so it is recorded on
-// trust, said out loud on the setup page, and given no capability row in `runPreflight`. A
-// capability row that lies is worse than no row.
+// before it is written, and a CMS credential cannot meet that standard today. The managed setup
+// therefore registers no CMS token and gives it no capability row in `runPreflight`; only the
+// explicitly legacy plaintext configurator can preserve the old name. A capability row that lies is
+// worse than no row.
 const KEY_ALIASES = {
   MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
   MAPTILER_DELIVERY_KEY: [],
@@ -61,8 +64,9 @@ export function resolveEnvKey(env, canonical) {
 }
 
 /**
- * Write one key into the root `.env`, replacing the line if that name is already there and
- * appending it if not. The ONE code path in this toolchain that accepts a key from a journalist —
+ * Legacy copied-root helper: write one key into the root `.env`, replacing the line if that name is already there and
+ * appending it if not. This is not the managed setup path; Engine's protected Readiness controller
+ * accepts new credentials there. Historically this was the one code path that accepted a key —
  * before this, preflight reported a closed capability accurately and there was nowhere for an
  * answer to go, so `DATAWRAPPER_TOKEN` closed a whole story's delegated path with no moment at
  * which it could have been opened.

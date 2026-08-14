@@ -42,7 +42,7 @@ export async function fetchWithTimeout(url, { timeoutMs = DEFAULT_TIMEOUT_MS, fe
       return { ok: false, status: response.status, text: null, error: `${url} answered ${response.status}` };
     }
     const text = await response.text();
-    return { ok: true, status: response.status, text, error: null };
+    return { ok: true, status: response.status, url: response.url || url, text, error: null };
   } catch (error) {
     const detail = error.message.startsWith("timed out") ? error.message : `threw: ${error.message}`;
     return { ok: false, status: null, text: null, error: `${url} ${detail}` };

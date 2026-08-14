@@ -18,7 +18,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { comparePngBuffers } from "./compare-png.mjs";
 

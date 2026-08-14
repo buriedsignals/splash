@@ -96,7 +96,9 @@ export function readBeats() {
   return beats;
 }
 
-const FORMATS = ["static", "web", "video", "scrolly"];
+// Exported for sibling inventory generators. This remains proof vocabulary only: callers may use
+// it to order evidence, never to turn an artifact on disk into a production-quality verdict.
+export const PROOF_FORMATS = ["static", "web", "video", "scrolly"];
 const isMap = (b) => b.medium.startsWith("map") || b.name.startsWith("map");
 
 function render(beats) {
@@ -120,7 +122,7 @@ function render(beats) {
     const set = beats.filter(pick).filter((b) => b.type);
     const types = [...new Set(set.map((b) => b.type))].sort();
     const covered = types.filter((t) =>
-      FORMATS.slice(0, 3).every((g) => set.some((b) => b.type === t && b.formats.has(g))),
+      PROOF_FORMATS.slice(0, 3).every((g) => set.some((b) => b.type === t && b.formats.has(g))),
     );
     lines.push(
       `## ${label} — ${types.length} types, ${set.length} beats`,
