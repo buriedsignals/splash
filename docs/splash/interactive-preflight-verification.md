@@ -845,17 +845,25 @@ Focused regressions cover each repaired boundary, including tampered/partial run
 rollback/finalization, manifest-retirement failure, canonical empty-map reinstall, and namespace
 rollback.
 
-Final clean-commit verification used Splash commit `f2bd0ff1` and Engine commit `edc15444`. The
-Engine commit was exported without the initiative-unowned local catalogue/Mycroft edits before
-running `go test -race -count=1 ./...`; every package passed. `go vet ./...`, Linux and Windows
-amd64 cross-compilation of both `internal/keys` and `cmd/bsig`, the native-gate wrapper tests, and a
-fresh synthetic macOS Keychain create/replace/remove round trip also passed. Cross-compilation is
-still not native Linux or Windows evidence.
+Clean feature verification used Splash implementation commit `f2bd0ff1` and Engine feature commit
+`edc15444`. The Engine commit was exported without the initiative-unowned local catalogue/Mycroft
+edits before running `go test -race -count=1 ./...`; every package passed. `go vet ./...`, Linux and
+Windows amd64 cross-compilation of both `internal/keys` and `cmd/bsig`, the native-gate wrapper
+tests, and a fresh synthetic macOS Keychain create/replace/remove round trip also passed.
+Cross-compilation is still not native Linux or Windows evidence.
+
+The final pushed Engine tip is `7d77c4f9`. Two test-only follow-ups resolved portability failures
+found by the first clean Linux CI runs: the redaction regression now resolves `/bin/sh` to the
+pinned regular file required by the execution policy, and the abort-lifecycle desktop test fixes
+its platform independently of the runner's installed prompt programs. The final
+[`install-contract` run](https://github.com/buriedsignals/engine/actions/runs/31871603864) passed the
+Linux compile, portable contract/vet, Windows and Linux ARM64 cross-build, and desktop
+contract/type gates.
 
 The six Splash skips are still skips, not live passes: they require a real MapTiler/Datawrapper or
-sealed provider credential, including the generic map bake's real-provider path. The complete Engine
-suite passes every package except two catalogue
-checks: `TestSkillsVendor_MatchesVendoredManifests` rejects the now-stale signature and
+sealed provider credential, including the generic map bake's real-provider path. The broad Engine
+suite in the unrelated mixed local working copy passes every package except two catalogue checks:
+`TestSkillsVendor_MatchesVendoredManifests` rejects the now-stale signature and
 `TestPublishedCatalogMatchesAuthored` sees the published Mycroft copy diverge. Inspection attributes
 both to the pre-existing, initiative-unowned removal of the Mycroft `qmd` row from
 `engine/catalog/catalog.json`; Splash did not alter, sign, publish, or repair that catalogue.
