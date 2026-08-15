@@ -122,6 +122,10 @@ receipt and is reconciled from the hosted-operation record on retry.
 ## Documentation
 
 - [`AGENTS.md`](AGENTS.md) — repository workflow and product constraints
+- [Interactive setup and visual-selection verification](docs/splash/interactive-preflight-verification.md)
+  — durable implementation evidence and remaining release blockers
+- [Interactive setup and visual-selection PRD](docs/splash/2026-08-14-interactive-preflight-and-visual-selection-prd.md)
+  — active plan retained until its final release-closure gate
 - [Residual findings](docs/residual-review-findings/feat-data2story-human-gated-production.md)
   — completed delivery hardening and outstanding live verification
 - [`skills/splash/SKILL.md`](skills/splash/SKILL.md) — orchestration and

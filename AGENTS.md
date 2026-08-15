@@ -28,6 +28,10 @@ as Splash's runtime architecture.
 ## Canonical documentation
 
 - `README.md` — current product, installation, and repository overview.
+- `docs/splash/interactive-preflight-verification.md` — durable implementation evidence and the
+  remaining release blockers for interactive setup and visual selection.
+- `docs/splash/2026-08-14-interactive-preflight-and-visual-selection-prd.md` — active engineering
+  plan retained only until its explicit release-closure gate permits deletion.
 - `docs/residual-review-findings/feat-data2story-human-gated-production.md` —
   landed hardening and the one remaining live verification item.
 - `skills/splash/SKILL.md` — executable orchestration contract.
@@ -58,15 +62,22 @@ deployment back to the canonical beat. Re-render, re-review, and re-materialise
 from the beat; do not patch exported files in place. Creating or updating
 `beats/<outputId>/FEEDBACK.md` is the durable revision trigger consumed by `whereIs`.
 
-## Host discovery
+## Installation and host projection
 
-`installer/place-skills.mjs` discovers every directory under `skills/` that has
-a `SKILL.md` and places one flat symlink per skill in
-`~/.agents/skills/`. Goose, Codex, and Gemini use that shared store. Do not add a
-separate `~/.goose` link or a root `~/.claude/skills/splash` link.
+The canonical development activation is `bash installer/install.sh`. It hands the current checkout
+to one Engine plan/apply transaction. Engine owns dependency and compatible-browser installation,
+the no-value smoke gate, direct skill projections, Goose registration, receipts, doctor, repair,
+and uninstall. Do not add a second Splash lifecycle or mutate those paths after Engine commits.
 
-The current repository ships 15 skills. Derive the inventory from the
-filesystem rather than maintaining a second hard-coded installer list.
+Engine projects every directory under `skills/` containing `SKILL.md` as one flat link in the shared
+agents store. Derive that inventory from the filesystem; do not maintain another hard-coded skill
+list or add separate Goose or Claude skill links. `installer/place-skills.mjs` is retained only as
+the setup page's non-mutating compatibility/dry-run model. It is not an installer.
+
+Stories and `NEWSROOM.md` are external, data-bearing state. Provider credentials and validation
+receipts belong only to Engine's operating-system credential broker. The adopted checkout,
+dependency tree, managed browser, skill links, and `extensions.splash` registration are removable
+Engine-owned state.
 
 ## Verification
 
@@ -74,16 +85,19 @@ Run checks in proportion to the change. The release baseline is:
 
 ```bash
 bun install --frozen-lockfile
-bun test
-bun run matrix:check
-bun run survey:check
+bun --no-env-file test
+bun --no-env-file run matrix:check
+bun --no-env-file run survey:check
+bun --no-env-file run catalog:check
 ```
 
-For installer or host-discovery changes, also run:
+For installer, host-projection, or MCP-app changes, also run the focused suites and the canonical
+Engine doctor or lifecycle checks appropriate to the change:
 
 ```bash
-bun test installer/test
+bun --no-env-file test installer/test apps/goose/test
 bun installer/place-skills.mjs --root "$PWD" --home /tmp/splash-skills-check --dry-run
+bsig doctor --product splash
 ```
 
 Credential-gated provider smoke tests may be skipped only when the credential is

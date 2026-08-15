@@ -551,6 +551,29 @@ the capability or an ambient credential canary in public manager state. This rem
 the production app has not yet been exercised in a real Goose Desktop session, and host open-link
 success/denial plus visual/accessibility behavior remain unclaimed.
 
+## Retained publication-format gate evidence
+
+The completed 2026-08-13 publication-format planning document was retired on 2026-08-15 after its
+operational guidance had landed in `README.md` and the Splash/Storyboard skills. Its acceptance
+evidence remains executable in
+`skills/storyboard/test/fixtures/publication-format-host-acceptance.mjs` and
+`skills/storyboard/test/publication-format-gate.test.ts`.
+
+That fixture records a fresh Codex-host run from 2026-08-14. Before the journalist replied,
+`whereIs` reported `storyboard`, `G2b`, `awaiting: format`, and slot `1`; the complete assistant turn
+recommended Interactive web, presented all four publication formats, asked which to make first, and
+stopped. The journalist replied `Interactive web.` The only Storyboard additions were
+`format: web` and `reachable: yes`; `whereIs` then advanced to `G2-reference`, while size,
+reference, treatment, beats, and exports remained absent. The fixture pins the complete assistant
+turn, both Storyboard states, their exact diff, and pre/post file digests. The current full Splash
+suite continues to exercise that record.
+
+The cleanup audit did not classify production or proof assets as stale. In particular,
+`apps/goose/compatibility/` remains referenced by Splash's host-contract tests and Engine's runtime
+closure test; `installer/install-browser.mjs` is invoked by Engine's managed browser step; generated
+catalogues are runtime inputs; and the root template and legacy environment example retain direct
+tests. They remain intentionally.
+
 ## U6 canonical visual catalogue
 
 `catalog/visual-catalog.json` is now the single authored structural source. It normalizes ten
