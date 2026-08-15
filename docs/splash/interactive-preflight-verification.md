@@ -759,8 +759,8 @@ Verification recorded on 2026-08-14; the full suite, generated checks, and focus
 refreshed on 2026-08-15:
 
 ```text
-bun --no-env-file test --only-failures
-PASS: 3158 tests, 6 explicit live/provider skips, 0 failures, 8954 expectations, 161 files
+bun --no-env-file test --reporter=junit --reporter-outfile=<temporary path> --only-failures
+PASS: 3165 tests, 6 explicit live/provider skips, 0 failures, 8958 assertions (217.45s)
 
 bun --no-env-file test skills/splash/test/map-bake.test.ts \
   skills/splash/test/run-operation.test.ts \
@@ -790,7 +790,7 @@ GOCACHE=/tmp/bsig-go-cache go test -race -count=1 ./internal/run \
 PASS: all six focused Engine packages
 
 bun --no-env-file test installer/test/enrol-engine.test.ts
-PASS: 6 tests, 0 failures, 23 expectations; no post-commit skill installer or pre-apply stories-root mutation
+PASS: 7 tests, 0 failures, 27 expectations; no post-commit skill installer or pre-apply stories-root mutation
 
 GOCACHE=/tmp/bsig-go-cache go test -count=1 ./cmd/bsig ./internal/keys \
   -run 'MalformedRecordJSON|CredentialLockExcludesAnotherProcess|RecordBrokerConcurrent|SecretServiceMissingSessionBus'
@@ -844,6 +844,13 @@ The lifecycle exposed and closed install-path defects that focused tests had not
 Focused regressions cover each repaired boundary, including tampered/partial runtime refusal,
 rollback/finalization, manifest-retirement failure, canonical empty-map reinstall, and namespace
 rollback.
+
+Final clean-commit verification used Splash commit `f2bd0ff1` and Engine commit `edc15444`. The
+Engine commit was exported without the initiative-unowned local catalogue/Mycroft edits before
+running `go test -race -count=1 ./...`; every package passed. `go vet ./...`, Linux and Windows
+amd64 cross-compilation of both `internal/keys` and `cmd/bsig`, the native-gate wrapper tests, and a
+fresh synthetic macOS Keychain create/replace/remove round trip also passed. Cross-compilation is
+still not native Linux or Windows evidence.
 
 The six Splash skips are still skips, not live passes: they require a real MapTiler/Datawrapper or
 sealed provider credential, including the generic map bake's real-provider path. The complete Engine
@@ -903,7 +910,7 @@ Status vocabulary: `fixture-pass`, `partial`, `pending`, `blocked`, `release-pas
 | R27         | U7/U8/U9     | partial      | Cancellation is call-free, canonical state drives reload, no UI database exists, and fresh recommendation state is derived after a write; real app close/reopen evidence remains U10.                                                                                                                                                                                                   |
 | R28         | U7/U8/U9     | partial      | Both modes summarize but do not merge medium, format, size, treatment, and producer; format/treatment rewinds state their downstream consequences. Real-host observation remains U10.                                                                                                                                                                                                   |
 | R29         | U7/U8/U9     | partial      | Both app modes integrate confirmed opaque binding, Engine revalidation, selection and recommendation revision checks, cross-process locking, one canonical writer, and non-reflective schema errors; real Goose-host evidence remains U10.                                                                                                                                               |
-| R30         | U1/U3/U5/U10 | partial      | Production app is additive, Engine owns Goose registration/removal, one simplified current-checkout install/adopt action passes a real macOS install/reapply/doctor/MCP-load/uninstall lifecycle, and the full 3158-test Splash regression passes. Production Desktop rendering and non-macOS lifecycle evidence remain; signed public distribution is out of scope.                                                                                               |
+| R30         | U1/U3/U5/U10 | partial      | Production app is additive, Engine owns Goose registration/removal, one simplified current-checkout install/adopt action passes a real macOS install/reapply/doctor/MCP-load/uninstall lifecycle, and the full 3165-test Splash regression passes. Production Desktop rendering and non-macOS lifecycle evidence remain; signed public distribution is out of scope.                                                                                               |
 | R31         | U3/U4/U5     | partial      | Default setup, README, doctor, `.env.example`, declarative map bake, Datawrapper, MapTiler delivery, and hosted delivery use or document the broker-backed Engine path; direct APIs/root `.env` are labelled implementation/test or legacy. Live migration evidence remains.                                                                                                                |
 | R32         | U4           | fixture-pass | Opt-in per-ID migration commits through Engine first; exact revision/assignment removal preserves unrelated content and retains legacy authority on refusal or failure.                                                                                                                                                                                                                 |
 | R33         | U1/U10       | partial      | Current macOS host evidence only; other topology claims absent.                                                                                                                                                                                                                                                                                                                         |
