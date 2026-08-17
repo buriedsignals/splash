@@ -108,7 +108,7 @@ describe("Splash app protocol boundary", () => {
       env: { PATH: root, MAPTILER_KEY: "candidate-never-in-control-state" },
     });
     const started = await manager.start();
-    expect(started).toEqual({
+    expect(started).toMatchObject({
       status: "ready",
       setupUrl: "http://127.0.0.1:45678/#manager-capability",
     });
@@ -120,5 +120,60 @@ describe("Splash app protocol boundary", () => {
       "candidate-never-in-control-state",
     );
     manager.close();
+    await expect(started.completion).resolves.toEqual({ reason: "parent-close" });
+  });
+
+  it("returns bounded setup completion outcomes from the controller close reason", async () => {
+    const root = await mkdtemp(join(tmpdir(), "splash-app-setup-completion-"));
+    roots.push(root);
+    const engine = join(root, "bsig");
+    const opener = join(root, "open");
+    await writeFile(engine, "#!/bin/sh\nexit 0\n");
+    await writeFile(opener, "#!/bin/sh\nexit 0\n");
+    await chmod(engine, 0o755);
+    await chmod(opener, 0o755);
+    for (const outcome of ["done", "closed"]) {
+      const child = join(root, `controller-${outcome}.mjs`);
+      await writeFile(child, `process.stdout.write(JSON.stringify({event:"ready",url:"http://127.0.0.1:45678/#cap"})+"\\n");process.stdout.write(JSON.stringify({event:"closed",reason:"${outcome}"})+"\\n");`);
+      const manager = createSetupSessionManager({ controllerPath: child, bsigPath: engine, newsroomPath: join(root, "NEWSROOM.md"), legacyEnvPath: join(root, ".env"), platform: "darwin", which: () => opener });
+      const started = await manager.start();
+      await expect(started.completion).resolves.toEqual({ reason: outcome });
+    }
+    const hanging = join(root, "controller-hanging.mjs");
+    await writeFile(hanging, `process.stdout.write(JSON.stringify({event:"ready",url:"http://127.0.0.1:45678/#cap"})+"\\n");await new Promise(()=>{});`);
+    const manager = createSetupSessionManager({ controllerPath: hanging, bsigPath: engine, newsroomPath: join(root, "NEWSROOM.md"), legacyEnvPath: join(root, ".env"), platform: "darwin", which: () => opener, completionMs: 20 });
+    const started = await manager.start();
+    await expect(started.completion).resolves.toEqual({ reason: "expired" });
+  });
+
+  it("reserves setup startup and opens one capability only once", async () => {
+    const root = await mkdtemp(join(tmpdir(), "splash-app-setup-reservation-"));
+    roots.push(root);
+    const child = join(root, "controller.mjs");
+    const engine = join(root, "bsig");
+    const opener = join(root, "open");
+    await writeFile(child, `await new Promise(resolve=>setTimeout(resolve,20));process.stdout.write(JSON.stringify({event:"ready",url:"http://127.0.0.1:45678/#cap"})+"\\n");for await(const chunk of Bun.stdin.stream()){process.stdout.write(JSON.stringify({event:"closed",reason:"parent-close"})+"\\n");break}`);
+    await writeFile(engine, "#!/bin/sh\nexit 0\n");
+    await writeFile(opener, "#!/bin/sh\nexit 0\n");
+    await chmod(engine, 0o755);
+    await chmod(opener, 0o755);
+    let spawnCount = 0;
+    const manager = createSetupSessionManager({
+      controllerPath: child,
+      bsigPath: engine,
+      newsroomPath: join(root, "NEWSROOM.md"),
+      legacyEnvPath: join(root, ".env"),
+      platform: "darwin",
+      which: () => opener,
+      spawn(args: string[], options: any) { spawnCount += 1; return Bun.spawn(args, options); },
+    });
+    const [first, second] = await Promise.all([manager.start(), manager.start()]);
+    expect(spawnCount).toBe(1);
+    expect(first.status).toBe("ready");
+    expect(second.status).toBe("already-open");
+    expect(await manager.openLocally()).toEqual({ ok: true, status: "opened" });
+    expect(await manager.openLocally()).toEqual({ ok: false, status: "already-open" });
+    manager.close();
+    await first.completion;
   });
 });

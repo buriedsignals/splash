@@ -49,6 +49,18 @@ describe("formatProposal — the passing case", () => {
   it("should say plainly that nothing renders until the answer is recorded", () => {
     expect(text).toMatch(/refuses to render/);
   });
+
+  it("should present at most two progressive choices even when the newsroom records many accents", () => {
+    const rich = formatProposal(
+      proposePalette({
+        newsroom: { ...HEIDI, accents: "#C1440E, #1F6FB2" },
+        subject: "les glaciers et les sponsors des JO",
+      }),
+    );
+    expect(rich.match(/^\*\*\d+\./gm)).toHaveLength(2);
+    expect(rich.match(/^- \*\*\d+\*\* —/gm)).toHaveLength(2);
+    expect(rich.match(/— \*\*recommended\*\*/g)).toHaveLength(1);
+  });
 });
 
 describe("formatProposal — the failing case", () => {

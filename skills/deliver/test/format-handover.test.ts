@@ -167,9 +167,9 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
     ).toThrow(/not a state this hand-over knows/);
   });
 
-  it("should state the cost of a development key, in the journalist's own terms", () => {
-    const doc = formatHandover({ ...VALID, liveTiles: "development" });
-    expect(doc).toContain("100% of its spending limit");
+  it("should state the publication restriction for a configured key", () => {
+    const doc = formatHandover({ ...VALID, liveTiles: "configured" });
+    expect(doc).toContain("allowed HTTP origins");
     expect(doc).toMatch(/\bbilled\b/);
     expect(doc).not.toMatch(/\bskills\//);
     expect(doc).not.toMatch(/\.(mjs|mts|cjs|cts|tsx|jsx)\b/);
@@ -253,10 +253,10 @@ describe("formatHandover — written in the story's own language (A25, ruling R4
     expect(doc).not.toContain("the one to give the CMS");
   });
 
-  it("should state the cost of a development key in French, since it is the paragraph that costs them money", () => {
-    const doc = formatHandover({ ...FR, liveTiles: "development" });
-    expect(doc).toContain("100 % de son plafond de dépenses");
-    expect(doc).toContain("MAPTILER_DELIVERY_KEY");
+  it("should state the publication restriction for a configured key in French", () => {
+    const doc = formatHandover({ ...FR, liveTiles: "configured" });
+    expect(doc).toContain("origines HTTP");
+    expect(doc).toContain("MapTiler");
     expect(doc).not.toContain("spending limit");
   });
 

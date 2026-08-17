@@ -88,12 +88,17 @@ export async function ensureStoryGuidance({ storyDir }) {
   }
 }
 
-export async function createStory({ root, title }) {
+export async function createStory({ storiesRoot, title }) {
   const slug = slugify(title);
   if (!slug) {
     throw new Error(`title carries no usable content for a folder name`);
   }
-  const dir = join(root, "stories", slug);
+  await mkdir(storiesRoot, { recursive: true });
+  const root = await lstat(storiesRoot);
+  if (root.isSymbolicLink() || !root.isDirectory()) {
+    throw new Error(`stories root must be a real directory: ${storiesRoot}`);
+  }
+  const dir = join(storiesRoot, slug);
   try {
     await stat(dir);
     throw new Error(`story "${slug}" already exists at ${dir}`);

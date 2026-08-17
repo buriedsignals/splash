@@ -75,9 +75,7 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
 const ENV = join(TWIN, ".env");
 const PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
-/** Every MapTiler key name this tree knows about, INCLUDING R1b's second delivery key — the one the
- *  ruling says will be substituted into delivered files, and therefore the one most likely to be
- *  committed by accident. */
+/** Every supported or historical MapTiler key alias that must never be committed. */
 const KEY_NAMES = [
   "MAPTILER_KEY",
   "MAPTILER_DELIVERY_KEY",

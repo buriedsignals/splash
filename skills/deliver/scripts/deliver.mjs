@@ -271,45 +271,20 @@ export function carriesMapKey(html) {
  * So the key is substituted HERE, when the file goes to the newsroom, and nowhere earlier.
  * `splash/test/no-key-in-the-repository.test.ts` reddens if one ever reaches a tracked file.
  *
- * THE DELIVERED KEY IS `MAPTILER_DELIVERY_KEY` WHEN THERE IS ONE — and `MAPTILER_KEY` when there is
- * not. Clause 4 of R1b says the delivered key *should* be the second, origin-restricted one, and it
- * is right: MapTiler's documented mitigation for a client-side key is Allowed HTTP origins, enforced
- * server-side, so a restricted key copied elsewhere simply does not work — and an account's DEFAULT
- * key CANNOT be restricted, so a dedicated one has to be created
- * (docs.maptiler.com/cloud/api/authentication-key/).
+ * `MAPTILER_KEY` is the provider-defined API credential for both production and delivery. It is
+ * substituted only here. The handover tells the newsroom that a web delivery exposes the key and
+ * that allowed HTTP origins must be restricted before publication.
  *
- * THAT "SHOULD" WAS COMPILED INTO A HARD BLOCK, AND THE BLOCK IS GONE. With only `MAPTILER_KEY` set
- * this function threw, so a journalist whose root held one key could not deliver their own work at
- * all. That is stricter than ruling R1, which is the ruling that governs: *"la carte doit rester
- * interactive tout le temps… On a le droit d'utiliser pleinement MapTiler. Et garder l'export du
- * HTML pas grave pour la clé."* The owner was shown the cost — the key ships inside the delivered
- * HTML, readable by anyone who opens the article — and accepted it explicitly. R1b added where the
- * key may not go (the repository) and which key is preferable (the restricted one). Neither says a
- * delivery stops.
- *
- * So this function RECOMMENDS and never blocks: the best key available is substituted, and
- * `mapKeyState` names which one went in, so the hand-over can say plainly what the newsroom is
- * shipping and what it costs them. **There is no refusal left in this path** — a rule that stops a
- * journalist delivering is a rule they will route around, which is precisely what the run did.
- *
- * The four states, and there is no fifth:
- *
- *   - no key slot in the file      → `"none"`. Not a map delivery; nothing is substituted or said.
- *   - `MAPTILER_DELIVERY_KEY` set  → `"restricted"`. Substituted. The delivery is live, and the key
- *                                    it carries is worthless off the newsroom's own domains.
- *   - only `MAPTILER_KEY` set      → `"development"`. Substituted, and SAID OUT LOUD: the delivery
- *                                    is live and carries an unrestricted key. Ruling R1's own trade.
- *   - neither set                  → `"unkeyed"`. The placeholder travels through untouched. Not a
- *                                    silent failure: the delivered page renders its complete
- *                                    fallback layer, exactly as it does offline, and the hand-over
- *                                    says so.
+ *   - no key slot in the file → `"none"`; nothing is substituted or said.
+ *   - `MAPTILER_KEY` set      → `"configured"`; the live map receives the configured API key.
+ *   - no key set              → `"unkeyed"`; the complete baked fallback remains.
  */
 export function substituteKeys(html, env = process.env) {
   // The artifact decides, not the environment. A beat with no key slot is not a map delivery and
   // has nothing here to protect.
   if (!carriesMapKey(html)) return html;
 
-  const key = env.MAPTILER_DELIVERY_KEY || env.MAPTILER_KEY;
+  const key = env.MAPTILER_KEY;
   if (!key) return html;
   return html.split(MAP_KEY_PLACEHOLDER).join(key);
 }
@@ -321,19 +296,18 @@ export function substituteKeys(html, env = process.env) {
  * fact is this enum; what to do about it is the journalist's, and `formatHandover` is where they are
  * told. Separating the two is what let the block become a recommendation without becoming silence.
  */
-export const LIVE_TILE_STATES = ["none", "restricted", "development", "unkeyed"];
+export const LIVE_TILE_STATES = ["none", "configured", "unkeyed"];
 
 export function mapKeyState(html, env = process.env) {
   if (!carriesMapKey(html)) return "none";
-  if (env.MAPTILER_DELIVERY_KEY) return "restricted";
-  if (env.MAPTILER_KEY) return "development";
+  if (env.MAPTILER_KEY) return "configured";
   return "unkeyed";
 }
 
 // A delivery can write more than one file, so the hand-over states the state that COSTS THE MOST.
-// An unrestricted key in any delivered file is the thing the newsroom needs told, whatever the file
+// A configured key in any delivered file is the thing the newsroom needs told, whatever the file
 // beside it carries.
-const STATE_COST = { none: 0, restricted: 1, unkeyed: 2, development: 3 };
+const STATE_COST = { none: 0, configured: 1, unkeyed: 2 };
 
 function costliestState(states) {
   return states.reduce((worst, state) => (STATE_COST[state] > STATE_COST[worst] ? state : worst), "none");

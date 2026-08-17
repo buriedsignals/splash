@@ -1,8 +1,6 @@
-export const RESOURCE_URI = "ui://splash/app";
 export const ENGINE_SPLASH_CONTRACT_MIN = 1;
 export const CREDENTIAL_IDS = Object.freeze([
   "MAPTILER_KEY",
-  "MAPTILER_DELIVERY_KEY",
   "DATAWRAPPER_TOKEN",
   "CLOUDFLARE_API_TOKEN",
 ]);
@@ -74,7 +72,7 @@ export function buildPublicStatus({ preflight, keyList, credentials = [] } = {})
     ? preflight.ready === true ? "ready" : "repair-required"
     : "repair-required";
   return {
-    schemaVersion: "splash-app/v1",
+    schemaVersion: "splash-status/v1",
     runtime: { status: runtimeStatus },
     readiness: {
       ready: preflight?.ready === true,

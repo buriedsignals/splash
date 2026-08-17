@@ -5,7 +5,6 @@ const MAX_OUTPUT_BYTES = 1 << 20;
 const MAX_CANDIDATE_BYTES = 16 << 10;
 const CREDENTIAL_IDS = new Set([
   "MAPTILER_KEY",
-  "MAPTILER_DELIVERY_KEY",
   "DATAWRAPPER_TOKEN",
   "CLOUDFLARE_API_TOKEN",
 ]);
@@ -99,18 +98,13 @@ function exactContext(id, context) {
   if (!context || typeof context !== "object" || Array.isArray(context)) throw new Error("validation context must be an object");
   const expected = id === "CLOUDFLARE_API_TOKEN"
     ? ["cloudflareAccountId", "pagesScopeAttested"]
-    : id === "MAPTILER_DELIVERY_KEY"
-      ? ["originRestrictionsAttested"]
-      : [];
+    : [];
   const actual = Object.keys(context).sort();
   if (JSON.stringify(actual) !== JSON.stringify(expected.sort())) throw new Error("validation context does not match the credential contract");
   if (id === "CLOUDFLARE_API_TOKEN") {
     if (!/^[0-9a-f]{32}$/i.test(context.cloudflareAccountId ?? "") || context.pagesScopeAttested !== true) {
       throw new Error("Cloudflare validation requires its account id and Pages scope attestation");
     }
-  }
-  if (id === "MAPTILER_DELIVERY_KEY" && context.originRestrictionsAttested !== true) {
-    throw new Error("MapTiler delivery validation requires origin-restriction attestation");
   }
   return context;
 }

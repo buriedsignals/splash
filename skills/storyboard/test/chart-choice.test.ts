@@ -80,4 +80,11 @@ describe("the storyboard chart chooser", () => {
       "does not install, invoke, or require Data2Story skills at runtime",
     );
   });
+
+  it("resumes Goose directly when the localhost treatment gate resolves", () => {
+    const exchange = readFileSync(EXCHANGE, "utf8").replace(/\s+/g, " ");
+    expect(exchange).toContain("resolves the pending MCP tool call");
+    expect(exchange).toContain("without asking the journalist to return to chat or type “Continue”");
+    expect(exchange).not.toContain('On “Continue”');
+  });
 });

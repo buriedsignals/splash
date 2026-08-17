@@ -29,7 +29,7 @@ dependency.
 6. Read the selected type sheet before proposing the candidate. If a lower-ranked form wins, state
    why the higher surviving form lost. Do not turn this into another question for the journalist.
 
-The agent may choose a lower-ranked form when the subject, comparison, limits, article placement or
+The agent may choose a lower-ranked form when the subject, comparison, limits or
 delivery context gives it a better reason. That judgement belongs in the candidate rationale. A
 generic preference such as "more engaging" is not a reason.
 

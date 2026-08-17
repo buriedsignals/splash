@@ -6,15 +6,16 @@ import {
   readLegacyIntegrations,
   removeLegacyAssignments,
 } from "./legacy-env.mjs";
-import { readNewsroom, updateNewsroom, NEWSROOM_MANAGED_FIELDS } from "./newsroom-store.mjs";
+import { readNewsroom, updateNewsroom } from "./newsroom-store.mjs";
+import { isDeclinedProfile, validateNewsroom } from "../../skills/splash/scripts/newsroom.mjs";
 import { createOutboundFetchPolicy } from "./outbound-fetch.mjs";
 import { deriveCharter } from "../../skills/newsroom-charter/scripts/derive-charter.mjs";
+import { renderSetupPage } from "./setup-page.mjs";
 
 const BODY_LIMIT = 32 << 10;
 const REQUEST_TIMEOUT_MS = 10_000;
 const CREDENTIAL_IDS = new Set([
   "MAPTILER_KEY",
-  "MAPTILER_DELIVERY_KEY",
   "DATAWRAPPER_TOKEN",
   "CLOUDFLARE_API_TOKEN",
 ]);
@@ -186,56 +187,7 @@ async function deriveNewsroomProposal(url) {
   }
 }
 
-function page(nonce) {
-  const fieldCopy = {
-    name: ["Newsroom name", "The publication name shown on visuals."],
-    url: ["Public newsroom URL", "Used only when you ask Splash to measure public brand declarations."],
-    brandColor: ["Primary brand colour", "Six-digit hex colour, for example #0057b8."],
-    ground: ["Background colour", "Six-digit hex colour used behind newsroom visuals."],
-    typefaces: ["Typefaces", "Comma-separated newsroom typefaces, in preferred order."],
-    languages: ["Publishing languages", "Comma-separated language codes, most-used first."],
-    language: ["Primary language", "Optional primary language code when several are listed."],
-    accents: ["Additional accent colours", "Comma-separated six-digit hex colours."],
-    credit: ["House credit convention", "Optional standing credit wording."],
-    cloudflareAccountId: ["Cloudflare account ID", "Non-secret 32-character account identifier used to validate Pages access."],
-    cmsKind: ["CMS kind", "Use livingdocs or we-publish; configure it together with its endpoint."],
-    cmsEndpoint: ["CMS endpoint", "Full HTTP or HTTPS API URL without an embedded credential."],
-  };
-  const fields = NEWSROOM_MANAGED_FIELDS.map((field) => {
-    const [label, help] = fieldCopy[field] ?? [field, ""];
-    return `<label for="newsroom-${field}"><span>${label}</span><input id="newsroom-${field}" name="${field}" aria-describedby="newsroom-${field}-help" autocomplete="off"><small id="newsroom-${field}-help">${help}</small></label>`;
-  }).join("");
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Splash setup</title>
-<style nonce="${nonce}">
-:root{font-family:system-ui,sans-serif;color:#17202a;background:#f7f5ef}*{box-sizing:border-box}body{margin:0}main{width:min(44rem,100%);margin:auto;padding:1rem}h1{font-size:1.65rem;margin:.25rem 0}.lede{max-width:58ch}.tabs{display:flex;gap:.5rem;margin:1.25rem 0}.tabs button,button,a.action{min-width:44px;min-height:44px;border:2px solid #17202a;border-radius:.35rem;padding:.65rem .85rem;background:#fff;color:inherit;font:inherit;font-weight:650}.tabs button[aria-selected=true]{background:#17202a;color:#fff}[hidden]{display:none!important}label{display:block;margin:1rem 0}label span{display:block;font-weight:650;margin-bottom:.3rem}input{width:100%;min-height:44px;padding:.55rem;border:1px solid #59636d;border-radius:.3rem;font:inherit}.credential{border-top:1px solid #c6c4bc;padding:1rem 0}.credential p{margin:.35rem 0}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.status{padding:.65rem;background:#fff;border-left:4px solid #59636d}.error{border-color:#9d1c20;color:#741316}a{color:#064f76}a:focus,button:focus,input:focus{outline:3px solid #d18b00;outline-offset:2px}@media(max-width:320px){main{padding:.65rem}.tabs,.actions{display:block}.tabs button,.actions button{width:100%;margin:.2rem 0}body{overflow-x:hidden}}
-</style></head><body><main>
-<h1>Splash pre-flight</h1><p class="lede">Save service credentials in your operating system’s secure store, then record the newsroom details Splash may show in its work.</p>
-<nav class="tabs" role="tablist" aria-label="Setup sections"><button id="tab-credentials" role="tab" aria-selected="true" aria-controls="panel-credentials">Credentials</button><button id="tab-newsroom" role="tab" aria-selected="false" aria-controls="panel-newsroom">Newsroom</button></nav>
-<p id="summary" class="status" role="status" aria-live="polite" tabindex="-1">Opening the protected local session…</p>
-<section id="panel-credentials" role="tabpanel" aria-labelledby="tab-credentials"><div id="credentials"></div><div id="legacy"></div></section>
-<section id="panel-newsroom" role="tabpanel" aria-labelledby="tab-newsroom" hidden><p>Enter details manually, or measure declarations on the public newsroom website and confirm the proposal before saving.</p><button type="button" id="derive">Measure the public site</button><div id="proposal" aria-live="polite"></div><form id="newsroom-form">${fields}<div class="actions"><button type="submit">Save newsroom</button><button type="button" id="decline">Record that no house profile will be used</button></div></form></section>
-<div class="actions"><button id="done" type="button">Done</button><button id="close" type="button">Close setup</button></div>
-</main><script nonce="${nonce}">
-const summary=document.querySelector('#summary');let state=null;
-function announce(message,error=false){summary.textContent=message;summary.classList.toggle('error',error);summary.focus()}
-async function api(path,options={}){const response=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});const body=await response.json();if(!response.ok)throw Object.assign(new Error(body.message||'Request refused'),{body});return body}
-function activate(name){for(const tab of document.querySelectorAll('[role=tab]')){const selected=tab.id==='tab-'+name;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;document.querySelector('#'+tab.getAttribute('aria-controls')).hidden=!selected}document.querySelector('#tab-'+name).focus()}
-const tabs=[...document.querySelectorAll('[role=tab]')];for(const tab of tabs){tab.tabIndex=tab.getAttribute('aria-selected')==='true'?0:-1;tab.addEventListener('click',()=>activate(tab.id.slice(4)));tab.addEventListener('keydown',event=>{let next=-1;if(event.key==='ArrowRight')next=(tabs.indexOf(tab)+1)%tabs.length;if(event.key==='ArrowLeft')next=(tabs.indexOf(tab)-1+tabs.length)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next<0)return;event.preventDefault();activate(tabs[next].id.slice(4))})}
-function safeLink(raw){try{const url=new URL(raw);return url.protocol==='https:'?url.href:null}catch{return null}}
-function renderCredentials(){const root=document.querySelector('#credentials');root.replaceChildren();for(const row of state.credentials){const box=document.createElement('section');box.className='credential';const slug=row.id.toLowerCase().replaceAll('_','-');const title=document.createElement('h2');title.textContent=row.metadata?.name||row.id;box.append(title);const status=document.createElement('p');status.id=slug+'-status';status.textContent=row.stored?'Saved, generation '+row.generation:'Not saved';box.append(status);const purpose=document.createElement('p');purpose.id=slug+'-purpose';purpose.textContent=row.metadata?.purpose||'';box.append(purpose);const href=safeLink(row.metadata?.acquisitionUrl);if(href){const link=document.createElement('a');link.href=href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Get this credential from the provider';box.append(link)}const label=document.createElement('label');const labelText=document.createElement('span');labelText.textContent='Paste a new value';const input=document.createElement('input');input.type='password';input.autocomplete='off';input.spellcheck=false;input.setAttribute('aria-describedby',slug+'-status '+slug+'-purpose');label.append(labelText,input);box.append(label);let attest=null;if(row.id==='MAPTILER_DELIVERY_KEY'||row.id==='CLOUDFLARE_API_TOKEN'){const wrap=document.createElement('label');attest=document.createElement('input');attest.type='checkbox';attest.style.width='44px';wrap.append(attest,document.createTextNode(row.id==='MAPTILER_DELIVERY_KEY'?' I confirm this key is origin-restricted':' I confirm this token has Pages edit scope'));box.append(wrap)}const save=document.createElement('button');save.type='button';save.textContent='Verify and save';save.addEventListener('click',async()=>{const candidate=input.value;input.value='';const validationContext=row.id==='MAPTILER_DELIVERY_KEY'?{originRestrictionsAttested:attest.checked}:row.id==='CLOUDFLARE_API_TOKEN'?{cloudflareAccountId:state.newsroom.profile?.cloudflareAccountId||'',pagesScopeAttested:attest.checked}:{};announce('Checking '+(row.metadata?.name||row.id)+'…');try{const result=await api('/api/credential/replace',{method:'POST',body:JSON.stringify({id:row.id,candidate,expectedGeneration:row.generation,validationContext})});announce(result.ok?'Saved. The field has been cleared.':result.reason||'The candidate was not saved.',!result.ok);await refresh()}catch(error){announce(error.body?.reason||error.body?.message||'The candidate was not saved.',true)}});box.append(save);root.append(box)}}
-function migrationContext(id){if(id==='MAPTILER_DELIVERY_KEY')return confirm('Confirm that this delivery key is restricted to the publication origin.')?{originRestrictionsAttested:true}:null;if(id==='CLOUDFLARE_API_TOKEN'){const account=state.newsroom.profile?.cloudflareAccountId||'';return account&&confirm('Confirm that this token has Pages edit scope.')?{cloudflareAccountId:account,pagesScopeAttested:true}:null}return {}}
-function renderLegacy(){const root=document.querySelector('#legacy');root.replaceChildren();if(!state.legacy?.exists)return;const title=document.createElement('h2');title.textContent='Existing .env migration';root.append(title);if(!state.legacy.safe){const warning=document.createElement('p');warning.className='status error';warning.textContent='The existing .env needs a manual syntax, ownership, or permissions repair before safe migration.';root.append(warning);return}for(const item of state.legacy.credentials){const row=document.createElement('p');row.textContent=item.id+' is present as '+item.sourceName+'. ';const move=document.createElement('button');move.type='button';move.textContent='Move to secure storage';move.addEventListener('click',async()=>{if(!confirm('Validate and save this existing credential in secure storage?'))return;const context=migrationContext(item.id);if(context===null){announce('The required attestation or service account is missing.',true);return}const current=state.credentials.find(value=>value.id===item.id);const confirmRemoval=confirm('After secure storage succeeds, remove only this exact assignment from .env?');try{const result=await api('/api/legacy/migrate-credential',{method:'POST',body:JSON.stringify({credentialId:item.id,expectedEnvRevision:state.legacy.revision,assignmentId:item.assignmentId,expectedGeneration:current?.generation||0,validationContext:context,confirmRemoval})});announce(result.ok?'Credential moved. Legacy assignment: '+result.legacyRemoval.status:(result.credential?.reason||'The credential was not moved.'),!result.ok);await refresh()}catch(error){announce(error.body?.message||'The credential was not moved.',true)}});row.append(move);root.append(row)}if(state.legacy.integrations.length){const integrations=document.createElement('button');integrations.type='button';integrations.textContent='Import non-secret service settings into NEWSROOM.md';integrations.addEventListener('click',async()=>{if(!confirm('Import the listed account and CMS settings into the newsroom profile?'))return;const confirmRemoval=confirm('After the newsroom write succeeds, remove only those exact settings from .env?');try{const result=await api('/api/legacy/import-integrations',{method:'POST',body:JSON.stringify({expectedEnvRevision:state.legacy.revision,assignments:state.legacy.integrations.map(({field,assignmentId})=>({field,assignmentId})),expectedNewsroomRevision:state.newsroom.revision,confirmImport:true,confirmReplaceDecline:state.newsroom.declined,confirmRemoval})});state.newsroom=result.newsroom;announce('Service settings imported. Legacy assignments: '+result.legacyRemoval.status);await refresh()}catch(error){announce(error.body?.message||'Service settings were not imported.',true)}});root.append(integrations)}}
-function renderNewsroom(){const profile=state.newsroom.profile||{};for(const input of document.querySelectorAll('#newsroom-form input'))input.value=profile[input.name]||''}
-async function refresh(){state=await api('/api/status',{method:'POST',body:'{}'});renderCredentials();renderLegacy();renderNewsroom()}
-document.querySelector('#derive').addEventListener('click',async()=>{const url=document.querySelector('#newsroom-url').value;announce('Measuring the public newsroom site…');try{const result=await api('/api/derive',{method:'POST',body:JSON.stringify({url})});const proposal=document.querySelector('#proposal');proposal.replaceChildren();const heading=document.createElement('h2');heading.textContent='Measured proposal';proposal.append(heading);for(const [field,row] of Object.entries(result.fields)){if(!row)continue;const item=document.createElement('p');item.textContent=field+': '+row.value+' — '+row.source+' ('+row.evidence+')';proposal.append(item)}const apply=document.createElement('button');apply.type='button';apply.textContent='Apply this proposal to empty fields';apply.addEventListener('click',()=>{if(!confirm('Apply these measured values to the empty newsroom fields?'))return;for(const [field,row] of Object.entries(result.fields)){const input=document.querySelector('#newsroom-'+field);if(row&&input&&!input.value)input.value=row.value}announce('Proposal applied to the form. Review it, then save newsroom.')});proposal.append(apply);announce('Proposal ready for review. Nothing has been written.')}catch(error){announce(error.body?.message||'The site could not be measured safely; enter branding manually.',true)}});
-document.querySelector('#newsroom-form').addEventListener('submit',async event=>{event.preventDefault();const changes=Object.fromEntries([...new FormData(event.currentTarget)].map(([key,value])=>[key,String(value)]));try{state.newsroom=await api('/api/newsroom',{method:'POST',body:JSON.stringify({expectedRevision:state.newsroom.revision,changes,decline:false,confirmDecline:false,confirmReplaceDecline:state.newsroom.declined})});announce('Newsroom details saved.')}catch(error){announce(error.body?.message||'Newsroom details were not saved.',true)}});
-document.querySelector('#decline').addEventListener('click',async()=>{if(!confirm('Record that this newsroom will not use a house profile?'))return;try{state.newsroom=await api('/api/newsroom',{method:'POST',body:JSON.stringify({expectedRevision:state.newsroom.revision,changes:{},decline:true,confirmDecline:true,confirmReplaceDecline:false})});announce('The newsroom decision was recorded.')}catch(error){announce(error.body?.message||'The decision was not saved.',true)}});
-document.querySelector('#done').addEventListener('click',async()=>{await api('/api/done',{method:'POST',body:'{}'});announce('Setup is complete. You can close this page.')});document.querySelector('#close').addEventListener('click',async()=>{await api('/api/close',{method:'POST',body:'{}'});announce('Setup closed. Completed saves remain stored.')});
-(async()=>{const capability=location.hash.slice(1);history.replaceState(null,'',location.pathname);if(!capability)throw new Error('This setup link has expired.');await api('/session',{method:'POST',body:JSON.stringify({capability})});await refresh();announce('Protected local setup is ready.')})().catch(error=>announce(error.message,true));
-</script></body></html>`;
-}
+const page = renderSetupPage;
 
 export async function startSetupController({
   engineBridge,
@@ -306,6 +258,22 @@ export async function startSetupController({
     return { credentials: rows, broker: listed.broker ?? null, newsroom, legacy };
   }
 
+  async function completionBlockers() {
+    const status = await publicStatus();
+    const blockers = [];
+    if (status.broker?.status === "unavailable") {
+      blockers.push("secure credential storage is unavailable");
+    }
+    if (!status.newsroom?.exists || !status.newsroom.profile) {
+      blockers.push("newsroom branding has not been saved");
+    } else if (isDeclinedProfile(status.newsroom.profile)) {
+      blockers.push("newsroom branding has not been completed");
+    } else {
+      blockers.push(...validateNewsroom(status.newsroom.profile));
+    }
+    return blockers;
+  }
+
   async function handler(request, response) {
     try {
       if (request.headers.host !== expectedHost) return sendJson(response, 421, { code: "wrong-host", message: "This local setup URL belongs to a different host." });
@@ -332,6 +300,54 @@ export async function startSetupController({
       if (url.pathname === "/api/status") {
         exactObject(await readJson(request), [], "status request");
         return sendJson(response, 200, await publicStatus());
+      }
+      if (url.pathname === "/api/submit") {
+        const body = exactObject(await readJson(request), ["credentials", "newsroom"], "setup submission");
+        if (!Array.isArray(body.credentials) || body.credentials.length > CREDENTIAL_IDS.size) {
+          throw new Error("setup credentials do not match the closed contract");
+        }
+        const seen = new Set();
+        const credentials = body.credentials.map((value) => {
+          const row = exactObject(value, ["id", "candidate", "expectedGeneration", "validationContext"], "setup credential");
+          if (!CREDENTIAL_IDS.has(row.id) || seen.has(row.id)) throw new Error("setup credential id is unsupported or duplicated");
+          seen.add(row.id);
+          return row;
+        });
+        const newsroom = exactObject(body.newsroom, ["expectedRevision", "changes", "confirmReplaceDecline"], "setup newsroom");
+        const result = await runMutation(async () => {
+          let savedNewsroom;
+          try {
+            savedNewsroom = await updateNewsroom(newsroomPath, {
+              expectedRevision: newsroom.expectedRevision,
+              changes: newsroom.changes,
+              decline: false,
+              confirmDecline: false,
+              confirmReplaceDecline: newsroom.confirmReplaceDecline === true,
+            });
+          } catch (error) {
+            const safe = safeError(error);
+            return { ok: false, credentials: [], newsroom: { ok: false, code: safe.code, message: safe.message } };
+          }
+          const savedCredentials = [];
+          for (const row of credentials) {
+            try {
+              const saved = await engineBridge.replace(row.id, {
+                candidate: row.candidate,
+                expectedGeneration: row.expectedGeneration,
+                validationContext: row.validationContext,
+              });
+              savedCredentials.push({ ...saved, name: row.id });
+            } catch {
+              savedCredentials.push({ ok: false, id: row.id, name: row.id, status: "invalid", reason: "The credential or its validation details were rejected.", written: false });
+            }
+          }
+          return {
+            ok: savedCredentials.every((row) => row.ok),
+            credentials: savedCredentials,
+            newsroom: { ok: true, ...savedNewsroom },
+          };
+        });
+        return sendJson(response, 200, result);
       }
       if (url.pathname === "/api/credential/replace") {
         const body = exactObject(await readJson(request), ["id", "candidate", "expectedGeneration", "validationContext"], "credential replacement");
@@ -428,6 +444,15 @@ export async function startSetupController({
         exactObject(await readJson(request), [], "setup completion");
         if (inFlightMutations > 0) {
           return sendJson(response, 409, { code: "operation-in-flight", message: "A save is still finishing. Wait for its result before closing setup." });
+        }
+        if (url.pathname === "/api/done") {
+          const blockers = await completionBlockers();
+          if (blockers.length > 0) {
+            return sendJson(response, 409, {
+              code: "setup-incomplete",
+              message: `Setup is incomplete: ${blockers.join("; ")}. Save the required fields before continuing.`,
+            });
+          }
         }
         sendJson(response, 200, { ok: true, state: url.pathname === "/api/done" ? "done" : "closed" });
         queueMicrotask(() => shutdown(url.pathname === "/api/done" ? "done" : "closed"));

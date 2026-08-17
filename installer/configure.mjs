@@ -160,13 +160,6 @@ const KEY_FIELDS = [
     where: "maptiler.com/cloud → Account → Keys (the free tier is enough)",
   },
   {
-    name: "MAPTILER_DELIVERY_KEY",
-    label: "MapTiler delivery key (optional)",
-    opens: "the key embedded in a delivered map page",
-    where:
-      "a SECOND MapTiler key, restricted to your own domain. A delivered web map carries its key in the file, so this one should not be the key above. An account's default key cannot be restricted, so create a dedicated one.",
-  },
-  {
     name: "DATAWRAPPER_TOKEN",
     label: "Datawrapper token (optional)",
     opens: "the delegated Datawrapper path",
@@ -681,13 +674,7 @@ async function verify(payload) {
     else if (field.name === "DATAWRAPPER_TOKEN") result = await probeDatawrapper(value, fetch);
     else if (field.name === "CLOUDFLARE_API_TOKEN")
       result = await probeCloudflare((payload.CLOUDFLARE_ACCOUNT_ID ?? "").trim(), value, fetch);
-    else if (field.name === "MAPTILER_DELIVERY_KEY") {
-      // Deliberately NOT probed. MapTiler enforces an origin restriction server-side against the
-      // request's own Origin, and a delivery key should be origin-restricted — so probing it from
-      // here would report a correct key as broken. Recorded on trust and said so.
-      lines.push(`${field.name}: accepted without a check — an origin-restricted key cannot be probed from this machine.`);
-      continue;
-    } else continue; // CLOUDFLARE_ACCOUNT_ID is checked together with its token
+    else continue; // CLOUDFLARE_ACCOUNT_ID is checked together with its token
     lines.push(`${field.name}: ${result.ok ? "accepted" : "REJECTED"} — ${result.detail}`);
     if (!result.ok) rejected.push(field.name);
   }

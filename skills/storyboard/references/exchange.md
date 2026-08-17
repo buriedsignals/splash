@@ -45,17 +45,16 @@ Whichever verdict lands, say what the check could and could not see — `resolve
 both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as
 one.
 
-## ③ The journalist's hand — five questions, each with a destination
+## ③ The journalist's hand — four decisions, each with a destination
 
 Every one of these harvests something the data cannot supply on its own, and every answer has a
-named place it lands in the storyboard. That destination is what stops the five questions from
+named place it lands in the storyboard. That destination is what stops the four decisions from
 being disguised parameter collection: nothing is asked "because the form has a field for it" —
 each question exists because a specific downstream decision cannot be made without it.
 
-**Five questions, six fields**: credit yields both `credit` and `effectiveDate`, which is why the
-hand has six destinations and this movement has five turns. An earlier draft of this file counted
-four in its heading and listed five in its table — a model asking four and leaving one field empty
-is refused by both gates with no explanation of which question it skipped.
+**Four decisions, five fields**: credit yields both `credit` and `effectiveDate`. Article placement
+is not a human gate. Splash may infer it later from the article when delivery needs it, but it must
+not ask the journalist to confirm a paragraph merely to close Storyboard.
 
 **These questions come before the medium is chosen, so none of their destinations may presume one.**
 `subject` is what the survey at ④ and the palette at ⑨ are *of*, so the hand has to stay early — but
@@ -66,17 +65,16 @@ medium existed.
 | The question, as asked | What it harvests | Where it lands |
 |---|---|---|
 | *"In this data, who is the subject of your piece?"* | the subject, which the data does not designate — the maximum is not the subject | **the one element the visual emphasises, whatever its medium.** Real predecessor bug: a scatter labelled its max-y instead of the subject |
-| *"What does the reader compare it to — last year, the average, the announced target, the next town?"* | the editorially meaningful reference point | **the reference the reader measures against** — the mechanism that carries it is chosen with the medium, not here. A number alone says nothing |
+| Propose the comparison implied by the confirmed takeaway, explain in one sentence why it serves the article, then ask: *"Should the visual use that comparison? Yes or no. If no, what should the reader compare instead?"* | the editorially meaningful reference point | **the reference the reader measures against** — the mechanism that carries it is chosen with the medium, not here. A number alone says nothing. Never ask an open-ended comparison question after already stating a recommendation |
 | *"What does this data NOT let you conclude?"* | the boundary the journalist knows and the data never states (sample, correlation vs causation, scope) | the anti-overclaim check on the title, and what an annotation is allowed to assert |
-| *"Which paragraph does this visual follow — and what does the text already say next to it?"* | what is already written | **do not duplicate** (if the axis carries `2024`, the callout gives the value, not the year) |
 | *"How do you credit it, and as of what date?"* | the house convention and the effective date | the visible source line, and traceability |
 
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
 
-The placement question used to carry a second clause — *"also feeds channel and size"* — and that
-clause was not a destination at all, it was a **decision taken out of order**: format and size settled
-at movement ③, before ④ had named a single type. It is now movements ⑥ and ⑦, where the journalist
-is actually asked. Placement keeps only its editorial half.
+Placement is deliberately absent. It used to ask the journalist to approve a paragraph even though
+the article already supplied the relevant structure. That added a gate without changing the visual
+decision. Delivery may derive a non-blocking placement note later; Storyboard does not collect or
+require `placement:`.
 
 ### When the answer is "I don't know" or "none"
 
@@ -94,23 +92,19 @@ Per question, on absence:
   a sentence about someone or something, and that noun phrase is the candidate subject.
 - **Comparison** — propose the reference point implied by the takeaway's own shape (a stated "than",
   a named period, an implied baseline) before falling back to "the average" or "last year" as a
-  generic default.
+  generic default. Explain why, then require only Yes or No; a No carries the replacement comparison.
 - **Limits** — **"none" is a legitimate answer.** If the journalist sees no limit, that is the
   information, and it is recorded as given, verbatim — never replaced by an invented caveat. The
   system may still separately offer a limit it can see in the data itself (a short window, a
   correlation dressed as a cause, a source that only measures a proxy for the claim) for the
   journalist to accept or reject — offering is not manufacturing, and the two must not be conflated.
-- **Placement** — the worked example, because this is the one the first session actually hit: with
-  no placement decided, propose one from the article's own structure — *"this follows the paragraph
-  that first states the divergence, which argues for mid-article placement"* — and say what that
-  placement implies for the questions still to come, so the proposal is a reason, not a guess.
 - **Credit** — propose the newsroom's standing convention (`NEWSROOM.md`, whose `credit` field
   preflight has already read back) and today's date as the effective date; the journalist confirms
   or corrects rather than dictating both from nothing.
 
 None of this is a re-ask. The question was asked once; what follows an "I don't know" is a proposal
 the journalist disposes of in one move, exactly as movement ⑩ already does for slots and candidates
-— the same discipline, applied to all five questions, not only the last movement.
+— the same discipline, applied to all four decisions, not only the last movement.
 
 ## ④ The survey — everything that could be made of this data
 
@@ -132,7 +126,7 @@ rank only the types this story's frozen profile can actually support. Then name:
   a missing key is said HERE, with what would open it, not three movements later.
 
 The chooser is advisory. Its first surviving type is the recommendation, not a dispatch rule. A
-lower-ranked type may lead when the subject, comparison, limits, placement or delivery context gives
+lower-ranked type may lead when the subject, comparison, limits or delivery context gives
 it a stronger story-specific reason; say why the higher surviving type lost. Reachability is checked
 after editorial fit, so an unproven type is reported as unproven rather than quietly ranked below a
 weaker form. Do not ask the journalist to operate or override the ranking.
@@ -226,6 +220,27 @@ subject, the proposal SAYS so and the newsroom's colours lead — never silently
 option with no explanation, which is what the run did.
 
 Lands in `PALETTE.md`.
+
+### Open Storyboard by default
+
+After the palette is confirmed and before presenting any treatment, open Storyboard without asking
+an interface-choice question. Storyboard ranks the reachable set against the confirmed editorial
+hand and frozen profile, then opens only one recommendation and one alternative.
+
+À-la-carte remains available as an explicit chat override. If the journalist directly asks to see
+all treatments or says “À-la-carte”, open that catalogue instead. Do not infer that override from
+hesitation or from a large catalogue:
+
+- Default: call `open_splash_storyboard` with the exact story directory.
+- Explicit override: call `open_splash_a_la_carte` with the exact story directory.
+
+The journalist confirms the exact story path and one treatment in the protected localhost browser
+interface. That confirmation writes the canonical `chosen` value and resolves the pending MCP tool
+call. Goose then re-reads the story from disk and continues at the conditional producer gate or
+production without asking the journalist to return to chat or type “Continue”. Do not repeat the mode
+question or ask the journalist to type the visual choice again.
+If the host cannot launch the browser interface, fall back to the same treatment gate in text; never
+interpret opening, focus, dismissal, timeout or a recommendation as confirmation.
 
 ## ⑩ The storyboard proposal, and the beat brief
 

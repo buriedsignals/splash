@@ -92,13 +92,12 @@ describe("the exchange keeps its documented order", () => {
     }
   });
 
-  it("should ask five hand questions and no more, all of them medium-neutral", () => {
+  it("should ask four hand questions and no more, all of them medium-neutral", () => {
     const rows = handTable();
-    expect(rows.length).toBe(5);
-    // The four that used to presume a chart, plus credit. What is banned is the clause that
-    // DECIDED downstream, not the questions themselves — subject has to stay early, because the
-    // survey at ④ and the palette at ⑨ are OF it.
+    expect(rows.length).toBe(4);
     expect(rows.join("\n")).not.toContain("channel and size");
+    expect(rows.join("\n")).not.toContain("Which paragraph");
+    expect(rows.join("\n")).toContain("Yes or no");
   });
 
   it("should keep grounding at the takeaway, not at the proposal", () => {
@@ -124,6 +123,19 @@ describe("the exchange keeps its documented order", () => {
     );
     expect(loop).toContain("ends in a real question");
     expect(loop).toContain("reference:");
+  });
+
+  it("should open Storyboard by default and reserve À-la-carte for an explicit override", () => {
+    const palette = EXCHANGE.indexOf("## ⑨ The palette");
+    const mode = EXCHANGE.indexOf("### Open Storyboard by default");
+    const proposal = EXCHANGE.indexOf("## ⑩");
+    expect(mode).toBeGreaterThan(palette);
+    expect(mode).toBeGreaterThan(-1);
+    expect(mode).toBeLessThan(proposal);
+    expect(EXCHANGE).toContain("open_splash_a_la_carte");
+    expect(EXCHANGE).toContain("open_splash_storyboard");
+    expect(EXCHANGE).toContain("explicit chat override");
+    expect(EXCHANGE).not.toContain("ask: **À-la-carte or Storyboard?**");
   });
 
   it("should forbid drawing a recommendation as a chart before a medium is chosen", () => {

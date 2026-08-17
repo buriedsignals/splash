@@ -113,10 +113,13 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    sentence and `formatProposal` prints it — because four conventions ship, so "none applies" is
    the common case, and a one-option proposal with no explanation reads as a tool with nothing to
    say rather than as a subject with no convention.
-5. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
-   escape branch — including when there is exactly one option, and including when every option
-   fails. A proposal that cannot be refused is not a proposal, and the case where refusing matters
-   most is the case where the house colours themselves do not measure up.
+5. **`formatProposal` renders the question with at most two visible choices**, always ending in a
+   real ask and always carrying the escape branch. A newsroom may record many accents for
+   multi-series production, but they are not each presented as a separate editorial decision: the
+   passing recommendation and first genuine alternative are shown in stable order. When no option
+   clears the contrast floor, none is falsely marked recommended. A proposal that cannot be refused
+   is not a proposal, and the case where refusing matters most is the case where the house colours
+   themselves do not measure up.
 6. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
    with `origin:` naming who chose — `newsroom`, `subject` or `journalist`.
 7. **A render that reads it never defaults, and the reach is measured, not claimed.**

@@ -374,6 +374,27 @@ async function openSession(controller: Awaited<ReturnType<typeof startSetupContr
   return { response, cookie };
 }
 
+async function saveCompleteNewsroom(origin: string, cookie: string) {
+  const status = await fetch(`${origin}/api/status`, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "application/json" },
+    body: "{}",
+  }).then((response) => response.json());
+  return fetch(`${origin}/api/newsroom`, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      expectedRevision: status.newsroom.revision,
+      changes: {
+        name: "Setup Test Desk", url: "https://example.test", language: "en",
+        languages: "en", brandColor: "#123456", ground: "#ffffff",
+        typefaces: "system-ui, sans-serif",
+      },
+      decline: false, confirmDecline: false, confirmReplaceDecline: false,
+    }),
+  });
+}
+
 function stubBridge(overrides: Record<string, unknown> = {}) {
   return {
     async list() {
@@ -403,7 +424,18 @@ describe("token-bound loopback setup controller", () => {
     expect(page.headers.get("cache-control")).toContain("no-store");
     expect(page.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(page.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(await page.text()).not.toContain(controller.capability);
+    const html = await page.text();
+    expect(html).not.toContain(controller.capability);
+    expect(html).toContain("Save setup and continue");
+    expect(html).toContain("Newsroom branding");
+    expect(html).not.toContain('role="tab"');
+    expect(html).not.toContain("MAPTILER_DELIVERY_KEY");
+    expect(html).not.toContain("House credit convention");
+    expect(html).not.toContain("CMS kind");
+    expect(html).toContain("window.close()");
+    expect(html).toContain("let pending=false");
+    expect(html).toContain("window.addEventListener('pagehide'");
+    expect(html).toContain("navigator.sendBeacon('/api/close'");
 
     const wrongOrigin = await fetch(`${controller.origin}/session`, {
       method: "POST",
@@ -441,7 +473,7 @@ describe("token-bound loopback setup controller", () => {
     expect(oversized.status).toBe(413);
   });
 
-  test("keeps candidate bodies out of lifecycle control events and invalidates on Done", async () => {
+  test("keeps candidate bodies out of lifecycle events and refuses Done until setup is complete", async () => {
     const lifecycle: unknown[] = [];
     let observed = "";
     const controller = await controllerFixture(stubBridge({
@@ -460,6 +492,14 @@ describe("token-bound loopback setup controller", () => {
     expect(observed).toBe("controller-secret-canary-12345");
     expect(JSON.stringify(lifecycle)).not.toContain("controller-secret-canary");
 
+    const incomplete = await fetch(`${controller.origin}/api/done`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(incomplete.status).toBe(409);
+    expect(await incomplete.json()).toMatchObject({ code: "setup-incomplete" });
+    expect(await saveCompleteNewsroom(controller.origin, cookie)).toMatchObject({ status: 200 });
     const done = await fetch(`${controller.origin}/api/done`, {
       method: "POST",
       headers: { origin: controller.origin, cookie, "content-type": "application/json" },
@@ -467,6 +507,47 @@ describe("token-bound loopback setup controller", () => {
     });
     expect(done.status).toBe(200);
     expect(await controller.closed).toEqual({ reason: "done" });
+  });
+
+  test("one submission saves the newsroom and every changed credential", async () => {
+    const observed: Array<{ id: string; candidate: string }> = [];
+    const controller = await controllerFixture(stubBridge({
+      async replace(id: string, request: any) {
+        observed.push({ id, candidate: request.candidate });
+        return { ok: true, id, stored: true, generation: 1, metadata: { id, name: id } };
+      },
+    }));
+    const { cookie } = await openSession(controller);
+    const status = await fetch(`${controller.origin}/api/status`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    }).then((response) => response.json());
+    const response = await fetch(`${controller.origin}/api/submit`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        credentials: [{ id: "MAPTILER_KEY", candidate: "batch-secret-canary", expectedGeneration: 0, validationContext: {} }],
+        newsroom: {
+          expectedRevision: status.newsroom.revision,
+          confirmReplaceDecline: false,
+          changes: {
+            name: "Batch News", url: "https://batch.example", language: "en", languages: "en",
+            brandColor: "#123456", accents: "#cc8800", ground: "#ffffff",
+            typefaces: "system-ui, sans-serif", cloudflareAccountId: "",
+          },
+        },
+      }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ok: true, newsroom: { ok: true } });
+    expect(observed).toEqual([{ id: "MAPTILER_KEY", candidate: "batch-secret-canary" }]);
+    const refreshed = await fetch(`${controller.origin}/api/status`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    }).then((result) => result.json());
+    expect(refreshed.newsroom.profile.name).toBe("Batch News");
   });
 
   test("refuses Close setup while a credential mutation is in flight", async () => {
@@ -681,6 +762,7 @@ exit 1
       body: "{}",
     });
     expect(status.status).toBe(200);
+    expect(await saveCompleteNewsroom(origin, cookie)).toMatchObject({ status: 200 });
     const done = await fetch(`${origin}/api/done`, {
       method: "POST",
       headers: { origin, cookie, "content-type": "application/json" },

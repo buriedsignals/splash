@@ -1526,12 +1526,6 @@ describe("exportDirFor", () => {
 describe("substituteKeys — R1b clause 4, the delivered key", () => {
   const page = "style.json?key=__MAPTILER" + '_KEY__"';
 
-  it("should substitute the second, domain-restricted key", () => {
-    expect(
-      substituteKeys(page, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe('style.json?key=restricted-key"');
-  });
-
   it("should leave the placeholder alone when no key is configured at all", () => {
     // Not a silent failure: the delivered page renders its complete fallback layer, exactly as it
     // does offline or with JavaScript off. The live layer never boots, which is the honest outcome
@@ -1539,18 +1533,15 @@ describe("substituteKeys — R1b clause 4, the delivered key", () => {
     expect(substituteKeys(page, {})).toBe(page);
   });
 
-  it("should deliver the development key rather than block, when it is the only one", () => {
-    expect(substituteKeys(page, { MAPTILER_KEY: "development-key" })).toBe(
-      'style.json?key=development-key"',
+  it("should deliver the configured API key", () => {
+    expect(substituteKeys(page, { MAPTILER_KEY: "configured-key" })).toBe(
+      'style.json?key=configured-key"',
     );
   });
 
   it("should name which key went in, so the hand-over can say so", () => {
-    expect(mapKeyState(page, { MAPTILER_DELIVERY_KEY: "restricted-key" })).toBe(
-      "restricted",
-    );
-    expect(mapKeyState(page, { MAPTILER_KEY: "development-key" })).toBe(
-      "development",
+    expect(mapKeyState(page, { MAPTILER_KEY: "configured-key" })).toBe(
+      "configured",
     );
     expect(mapKeyState(page, {})).toBe("unkeyed");
     expect(mapKeyState("<p>no map here</p>", { MAPTILER_KEY: "k" })).toBe(
@@ -1558,14 +1549,6 @@ describe("substituteKeys — R1b clause 4, the delivered key", () => {
     );
   });
 
-  it("should prefer the delivery key even when the development key is also set", () => {
-    expect(
-      substituteKeys(page, {
-        MAPTILER_DELIVERY_KEY: "restricted-key",
-        MAPTILER_KEY: "development-key",
-      }),
-    ).toBe('style.json?key=restricted-key"');
-  });
 });
 
 /**
@@ -1592,9 +1575,6 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(substituteKeys(chartPage, { MAPTILER_KEY: "development-key" })).toBe(
       chartPage,
     );
-    expect(
-      substituteKeys(chartPage, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe(chartPage);
     expect(substituteKeys(chartPage, {})).toBe(chartPage);
   });
 
@@ -1602,12 +1582,12 @@ describe("the key rule reads the artifact, not the environment", () => {
     // The scoping must not blunt the rule: the same environment, on a real map artifact, is still
     // handled — this is the line between "scoped" and "switched off".
     expect(
-      substituteKeys(mapPage, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe('style.json?key=restricted-key"');
+      substituteKeys(mapPage, { MAPTILER_KEY: "configured-key" }),
+    ).toBe('style.json?key=configured-key"');
     expect(substituteKeys(mapPage, {})).toContain("__MAPTILER" + "_KEY__");
   });
 
-  it("should deliver a MAP beat on a development key, and say so in the hand-over", async () => {
+  it("should deliver a MAP beat with the configured key and state the origin restriction", async () => {
     // R1: the delivered HTML carries the key, knowingly. R1b prefers the restricted one. The
     // journalist gets the delivery AND the statement of what it costs — never a refusal instead of
     // both.
@@ -1620,17 +1600,16 @@ describe("the key rule reads the artifact, not the environment", () => {
       format: "web",
       beatDir,
       exportDir,
-      env: { MAPTILER_KEY: "development-key" },
+      env: { MAPTILER_KEY: "configured-key" },
       handover,
     });
 
     expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(
-      'style.json?key=development-key"',
+      'style.json?key=configured-key"',
     );
     const readme = await readFile(join(exportDir, "HANDOVER.md"), "utf8");
-    expect(readme).toContain("development");
-    expect(readme).toContain("100% of its spending limit");
-    expect(readme).toContain("MAPTILER_DELIVERY_KEY");
+    expect(readme).toContain("allowed HTTP origins");
+    expect(readme).toContain("MapTiler API key");
   });
 
   it("should say the map is not live when no key was recorded at all", async () => {

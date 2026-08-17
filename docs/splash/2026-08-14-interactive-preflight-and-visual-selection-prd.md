@@ -11,12 +11,16 @@ scope: Goose MCP App experience, credential onboarding, newsroom profile, visual
 
 ## Summary
 
-Splash will give journalists a graphical path from preflight to a confirmed visual choice. A Goose
-MCP App view will report readiness, explain unavailable capabilities, collect non-sensitive choices,
-and present the same visual catalogue in two modes: an expert-oriented à-la-carte chooser and an
-AI-recommended storyboard chooser. API keys will never be entered in the MCP view. The app will open
-a branded local browser page where the journalist can follow provider links, paste credentials,
-verify them, and save them through Engine's operating-system credential broker.
+Splash will give journalists a graphical path from preflight to a confirmed visual choice. The
+Splash MCP app is an MCP server plus protected localhost browser interfaces; it does not publish an
+embedded MCP Apps resource. Its model-visible tools launch three separate browser surfaces:
+Preflight, a two-card Storyboard, and a searchable visual À-la-carte catalogue. API keys are entered
+only in Preflight's protected browser page, verified there, and saved through Engine's
+operating-system credential broker.
+
+This localhost decision supersedes the embedded-MCP-App presentation described in later historical
+implementation sections of this PRD. Those sections remain only as provenance until the release
+closure gate deletes this document; they are not the current interface contract.
 
 The local setup page will also collect the newsroom's non-sensitive identity, colours, typography,
 language, and credit convention. Splash will stop treating a repository `.env` as the primary home
@@ -74,8 +78,9 @@ than preserved behind a more polished page.
 - Make a newly saved credential usable by the next relevant Splash operation without exposing a raw
   secret-retrieval command.
 - Keep newsroom branding and other non-secret configuration visibly separate from credentials.
-- Provide one canonical visual catalogue shared by à-la-carte selection and storyboard
-  recommendations.
+- Provide one canonical visual catalogue: À-la-carte shows every reachable treatment as searchable
+  preview cards; Storyboard shows exactly one recommendation and one alternative when two are
+  reachable.
 - Preserve explicit human confirmation: an AI recommendation is never a selection until the
   journalist confirms it.
 - Keep capability failures non-blocking when the requested visual or delivery path does not require
@@ -147,11 +152,14 @@ than preserved behind a more polished page.
 - **Storage and execution ship together.** Removing `.env` as the primary store is not complete until
   every key-dependent Splash boundary can receive the required value at execution time. The design
   must not add `keys get` or hydrate unrelated processes.
-- **Non-secret configuration remains inspectable.** Account identifiers, CMS kind and endpoint, and
-  newsroom branding live in canonical `NEWSROOM.md` fields rather than the credential broker.
-- **One catalogue, two choice modes.** À-la-carte and storyboard views render the same canonical
-  catalogue and compatibility rules. Storyboard adds a ranked recommendation and rationale; it does
-  not maintain a second list of visual types.
+- **Non-secret configuration remains inspectable.** Account identifiers and newsroom branding live
+  in canonical `NEWSROOM.md` fields rather than the credential broker. Older CMS fields remain
+  parser-compatible but are not part of Readiness.
+- **One catalogue, two interfaces selected in chat.** The journalist chooses À-la-carte or
+  Storyboard in the progressive chat exchange. Splash then opens exactly that interface at the
+  treatment gate. À-la-carte renders all reachable treatments in stable catalogue order;
+  Storyboard renders the same set as ranked recommendations with rationale and trade-offs. Neither
+  interface contains a mode switch or owns earlier editorial questions.
 - **No implicit plaintext fallback.** A platform without an available secure store fails closed and
   explains the remedy. Any temporary legacy-file compatibility is explicit, visibly weaker, and
   never selected merely because the secure store failed.
@@ -177,8 +185,9 @@ than preserved behind a more polished page.
 
 ```mermaid
 flowchart TB
-  J[Journalist in Goose] --> A[Splash MCP App view]
-  A -->|read status and choose visuals| M[Splash MCP server]
+  J[Journalist in Goose] --> T[Progressive chat gates]
+  T -->|Storyboard by default; explicit À-la-carte override| A[One treatment-selection interface]
+  A -->|read and confirm treatment| M[Splash MCP server]
   A -->|Configure credentials| O[Host-approved external link]
   O --> L[Token-bound local setup page]
   L -->|non-secret profile values| P[Newsroom profile]
@@ -193,38 +202,34 @@ flowchart TB
   R --> H
 ```
 
-The embedded app has two top-level destinations: **Readiness** and **Choose visual**. Readiness is the
-default and shows hard blockers, optional capabilities, newsroom status, and the setup action. Choose
-visual is available only after the journalist has confirmed an Engine-validated active-story binding
-and that story has an unresolved supported selection gate. The globally registered extension must
-not infer a story from the Goose or process working directory. A model-callable request may nominate
-a story path, but it performs no mutation: Engine canonicalizes it beneath the adopted Splash story
-root, verifies the expected story markers, and returns a non-secret descriptor. The app shows the
-exact story name and location; only an app-only confirmation challenge proved by U1 may bind that
-descriptor to the current MCP session. Without that isolation, the existing textual human gate owns
-binding and confirmation. An À-la-carte entry opens the bound gate without ranking, while a
-Storyboard entry opens the same gate with the current recommendation and alternatives. A launch from
-an active recommendation deep-links there. Back returns to Readiness. Reload on the same connection
-reconstructs the destination and gate from canonical state; a new MCP process starts unbound and
-requires confirmation again.
+Readiness is a separate setup/capability interface, opened only when setup or a blocker requires it.
+It is not a dashboard or a parent navigation surface for visual selection. The progressive chat
+exchange owns framing, hand, medium, format, reference, and palette. It then opens Storyboard by
+default. À-la-carte opens only after a direct chat request to see all treatments; there is no mode
+question. The globally registered extension must not infer a story from the Goose or process
+working directory. A model-callable request may nominate a story path, but it performs no mutation:
+Engine canonicalizes it beneath the adopted Splash story root, verifies the expected story markers,
+and returns a non-secret descriptor. The interface shows the exact story name and location; only an
+app-only confirmation challenge proved by U1 may bind that descriptor to the current MCP session.
+Without that isolation, the existing textual human gate owns binding and confirmation. À-la-carte
+shows every reachable treatment without ranking. Storyboard shows the same treatment set ranked with
+evidence, rationale, and trade-offs. The confirmed interface write is canonical before it sends a
+user-role continuation to resume the model from disk. Reload reconstructs that interface from
+canonical state; a new MCP process starts unbound and requires confirmation again.
 
-The external setup page has two persistent tabs: **Credentials** and **Newsroom & integrations**. It
-opens the tab and card that triggered setup, while keeping the other tab reachable. Done leads to the
-non-sensitive completion summary; Close setup states that completed saves remain committed and warns
-only about unsaved or in-flight work. Returning to Goose restores focus to the initiating control and
-refreshes status when the host supports it, with a visible manual Refresh fallback.
+The external setup page is one scrolling form with **Credentials** and **Newsroom branding**
+sections. One final **Save setup and continue** action validates every changed credential, writes the
+profile, closes the page where the browser allows it, and resumes Goose only after every requested
+save succeeds. Close leaves already committed values intact and never writes unsaved fields.
 
 ## Credential and configuration inventory
 
 | Value | Classification | Destination | Verification expectation |
 | --- | --- | --- | --- |
-| `MAPTILER_KEY` | Credential | Engine broker | Real MapTiler request before accepted |
-| `MAPTILER_DELIVERY_KEY` | Credential intended for delivered client output | Engine broker until delivery | Stored as unverified because origin restriction prevents a truthful local probe |
+| `MAPTILER_KEY` | Client-publishable credential | Engine broker until a confirmed web delivery | Real MapTiler request before accepted; restrict allowed origins before public web delivery |
 | `DATAWRAPPER_TOKEN` | Credential | Engine broker | Authenticated Datawrapper account request |
 | `CLOUDFLARE_API_TOKEN` | Credential | Engine broker | Token activity and selected-account access verified; Pages Edit scope remains user-attested until a real deployment or a non-mutating scope-introspection API can prove it |
 | `CLOUDFLARE_ACCOUNT_ID` | Non-secret identifier | `NEWSROOM.md` | Shape-checked and paired with token verification |
-| `CMS_KIND` | Non-secret configuration | `NEWSROOM.md` | Restricted to integrations Splash actually describes |
-| `CMS_ENDPOINT` | Non-secret configuration | `NEWSROOM.md` | HTTP/HTTPS URL validation; no claim of live integration |
 | Newsroom identity and brand fields | Non-secret editorial configuration | `NEWSROOM.md` | Parsed through the same contract preflight reads |
 
 The credential catalogue must own, for each entry, its stable ID, display name, purpose, capability,
@@ -249,39 +254,26 @@ hard-coded provider lists.
 - **Trigger:** The journalist chooses Configure credentials.
 - **Actors:** A1, A2, A3, A4, A5, A6.
 - **Steps:** The MCP view asks the host to open the loopback URL. The page shows provider cards with
-  purpose, required scope, visible destination domain, official acquisition link, concealed paste
-  field, and Save and verify action. The controller passes a bounded candidate request to Engine
-  through stdin; Engine validates and commits it as one authority operation. Each successful save
-  clears that input while the page remains open until the journalist chooses Done or Close setup.
+  purpose, official acquisition link, concealed paste field, and current saved state. The journalist
+  completes credentials and branding, then uses one final **Save setup and continue** action. The
+  controller passes each changed candidate to Engine through bounded stdin and writes non-secret
+  newsroom state through its revision-checked writer. Secret fields are cleared after the attempt.
 - **Outcome:** The page separately reports broker availability, stored state, validation outcome and
   timestamp, and resulting capability. A rejected or unavailable replacement remains an attempt
   result while any prior stored credential stays authoritative. The MCP view refreshes status without
   receiving the secret.
 
-Credential cards use this complete interaction-state contract:
-
-| State | Visible status | Enabled actions and transition rules |
-| --- | --- | --- |
-| Broker unavailable | Secure storage unavailable with the specific platform/contract reason | Retry status; provider links and newsroom editing remain available; Save, Replace, and Remove are disabled |
-| Not saved | Not saved; capability consequence named | Get key; paste; Save and verify |
-| Saving or replacing | Verifying without displaying the candidate | Disable the field and all duplicate/destructive actions; announce progress; Close setup warns that the in-flight result may still commit |
-| Saved and verified | Saved; verified dimensions and timestamp; resulting capability | Replace; Remove; refresh status |
-| Saved, unverified | Saved; each unverified dimension and reason | Replace; Remove; continue only where the capability contract permits |
-| Replacement rejected, prior retained | Attempt rejected; previous saved credential still authoritative | Clear the candidate field; Retry with a newly pasted value; Remove remains separately available |
-| Provider unavailable, prior retained | Provider unavailable; previous stored/validation state unchanged | Clear the candidate field; Retry; never relabel the prior value invalid |
-| Stale conflict | State changed in another session; nothing written | Clear the candidate field; Refresh before another mutation |
-| Removing | Confirmation names every capability that will close | Confirm removal or keep; prevent duplicate submission; success returns to Not saved |
-
-Close setup never rolls back completed saves. Done clears unsaved secret fields, shows a non-sensitive
-summary, and tells the journalist to return to Goose and use the visible manual Refresh action before
-the session expires; it does not assume an undocumented Goose deep-link.
+The submission disables duplicate actions while in flight. A rejected replacement keeps any prior
+credential authoritative and leaves the page open with a per-provider result. A stale newsroom
+revision stops credential processing. Close setup never rolls back completed saves.
 
 ### F3. Configure the newsroom
 
-- **Trigger:** The journalist opens the Newsroom tab from setup or preflight reports the profile as
-  missing.
+- **Trigger:** The journalist reaches the Newsroom branding section or preflight reports the profile
+  as missing.
 - **Actors:** A1, A3, A4.
-- **Steps:** The page offers manual identity, language, colour, ground, typography, and credit fields,
+- **Steps:** The page offers manual identity, a publishing-language dropdown, a typeface-pairing
+  dropdown with a custom installed-font option, and grouped primary/accent/background colours,
   plus the existing option to derive proposals from the newsroom's own site. Derived values remain
   proposals and never overwrite a value the journalist entered. Saving compares the profile revision
   that was loaded, preserves unknown supported content, and refuses a stale overwrite.
@@ -370,8 +362,8 @@ the session expires; it does not assume an undocumented Goose deep-link.
   submitted credential values. A provider-required authentication transport may carry a value on
   the wire, including MapTiler's query parameter, but Splash and Engine must redact the complete
   request URL before it can reach any observable output. The sole generated-file exception is a
-  `MAPTILER_DELIVERY_KEY` classified as client-publishable and materialized only into the final,
-  explicitly confirmed delivery artifact after the journalist attests its origin restrictions. It
+  `MAPTILER_KEY` classified as client-publishable and materialized only into the final,
+  explicitly confirmed delivery artifact after the journalist restricts its allowed origins. It
   remains forbidden in intermediate artifacts and every other listed surface.
 
 ### Credential authority and runtime use
@@ -413,22 +405,23 @@ the session expires; it does not assume an undocumented Goose deep-link.
   two processes cannot both pass the comparison. Engine registry policy must mark Splash entries as
   record-backed: legacy raw `keys set` and `keys validate` verbs reject them, while removal requires
   the record-aware expected-generation contract. Existing raw IDs retain their current behaviour.
-- R14. MapTiler delivery keys that cannot be honestly probed must display saved-unverified rather
-  than verified. Cloudflare may report token-active and account-access
+- R14. Splash uses one provider-defined MapTiler API key for production and confirmed delivery; it
+  must not invent a separate delivery credential. Public web delivery must identify the key as
+  client-publishable and require allowed-origin restrictions. Cloudflare may report token-active and account-access
   separately, but must not label Pages Edit scope verified unless a non-mutating provider response
   actually proves that grant. The interface must explain each unverified dimension.
 
 ### Newsroom configuration
 
-- R15. Credential and newsroom setup must be available as distinct tabs or pages in the same branded
-  local setup experience.
+- R15. Credential and newsroom setup must be two clearly labelled sections in one branded,
+  single-scroll local form with one final submission.
 - R16. Newsroom fields must use the canonical `NEWSROOM.md` reader and validation rules. The interface
   must not invent a second branding schema. Updates must be atomic, preserve supported content not
   owned by the form, and compare the loaded document revision before replacing it while holding a
   cross-process target lock through the final reread and atomic rename.
 - R17. Site-derived brand values must show their source and remain proposals until the journalist
-  confirms them. Credit convention must remain a direct editorial answer rather than an inferred
-  website property. Derivation fetches must reject non-public destinations after DNS resolution and
+  confirms them. Story credits are not newsroom setup fields. Derivation fetches must reject
+  non-public destinations after DNS resolution and
   on every redirect, constrain schemes and ports, cap redirects and total response bytes, require
   supported content types, and fail safely on DNS changes.
 - R18. Non-secret service configuration must not be placed in the credential broker merely because
@@ -552,12 +545,13 @@ the session expires; it does not assume an undocumented Goose deep-link.
 - AE4. **Covers R5, R13.** Given an invalid Datawrapper token and an existing working stored token,
   when replacement is attempted, then validation fails, the old token remains authoritative, and
   neither value is returned or logged.
-- AE5. **Covers R7-R14.** Given a valid MapTiler development key, when Save and verify succeeds, then
+- AE5. **Covers R7-R14.** Given a valid MapTiler API key, when the final setup submission succeeds, then
   Engine reports the key ID as saved and valid with a new generation and the next registered
   map-bake action can use it without a `.env` or host restart; a concurrent stale replacement writes
   nothing.
-- AE6. **Covers R14.** Given an origin-restricted MapTiler delivery key, when it is saved, then the
-  interface says saved-unverified and does not report a local 403 as proof the key is broken.
+- AE6. **Covers R14.** Given a MapTiler-backed web delivery, the same verified API key is released
+  only to the explicitly confirmed final artifact, which tells the journalist to restrict its
+  allowed publication origins.
 - AE7. **Covers R15-R18.** Given an incomplete newsroom profile, when the journalist confirms manual
   branding fields, then the canonical newsroom reader accepts the result, preserves unowned
   supported content, and stores no brand value in the keychain; a concurrent profile edit causes a
@@ -622,8 +616,8 @@ the session expires; it does not assume an undocumented Goose deep-link.
   labelled capability without typing a terminal command or placing the value in chat.
 - Automated boundary tests find no credential value in MCP traffic, arguments, logs,
   application-visible URLs, recorded provider request URLs, profile files, story files, generated
-  plans, or intermediate artifacts. The separately classified MapTiler delivery key may appear only
-  in its explicitly confirmed final client artifact.
+  plans, or intermediate artifacts. The client-publishable `MAPTILER_KEY` may appear only in its
+  explicitly confirmed final client artifact.
 - All key-dependent Splash operations pass with brokered runtime hydration and with the repository
   `.env` absent. Browser-dependent operations also pass with only the manifest-recorded browser and
   fail before credential acquisition when that executable changes or an ambient override is offered.
@@ -796,8 +790,8 @@ sequenceDiagram
   participant K as Native secure store
   participant R as Installed Splash runner
 
-  J->>U: Paste candidate and choose Save and verify
-  U->>C: POST candidate + expected broker generation
+  J->>U: Complete the form and choose Save setup and continue
+  U->>C: POST changed candidates + newsroom revision
   C->>E: bounded JSON over stdin
   E->>P: documented validation request
   alt invalid, unavailable, stale, or insufficiently proved
@@ -1365,15 +1359,16 @@ credential setup, canonical newsroom configuration, and opt-in `.env` migration.
   Done/Close-setup/expiry invalidation.
 - Apply `Cache-Control: no-store`, a restrictive CSP, `Referrer-Policy: no-referrer`, and
   `rel="noopener noreferrer"` on acquisition links. Never retain a saved secret in the DOM.
-- Implement the two setup destinations as semantic tabs with programmatic field/status/help
-  associations, live-region announcements for pending/results/conflicts, focus movement to the first
+- Implement two semantic scrolling sections with programmatic field/status/help associations,
+  live-region announcements for pending/results/conflicts, focus movement to the first
   error or completion summary, keyboard access to every action, 44-by-44 CSS-pixel touch targets, and
   a single-column 320 CSS-pixel layout without horizontal scrolling.
 - Run as a separate child process from the MCP server. Its control channel may report readiness,
   lifecycle, and redacted errors only; it must never forward HTTP bodies or candidate values to the
   parent.
-- Send provider candidates only to U2's atomic Engine command and expose its typed dimensions. Save
-  does not close the multi-provider session; Done does.
+- Send provider candidates only to U2's atomic Engine command and expose its typed dimensions. One
+  final submission processes all changed candidates and the newsroom profile, then signals Done only
+  after the complete request succeeds.
 - Extend the canonical newsroom parser with optional camel-case service fields. Preload current
   values, preserve unowned supported content, compare revision, write atomically, and make decline a
   separately confirmed canonical decision. Hold an adjacent cross-process lock from final revision
@@ -1463,11 +1458,12 @@ Expose accurate readiness and safe setup entry points in Goose without placing s
 - Covers R1-R3, R7, R15, R22-R23, R30, R33 and AE1-AE3, AE8, AE13, AE17.
 - Serve a bundled MCP App resource with no external runtime dependencies and an empty-by-default CSP
   allowlist. The app displays hard blockers separately from optional capability states.
-- Implement the documented Readiness/Choose visual hierarchy with semantic navigation landmarks,
-  an announced active destination, deterministic back/reload behavior, focus restoration to the
-  setup trigger, live status announcements, keyboard access, 44-by-44 CSS-pixel touch targets, and a
-  single-column 320 CSS-pixel layout without horizontal scrolling.
-- Start every MCP process with Readiness available and Choose visual unbound. A model-callable tool
+- Keep Readiness as an independently opened setup/capability interface. Do not render Readiness,
+  Choose visual, or mode-switch navigation around a treatment interface. Each treatment opener
+  renders only its requested À-la-carte or Storyboard interface with live status announcements,
+  keyboard access, 44-by-44 CSS-pixel touch targets, and a single-column 320 CSS-pixel layout without
+  horizontal scrolling.
+- Start every MCP process with treatment selection unbound. A model-callable tool
   may nominate a path for Engine validation but must not bind or mutate it. Show the returned
   canonical story name/location and require the U1-proved app-only confirmation challenge to create
   an in-memory session binding; new processes and unproved app-only isolation remain unbound.

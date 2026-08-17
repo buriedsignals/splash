@@ -362,6 +362,20 @@ function explicitSignal(text, signals) {
   return signals.some((signal) => new RegExp(`\\b${signal}\\b`, "i").test(text));
 }
 
+function treatmentIntentFindings(text) {
+  const findings = new Map();
+  if (
+    explicitSignal(text, ["endpoint", "endpoints", "two moments", "two points"]) ||
+    /\b(?:19|20)\d{2}\s+(?:vs\.?|versus|against|to)\s+(?:19|20)\d{2}\b/i.test(text)
+  ) {
+    findings.set("two-moments", "the confirmed comparison explicitly contrasts two moments");
+  }
+  if (explicitSignal(text, ["rank", "ranks", "ranking", "position", "positions", "leaderboard", "overtook"])) {
+    findings.set("rank", "a confirmed field explicitly makes rank or position the comparison");
+  }
+  return findings;
+}
+
 function rankChoice(choice, index, model, facts) {
   const matchedEvidence = [];
   const unresolvedRequirements = [];
@@ -405,6 +419,7 @@ function rankChoice(choice, index, model, facts) {
       tradeoffs.push("No confirmed placement field names an aspect ratio; landscape is the stable editorial default.");
     }
   } else if (choice.kind === "treatment") {
+    const intentFindings = treatmentIntentFindings(text);
     for (const requirement of choice.dataShape?.requires ?? []) {
       const finding = requirementFinding(requirement, facts);
       if (!finding) {
@@ -415,6 +430,11 @@ function rankChoice(choice, index, model, facts) {
       } else {
         score -= 1;
         unresolvedRequirements.push(requirement);
+      }
+      const intent = intentFindings.get(requirement);
+      if (intent) {
+        score += 3;
+        matchedEvidence.push({ source: "STORYBOARD.md", fact: intent });
       }
     }
     if (!choice.dataShape?.requires?.length) unresolvedRequirements.push("no machine-readable data-shape requirements");

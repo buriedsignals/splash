@@ -47,6 +47,18 @@ function optionBlock(option, index, recommended) {
   ].join("\n");
 }
 
+// A newsroom may record many accents so production has enough distinct series inks, but those
+// colours are not each a separate editorial decision. Keep the progressive chat gate to two
+// choices: the recommendation (when one exists) and the first genuine alternative. Preserve the
+// proposal's stable order so subject convention still precedes house colour when both are shown.
+function visibleChoices(options, recommended) {
+  if (options.length <= 2) return options;
+  const recommendedOption = options.find((option) => option.id === recommended);
+  const alternative = options.find((option) => option.id !== recommended);
+  const ids = new Set([recommendedOption?.id, alternative?.id].filter(Boolean));
+  return options.filter((option) => ids.has(option.id)).slice(0, 2);
+}
+
 /**
  * The question. Rendered markdown, ending in a real ask — never a statement of what was decided.
  *
@@ -57,6 +69,8 @@ function optionBlock(option, index, recommended) {
  */
 export function formatProposal(proposal) {
   const { options, recommended, subject, escape, noConventionReason } = proposal;
+
+  const choices = visibleChoices(options, recommended);
 
   const head = [
     "# Colours for this beat",
@@ -87,10 +101,10 @@ export function formatProposal(proposal) {
     ].join("\n");
   }
 
-  const body = options.map((option, i) => optionBlock(option, i + 1, recommended));
+  const body = choices.map((option, i) => optionBlock(option, i + 1, recommended));
 
-  const tail = ["## Your answer", "", ...options.map((o, i) => `- **${i + 1}** — ${o.label}`)];
-  if (options.some((o) => !o.contrast.passes && o.remedy)) {
+  const tail = ["## Your answer", "", ...choices.map((o, i) => `- **${i + 1}** — ${o.label}`)];
+  if (choices.some((o) => !o.contrast.passes && o.remedy)) {
     tail.push("- **the adjusted variant** of a failing option, where one was offered above");
   }
   tail.push(

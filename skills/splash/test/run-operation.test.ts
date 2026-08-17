@@ -23,7 +23,6 @@ const roots: string[] = [];
 
 afterEach(async () => {
   delete process.env.MAPTILER_KEY;
-  delete process.env.MAPTILER_DELIVERY_KEY;
   delete process.env.DATAWRAPPER_TOKEN;
   delete process.env.CLOUDFLARE_API_TOKEN;
   delete process.env.SPLASH_BROWSER_PATH;
@@ -179,7 +178,7 @@ describe("closed Splash operation runner", () => {
     await mkdir(join(beat, "renders"), { recursive: true });
     await writeFile(input, '<script>const key="__MAPTILER_KEY__"</script>');
     await approveCurrentOutput(beat);
-    process.env.MAPTILER_DELIVERY_KEY = "restricted-delivery-canary-12345";
+    process.env.MAPTILER_KEY = "delivery-canary-12345";
     const result = await runOperation("maptiler-delivery", {
       ...fixture.request,
       outputId: "map",
@@ -201,14 +200,14 @@ describe("closed Splash operation runner", () => {
       join(fixture.story, "export", "map", "source.html"),
       "utf8",
     );
-    expect(final).toContain("restricted-delivery-canary-12345");
+    expect(final).toContain("delivery-canary-12345");
     expect(await readFile(input, "utf8")).not.toContain(
-      "restricted-delivery-canary-12345",
+      "delivery-canary-12345",
     );
     expect(JSON.stringify(result)).not.toContain(
-      "restricted-delivery-canary-12345",
+      "delivery-canary-12345",
     );
-    expect(result.keyState).toBe("restricted");
+    expect(result.keyState).toBe("configured");
   });
 
   test("rejects undeclared parameters and story escapes", async () => {

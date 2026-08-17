@@ -6,31 +6,24 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4";
 import {
-  registerAppResource,
-  registerAppTool,
-  RESOURCE_MIME_TYPE,
-} from "@modelcontextprotocol/ext-apps/server";
-import {
   createEngineBridge,
   invokeEngine,
 } from "../../installer/setup/engine-bridge.mjs";
 import { runPreflight } from "../../skills/splash/scripts/preflight.mjs";
+import { createStory } from "../../skills/splash/scripts/new-story.mjs";
 import {
   buildPublicStatus,
   ENGINE_SPLASH_CONTRACT_MIN,
-  RESOURCE_URI,
   textSummary,
 } from "./contract.mjs";
 import { createSetupSessionManager } from "./setup-session.mjs";
+import { createBrowserInterfaceManager } from "./browser-interface.mjs";
 import { createRecommendationService } from "./recommendation.mjs";
 import {
   capabilitySnapshotFromStatus,
   createSelectionService,
 } from "./selection.mjs";
 import { createStoryBinding } from "./story-binding.mjs";
-
-const APP_MARKER = "/*__SPLASH_APP__*/";
-const CSS_MARKER = "/*__SPLASH_CSS__*/";
 
 function exactObject(shape) {
   return z.strictObject(shape, {
@@ -48,31 +41,9 @@ const STORY_ARGUMENTS = exactObject({
     .min(1)
     .max(16 << 10),
 });
-const CONFIRM_ARGUMENTS = exactObject({
-  challenge: z.string().min(16).max(256),
+const CREATE_STORY_ARGUMENTS = exactObject({
+  title: z.string().trim().min(1).max(512),
 });
-const EXPECTED_SELECTION = exactObject({
-  storyRevision: z.string().min(1).max(256),
-  catalogRevision: z.string().min(1).max(256),
-  capabilityGeneration: z.string().min(1).max(256),
-});
-const SELECTION_CONFIRM_ARGUMENTS = exactObject({
-  optionId: z.string().min(1).max(256),
-  expected: EXPECTED_SELECTION,
-});
-const SELECTION_REWIND_ARGUMENTS = exactObject({
-  expected: EXPECTED_SELECTION,
-});
-const STORYBOARD_CONFIRM_ARGUMENTS = exactObject({
-  optionId: z.string().min(1).max(256),
-  expected: EXPECTED_SELECTION,
-  recommendationRevision: z.string().min(1).max(256),
-});
-
-function appMeta(visibility) {
-  return { ui: { resourceUri: RESOURCE_URI, visibility } };
-}
-
 function textResult(text, structuredContent) {
   return { content: [{ type: "text", text }], structuredContent };
 }
@@ -91,39 +62,21 @@ function assertSelectionReadyStatus(status) {
   throw error;
 }
 
-export async function renderAppHtml() {
-  const root = join(import.meta.dirname, "resources");
-  const [template, css, build] = await Promise.all([
-    readFile(join(root, "splash-app.html"), "utf8"),
-    readFile(join(root, "splash-app.css"), "utf8"),
-    Bun.build({
-      entrypoints: [join(root, "splash-app.mjs")],
-      format: "esm",
-      minify: true,
-      target: "browser",
-    }),
-  ]);
-  if (!build.success || build.outputs.length !== 1)
-    throw new Error("could not bundle the Splash app");
-  if (!template.includes(APP_MARKER) || !template.includes(CSS_MARKER))
-    throw new Error("Splash app template markers are missing");
-  const bundled = await build.outputs[0].text();
-  return template
-    .replace(CSS_MARKER, () => css)
-    .replace(APP_MARKER, () => bundled);
-}
-
 export function createServer({
   statusProvider,
   setupManager,
+  interfaceManager,
+  workspace,
   storyBinding,
-  selection,
-  recommendation,
-  appHtml = renderAppHtml,
   onToolCall = () => {},
 } = {}) {
   if (!statusProvider || typeof statusProvider.read !== "function")
     throw new Error("Splash MCP requires a status provider");
+  if (
+    !workspace ||
+    typeof workspace.createStory !== "function"
+  )
+    throw new Error("Splash MCP requires an Engine-bound story workspace");
   if (
     !setupManager ||
     ["start", "openLocally", "close"].some(
@@ -131,440 +84,132 @@ export function createServer({
     )
   )
     throw new Error("Splash MCP requires a setup manager");
-  if (
-    !storyBinding ||
-    ["nominate", "pending", "confirm", "current", "context", "revalidate"].some(
-      (name) => typeof storyBinding[name] !== "function",
-    )
-  )
+  if (!interfaceManager || ["open", "close"].some((name) => typeof interfaceManager[name] !== "function"))
+    throw new Error("Splash MCP requires a local browser interface manager");
+  if (!storyBinding || typeof storyBinding.nominate !== "function")
     throw new Error("Splash MCP requires a story binding");
-  if (
-    !selection ||
-    ["read", "confirm", "reopenFormat", "reopenTreatment"].some(
-      (name) => typeof selection[name] !== "function",
-    )
-  )
-    throw new Error("Splash MCP requires a selection service");
-  if (
-    !recommendation ||
-    ["read", "confirm"].some(
-      (name) => typeof recommendation[name] !== "function",
-    )
-  )
-    throw new Error("Splash MCP requires a recommendation service");
 
   const server = new McpServer({ name: "splash", version: "0.1.0" });
 
-  registerAppTool(
-    server,
-    "open_splash",
+  server.registerTool(
+    "create_splash_story",
     {
-      title: "Open Splash",
+      title: "Create canonical Splash story",
       description:
-        "Open Splash readiness and visual-selection navigation without accepting credentials.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["model", "app"]),
+        "Create a new story workspace beneath Engine's adopted Splash stories root before intake. Use this instead of deriving a story directory from the shell working directory or checkout.",
+      inputSchema: CREATE_STORY_ARGUMENTS,
+      _meta: { ui: { visibility: ["model"] } },
     },
-    async () => {
-      onToolCall("open_splash");
-      const status = await statusProvider.read();
-      status.story = {
-        status: storyBinding.current() ? "bound" : "unbound",
-        descriptor: storyBinding.current(),
-      };
-      return textResult(
-        `${textSummary(status)} The Splash view was requested; render acknowledgement is not inferred.`,
-        status,
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "refresh_splash_status",
-    {
-      title: "Refresh Splash status",
-      description: "Refresh non-secret Splash readiness from the rendered app.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("refresh_splash_status");
-      const status = await statusProvider.read();
-      status.story = {
-        status: storyBinding.current() ? "bound" : "unbound",
-        descriptor: storyBinding.current(),
-      };
-      return textResult(textSummary(status), status);
-    },
-  );
-
-  registerAppTool(
-    server,
-    "start_splash_setup",
-    {
-      title: "Start protected Splash setup",
-      description:
-        "Start a short-lived local credential and newsroom setup session after explicit app action.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("start_splash_setup");
+    async ({ title }) => {
+      onToolCall("create_splash_story");
       try {
-        const result = await setupManager.start();
+        const created = await workspace.createStory({ title });
+        const state = {
+          schemaVersion: "splash-story-workspace/v1",
+          storyId: created.slug,
+          canonicalPath: created.dir,
+        };
         return textResult(
-          "Protected local setup is ready for the app to open.",
-          { status: result.status, setupUrl: result.setupUrl },
+          `Canonical Splash story ${created.slug} was created. Freeze source material there, then recover the phase from disk.`,
+          state,
         );
       } catch {
         return {
           isError: true,
           ...textResult(
-            "The protected setup controller could not start. Nothing was changed.",
-            { status: "controller-start-failed" },
+            "Splash could not create that canonical story workspace. Nothing was overwritten.",
+            { schemaVersion: "splash-story-workspace-error/v1" },
           ),
         };
       }
     },
   );
 
-  registerAppTool(
-    server,
-    "open_splash_setup_locally",
+  server.registerTool(
+    "open_splash_readiness",
     {
-      title: "Open Splash setup with this computer",
+      title: "Open Splash readiness",
       description:
-        "Use the platform URL opener after the host cannot open the already-started local setup session.",
+        "Open the protected localhost Splash preflight interface for credentials, newsroom branding, and capability status. Do not use this to choose a visual.",
       inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
+      _meta: { ui: { visibility: ["model"] } },
     },
     async () => {
-      onToolCall("open_splash_setup_locally");
-      const result = await setupManager.openLocally();
-      return {
-        ...(result.ok ? {} : { isError: true }),
-        ...textResult(
-          result.ok
-            ? "The platform opener accepted the local setup page."
-            : "The platform opener could not open the active setup page.",
-          result,
-        ),
-      };
-    },
-  );
-
-  registerAppTool(
-    server,
-    "close_splash_setup",
-    {
-      title: "Close Splash setup",
-      description:
-        "Close the active local setup controller without undoing completed saves.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("close_splash_setup");
-      setupManager.close();
-      return textResult(
-        "The setup controller was asked to close. Completed saves remain committed.",
-        { status: "closing" },
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "nominate_splash_story",
-    {
-      title: "Nominate a Splash story",
-      description:
-        "Ask Engine to inspect one story path. This does not bind or change the story.",
-      inputSchema: STORY_ARGUMENTS,
-      _meta: appMeta(["model", "app"]),
-    },
-    async ({ path }) => {
-      onToolCall("nominate_splash_story");
+      onToolCall("open_splash_readiness");
       try {
-        const descriptor = await storyBinding.nominate(path);
-        return textResult(
-          `Engine inspected story ${descriptor.storyId}. Open Splash to review and confirm it.`,
-          { nominated: true, descriptor },
-        );
+        const started = await setupManager.start();
+        const opened = await setupManager.openLocally();
+        if (!opened.ok && opened.status !== "already-open") throw new Error("local opener failed");
+        const completion = await started.completion;
+        if (completion.reason !== "done") {
+          return {
+            isError: true,
+            ...textResult(
+              `Splash preflight ended without Done (${completion.reason}). Saved values remain stored; reopen readiness to finish.`,
+              { schemaVersion: "splash-browser-launch/v1", view: "readiness", status: completion.reason },
+            ),
+          };
+        }
+        const status = await statusProvider.read();
+        return textResult(`${textSummary(status)} Preflight was completed in the Splash MCP app. Resume from this fresh status now; do not ask the journalist to type Continue.`, {
+          schemaVersion: "splash-browser-launch/v1",
+          view: "readiness",
+          status: "done",
+          readiness: status.readiness,
+          runtime: status.runtime,
+        });
       } catch {
-        return {
-          isError: true,
-          ...textResult(
-            "Engine refused that story nomination. No story was bound or changed.",
-            { nominated: false },
-          ),
-        };
+        return { isError: true, ...textResult("Splash could not complete the local preflight interaction. Saved setup values may remain stored; reopen readiness and inspect the fresh status before retrying.", { schemaVersion: "splash-browser-launch/v1", view: "readiness", status: "open-failed" }) };
       }
     },
   );
 
-  registerAppTool(
-    server,
-    "pending_splash_story",
-    {
-      title: "Read the pending Splash story",
-      description: "Read the app-session-only story confirmation challenge.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("pending_splash_story");
-      const pending = storyBinding.pending();
-      return textResult(
-        pending
-          ? "A nominated story is waiting for confirmation."
-          : "No story is waiting for confirmation.",
-        pending ?? { descriptor: null, challenge: null },
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "confirm_splash_story",
-    {
-      title: "Confirm the pending Splash story",
-      description:
-        "Bind the displayed story to this in-memory Splash app session only.",
-      inputSchema: CONFIRM_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async ({ challenge }) => {
-      onToolCall("confirm_splash_story");
-      try {
-        const descriptor = storyBinding.confirm(challenge);
-        return textResult(
-          `Story ${descriptor.storyId} is bound to this Splash session.`,
-          { confirmed: true, descriptor },
-        );
-      } catch {
-        return {
-          isError: true,
-          ...textResult(
-            "The story confirmation expired. Nominate and review it again.",
-            { confirmed: false },
-          ),
-        };
-      }
-    },
-  );
-
-  async function requireSelectionReadiness() {
-    assertSelectionReadyStatus(await statusProvider.read());
-  }
-
-  async function runSelection(action, successText) {
-    try {
-      await requireSelectionReadiness();
-      const bindingContext = storyBinding.context();
-      if (!bindingContext)
-        throw new Error("confirm a story before choosing a visual");
-      const model = await action(bindingContext);
-      return textResult(successText, model);
-    } catch (error) {
-      const status =
-        error?.code === "PREFLIGHT_REQUIRED"
-          ? "preflight-required"
-          : error?.code === "RECOMMENDATION_CONFLICT"
-            ? "recommendation-conflict"
-            : error?.code === "REVISION_CONFLICT" ||
-                error?.code === "SELECTION_CONFLICT"
-              ? "selection-conflict"
-              : error?.code === "OPTION_UNAVAILABLE"
-                ? "option-unavailable"
-                : storyBinding.current()
-                  ? "selection-unavailable"
-                  : "story-unbound";
-      const message =
-        status === "preflight-required"
-          ? "Complete Splash readiness before choosing a visual. Nothing was changed."
-          : status === "selection-conflict"
-            ? "The story or available capabilities changed. Refresh before confirming again. Nothing was changed."
-            : status === "recommendation-conflict"
-              ? "The recommendation evidence changed. Refresh before confirming again. Nothing was changed."
-              : status === "option-unavailable"
-                ? "That option is no longer available. Refresh before choosing again. Nothing was changed."
-                : status === "story-unbound"
-                  ? "Confirm the exact story in this app session before choosing a visual."
-                  : "The current storyboard decision could not be read. Nothing was changed.";
-      return {
-        isError: true,
-        ...textResult(message, {
-          schemaVersion: "splash-selection-error/v1",
-          status,
-        }),
-      };
-    }
-  }
-
-  registerAppTool(
-    server,
-    "read_splash_selection",
-    {
-      title: "Read the current Splash choice",
-      description:
-        "Read the active canonical storyboard gate for the confirmed app-session story.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("read_splash_selection");
-      return runSelection(
-        (bindingContext) => selection.read({ bindingContext }),
-        "The current storyboard decision is ready.",
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "confirm_splash_selection",
-    {
-      title: "Confirm the current Splash choice",
-      description:
-        "Confirm exactly one revision-current choice in the active storyboard gate.",
-      inputSchema: SELECTION_CONFIRM_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async ({ optionId, expected }) => {
-      onToolCall("confirm_splash_selection");
-      return runSelection(
-        (bindingContext) =>
-          selection.confirm({ bindingContext, expected, optionId }),
-        "The storyboard decision was confirmed.",
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "reopen_splash_format",
-    {
-      title: "Reopen the Splash publication format",
-      description:
-        "Explicitly clear the current format and its dependent decisions after a revision check.",
-      inputSchema: SELECTION_REWIND_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async ({ expected }) => {
-      onToolCall("reopen_splash_format");
-      return runSelection(
-        (bindingContext) =>
-          selection.reopenFormat({ bindingContext, expected }),
-        "The publication-format decision was reopened.",
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "reopen_splash_treatment",
-    {
-      title: "Reopen the Splash treatment",
-      description:
-        "Explicitly clear the current treatment and producer after a revision check.",
-      inputSchema: SELECTION_REWIND_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async ({ expected }) => {
-      onToolCall("reopen_splash_treatment");
-      return runSelection(
-        (bindingContext) =>
-          selection.reopenTreatment({ bindingContext, expected }),
-        "The treatment decision was reopened.",
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "read_splash_storyboard_recommendation",
-    {
-      title: "Read the current Splash recommendation",
-      description:
-        "Read one evidence-based advisory recommendation plus reachable alternatives for the confirmed story.",
-      inputSchema: NO_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async () => {
-      onToolCall("read_splash_storyboard_recommendation");
-      return runSelection(
-        (bindingContext) => recommendation.read({ bindingContext }),
-        "The current advisory recommendation is ready.",
-      );
-    },
-  );
-
-  registerAppTool(
-    server,
-    "confirm_splash_storyboard_selection",
-    {
-      title: "Confirm a Splash Storyboard choice",
-      description:
-        "Confirm one reachable alternative only while its recommendation evidence and selection revisions remain current.",
-      inputSchema: STORYBOARD_CONFIRM_ARGUMENTS,
-      _meta: appMeta(["app"]),
-    },
-    async ({ optionId, expected, recommendationRevision }) => {
-      onToolCall("confirm_splash_storyboard_selection");
-      return runSelection(
-        (bindingContext) =>
-          recommendation.confirm({
-            bindingContext,
-            expected,
-            recommendationRevision,
-            optionId,
-          }),
-        "The Storyboard choice was confirmed.",
-      );
-    },
-  );
-
-  registerAppResource(
-    server,
-    "Splash",
-    RESOURCE_URI,
-    {
-      description: "Splash readiness and visual-selection application.",
-      mimeType: RESOURCE_MIME_TYPE,
-      _meta: {
-        ui: {
-          csp: {
-            connectDomains: [],
-            resourceDomains: [],
-            frameDomains: [],
-            baseUriDomains: [],
-          },
-          prefersBorder: true,
-        },
+  function registerSelectionOpener(name, view, title, description) {
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        inputSchema: STORY_ARGUMENTS,
+        _meta: { ui: { visibility: ["model"] } },
       },
-    },
-    async () => ({
-      contents: [
-        {
-          uri: RESOURCE_URI,
-          mimeType: RESOURCE_MIME_TYPE,
-          text: await appHtml(),
-          _meta: {
-            ui: {
-              csp: {
-                connectDomains: [],
-                resourceDomains: [],
-                frameDomains: [],
-                baseUriDomains: [],
-              },
-              prefersBorder: true,
-            },
-          },
-        },
-      ],
-    }),
+      async ({ path }) => {
+        onToolCall(name);
+        try {
+          assertSelectionReadyStatus(await statusProvider.read());
+          const completion = await interfaceManager.open({ mode: view, path });
+          const descriptor = completion.descriptor;
+          return textResult(
+            `${completion.optionId} was confirmed for story ${descriptor.storyId} in the Splash MCP app. Resume from disk now; do not ask the journalist to type Continue.`,
+            { schemaVersion: "splash-browser-launch/v1", view, status: "confirmed", optionId: completion.optionId, phase: completion.phase, story: { storyId: descriptor.storyId, canonicalPath: descriptor.canonicalPath } },
+          );
+        } catch (error) {
+          return {
+            isError: true,
+            ...textResult(
+              error?.code === "PREFLIGHT_REQUIRED"
+                ? "Complete Splash preflight before choosing a treatment. No story was changed."
+                : "Splash could not complete that story interaction in the local browser interface. Inspect the canonical story state before retrying.",
+              { schemaVersion: "splash-browser-launch/v1", view, status: error?.code === "PREFLIGHT_REQUIRED" ? "preflight-required" : "open-failed" },
+            ),
+          };
+        }
+      },
+    );
+  }
+
+  registerSelectionOpener(
+    "open_splash_a_la_carte",
+    "a-la-carte",
+    "Open Splash À-la-carte",
+    "Explicit override only: open every reachable treatment only when the journalist directly asks in chat for À-la-carte or all treatments. Never use this as the default continuation.",
+  );
+
+  registerSelectionOpener(
+    "open_splash_storyboard",
+    "storyboard",
+    "Open Splash Storyboard recommendations",
+    "Default treatment continuation: open the localhost Storyboard automatically with exactly one recommendation and one alternative. No interface-choice question is required.",
   );
 
   return server;
@@ -614,6 +259,7 @@ async function readStableProfile(story) {
 
 export async function productionDependencies() {
   const checkoutRoot = requiredEnvironment("SPLASH_CHECKOUT_ROOT");
+  const storiesRoot = requiredEnvironment("SPLASH_STORIES_ROOT");
   const newsroomPath = requiredEnvironment("SPLASH_NEWSROOM_PATH");
   const bsigPath = requiredEnvironment("SPLASH_BSIG_PATH");
   const bridge = createEngineBridge({ executable: bsigPath });
@@ -699,6 +345,11 @@ export async function productionDependencies() {
     newsroomPath,
     legacyEnvPath: join(checkoutRoot, ".env"),
   });
+  const workspace = {
+    async createStory({ title }) {
+      return createStory({ storiesRoot, title });
+    },
+  };
   const storyBinding = createStoryBinding({
     async inspect(path) {
       const result = await invokeEngine(
@@ -721,12 +372,17 @@ export async function productionDependencies() {
     selection,
     profileProvider: readStableProfile,
   });
-  return {
-    statusProvider,
-    setupManager,
+  const interfaceManager = createBrowserInterfaceManager({
     storyBinding,
     selection,
     recommendation,
+  });
+  return {
+    statusProvider,
+    setupManager,
+    interfaceManager,
+    workspace,
+    storyBinding,
   };
 }
 
@@ -735,13 +391,13 @@ export async function main() {
   const server = createServer(dependencies);
   await server.connect(new StdioServerTransport());
   console.error(
-    `Splash MCP App server running on stdio (contract ${ENGINE_SPLASH_CONTRACT_MIN})`,
+    `Splash MCP app server running on stdio (contract ${ENGINE_SPLASH_CONTRACT_MIN})`,
   );
 }
 
 if (import.meta.main) {
   main().catch(() => {
-    console.error("Splash MCP App server failed closed");
+    console.error("Splash MCP app server failed closed");
     process.exitCode = 1;
   });
 }

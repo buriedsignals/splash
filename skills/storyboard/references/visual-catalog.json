@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "splash.visual-catalog",
-  "catalogRevision": "sha256:569532e17b0ab933a826a582a3ff18dcde33891cf04d69581659cc61b32572d7",
+  "catalogRevision": "sha256:6ea6e75ebcaeb3c4f2cf4cf144f7fd282d336dff8c4a52d305d262e28d7ef55b",
   "mediums": [
     {
       "id": "chart",
@@ -54,13 +54,13 @@
     },
     {
       "id": "map-delivery",
-      "label": "Restricted live-map delivery",
+      "label": "Live-map delivery",
       "requiredCredentials": [
-        "MAPTILER_DELIVERY_KEY"
+        "MAPTILER_KEY"
       ],
       "requiredSettings": [],
       "repairAction": "open-readiness",
-      "unavailableReason": "A restricted MapTiler delivery key is needed to keep the live map layer in a published page; the baked fallback can still be delivered."
+      "unavailableReason": "Live-map delivery needs the verified MapTiler API key; restrict its allowed origins before publication. The baked fallback can still be delivered."
     },
     {
       "id": "datawrapper",

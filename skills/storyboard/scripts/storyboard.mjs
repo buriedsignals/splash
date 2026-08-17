@@ -28,7 +28,6 @@ const HAND = [
   "subject",
   "comparison",
   "limits",
-  "placement",
   "credit",
   "effectiveDate",
 ];

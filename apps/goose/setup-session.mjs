@@ -3,6 +3,7 @@ import { isAbsolute } from "node:path";
 
 const MAX_CONTROL_BYTES = 64 << 10;
 const START_TIMEOUT_MS = 15_000;
+const COMPLETION_TIMEOUT_MS = 4 * 60_000;
 const EVENTS = new Set(["ready", "session-opened", "done", "closed", "error"]);
 
 async function realFile(path, label) {
@@ -60,11 +61,16 @@ export function createSetupSessionManager({
   which = Bun.which,
   platform = process.platform,
   env = process.env,
+  completionMs = COMPLETION_TIMEOUT_MS,
 } = {}) {
   let active = null;
+  let starting = null;
 
-  async function start() {
-    if (active?.url) return { status: "already-open", setupUrl: active.url };
+  async function startNew() {
+    if (active?.url) return { status: "already-open", setupUrl: active.url, completion: active.completion };
+    if (!Number.isFinite(completionMs) || completionMs <= 0 || completionMs > 5 * 60_000) {
+      throw new Error("setup completion timeout is invalid");
+    }
     const [bun, controller, bsig] = await Promise.all([
       realFile(bunExecutable, "Bun executable"),
       realFile(controllerPath, "setup controller child"),
@@ -81,7 +87,19 @@ export function createSetupSessionManager({
       stdout: "pipe",
       stderr: "pipe",
     });
-    const current = { child, url: "", events: [] };
+    let resolveCompletion;
+    const completion = new Promise((resolve) => { resolveCompletion = resolve; });
+    const current = { child, url: "", opened: false, events: [], completion, completionSettled: false, completionTimer: null };
+    function settleCompletion(reason) {
+      if (current.completionSettled) return;
+      current.completionSettled = true;
+      clearTimeout(current.completionTimer);
+      resolveCompletion({ reason });
+    }
+    current.completionTimer = setTimeout(() => {
+      settleCompletion("expired");
+      child.kill();
+    }, completionMs);
     active = current;
     void drainBounded(child.stderr, child);
 
@@ -111,6 +129,14 @@ export function createSetupSessionManager({
               settleReady(current.url);
             } else {
               current.events.push(event.event === "closed" ? { event: "closed", reason: String(event.reason ?? "").slice(0, 80) } : { event: event.event });
+              if (event.event === "closed") {
+                settleCompletion(String(event.reason ?? "closed").slice(0, 80) || "closed");
+                if (active === current) active = null;
+              }
+              if (event.event === "error") {
+                settleCompletion("error");
+                if (active === current) active = null;
+              }
             }
           }
         }
@@ -118,26 +144,48 @@ export function createSetupSessionManager({
       } catch {
         child.kill();
         rejectReady(new Error("setup controller control channel failed closed"));
+        settleCompletion("control-error");
       } finally {
+        settleCompletion("controller-exited");
         if (active === current) active = null;
       }
     })();
     try {
       const setupUrl = await ready;
-      return { status: "ready", setupUrl };
+      return { status: "ready", setupUrl, completion };
     } finally {
       clearTimeout(timer);
     }
   }
 
+  async function start() {
+    if (active?.url) return { status: "already-open", setupUrl: active.url, completion: active.completion };
+    if (starting) {
+      const result = await starting;
+      return { ...result, status: "already-open" };
+    }
+    starting = startNew();
+    try {
+      return await starting;
+    } finally {
+      starting = null;
+    }
+  }
+
   async function openLocally() {
     if (!active?.url) return { ok: false, status: "session-expired" };
+    if (active.opened) return { ok: false, status: "already-open" };
+    active.opened = true;
     const discovered = platform === "darwin" ? which("open") : platform === "win32" ? which("rundll32.exe") : which("xdg-open");
-    if (!discovered) return { ok: false, status: "opener-unavailable" };
+    if (!discovered) {
+      active.opened = false;
+      return { ok: false, status: "opener-unavailable" };
+    }
     let opener;
     try {
       opener = await realFile(discovered, "platform URL opener");
     } catch {
+      active.opened = false;
       return { ok: false, status: "opener-unavailable" };
     }
     const args = platform === "win32"
@@ -146,8 +194,11 @@ export function createSetupSessionManager({
     try {
       const opened = spawn(args, { stdin: "ignore", stdout: "ignore", stderr: "ignore", env: safeChildEnvironment(env) });
       const code = await opened.exited;
-      return code === 0 ? { ok: true, status: "opened" } : { ok: false, status: "opener-failed" };
+      if (code === 0) return { ok: true, status: "opened" };
+      active.opened = false;
+      return { ok: false, status: "opener-failed" };
     } catch {
+      active.opened = false;
       return { ok: false, status: "opener-failed" };
     }
   }

@@ -23,6 +23,15 @@ request before reading a credential, and injects only that operation's broker re
 `scripts/sealed-operation.mjs`. Do not source a repository `.env` or pass a key in chat, argv, or a
 story file.
 
+For hosted delivery, pipe the closed JSON request to **`bsig --json run splash
+cloudflare-deploy`**. Never invoke `skills/splash/scripts/run-operation.mjs` directly: a direct Bun
+process is deliberately outside Engine's broker boundary, so it cannot receive the credential and
+will falsely report that both Cloudflare variables are missing. The `cloudflareAccountId` belongs
+in the non-secret request; the token never does. The caller-owned top-level request fields are
+exactly `storyId`, `outputId`, `cloudflareAccountId`, `finalDeliveryConfirmed`, and `parameters`.
+Do not send `path`, `format`, or any `canonical*` path: Engine derives and binds those fields itself,
+while the delivery format belongs inside `parameters`.
+
 **Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
 every format offers both. `embed` (the journalist-facing **Deploy and receive embed code** form)
 and `cms-insertion` (a prepared
@@ -306,23 +315,21 @@ because a `MAPTILER_KEY` sat in the environment. A rule that fires where it cann
 anything teaches its reader to route around it, and that is exactly what the run then did.
 
 **It recommends; it does not block.** For an artifact that DOES carry the slot, `mapKeyState` names
-one of four states and `substituteKeys` puts the best available key in — there is **no refusal left
+one of three states and `substituteKeys` puts the configured key in — there is **no refusal left
 in this path**:
 
 | state | what happens | what the hand-over says |
 | --- | --- | --- |
 | `none` | no key slot in the file; nothing is substituted | nothing — it is not a map delivery |
-| `restricted` | `MAPTILER_DELIVERY_KEY` goes in | the live map's key is restricted to the newsroom's own domains |
-| `development` | `MAPTILER_KEY` goes in | the page carries a development key: readable by any reader, billed by usage, and MapTiler switches off **every** key on an account at 100% of its spending limit — plus how to record a restricted one |
+| `configured` | `MAPTILER_KEY` goes in | the page carries the MapTiler API key and it must be restricted to the newsroom's allowed origins before publication |
 | `unkeyed` | the placeholder travels through | the page shows its baked map layer; it does not pan or zoom |
 
-The `development` row used to **throw**, which is stricter than the ruling that governs it. R1: *"la
+The configured row never blocks delivery. R1: *"la
 carte doit rester interactive tout le temps… On a le droit d'utiliser pleinement MapTiler. Et garder
 l'export du HTML pas grave pour la clé."* The owner accepted, having been shown the cost, that the
-delivered HTML carries the key. R1b's clause 4 says the delivered key *should* be a second,
-origin-restricted one — a recommendation, and a hard block turned it into a wall a journalist could
-not deliver their own work past. The recommendation is now actually MADE, in the file the newsroom
-keeps: `formatHandover` renders it from a **closed** four-state vocabulary (an unknown state throws
+delivered HTML carries the key. MapTiler exposes API keys for client use; the newsroom must apply
+allowed-origin restrictions before publication. The recommendation is made in the file the newsroom
+keeps: `formatHandover` renders it from a **closed** three-state vocabulary (an unknown state throws
 rather than silently saying nothing), so it can never be forgotten and can never become free text.
 
 ### A refusal states the situation. It never names a way around itself.
@@ -330,11 +337,8 @@ rather than silently saying nothing), so it can never be forgotten and can never
 Every refusal in this path — and there are twenty — stops and informs, and nothing more. It says what
 happened and what the situation is; it does not offer a second route to the same delivery.
 
-That is not a style note. The refusal this skill used to raise over the MapTiler key ended with *"…or
-unset `MAPTILER_KEY` for this delivery and the page will ship its complete fallback layer"*, and in
-the owner's run the model read it, took that route, and said so: *"Je livre par la voie que le refus
-lui-même désigne."* A gate that supplies its own bypass is not a gate — it is a suggestion with extra
-steps, and the next reader is always in a hurry.
+That is not a style note. A gate that supplies its own bypass is not a gate — it is a suggestion with
+extra steps, and the next reader is always in a hurry.
 
 Two things that are NOT this, because the line is fine: restating the CONDITION the gate waits on
 ("this beat has not been approved yet — show it first") closes the gate rather than going round it,
@@ -422,7 +426,7 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 | Shortest a subject's own reason may read before it counts as a name rather than a reason | `5` words | `validateSubject`, `scripts/other-subjects.mjs` |
 | What answers close the subject half | `3` — `declined`, `taken <id>`, and `none` for an article that carried nothing else | `recordSubjectAnswer`, `scripts/other-subjects.mjs` |
 | How many live-tile states a delivery can be in | `4` (`none`, `restricted`, `development`, `unkeyed`) — an unknown one throws in the hand-over rather than saying nothing | `LIVE_TILE_STATES`, `scripts/deliver.mjs` |
-| What each of those states says to the journalist | `4` paragraph blocks, one per state, `none` being silence — **in each language the delivery is written in**, and a state present in one table and missing from another is refused rather than silently dropped | `LIVE_TILES`, `scripts/format-handover.mjs` |
+| What each of those states says to the journalist | `3` paragraph blocks, one per state, `none` being silence — **in each language the delivery is written in**, and a state present in one table and missing from another is refused rather than silently dropped | `LIVE_TILES`, `scripts/format-handover.mjs` |
 | How many languages a delivery can be WRITTEN in | `2` (`en`, `fr`) — any other recorded language gets the English scaffold plus a line saying so; a missing one throws | `SCAFFOLD_LANGUAGES`, `scripts/journalist-language.mjs` |
 | Which CMS kind `cms-insertion` demonstrates when the caller supplies none | `"we-publish"` (override with `materialise`'s own `cms` object) | `materialise`'s `"cms-insertion"` branch |
 
@@ -431,7 +435,7 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
   hand fields 4 and 5, the caveat is `limits`, the alt is in the component, the `language` is the
-  storyboard's own field. `LIVE_TILES` is the four-state vocabulary that says which MapTiler key
+  storyboard's own field. `LIVE_TILES` is the three-state vocabulary that says whether the MapTiler key
   the delivered page carries and what it costs — an enum, never a sentence a caller writes — held
   per language, like every other sentence in the document.
 - `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` and

@@ -151,23 +151,22 @@ export function validateNewsroom(profile) {
     errors.push("cloudflareAccountId must be the 32-character hexadecimal account id");
   }
 
+  // Backward compatibility only: Readiness no longer asks for CMS configuration, but profiles
+  // written by older releases must remain readable and must not be silently corrupted.
   const cmsKind = (profile?.cmsKind ?? "").trim();
   const cmsEndpoint = (profile?.cmsEndpoint ?? "").trim();
   if (cmsKind && !["livingdocs", "we-publish"].includes(cmsKind)) {
     errors.push(`cmsKind must be livingdocs or we-publish, got ${JSON.stringify(cmsKind)}`);
   }
-  if (Boolean(cmsKind) !== Boolean(cmsEndpoint)) {
-    errors.push("cmsKind and cmsEndpoint must be configured together");
-  }
+  if (Boolean(cmsKind) !== Boolean(cmsEndpoint)) errors.push("cmsKind and cmsEndpoint must be configured together");
   if (cmsEndpoint) {
     try {
       const parsed = new URL(cmsEndpoint);
-      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
-        throw new Error("unsupported endpoint");
-      }
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error("unsupported endpoint");
     } catch {
       errors.push("cmsEndpoint must be a full HTTP or HTTPS URL without embedded credentials");
     }
   }
+
   return errors;
 }

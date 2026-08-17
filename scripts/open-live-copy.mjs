@@ -18,9 +18,8 @@
 // fallback and the page looks broken in exactly the way it is not.
 //
 // This is what `deliver` does for real, on the beat the journalist chose
-// (`substituteKeys`, reading `MAPTILER_DELIVERY_KEY` before `MAPTILER_KEY`). This script is the
-// LOOK-AT-IT path, not the delivery path, and it deliberately reads the same two variables in the
-// same order so the two cannot disagree about which key a reader gets.
+// (`substituteKeys`, reading `MAPTILER_KEY`). This script is the LOOK-AT-IT path, not the delivery
+// path, and deliberately reads that same credential so the two cannot disagree.
 //
 // Usage:
 //   bun scripts/open-live-copy.mjs                    every tracked page that requests MapTiler
@@ -46,18 +45,15 @@ const outDir = resolve(flag("--out", "/tmp/splash-live"));
 const port = Number(flag("--port", 8765));
 const filters = process.argv.slice(2).filter((a) => !a.startsWith("--") && !/^\d+$/.test(a) && !a.startsWith("/"));
 
-/** The key, from the one home this tree keeps it in. Delivery key first, exactly as `deliver`
- *  orders them: R1b's fourth clause is that what reaches a reader is a SECOND, origin-restricted
- *  key, and a look-at-it copy that used the development key would be rehearsing the wrong thing. */
+/** The MapTiler API key, from the one legacy environment home this helper supports. */
 function readKey() {
   const env = join(TWIN, ".env");
   if (!existsSync(env)) throw new Error(`no .env at ${env} — this needs a real MapTiler key`);
   const lines = readFileSync(env, "utf8").split(/\r?\n/);
-  for (const name of ["MAPTILER_DELIVERY_KEY", "MAPTILER_KEY"]) {
-    const line = lines.find((l) => l.startsWith(`${name}=`));
-    if (line) return { name, value: line.slice(name.length + 1).trim() };
-  }
-  throw new Error(`no MAPTILER_DELIVERY_KEY or MAPTILER_KEY in ${env}`);
+  const name = "MAPTILER_KEY";
+  const line = lines.find((value) => value.startsWith(`${name}=`));
+  if (line) return { name, value: line.slice(name.length + 1).trim() };
+  throw new Error(`no MAPTILER_KEY in ${env}`);
 }
 
 function trackedHtml() {

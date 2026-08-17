@@ -32,9 +32,9 @@ async function readRequest() {
 }
 
 function keyState(files) {
-  const key = process.env.MAPTILER_DELIVERY_KEY ?? "";
+  const key = process.env.MAPTILER_KEY ?? "";
   if (!key) return "unkeyed";
-  return files.some((body) => body.includes(key)) ? "restricted" : "none";
+  return files.some((body) => body.includes(key)) ? "configured" : "none";
 }
 
 export async function runSealedDelivery(
@@ -55,7 +55,7 @@ export async function runSealedDelivery(
     const written = await materialiseFn({
       ...request,
       form: "owned-file",
-      env: { MAPTILER_DELIVERY_KEY: process.env.MAPTILER_DELIVERY_KEY ?? "" },
+      env: { MAPTILER_KEY: process.env.MAPTILER_KEY ?? "" },
     });
     const bodies = await Promise.all(
       written.map(async (path) => {

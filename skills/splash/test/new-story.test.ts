@@ -25,7 +25,10 @@ describe("slugify", () => {
 
 describe("createStory", () => {
   it("should create the whole workspace shape", async () => {
-    const { slug, dir } = await createStory({ root, title: "Water Wars" });
+    const { slug, dir } = await createStory({
+      storiesRoot: join(root, "stories"),
+      title: "Water Wars",
+    });
     expect(slug).toBe("water-wars");
     for (const child of ["source", "beats", "export"]) {
       expect((await stat(join(dir, child))).isDirectory()).toBe(true);
@@ -39,10 +42,20 @@ describe("createStory", () => {
 
   it("should make scaffolding mandatory before phase recovery in the orchestration contract", async () => {
     const skill = await readFile(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
-    const createStep = skill.indexOf("createStory({root, title})` exactly once before intake");
+    const createStep = skill.indexOf("create_splash_story` exactly once before intake");
     const recoverStep = skill.indexOf("**Recover the phase.**");
     expect(createStep).toBeGreaterThan(-1);
     expect(recoverStep).toBeGreaterThan(createStep);
+  });
+
+  it("should keep preflight portable without accepting credentials in chat", async () => {
+    const skill = await readFile(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
+    expect(skill).toContain("MCP server is the\nportable launch and control bridge");
+    expect(skill).toContain("does not publish an embedded MCP Apps resource");
+    expect(skill).toContain("bun --no-env-file installer/configure.mjs");
+    expect(skill).toContain("Never ask the journalist to paste a credential into chat");
+    expect(skill).toContain("one scrolling form with Credentials and Newsroom branding sections");
+    expect(skill).toContain("Save setup and continue");
   });
 
   it("should keep the active hosted beat's renderer on the canonical review target", async () => {
@@ -63,8 +76,9 @@ describe("createStory", () => {
   });
 
   it("should refuse to overwrite an existing story", async () => {
-    await createStory({ root, title: "Water Wars" });
-    await expect(createStory({ root, title: "Water Wars" })).rejects.toThrow(
+    const storiesRoot = join(root, "stories");
+    await createStory({ storiesRoot, title: "Water Wars" });
+    await expect(createStory({ storiesRoot, title: "Water Wars" })).rejects.toThrow(
       "already exists",
     );
   });
@@ -82,7 +96,7 @@ describe("createStory", () => {
   });
 
   it("should refuse an empty title", async () => {
-    await expect(createStory({ root, title: "" })).rejects.toThrow(
+    await expect(createStory({ storiesRoot: join(root, "stories"), title: "" })).rejects.toThrow(
       "title carries no usable content",
     );
     const storiesDir = join(root, "stories");
@@ -97,7 +111,7 @@ describe("createStory", () => {
   });
 
   it("should refuse a whitespace-only title", async () => {
-    await expect(createStory({ root, title: "   \t\n  " })).rejects.toThrow(
+    await expect(createStory({ storiesRoot: join(root, "stories"), title: "   \t\n  " })).rejects.toThrow(
       "title carries no usable content",
     );
     const storiesDir = join(root, "stories");
@@ -112,7 +126,7 @@ describe("createStory", () => {
   });
 
   it("should refuse a punctuation-only title", async () => {
-    await expect(createStory({ root, title: "!!!???..." })).rejects.toThrow(
+    await expect(createStory({ storiesRoot: join(root, "stories"), title: "!!!???..." })).rejects.toThrow(
       "title carries no usable content",
     );
     const storiesDir = join(root, "stories");

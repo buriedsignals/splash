@@ -905,6 +905,21 @@ if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });
 try {
+  console.log(`\nRUNTIME — page JavaScript starts cleanly`);
+  {
+    const page = await browser.newPage();
+    const runtimeErrors = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    await sleep(60);
+    check(
+      runtimeErrors.length === 0,
+      `page starts without an uncaught JavaScript error`,
+      runtimeErrors.length ? runtimeErrors.join(" | ") : "no pageerror events",
+    );
+    await page.close();
+  }
+
   console.log(`\nFIT — the whole beat inside the visible window`);
   {
     const page = await browser.newPage();

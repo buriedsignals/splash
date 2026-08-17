@@ -14,12 +14,21 @@ first, and end the turn. Only the user's next message may supply `format:`. Befo
 not run the reference loop, choose a palette or treatment, write `reachable: yes`, or dispatch a
 producer.
 
-When Goose can render the Splash app, Storyboard mode may show that same gate through the shared
-chooser. `recommendVisualChoice` ranks only the currently reachable U7 options against confirmed
-Storyboard fields and the frozen profile, names unresolved requirements and transparent ties, and
-never writes. The journalist still presses the separate app-only Confirm; focus, recommendation,
-silence, timeout, dismissal, or a model message does not supply the answer. Without app-only tools,
-use the textual gate above.
+After palette confirmation, open Storyboard. Do not ask the journalist to choose an interface:
+Storyboard is the normal continuation and calls `open_splash_storyboard`,
+uses `recommendVisualChoice` to rank that set against confirmed Storyboard fields and the frozen
+profile, and opens only the first two: one recommendation and one alternative. The journalist still
+presses the separate browser Confirm; focus, recommendation, silence, timeout or dismissal does not
+supply the answer. Keep the MCP tool call open during the browser interaction. On Confirm, write the
+treatment, attempt to close the page, return the confirmed choice to Goose, re-read the story from disk and
+continue with the conditional producer gate or production without asking for a second chat message.
+À-la-carte is an explicit override only: call `open_splash_a_la_carte` when the journalist has
+directly asked in chat to see every treatment or used the words “À-la-carte”. Never infer that
+override from uncertainty, a missing answer, or the existence of many reachable treatments.
+If the browser refuses script-close for an operating-system-opened tab, leave a completed state that
+says Goose is continuing and the tab is safe to close.
+Without the browser launch tools, show the same two Storyboard options or a compact
+grouped À-la-carte list in text and require an explicit reply.
 
 After a chart treatment is chosen, consult `references/datawrapper-chart-types.json` through
 `scripts/producer-gate.mjs`. If that treatment has a faithful Datawrapper implementation in the
@@ -272,7 +281,7 @@ if (errors.length > 0) {
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many hand-of-the-journalist fields are required | `6` (`HAND.length`: subject, comparison, limits, placement, credit, effectiveDate) | `scripts/storyboard.mjs` |
+| How many hand-of-the-journalist fields are required | `5` (`HAND.length`: subject, comparison, limits, credit, effectiveDate) | `scripts/storyboard.mjs` |
 | Minimum slots before the storyboard can produce anything | `1` (`slots.length === 0` is the refusal threshold) | `checkStoryboard` |
 | Fewest candidates a slot may list once something is `chosen` | `1` (`candidates.length === 0` refuses as malformed, not silently passed) | `checkStoryboard` |
 | Leading spaces that mark a line as a slot's own field, not a top-level one | `4` (`/^\s{4,}[A-Za-z]+:/`) | `parseStoryboard` |

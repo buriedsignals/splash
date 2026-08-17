@@ -413,7 +413,6 @@ function publicEvidence(parsed, slot) {
     "subject",
     "comparison",
     "limits",
-    "placement",
     "effectiveDate",
   ];
   const evidence = Object.fromEntries(
@@ -569,7 +568,18 @@ export function createSelectionService({
     await writer(path, mutation(current), {
       expectedRevision: current.revisions.story,
     });
-    return read({ bindingContext });
+    try {
+      return await read({ bindingContext });
+    } catch {
+      return Object.freeze({
+        schemaVersion: "splash-selection-committed/v1",
+        story: current.story,
+        phase: null,
+        gate: null,
+        committed: true,
+        refresh: { status: "indeterminate" },
+      });
+    }
   }
 
   return Object.freeze({

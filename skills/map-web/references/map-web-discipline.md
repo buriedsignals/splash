@@ -682,20 +682,11 @@ key ever reaches a tracked file. Every map × web beat commits its own HTML and 
 an MIT open-source release: a key pushed to a public repository is found by scanners within minutes
 and survives in the history after any later removal.
 
-**The delivered key IS `MAPTILER_DELIVERY_KEY`, a SECOND, origin-restricted key — never the
-development one, and there is no fallback to it.** MapTiler's documented mitigation for a
-client-side key is Allowed HTTP origins, enforced server-side — copied elsewhere it does not work —
-and **an account's default key cannot be restricted**, so a dedicated one has to be created
-(<https://docs.maptiler.com/cloud/api/authentication-key/>).
-
-This paragraph used to say "should", while the code read `MAPTILER_DELIVERY_KEY || MAPTILER_KEY`,
-and that is the difference between a rule and advice. Measured: this tree's `.env` holds only
-`MAPTILER_KEY`, so **every delivery substituted the unrestricted development key** and nothing
-refused, warned or recorded it. `substituteKeys` now has three states and no fourth — the delivery
-key is substituted; with neither key set the placeholder travels through and the page ships its
-complete fallback layer; **with only `MAPTILER_KEY` set it throws**, naming both ways forward.
-Falling silently back to the placeholder there would ship a dead map to someone who believes they
-configured one, which is why the third state is loud rather than lenient.
+**The delivered credential is `MAPTILER_KEY`; MapTiler does not define a separate delivery-key
+credential type.** MapTiler's documented mitigation for a client-side API key is Allowed HTTP
+origins, enforced server-side, so the newsroom must restrict the configured key before publication
+(<https://docs.maptiler.com/cloud/api/authentication-key/>). With no key, the placeholder remains and
+the page ships its complete baked fallback layer.
 
 **The guard's three holes, closed 2026-08-10.** A regression exercise wrote a real key into three
 tracked files and watched the guard pass on all three: a tracked `.html` over 8 MB (skipped by

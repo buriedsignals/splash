@@ -10,6 +10,56 @@ initiative_prd: docs/splash/2026-08-14-interactive-preflight-and-visual-selectio
 This is the durable closure record for the initiative. It remains after the implementation PRD is
 deleted. A row marked pending or blocked is not release evidence.
 
+## Current interface architecture — 2026-08-17
+
+The Splash MCP app now means the complete integration: a stdio MCP server that launches protected
+localhost browser interfaces. The production server no longer advertises a `ui://` resource or
+depends on `@modelcontextprotocol/ext-apps`.
+
+- `open_splash_readiness` launches the existing token-bound Preflight page. Credentials remain
+  password inputs delivered only to Engine's broker; newsroom branding remains a separate form.
+  Its MCP call stays pending until the journalist presses Done, then refreshes readiness and lets
+  Goose continue automatically. An ordinary save, close, or expiry is not treated as Done.
+- `open_splash_storyboard` launches exactly two visual cards when two treatments are reachable: one
+  evidence-based recommendation and one alternative.
+- `open_splash_a_la_carte` launches the full reachable catalogue as searchable visual preview cards.
+- Both treatment pages require confirmation of the Engine-inspected canonical story, then perform
+  the same revision-checked canonical write. Opening, searching, focusing, cancelling, or closing a
+  page writes nothing.
+- Hosts without these launch tools fall back to text. They must never request a credential in chat.
+
+The older embedded-MCP-App compatibility evidence below is retained as historical evidence of the
+abandoned presentation path, not as a current shipping claim.
+
+### Live Goose Desktop acceptance — 2026-08-17
+
+The current localhost architecture was exercised in Goose Desktop 1.46.0 on macOS with provider
+`gpt-5.6-sol`, the `splash-test` workspace, and the Engine-inspected story
+`europe-s-heat-pump-gap-is-narrowing-but-the-nordics-still-lead`. Apertus was not used.
+
+- Goose called `open_splash_a_la_carte`; the protected browser page required confirmation of the
+  exact canonical story and then showed all 32 reachable treatments with search. Closing without a
+  treatment confirmation did not modify the story.
+- Goose called `open_splash_storyboard`; after exact-story confirmation the page showed only
+  `chart.slope` as recommended and `chart.bump` as the alternative. Confirming `chart.slope` kept
+  the MCP call open, returned the option to Goose, and caused Goose to run `whereIs` and continue to
+  G2-producer without a second chat message.
+- Chrome did not allow script-close for the tab opened by the operating system. The MCP call and
+  Goose continuation still completed; the page therefore attempts `window.close()` and otherwise
+  leaves a completed state telling the journalist the tab is safe to close.
+- The Custom producer path reached G3 and produced the self-contained web chart. Manual inspection
+  rejected three inaccurate render claims: hidden first-paint labels, a 2015/2021 header mismatch,
+  and mobile clipping caused by the default `<figure>` margin. Durable G3 feedback drove four
+  correction cycles. `renders/correction-4/fit-1600x800.png` and
+  `renders/correction-4/fit-375x812.png` were independently inspected before approval; both retain
+  the full title, caveat, source, country names, endpoint values, and correct 2021/2025 headers.
+- After the revision-bound G3 approval, `whereIs` recovered G4. Goose offered `owned-file`,
+  `cms-insertion`, and `source-bundle`, reported hosted `embed` unavailable because Cloudflare is
+  not configured, and materialised nothing. The run stopped at this pre-deployment gate.
+
+This is live evidence for the installed macOS Goose–Splash–Engine–browser path. It is not evidence
+for Apertus, hosted deployment, Linux, Windows, or WSL.
+
 ## Compatibility and documentation baseline
 
 Context7 CLI 0.3.5 was available at
@@ -21,10 +71,10 @@ fixture in these official sources:
 - [MCP Apps SDK](https://github.com/modelcontextprotocol/ext-apps): register one-shot handlers before
   `App.connect()`, inspect `serverTools`/`openLinks` host capabilities, distinguish host tool-result
   notifications from app-initiated `callServerTool`, and handle open-link denial separately from
-  transport failure. The current development lockfile resolves `@modelcontextprotocol/ext-apps`
-  1.7.5; this is dependency reproducibility for the adopted checkout, not a Splash release/source
-  pin. Its installed `App.openLink` contract returns `isError` for host denial and throws for
-  timeout or connection loss.
+  transport failure. At the 2026-08-14 observation, the fixture lockfile resolved
+  `@modelcontextprotocol/ext-apps` 1.7.5; that dependency has since been removed with the abandoned
+  embedded presentation path. The then-installed `App.openLink` contract returned `isError` for
+  host denial and threw for timeout or connection loss.
 - [Goose MCP App renderer](https://github.com/aaif-goose/goose/blob/main/ui/desktop/src/components/McpApps/McpAppRenderer.tsx): current Desktop declares `openLinks` and connects `ui/open-link` to its confirmation handler.
 - [Goose extension configuration](https://github.com/aaif-goose/goose/blob/main/documentation/docs/getting-started/using-extensions.md): stdio extension YAML shape.
 - [Bun environment documentation](https://github.com/oven-sh/bun/blob/main/docs/runtime/environment-variables.mdx) and [Bun CLI parser](https://github.com/oven-sh/bun/blob/main/src/runtime/cli/Arguments.rs): `--no-env-file` and its position before the script argument.
@@ -88,7 +138,7 @@ than simulating a working broker.
 
 ## U2 Engine credential broker
 
-Engine now registers exactly `MAPTILER_KEY`, `MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and
+Engine now registers exactly `MAPTILER_KEY`, `DATAWRAPPER_TOKEN`, and
 `CLOUDFLARE_API_TOKEN` as record-backed Splash credentials. `CLOUDFLARE_ACCOUNT_ID` remains
 non-secret newsroom context and `CMS_TOKEN` remains unregistered. Public metadata includes provider
 acquisition links, permissions, migration aliases, validator policy, replacement behavior, the
@@ -467,11 +517,13 @@ is unresolved. Credential candidates are cleared from the browser field immediat
 bounded stdin to the exact `bsig` executable, and rejected if Engine reflects them anywhere in its
 control output.
 
-The credential and newsroom destinations are semantic keyboard-operable tabs. The newsroom writer
+The credential and newsroom destinations are semantic sections in one keyboard-operable scrolling
+form with one final submission. The newsroom writer
 uses a revision digest plus an adjacent cross-process lock held across final reread, fsynced temp
 write, and atomic rename; it preserves unowned front matter and prose. Declining a profile and
-replacing that decision each require a separate confirmation. Optional non-secret Cloudflare/CMS
-configuration is canonical `NEWSROOM.md` state, not broker state.
+replacing that decision each require a separate confirmation in the compatibility API. Optional
+non-secret Cloudflare configuration is canonical `NEWSROOM.md` state, not broker state; legacy CMS
+fields remain readable but are no longer part of Readiness.
 
 Legacy `.env` discovery returns identities and assignment handles but no values. Unsafe ownership,
 permissions, symlinks, shell syntax, duplicates, and alias ambiguity fail closed. A candidate is read
@@ -510,19 +562,23 @@ tree, dependency tree, and exact server entrypoint before launch. Engine passes 
 of its own running executable to the MCP child; no PATH-resolved `bsig`, credential, browser selector,
 or checkout `.env` reaches the server.
 
-The bundled resource has an empty network allowlist and two destinations: Readiness and Choose
-visual. Readiness separates hard blockers, runtime state, broker state, and each optional credential
+The bundled resource has an empty network allowlist and separate openers for Readiness, À-la-carte,
+and Storyboard. It does not render a dashboard, top-level destination navigation, or a mode switch.
+Readiness separates hard blockers, runtime state, broker state, and each optional credential
 status/acquisition link. It has no credential input. Explicit setup action starts U4 as a separate
 child; the one-time loopback capability is returned only by an app-only tool, never the model-visible
 open/status result or parent lifecycle state. The client tries the documented host open-link channel,
 then a fixed local-opener tool, while distinguishing host denial, host error, missing capability,
 expired session, and opener failure.
 
-A model-visible nomination asks Engine's closed `story-inspect` operation to canonicalize one story
-beneath the adopted stories root and does not bind it. The confirmation challenge exists only in an
-app-visible tool result; confirmation binds the displayed descriptor in memory for that MCP process.
-A new process starts unbound, and the binding module re-inspects the canonical descriptor before a
-future write.
+The model-visible Storyboard opener is the default continuation. The À-la-carte opener is used only
+after the journalist explicitly requests all treatments in chat. The selected opener
+asks Engine's closed `story-inspect` operation to canonicalize one story beneath the adopted stories
+root and does not bind it. The confirmation challenge exists only in an app-visible tool result;
+confirmation binds the displayed descriptor in memory for that MCP process. The selected interface
+owns only G2 treatment confirmation. Once its canonical write succeeds, it sends a user-role message
+through the MCP Apps host so the model resumes from disk at the next chat gate. A new process starts
+unbound, and the binding module re-inspects the canonical descriptor before a future write.
 
 Engine continues to own `extensions.splash` through the same revision-checked config transaction as
 its other products. Doctor now distinguishes missing registration, disabled registration, a foreign
@@ -926,10 +982,10 @@ Status vocabulary: `fixture-pass`, `partial`, `pending`, `blocked`, `release-pas
 | R12         | U2/U3/U5     | partial      | One atomic credential record hydrates only the exact provider check/map bake/Datawrapper/MapTiler-delivery/Cloudflare-delivery operation; structured requests and story-bound map inputs are validated before the store read. Real installed activation and next-operation provider runs remain.                                                                                         |
 | R13         | U2/U4        | partial      | Monotonic generations, Engine and newsroom cross-process locks, concurrent winner/conflict tests, stale-view refusal, and raw-verb rejection pass; live multi-process native-store evidence remains.                                                                                                                                                                                    |
 | R14         | U2/U5        | partial      | Provider receipts, saved-unverified delivery state, Cloudflare attestation/account binding, and Readiness presentation pass fixture tests; real-host presentation remains.                                                                                                                                                                                                              |
-| R15         | U4/U5        | partial      | Setup tabs and MCP Readiness/Choose navigation, labels/help, live status, keyboard behavior, 44px controls, and 320px CSS exist and are source-tested; real visual/accessibility QA remains.                                                                                                                                                                                            |
+| R15         | U4/U5        | partial      | The single-scroll setup form and MCP Readiness/Choose navigation, labels/help, live status, keyboard behavior, 44px controls, and narrow-screen CSS exist and are source-tested; real visual/accessibility QA remains.                                                                                                                                                                  |
 | R16         | U4           | fixture-pass | Canonical external NEWSROOM.md update preserves unowned content and proves revision CAS with same-process and barrier-driven cross-process writers.                                                                                                                                                                                                                                     |
 | R17         | U4           | partial      | Proposal-only derivation, public-address pinning, redirect/content/byte bounds, and a real public HTTPS request pass; broader platform DNS/live-site QA remains.                                                                                                                                                                                                                        |
-| R18         | U4           | fixture-pass | Non-secret Cloudflare/CMS fields validate in canonical newsroom state; revision-safe legacy import precedes dependent token validation.                                                                                                                                                                                                                                                 |
+| R18         | U4           | fixture-pass | Non-secret Cloudflare account context validates in canonical newsroom state; legacy CMS fields remain parser-compatible but are not shown in Readiness.                                                                                                                                                                                                                                  |
 | R19         | U6           | fixture-pass | Strict canonical source and generated Storyboard derivative cover 10 producer pairs, 41 treatments, 162 stable treatment/format IDs, size/interaction/runtime/credential/delivery facts, and one explicitly non-selectable treatment.                                                                                                                                                   |
 | R20         | U6           | fixture-pass | Generator checks every type sheet, producer identity, exact delivery forms, canonical sizes, Datawrapper mapping, and proof inventory without treating proof as production authority.                                                                                                                                                                                                   |
 | R21         | U6/U7/U8/U9  | partial      | The authored catalogue, Storyboard derivative, selection service, À-la-carte view, and Storyboard recommender share the same revisions, stable IDs, labels, chooser, and writer; real Goose-host observation remains U10.                                                                                                                                                                 |

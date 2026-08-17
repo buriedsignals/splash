@@ -13,6 +13,7 @@ import visualCatalog from "../../../catalog/visual-catalog.json" with { type: "j
 import storyboardCatalog from "../../../skills/storyboard/references/visual-catalog.json" with { type: "json" };
 import {
   mutateStoryboard,
+  mutateStoryboardRevisioned,
   parseStoryboard,
 } from "../../../skills/storyboard/scripts/storyboard.mjs";
 import {
@@ -176,6 +177,31 @@ describe("shared revision-safe selection domain", () => {
     expect(slot.chosen).toBeUndefined();
     expect(written).toContain("Keep this journalist prose byte-for-byte.");
     expect(next.gate).toEqual({ id: "G2-reference", awaiting: "reference" });
+  });
+
+  it("returns a committed receipt when the post-write refresh is indeterminate", async () => {
+    let stateReads = 0;
+    const selection = createSelectionService({
+      storyBinding: binding,
+      capabilityProvider: async () => capabilityState,
+      catalogProvider: async () => currentCatalog,
+      stateProvider: async () => {
+        stateReads += 1;
+        if (stateReads === 3) throw new Error("fault-injected refresh failure");
+        return { phase: "storyboard", gate: "G2b", awaiting: "format", slotId: 1 };
+      },
+      writer: mutateStoryboardRevisioned,
+    });
+    const model = await selection.read({ bindingContext });
+    const receipt = await selection.confirm({ bindingContext, expected: expected(model), optionId: "format.web" });
+    expect(receipt).toMatchObject({
+      schemaVersion: "splash-selection-committed/v1",
+      committed: true,
+      refresh: { status: "indeterminate" },
+      story: { storyId: "story-one", canonicalPath: storyPath },
+    });
+    const slot = parseStoryboard(await readFile(join(storyPath, "STORYBOARD.md"), "utf8")).meta.slots[0];
+    expect(slot.format).toBe("web");
   });
 
   it("writes byte-identical storyboard state through the graphical and skill-local paths", async () => {

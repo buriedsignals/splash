@@ -49,27 +49,15 @@ const REQUIRED = ["format", "placement", "alt", "credit"];
 export const LIVE_TILES = {
   en: {
     none: null,
-    restricted: [
-      "## The live map in this file",
-      "",
-      "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-      "inside the file, and it is the one restricted to your own domains — copied out of the page, it",
-      "does not work anywhere else.",
-    ],
-    development: [
+    configured: [
       "## The live map in this file, and the key it carries",
       "",
       "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-      "inside the file: anyone who opens the published article can read it, and it is your development",
-      "key, which is not restricted to your own domains.",
+      "inside the file: anyone who opens the published article can read it. Before publication,",
+      "restrict this MapTiler API key to the newsroom's allowed HTTP origins.",
       "",
-      "What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by",
-      "whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler",
-      "switches off **every** key on it — including the maps in articles you published years ago.",
-      "",
-      "The way to close that, when you want to: create a second MapTiler key restricted to your own",
-      "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry",
-      "the restricted key, which is worth nothing to anyone who lifts it out of the page.",
+      "Tiles drawn with the key are billed to your MapTiler account. Allowed-origin restrictions keep",
+      "a copied key from working on other sites.",
     ],
     unkeyed: [
       "## The live map in this file",
@@ -81,29 +69,15 @@ export const LIVE_TILES = {
   },
   fr: {
     none: null,
-    restricted: [
-      "## La carte en direct dans ce fichier",
-      "",
-      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
-      "qui permet ce dessin est à l'intérieur du fichier, et c'est celle qui est restreinte à vos",
-      "propres domaines — sortie de la page, elle ne fonctionne nulle part ailleurs.",
-    ],
-    development: [
+    configured: [
       "## La carte en direct dans ce fichier, et la clé qu'elle emporte",
       "",
       "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
       "qui permet ce dessin est à l'intérieur du fichier : n'importe qui ouvrant l'article publié peut",
-      "la lire, et c'est votre clé de développement, qui n'est pas restreinte à vos propres domaines.",
+      "la lire. Avant publication, limitez cette clé API MapTiler aux origines HTTP de votre rédaction.",
       "",
-      "Ce que cela vous coûte, clairement. Les tuiles que dessine cette carte sont facturées à votre",
-      "compte MapTiler, quelle que soit la personne qui utilise la clé. Et si ce compte atteint un jour",
-      "100 % de son plafond de dépenses, MapTiler coupe **toutes** les clés qui s'y trouvent — y compris",
-      "les cartes des articles que vous avez publiés il y a des années.",
-      "",
-      "Comment fermer cela, quand vous le voudrez : créez une seconde clé MapTiler restreinte à vos",
-      "propres domaines, et enregistrez-la sur la page de configuration sous le nom",
-      "`MAPTILER_DELIVERY_KEY`. Les livraisons suivantes emporteront la clé restreinte, qui ne vaut rien",
-      "pour qui l'extrait de la page.",
+      "Les tuiles sont facturées à votre compte MapTiler. La restriction d'origine empêche une clé",
+      "copiée de fonctionner sur d'autres sites.",
     ],
     unkeyed: [
       "## La carte en direct dans ce fichier",

@@ -52,11 +52,11 @@
     },
     {
       "id": "map-delivery",
-      "label": "Restricted live-map delivery",
-      "requiredCredentials": ["MAPTILER_DELIVERY_KEY"],
+      "label": "Live-map delivery",
+      "requiredCredentials": ["MAPTILER_KEY"],
       "requiredSettings": [],
       "repairAction": "open-readiness",
-      "unavailableReason": "A restricted MapTiler delivery key is needed to keep the live map layer in a published page; the baked fallback can still be delivered."
+      "unavailableReason": "Live-map delivery needs the verified MapTiler API key; restrict its allowed origins before publication. The baked fallback can still be delivered."
     },
     {
       "id": "datawrapper",

@@ -177,21 +177,6 @@ describe("a producer's .env and recordKey's .env are the same file", () => {
     }
   }, 30_000);
 
-  it("should accept MAPTILER_DELIVERY_KEY, the key ruling R1b requires", async () => {
-    const lab = await mkdtemp(join(tmpdir(), "splash-deliverykey-"));
-    try {
-      await recordKey({
-        root: lab,
-        name: "MAPTILER_DELIVERY_KEY",
-        value: "restricted-key",
-      });
-      expect(await readFile(join(lab, ".env"), "utf8")).toContain(
-        "MAPTILER_DELIVERY_KEY=restricted-key",
-      );
-    } finally {
-      await rm(lab, { recursive: true, force: true });
-    }
-  });
 });
 
 /** `src` with line and block comments removed; string literals are preserved untouched. */

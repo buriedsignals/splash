@@ -63,7 +63,7 @@ function scalarFieldValue(frontmatter, field) {
   return scalarValue(match[1]);
 }
 
-// The six hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
+// The five hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
 // membership rule below, mirror storyboard/scripts/storyboard.mjs's own `HAND` constant and
 // `checkStoryboard` — reimplemented here, not imported, because skills in this branch do not
 // import across skill boundaries (each treats the STORYBOARD.md file, not another skill's code,
@@ -71,7 +71,7 @@ function scalarFieldValue(frontmatter, field) {
 // precedent: it already mirrors *this* file's takeaway-sentinel rule the same way). If you touch
 // either list, mirror the change in the other — a test in `test/where.test.ts` pins every branch
 // below so a real divergence fails loud rather than silently reporting `production` too early.
-const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
+const HAND = ["subject", "comparison", "limits", "credit", "effectiveDate"];
 
 // EVERY rule below reads a RECORDED SCALAR. That is the whole design, and it is what makes the
 // mirroring above safe rather than merely careful. `checkStoryboard` used to accept a `profile` and

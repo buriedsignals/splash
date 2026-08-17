@@ -14,20 +14,6 @@ import { join } from "node:path";
 // for its own ATELIER_*→SPLASH_* rename (`process.env.SPLASH_X ?? process.env.ATELIER_X`, canonical
 // first): read the canonical name first, fall back to each alias in order, so the canonical name
 // always wins when both happen to be set.
-// `MAPTILER_DELIVERY_KEY` is a SECOND MapTiler key, and it is deliberately not an alias of the
-// first — ruling R1b (`FEEDBACK-2026-08-10.md`): a map web beat ships live tiles, so the delivered
-// HTML carries a key, and the one it carries must be a dedicated origin-restricted key rather than
-// the development one. `deliver`'s `substituteKeys` already reads it before `MAPTILER_KEY`.
-// It was missing here, which meant the ONE code path that accepts a key from a journalist threw on
-// the exact key the owner's own ruling requires.
-//
-// It has no probe. That is a decision, not an omission: MapTiler enforces an origin restriction
-// server-side against the request's own Origin, so a restricted key probed from a shell has no
-// origin to present and would answer 403 — a working key reported broken. A capability row that
-// lies is worse than no row, so this key is recordable and never probed, and `substituteKeys` is
-// where its absence shows honestly (the placeholder travels through and the live layer never
-// boots).
-//
 // `CMS_KIND` / `CMS_ENDPOINT` / `CMS_TOKEN` are retained for copied-root compatibility only.
 // `deliver/scripts/cms-insert.mjs` builds the We.Publish and
 // Livingdocs mutation SHAPES and sends neither — the `cms-insertion` delivery form writes a file
@@ -35,15 +21,13 @@ import { join } from "node:path";
 // there was nowhere for a journalist's endpoint or token to go at all, and the first person to wire
 // a real CMS would have had to invent a convention on the spot.
 //
-// They have NO PROBE, for the same reason `MAPTILER_DELIVERY_KEY` has none and stated even more
-// plainly: there is no instance to probe. Every other key here is verified against its real service
+// They have NO PROBE because there is no instance to probe. Every other key here is verified against its real service
 // before it is written, and a CMS credential cannot meet that standard today. The managed setup
 // therefore registers no CMS token and gives it no capability row in `runPreflight`; only the
 // explicitly legacy plaintext configurator can preserve the old name. A capability row that lies is
 // worse than no row.
 const KEY_ALIASES = {
   MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
-  MAPTILER_DELIVERY_KEY: [],
   DATAWRAPPER_TOKEN: ["DATAWRAPPER_API_TOKEN"],
   CLOUDFLARE_API_TOKEN: [],
   CLOUDFLARE_ACCOUNT_ID: [],
