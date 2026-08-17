@@ -17,6 +17,7 @@ import {
   exportDirFor as canonicalExportDirFor,
   substituteKeys,
   mapKeyState,
+  embedCodeFor,
 } from "../scripts/deliver.mjs";
 import { cloudflareProjectName } from "../scripts/deploy-embed.mjs";
 import {
@@ -1782,5 +1783,140 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(await readFile(join(exportDir, "chart.html"), "utf8")).toBe(
       chartPage,
     );
+  });
+});
+
+describe("embedCodeFor", () => {
+  const url = "https://example-story.pages.dev/";
+  const title = "Rainfall in Annemasse";
+
+  it("should reference an absolute scroller URL and inline nothing, when one is given", () => {
+    const html = embedCodeFor(url, title, {
+      scrollerUrl: "https://cdn.example.com/splash-iframe-scroller.js",
+    });
+    expect(html).toContain(
+      '<script src="https://cdn.example.com/splash-iframe-scroller.js"></script>',
+    );
+    // Nothing else: this is the one script tag, referencing the hosted file, no inline body.
+    expect(html.match(/<script/g)?.length).toBe(1);
+  });
+
+  it("should inline the scroller's own source and emit no <script src=…> for it, when no URL is given", () => {
+    const inlineSource = "window.splashScroller = { hi: true };";
+    const html = embedCodeFor(url, title, { inlineSource });
+    expect(html).toContain(`<script>\n${inlineSource}\n</script>`);
+    expect(html).not.toMatch(/<script src=/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on a non-HTTPS scroller URL", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        scrollerUrl: "http://cdn.example.com/splash-iframe-scroller.js",
+      }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on a scroller URL carrying credentials", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        scrollerUrl:
+          "https://user:pass@cdn.example.com/splash-iframe-scroller.js",
+      }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on an unparseable scroller URL", () => {
+    expect(() =>
+      embedCodeFor(url, title, { scrollerUrl: "not a url" }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should refuse to inline a source that contains </script — it would end the block early", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        inlineSource: "console.log('</script>');",
+      }),
+    ).toThrow(/<\/script/);
+  });
+
+  it("should refuse when neither a scroller URL nor an inline source is given", () => {
+    expect(() => embedCodeFor(url, title, {})).toThrow(
+      /scrollerUrl|inlineSource/,
+    );
+  });
+
+  it("should keep the iframe itself identical across both modes: attribute, marker, height, title", () => {
+    for (const options of [
+      { scrollerUrl: "https://cdn.example.com/splash-iframe-scroller.js" },
+      { inlineSource: "/* scroller */" },
+    ]) {
+      const html = embedCodeFor(url, title, options);
+      expect(html).toContain("data-splash-embed");
+      expect(html).toContain('src="https://example-story.pages.dev/?splash"');
+      expect(html).toContain("height:600px");
+      expect(html).toContain(`title="${title}"`);
+      expect(html).toContain('loading="lazy"');
+    }
+  });
+});
+
+describe("materialise — embed form resolves the scroller via SPLASH_SCROLLER_URL", () => {
+  let tempRoot2: string, beatDir2: string, exportDir2: string;
+  beforeEach(async () => {
+    tempRoot2 = await mkdtemp(join(tmpdir(), "scroller-url-beat-"));
+    const storyDir = join(tempRoot2, "story");
+    beatDir2 = join(storyDir, "beats", "1-rainfall-web");
+    exportDir2 = exportDirFor(storyDir, "1-rainfall-web");
+    await mkdir(join(beatDir2, "renders"), { recursive: true });
+    await writeFile(
+      join(beatDir2, "renders", "rainfall.html"),
+      "<!doctype html><html><body><h1>rainfall</h1></body></html>",
+    );
+    await writeFile(
+      join(beatDir2, "APPROVED.md"),
+      "seen at full size, approved",
+    );
+  });
+  afterEach(async () => {
+    await rm(tempRoot2, { recursive: true, force: true });
+  });
+
+  it("should reference the hosted scroller URL when SPLASH_SCROLLER_URL is set", async () => {
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: beatDir2,
+      exportDir: exportDir2,
+      env: {
+        CLOUDFLARE_ACCOUNT_ID: "acct",
+        CLOUDFLARE_API_TOKEN: "tok",
+        SPLASH_SCROLLER_URL:
+          "https://cdn.example.com/splash-iframe-scroller.js",
+      },
+      fetchFn: fakeCloudflare(),
+      handover,
+    });
+    const code = await Bun.file(join(exportDir2, "EMBED_CODE.html")).text();
+    expect(code).toContain(
+      '<script src="https://cdn.example.com/splash-iframe-scroller.js"></script>',
+    );
+  });
+
+  it("should inline the scroller's own source when SPLASH_SCROLLER_URL is not set", async () => {
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: beatDir2,
+      exportDir: exportDir2,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn: fakeCloudflare(),
+      handover,
+    });
+    const code = await Bun.file(join(exportDir2, "EMBED_CODE.html")).text();
+    // Anchored to the start of a line: the inlined source carries, in its OWN header comment, an
+    // example `<script src="/assets/splash-iframe-scroller.js">` showing a newsroom how to host it.
+    // An unanchored match trips on that documentation instead of on real markup.
+    expect(code).not.toMatch(/^<script src=/m);
+    expect(code).toContain("splashScroller");
   });
 });

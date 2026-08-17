@@ -2,8 +2,12 @@
  * splash-iframe-scroller — the article page's companion for Splash embeds.
  * Drop it on any page that carries one or more Splash iframes. One file, no dependency.
  *
- *   <script src="/assets/splash-iframe-scroller.js"></script>
- *   <script>splashScroller({ offset: "nav" });</script>   // offset: selector, number, or function
+ *   <script src="/assets/splash-iframe-scroller.js"><\/script>
+ *   <script>splashScroller({ offset: "nav" });<\/script>   // offset: selector, number, or function
+ *
+ * (closing tags above are escaped with a backslash — this file is sometimes inlined verbatim
+ * inside a delivered page's own script block, where that closing sequence unescaped, even inside
+ * a comment, would end the block early and truncate the page)
  *
  * It does TWO things, and nothing else:
  *   1. CENTRES an embed under the site's sticky furniture once the reader has arrived on it.
@@ -48,7 +52,8 @@
        GENRE is deliberately absent, because this script does not need it. It centres every embed
        the same way, and the only genre that ever speaks (a scrolly, through its own emitter) says
        so by speaking. A parent page does not have to be told what it is showing. */
-    var selector = opts.selector || "[data-splash-embed], iframe[src*='splash']";
+    var selector =
+      opts.selector || "[data-splash-embed], iframe[src*='splash']";
     var offset = opts.offset;
     var reduced =
       typeof global.matchMedia === "function" &&
@@ -186,14 +191,19 @@
        not be indistinguishable from a script that is working. */
     function warnIfEmpty() {
       if (embeds.length > 0) return;
-      var suspects = doc.querySelectorAll('[class*="splash-embed"], [class*="visuals-immersive"]');
+      var suspects = doc.querySelectorAll(
+        '[class*="splash-embed"], [class*="visuals-immersive"]',
+      );
       var hint =
         suspects.length > 0
           ? " A container matching that name IS on the page — check the embed block for a broken quote."
           : "";
       if (global.console && global.console.warn)
         global.console.warn(
-          "splash-iframe-scroller: no embed matched " + JSON.stringify(selector) + "." + hint,
+          "splash-iframe-scroller: no embed matched " +
+            JSON.stringify(selector) +
+            "." +
+            hint,
         );
     }
 

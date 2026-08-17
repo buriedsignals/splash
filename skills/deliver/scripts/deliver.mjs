@@ -521,14 +521,72 @@ function withSplashMarker(href) {
   return href.includes("?") ? `${href}&splash` : `${href}?splash`;
 }
 
-export function embedCodeFor(url, title) {
+// The env var a newsroom sets once it has hosted its own copy of the scroller — the source of the
+// `scrollerUrl` this file's caller (`materialise`, which alone reads `process.env`) may pass in.
+// Named here only so `validateScrollerUrl`'s error messages can name it; this module never reads it.
+const SCROLLER_URL_ENV_VAR = "SPLASH_SCROLLER_URL";
+
+// A RELATIVE `<script src="splash-iframe-scroller.js">` only ever worked when a newsroom happened
+// to host the file at that exact relative path next to the article — everywhere else it resolved
+// against the ARTICLE's own URL and 404'd, silently, because a script tag that fails to load makes
+// no noise. Five published 20min articles carried this for months before anyone noticed. So: an
+// ABSOLUTE URL, when a hosted one is known and validated, or the script's own SOURCE inlined —
+// never a bare relative filename again.
+export function validateScrollerUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`${SCROLLER_URL_ENV_VAR} is not a valid URL: ${JSON.stringify(rawUrl)}`);
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${SCROLLER_URL_ENV_VAR} must use HTTPS, got ${JSON.stringify(rawUrl)}`);
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${SCROLLER_URL_ENV_VAR} must not carry credentials`);
+  }
+  return parsed.href;
+}
+
+/**
+ * A pure function of its arguments — it never reads `process.env` or the filesystem itself, so it
+ * stays trivially testable. `options` carries exactly one of:
+ *
+ *   - `scrollerUrl`: the raw, unvalidated value of `SPLASH_SCROLLER_URL` — validated here (HTTPS
+ *     only, no credentials, a clear error naming the env var on anything unparseable) and emitted
+ *     as an absolute `<script src>`. The "whitelist our script" path a newsroom takes once it has
+ *     hosted its own copy.
+ *   - `inlineSource`: the scroller's own source text (`materialise` reads the asset file — this
+ *     function does not) — emitted verbatim inside a `<script>…</script>` block, so the pasted
+ *     embed is entirely self-contained and needs no hosting at all. Guarded against the one thing
+ *     that would break it: a source containing `</script` would close the block early and truncate
+ *     the page's own HTML after it.
+ */
+export function embedCodeFor(url, title, options = {}) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:") throw new Error("an embed URL must use HTTPS");
   if (!title) throw new Error("an embed iframe needs a non-empty title");
   const markedSrc = withSplashMarker(parsed.href);
-  return (
-    `<iframe data-splash-embed src="${escapeHtmlAttribute(markedSrc)}" title="${escapeHtmlAttribute(title)}" loading="lazy" style="width:100%;height:600px;border:0" allowfullscreen></iframe>\n` +
-    `<script src="${SCROLLER_ASSET_NAME}"></script>\n`
+  const iframe = `<iframe data-splash-embed src="${escapeHtmlAttribute(markedSrc)}" title="${escapeHtmlAttribute(title)}" loading="lazy" style="width:100%;height:600px;border:0" allowfullscreen></iframe>\n`;
+
+  const { scrollerUrl, inlineSource } = options;
+  if (scrollerUrl != null && inlineSource != null) {
+    throw new Error("embedCodeFor accepts either options.scrollerUrl or options.inlineSource, not both");
+  }
+  if (scrollerUrl != null) {
+    const resolved = validateScrollerUrl(scrollerUrl);
+    return `${iframe}<script src="${escapeHtmlAttribute(resolved)}"></script>\n`;
+  }
+  if (inlineSource != null) {
+    if (inlineSource.includes("</script")) {
+      throw new Error(
+        'the scroller source cannot be inlined: it contains "</script", which would close the block early and truncate the page',
+      );
+    }
+    return `${iframe}<script>\n${inlineSource}\n</script>\n`;
+  }
+  throw new Error(
+    "embedCodeFor requires either options.scrollerUrl (a hosted copy) or options.inlineSource (the script's own source) — never a bare relative filename",
   );
 }
 
@@ -645,11 +703,18 @@ async function materialiseInto({
     // EXACTLY the stable project URL, and a query string there fails that check.
     await writeFile(urlPath, `${withSplashMarker(deployment.url)}\n`);
     written.push(urlPath);
+    // Which script tag the pasted block gets: an absolute URL when the newsroom has told us where
+    // its own hosted copy lives (`SPLASH_SCROLLER_URL`), or the script's own source inlined so the
+    // block works with zero setup. Never the bare relative filename this replaces — see
+    // `embedCodeFor`'s own header comment for why that broke silently everywhere but one path.
+    const embedOptions = env[SCROLLER_URL_ENV_VAR]
+      ? { scrollerUrl: env[SCROLLER_URL_ENV_VAR] }
+      : { inlineSource: await readFile(SCROLLER_ASSET_PATH, "utf8") };
     const codePath = join(exportDir, "EMBED_CODE.html");
-    await writeFile(codePath, embedCodeFor(deployment.url, handover.alt));
+    await writeFile(codePath, embedCodeFor(deployment.url, handover.alt, embedOptions));
     written.push(codePath);
-    // The snippet above references this file by name — the newsroom's own template must carry a
-    // copy of it (installed once, not once per beat) for the snippet to mean anything.
+    // A copy is still shipped alongside the block regardless of mode — a newsroom that later hosts
+    // its own copy and sets SPLASH_SCROLLER_URL wants this exact file to publish at that URL.
     const scrollerPath = join(exportDir, SCROLLER_ASSET_NAME);
     await copyFile(SCROLLER_ASSET_PATH, scrollerPath);
     written.push(scrollerPath);
