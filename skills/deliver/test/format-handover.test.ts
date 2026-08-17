@@ -1,10 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  formatHandover,
-  LIVE_TILES,
-} from "../scripts/format-handover.mjs";
+import { formatHandover, LIVE_TILES } from "../scripts/format-handover.mjs";
 
 const VALID = {
   format: "static",
@@ -21,9 +18,9 @@ const VALID = {
 
 describe("formatHandover — what the journalist reads", () => {
   it("should reject the legacy runtime field instead of maintaining two API vocabularies", () => {
-    expect(() =>
-      formatHandover({ ...VALID, genre: "static" } as any),
-    ).toThrow(/does not accept genre/);
+    expect(() => formatHandover({ ...VALID, genre: "static" } as any)).toThrow(
+      /does not accept genre/,
+    );
   });
 
   it("should name each file by basename and say what it is for", () => {
@@ -48,6 +45,27 @@ describe("formatHandover — what the journalist reads", () => {
     expect(doc).toContain("the iframe snippet to paste into the CMS");
     expect(doc).toContain("linking the live output to its editable source");
     expect(doc).not.toContain("`EMBED_CODE.html`** — the page itself");
+  });
+
+  // The article page's companion script (`skills/deliver/assets/splash-iframe-scroller.js`) is
+  // installed ONCE on the site's own template, never once per visual — the generic "delivered with
+  // the beat" role every other unmatched extension gets would read as though a fresh copy belongs
+  // beside every single beat, which is wrong and would tell a journalist to do the wrong thing.
+  it("should describe the article page's companion script as an install-once integration file, not a per-beat delivery", () => {
+    const doc = formatHandover({
+      ...VALID,
+      format: "web",
+      files: [
+        "/tmp/story/export/EMBED_URL.txt",
+        "/tmp/story/export/EMBED_CODE.html",
+        "/tmp/story/export/DEPLOYMENT.json",
+        "/tmp/story/export/splash-iframe-scroller.js",
+      ],
+    });
+    expect(doc).toContain("installed once");
+    expect(doc).not.toContain(
+      "`splash-iframe-scroller.js`** — delivered with the beat",
+    );
   });
 
   it("should read back the placement, the alt, the credit and the caveat", () => {
@@ -251,6 +269,23 @@ describe("formatHandover — written in the story's own language (A25, ruling R4
     const doc = formatHandover(FR);
     expect(doc).toContain("le fichier vectoriel");
     expect(doc).not.toContain("the one to give the CMS");
+  });
+
+  it("should describe the companion script as install-once in French too", () => {
+    const doc = formatHandover({
+      ...FR,
+      format: "web",
+      files: [
+        "/tmp/story/export/EMBED_URL.txt",
+        "/tmp/story/export/EMBED_CODE.html",
+        "/tmp/story/export/DEPLOYMENT.json",
+        "/tmp/story/export/splash-iframe-scroller.js",
+      ],
+    });
+    expect(doc).toContain("installé une seule fois");
+    expect(doc).not.toContain(
+      "`splash-iframe-scroller.js`** — livré avec ce visuel",
+    );
   });
 
   it("should state the cost of a development key in French, since it is the paragraph that costs them money", () => {

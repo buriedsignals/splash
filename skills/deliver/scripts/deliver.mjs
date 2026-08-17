@@ -6,7 +6,8 @@
 
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
   DEPLOYMENT_RECEIPT_SCHEMA_VERSION,
@@ -29,6 +30,17 @@ import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
 
 const REACT_VERSION = "^19.1.0";
+
+// The article page's companion script for a Splash embed (see its own header comment for what it
+// does). It ships once per DELIVERY, not once per beat's own render — `assets/` rather than
+// `renders/` — so it is copied here from this skill's own directory, not from the beat's.
+const SCROLLER_ASSET_NAME = "splash-iframe-scroller.js";
+const SCROLLER_ASSET_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "assets",
+  SCROLLER_ASSET_NAME,
+);
 
 // Every format this skill knows how to deliver, and the forms it can honestly offer for each.
 // `medium` is accepted on `offerForms`'s own interface for its future (a map beat's forms will not
@@ -501,11 +513,23 @@ function escapeHtmlAttribute(value) {
     .replace(/>/g, "&gt;");
 }
 
+// Marks the iframe as one of ours, two ways at once (see `splash-iframe-scroller.js`'s own header
+// comment for why both): the `data-splash-embed` attribute, and a `?splash`/`&splash` marker
+// appended to the `src` itself — the attribute alone does not survive a CMS that only takes a URL
+// and builds its own iframe markup around it.
+function withSplashMarker(href) {
+  return href.includes("?") ? `${href}&splash` : `${href}?splash`;
+}
+
 export function embedCodeFor(url, title) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:") throw new Error("an embed URL must use HTTPS");
   if (!title) throw new Error("an embed iframe needs a non-empty title");
-  return `<iframe src="${escapeHtmlAttribute(parsed.href)}" title="${escapeHtmlAttribute(title)}" loading="lazy" style="width:100%;height:600px;border:0" allowfullscreen></iframe>\n`;
+  const markedSrc = withSplashMarker(parsed.href);
+  return (
+    `<iframe data-splash-embed src="${escapeHtmlAttribute(markedSrc)}" title="${escapeHtmlAttribute(title)}" loading="lazy" style="width:100%;height:600px;border:0" allowfullscreen></iframe>\n` +
+    `<script src="${SCROLLER_ASSET_NAME}"></script>\n`
+  );
 }
 
 async function materialiseInto({
@@ -619,6 +643,11 @@ async function materialiseInto({
     const codePath = join(exportDir, "EMBED_CODE.html");
     await writeFile(codePath, embedCodeFor(deployment.url, handover.alt));
     written.push(codePath);
+    // The snippet above references this file by name — the newsroom's own template must carry a
+    // copy of it (installed once, not once per beat) for the snippet to mean anything.
+    const scrollerPath = join(exportDir, SCROLLER_ASSET_NAME);
+    await copyFile(SCROLLER_ASSET_PATH, scrollerPath);
+    written.push(scrollerPath);
     const deploymentPath = join(exportDir, "DEPLOYMENT.json");
     await writeFile(
       deploymentPath,
