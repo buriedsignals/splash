@@ -1058,7 +1058,11 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       "story",
       "1-rainfall-web",
     );
-    expect(url.trim()).toBe(`https://${projectName}.pages.dev`);
+    // The address a journalist may paste straight into a CMS that accepts only a URL: it carries
+    // the marker, because the CMS builds the iframe itself and `data-splash-embed` never survives.
+    // DEPLOYMENT.json's own `publicUrl` stays unmarked — `deploy-embed.mjs` requires it to be
+    // exactly the stable project URL, and a query string there fails reconciliation.
+    expect(url.trim()).toBe(`https://${projectName}.pages.dev?splash`);
     // The `?splash` marker is what lets `splash-iframe-scroller.js` recognise this iframe when a
     // CMS has rebuilt the markup from a bare URL and the `data-splash-embed` attribute did not
     // survive — see that script's own header comment.

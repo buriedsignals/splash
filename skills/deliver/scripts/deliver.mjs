@@ -638,7 +638,12 @@ async function materialiseInto({
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
     const urlPath = join(exportDir, "EMBED_URL.txt");
-    await writeFile(urlPath, `${deployment.url}\n`);
+    // MARKED, unlike the receipt below. This is the address a journalist pastes into a CMS that
+    // accepts nothing but a URL — the CMS then builds the iframe itself, so `data-splash-embed`
+    // never survives and the marker is the only thing left for the companion script to recognise.
+    // `DEPLOYMENT.json`'s own `publicUrl` stays bare on purpose: `deploy-embed.mjs` checks it is
+    // EXACTLY the stable project URL, and a query string there fails that check.
+    await writeFile(urlPath, `${withSplashMarker(deployment.url)}\n`);
     written.push(urlPath);
     const codePath = join(exportDir, "EMBED_CODE.html");
     await writeFile(codePath, embedCodeFor(deployment.url, handover.alt));
