@@ -201,11 +201,14 @@ describe("measureProgress — the CONTINUOUS signal a consumer scrubs a visual a
   it("should interpolate smoothly and monotonically between two card centres", () => {
     const seen: number[] = [];
     for (let shift = 0; shift <= 100; shift += 5)
-      seen.push(measureProgress(cards(330 - shift, 430 - shift, 530 - shift), LANE));
+      seen.push(
+        measureProgress(cards(330 - shift, 430 - shift, 530 - shift), LANE),
+      );
     expect(seen[0]).toBeCloseTo(0, 6);
     expect(seen[seen.length - 1]).toBeCloseTo(1, 6);
     expect(seen[10]).toBeCloseTo(0.5, 6);
-    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeGreaterThan(seen[i - 1]);
+    for (let i = 1; i < seen.length; i++)
+      expect(seen[i]).toBeGreaterThan(seen[i - 1]);
   });
 
   it("should clamp before the first card arrives and after the last one passes", () => {
@@ -218,7 +221,10 @@ describe("measureProgress — the CONTINUOUS signal a consumer scrubs a visual a
   it("should never move backwards as the cards travel up", () => {
     let last = -1;
     for (let shift = 0; shift <= 400; shift += 7) {
-      const now = measureProgress(cards(330 - shift, 430 - shift, 530 - shift), LANE);
+      const now = measureProgress(
+        cards(330 - shift, 430 - shift, 530 - shift),
+        LANE,
+      );
       expect(now).toBeGreaterThanOrEqual(last);
       last = now;
     }
@@ -233,7 +239,10 @@ describe("measureProgress — the CONTINUOUS signal a consumer scrubs a visual a
   // whose steps carry two lines and five lines alike stays in step with its own words.
   for (const n of [4, 6, 8]) {
     it(`should resolve a fractional index among ${n} cards`, () => {
-      const centres = Array.from({ length: n }, (_, i) => 330 - 100 * 2 + i * 100);
+      const centres = Array.from(
+        { length: n },
+        (_, i) => 330 - 100 * 2 + i * 100,
+      );
       expect(measureProgress(cards(...centres), LANE)).toBeCloseTo(2, 6);
     });
   }
@@ -873,6 +882,37 @@ describe("renderScrolly — the full self-contained page", () => {
 
 // ---------------------------------------------------------------------------
 // render — this skill's own seed runner (SEED / STEPS_META → renderScrolly).
+// ---------------------------------------------------------------------------
+
+describe("renderScrolly — the exit emitter is inlined alongside the interaction script", () => {
+  it("should carry the release-message emitter, and leave no top-level export in the emitted HTML", async () => {
+    const steps = [
+      makeStep("first", ["First step's own words."]),
+      makeStep("second", ["Second step's own words."]),
+    ];
+    const { outPath } = await renderScrolly({
+      steps,
+      title: "Exit emitter fixture",
+      source: "Test fixture",
+      ground: "#FFFFFF",
+      outDir: "/tmp/scrolly-test-embed-exit",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+
+    // The emitter's own decision function and its release message are present, inlined — not
+    // fetched (the page stays one self-contained file, same rule as the interaction script).
+    expect(html).toContain("decideRelease");
+    expect(html).toContain('type: "release"');
+    expect(html).toContain("window.parent");
+    expect(html).not.toContain("<script src=");
+
+    // Stripping `export` (assets/embed-exit.mjs, same trick assets/interaction.mjs already uses)
+    // must leave nothing a browser would choke on as a classic script.
+    expect(html).not.toContain("export ");
+  });
+});
+
 // ---------------------------------------------------------------------------
 
 describe("render — the seed's own runner", () => {

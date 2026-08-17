@@ -122,6 +122,16 @@ ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
   );
   const inlineScript = inlineable(interactionSource);
 
+  // The exit emitter — the only message a Splash page ever sends its parent, and how a reader gets
+  // carried back out of `.scrolly-steps` at either end (a cross-origin iframe cannot scroll its own
+  // container, and Chrome does not chain scroll out of one). Inlined the same way, right after the
+  // interaction script, into its own IIFE — see `assets/embed-exit.mjs`'s own doc-comment.
+  const embedExitSource = await readFile(
+    join(HERE, "../assets/embed-exit.mjs"),
+    "utf8",
+  );
+  const inlineEmbedExit = inlineable(embedExitSource);
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -151,6 +161,9 @@ ${stepsHtml}
 </article>
 <script>
 ${inlineScript}
+</script>
+<script>
+${inlineEmbedExit}
 </script>
 </body>
 </html>
