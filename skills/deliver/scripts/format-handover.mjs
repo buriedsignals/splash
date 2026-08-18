@@ -179,11 +179,19 @@ const ROLE_BY_BASENAME = {
     "EMBED_CODE.html": "the iframe snippet to paste into the CMS",
     "DEPLOYMENT.json":
       "the deployment receipt linking the live output to its editable source and exact deployed version",
+    // Unlike every other delivered file, this one is not part of THIS beat's own delivery — it is
+    // the article page's companion script, installed once on the site's template, and every
+    // embed on that site shares the same copy. The generic ".js" / "other" role below ("delivered
+    // with the beat") would tell the newsroom to install a fresh copy per visual, which is wrong.
+    "splash-iframe-scroller.js":
+      "the article page's companion script — installed once on the site's template, not once per visual; it centres this embed and carries the reader out at the end of a scrolly",
   },
   fr: {
     "EMBED_CODE.html": "l'extrait iframe à coller dans le CMS",
     "DEPLOYMENT.json":
       "le reçu de déploiement qui relie le visuel en ligne à sa source modifiable et à sa version déployée exacte",
+    "splash-iframe-scroller.js":
+      "le script compagnon de la page — installé une seule fois sur le gabarit du site, pas une fois par visuel ; il centre cet embed et raccompagne le lecteur à la fin d'un scrolly",
   },
 };
 

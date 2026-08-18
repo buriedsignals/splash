@@ -17,6 +17,7 @@ import {
   exportDirFor as canonicalExportDirFor,
   substituteKeys,
   mapKeyState,
+  embedCodeFor,
 } from "../scripts/deliver.mjs";
 import { cloudflareProjectName } from "../scripts/deploy-embed.mjs";
 import {
@@ -74,7 +75,9 @@ const offerFormsWithReview = (options: Record<string, any>) => {
 const offerForms = (options: Record<string, any>) =>
   offerFormsLegacyV1({
     ...options,
-    storiesRoot: options.beatDir ? identityForBeat(options.beatDir).storiesRoot : tempRoot,
+    storiesRoot: options.beatDir
+      ? identityForBeat(options.beatDir).storiesRoot
+      : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
@@ -85,7 +88,9 @@ const materialise = async (options: Record<string, any>) => {
   if (options.beatDir) await approveCurrentOutput(options.beatDir);
   return materialiseLegacyV1({
     ...options,
-    storiesRoot: options.beatDir ? identityForBeat(options.beatDir).storiesRoot : tempRoot,
+    storiesRoot: options.beatDir
+      ? identityForBeat(options.beatDir).storiesRoot
+      : tempRoot,
     planVersion: TEST_PLAN_VERSION,
     findingIds: TEST_FINDING_IDS,
   });
@@ -160,7 +165,10 @@ describe("offerForms — Gate 3 before Gate 4", () => {
 
 describe("offerForms", () => {
   it("should keep the G4 prompt explicitly about a delivery form, not publication format", () => {
-    const skill = readFileSync(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
+    const skill = readFileSync(
+      join(import.meta.dirname, "..", "SKILL.md"),
+      "utf8",
+    );
     expect(skill).toContain("Which delivery form should Splash provide?");
     expect(skill).toMatch(/does not call this a publication-format choice/);
   });
@@ -223,9 +231,11 @@ describe("offerForms", () => {
   });
 
   it("should not promise an SVG when a static producer only made a PNG", () => {
-    const owned = offerForms({ beatDir, medium: "chart", format: "static" }).find(
-      (form) => form.id === "owned-file",
-    );
+    const owned = offerForms({
+      beatDir,
+      medium: "chart",
+      format: "static",
+    }).find((form) => form.id === "owned-file");
     expect(owned.gives).toContain("PNG");
     expect(owned.gives).toContain("when the producer made one");
     expect(owned.gives).not.toContain("a PNG and an SVG");
@@ -300,7 +310,10 @@ describe("offerForms", () => {
       format: "web",
       env: { CLOUDFLARE_ACCOUNT_ID: "acct" },
     }).find((form) => form.id === "embed");
-    expect(embed).toMatchObject({ available: false, reason: expect.stringContaining("CLOUDFLARE_API_TOKEN") });
+    expect(embed).toMatchObject({
+      available: false,
+      reason: expect.stringContaining("CLOUDFLARE_API_TOKEN"),
+    });
   });
 
   it("should disable the hosted embed when only the token is set, missing the account id", () => {
@@ -310,7 +323,10 @@ describe("offerForms", () => {
       format: "web",
       env: { CLOUDFLARE_API_TOKEN: "tok" },
     }).find((form) => form.id === "embed");
-    expect(embed).toMatchObject({ available: false, reason: expect.stringContaining("CLOUDFLARE_ACCOUNT_ID") });
+    expect(embed).toMatchObject({
+      available: false,
+      reason: expect.stringContaining("CLOUDFLARE_ACCOUNT_ID"),
+    });
   });
 
   it("should offer the hosted embed for a web chart once both Cloudflare credentials are set", () => {
@@ -408,7 +424,9 @@ describe("materialise", () => {
       }),
     ).rejects.toThrow(/rendered draft changed/);
 
-    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
   });
 
   it("should reject an export directory outside the story without touching it", async () => {
@@ -508,7 +526,9 @@ describe("materialise", () => {
       }),
     ).rejects.toThrow(/symbolic link/);
 
-    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
   });
 
   it("should refuse a symlinked renders directory without reading its target", async () => {
@@ -529,7 +549,9 @@ describe("materialise", () => {
       }),
     ).rejects.toThrow(/symlink/);
 
-    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
   });
 
   it("should refuse a symlink inside a source bundle without reading its target", async () => {
@@ -548,7 +570,9 @@ describe("materialise", () => {
       }),
     ).rejects.toThrow(/symbolic link/);
 
-    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
   });
 
   it("should preserve the last good export when a replacement fails", async () => {
@@ -634,7 +658,10 @@ describe("materialise", () => {
   });
 
   it("should reconcile abandoned staging before starting a new delivery", async () => {
-    const abandoned = replacementArtifacts(exportDir, "interrupted-build").stagingDir;
+    const abandoned = replacementArtifacts(
+      exportDir,
+      "interrupted-build",
+    ).stagingDir;
     await mkdir(abandoned);
     await writeFile(join(abandoned, "partial.txt"), "never publish this");
 
@@ -646,9 +673,13 @@ describe("materialise", () => {
       handover,
     });
 
-    expect(await readdir(dirname(exportDir))).not.toContain(basename(abandoned));
+    expect(await readdir(dirname(exportDir))).not.toContain(
+      basename(abandoned),
+    );
     expect(await Bun.file(join(exportDir, "partial.txt")).exists()).toBe(false);
-    expect(await readFile(join(exportDir, "still.png"), "utf8")).toBe("png-bytes");
+    expect(await readFile(join(exportDir, "still.png"), "utf8")).toBe(
+      "png-bytes",
+    );
   });
 
   it("should write only the owned file when that form is chosen", async () => {
@@ -884,7 +915,10 @@ describe("materialise", () => {
 // `materialise`, so it only needs to prove the plumbing gets there and back with the right URL.
 function fakeCloudflare({ varyDeployments = false } = {}) {
   let deploymentNumber = 0;
-  const deployments = new Map<string, { id: string; url: string; commitHash: string }>();
+  const deployments = new Map<
+    string,
+    { id: string; url: string; commitHash: string }
+  >();
   const fetchFn = async (url: string, init?: RequestInit) => {
     const path = new URL(url).pathname;
     if (path.endsWith("/upload-token")) {
@@ -931,15 +965,20 @@ function fakeCloudflare({ varyDeployments = false } = {}) {
     const deploymentMatch = path.match(/\/deployments\/(deployment-\d+)$/);
     if (deploymentMatch && init?.method !== "POST") {
       const deployment = deployments.get(deploymentMatch[1]);
-      if (!deployment) throw new Error(`fakeCloudflare: missing ${deploymentMatch[1]}`);
-      return new Response(JSON.stringify({
-        success: true,
-        result: {
-          id: deployment.id,
-          url: deployment.url,
-          deployment_trigger: { metadata: { commit_hash: deployment.commitHash } },
-        },
-      }));
+      if (!deployment)
+        throw new Error(`fakeCloudflare: missing ${deploymentMatch[1]}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: {
+            id: deployment.id,
+            url: deployment.url,
+            deployment_trigger: {
+              metadata: { commit_hash: deployment.commitHash },
+            },
+          },
+        }),
+      );
     }
     if (path.endsWith("/projects") && init?.method === "POST") {
       return new Response(JSON.stringify({ success: true, result: {} }));
@@ -963,7 +1002,10 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       join(webBeatDir, "renders", "rainfall.html"),
       "<!doctype html><html><body><h1>rainfall</h1></body></html>",
     );
-    await writeFile(join(webBeatDir, "APPROVED.md"), "seen at full size, approved");
+    await writeFile(
+      join(webBeatDir, "APPROVED.md"),
+      "seen at full size, approved",
+    );
   });
   afterEach(async () => {
     await rm(webTempRoot, { recursive: true, force: true });
@@ -980,7 +1022,9 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
         handover,
       }),
     ).rejects.toThrow("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN");
-    expect(await Bun.file(join(webTempRoot, ".splash-instance-id")).exists()).toBe(false);
+    expect(
+      await Bun.file(join(webTempRoot, ".splash-instance-id")).exists(),
+    ).toBe(false);
   });
 
   it("should write the stable URL, iframe code, and deployment receipt when deploy is chosen", async () => {
@@ -1004,15 +1048,33 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       "EMBED_CODE.html",
       "EMBED_URL.txt",
       "HANDOVER.md",
+      "splash-iframe-scroller.js",
     ]);
     const url = await Bun.file(join(webExportDir, "EMBED_URL.txt")).text();
-    const instanceId = (await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")).trim();
-    const projectName = cloudflareProjectName(instanceId, "story", "1-rainfall-web");
-    expect(url.trim()).toBe(`https://${projectName}.pages.dev`);
-    expect(await Bun.file(join(webExportDir, "EMBED_CODE.html")).text()).toContain(
-      `<iframe src="https://${projectName}.pages.dev/"`,
+    const instanceId = (
+      await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")
+    ).trim();
+    const projectName = cloudflareProjectName(
+      instanceId,
+      "story",
+      "1-rainfall-web",
     );
-    expect(JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"))).toMatchObject({
+    // The address a journalist may paste straight into a CMS that accepts only a URL: it carries
+    // the marker, because the CMS builds the iframe itself and `data-splash-embed` never survives.
+    // DEPLOYMENT.json's own `publicUrl` stays unmarked — `deploy-embed.mjs` requires it to be
+    // exactly the stable project URL, and a query string there fails reconciliation.
+    expect(url.trim()).toBe(`https://${projectName}.pages.dev?splash`);
+    // The `?splash` marker is what lets `splash-iframe-scroller.js` recognise this iframe when a
+    // CMS has rebuilt the markup from a bare URL and the `data-splash-embed` attribute did not
+    // survive — see that script's own header comment.
+    expect(
+      await Bun.file(join(webExportDir, "EMBED_CODE.html")).text(),
+    ).toContain(
+      `<iframe data-splash-embed src="https://${projectName}.pages.dev/?splash"`,
+    );
+    expect(
+      JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8")),
+    ).toMatchObject({
       schemaVersion: 2,
       provider: "cloudflare-pages",
       storyId: "story",
@@ -1026,6 +1088,7 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     expect(written).toEqual([
       join(webExportDir, "EMBED_URL.txt"),
       join(webExportDir, "EMBED_CODE.html"),
+      join(webExportDir, "splash-iframe-scroller.js"),
       join(webExportDir, "DEPLOYMENT.json"),
       join(webExportDir, "HANDOVER.md"),
     ]);
@@ -1042,7 +1105,9 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       fetchFn,
       handover,
     });
-    const first = JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"));
+    const first = JSON.parse(
+      await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"),
+    );
 
     await writeFile(
       join(webBeatDir, "renders", "rainfall.html"),
@@ -1057,12 +1122,16 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       fetchFn,
       handover,
     });
-    const second = JSON.parse(await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"));
+    const second = JSON.parse(
+      await readFile(join(webExportDir, "DEPLOYMENT.json"), "utf8"),
+    );
 
     expect(second.publicUrl).toBe(first.publicUrl);
     expect(second.projectName).toBe(first.projectName);
     expect(second.splashInstanceId).toBe(first.splashInstanceId);
-    expect(second.immutableDeploymentUrl).not.toBe(first.immutableDeploymentUrl);
+    expect(second.immutableDeploymentUrl).not.toBe(
+      first.immutableDeploymentUrl,
+    );
   });
 
   it("should reuse a successful remote deployment after local publication fails", async () => {
@@ -1076,7 +1145,10 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     const base = fakeCloudflare();
     let deploymentPosts = 0;
     const fetchFn = async (url: string, init?: RequestInit) => {
-      if (new URL(url).pathname.endsWith("/deployments") && init?.method === "POST") {
+      if (
+        new URL(url).pathname.endsWith("/deployments") &&
+        init?.method === "POST"
+      ) {
         deploymentPosts++;
       }
       return base(url, init);
@@ -1099,13 +1171,19 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       }),
     ).rejects.toThrow(/local publication fault/);
 
-    expect(await Bun.file(join(webExportDir, "rainfall.html")).exists()).toBe(true);
-    expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).exists()).toBe(false);
+    expect(await Bun.file(join(webExportDir, "rainfall.html")).exists()).toBe(
+      true,
+    );
+    expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).exists()).toBe(
+      false,
+    );
     const exportRoot = dirname(webExportDir);
     const recordName = (await readdir(exportRoot)).find((name) =>
       name.includes("-hosted-deployment-"),
     )!;
-    expect(JSON.parse(await readFile(join(exportRoot, recordName), "utf8"))).toMatchObject({
+    expect(
+      JSON.parse(await readFile(join(exportRoot, recordName), "utf8")),
+    ).toMatchObject({
       state: "remote-complete",
       deploymentId: "deployment-1",
     });
@@ -1121,14 +1199,20 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     });
 
     expect(deploymentPosts).toBe(1);
-    expect(await Bun.file(join(webExportDir, "EMBED_URL.txt")).text()).toContain(
+    expect(
+      await Bun.file(join(webExportDir, "EMBED_URL.txt")).text(),
+    ).toContain(
       `https://${cloudflareProjectName(
-        (await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")).trim(),
+        (
+          await readFile(join(webTempRoot, ".splash-instance-id"), "utf8")
+        ).trim(),
         "story",
         "1-rainfall-web",
       )}.pages.dev`,
     );
-    expect(JSON.parse(await readFile(join(exportRoot, recordName), "utf8"))).toMatchObject({
+    expect(
+      JSON.parse(await readFile(join(exportRoot, recordName), "utf8")),
+    ).toMatchObject({
       state: "local-complete",
       deploymentId: "deployment-1",
     });
@@ -1217,7 +1301,13 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     });
     expect(
       (await readdir(webExportDir)).filter((f) => !f.startsWith(".")).sort(),
-    ).toEqual(["DEPLOYMENT.json", "EMBED_CODE.html", "EMBED_URL.txt", "HANDOVER.md"]);
+    ).toEqual([
+      "DEPLOYMENT.json",
+      "EMBED_CODE.html",
+      "EMBED_URL.txt",
+      "HANDOVER.md",
+      "splash-iframe-scroller.js",
+    ]);
 
     await materialise({
       form: "cms-insertion",
@@ -1427,12 +1517,12 @@ describe("a story has more than one beat", () => {
       handover,
     });
 
-    expect(await readdir(exportDirFor(multiBeatStoryDir, "1-rainfall"))).toContain(
-      "still.png",
-    );
-    expect(await readdir(exportDirFor(multiBeatStoryDir, "2-temperature"))).toContain(
-      "build.ts",
-    );
+    expect(
+      await readdir(exportDirFor(multiBeatStoryDir, "1-rainfall")),
+    ).toContain("still.png");
+    expect(
+      await readdir(exportDirFor(multiBeatStoryDir, "2-temperature")),
+    ).toContain("build.ts");
   });
 
   it("should give each beat its own directory under export/", async () => {
@@ -1472,7 +1562,9 @@ describe("a story has more than one beat", () => {
       }),
     ).rejects.toThrow(/export directory/);
 
-    expect(await readFile(join(shared, "sentinel.txt"), "utf8")).toBe("keep-me");
+    expect(await readFile(join(shared, "sentinel.txt"), "utf8")).toBe(
+      "keep-me",
+    );
   });
 
   it("should still let the same beat change its mind in its own directory", async () => {
@@ -1691,5 +1783,140 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(await readFile(join(exportDir, "chart.html"), "utf8")).toBe(
       chartPage,
     );
+  });
+});
+
+describe("embedCodeFor", () => {
+  const url = "https://example-story.pages.dev/";
+  const title = "Rainfall in Annemasse";
+
+  it("should reference an absolute scroller URL and inline nothing, when one is given", () => {
+    const html = embedCodeFor(url, title, {
+      scrollerUrl: "https://cdn.example.com/splash-iframe-scroller.js",
+    });
+    expect(html).toContain(
+      '<script src="https://cdn.example.com/splash-iframe-scroller.js"></script>',
+    );
+    // Nothing else: this is the one script tag, referencing the hosted file, no inline body.
+    expect(html.match(/<script/g)?.length).toBe(1);
+  });
+
+  it("should inline the scroller's own source and emit no <script src=…> for it, when no URL is given", () => {
+    const inlineSource = "window.splashScroller = { hi: true };";
+    const html = embedCodeFor(url, title, { inlineSource });
+    expect(html).toContain(`<script>\n${inlineSource}\n</script>`);
+    expect(html).not.toMatch(/<script src=/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on a non-HTTPS scroller URL", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        scrollerUrl: "http://cdn.example.com/splash-iframe-scroller.js",
+      }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on a scroller URL carrying credentials", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        scrollerUrl:
+          "https://user:pass@cdn.example.com/splash-iframe-scroller.js",
+      }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should fail loudly, naming SPLASH_SCROLLER_URL, on an unparseable scroller URL", () => {
+    expect(() =>
+      embedCodeFor(url, title, { scrollerUrl: "not a url" }),
+    ).toThrow(/SPLASH_SCROLLER_URL/);
+  });
+
+  it("should refuse to inline a source that contains </script — it would end the block early", () => {
+    expect(() =>
+      embedCodeFor(url, title, {
+        inlineSource: "console.log('</script>');",
+      }),
+    ).toThrow(/<\/script/);
+  });
+
+  it("should refuse when neither a scroller URL nor an inline source is given", () => {
+    expect(() => embedCodeFor(url, title, {})).toThrow(
+      /scrollerUrl|inlineSource/,
+    );
+  });
+
+  it("should keep the iframe itself identical across both modes: attribute, marker, height, title", () => {
+    for (const options of [
+      { scrollerUrl: "https://cdn.example.com/splash-iframe-scroller.js" },
+      { inlineSource: "/* scroller */" },
+    ]) {
+      const html = embedCodeFor(url, title, options);
+      expect(html).toContain("data-splash-embed");
+      expect(html).toContain('src="https://example-story.pages.dev/?splash"');
+      expect(html).toContain("height:600px");
+      expect(html).toContain(`title="${title}"`);
+      expect(html).toContain('loading="lazy"');
+    }
+  });
+});
+
+describe("materialise — embed form resolves the scroller via SPLASH_SCROLLER_URL", () => {
+  let tempRoot2: string, beatDir2: string, exportDir2: string;
+  beforeEach(async () => {
+    tempRoot2 = await mkdtemp(join(tmpdir(), "scroller-url-beat-"));
+    const storyDir = join(tempRoot2, "story");
+    beatDir2 = join(storyDir, "beats", "1-rainfall-web");
+    exportDir2 = exportDirFor(storyDir, "1-rainfall-web");
+    await mkdir(join(beatDir2, "renders"), { recursive: true });
+    await writeFile(
+      join(beatDir2, "renders", "rainfall.html"),
+      "<!doctype html><html><body><h1>rainfall</h1></body></html>",
+    );
+    await writeFile(
+      join(beatDir2, "APPROVED.md"),
+      "seen at full size, approved",
+    );
+  });
+  afterEach(async () => {
+    await rm(tempRoot2, { recursive: true, force: true });
+  });
+
+  it("should reference the hosted scroller URL when SPLASH_SCROLLER_URL is set", async () => {
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: beatDir2,
+      exportDir: exportDir2,
+      env: {
+        CLOUDFLARE_ACCOUNT_ID: "acct",
+        CLOUDFLARE_API_TOKEN: "tok",
+        SPLASH_SCROLLER_URL:
+          "https://cdn.example.com/splash-iframe-scroller.js",
+      },
+      fetchFn: fakeCloudflare(),
+      handover,
+    });
+    const code = await Bun.file(join(exportDir2, "EMBED_CODE.html")).text();
+    expect(code).toContain(
+      '<script src="https://cdn.example.com/splash-iframe-scroller.js"></script>',
+    );
+  });
+
+  it("should inline the scroller's own source when SPLASH_SCROLLER_URL is not set", async () => {
+    await materialise({
+      form: "embed",
+      format: "web",
+      beatDir: beatDir2,
+      exportDir: exportDir2,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn: fakeCloudflare(),
+      handover,
+    });
+    const code = await Bun.file(join(exportDir2, "EMBED_CODE.html")).text();
+    // Anchored to the start of a line: the inlined source carries, in its OWN header comment, an
+    // example `<script src="/assets/splash-iframe-scroller.js">` showing a newsroom how to host it.
+    // An unanchored match trips on that documentation instead of on real markup.
+    expect(code).not.toMatch(/^<script src=/m);
+    expect(code).toContain("splashScroller");
   });
 });
