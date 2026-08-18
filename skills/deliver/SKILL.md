@@ -211,7 +211,11 @@ remain untouched on disk.
      immutable deployment URL and Splash instance ID back to `beats/<outputId>/` and the current rendered artifact.
      `HANDOVER.md` explains each file. An approved revision rematerialised for the same output
      deploys to the same project, so existing embeds keep their address while the deployment
-     receipt records the new immutable version.
+     receipt records the new immutable version. Splash also publishes the article-page companion
+     script to one deterministic Pages project per Cloudflare account and references that absolute
+     URL from `EMBED_CODE.html`; ordinary browsers load it automatically. Preflight exposes the
+     exact URL as an optional CSP/script-blocker allow-list value. `SPLASH_SCROLLER_URL` may still
+     override the emitted URL without preventing Splash from maintaining its canonical hosted copy.
    - **`"cms-insertion"` — UNPROVEN.** Reads the same single owned file, builds a mutation payload
      with `scripts/cms-insert.mjs`'s `buildInsertion` (`kind: "we-publish"` by default, or the
      caller's own `cms` object), and writes it to `exportDir/CMS-INSERTION.md` — nothing is sent
@@ -415,6 +419,7 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
 | Which Cloudflare Pages project a beat's embed lands in | One deterministic, length-bounded project derived from `{storyId, outputId}`; rerunning the same output retains its stable `*.pages.dev` URL | `cloudflareProjectName`, `scripts/deploy-embed.mjs` |
+| Which URL a newsroom may whitelist for scrollytelling assistance | One deterministic `https://splash-scroller-<account-hash>.pages.dev` URL per Cloudflare account; Splash publishes it automatically on hosted delivery | `cloudflareScrollerProjectName`, `cloudflareScrollerUrl`, `scripts/deploy-embed.mjs` |
 | How long a Cloudflare request, including its response body, may remain unresolved | `15,000ms` (override with `materialise`'s `hostedRequestTimeoutMs`) | `scripts/deploy-embed.mjs`, `DEFAULT_REQUEST_TIMEOUT_MS` |
 | Which formats a medium can also be produced in, after its first delivery | `chart`/`map` → 4 each, `image` → 2 (an absent pair is never offered) | `PRODUCIBLE_FORMATS`, `scripts/another-format.mjs` |
 | What answers close a delivery | `2` — `declined` and `taken <format>`; `pending` is what `materialise` writes and what `deliveryClosed` refuses to call closed | `recordFormatAnswer`, `scripts/another-format.mjs` |

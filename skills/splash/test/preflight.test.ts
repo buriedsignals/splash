@@ -325,6 +325,10 @@ describe("runPreflight — capabilities, not a verdict", () => {
       fetchFn: okFetch,
     });
     expect(report.capabilities.hostedEmbed.available).toBe(true);
+    expect(report.capabilities.hostedEmbed).toMatchObject({
+      companionScriptUrl: "https://splash-scroller-def0b17f603285ef4336.pages.dev",
+      whitelistOptional: true,
+    });
   });
 
   it("should carry a probed capability's own rejection, rather than a fixed sentence", async () => {

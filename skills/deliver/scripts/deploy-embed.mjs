@@ -245,6 +245,19 @@ export function cloudflareProjectName(instanceId, storyId, outputId) {
   return project;
 }
 
+export function cloudflareScrollerProjectName(accountId) {
+  if (typeof accountId !== "string" || !/^[A-Za-z0-9_-]+$/.test(accountId)) {
+    throw new Error("a Splash scroller project needs one Cloudflare account ID path segment");
+  }
+  const identity = /^[0-9a-f]{32}$/i.test(accountId) ? accountId.toLowerCase() : accountId;
+  const digest = createHash("sha256").update(identity).digest("hex").slice(0, 20);
+  return `splash-scroller-${digest}`;
+}
+
+export function cloudflareScrollerUrl(accountId) {
+  return stableProjectUrl(cloudflareScrollerProjectName(accountId));
+}
+
 function stableProjectUrl(projectName) {
   return `https://${projectName}.pages.dev`;
 }

@@ -19,7 +19,7 @@ import {
   mapKeyState,
   embedCodeFor,
 } from "../scripts/deliver.mjs";
-import { cloudflareProjectName } from "../scripts/deploy-embed.mjs";
+import { cloudflareProjectName, cloudflareScrollerUrl } from "../scripts/deploy-embed.mjs";
 import {
   offerFormsLegacyV1,
   materialiseLegacyV1,
@@ -1178,15 +1178,19 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       false,
     );
     const exportRoot = dirname(webExportDir);
-    const recordName = (await readdir(exportRoot)).find((name) =>
+    const recordNames = (await readdir(exportRoot)).filter((name) =>
       name.includes("-hosted-deployment-"),
-    )!;
-    expect(
-      JSON.parse(await readFile(join(exportRoot, recordName), "utf8")),
-    ).toMatchObject({
-      state: "remote-complete",
-      deploymentId: "deployment-1",
-    });
+    );
+    expect(recordNames).toHaveLength(2);
+    const remoteRecords = await Promise.all(
+      recordNames.map(async (name) =>
+        JSON.parse(await readFile(join(exportRoot, name), "utf8"))),
+    );
+    expect(remoteRecords.map((record) => record.outputId).sort()).toEqual([
+      "1-rainfall-web",
+      "splash-iframe-scroller",
+    ]);
+    expect(remoteRecords.every((record) => record.state === "remote-complete")).toBe(true);
 
     await materialise({
       form: "embed",
@@ -1198,7 +1202,7 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
       handover,
     });
 
-    expect(deploymentPosts).toBe(1);
+    expect(deploymentPosts).toBe(2);
     expect(
       await Bun.file(join(webExportDir, "EMBED_URL.txt")).text(),
     ).toContain(
@@ -1210,12 +1214,11 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
         "1-rainfall-web",
       )}.pages.dev`,
     );
-    expect(
-      JSON.parse(await readFile(join(exportRoot, recordName), "utf8")),
-    ).toMatchObject({
-      state: "local-complete",
-      deploymentId: "deployment-1",
-    });
+    const completedRecords = await Promise.all(
+      recordNames.map(async (name) =>
+        JSON.parse(await readFile(join(exportRoot, name), "utf8"))),
+    );
+    expect(completedRecords.every((record) => record.state === "local-complete")).toBe(true);
   });
 
   it("should refuse to materialise embed when renders/ holds more than one file", async () => {
@@ -1902,7 +1905,7 @@ describe("materialise — embed form resolves the scroller via SPLASH_SCROLLER_U
     );
   });
 
-  it("should inline the scroller's own source when SPLASH_SCROLLER_URL is not set", async () => {
+  it("should host and reference the companion automatically when SPLASH_SCROLLER_URL is not set", async () => {
     await materialise({
       form: "embed",
       format: "web",
@@ -1913,10 +1916,9 @@ describe("materialise — embed form resolves the scroller via SPLASH_SCROLLER_U
       handover,
     });
     const code = await Bun.file(join(exportDir2, "EMBED_CODE.html")).text();
-    // Anchored to the start of a line: the inlined source carries, in its OWN header comment, an
-    // example `<script src="/assets/splash-iframe-scroller.js">` showing a newsroom how to host it.
-    // An unanchored match trips on that documentation instead of on real markup.
-    expect(code).not.toMatch(/^<script src=/m);
-    expect(code).toContain("splashScroller");
+    expect(code).toContain(
+      `<script src="${cloudflareScrollerUrl("acct")}/"></script>`,
+    );
+    expect(code).not.toContain("splashScroller");
   });
 });

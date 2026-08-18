@@ -172,6 +172,9 @@ unavailable while `offerForms` would have offered it — **a delivery constraint
 - `capabilities.map` / `capabilities.datawrapper` / `capabilities.hostedEmbed` each carry
   `{available, reason}` (plus `opens`, the label from the table above) — a missing or rejected key
   narrows `capabilities`, and never appears in `blockers`.
+- An available `hostedEmbed` also carries `companionScriptUrl` and
+  `whitelistOptional: true`: the script loads automatically, while the exact URL is disclosed for
+  newsrooms whose CSP or script blocker requires an explicit allow-list.
 - `assertPreflightReady(report)` (`scripts/preflight.mjs`) is the mechanical stop the old prose
   only described: it throws, naming every blocker, when `ready` is false, and does nothing at all
   otherwise. It never inspects `capabilities` — call it once, right after `runPreflight`, instead of
