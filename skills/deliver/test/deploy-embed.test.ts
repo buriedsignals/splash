@@ -5,6 +5,8 @@ import { join } from "node:path";
 import {
   contentTypeFor,
   cloudflareProjectName,
+  cloudflareScrollerProjectName,
+  cloudflareScrollerUrl,
   resolveSplashInstanceId,
   resolveCloudflareCredentials,
   deployFile,
@@ -455,5 +457,16 @@ describe("cloudflareProjectName", () => {
       stableAcrossRevisions: true,
       publishedAt: "2026-08-14T00:00:00.000Z",
     })).toThrow(/does not belong/);
+  });
+});
+
+describe("cloudflareScrollerProjectName", () => {
+  it("derives one stable companion URL per Cloudflare account", () => {
+    const project = cloudflareScrollerProjectName("acct");
+    expect(project).toBe("splash-scroller-def0b17f603285ef4336");
+    expect(cloudflareScrollerUrl("acct")).toBe(`https://${project}.pages.dev`);
+    expect(cloudflareScrollerProjectName("ABCDEF0123456789ABCDEF0123456789")).toBe(
+      cloudflareScrollerProjectName("abcdef0123456789abcdef0123456789"),
+    );
   });
 });

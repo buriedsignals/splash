@@ -5,11 +5,12 @@
 // is always on the {form, format} pair, never on the form id alone.
 
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
+  cloudflareScrollerProjectName,
   DEPLOYMENT_RECEIPT_SCHEMA_VERSION,
   deployFile,
   resolveSplashInstanceId,
@@ -703,15 +704,26 @@ async function materialiseInto({
     // EXACTLY the stable project URL, and a query string there fails that check.
     await writeFile(urlPath, `${withSplashMarker(deployment.url)}\n`);
     written.push(urlPath);
-    // Which script tag the pasted block gets: an absolute URL when the newsroom has told us where
-    // its own hosted copy lives (`SPLASH_SCROLLER_URL`), or the script's own source inlined so the
-    // block works with zero setup. Never the bare relative filename this replaces — see
-    // `embedCodeFor`'s own header comment for why that broke silently everywhere but one path.
-    const embedOptions = env[SCROLLER_URL_ENV_VAR]
-      ? { scrollerUrl: env[SCROLLER_URL_ENV_VAR] }
-      : { inlineSource: await readFile(SCROLLER_ASSET_PATH, "utf8") };
+    const scrollerSource = await readFile(SCROLLER_ASSET_PATH);
+    const scrollerDigest = `sha256:${createHash("sha256").update(scrollerSource).digest("hex")}`;
+    const companionDeployment = await deployFile({
+      accountId: creds.accountId,
+      apiToken: creds.apiToken,
+      projectName: cloudflareScrollerProjectName(creds.accountId),
+      filePath: SCROLLER_ASSET_PATH,
+      fileName: SCROLLER_ASSET_NAME,
+      recordDir: hostedOperation.recordDir,
+      outputId: "splash-iframe-scroller",
+      reviewId: `asset-${scrollerDigest.slice(7, 27)}`,
+      draftDigest: scrollerDigest,
+      deliveryOperationId: hostedOperation.deliveryOperationId,
+      timeoutMs: hostedOperation.timeoutMs,
+      fetchFn,
+    });
+    hostedOperation.companionResult = companionDeployment;
+    const scrollerUrl = env[SCROLLER_URL_ENV_VAR] || companionDeployment.url;
     const codePath = join(exportDir, "EMBED_CODE.html");
-    await writeFile(codePath, embedCodeFor(deployment.url, handover.alt, embedOptions));
+    await writeFile(codePath, embedCodeFor(deployment.url, handover.alt, { scrollerUrl }));
     written.push(codePath);
     // A copy is still shipped alongside the block regardless of mode — a newsroom that later hosts
     // its own copy and sets SPLASH_SCROLLER_URL wants this exact file to publish at that URL.
@@ -937,6 +949,20 @@ export async function materialise(options) {
                   },
                 }
               : {}),
+            ...(hostedOperation?.companionResult
+              ? {
+                  companionScript: {
+                    deploymentKey: hostedOperation.companionResult.deploymentKey,
+                    deploymentId: hostedOperation.companionResult.deploymentId,
+                    url: hostedOperation.companionResult.url,
+                    deploymentUrl: hostedOperation.companionResult.deploymentUrl,
+                    projectName: cloudflareScrollerProjectName(
+                      resolveCloudflareCredentials(options.env ?? process.env).accountId,
+                    ),
+                    record: basename(hostedOperation.companionResult.recordPath),
+                  },
+                }
+              : {}),
             createdAt: new Date().toISOString(),
           },
           hooks: options.replacementHooks,
@@ -944,6 +970,12 @@ export async function materialise(options) {
         if (hostedOperation?.result) {
           await markHostedDeploymentLocalComplete(
             hostedOperation.result.recordPath,
+            operationId,
+          );
+        }
+        if (hostedOperation?.companionResult) {
+          await markHostedDeploymentLocalComplete(
+            hostedOperation.companionResult.recordPath,
             operationId,
           );
         }

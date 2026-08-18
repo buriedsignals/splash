@@ -4,6 +4,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.mjs";
 import { probeMapTiler, probeDatawrapper, probeCloudflare, resolveEnvKey } from "./keys.mjs";
 
@@ -209,6 +210,10 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
         opens: "the hosted embed delivery form",
         available: result.ok,
         reason: result.detail,
+        companionScriptUrl: result.ok
+          ? `https://splash-scroller-${createHash("sha256").update(accountId.toLowerCase()).digest("hex").slice(0, 20)}.pages.dev`
+          : null,
+        whitelistOptional: true,
         fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom, then verify and save a Pages token under Credentials in Splash Readiness setup",
       };
     })(),
