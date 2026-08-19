@@ -402,8 +402,69 @@ That is a task this plan should carry; it is not in it yet.
 **Found while running the full suite, and NOT caused by this work** (verified against a stashed
 tree, identical before and after): `skills/scrolly/test/scroll-integrity.test.ts` is red with nine
 failures of the plate-follows-the-theme guard — `danube-scrolly`, `one-map-four-readings` and
-`quakes-four-maps`, at three widths each, all shipping a light plate under a `#000` ground. Real
-debt, correctly named by a guard added earlier in this branch, and not yet paid.
+`quakes-four-maps`, at three widths each.
+
+---
+
+### Task 1e: The debt was the guard's, not the beats' — closed 2026-08-19, `e5a47f36`
+
+The three beats were correct. All three declare `--ground: #FFFFFF` in their own `:root` and carry
+light plates (0.890 / 0.700 / 0.658): a light beat with a light plate, three times over. **The
+instrument was wrong.**
+
+It read `getComputedStyle(document.querySelector(".scrolly")).backgroundColor`. `.scrolly` sets no
+background — `html, body` carry `background: var(--ground)` — so the computed value is
+`rgba(0, 0, 0, 0)`, and luminance maths that ignore alpha read those zeros as pure black. **Every
+beat in the tree measured "ground 0.000."** The one beat that passed, `route-access`, passed by
+luck: its declared ground really is dark, so black landed on the right side.
+
+Two things at once, because either alone leaves the hole:
+
+- `surfaceLuminance(css)` — pure, tested without a browser, returns `null` for zero alpha and for an
+  unreadable value. A transparent surface has not been measured; it has been missed, and an
+  instrument that returns a number there is confidently wrong.
+- the ground read is the one the beat DECLARES (`--ground`), then `.scrolly`, then `body`. The page
+  returns STRINGS and node decides, which is what makes the decision testable without Chrome. When
+  no ground can be read at all the guard says so in a note and does not run.
+
+Mutation-checked end to end, not only on the pure function: `--ground` forced to `#FFFFFF` on
+`route-access`'s own rendered file with its dark plate untouched → FAIL naming ground 1.000 against
+plate 0.015 at all three widths. `bun test skills/scrolly`: 157 pass, 0 fail.
+
+**The rule this earns, and it is one this branch has now paid for twice.** The first time was the
+Danube dash, where five measurements of my own contradicted the owner's screen and the owner was
+right. This time a guard I wrote failed three innocent beats for eight days' worth of red. Both have
+the same shape: *a measurement that disagrees with a beat has to be doubted before the beat is*. What
+made this one findable in an hour rather than a day was reading what the beats DECLARE (`PALETTE.md`
+said `#FFFFFF` on all three, against a guard reporting black) instead of re-running the instrument.
+
+---
+
+### Task 1f: The picture comparator must not be a trade — OPEN
+
+Raised by the owner on 2026-08-19, on the wording "to be shareable, the comparator had to lose its
+browser": sharing between skills is for CARRYING capability across, not for trimming to whatever the
+weakest path can afford. Measured, the swap in Task 1d was both:
+
+| | browser comparator (before) | `node:zlib` comparator (now) |
+| --- | --- | --- |
+| alpha channel | **not compared** (`dr`/`dg`/`db` only) — a still whose ground went transparent read as identical | compared |
+| browsers needed | one launch per comparison | none |
+| callable from | a skill already driving Chrome (1 of 7) | all 7, synchronously |
+| PNG 8-bit RGB/RGBA | yes | yes |
+| **PNG 16-bit, palette, greyscale, interlaced** | **yes** | **throws by name** |
+| JPEG / WebP | yes | no |
+
+The last two rows are capability that was there and is not any more. It does not bite today — all
+fourteen `preview.png` in the tree are 8-bit RGB or RGBA, non-interlaced, measured — but "it does not
+bite today" is what every one of the defects in this plan was, once.
+
+**The work:** widen `decodePng` to greyscale (colour type 0), palette + `tRNS` (3), greyscale+alpha
+(4), 16-bit depth, and Adam7 interlace; keep the named refusal for anything still outside. Each
+addition arrives with its own round-trip test AND a cross-check against Chrome's decoder on a real
+file of that kind, because the synthetic round-trip alone cannot catch a bug the encoder shares —
+measured: a broken Paeth predictor stayed green until the fixture stopped being a linear gradient.
+Then re-copy to all eight skills; `compare-png-parity.test.ts` holds them.
 
 ---
 
