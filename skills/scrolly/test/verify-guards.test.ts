@@ -23,6 +23,7 @@ import {
   requiresScrub,
   stalledSteps,
   neverReached,
+  plateFollowsGround,
 } from "../scripts/verify-scrolly.mjs";
 
 // ── G1. Two steps that paint the same picture ────────────────────────────────────────────────
@@ -478,5 +479,46 @@ describe("marks that the narrative reaches", () => {
 
   it("says nothing about a beat that declares no state at all", () => {
     expect(neverReached([])).toEqual([]);
+  });
+});
+
+// ── G7. A plate that does not follow the theme ────────────────────────────────────────────────
+//
+// The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+// halo — furniture that is right for that ground — over a basemap baked in `dataviz-light`. The
+// theme and the plate disagreed, and nothing said so: the labels read as unreadable white-on-white,
+// which is what it looks like when the furniture is right and the ground under it is not.
+//
+// It is the one disagreement in this format that a machine CAN settle, because both sides are
+// numbers: the ground is declared and the plate can be measured. What it must not do is prescribe a
+// direction — a dark beat and a light beat are both legitimate; what is refused is the two sides
+// being on opposite ones.
+
+describe("a baked plate under a declared ground", () => {
+  it("refuses a light plate under a dark ground", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.83 })).toBe(false);
+  });
+
+  it("refuses a dark plate under a light ground", () => {
+    expect(plateFollowsGround({ ground: 0.95, plate: 0.014 })).toBe(false);
+  });
+
+  it("accepts the dark pairing this beat was rebuilt into", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.014 })).toBe(true);
+  });
+
+  it("accepts an ordinary light pairing", () => {
+    expect(plateFollowsGround({ ground: 1, plate: 0.78 })).toBe(true);
+  });
+
+  // A mid-grey plate belongs to neither side and cannot be called wrong on this evidence: the
+  // guard's job is to catch the two-sided disagreement, not to legislate taste.
+  it("accepts a plate that sits in the middle, whichever ground it is under", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.42 })).toBe(true);
+    expect(plateFollowsGround({ ground: 0.95, plate: 0.42 })).toBe(true);
+  });
+
+  it("says nothing when there is no plate to measure", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: null })).toBe(true);
   });
 });

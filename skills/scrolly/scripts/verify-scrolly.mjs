@@ -251,6 +251,27 @@ export function duplicatedPayload(html) {
     .sort((a, b) => b.wastedBytes - a.wastedBytes);
 }
 
+/** The two sides a mid-grey band apart: below this a surface is DARK, above it LIGHT, and in
+ *  between it belongs to neither and this guard says nothing. */
+const DARK_SIDE = 0.25;
+const LIGHT_SIDE = 0.6;
+
+/** Whether a baked plate is on the same side as the ground its beat declared.
+ *
+ *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+ *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
+ *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
+ *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
+ *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
+export function plateFollowsGround({ ground, plate }) {
+  if (plate == null || ground == null) return true;
+  const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
+  const one = side(ground);
+  const two = side(plate);
+  if (one === "middle" || two === "middle") return true;
+  return one === two;
+}
+
 /** Marks a beat declared PENDING that were still pending when the scroll ended.
  *
  *  The narrative reached them and the picture never said so — measured on a rebuilt route beat whose
@@ -1256,6 +1277,54 @@ export async function verifyCargo(page, file, { w, h }) {
         : `${where}: this beat declares no \`data-state\` marks, so nothing checks that its own marks register the narrative`,
     );
   }
+
+  // THE PLATE AGAINST THE THEME, both as numbers. The ground is read off the rendered page rather
+  // than off a stylesheet, and the plate is sampled through a canvas — a DOM read, not a compositor
+  // one, which is the only kind this file trusts since a screenshot lied to it.
+  const surfaces = await page.evaluate(async () => {
+    const relative = (rgb) => {
+      const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number);
+      const channel = (value) => {
+        const c = value / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const root = document.querySelector(".scrolly");
+    const ground = root ? relative(getComputedStyle(root).backgroundColor) : null;
+    const graphic = document.querySelector(".scrolly-graphic");
+    const source =
+      graphic?.querySelector("img[src^='data:']") ??
+      graphic?.querySelector("image[href^='data:'], image[*|href^='data:']");
+    if (!source) return { ground, plate: null };
+    const href = source.getAttribute("src") ?? source.getAttribute("href");
+    const bitmap = await new Promise((settle) => {
+      const img = new Image();
+      img.onload = () => settle(img);
+      img.onerror = () => settle(null);
+      img.src = href;
+    });
+    if (!bitmap) return { ground, plate: null };
+    const canvas = new OffscreenCanvas(64, 32);
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(bitmap, 0, 0, 64, 32);
+    const data = context.getImageData(0, 0, 64, 32).data;
+    let sum = 0;
+    for (let px = 0; px < data.length; px += 4)
+      sum += relative(`rgb(${data[px]},${data[px + 1]},${data[px + 2]})`);
+    return { ground, plate: sum / (data.length / 4) };
+  });
+  if (!plateFollowsGround(surfaces))
+    failures.push(
+      `${where}: the baked plate and the ground this beat declares are on opposite sides — ground ` +
+        `luminance ${surfaces.ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}. The furniture ` +
+        `derives from the ground, so it will be right and unreadable: white labels over a light ` +
+        `basemap, or ink over a dark one. Bake the plate in the style the theme asked for`,
+    );
+  if (surfaces.plate != null)
+    notes.push(
+      `${where}: ground luminance ${surfaces.ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}`,
+    );
 
   for (const id of revealDashInScreenSpace([...dashed.values()]))
     failures.push(

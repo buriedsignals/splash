@@ -1007,6 +1007,27 @@ and says out loud when a scrub beat declares nothing at all — a beat whose mar
 exactly 1.0 along the route, the scroll ended at a reveal of 0.9999999, and the last stop stayed grey
 for good. Float arithmetic does not get to decide whether the reader arrived.
 
+### The plate follows the theme, not the other way about
+
+The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+halo — furniture that is RIGHT for that ground — over a basemap baked in `dataviz-light`. What a
+reader saw was white text on a pale map. **The furniture was not the defect; the plate was**, and
+this is worth stating because the first rebuild here got it backwards: it read the unreadable labels
+as the fault, flipped the beat to a light ground, and in doing so overturned somebody else's
+editorial decision without saying so. A theme is a choice. A plate that disagrees with it is a bug.
+
+This is the one disagreement in the format a machine CAN settle, because both sides are numbers: the
+ground is declared and the plate can be sampled. `verify-scrolly.mjs` measures both — the ground off
+the rendered page, the plate through a canvas, a DOM read rather than a compositor one — and refuses
+them being on opposite sides. It prescribes no direction: dark beats and light beats are equally
+legitimate, and a mid-grey plate belongs to neither side and is left alone. Run against the delivered
+file it reports ground 0.000 against plate 0.828 and fails; against the rebuild, 0.000 and 0.015.
+
+**And the accent moves with the ground.** The original's #0B6B61 measures 2.77:1 against its own
+declared ground — under the 3:1 a thin line owes a reader — and only ever worked because the plate
+beneath it was light. Re-baking the plate to follow the theme is not the end of the job; every
+colour measured against the old surface has to be measured again against the new one.
+
 ### One visual, instantiated once
 
 The delivered page's own bug, and it is worth naming because the correct pattern already existed and

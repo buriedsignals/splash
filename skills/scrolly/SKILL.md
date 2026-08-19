@@ -87,6 +87,11 @@ that does not redraw is not a step":
   pending when the scroll ends. It cannot be read off the pixels — requiring a colour change refuses
   a beat whose marks legitimately only fade, and requiring "the descriptor changed" accepts one whose
   group opacity moved while every fill stayed frozen.
+- **The plate follows the theme.** A beat's furniture derives from its declared ground, so a plate
+  baked on the other side makes that furniture right and unreadable — white labels over a pale
+  basemap. The verifier measures both (ground off the page, plate through a canvas) and refuses
+  opposite sides; it prescribes no direction. Re-baking is not the end of it: every colour measured
+  against the old surface has to be measured again against the new one.
 - **One visual, instantiated once.** Either every step's frame carries its own SSR'd picture, or ONE
   picture rides step 1's frame and the boot script lifts it out of the stack and scrubs it off
   `data-progress` (`proof/mapmore-scrolly-danube/render.mjs` is the worked example). Never both: the

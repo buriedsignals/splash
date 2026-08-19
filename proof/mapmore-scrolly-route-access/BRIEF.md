@@ -20,7 +20,13 @@ Measured on it at three widths — the account is in
 - the same 340 KiB plate was therefore inlined **five times** — 1.33 MB of a 1.80 MB page;
 - the plate was forced to `object-fit: cover` under an overlay declaring
   `preserveAspectRatio="xMidYMid meet"`. One crops, the other letterboxes: at 375x812 Lisbon was
-  drawn over Switzerland.
+  drawn over Switzerland;
+- and the theme and the plate disagreed. The file declared `--ground: #16191B` and painted every
+  label white on a dark halo — furniture that is RIGHT for that ground — over a basemap baked in
+  `dataviz-light`. **The labels were not the defect; the plate was.** The first rebuild here got
+  this backwards and resolved it by moving the theme to the plate, which is a coherent picture and
+  somebody else's editorial decision quietly overturned. `bake.mjs` bakes `dataviz-dark` at the
+  original's own camera instead.
 
 ## How this one is assembled
 
@@ -32,9 +38,18 @@ it held back. Nothing runs at read time, so there is no copy to bind and none to
 filling the same `viewBox="0 0 1400 700"`. There is no `object-fit` anywhere, so the plate and the
 marks cannot describe two different places: they are the same projection.
 
-**The plate is emitted once.** Step 1's frame defines `<image id="route-access-plate">`; the other
-four `<use>` it. Same-document reference, and `opacity` is not inherited, so the definition resolves
-from frames that are themselves at opacity 0.
+**The plate is baked for the theme, at the original's own camera.** The delivered plate carries no
+bounds, but it carries five stops whose real coordinates are known and whose pixel positions are in
+the markup; five points over-determine a Web Mercator fit, and the residuals came back at 0.03px or
+less. The recovered frame lands on north 49.0000 / south 33.0002 — round numbers, which is what an
+authored camera looks like. `bake.mjs` asserts it reaches that frame before writing anything, and
+that assertion earned its keep on the first run: MapLibre's zoom is defined on 512px tiles, so the
+first bake came back one level in, at north 45.37.
+
+**The accent moved, and the measurement is why.** The original's #0B6B61 reads 2.77:1 on this
+ground — under the 3:1 a line this thin owes a reader, and it only ever worked because the plate
+under it was light. Same hue, lifted: #13A99B measures 6.04:1 on the ground and 5.63:1 on the
+baked plate's own mean.
 
 **The reveal is measured in the path's own units.** `pathLength={1}`, `stroke-dasharray: 1`, and an
 offset that is a fraction — never a length in plate units, and no `vector-effect` on a dash that
