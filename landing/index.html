@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splash — Visual journalism, made by agents</title>
+  <meta name="description" content="Splash turns reporting and data into charts, maps, video and scrollytelling through a local-first, human-gated workflow." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='32' fill='%23D4A853'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --ground: #16191b;
+      --ground-raised: #1d2124;
+      --gold: #d4a853;
+      --teal: #6ca3a3;
+      --text: #f0ece6;
+      --muted: #a39f99;
+      --line: rgba(240, 236, 230, 0.14);
+      --font: 'Space Grotesk', system-ui, sans-serif;
+      --nav-height: 64px;
+      --word-opacity: 1;
+      --grid-opacity: 0;
+    }
+
+    html {
+      background: var(--ground);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      width: 100vw;
+      height: 100svh;
+      margin: 0;
+      overflow: hidden;
+      background: var(--ground);
+    }
+
+    a { color: inherit; }
+
+    a:focus-visible,
+    .scrolly-steps:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 4px;
+    }
+
+    .scrolly {
+      position: relative;
+      width: 100%;
+      height: 100svh;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 50;
+      height: var(--nav-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: linear-gradient(180deg, rgba(22, 25, 27, 0.98), rgba(22, 25, 27, 0));
+      pointer-events: none;
+    }
+
+    .nav a { pointer-events: auto; }
+
+    .nav-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--gold);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+    }
+
+    .nav-logo::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 16px rgba(212, 168, 83, 0.7);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link,
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .nav-link {
+      border: 1px solid var(--line);
+      background: rgba(22, 25, 27, 0.82);
+      color: var(--text);
+    }
+
+    .nav-cta {
+      background: var(--gold);
+      color: var(--ground);
+    }
+
+    .visual-stage {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      perspective: 1000px;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(108, 163, 163, 0.08), transparent 34%),
+        linear-gradient(180deg, #141719 0%, var(--ground) 100%);
+    }
+
+    .visual-stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 20%, rgba(8, 10, 11, 0.62) 100%);
+    }
+
+    .word-field {
+      position: absolute;
+      inset: 0;
+      opacity: var(--word-opacity);
+      transition: opacity 0.2s linear;
+    }
+
+    .word-field span {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      color: rgba(240, 236, 230, var(--a, 0.12));
+      font-size: var(--s, 1rem);
+      font-weight: var(--w, 500);
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+      transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+      filter: blur(var(--b, 0));
+    }
+
+    .grid-plane {
+      position: absolute;
+      left: 50%;
+      top: 56%;
+      width: min(76vw, 960px);
+      aspect-ratio: 16 / 9;
+      opacity: var(--grid-opacity);
+      transform: translate(-50%, -50%) rotateX(66deg) translateZ(-120px);
+      background-image:
+        linear-gradient(rgba(108, 163, 163, 0.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108, 163, 163, 0.18) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle, black 10%, transparent 70%);
+    }
+
+    .signal-shell {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: clamp(220px, 34vw, 520px);
+      aspect-ratio: 1;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .signal-core {
+      position: absolute;
+      inset: 27%;
+      border: 1px solid rgba(240, 236, 230, 0.42);
+      border-radius: 62% 38% 58% 42% / 42% 60% 40% 58%;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.84), transparent 8%),
+        radial-gradient(circle at 42% 38%, rgba(212, 168, 83, 0.82), transparent 34%),
+        linear-gradient(145deg, rgba(108, 163, 163, 0.78), rgba(22, 25, 27, 0.92));
+      box-shadow:
+        inset -24px -28px 48px rgba(0, 0, 0, 0.5),
+        0 0 70px rgba(108, 163, 163, 0.18),
+        0 0 120px rgba(212, 168, 83, 0.12);
+      transition: border-radius 0.5s ease, transform 0.5s ease;
+      transform: translateZ(64px);
+    }
+
+    .signal-core::before,
+    .signal-core::after {
+      content: '';
+      position: absolute;
+      inset: 14%;
+      border: 1px solid rgba(240, 236, 230, 0.2);
+      border-radius: inherit;
+      transform: translateZ(30px) rotate(28deg);
+    }
+
+    .signal-core::after {
+      inset: 31%;
+      border-color: rgba(212, 168, 83, 0.72);
+      transform: translateZ(56px);
+    }
+
+    .orbit {
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(240, 236, 230, 0.18);
+      border-radius: 50%;
+      transform-style: preserve-3d;
+    }
+
+    .orbit::before,
+    .orbit::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 14px rgba(212, 168, 83, 0.8);
+    }
+
+    .orbit::before { left: 12%; top: 16%; }
+    .orbit::after { right: 8%; bottom: 24%; background: var(--teal); }
+    .orbit-a { transform: rotateX(70deg) rotateZ(12deg); }
+    .orbit-b { inset: 19%; transform: rotateY(68deg) rotateZ(-22deg); }
+    .orbit-c { inset: 5%; transform: rotateX(46deg) rotateY(42deg); }
+
+    .scrolly[data-scene="4"] .signal-core,
+    .scrolly[data-scene="5"] .signal-core {
+      border-radius: 16%;
+      transform: translateZ(64px) rotate(45deg);
+    }
+
+    .scrolly[data-scene="6"] .signal-core {
+      border-radius: 50%;
+      transform: translateZ(64px) scale(0.72);
+    }
+
+    .scrolly-steps {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(212, 168, 83, 0.48) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .step {
+      min-height: 140svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--nav-height) + 28px) 24px 72px;
+    }
+    .step--product { flex-direction: column; }
+
+
+    .step:first-child { min-height: 128svh; }
+    .step:last-child { min-height: 120svh; }
+
+    .story-card {
+      width: min(500px, 100%);
+      padding: 22px 24px 24px;
+      border: 1px solid rgba(240, 236, 230, 0.16);
+      border-radius: 7px;
+      background: var(--ground);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .story-card.active {
+      border-color: rgba(212, 168, 83, 0.7);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
+    }
+
+    .story-card--hero { width: min(620px, 100%); text-align: center; }
+    .story-card--wide { width: min(760px, 100%); }
+
+
+    h1, h2, p { margin-top: 0; }
+
+    h1,
+    h2 {
+      margin-bottom: 16px;
+      color: var(--text);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.045em;
+    }
+
+    h1 { font-size: clamp(2.5rem, 5.5vw, 4.6rem); }
+    .story-card--hero h1 { font-size: clamp(2.15rem, 4.4vw, 3.8rem); }
+    h2 { font-size: clamp(1.65rem, 3.6vw, 2.55rem); }
+
+    p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 1.03rem;
+      line-height: 1.62;
+    }
+
+    .story-card p a {
+      color: var(--teal);
+      font-weight: 600;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1px;
+    }
+
+    .hero-line {
+      max-width: 42ch;
+      margin-inline: auto;
+      color: var(--text);
+      font-size: clamp(1.02rem, 1.8vw, 1.22rem);
+    }
+
+
+
+    .process-steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .process-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 10px;
+      padding: 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--ground-raised);
+      text-align: left;
+    }
+
+    .process-step:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      right: -8px;
+      z-index: 1;
+      color: var(--gold);
+      content: "→";
+      transform: translate(50%, -50%);
+    }
+
+    .process-number {
+      display: inline-grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--ground);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .process-step h3 {
+      margin: 2px 0 5px;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .process-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+
+    .product-meta {
+      display: grid;
+      width: min(760px, calc(100% - 48px));
+      gap: 12px;
+      margin: 18px auto 0;
+      padding: 0 24px;
+      text-align: left;
+    }
+
+    .pill-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .pill-label {
+      flex: 0 0 68px;
+      padding-top: 7px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .pill-row {
+      display: flex;
+      flex: 1;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--ground-raised);
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+
+    .menu-section {
+      margin-top: 22px;
+      text-align: left;
+    }
+
+    .menu-heading {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .format-options { gap: 8px; }
+
+    .visual-menu { border-top: 1px solid var(--line); }
+    .visual-menu:last-of-type { border-bottom: 1px solid var(--line); }
+
+    .visual-menu summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 13px 0;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .visual-menu summary::-webkit-details-marker { display: none; }
+
+    .visual-menu summary::after {
+      content: "+";
+      color: var(--gold);
+    }
+
+    .visual-menu[open] summary::after { content: "−"; }
+
+    .visual-menu-count {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+
+    .visual-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 0 0 14px;
+    }
+
+    .visual-options .pill {
+      min-height: 28px;
+      padding: 4px 9px;
+      font-size: 0.7rem;
+    }
+
+    .menu-section + p { margin-top: 18px; }
+
+
+    .cta-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .cta-row + p {
+      margin-top: 18px;
+      color: var(--text);
+      font-weight: 600;
+      text-align: center;
+    }
+
+
+    .button-primary,
+    .button-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 22px;
+      border-radius: 7px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .button-primary { background: var(--gold); color: var(--ground); }
+    .button-secondary { border: 1px solid var(--line); color: var(--text); }
+
+    .story-progress {
+      position: fixed;
+      right: 24px;
+      bottom: 20px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 210px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 2px;
+      overflow: hidden;
+      background: rgba(240, 236, 230, 0.16);
+    }
+
+    .progress-fill {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--gold);
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+
+    @media (max-width: 760px) {
+      .nav { padding-inline: 16px; }
+      .nav-link { display: none; }
+      .step { padding-inline: 0; }
+      .step--process { align-items: flex-start; }
+      .story-card {
+        width: 100%;
+        max-width: none;
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+        padding: 24px;
+      }
+      .story-card--hero,
+      .story-card--wide { width: 100%; }
+      .product-meta {
+        width: 100%;
+        margin-top: 16px;
+        padding: 0 24px;
+      }
+      .signal-shell { width: min(92vw, 420px); }
+      .process-steps {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+      .process-step:not(:last-child)::after {
+        top: auto;
+        right: auto;
+        bottom: -8px;
+        left: 50%;
+        content: "↓";
+        transform: translate(-50%, 50%);
+      }
+      .pill-group { display: block; }
+      .pill-label {
+        display: block;
+        width: auto;
+        padding-top: 0;
+        margin-bottom: 7px;
+      }
+      .story-progress {
+        right: 16px;
+        bottom: 14px;
+        width: 110px;
+      }
+      .story-progress strong { display: none; }
+    }
+
+    @media (max-width: 380px) {
+      .nav-cta { padding-inline: 13px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .signal-core,
+      .story-card,
+      .word-field { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="scrolly" id="top" data-scene="1" data-progress="0">
+    <nav class="nav" aria-label="Main navigation">
+      <a href="#top" class="nav-logo" data-scroll-scene="1">Splash</a>
+      <div class="nav-actions">
+        <a href="https://github.com/buriedsignals/splash" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+        <a href="#menu" class="nav-cta" data-scroll-scene="6">See the menu</a>
+      </div>
+    </nav>
+
+    <div class="visual-stage" aria-hidden="true">
+      <div class="word-field">
+        <span style="--x:8%;--y:17%;--s:1.9rem;--a:.08;--r:-5deg">another paragraph</span>
+        <span style="--x:26%;--y:8%;--s:.9rem;--a:.15">summary</span>
+        <span style="--x:75%;--y:13%;--s:2.4rem;--a:.07;--r:4deg">more content</span>
+        <span style="--x:91%;--y:30%;--s:1rem;--a:.14;--r:7deg">analysis</span>
+        <span style="--x:15%;--y:39%;--s:3.2rem;--a:.045">words</span>
+        <span style="--x:76%;--y:43%;--s:1.15rem;--a:.13">context and background</span>
+        <span style="--x:4%;--y:62%;--s:1rem;--a:.13;--r:-8deg">introduction</span>
+        <span style="--x:89%;--y:68%;--s:2.7rem;--a:.055;--r:5deg">copy</span>
+        <span style="--x:27%;--y:76%;--s:1.35rem;--a:.11">read more</span>
+        <span style="--x:68%;--y:84%;--s:.9rem;--a:.16;--r:-3deg">the key takeaway is</span>
+        <span style="--x:47%;--y:22%;--s:.75rem;--a:.11">further explanation</span>
+        <span style="--x:53%;--y:92%;--s:2rem;--a:.06">body text</span>
+        <span style="--x:94%;--y:90%;--s:.8rem;--a:.13">conclusion</span>
+        <span style="--x:9%;--y:91%;--s:.8rem;--a:.12">additional detail</span>
+      </div>
+      <div class="grid-plane"></div>
+      <div class="signal-shell" id="signal-shell">
+        <div class="orbit orbit-a"></div>
+        <div class="orbit orbit-b"></div>
+        <div class="orbit orbit-c"></div>
+        <div class="signal-core"></div>
+      </div>
+    </div>
+
+    <div class="story-progress" aria-hidden="true">
+      <strong id="chapter-label">The problem</strong>
+      <span class="progress-track"><span class="progress-fill" id="progress-fill"></span></span>
+    </div>
+
+    <div class="scrolly-steps" id="scrolly-steps" tabindex="0" aria-label="Splash story. Scroll to continue.">
+      <section class="step" data-step="1">
+        <article class="story-card story-card--hero" data-scene="1" data-chapter="The problem">
+          <h1>Too much reporting ends up as text.</h1>
+          <p class="hero-line">Comparisons become paragraphs. Places are described instead of mapped. Change over time is written out instead of shown. The internet does not need another wall of words; it needs evidence readers can see.</p>
+        </article>
+      </section>
+
+      <section class="step" data-step="2">
+        <article class="story-card" data-scene="2" data-chapter="Why visuals matter">
+          <h2>Visual journalism makes reporting easier to inspect.</h2>
+          <p>In a <a href="https://files.ejc.net/production/resources/pages/2024/state-of-data-journalism-survey-2023/files/The-State-of-Data-Journalism-2023-pdf-report.pdf" target="_blank" rel="noopener">survey of 768 people involved in data journalism</a>, 70% said data journalism makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p>
+        </article>
+      </section>
+
+      <section class="step" data-step="3">
+        <article class="story-card" data-scene="2" data-chapter="Trust and credibility">
+          <h2>Good design helps readers trust the work.</h2>
+          <p>Clear visual design can make the same work feel <a href="https://doi.org/10.1075/idj.23.1.09che" target="_blank" rel="noopener">clearer, more rigorous and more engaging</a>. Readers look for <a href="https://dl.acm.org/doi/full/10.1145/3706598.3713824" target="_blank" rel="noopener">clarity, polish and credible sources</a> when deciding whether to trust a visualisation.</p>
+        </article>
+      </section>
+
+      <section class="step" data-step="4">
+        <article class="story-card" data-scene="3" data-chapter="The AI shift">
+          <h2>When articles become inputs, visual form becomes identity.</h2>
+          <p>AI turns fixed articles into <a href="https://reutersinstitute.politics.ox.ac.uk/news/information-ecosystem-being-redrawn-ai-might-be-good-news" target="_blank" rel="noopener">“liquid information”</a> that machines break apart and recompose. Visual journalism gives the reporting a distinctive form that still belongs to the publisher.</p>
+        </article>
+      </section>
+
+      <section class="step" data-step="5">
+        <article class="story-card" data-scene="3" data-chapter="AI discovery">
+          <h2>Visuals create another way for the story to travel.</h2>
+          <p>AI Search is <a href="https://developers.google.com/search/docs/appearance/ai-features" target="_blank" rel="noopener">multimodal</a> and can use high-quality images and video alongside text. Visuals can become part of how reporting is found and understood.</p>
+        </article>
+      </section>
+
+      <section class="step step--product" data-step="6">
+        <article class="story-card story-card--wide" data-scene="4" data-chapter="What is Splash">
+          <h2>Splash is an agent system for visual journalism.</h2>
+          <p>You install it into your AI assistant. Splash guides the agent through a research-informed process for understanding the story and data, choosing the right visual form, producing it, and asking for your approval before publication.</p>
+        </article>
+        <div class="product-meta" aria-label="Splash product details">
+          <div class="pill-group"><span class="pill-label">Contains</span><div class="pill-row"><span class="pill">15 skills</span></div></div>
+          <div class="pill-group"><span class="pill-label">Uses</span><div class="pill-row"><span class="pill">Datawrapper</span><span class="pill">D3</span><span class="pill">Remotion</span><span class="pill">MapTiler</span></div></div>
+          <div class="pill-group"><span class="pill-label">Produces</span><div class="pill-row"><span class="pill">Charts</span><span class="pill">Cartography</span><span class="pill">Video</span><span class="pill">Scrollytelling</span><span class="pill">Web / iframe</span><span class="pill">Print</span></div></div>
+        </div>
+      </section>
+
+      <section class="step step--process" data-step="7">
+        <article class="story-card story-card--wide" data-scene="5" data-chapter="What Splash does">
+          <h2>How Splash turns reporting into visual journalism.</h2>
+          <p>Splash gives AI agents a newsroom process for making visual journalism. It guides the agent to read the story and data, ask what the visual should communicate, check which forms the evidence can support, and propose the strongest options.</p>
+          <p>After you choose, the agent produces the visual and shows it for review. You can approve it or request changes. Splash then prepares the chosen output for print, web, video or scrollytelling.</p>
+          <div class="process-steps" role="list" aria-label="How Splash turns reporting into visual journalism">
+            <div class="process-step" role="listitem"><span class="process-number">1</span><div><h3>Understand</h3><p>The agent reads the story and data.</p></div></div>
+            <div class="process-step" role="listitem"><span class="process-number">2</span><div><h3>Recommend</h3><p>Splash guides it toward visual forms the evidence supports.</p></div></div>
+            <div class="process-step" role="listitem"><span class="process-number">3</span><div><h3>Decide</h3><p>You choose the treatment and format.</p></div></div>
+            <div class="process-step" role="listitem"><span class="process-number">4</span><div><h3>Produce</h3><p>The agent creates a visual for review.</p></div></div>
+            <div class="process-step" role="listitem"><span class="process-number">5</span><div><h3>Publish</h3><p>You approve the final output.</p></div></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="step" data-step="8" id="menu">
+        <article class="story-card story-card--wide" data-scene="6" data-chapter="Make a Splash">
+          <h2>One story. The right visual form.</h2>
+          <div class="menu-section">
+            <h3 class="menu-heading">Format</h3>
+            <div class="pill-row format-options">
+              <span class="pill">Static / print</span>
+              <span class="pill">Web / iframe</span>
+              <span class="pill">Video</span>
+              <span class="pill">Scrollytelling</span>
+            </div>
+          </div>
+          <div class="menu-section">
+            <h3 class="menu-heading">Visualisation</h3>
+            <details class="visual-menu">
+              <summary>Charts <span class="visual-menu-count">32 forms</span></summary>
+              <div class="visual-options">
+                <span class="pill">Area</span>
+                <span class="pill">Bar and column</span>
+                <span class="pill">Beeswarm</span>
+                <span class="pill">Box plot</span>
+                <span class="pill">Bullet</span>
+                <span class="pill">Bump</span>
+                <span class="pill">Calendar heatmap</span>
+                <span class="pill">Connected scatter</span>
+                <span class="pill">Diverging bar</span>
+                <span class="pill">Diverging stacked bar</span>
+                <span class="pill">Dot strip</span>
+                <span class="pill">Dumbbell</span>
+                <span class="pill">Gantt</span>
+                <span class="pill">Grouped bar</span>
+                <span class="pill">Heatmap</span>
+                <span class="pill">Histogram</span>
+                <span class="pill">Line</span>
+                <span class="pill">Lollipop</span>
+                <span class="pill">Marimekko</span>
+                <span class="pill">Parallel coordinates</span>
+                <span class="pill">Pictogram</span>
+                <span class="pill">Pie and donut</span>
+                <span class="pill">Population pyramid</span>
+                <span class="pill">Radar</span>
+                <span class="pill">Sankey</span>
+                <span class="pill">Scatter and bubble</span>
+                <span class="pill">Slope</span>
+                <span class="pill">Small multiples</span>
+                <span class="pill">Stacked bar</span>
+                <span class="pill">Streamgraph</span>
+                <span class="pill">Treemap</span>
+                <span class="pill">Waterfall</span>
+              </div>
+            </details>
+            <details class="visual-menu">
+              <summary>Maps <span class="visual-menu-count">8 forms</span></summary>
+              <div class="visual-options">
+                <span class="pill">Cartogram</span>
+                <span class="pill">Choropleth</span>
+                <span class="pill">Contour / isoline</span>
+                <span class="pill">Dot density</span>
+                <span class="pill">Flow / route</span>
+                <span class="pill">Hex grid</span>
+                <span class="pill">Locator</span>
+                <span class="pill">Proportional symbol</span>
+              </div>
+            </details>
+            <details class="visual-menu">
+              <summary>Scrollies <span class="visual-menu-count">4 forms</span></summary>
+              <div class="visual-options">
+                <span class="pill">Chart</span>
+                <span class="pill">Map</span>
+                <span class="pill">Image sequence</span>
+                <span class="pill">Mixed media</span>
+              </div>
+            </details>
+          </div>
+          <p>Bring the reporting and the data. Splash handles the production flow; you make the editorial decisions.</p>
+          <div class="cta-row">
+            <a class="button-primary" href="https://github.com/buriedsignals/splash#installation" target="_blank" rel="noopener">Install Splash</a>
+            <a class="button-secondary" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">View on GitHub</a>
+          </div>
+          <p>Go make a Splash.</p>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.querySelector('.scrolly');
+      const scroller = document.getElementById('scrolly-steps');
+      const cards = Array.from(document.querySelectorAll('.story-card'));
+      const signal = document.getElementById('signal-shell');
+      const chapterLabel = document.getElementById('chapter-label');
+      const progressFill = document.getElementById('progress-fill');
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let framePending = false;
+
+      function cardCentres() {
+        const lane = scroller.getBoundingClientRect();
+        return cards.map(card => {
+          const rect = card.getBoundingClientRect();
+          return rect.top - lane.top + scroller.scrollTop + rect.height / 2;
+        });
+      }
+
+      function measureProgress() {
+        const centres = cardCentres();
+        const laneCentre = scroller.scrollTop + scroller.clientHeight / 2;
+
+        if (laneCentre <= centres[0]) return 0;
+        if (laneCentre >= centres[centres.length - 1]) return centres.length - 1;
+
+        for (let index = 0; index < centres.length - 1; index += 1) {
+          if (laneCentre <= centres[index + 1]) {
+            const span = centres[index + 1] - centres[index];
+            return index + (laneCentre - centres[index]) / span;
+          }
+        }
+
+        return centres.length - 1;
+      }
+
+      function renderScroll() {
+        const progress = measureProgress();
+        const normalised = progress / (cards.length - 1);
+        const activeIndex = Math.max(0, Math.min(cards.length - 1, Math.round(progress)));
+        const activeCard = cards[activeIndex];
+        const scene = Number(activeCard.dataset.scene);
+
+        cards.forEach((card, index) => card.classList.toggle('active', index === activeIndex));
+        root.dataset.scene = String(scene);
+        root.dataset.progress = progress.toFixed(4);
+        root.style.setProperty('--word-opacity', String(Math.max(0, 1 - progress / 1.4)));
+        root.style.setProperty('--grid-opacity', String(Math.max(0, Math.min(0.58, (progress - 0.5) / 3))));
+        chapterLabel.textContent = activeCard.dataset.chapter;
+        progressFill.style.transform = `scaleX(${normalised})`;
+
+        if (reducedMotion.matches) {
+          signal.style.transform = 'translate3d(-50%, -50%, 0)';
+        } else {
+          const mobileFactor = window.innerWidth < 600 ? 0.32 : 1;
+          const shiftX = Math.sin(normalised * Math.PI * 2.3) * 12 * mobileFactor;
+          const shiftY = Math.cos(normalised * Math.PI * 1.4) * 5 * mobileFactor;
+          const rotateX = -18 + normalised * 280;
+          const rotateY = normalised * 720;
+          const scale = 0.7 + Math.sin(normalised * Math.PI) * 0.24;
+          signal.style.transform = `translate3d(calc(-50% + ${shiftX}vw), calc(-50% + ${shiftY}vh), 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
+        }
+
+        window.SplashScenes.currentScene = scene;
+        window.SplashScenes.progress = progress;
+        framePending = false;
+      }
+
+      function queueRender() {
+        if (framePending) return;
+        framePending = true;
+        window.requestAnimationFrame(renderScroll);
+      }
+
+      function scrollToScene(scene) {
+        const card = cards.find(item => Number(item.dataset.scene) === scene);
+        if (!card) return;
+        const lane = scroller.getBoundingClientRect();
+        const rect = card.getBoundingClientRect();
+        const target = rect.top - lane.top + scroller.scrollTop - (scroller.clientHeight - rect.height) / 2;
+        scroller.scrollTo({ top: target, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      }
+
+      window.SplashScenes = {
+        currentScene: 1,
+        progress: 0,
+        setActiveScene: scrollToScene,
+        scroller,
+        cards,
+      };
+
+      document.querySelectorAll('[data-scroll-scene]').forEach(link => {
+        link.addEventListener('click', event => {
+          event.preventDefault();
+          scrollToScene(Number(link.dataset.scrollScene));
+        });
+      });
+
+      scroller.addEventListener('scroll', queueRender, { passive: true });
+      window.addEventListener('resize', queueRender, { passive: true });
+      reducedMotion.addEventListener('change', queueRender);
+      renderScroll();
+    })();
+  </script>
+</body>
+</html>
