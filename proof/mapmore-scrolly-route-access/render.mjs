@@ -1,6 +1,6 @@
 // The runner for the rebuilt route beat. A CONSUMER of `scrolly`: it imports the skill's own
-// generic `renderScrolly` and hands it five finished pictures. Nothing under `skills/scrolly` is
-// edited by it, and nothing here runs in the reader's browser.
+// generic `renderScrolly`, hands it ONE picture on step 1's frame and empty wrappers after it, and
+// inlines this beat's own driver beside it. Nothing under `skills/scrolly` is edited by it.
 //
 // The original — `splash-test-b-route-access`, delivered 2026-08-18 — is rebuilt rather than
 // patched, because its three defects were all in HOW the picture was assembled, not in what it
@@ -9,7 +9,7 @@
 import { readFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createElement } from "react";
+import { createElement, Fragment } from "react";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { deriveFurniture } from "../../skills/scrolly/scripts/render-still.mjs";
 import { RouteFrame } from "./RouteFrames.tsx";
@@ -69,19 +69,49 @@ async function render({ outDir = join(HERE, "render") } = {}) {
   const plateBuffer = await readFile(join(HERE, "plate", "plate.png"));
   const plate = `data:image/png;base64,${plateBuffer.toString("base64")}`;
 
+  // ONE PICTURE, NOT FIVE. The visual rides step 1's frame — the one the scaffold marks `active` at
+  // build time, so a reader without JavaScript meets the opening state — and the driver lifts it out
+  // of the stack on boot and scrubs it. The first rebuild gave every step its own finished picture:
+  // guard-clean, and a slideshow. Five pictures cannot draw a line under the reader's gesture.
+  const driver = await readFile(join(HERE, "route-drive.mjs"), "utf8");
+  const boot =
+    driver.replace(/^export /gm, "") +
+    `\n;(function () {\n` +
+    `  if (window.__routeAccessStarted) return;\n` +
+    `  window.__routeAccessStarted = true;\n` +
+    // The script sits INSIDE the graphic, which the scaffold emits before the prose column, so no
+    // panel exists yet when this tag is parsed. Booting here would exit on the driver's own guard.
+    `  function boot() {\n` +
+    `    var root = document.querySelector('[data-visual="route-access"]');\n` +
+    `    if (!root) return;\n` +
+    `    initRouteAccess(root, ${JSON.stringify({ stops: geometry.stops.map((s) => s.reachedAt) })});\n` +
+    `  }\n` +
+    `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
+    `  else boot();\n` +
+    `})();\n`;
+
+  const visual = createElement(RouteFrame, {
+    geometry,
+    plate,
+    reveal: geometry.stops[0].reachedAt,
+    ground,
+    accent,
+    ink: furniture.ink,
+    muted: furniture.muted,
+  });
+
   const steps = geometry.stops.map((stop, index) => ({
     id: stop.name.toLowerCase(),
     prose: PROSE[index],
-    // ONLY the first frame carries the plate's own bytes; the rest reference it by id.
-    frame: createElement(RouteFrame, {
-      geometry,
-      plate: index === 0 ? plate : undefined,
-      index,
-      ground,
-      accent,
-      ink: furniture.ink,
-      muted: furniture.muted,
-    }),
+    frame:
+      index === 0
+        ? createElement(
+            Fragment,
+            null,
+            visual,
+            createElement("script", { dangerouslySetInnerHTML: { __html: boot } }),
+          )
+        : createElement("div"),
   }));
 
   await mkdir(outDir, { recursive: true });
@@ -96,7 +126,7 @@ async function render({ outDir = join(HERE, "render") } = {}) {
   console.log(
     `route-scrolly → ${outPath}  [${steps.length} steps, panel contrast ${panelContrast.toFixed(2)}:1]\n` +
       `  reveal ${geometry.stops.map((s) => `${(s.reachedAt * 100).toFixed(1)}%`).join(" -> ")} ` +
-      `of a ${geometry.routeLength} unit route, one plate emitted once`,
+      `of a ${geometry.routeLength} unit route, one picture driven continuously`,
   );
   return { outPath };
 }

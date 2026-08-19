@@ -3,8 +3,10 @@
 //
 // THREE RULES ARE STRUCTURAL HERE, and each is a defect the delivered file shipped (see BRIEF.md):
 //
-//   1. ONE PLATE. Step 1's frame defines the `<image>`; every other frame `<use>`s it. The delivered
-//      file inlined the same 340 KiB five times — 1.33 MB of a 1.80 MB page.
+//   1. ONE PICTURE. The visual is built once, on step 1's frame, and `route-drive.mjs` lifts it out
+//      of the frame stack on boot so the step swap cannot fade it. The first rebuild here shipped
+//      five SSR'd pictures instead — guard-clean, and a slideshow: "le dessin de la ligne n'est pas
+//      progressif au scroll". The delivered file inlined the same 340 KiB plate five times.
 //   2. ONE PROJECTION. The plate is an `<image>` INSIDE the marks' own SVG, filling the same
 //      viewBox. There is no `object-fit` anywhere in this beat, so a plate that crops under an
 //      overlay that letterboxes is not a state this markup can reach.
@@ -12,8 +14,9 @@
 //      `vector-effect` on it — which computes a dash in screen space, where a pattern one path long
 //      repeats as soon as the camera scales up.
 //
-// There is no runtime script. Each step is a finished picture, so nothing has to find its own copy
-// of the visual at read time and nothing can bind the wrong one.
+// This component renders the OPENING state; `route-drive.mjs` takes it from there, scrubbing the
+// reveal off `data-progress` on every animation frame. A reader with no JavaScript keeps exactly
+// what is SSR'd here.
 
 import { createElement, type ReactNode } from "react";
 
@@ -42,27 +45,31 @@ const DIM = 0.28;
 export function RouteFrame({
   geometry,
   plate,
-  index,
+  reveal,
   ground,
   accent,
   ink,
   muted,
 }: {
   geometry: RouteGeometry;
-  /** The plate's own data URI — passed on the DEFINING frame only; the others reference it by id. */
-  plate?: string;
-  index: number;
+  /** The plate's own data URI. One picture, so one copy. */
+  plate: string;
+  /** The opening state this frame is SSR'd in — the picture a reader without JavaScript keeps. */
+  reveal: number;
   ground: string;
   accent: string;
   ink: string;
   muted: string;
 }): ReactNode {
   const [width, height] = geometry.viewBox;
-  const reached = geometry.stops[index].reachedAt;
+  const reached = reveal;
 
   return createElement(
     "div",
-    { style: { position: "absolute", inset: 0, background: ground } },
+    {
+      "data-visual": "route-access",
+      style: { position: "absolute", inset: 0, background: ground },
+    },
     createElement(
       "svg",
       {
@@ -77,16 +84,7 @@ export function RouteFrame({
           display: "block",
         },
       },
-      plate
-        ? createElement("image", {
-            id: PLATE_ID,
-            href: plate,
-            x: 0,
-            y: 0,
-            width,
-            height,
-          })
-        : createElement("use", { href: `#${PLATE_ID}` }),
+      createElement("image", { id: PLATE_ID, href: plate, x: 0, y: 0, width, height }),
       // The halo first, then the line, both on the same `d` and the same fractional offset, so the
       // halo can never lag the line it is haloing.
       createElement("path", {
@@ -113,7 +111,7 @@ export function RouteFrame({
         style: { strokeDasharray: 1, strokeDashoffset: 1 - reached },
       }),
       ...geometry.stops.map((stop, i) => {
-        const arrived = i <= index;
+        const arrived = reached >= stop.reachedAt;
         return createElement(
           "g",
           {
