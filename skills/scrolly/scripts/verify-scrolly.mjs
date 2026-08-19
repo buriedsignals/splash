@@ -115,8 +115,9 @@
 
 import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
  *  `map-web/test/standalone.test.ts`'s own copy for why these are duplicated rather than
@@ -166,6 +167,127 @@ export const WIDTHS = [
  *  at 1600x900 and as a flick at 375x812, and the difference silently decides whether a 0.3s
  *  transition has time to finish. 60 frames is about a second per step: brisk, and real. */
 export const FRAMES_PER_STEP = 60;
+
+/** THE THREE CARGO GUARDS. Everything else in this file measures the VEHICLE — the handover, the
+ *  card's travel, the frame that never moves — and a delivered five-stop route scrolly passed all of
+ *  it while being dead: the same picture five times, the route never drawn, the plate cropped out
+ *  from under the marks on a phone. These three take measurements and decide; the browser work that
+ *  produces those measurements stays in `verifyOne`, so what fails is testable without Chrome
+ *  (`test/verify-guards.test.ts`). */
+
+/** How much of a step's painted picture must change for it to count as a step at all. Read off a
+ *  population, measured with the fingerprint below at three widths: this tree's seven scrollies
+ *  redraw 6.5% to 96.8% of their marks per step, and the delivered route page 0.0% on three of its
+ *  four transitions. One percent is six times below the lowest living step and above nothing but
+ *  zero, which is what a frozen picture measures.
+ *
+ *  A NOTE ON THE FLOOR'S ONE NEIGHBOUR. That same delivered page's first transition measures 4.4% —
+ *  one of five stops lighting up and nothing else — and passes. It is thin, and it is a change; a
+ *  guard that failed it would be legislating composition, which belongs to the doctrine and to a
+ *  reader, not to a threshold. */
+export const STEP_REDRAW_FLOOR = 0.01;
+
+/** The share of a step's painted marks that differ from the step before it. A MULTISET of what the
+ *  reader can see, never a map of DOM addresses: the delivered route page carries five copies of one
+ *  frame and swaps which is painted, so keyed by position in the tree its identical pictures read as
+ *  97.7% redrawn. Copies count — dropping one of fifteen identical labels IS a redraw — and order
+ *  does not. Both empty is not a division by zero; it is two empty pictures, which are the same
+ *  picture. */
+export function fingerprintDrift(before, after) {
+  const tally = (marks) => {
+    const counts = new Map();
+    for (const mark of marks) counts.set(mark, (counts.get(mark) ?? 0) + 1);
+    return counts;
+  };
+  const one = tally(before);
+  const two = tally(after);
+  let total = 0;
+  let moved = 0;
+  for (const mark of new Set([...one.keys(), ...two.keys()])) {
+    const a = one.get(mark) ?? 0;
+    const b = two.get(mark) ?? 0;
+    total += Math.max(a, b);
+    moved += Math.abs(a - b);
+  }
+  return total === 0 ? 0 : moved / total;
+}
+
+/** Consecutive steps whose graphic was not materially repainted — pairs of ids, in reader order.
+ *  `changed` is the fraction of the graphic that differs from the step before it; the first step has
+ *  none. A picture that returns LATER in the sequence is a composition (a map coming home to its
+ *  opening camera); only a repeat the reader meets back to back gave them nothing for the scroll. */
+export function stillSteps(shots, floor = STEP_REDRAW_FLOOR) {
+  const pairs = [];
+  for (let i = 1; i < shots.length; i += 1)
+    if (Number(shots[i].changed ?? 0) < floor)
+      pairs.push([shots[i - 1].id, shots[i].id]);
+  return pairs;
+}
+
+/** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
+ *  defect: reporting those would bury the 1.33 MB one under a list of nothing. */
+const PAYLOAD_FLOOR = 1024;
+
+/** Every data: asset inlined more than once, worst waste first. A weight ceiling would have been
+ *  arbitrary — this tree's own image scrolly is legitimately 3 MB — but a second copy of one asset
+ *  is bytes no reader benefits from, whatever the beat, and it is the file-side fingerprint of a
+ *  visual duplicated into every step frame. */
+export function duplicatedPayload(html) {
+  const blobs = new Map();
+  for (const match of html.matchAll(/data:[a-z/+.-]+;base64,([A-Za-z0-9+/=]+)/gi)) {
+    const body = match[1];
+    if (body.length < PAYLOAD_FLOOR) continue;
+    const seen = blobs.get(body) ?? { copies: 0, bytes: body.length };
+    seen.copies += 1;
+    blobs.set(body, seen);
+  }
+  return [...blobs.values()]
+    .filter((b) => b.copies > 1)
+    .map((b) => ({
+      copies: b.copies,
+      bytes: b.bytes,
+      wastedBytes: (b.copies - 1) * b.bytes,
+    }))
+    .sort((a, b) => b.wastedBytes - a.wastedBytes);
+}
+
+/** Marks whose dash MEASURES their own path while being computed in screen space — the reveal that
+ *  cannot work, and the one this tree shipped for months without seeing.
+ *
+ *  `vector-effect: non-scaling-stroke` takes the stroke, and with it the dash pattern, out of the
+ *  path's own user units. A dash pattern repeats forever, so a pattern one path-length long measured
+ *  against a line the camera has scaled up draws dash, gap, dash: a head, a hole and a tail, sliding
+ *  together as the offset moves. A DECORATIVE dash — a gridline, a leader — belongs in screen space
+ *  and is left alone here; what is refused is a dash that measures, recognised by a declared
+ *  `pathLength` or by an offset that is not zero. */
+export function revealDashInScreenSpace(marks) {
+  return marks
+    .filter((mark) => mark.vectorEffect === "non-scaling-stroke")
+    .filter(
+      (mark) => mark.pathLength != null || Number.parseFloat(mark.dashoffset) !== 0,
+    )
+    .map((mark) => mark.id);
+}
+
+/** The overlay fitting each `object-fit` describes the same projection as. The alignment half of
+ *  `preserveAspectRatio` is the beat's own composition and is not read here. */
+const PROJECTION = { cover: "slice", contain: "meet", "scale-down": "meet", fill: "none" };
+
+/** Frames whose raster plate and whose overlay project the geography differently. `cover` crops and
+ *  `meet` letterboxes, so a mark drawn under one lands somewhere the other never claimed — measured
+ *  at 375x812 on the delivered page, Lisbon was drawn over Switzerland.
+ *  `references/scrolly-discipline.md` states this pairing; this is what measures it. */
+export function projectionDisagreements(frames) {
+  return frames.flatMap((frame) => {
+    if (!frame.fit) return [];
+    const expectedFitting = PROJECTION[frame.fit];
+    if (!expectedFitting) return [];
+    const fitting = frame.par === "none" ? "none" : String(frame.par).split(/\s+/)[1];
+    if (fitting === expectedFitting) return [];
+    const expected = expectedFitting === "none" ? "none" : `xMidYMid ${expectedFitting}`;
+    return [{ id: frame.id, fit: frame.fit, par: frame.par, expected }];
+  });
+}
 
 /** Opacity above which a panel counts as painted over the graphic. */
 const PAINTED = 0.05;
@@ -821,6 +943,222 @@ export async function verifyStates(browser, file) {
   return out;
 }
 
+/** THE CARGO PASS. `verifyOne` drives the vehicle continuously and reads what moves; this one stops
+ *  at each step, lets it settle, and asks the only question that pass cannot: did the picture the
+ *  reader came for actually change, and does it describe one place?
+ *
+ *  It reads the graphic's own painted geometry — position, size, opacity, fill, path data, text —
+ *  and never a screenshot. The page that forced this check had markup that differed per step (one
+ *  class, one inline style) while the picture did not, so a naive DOM diff would have passed it;
+ *  what is fingerprinted here is only what a reader can see. Pixels were tried first and had to go:
+ *  see the capture's own note below. */
+export async function verifyCargo(page, file, { w, h }) {
+  const failures = [];
+  const notes = [];
+  const where = `${basename(file)} @ ${w}x${h}`;
+
+  await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
+  await page.goto(`file://${file}`, { waitUntil: "load" });
+  await new Promise((r) => setTimeout(r, 300));
+
+  const stepCount = await page.evaluate(
+    () => document.querySelectorAll(".step-frame").length,
+  );
+  const shots = [];
+  let previous = null;
+  const dashed = new Map();
+  const scales = [];
+  for (let i = 0; i < stepCount; i += 1) {
+    await page.evaluate((index) => {
+      const scroller = document.querySelector(".scrolly-steps");
+      const steps = document.querySelectorAll(".step-frame").length;
+      const travel = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTop = steps < 2 ? 0 : (travel * index) / (steps - 1);
+    }, i);
+    // WAIT FOR THIS STEP'S OWN FRAME — not for "some frame has settled", which is already true the
+    // instant the scroll is set, because the OUTGOING frame still holds the class: the reading then
+    // describes the previous step. Measured while it was wrong, it called this tree's own four-map
+    // beat 0.0% / 4.1% / 39.9% redrawn where every step of it really moves. FULLY arrived, not
+    // assertion D3's 0.98, because opacity is part of what is fingerprinted and a frame caught
+    // mid-fade would read as a picture nobody ever sees.
+    try {
+      await page.waitForFunction(
+        (index) => {
+          const opacities = Array.from(document.querySelectorAll(".step-frame")).map((frame) =>
+            Number(getComputedStyle(frame).opacity),
+          );
+          return (
+            opacities[index] >= 0.999 &&
+            opacities.filter((o) => o > 0.001).length === 1
+          );
+        },
+        { timeout: 4000, polling: 50 },
+        i,
+      );
+    } catch {
+      // A beat whose steps do not land one per equal share of the track — the id recorded below is
+      // read off the DOM either way, so the comparison stays honest about what it photographed.
+      notes.push(`${where}: step ${i + 1} never arrived alone; captured what was on screen`);
+      await new Promise((r) => setTimeout(r, 700));
+    }
+    // THE PICTURE IS READ WHERE IT IS DECIDED, never where it is presented. Screenshots were the
+    // first instrument and they lied: on a beat whose axes demonstrably fly in, the DOM read
+    // position 3.000 with its x ticks at 2012-2022 while every capture still showed the whole
+    // record. Puppeteer reads the compositor surface and that surface was stale — an ELEMENT
+    // screenshot even came back carrying a prose card that is not inside that element. Geometry,
+    // text and opacity are what a reader sees; a class or an inline style nobody can see is not in
+    // here, which is exactly what the delivered route page's five frozen copies differed by.
+    const seen = await page.evaluate(() => {
+      const active = document.querySelector(".step-frame.active");
+      const graphic = document.querySelector(".scrolly-graphic");
+      const painted = [];
+      const walk = (node) => {
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden") return;
+        const opacity = Number(style.opacity);
+        if (opacity <= 0.01) return;
+        const box = node.getBoundingClientRect();
+        if (box.width === 0 && box.height === 0) return;
+        const kids = Array.from(node.children);
+        const own = kids.length === 0 ? (node.textContent || "").trim() : "";
+        painted.push([
+          node.tagName,
+          Math.round(box.x * 2) / 2,
+          Math.round(box.y * 2) / 2,
+          Math.round(box.width * 2) / 2,
+          Math.round(box.height * 2) / 2,
+          opacity.toFixed(2),
+          style.fill,
+          style.stroke,
+          style.transform,
+          // A BOX IS NOT THE WHOLE PICTURE. `grinnell-glacier` pays 1.5 MB for a second copy of
+          // every photograph rather than clip one, on the argument that "an element's box is the
+          // one thing a per-frame recorder can see" — true of the recorder that existed, and a
+          // reason to widen this rather than to keep buying duplicates. A clipped, masked or
+          // filtered mark is a different picture at the same box.
+          style.clipPath,
+          style.mask,
+          style.filter,
+          node.getAttribute("d") ?? "",
+          own,
+        ].join("|"));
+        kids.forEach((kid) => walk(kid));
+      };
+      walk(graphic);
+      // Every mark whose dash could be measuring its own path, and the scale the camera is
+      // drawing at — the number this file was blind to for months (see `revealDashInScreenSpace`).
+      const dashed = [];
+      for (const node of graphic.querySelectorAll("*")) {
+        const style = getComputedStyle(node);
+        if (style.strokeDasharray === "none" || !style.strokeDasharray) continue;
+        dashed.push({
+          id:
+            node.getAttribute("data-part") ??
+            node.getAttribute("data-layer") ??
+            node.tagName.toLowerCase(),
+          dasharray: style.strokeDasharray,
+          dashoffset: style.strokeDashoffset,
+          pathLength: node.getAttribute("pathLength"),
+          vectorEffect: style.vectorEffect,
+        });
+      }
+      const svg = graphic.querySelector("svg[viewBox]");
+      const viewBox = svg?.getAttribute("viewBox")?.split(/[\s,]+/);
+      const scale =
+        svg && viewBox && Number(viewBox[2]) > 0
+          ? svg.getBoundingClientRect().width / Number(viewBox[2])
+          : null;
+      return {
+        id: active ? active.getAttribute("data-step") : null,
+        painted,
+        dashed,
+        scale,
+      };
+    });
+    const changed = previous === null ? null : fingerprintDrift(previous, seen.painted);
+    previous = seen.painted;
+    for (const mark of seen.dashed) if (!dashed.has(mark.id)) dashed.set(mark.id, mark);
+    scales.push(seen.scale);
+    shots.push({ id: seen.id ?? `step-${i + 1}`, changed });
+  }
+
+  for (const [before, after] of stillSteps(shots))
+    failures.push(
+      `${where}: steps ${before} and ${after} painted the SAME picture — a reader who scrolled ` +
+        `from one to the other was given nothing for it; a step that does not redraw is prose ` +
+        `with a photograph behind it, not a scrolly`,
+    );
+
+  const projections = await page.evaluate(() =>
+    Array.from(document.querySelectorAll(".step-frame")).map((frame) => {
+      const plate = frame.querySelector("img");
+      const overlay = frame.querySelector("svg");
+      const covers = (a, b) => {
+        if (!a || !b) return false;
+        const one = a.getBoundingClientRect();
+        const two = b.getBoundingClientRect();
+        const overlap =
+          Math.max(0, Math.min(one.right, two.right) - Math.max(one.left, two.left)) *
+          Math.max(0, Math.min(one.bottom, two.bottom) - Math.max(one.top, two.top));
+        const smaller = Math.min(one.width * one.height, two.width * two.height);
+        return smaller > 0 && overlap / smaller > 0.8;
+      };
+      return {
+        id: frame.getAttribute("data-step"),
+        fit: plate && covers(plate, overlay) ? getComputedStyle(plate).objectFit : null,
+        par: overlay ? overlay.getAttribute("preserveAspectRatio") : null,
+      };
+    }),
+  );
+  for (const bad of projectionDisagreements(projections))
+    failures.push(
+      `${where}: step ${bad.id} paints its plate \`object-fit: ${bad.fit}\` under an overlay ` +
+        `\`preserveAspectRatio="${bad.par}"\` — one crops and the other letterboxes, so every mark ` +
+        `is drawn somewhere the basemap never claimed; expected \`${bad.expected}\``,
+    );
+
+  for (const id of revealDashInScreenSpace([...dashed.values()]))
+    failures.push(
+      `${where}: \`${id}\` reveals itself with a dash while carrying ` +
+        `\`vector-effect: non-scaling-stroke\` — the pattern is then measured in SCREEN space, ` +
+        `not in the path's own units, and repeats wherever the camera scales up: a head, a hole ` +
+        `and a tail. Drop the vector-effect on a measuring dash, or measure the reveal some other way`,
+    );
+
+  // Reported, not asserted. The camera's scale is the number this file never wrote down, and it is
+  // what a reader's window changes under a beat that fits a fixed plate into it. Stated so that a
+  // run which never left one narrow band of scale says so, instead of reading as full coverage.
+  const drawn = scales.filter((one) => one != null);
+  if (drawn.length)
+    notes.push(
+      `${where}: camera scale ${Math.min(...drawn).toFixed(2)}..${Math.max(...drawn).toFixed(2)}` +
+        (Math.max(...drawn) < 1.15
+          ? "  — never drawn above 1.15x here, so a defect that needs a scaled-up camera would not show"
+          : ""),
+    );
+
+  const wasted = duplicatedPayload(await readFile(file, "utf8"));
+  const total = wasted.reduce((sum, one) => sum + one.wastedBytes, 0);
+  if (wasted.length)
+    failures.push(
+      `${basename(file)}: ${wasted.length} inlined asset(s) carried more than once — ` +
+        wasted
+          .slice(0, 3)
+          .map((one) => `${one.copies} copies of ${Math.round(one.bytes / 1024)} KiB`)
+          .join(", ") +
+        `; ${Math.round(total / 1024)} KiB a reader downloads for nothing`,
+    );
+  notes.push(
+    `${where}: ${shots.length} steps, redraw ` +
+      shots
+        .slice(1)
+        .map((shot) => `${(Number(shot.changed ?? 0) * 100).toFixed(1)}%`)
+        .join(" / "),
+  );
+
+  return { failures, notes };
+}
+
 /** Drives every file at every width, plus the two state checks per file, on ONE browser. */
 export async function verifyAll(files, widths = WIDTHS) {
   const browser = await puppeteer.launch({
@@ -837,6 +1175,11 @@ export async function verifyAll(files, widths = WIDTHS) {
         const r = await verifyOne(page, file, size);
         failures.push(...r.failures);
         notes.push(...r.notes);
+        // The cargo pass reloads the file and stops at each step; it cannot share the continuous
+        // drive's page state, and the projection defect it looks for only appears at some widths.
+        const c = await verifyCargo(page, file, size);
+        failures.push(...c.failures);
+        notes.push(...c.notes);
       }
       const s = await verifyStates(browser, file);
       failures.push(...s.failures);

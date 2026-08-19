@@ -87,6 +87,21 @@ export type ScrollyStepMeta = {
  * actually be shown them: the thing itself, how it is read, where it is, what it recorded. Not four
  * states of one chart (which belongs to `chart-web`, and `SKILL.md`'s own "When to use" says
  * so in as many words).
+ *
+ * **EVERY ENTRY HERE OWES THE READER A DIFFERENT PICTURE.** A step is a change of frame, not a
+ * change of sentence: `scripts/verify-scrolly.mjs` photographs each step with the card hidden and
+ * fails a beat whose graphic repaints less than 1% of the frame between two of them. Measured on
+ * this tree, a living step repaints 3.1% to 61.4%; five beats on disk were found handing the reader
+ * a fresh sentence over an unchanged picture, one of them with four sentences and two pictures. If
+ * an arc has four things to say and three pictures to say them with, it is a three-step beat.
+ *
+ * **AND THE PICTURE IS BUILT ONCE.** The scaffold emits one `.step-frame` per entry, so a beat
+ * either gives every frame its own SSR'd drawing — as this seed does, one per medium — or rides ONE
+ * picture on step 1's frame, lifts it out of the stack on boot and scrubs it off `data-progress`
+ * (`proof/mapmore-scrolly-danube/render.mjs`). Doing both is the defect that shipped: a visual
+ * copied into all five frames, animated through `querySelector` — singular — so the only copy that
+ * moved was the one the reader never saw, and one 340 KiB plate was inlined five times.
+ * See `references/scrolly-discipline.md`, "A step that does not redraw is not a step."
  */
 export const STEPS_META: ScrollyStepMeta[] = [
   {

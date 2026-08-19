@@ -908,6 +908,119 @@ prose, and the active frame advances through all four — photograph, ordinary d
 spell — one clean settled image at a time (see "The graphic is fixed," below, for what "settled"
 means here and how it was measured).
 
+## A step that does not redraw is not a step (the eleventh correction)
+
+**Every assertion this format carried was about the VEHICLE, and a delivered page proved that a
+vehicle in perfect health can carry nothing at all.** `splash-test-b-route-access`, a five-stop route
+scrolly published on 2026-08-18, passed the lot: the active step handed over exactly once per
+boundary, the frames arrived in order and settled, the card travelled centred and opaque over the
+graphic, `data-progress` advanced 0 → 4 without ever going backwards. And the map never moved, the
+route was never drawn, and the reader who scrolled through five stops met one identical picture five
+times. Measured with the panels hidden, its steps repainted **0.3%, 0.0%, 0.0% and 0.0%** of the
+frame. Assertion H asks whether the SIGNAL a consumer could scrub against evolves; nothing asked
+whether anything CONSUMED it.
+
+Two rules come out of it, and they fail differently.
+
+### Every step changes the picture
+
+`verify-scrolly.mjs` now reads the graphic at each step — waiting for that step's own frame to be
+the only one painted — and fingerprints **what a reader can see**: every painted node's box,
+opacity, fill, stroke, transform, path data and leaf text, as a multiset. It reports the share of
+those marks that differ from the step before. This tree's seven scrollies redraw **6.5% to 96.8%**
+of their marks per step, at every width; the delivered route page redraws **0.0%** on three of its
+four transitions and 4.4% on the fourth, where one of five stops lights up and nothing else. The
+floor is 1%.
+
+**Pixels were the first instrument and they were wrong twice, in both directions.** A byte hash
+called the frozen page "5 of 5 redrawn", because the prose card travels over the graphic and because
+a crossfade leaves a residue differing on 98% of pixels by at most 7/255. Then, once that was
+answered, `page.screenshot` itself lied: on `one-line-four-readings` at its last step the DOM read
+position 3.000 with the x ticks at 2012–2022, opacity 1 — the axes had flown — while every capture
+still showed the whole 1876–2023 record. Puppeteer reads the compositor surface and that surface was
+stale; an ELEMENT screenshot came back carrying a prose card that is not inside that element, and
+the same frame through CDP with `fromSurface: false` showed the truth. **Five of this tree's own
+beats were briefly reported as shipping dead steps on that evidence, and not one of them does.**
+Read the picture where it is decided, never where it is presented.
+
+The DOM alone is not enough either, and the multiset is why: the delivered page carries five copies
+of one frame and swaps which is painted, so a fingerprint keyed by position in the tree called its
+identical pictures 97.7% redrawn. A reader sees the marks, not their addresses — and copies count,
+because dropping one of fifteen identical labels is a redraw.
+
+**What survived the correction:** one page fails this, the delivered one. Every beat in this tree is
+alive at every step, down to `danube-scrolly`'s quietest transition at 6.5%. A beat with four
+sentences and two states still does not have four steps — the prose is not the sequence, the picture
+is — but nothing in this tree is that beat, and the guard now says so rather than the opposite.
+
+### One visual, instantiated once
+
+The delivered page's own bug, and it is worth naming because the correct pattern already existed and
+lived nowhere anyone could find it. The scaffold emits one `.step-frame` per step. A beat may
+therefore work in either of two ways, and MUST NOT mix them:
+
+- **N pictures.** Each step's frame carries its own SSR'd drawing, differing by camera, by state, by
+  what is revealed. Nothing runs at read time.
+- **ONE picture, detached.** The visual and its script ride step 1's frame — the one the scaffold
+  marks `active` at build time, so a reader without JavaScript still meets the opening state — and
+  the script lifts it OUT of the stack on boot, where the step swap can never fade it away. It then
+  scrubs itself off `data-progress`. `proof/mapmore-scrolly-danube/render.mjs` and
+  `proof/scrolly-one-chart-swiss-life-expectancy/render.mjs` both do this.
+
+The delivered page did both. It put its visual in all five frames AND drove it with a script that
+ran `document.querySelector('[data-visual="…"]')` — singular. The animated copy was frame 1,
+invisible from step 2 onward; the four copies the reader actually saw were frozen at their
+build-time state, route hidden, stops at 28% opacity. The same defect read off the file: the same
+340 KiB basemap plate inlined **five times**, 1.33 MB of a 1.80 MB page that no reader benefits
+from. `verify-scrolly.mjs` fails a page that carries any asset twice, which is the cheap fingerprint
+of this mistake — and it caught 1.50 MB in `grinnell-glacier` and 371 KiB in `quakes-four-maps` on
+the way past.
+
+### One geography, one projection
+
+Found at 375x812 on the same page, and the rule was already written here — see "Two kinds of frame,"
+below — with nothing measuring it. Its plate was painted `object-fit: cover` (an `!important` the
+beat wrote over its own `contain`) while the SVG carrying the stops kept
+`preserveAspectRatio="xMidYMid meet"`. One crops, the other letterboxes: the marks were laid out
+across a 375x188 band while the basemap showed the middle third of its width, so **Lisbon was drawn
+over Switzerland**, at a scale that made every stop a 4px smear. A plate and the overlay drawn on it
+pair `cover` with `slice`, `contain` with `meet`, `fill` with `none`. The alignment half of the
+attribute stays the beat's own business.
+
+### A reveal is measured in the path's own units, never in screen space
+
+**The defect that took six hours and five wrong diagnoses, and the reason it survived them.** The
+Danube beat drew its river with `stroke-dasharray` set to the route's own length and an offset that
+shrank as the reader scrolled. The two paths also carried `vector-effect: non-scaling-stroke`, which
+takes the stroke — and with it the dash pattern — out of the path's user units and into screen
+space. A dash pattern repeats forever, so a pattern measured against a line of a different length
+draws **a head, a hole and a tail**, all sliding together as the offset moves. That is exactly what
+the owner photographed, three times, while every measurement taken here said the file was healthy.
+
+It was two compensations for one scale, applied at once: `strokeWidthsFor` already divides the
+intended screen width back out of the camera's CSS scale, and the vector-effect then asked the
+browser not to scale the stroke at all. The comment beside it argued the effect was harmless because
+"it neutralises the viewBox transform, which is the identity here" — true of the WIDTH, and beside
+the point for the DASH.
+
+The fix is both halves: `pathLength={1}` so the pattern is one whole path long whatever the scale,
+and **no vector-effect on a measuring dash**. `verify-scrolly.mjs` refuses the pairing now — a dash
+that measures (a declared `pathLength`, or an offset that is not zero) alongside
+`non-scaling-stroke`. A DECORATIVE dash in screen space is right and is left alone: eight delivered
+files in this tree carry a dashed gridline or leader, and none of them measure anything.
+
+**What this cost, and the honest part of it.** Five explanations were proposed and each was killed by
+measurement: a stale cache, a reprojection desync, the live tile canvas, the window size, reduced
+motion, a progress cap, real wheel input. All were wrong. What finally isolated it was an
+instrumented copy of the delivered page, handed to the person who could see the defect, with a
+button that hid one layer at a time — his click proved the two pieces came from the SVG paths, which
+no amount of driving here had established. **When a report and a measurement disagree, instrument
+the reporter's screen; do not keep re-measuring your own.** And note what does NOT explain it: this
+verifier drives the beat at camera scales of 1.78, 1.42 and 0.42, so "the guard only ever ran at
+scale 1" is not why it missed this. The symptom needs the renderer as well as the scale, and it is
+therefore not reproducible on demand here — which is precisely why the guard is written against the
+PAIRING, something that can be read off any file, rather than against the picture it produces.
+
 ## What survives with JavaScript disabled
 
 **Everything survives except which step's own frame is on screen.** The header title, bottom source,

@@ -61,6 +61,25 @@ instrument that checks it. **Install a `requestAnimationFrame` recorder BEFORE y
 position; `scripts/verify-scrolly.mjs` is that, and `test/scroll-integrity.test.ts` walks it over
 every scrolly on disk.**
 
+**AND A HEALTHY VEHICLE CAN CARRY NOTHING AT ALL.** Everything above is about the mechanism. A
+delivered five-stop route scrolly passed every assertion in this file's verifier — handover, order,
+settle, card, `data-progress` 0 → 4 — while its map never moved and its route was never drawn:
+measured, its steps repainted **4.4%, 0.0%, 0.0%, 0.0%** of their marks — the 4.4% being one of five stops lighting up, and nothing else. Two rules, both now measured
+by `scripts/verify-scrolly.mjs` and both written up in `references/scrolly-discipline.md`, "A step
+that does not redraw is not a step":
+
+- **Every step changes the picture.** The verifier fingerprints every painted mark of the graphic —
+  box, opacity, fill, stroke, transform, path data, text — and reports the share that differ from
+  the step before. This tree's beats redraw 6.5–96.8% of their marks per step; the floor is 1%. Read
+  that picture from the DOM and never from a screenshot: `page.screenshot` served a stale compositor
+  surface here and briefly framed five healthy beats as dead.
+- **One visual, instantiated once.** Either every step's frame carries its own SSR'd picture, or ONE
+  picture rides step 1's frame and the boot script lifts it out of the stack and scrubs it off
+  `data-progress` (`proof/mapmore-scrolly-danube/render.mjs` is the worked example). Never both: the
+  delivered page put its visual in all five frames and animated it with `querySelector` — singular —
+  so the copy that moved was the one nobody could see, and the same 340 KiB plate shipped five
+  times.
+
 **THE GRAPHIC IS FIXED AND THE PAGE DOES NOT SCROLL.** `.scrolly` is a two-row grid exactly one
 frame tall, `html, body` are `overflow: hidden`, the header is row 1 (outside the scroller, so it
 cannot slide away), and inside row 2 the graphic and the card layer are two absolutely-positioned
