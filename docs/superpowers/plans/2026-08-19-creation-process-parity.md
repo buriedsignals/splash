@@ -605,6 +605,55 @@ git commit -m "feat(chart-video): carry the four guards this format can reach"
 
 ---
 
+**Done 2026-08-19** — `c29a7b75`. Three things came out different from the plan, all measured:
+
+1. **Two guards, not four.** `guard-catalogue.json` lists `chart-video` as reachable by
+   `screen-space-dash` and `reached-mark-declares` only. The plan's other two are not reachable here
+   and the catalogue is right: this format ships an mp4 and PNGs, so there is no self-contained HTML
+   to inline an asset into twice, and no baked plate to disagree with a ground.
+2. **The driver cannot read a DOM, and pretending otherwise would have made it brittle.** The plan's
+   Step 5 assumed `page.goto(url + "&frame=" + n)`. A video beat's marks exist as marks only inside
+   Remotion's own render; `remotion`'s `Internals.Timeline` exports hooks and no context object, and
+   the render bundle speaks a private protocol to the renderer. A guard built on another package's
+   internals is brittle by construction. It reads the beat's own component text instead, and the
+   limit — a dash assembled in a helper and spread in is invisible — is written in the script's
+   header, in the test's header and in `SKILL.md`. The walking test asserts how MANY marks the reader
+   found (22 of the corpus's 22 literal `strokeDasharray` occurrences, checked file by file against a
+   raw text count) so a reader that broke fails instead of quietly passing.
+3. **Nothing was being fixed, and that is the interesting part.** Measured across the seed and 25
+   video beats: 18 carry a `strokeDasharray` — 22 marks, every one decorative — and **zero** carry a
+   `strokeDashoffset` or a `vectorEffect`, while **eleven** reveal a line with `drawnSoFar`, the path
+   re-generated from a sliced point list. This format had already answered the reveal problem better
+   than the format that earned the guard: there is no pattern to compute in the wrong space. The
+   guard is a ratchet, not a repair.
+
+`reached-mark-declares` stays **owed**, deliberately: no video beat declares `data-state` at all —
+arrival is signalled with opacity driven by `progressOf`, which the guard cannot read. Adopting the
+vocabulary is a change to how a beat is WRITTEN, not a guard to copy, and marking the cell carried by
+a check that reads nothing would be the lie this whole plan exists to prevent. GUARDS.md: 14 cells
+owed, down from 15.
+
+Mutation-checked: a `strokeDashoffset` and a `vectorEffect` added to the reference rule of
+`vidx-line-life-expectancy` → red, naming `proof/vidx-line-life-expectancy/LifeExpectancyGapVideo.tsx:568 line`.
+
+---
+
+### Task 2b: Carry `drawnSoFar` the other way, into `scrolly` — OPEN
+
+The mirror of Task 2, and the reason it is worth writing down: the capability traffic between these
+two skills runs BOTH ways. `scrolly` reveals a route with a dash and a `pathLength`, and it took six
+hours, five wrong diagnoses and a doctrine section to make that safe. `chart-video` reveals a line by
+re-generating the path from the points reached — a mechanism that cannot have the defect at all, in
+eleven beats, with no doctrine needed.
+
+A scrolly route drawn with `drawnSoFar` would need no `pathLength`, no `vector-effect` discipline and
+no guard. Whether every scrolly reveal can be re-expressed that way is a real question — a dash can
+reveal a shape whose points are not ordered, and `drawnSoFar` cannot — so this is a design task, not
+a copy. It belongs in the same plan because it is the same rule: a fix that stays in the skill it was
+found in is three quarters of a fix.
+
+---
+
 ### Task 3: `map-beat` — five guards and the driver that runs them
 
 **Files:**
