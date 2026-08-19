@@ -117,6 +117,10 @@ export function RouteFrame({
           {
             key: stop.name,
             "data-stop": String(i + 1),
+            // DECLARED, not only drawn: the driver flips this to `reached` when the line gets here,
+            // and `verify-scrolly.mjs` refuses a mark still pending when the scroll ends. A picture
+            // that never registers the narrative arriving is the defect this attribute exists for.
+            "data-state": arrived ? "reached" : "pending",
             opacity: arrived ? 1 : DIM,
           },
           createElement("circle", {

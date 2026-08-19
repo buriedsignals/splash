@@ -46,6 +46,14 @@ describe("whether a stop has been reached", () => {
   it("is reached at the start for a stop the route begins at", () => {
     expect(stopReached(0, 0)).toBe(true);
   });
+
+  // Float arithmetic does not get to decide whether the reader arrived. Caught by the guard at
+  // 1280x800 and nowhere else: the closing stop sits at exactly 1, the scroll ended at a reveal of
+  // 0.9999999, and the last stop stayed grey for good.
+  it("is reached when the line falls a hair short of it", () => {
+    expect(stopReached(0.9999999, 1)).toBe(true);
+    expect(stopReached(0.99, 1)).toBe(false);
+  });
 });
 
 describe("how strongly a stop is painted", () => {

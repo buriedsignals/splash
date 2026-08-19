@@ -984,6 +984,29 @@ Two things that instrument had to learn before it told the truth, both worth kee
 - **Wait past that crossfade.** Every sample is a jump, and a jump starts a transition — measuring
   260ms later measures the fade the measurement caused. At 550ms the same slideshow reads 0.0%.
 
+### A mark the narrative reaches says so, and declares that it did
+
+The third defect found by watching a scroll rather than by any instrument here: *"les points steps ne
+se colorisent pas de la couleur au passage, il reste gris foncé."* The driver moved each stop's
+OPACITY and nothing else, so every stop kept the fill it was SSR'd with. The line arrived at Madrid,
+at Marseille, at Milan; nothing on the map said so. **Strength says how close the line is; colour
+says whether it got there. They are two facts and a beat owes both.**
+
+This one cannot be read off the pixels, and the two failed attempts are worth keeping:
+
+- requiring a mark's COLOUR to change refuses `danube`, whose territories legitimately change only
+  their opacity as the river reaches them;
+- requiring its DESCRIPTOR to change accepts the broken beat, whose group opacity did move.
+
+So the beat DECLARES it. A scrub beat marks its state-bearing elements `data-state="pending"` and its
+driver flips them to `reached`. One attribute: checkable without semantics, and the same fact a
+screen reader can be handed. `verify-scrolly.mjs` refuses a mark still pending when the scroll ends,
+and says out loud when a scrub beat declares nothing at all — a beat whose marks nobody is checking.
+
+**It caught a real one on its first run**, at 1280x800 and at no other width: the closing stop sits at
+exactly 1.0 along the route, the scroll ended at a reveal of 0.9999999, and the last stop stayed grey
+for good. Float arithmetic does not get to decide whether the reader arrived.
+
 ### One visual, instantiated once
 
 The delivered page's own bug, and it is worth naming because the correct pattern already existed and

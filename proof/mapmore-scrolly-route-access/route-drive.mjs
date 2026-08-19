@@ -65,7 +65,9 @@ const DIM = 0.28;
  *  reader did: "les points steps ne se colorisent pas de la couleur au passage, il reste gris
  *  foncé". A stop is reached or it is not. */
 export function stopReached(fraction, reachedAt) {
-  return fraction >= reachedAt;
+  // A hair of tolerance, because float arithmetic does not get to decide whether the reader
+  // arrived: the closing stop sits at exactly 1 and the scroll ends at a reveal of 0.9999999.
+  return fraction >= reachedAt - 1e-6;
 }
 
 /** Each stop fades in over the stretch that reaches it, so nothing pops. */
@@ -135,7 +137,11 @@ export function initRouteAccess(root, config) {
           stopOpacity(fraction, config.stops[i], i === 0 ? null : config.stops[i - 1]),
         );
         // The COLOUR, not only the strength: a stop the line has reached is drawn in the accent.
-        const fill = stopReached(fraction, config.stops[i]) ? config.accent : config.muted;
+        // And the STATE is declared beside it, so a guard — and a screen reader — can read what the
+        // picture is saying rather than infer it from a fill.
+        const reached = stopReached(fraction, config.stops[i]);
+        el.setAttribute("data-state", reached ? "reached" : "pending");
+        const fill = reached ? config.accent : config.muted;
         for (const mark of el.querySelectorAll("[data-fill='stop']"))
           mark.setAttribute("fill", fill);
       });

@@ -22,6 +22,7 @@ import {
   revealDashInScreenSpace,
   requiresScrub,
   stalledSteps,
+  neverReached,
 } from "../scripts/verify-scrolly.mjs";
 
 // ── G1. Two steps that paint the same picture ────────────────────────────────────────────────
@@ -421,5 +422,61 @@ describe("a scrub beat whose picture holds still inside a step", () => {
 
   it("says nothing about a step with nothing sampled inside it", () => {
     expect(stalledSteps([{ id: "one", drifts: [] }])).toEqual([]);
+  });
+});
+
+// ── G6. A mark the narrative reaches that never says so ───────────────────────────────────────
+//
+// The third defect the owner found by watching a scroll rather than by any instrument here: "les
+// points steps ne se colorisent pas de la couleur au passage, il reste gris foncé". The driver moved
+// each stop's opacity and nothing else, so every stop kept the fill it was SSR'd with. The line
+// arrived; nothing on the map said so.
+//
+// IT CANNOT BE GUESSED. Requiring "a mark's colour changes" would fail `danube`, whose territories
+// legitimately change only their opacity as the river reaches them; requiring "its descriptor
+// changes" passes the broken beat, whose group opacity did move. There is no reading of the pixels
+// that separates the two without knowing what the beat MEANT.
+//
+// So the beat declares it. A scrub beat marks its state-bearing elements `data-state="pending"` and
+// its driver flips them to `reached` — one attribute, checkable without semantics, and a screen
+// reader can be told the same thing. What is refused is a mark still pending at the end of the
+// scroll: the narrative got there and the picture never registered it.
+
+describe("marks that the narrative reaches", () => {
+  it("refuses one still pending when the scroll is over", () => {
+    expect(
+      neverReached([
+        { id: "stop-1", opening: "reached", closing: "reached" },
+        { id: "stop-4", opening: "pending", closing: "pending" },
+      ]),
+    ).toEqual(["stop-4"]);
+  });
+
+  it("accepts a mark that arrives", () => {
+    expect(
+      neverReached([{ id: "stop-2", opening: "pending", closing: "reached" }]),
+    ).toEqual([]);
+  });
+
+  // A mark that is reached from the start is the opening state, not a defect: the route begins at
+  // its first stop.
+  it("accepts a mark that was reached from the opening", () => {
+    expect(
+      neverReached([{ id: "stop-1", opening: "reached", closing: "reached" }]),
+    ).toEqual([]);
+  });
+
+  it("names every mark left behind, not the first", () => {
+    expect(
+      neverReached([
+        { id: "a", opening: "pending", closing: "pending" },
+        { id: "b", opening: "pending", closing: "reached" },
+        { id: "c", opening: "pending", closing: "pending" },
+      ]),
+    ).toEqual(["a", "c"]);
+  });
+
+  it("says nothing about a beat that declares no state at all", () => {
+    expect(neverReached([])).toEqual([]);
   });
 });

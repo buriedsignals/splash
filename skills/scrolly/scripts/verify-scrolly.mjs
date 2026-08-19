@@ -251,6 +251,24 @@ export function duplicatedPayload(html) {
     .sort((a, b) => b.wastedBytes - a.wastedBytes);
 }
 
+/** Marks a beat declared PENDING that were still pending when the scroll ended.
+ *
+ *  The narrative reached them and the picture never said so — measured on a rebuilt route beat whose
+ *  driver moved each stop's opacity and nothing else, so every stop kept the fill it was SSR'd with:
+ *  "les points steps ne se colorisent pas de la couleur au passage, il reste gris foncé".
+ *
+ *  It is checked against a DECLARATION rather than against the pixels, because the pixels cannot
+ *  settle it: requiring a colour to change would refuse `danube`, whose territories legitimately
+ *  change only their opacity as the river reaches them, and requiring "the descriptor changed"
+ *  accepts the broken beat, whose group opacity did move. A scrub beat marks its state-bearing
+ *  elements `data-state="pending"` and its driver flips them to `reached`; one attribute, and a
+ *  screen reader can be told the same thing. */
+export function neverReached(marks) {
+  return marks
+    .filter((mark) => mark.opening === "pending" && mark.closing !== "reached")
+    .map((mark) => mark.id);
+}
+
 /** Which of the two models a beat is built on, read off the markup rather than guessed.
  *
  *  An ASSEMBLY builds a picture into every step frame — the seed's four media, four encodings of one
@@ -1193,6 +1211,51 @@ export async function verifyCargo(page, file, { w, h }) {
         `\`preserveAspectRatio="${bad.par}"\` — one crops and the other letterboxes, so every mark ` +
         `is drawn somewhere the basemap never claimed; expected \`${bad.expected}\``,
     );
+
+  // The states a beat DECLARED, read at the opening and at the close. Silence is not a failure —
+  // an assembly has nothing to declare — but it is worth saying out loud, because a scrub beat that
+  // declares nothing is a beat whose marks nobody is checking.
+  const declaredState = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll("[data-state]")).map((node) => ({
+        id:
+          node.getAttribute("data-stop") ??
+          node.getAttribute("data-mark") ??
+          node.getAttribute("data-territory") ??
+          node.tagName.toLowerCase(),
+        state: node.getAttribute("data-state"),
+      })),
+    );
+  if (requiresScrub({ frames: stepCount, framesWithContent })) {
+    await page.evaluate(() => {
+      const scroller = document.querySelector(".scrolly-steps");
+      scroller.scrollTop = 0;
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    const opening = await declaredState();
+    await page.evaluate(() => {
+      const scroller = document.querySelector(".scrolly-steps");
+      scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    const closing = await declaredState();
+    const byId = new Map(closing.map((mark) => [mark.id, mark.state]));
+    const marks = opening.map((mark) => ({
+      id: mark.id,
+      opening: mark.state,
+      closing: byId.get(mark.id),
+    }));
+    for (const id of neverReached(marks))
+      failures.push(
+        `${where}: mark ${id} was still \`pending\` when the scroll ended — the narrative reached ` +
+          `it and the picture never said so`,
+      );
+    notes.push(
+      marks.length
+        ? `${where}: ${marks.filter((m) => m.opening === "pending").length} of ${marks.length} declared marks start pending`
+        : `${where}: this beat declares no \`data-state\` marks, so nothing checks that its own marks register the narrative`,
+    );
+  }
 
   for (const id of revealDashInScreenSpace([...dashed.values()]))
     failures.push(

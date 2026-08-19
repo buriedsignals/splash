@@ -81,6 +81,12 @@ that does not redraw is not a step":
   whose picture never moves inside itself. A rebuild here passed all four cargo guards as five
   finished pictures and was still a slideshow — *"le dessin de la ligne n'est pas progressif au
   scroll"*.
+- **A mark the narrative reaches says so, and declares it.** Strength says how close the line is;
+  colour says whether it got there. A scrub beat marks its state-bearing elements
+  `data-state="pending"` and its driver flips them to `reached`; the verifier refuses one still
+  pending when the scroll ends. It cannot be read off the pixels — requiring a colour change refuses
+  a beat whose marks legitimately only fade, and requiring "the descriptor changed" accepts one whose
+  group opacity moved while every fill stayed frozen.
 - **One visual, instantiated once.** Either every step's frame carries its own SSR'd picture, or ONE
   picture rides step 1's frame and the boot script lifts it out of the stack and scrubs it off
   `data-progress` (`proof/mapmore-scrolly-danube/render.mjs` is the worked example). Never both: the
