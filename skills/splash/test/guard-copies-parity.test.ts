@@ -57,17 +57,32 @@ function declaration(file: string, name: string): string {
 
 const COPIES: Record<string, string[]> = {
   // decided by → the verification scripts that carry it
-  plateFollowsGround: ["scrolly/scripts/verify-scrolly.mjs", "map-beat/scripts/verify-map.mjs"],
-  surfaceLuminance: ["scrolly/scripts/verify-scrolly.mjs", "map-beat/scripts/verify-map.mjs"],
+  plateFollowsGround: [
+    "scrolly/scripts/verify-scrolly.mjs",
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+  ],
+  surfaceLuminance: [
+    "scrolly/scripts/verify-scrolly.mjs",
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+  ],
+  plateMatchesGeometry: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
+  groundFromPalette: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
+  plateLuminance: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
   revealDashInScreenSpace: [
     "scrolly/scripts/verify-scrolly.mjs",
     "chart-video/scripts/verify-video.mjs",
     "map-beat/scripts/verify-map.mjs",
     "chart-beat/scripts/verify-static.mjs",
+    "chart-web/scripts/verify-guards.mjs",
+    "map-web/scripts/verify-guards.mjs",
   ],
   duplicatedPayload: [
     "scrolly/scripts/verify-scrolly.mjs",
     "image-beat/scripts/verify-image.mjs",
+    "chart-web/scripts/verify-guards.mjs",
+    "map-web/scripts/verify-guards.mjs",
   ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
@@ -76,6 +91,8 @@ const COPIES: Record<string, string[]> = {
     "chart-video/scripts/verify-video.mjs",
     "map-beat/scripts/verify-map.mjs",
     "chart-beat/scripts/verify-static.mjs",
+    "chart-web/scripts/verify-guards.mjs",
+    "map-web/scripts/verify-guards.mjs",
   ],
 };
 

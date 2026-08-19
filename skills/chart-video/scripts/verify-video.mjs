@@ -38,9 +38,15 @@ export function revealDashInScreenSpace(marks) {
 
 /** Every JSX element in `source` that carries a dash, as the shape `revealDashInScreenSpace` reads.
  *
- *  Deliberately a text scan and not a parser: the four attributes it needs are written literally in
- *  every one of this corpus's 25 video components, and a scan cannot be wrong about an attribute
- *  that is not there. What it cannot see is a dash assembled elsewhere and spread in — stated in the
+ *  READS A COMPONENT OR THE FILE IT PRODUCES. The four attributes it needs are written literally in
+ *  both — camelCase in JSX, kebab-case in rendered SVG — as an attribute, inside a `style={{ }}`
+ *  object, or inside a `style="a:b;c:d"` string. One reader for both is what lets a format verify its
+ *  own SOURCE where that is the only thing that exists (a chart video's marks live only inside
+ *  Remotion's render) and its own ARTIFACT where the artifact is a real file (a web beat ships
+ *  self-contained HTML).
+ *
+ *  Deliberately a text scan and not a parser: a scan cannot be wrong about an attribute that is not
+ *  there. What it cannot see is a dash assembled elsewhere and spread in — stated in the
  *  test's header, and the reason the walking test asserts how MANY marks it found.
  *
  *  AN ABSENT OFFSET IS ZERO, NOT UNKNOWN. The DOM reader this mirrors gets `"0px"` from a computed
@@ -72,17 +78,24 @@ export function marksFromSource(source, where) {
     // often as the attribute form is — every route reveal in this tree uses it. A reader that knew
     // only attributes returned a mark with no offset and PASSED it, which is worse than not reading
     // the element at all.
+    // A RENDERED artifact writes the same thing as a CSS string — `style="stroke-dasharray:1;
+    // stroke-dashoffset:0.4"` — so both forms are read here and one reader serves a component and
+    // the file it produces. `,` ends a property in the object form and `;` in the string form.
+    const kebab = (name) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
     const styleAt = /\bstyle=\{\{/.exec(attributes);
     // Balanced from the INNER brace, so what comes back is the object's contents without its own
     // braces — otherwise the last property runs to the closing `}` and reads as `1 - reached }`.
-    const style = styleAt ? braced(attributes, styleAt.index + styleAt[0].length - 1) : "";
+    const cssAt = /\bstyle="([^"]*)"/.exec(attributes);
+    const style = styleAt
+      ? braced(attributes, styleAt.index + styleAt[0].length - 1)
+      : (cssAt?.[1] ?? "");
     const read = (name) => {
       const quoted = new RegExp(`\\b${name}=("([^"]*)"|'([^']*)')`).exec(attributes);
       if (quoted) return quoted[2] ?? quoted[3];
       const opened = new RegExp(`\\b${name}=\\{`).exec(attributes);
       // Balance the braces, so `{\`${a} ${b}\`}` comes back whole.
       if (opened) return braced(attributes, opened.index + opened[0].length - 1).trim();
-      const inStyle = new RegExp(`\\b${name}\\s*:`).exec(style);
+      const inStyle = new RegExp(`\\b${kebab(name)}\\s*:|\\b${name}\\s*:`).exec(style);
       if (!inStyle) return null;
       let at = inStyle.index + inStyle[0].length;
       let depth = 0;
@@ -91,7 +104,7 @@ export function marksFromSource(source, where) {
         const c = style[at];
         if (c === "{" || c === "(" || c === "[") depth++;
         else if (c === "}" || c === ")" || c === "]") depth--;
-        else if (c === "," && depth <= 0) break;
+        else if ((c === "," || c === ";") && depth <= 0) break;
       }
       return style.slice(start, at).trim();
     };

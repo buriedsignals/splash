@@ -123,6 +123,29 @@ describe("reading a video beat's marks out of its own component", () => {
     expect(revealDashInScreenSpace(marks)).toEqual(["Beat.tsx:1 path"]);
   });
 
+  // The RENDERED form of the same thing: kebab-case attributes, and a CSS string rather than a JSX
+  // object. A web beat ships self-contained HTML, so this is the artifact its own guard reads.
+  it("reads a rendered element, kebab-case attributes and a CSS style string alike", () => {
+    const marks = marksFromSource(
+      `<line x1="0" x2="760" stroke-dasharray="1" style="stroke-dashoffset:0.4;opacity:1" vector-effect="non-scaling-stroke"></line>`,
+      "beat.html",
+    );
+    expect(marks).toHaveLength(1);
+    expect(marks[0].dasharray).toBe("1");
+    expect(marks[0].dashoffset).toBe("0.4");
+    expect(marks[0].vectorEffect).toBe("non-scaling-stroke");
+    expect(revealDashInScreenSpace(marks)).toEqual(["beat.html:1 line"]);
+  });
+
+  it("leaves a rendered gridline alone — the one this corpus is full of", () => {
+    const marks = marksFromSource(
+      `<line x1="0" x2="760" y1="400" y2="400" stroke="#616161" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>`,
+      "beat.html",
+    );
+    expect(marks[0].dashoffset).toBe("0");
+    expect(revealDashInScreenSpace(marks)).toEqual([]);
+  });
+
   it("names each mark by its file and line, so a failure points at one place", () => {
     const marks = marksFromSource(`<g>\n</g>\n<path strokeDasharray="4 4" />`, "Beat.tsx");
     expect(marks[0].id).toBe("Beat.tsx:3 path");

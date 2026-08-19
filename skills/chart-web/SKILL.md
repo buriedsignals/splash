@@ -199,6 +199,28 @@ its own props and its own `frame` (a `WebFrame`-shaped value, inside `props`). T
 does not know, and does not need to know, what any one story calls its frame or how many pixels wide
 its canonical geometry is.
 
+## What the shipped file must CONTAIN, checked before it is driven
+
+The artifact is one self-contained HTML file. Two things about its contents are refused, both read
+from the file itself — no browser, no screenshot, no component.
+
+**Every asset is inlined exactly once.** A second copy is bytes no reader benefits from, and a
+self-contained file is where that happens without anyone noticing. A scrolly earned this at **1.33 MB
+of a 1.80 MB page**: the same 340 KiB basemap plate carried five times.
+
+**Every dash is drawn in the path's own units.** `vector-effect: non-scaling-stroke` is on nearly
+everything this format draws, and that is CORRECT — a 1px gridline must stay 1px in a fluid frame.
+Measured 2026-08-19 across the 23 web artifacts on disk: **29 dashed marks, all 29 of them under
+`non-scaling-stroke`, and none of them measuring anything.** That is the whole reason the guard belongs
+here: this format is one authored `stroke-dashoffset` away from a dash that measures a length the path
+does not have, and draws as head, hole and tail. It cost a map beat six hours and five wrong
+diagnoses.
+
+Both decisions live in `scripts/verify-guards.mjs` rather than in `verify-web.mjs`, because importing
+the driver RUNS it — a decision no test can reach without spending a browser is a decision nobody
+walks. `verify-web.mjs` imports them and prints a `CARGO` section before it drives anything;
+`test/verify-guards.test.ts` runs them over every web artifact in the repository.
+
 ## How it works (the shape)
 
 1. **Read `web-discipline.md`**, then write the frame before the interaction script. Draw geometry
@@ -336,6 +358,10 @@ skill into a journalist's root — the whole premise — did not build.
   own checks were each proven against a deliberately broken copy of the rendered HTML in `/tmp`;
   the focus-ring check FAILED that exercise the first time (it accepted the user agent's outline on
   an `opacity: 0` input, which paints nothing) and was rewritten to compare rendered frames instead.
+- `scripts/verify-guards.mjs` — `duplicatedPayload` and `revealDashInScreenSpace`, plus the
+  `marksFromSource` reader that feeds the second. Byte copies of the decisions `scrolly` and
+  `chart-video` earned, walked by `splash/test/guard-copies-parity.test.ts`. Separate from
+  `verify-web.mjs` because importing that file runs it.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
   story's render) to `assets/preview.png` or `--out <dir>` to write the proof to that directory
   instead, via `ChartWebPreviewSvg`. Derives `ink`/`muted`/`grid` with `deriveFurniture` and

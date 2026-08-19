@@ -44,10 +44,15 @@
 import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
+import {
+  duplicatedPayload,
+  marksFromSource,
+  revealDashInScreenSpace,
+} from "./verify-guards.mjs";
 
 /** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
@@ -188,6 +193,29 @@ if (!htmlPath) {
   htmlPath = outPath;
 }
 const url = `file://${resolve(htmlPath)}`;
+
+// ===== CARGO — what the shipped file CONTAINS, before anything is driven =====
+//
+// Two of this format's four guards read the artifact itself and need no browser, so making them wait
+// behind one would only make them skippable. The other two read the bake's own `plate/` files and are
+// run by `test/verify-guards.test.ts` over every beat on disk. All four live in `verify-guards.mjs`
+// because importing THIS file runs it.
+{
+  const html = await readFile(resolve(htmlPath), "utf8");
+  const mb = (n) => (n / (1024 * 1024)).toFixed(2);
+  const twice = duplicatedPayload(html);
+  const measuring = revealDashInScreenSpace(marksFromSource(html, basename(htmlPath)));
+  console.log(`\nCARGO — what the file carries`);
+  for (const found of twice)
+    console.log(
+      `  FAIL  ${found.copies} copies of one ${mb(found.bytes)} MB asset inlined, ${mb(found.wastedBytes)} MB wasted`,
+    );
+  for (const id of measuring)
+    console.log(`  FAIL  ${id} reveals with a dash that measures its own path under a non-scaling stroke`);
+  if (!twice.length && !measuring.length)
+    console.log(`  ok    every asset inlined once; every dash drawn in the path's own units`);
+  else process.exitCode = 1;
+}
 console.log(`driving ${url}\n`);
 
 const browser = await puppeteer.launch({

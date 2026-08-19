@@ -44,13 +44,18 @@
 // Exit code is 0 only when every check passed. Any failure prints the measurement that failed,
 // with both numbers, and exits 1.
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { render } from "./render-web.mjs";
+import {
+  duplicatedPayload,
+  marksFromSource,
+  revealDashInScreenSpace,
+} from "./verify-guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -901,6 +906,28 @@ if (!filePath) {
 }
 filePath = resolve(filePath);
 if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
+
+// ===== CARGO — what the shipped file CONTAINS, before anything is driven =====
+//
+// Two decisions this format reaches, run on the artifact itself rather than on the page a browser
+// renders from it: they need no browser, so making them wait behind one would only make them
+// skippable. They live in `verify-guards.mjs` because importing THIS file runs it.
+{
+  const html = readFileSync(filePath, "utf8");
+  const mb = (n) => (n / (1024 * 1024)).toFixed(2);
+  const twice = duplicatedPayload(html);
+  const measuring = revealDashInScreenSpace(marksFromSource(html, basename(filePath)));
+  console.log(`\nCARGO — what the file carries`);
+  for (const found of twice)
+    console.log(
+      `  FAIL  ${found.copies} copies of one ${mb(found.bytes)} MB asset inlined, ${mb(found.wastedBytes)} MB wasted`,
+    );
+  for (const id of measuring)
+    console.log(`  FAIL  ${id} reveals with a dash that measures its own path under a non-scaling stroke`);
+  if (!twice.length && !measuring.length)
+    console.log(`  ok    every asset inlined once; every dash drawn in the path's own units`);
+  else process.exitCode = 1;
+}
 if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });

@@ -1,133 +1,61 @@
-// Verifies what a MAP BEAT carries, after the render ladder has proved it exists.
+// The guards `map-web` carries, kept in their own module so a TEST can import them.
 //
-// `render-map.mjs` runs the join and the claim check and produces a still, a final frame and an mp4.
-// Nothing until now asked the two questions this format's own doctrine spends most of its words on:
-// does the baked plate describe the same geography the marks were projected into, and is it on the
-// same side of the theme as the ground the beat declares.
+// `verify-interaction.mjs` is this format's driver and it RUNS on import. A decision that only exists
+// inside it is a decision no test can reach without spending a browser, so the decisions live here
+// and the driver imports the two that are about the shipped page and calls them on it.
 //
-// THE SUBSTRATE IS THE BAKE'S OWN OUTPUT. `bake-plate.mjs` writes `plate/plate.png` and
-// `plate/geometry.json` beside each other, and `geometry.json` records the FRAME the marks were
-// projected into. Both questions are therefore decidable from two files — exactly, with no
-// rasteriser, no browser and no screenshot. `plate/plate.png` is decoded by this skill's own
-// `compare-png.mjs`, which is why the plate's luminance needs no canvas either.
+// FOUR GUARDS, TWO SUBSTRATES.
 //
-// WHY NOT `projectionDisagreements`. That decision compares an `<img>`'s CSS `object-fit` against the
-// `preserveAspectRatio` of the SVG drawn over it. Measured across this tree, `object-fit` appears in
-// exactly two files, both scrolly IMAGE beats, and in no map component at all: a map beat composites
-// its plate as an `<image>` INSIDE the marks' own SVG, in the marks' own coordinate system, so there
-// are not two projections that could disagree. The same DEFECT is reachable here by another
-// mechanism, and `plateMatchesGeometry` is what decides it.
+//   · the page — one self-contained HTML file carrying a baked plate, its marks and a live MapTiler
+//     layer over them. The same asset inlined twice is the most expensive mistake available here,
+//     since a map plate is the heaviest single asset this tree produces; and a dash that measures its
+//     own path under `vector-effect: non-scaling-stroke` is reachable for the same reason it is in
+//     `chart-web`.
+//   · the bake — `bake-plate.mjs` writes `plate/plate.png` and `plate/geometry.json` side by side,
+//     and the geometry records the FRAME every point's pixel position was computed in. So "does the
+//     plate describe the same place as the marks" and "is it on the ground's side" are exact, need no
+//     browser and no screenshot, and run in milliseconds.
+//
+// Every decision below is a COPY — of `scrolly`'s, `chart-video`'s and `map-beat`'s — held byte for
+// byte by `splash/test/guard-copies-parity.test.ts`. `map-beat` and `map-web` bake the same way, and
+// a plate does not know which format is drawing it.
 
 import { decodePng } from "./compare-png.mjs";
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["plateFollowsGround", "revealDashInScreenSpace", "plateMatchesGeometry"];
+export const GUARDS = [
+  "duplicatedPayload",
+  "revealDashInScreenSpace",
+  "plateMatchesGeometry",
+  "plateFollowsGround",
+];
 
-/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
- *
- *  THE `null` IS THE POINT. This guard failed three correct beats by reading
- *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
- *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
- *  it has been missed. Returning a number there is how a broken instrument reports confidently.
- *
- *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
- *  reading available without compositing the whole stack. */
-export function surfaceLuminance(css) {
-  if (typeof css !== "string") return null;
-  const value = css.trim();
-  if (!value || value === "transparent" || value === "none") return null;
-  let channels = null;
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
-  if (hex) {
-    const digits =
-      hex[1].length === 3
-        ? hex[1]
-            .split("")
-            .map((d) => d + d)
-            .join("")
-        : hex[1];
-    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
-  } else if (/^rgba?\(/i.test(value)) {
-    const parts = value.match(/[\d.]+/g);
-    if (!parts || parts.length < 3) return null;
-    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
-    channels = parts.slice(0, 3).map(Number);
+/** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
+ *  defect: reporting those would bury the 1.33 MB one under a list of nothing. */
+const PAYLOAD_FLOOR = 1024;
+
+/** Every data: asset inlined more than once, worst waste first. A weight ceiling would have been
+ *  arbitrary — this tree's own image scrolly is legitimately 3 MB — but a second copy of one asset
+ *  is bytes no reader benefits from, whatever the beat, and it is the file-side fingerprint of a
+ *  visual duplicated into every step frame. */
+export function duplicatedPayload(html) {
+  const blobs = new Map();
+  for (const match of html.matchAll(/data:[a-z/+.-]+;base64,([A-Za-z0-9+/=]+)/gi)) {
+    const body = match[1];
+    if (body.length < PAYLOAD_FLOOR) continue;
+    const seen = blobs.get(body) ?? { copies: 0, bytes: body.length };
+    seen.copies += 1;
+    blobs.set(body, seen);
   }
-  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
-  const channel = (v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return (
-    0.2126 * channel(channels[0]) +
-    0.7152 * channel(channels[1]) +
-    0.0722 * channel(channels[2])
-  );
-}
-
-/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
- *
- *  THE `null` IS THE POINT. This guard failed three correct beats by reading
- *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
- *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
- *  it has been missed. Returning a number there is how a broken instrument reports confidently.
- *
- *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
- *  reading available without compositing the whole stack. */
-export function surfaceLuminance(css) {
-  if (typeof css !== "string") return null;
-  const value = css.trim();
-  if (!value || value === "transparent" || value === "none") return null;
-  let channels = null;
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
-  if (hex) {
-    const digits =
-      hex[1].length === 3
-        ? hex[1]
-            .split("")
-            .map((d) => d + d)
-            .join("")
-        : hex[1];
-    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
-  } else if (/^rgba?\(/i.test(value)) {
-    const parts = value.match(/[\d.]+/g);
-    if (!parts || parts.length < 3) return null;
-    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
-    channels = parts.slice(0, 3).map(Number);
-  }
-  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
-  const channel = (v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return (
-    0.2126 * channel(channels[0]) +
-    0.7152 * channel(channels[1]) +
-    0.0722 * channel(channels[2])
-  );
-}
-
-/** The two sides a mid-grey band apart: below this a surface is DARK, above it LIGHT, and in
- *  between it belongs to neither and this guard says nothing. */
-const DARK_SIDE = 0.25;
-const LIGHT_SIDE = 0.6;
-
-/** Whether a baked plate is on the same side as the ground its beat declared.
- *
- *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
- *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
- *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
- *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
- *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
-
-export function plateFollowsGround({ ground, plate }) {
-  if (plate == null || ground == null) return true;
-  const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
-  const one = side(ground);
-  const two = side(plate);
-  if (one === "middle" || two === "middle") return true;
-  return one === two;
+  return [...blobs.values()]
+    .filter((b) => b.copies > 1)
+    .map((b) => ({
+      copies: b.copies,
+      bytes: b.bytes,
+      wastedBytes: (b.copies - 1) * b.bytes,
+    }))
+    .sort((a, b) => b.wastedBytes - a.wastedBytes);
 }
 
 /** Marks whose dash MEASURES their own path while being computed in screen space — the reveal that
@@ -233,6 +161,69 @@ export function marksFromSource(source, where) {
   return marks;
 }
 
+/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
+ *
+ *  THE `null` IS THE POINT. This guard failed three correct beats by reading
+ *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
+ *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
+ *  it has been missed. Returning a number there is how a broken instrument reports confidently.
+ *
+ *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
+ *  reading available without compositing the whole stack. */
+export function surfaceLuminance(css) {
+  if (typeof css !== "string") return null;
+  const value = css.trim();
+  if (!value || value === "transparent" || value === "none") return null;
+  let channels = null;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1]
+            .split("")
+            .map((d) => d + d)
+            .join("")
+        : hex[1];
+    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
+  } else if (/^rgba?\(/i.test(value)) {
+    const parts = value.match(/[\d.]+/g);
+    if (!parts || parts.length < 3) return null;
+    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
+    channels = parts.slice(0, 3).map(Number);
+  }
+  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
+  const channel = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return (
+    0.2126 * channel(channels[0]) +
+    0.7152 * channel(channels[1]) +
+    0.0722 * channel(channels[2])
+  );
+}
+
+/** The two sides a mid-grey band apart: below this a surface is DARK, above it LIGHT, and in
+ *  between it belongs to neither and this guard says nothing. */
+const DARK_SIDE = 0.25;
+const LIGHT_SIDE = 0.6;
+
+/** Whether a baked plate is on the same side as the ground its beat declared.
+ *
+ *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+ *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
+ *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
+ *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
+ *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
+
+export function plateFollowsGround({ ground, plate }) {
+  if (plate == null || ground == null) return true;
+  const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
+  const one = side(ground);
+  const two = side(plate);
+  if (one === "middle" || two === "middle") return true;
+  return one === two;
+}
 
 /** How far a plate's aspect ratio may sit from its frame's before it letterboxes. A frame is
  *  integers and a ratio is not: 936x827 baked at 2x is 1872x1654, and the two ratios agree to five

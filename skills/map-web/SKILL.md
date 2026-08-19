@@ -171,6 +171,39 @@ a beat leaves it off — as this seed does — a reader with no spatial access t
 that: the complete set of readings, the comparison the beat is about, and a reading that does not
 cost thirteen separate interactions. Read it before choosing; do not choose by not deciding.
 
+## Four guards, two substrates
+
+**From the shipped page**, read as a file and needing no browser:
+
+- **every asset inlined exactly once.** A map plate is the heaviest single asset this tree produces,
+  so a second copy is the most expensive mistake available here. A scrolly earned this guard at
+  **1.33 MB of a 1.80 MB page** — the same 340 KiB plate five times.
+- **every dash drawn in the path's own units.** This format's five pages carry **zero** dashed
+  elements today (the `stroke-dashoffset:0` a text search finds in them is URL-encoded inside a
+  `data:image/svg+xml,` attribution icon, not markup), so this is a pure ratchet. The reader that
+  feeds it is proved live in `chart-web`'s own walk — 23 artifacts, 29 marks — against a
+  byte-identical copy.
+
+**From the bake's own files**, exact and instant:
+
+- **the plate describes the frame its marks were projected into.** `bake-plate.mjs` writes
+  `plate/plate.png` and `plate/geometry.json` side by side, and the geometry records that frame. A
+  plate whose aspect ratio is not the frame's is letterboxed by the default
+  `preserveAspectRatio="xMidYMid meet"`, so the basemap shifts while the marks do not. Measured:
+  **all five beats agree to 0.000 %, at exactly 2.00×.**
+- **the plate is on the side of the ground the beat declares.** Measured: **all five**, plates 0.661
+  to 0.840 under `#FFFFFF`.
+
+**Not `projectionDisagreements`.** That decision compares an `<img>`'s CSS `object-fit` against the
+`preserveAspectRatio` of the SVG over it, and `object-fit` appears in **none** of the 23 web artifacts
+on disk — in exactly two files in this whole tree, both scrolly IMAGE beats. This format composites
+its plate as an `<image>` inside the marks' own SVG, in the marks' own coordinate system; there are
+not two projections that could disagree. Same defect, other mechanism, second catalogue row.
+
+All four live in `scripts/verify-guards.mjs` rather than in `verify-interaction.mjs`, because
+importing the driver RUNS it. The driver imports the two page-side ones and prints a `CARGO` section
+before it drives anything; `test/verify-guards.test.ts` runs all four over every `map / web` beat.
+
 ## How it works (the shape)
 
 1. **Read `references/map-web-discipline.md`** in full before writing a second beat — "Full width,
@@ -312,6 +345,10 @@ for its own generic function.
   and finishing with a JavaScript-disabled pass. It renders with the R1b placeholder, so the live
   layer never boots and every check is about the plate — its §0 asserts that reading rather than
   leaving it implied. The LIVE layer's own probe is `scripts/verify-live-map.mjs`.
+- `scripts/verify-guards.mjs` — `duplicatedPayload`, `revealDashInScreenSpace`,
+  `plateMatchesGeometry` and `plateFollowsGround`, plus the `marksFromSource`, `groundFromPalette`
+  and `plateLuminance` readers that feed them. Byte copies of what `scrolly`, `chart-video` and
+  `map-beat` earned, walked by `splash/test/guard-copies-parity.test.ts`.
 - `scripts/verify-live-map.mjs` — the live layer's probe: renders a KEYED copy into a temp
   directory (never into the tree) and drives it at two container aspects. Defaults to
   `output-proof/population.html`, the page this skill commits.

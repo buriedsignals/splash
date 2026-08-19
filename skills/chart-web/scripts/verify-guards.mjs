@@ -1,21 +1,51 @@
-// Verifies what a STATIC CHART carries, after the render ladder has proved it exists.
+// The guards `chart-web` carries, kept in their own module so a TEST can import them.
 //
-// A static frame has no reveal, so most of what a scrolly earned cannot happen here. One thing can: a
-// dash. `stroke-dasharray` is this format's ordinary way to draw a reference rule, a median line or a
-// projection break, and the moment one is authored with an offset — or the element carries
-// `vector-effect: non-scaling-stroke` — the pattern is computed in a space the path's own length does
-// not live in. In a static frame that is a rule drawn as head, hole and tail instead of a line, and
-// nothing else in this suite would say so.
+// `verify-web.mjs` is this format's driver and it RUNS on import — its whole bottom half is an
+// unguarded top-level run block that launches Chrome. A decision that only exists inside it is a
+// decision no test can reach without spending a browser, so the decisions live here and the driver
+// imports them and calls them on the artifact it just built. Both directions matter: a guard nothing
+// calls does not run, and a guard nothing can import cannot be held to its copies.
 //
-// WHY THIS READS SOURCE. A static beat's artifact is a PNG and an SVG, and the SVG does carry the
-// marks — but it only exists for a beat that has been RENDERED, while the component exists for every
-// beat on disk. The cost is a dash assembled in a helper and spread in, which this cannot see; the
-// walking test in `test/verify-static.test.ts` asserts how many marks the reader found, so a reader
-// that broke fails instead of quietly passing.
+// WHY THESE TWO. This format's output is ONE self-contained HTML file — chart, interaction, fonts and
+// every asset inlined so it can be dropped into a CMS.
+//
+//   · the same asset inlined twice is bytes no reader benefits from, and a self-contained file is
+//     exactly where that happens without anyone noticing;
+//   · `vector-effect: non-scaling-stroke` is on nearly every gridline this format draws — 18 of the
+//     23 web artifacts on disk carry it — which is CORRECT, a 1px rule must stay 1px in a fluid
+//     frame. It is also one authored `stroke-dashoffset` away from a dash that measures its own path
+//     in a space that path's length does not live in.
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["revealDashInScreenSpace"];
+export const GUARDS = ["duplicatedPayload", "revealDashInScreenSpace"];
+
+/** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
+ *  defect: reporting those would bury the 1.33 MB one under a list of nothing. */
+const PAYLOAD_FLOOR = 1024;
+
+/** Every data: asset inlined more than once, worst waste first. A weight ceiling would have been
+ *  arbitrary — this tree's own image scrolly is legitimately 3 MB — but a second copy of one asset
+ *  is bytes no reader benefits from, whatever the beat, and it is the file-side fingerprint of a
+ *  visual duplicated into every step frame. */
+export function duplicatedPayload(html) {
+  const blobs = new Map();
+  for (const match of html.matchAll(/data:[a-z/+.-]+;base64,([A-Za-z0-9+/=]+)/gi)) {
+    const body = match[1];
+    if (body.length < PAYLOAD_FLOOR) continue;
+    const seen = blobs.get(body) ?? { copies: 0, bytes: body.length };
+    seen.copies += 1;
+    blobs.set(body, seen);
+  }
+  return [...blobs.values()]
+    .filter((b) => b.copies > 1)
+    .map((b) => ({
+      copies: b.copies,
+      bytes: b.bytes,
+      wastedBytes: (b.copies - 1) * b.bytes,
+    }))
+    .sort((a, b) => b.wastedBytes - a.wastedBytes);
+}
 
 /** Marks whose dash MEASURES their own path while being computed in screen space — the reveal that
  *  cannot work, and the one this tree shipped for months without seeing.
