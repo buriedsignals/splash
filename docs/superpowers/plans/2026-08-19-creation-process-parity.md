@@ -849,6 +849,57 @@ projection-pairing and plate-follows-theme.
 
 ---
 
+**Done 2026-08-19** — `1419791d`. Six of the nine cells carried, one retired, three left — and the
+three are the same guard in three formats, which is Task 7's problem rather than this one's.
+
+**The decisions had to move out of the drivers, and that is the load-bearing part.** `verify-web.mjs`
+and `verify-interaction.mjs` both **run on import** — their bottom half is an unguarded top-level
+block that launches Chrome. A decision that only exists inside one of those is a decision no test can
+reach without spending a browser, and therefore a decision nothing walks for drift. Each skill now has
+`scripts/verify-guards.mjs`; each driver imports it and prints a `CARGO` section before it drives
+anything, so the guards are **wired as well as walked**.
+
+| | measured 2026-08-19 |
+| --- | --- |
+| `chart-web` · assets inlined twice | 0 of 23 web artifacts |
+| `chart-web` · dashed marks | **29, all 29 under `non-scaling-stroke`**, none measuring anything |
+| `map-web` · plate ratio vs projected frame | all 5 beats, 0.000 % apart, exactly 2.00× |
+| `map-web` · plate side vs declared ground | all 5, plates 0.661–0.840 under `#FFFFFF` |
+| `map-web` · dashed marks in its own pages | **0** — see below |
+
+The 29 figure is the point rather than a reassurance: this format puts `non-scaling-stroke` on nearly
+everything it draws, correctly, and is therefore one authored `stroke-dashoffset` away from the defect
+that cost six hours and five wrong diagnoses.
+
+**`projection-pairing` retired for `map-web` too**, the second format to lose that cell: `object-fit`
+appears in **none** of the 23 web artifacts, and in exactly two files in this whole tree, both scrolly
+IMAGE beats.
+
+**One reader now serves a component AND the file it produces.** `marksFromSource` reads camelCase JSX
+attributes, a `style={{ }}` object, kebab-case rendered attributes and a `style="a:b;c:d"` string.
+That is what lets `chart-video` verify its SOURCE — the only thing that exists for a Remotion beat —
+and `chart-web` verify its ARTIFACT, which is what a reader actually gets. Five byte-identical copies,
+walked.
+
+**One floor deliberately not invented.** `map-web`'s five pages carry zero dashed marks; the five
+`stroke-dashoffset:0` strings a text search finds are URL-encoded inside a `data:image/svg+xml`
+attribution icon, not markup. A floor there would look rigorous and prove nothing, so the reader is
+kept honest by being byte-identical to `chart-web`'s, which walks 29 marks with a floor of its own.
+
+Mutation-checked four times: a measuring dash injected into `web-co2-decline-slope`'s rendered file →
+red at `co2-decline-slope.html:206`; an asset inlined twice into `mapgen-choropleth-web` → *"2 copies
+of one 0.07 MB asset"*; its geometry frame height ×0.8 → *"plate 992x992 (1.0000) against frame
+496x396 (1.2525) — 20.161% apart"*; its `PALETTE` ground → `#16191B` → *"ground luminance 0.009, plate
+0.700 — opposite sides"*.
+
+**GUARDS.md: 3 cells owed, down from 15 when this plan opened.** All three are
+`reached-mark-declares`, in `chart-web`, `chart-video` and `map-web`. Not one artifact in any of the
+three declares a single `data-state`: they signal arrival with opacity driven by `progressOf`. **Task 7
+has to decide that**, and it is a decision about how a beat is written, not a guard to copy — see the
+note added to Task 7 below.
+
+---
+
 ### Task 6: `dw-beat` — what is checkable when rendering is delegated
 
 **Files:**
@@ -880,6 +931,27 @@ it("owes nothing: every reachable format carries every guard it can reach", () =
 ```
 
 - [ ] **Step 2: Run it — it passes only if Tasks 2-6 are complete; any remaining cell names itself**
+
+**THE DECISION THIS TASK CANNOT AVOID, measured on 2026-08-19.** After Tasks 2–5 the debt is three
+cells and they are the same guard: `reached-mark-declares` in `chart-web`, `chart-video` and
+`map-web`. `scrolly` answers it with `data-state="pending"` flipped to `reached`, and **no artifact in
+any of the other three declares a single `data-state`** — 23 web HTML files, 25 video components, the
+seeds included. All three signal arrival with opacity driven by `progressOf`, which the guard cannot
+read.
+
+So `owedRows() === []` is reachable in exactly two ways, and they are not equivalent:
+
+1. **Adopt the vocabulary.** A mark a reveal reaches declares it, in every format. That is a change to
+   how a beat is WRITTEN — three formats, ~50 components — and it buys a mechanical check that the
+   picture says what the narrative says. It is the honest version of "no creation process weaker than
+   another".
+2. **Scope the row to `scrolly`.** Say the guard is reachable only where a reader drives the reveal,
+   and blank the other three cells the way `projection-pairing` was blanked for `map-beat` and
+   `map-web` — but with a WEAKER argument, because unlike `object-fit` the mechanism here is not
+   absent from the format, only unused by it.
+
+Do not let the choice be made by whichever one turns the suite green. Whoever executes this asks the
+owner, records the answer here with its reason, and only then writes the assertion.
 - [ ] **Step 3: Add `bun run guards:check` to the release baseline in `AGENTS.md`**
 - [ ] **Step 4: Commit**
 
