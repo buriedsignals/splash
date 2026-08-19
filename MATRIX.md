@@ -37,7 +37,7 @@ test suite and direct review of the rendered artifacts.
 | **stacked bar** | static-electricity-mix-source | webx-electricity-mix | vidx-stacked-bar-swiss-electricity | — |
 | **waterfall** | static-germany-electricity-bridge | webx-germany-bridge | vidy-waterfall-germany-electricity-mix | — |
 
-## Maps — 6 types, 18 beats
+## Maps — 6 types, 19 beats
 
 5 of 6 are proven in all three of static, web and video.
 
@@ -45,7 +45,7 @@ test suite and direct review of the rendered artifacts.
 |---|---|---|---|---|
 | **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | mapscrolly-one-map-europe-carbon |
 | **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | mapscrolly-quakes-three-ways |
-| **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
+| **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube<br>mapmore-scrolly-route-access |
 | **hex grid** | map-quake-density<br>mapvid-hexgrid-quakes | mapgen-hexgrid-web | mapvid-hexgrid-quakes | — |
 | **locator** | map-geneva-locator<br>mapvid-locator-geneva | mapgen-locator-web | mapvid-locator-geneva | — |
 | **proportional symbol** | map-quake-symbol | mapgen-symbol-web | map-quake-symbol | — |

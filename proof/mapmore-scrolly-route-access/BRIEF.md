@@ -1,5 +1,11 @@
 # Five evening stops — a route scrolly, rebuilt
 
+**Type:** flow / route map, carried by the scroll vehicle. **Medium/format:** map / scrolly.
+**Channel:** article web, one self-contained `render/route-access.html`, **five steps**, **one fixed
+camera** on a **baked `dataviz-dark` plate** at the original's own recovered frame (west −14.3761,
+east 28.3758, north 48.9998, south 32.9997), the visual built once and scrubbed off
+`data-progress`.
+
 The beat `splash-test-b-route-access` delivered on 2026-08-18, rebuilt here with this tree's own
 machinery so the corrections have somewhere to live. Its data, its plate, its geography and its
 prose are the original's; what changed is how the picture is assembled.

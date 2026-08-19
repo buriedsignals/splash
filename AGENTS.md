@@ -89,6 +89,7 @@ bun --no-env-file test
 bun --no-env-file run matrix:check
 bun --no-env-file run survey:check
 bun --no-env-file run catalog:check
+bun --no-env-file run guards:check
 ```
 
 For installer, host-projection, or MCP-app changes, also run the focused suites and the canonical

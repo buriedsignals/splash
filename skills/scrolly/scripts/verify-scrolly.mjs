@@ -168,6 +168,23 @@ export const WIDTHS = [
  *  transition has time to finish. 60 frames is about a second per step: brisk, and real. */
 export const FRAMES_PER_STEP = 60;
 
+/** THE GUARDS THIS SKILL CARRIES, declared rather than inferred.
+ *
+ *  `scripts/guards.mjs` reads this array to answer "what does this creation process actually check?"
+ *  and `skills/doctrine/test/guard-parity.test.ts` fails if the catalogue claims a guard this list
+ *  does not name — or if this list names one the catalogue never declared, which would be a rule no
+ *  other format could ever inherit. Everything else exported below is machinery, not a guard. */
+export const GUARDS = [
+  "stillSteps",
+  "duplicatedPayload",
+  "projectionDisagreements",
+  "revealDashInScreenSpace",
+  "requiresScrub",
+  "stalledSteps",
+  "neverReached",
+  "plateFollowsGround",
+];
+
 /** THE THREE CARGO GUARDS. Everything else in this file measures the VEHICLE — the handover, the
  *  card's travel, the frame that never moves — and a delivered five-stop route scrolly passed all of
  *  it while being dead: the same picture five times, the route never drawn, the plate cropped out
