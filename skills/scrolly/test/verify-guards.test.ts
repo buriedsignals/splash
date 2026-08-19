@@ -20,6 +20,8 @@ import {
   STEP_REDRAW_FLOOR,
   fingerprintDrift,
   revealDashInScreenSpace,
+  requiresScrub,
+  stalledSteps,
 } from "../scripts/verify-scrolly.mjs";
 
 // ── G1. Two steps that paint the same picture ────────────────────────────────────────────────
@@ -353,5 +355,71 @@ describe("a dash that measures its own path", () => {
       { id: "line", dasharray: "1px", dashoffset: "0.3px", vectorEffect: "non-scaling-stroke" },
     ];
     expect(revealDashInScreenSpace(both)).toEqual(["halo", "line"]);
+  });
+});
+
+// ── G5. A beat that steps instead of scrubbing ────────────────────────────────────────────────
+//
+// The rebuilt route beat passed all four guards above and the owner read it in one scroll: "le
+// dessin de la ligne n'est pas progressif au scroll, il est un peu abrupt au step là". It gave every
+// step its own finished SSR'd picture, so the line jumped at each boundary and never moved under his
+// gesture. The vehicle has published a continuous `data-progress` since its eighth correction;
+// nothing ever required a beat to CONSUME it.
+//
+// It cannot be required of every beat. The seed assembles four DIFFERENT MEDIA — a photograph, a
+// diagram, a baked map, a chart — and there is nothing to scrub between a photo and a chart; the
+// same is true of `quakes-four-maps` (four encodings of one dataset) and `eu-carbon-four-charts`.
+// Those are ASSEMBLIES, and their steps are meant to swap.
+//
+// The two models are told apart by the markup itself, which is the honest place: an assembly builds
+// a picture into every step frame, a scrub builds ONE and drives it. So the requirement follows the
+// model a beat has already declared by how it is built.
+
+describe("which model a beat is built on", () => {
+  it("reads an assembly from a picture in every frame", () => {
+    expect(requiresScrub({ frames: 4, framesWithContent: 4 })).toBe(false);
+  });
+
+  it("reads a scrub from one picture driven for all of them", () => {
+    expect(requiresScrub({ frames: 5, framesWithContent: 1 })).toBe(true);
+  });
+
+  // A beat that fills some frames and not others is neither, and saying so is more use than
+  // guessing: it is the shape the delivered route page had after its script bound one copy.
+  it("calls a partial fill a scrub, because something is driving what is left", () => {
+    expect(requiresScrub({ frames: 5, framesWithContent: 2 })).toBe(true);
+  });
+
+  it("says nothing about a beat with no frames to read", () => {
+    expect(requiresScrub({ frames: 0, framesWithContent: 0 })).toBe(false);
+  });
+});
+
+describe("a scrub beat whose picture holds still inside a step", () => {
+  it("names the step that never moved", () => {
+    expect(
+      stalledSteps([
+        { id: "lisbon", drifts: [0.02, 0.03, 0.02] },
+        { id: "madrid", drifts: [0, 0, 0] },
+      ]),
+    ).toEqual(["madrid"]);
+  });
+
+  it("accepts a step that moves anywhere inside itself", () => {
+    expect(stalledSteps([{ id: "one", drifts: [0, 0, 0.05] }])).toEqual([]);
+  });
+
+  it("names every stalled step, not the first", () => {
+    expect(
+      stalledSteps([
+        { id: "a", drifts: [0, 0] },
+        { id: "b", drifts: [0.1] },
+        { id: "c", drifts: [0] },
+      ]),
+    ).toEqual(["a", "c"]);
+  });
+
+  it("says nothing about a step with nothing sampled inside it", () => {
+    expect(stalledSteps([{ id: "one", drifts: [] }])).toEqual([]);
   });
 });

@@ -95,6 +95,14 @@ export type ScrollyStepMeta = {
  * a fresh sentence over an unchanged picture, one of them with four sentences and two pictures. If
  * an arc has four things to say and three pictures to say them with, it is a three-step beat.
  *
+ * **THIS SEED IS AN ASSEMBLY, AND MOST BEATS ARE NOT.** Its four steps are four different MEDIA, so
+ * they swap: there is nothing to scrub between a photograph and a chart. A beat whose steps are
+ * STATES OF ONE THING — a route growing, an axis flying in, a band widening — owes the reader a
+ * CONTINUOUS reveal instead: one picture, lifted out of the frame stack on boot, scrubbed off
+ * `data-progress`. Five finished pictures of the same subject is a slideshow with a crossfade, and
+ * it passes every other guard in this skill; `verify-scrolly.mjs` reads the model off the markup and
+ * refuses a scrub beat whose picture holds still inside a step.
+ *
  * **AND THE PICTURE IS BUILT ONCE.** The scaffold emits one `.step-frame` per entry, so a beat
  * either gives every frame its own SSR'd drawing — as this seed does, one per medium — or rides ONE
  * picture on step 1's frame, lifts it out of the stack on boot and scrubs it off `data-progress`

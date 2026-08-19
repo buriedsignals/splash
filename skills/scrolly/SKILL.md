@@ -73,6 +73,14 @@ that does not redraw is not a step":
   the step before. This tree's beats redraw 6.5–96.8% of their marks per step; the floor is 1%. Read
   that picture from the DOM and never from a screenshot: `page.screenshot` served a stale compositor
   surface here and briefly framed five healthy beats as dead.
+- **Decide which model the beat is, and owe what it owes.** An ASSEMBLY gives every step its own
+  picture and swaps — the seed's four media, four encodings of one dataset. A SCRUB builds ONE
+  picture, lifts it out of the frame stack on boot and drives it off `data-progress`; it is the only
+  model that draws a line under the reader's gesture, and the only one a beat whose steps are STATES
+  OF ONE THING may use. The verifier reads the model off the markup and, for a scrub, refuses a step
+  whose picture never moves inside itself. A rebuild here passed all four cargo guards as five
+  finished pictures and was still a slideshow — *"le dessin de la ligne n'est pas progressif au
+  scroll"*.
 - **One visual, instantiated once.** Either every step's frame carries its own SSR'd picture, or ONE
   picture rides step 1's frame and the boot script lifts it out of the stack and scrubs it off
   `data-progress` (`proof/mapmore-scrolly-danube/render.mjs` is the worked example). Never both: the

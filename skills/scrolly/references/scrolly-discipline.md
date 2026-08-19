@@ -953,6 +953,37 @@ alive at every step, down to `danube-scrolly`'s quietest transition at 6.5%. A b
 sentences and two states still does not have four steps — the prose is not the sequence, the picture
 is — but nothing in this tree is that beat, and the guard now says so rather than the opposite.
 
+### Two models, and the one that owes the reader a continuous line
+
+**A beat is an ASSEMBLY or a SCRUB, and the choice decides what it owes.** The rebuilt route beat
+passed every cargo guard — each step redrew, one plate, one projection, a dash in the path's own
+units — and its owner read it in one scroll: *"le dessin de la ligne n'est pas progressif au scroll,
+il est un peu abrupt au step là."* It had been given five finished SSR'd pictures, so the line jumped
+at each boundary and never moved under his gesture. **Passing the cargo guards is not the same as
+carrying the cargo.**
+
+- An **ASSEMBLY** builds a picture into every step frame and swaps between them. That is the seed's
+  own model — a photograph, a diagram, a baked map, a chart — and there is nothing to scrub between a
+  photograph and a chart. `quakes-four-maps` (four encodings of one dataset) and
+  `eu-carbon-four-charts` are assemblies too.
+- A **SCRUB** builds ONE picture on step 1's frame, lifts it out of the stack on boot and drives it
+  off `data-progress`. It is the only model that can draw a line, grow a band or fly an axis under
+  the reader's own gesture, and it is what a beat whose steps are STATES OF ONE THING must use.
+
+The vehicle has published a continuous `data-progress` since its eighth correction. Nothing required
+a beat to CONSUME it until now: `verify-scrolly.mjs` reads which model a beat is built on straight
+off the markup — an assembly fills every frame, a scrub fills one — and, for a scrub, refuses any
+step whose picture never moves anywhere inside itself. Measured with the guard working: this tree's
+scrub beats move 4.4% to 32% of their marks inside a step; the same beat with its driver disabled
+moves 0.0%.
+
+Two things that instrument had to learn before it told the truth, both worth keeping:
+
+- **Sample the MIDDLE of a step, never its edges.** The vehicle's own 0.3s crossfade lives at the
+  boundaries and registers as motion; a slideshow sampled there read as 91% moving.
+- **Wait past that crossfade.** Every sample is a jump, and a jump starts a transition — measuring
+  260ms later measures the fade the measurement caused. At 550ms the same slideshow reads 0.0%.
+
 ### One visual, instantiated once
 
 The delivered page's own bug, and it is worth naming because the correct pattern already existed and

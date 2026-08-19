@@ -251,6 +251,28 @@ export function duplicatedPayload(html) {
     .sort((a, b) => b.wastedBytes - a.wastedBytes);
 }
 
+/** Which of the two models a beat is built on, read off the markup rather than guessed.
+ *
+ *  An ASSEMBLY builds a picture into every step frame — the seed's four media, four encodings of one
+ *  dataset — and its steps are MEANT to swap: there is nothing to scrub between a photograph and a
+ *  chart. A SCRUB builds ONE picture and drives it off `data-progress`, and that is the only model
+ *  that can draw a line under the reader's own gesture. A beat that fills some frames and not others
+ *  is read as a scrub, because something is driving what is left — and that is the exact shape a
+ *  delivered route page had after its script bound one copy of five. */
+export function requiresScrub({ frames, framesWithContent }) {
+  if (!(frames > 1)) return false;
+  return framesWithContent < frames;
+}
+
+/** Steps whose picture never moved anywhere inside themselves, on a beat built to scrub. The
+ *  vehicle has published a continuous signal since its eighth correction; this is what finally
+ *  requires a beat to consume it. */
+export function stalledSteps(readings) {
+  return readings
+    .filter((step) => step.drifts.length > 0 && step.drifts.every((drift) => drift === 0))
+    .map((step) => step.id);
+}
+
 /** Marks whose dash MEASURES their own path while being computed in screen space — the reveal that
  *  cannot work, and the one this tree shipped for months without seeing.
  *
@@ -952,6 +974,44 @@ export async function verifyStates(browser, file) {
  *  class, one inline style) while the picture did not, so a naive DOM diff would have passed it;
  *  what is fingerprinted here is only what a reader can see. Pixels were tried first and had to go:
  *  see the capture's own note below. */
+/** WHAT A READER CAN SEE, as a multiset, serialised into the page. Shared by the per-step reading
+ *  and the intra-step one so both ask the same question of the same tree. */
+function paintedMarks() {
+  const graphic = document.querySelector(".scrolly-graphic");
+  const painted = [];
+  const walk = (node) => {
+    const style = getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden") return;
+    const opacity = Number(style.opacity);
+    if (opacity <= 0.01) return;
+    const box = node.getBoundingClientRect();
+    if (box.width === 0 && box.height === 0) return;
+    const kids = Array.from(node.children);
+    const own = kids.length === 0 ? (node.textContent || "").trim() : "";
+    painted.push(
+      [
+        node.tagName,
+        Math.round(box.x * 2) / 2,
+        Math.round(box.y * 2) / 2,
+        Math.round(box.width * 2) / 2,
+        Math.round(box.height * 2) / 2,
+        opacity.toFixed(2),
+        style.fill,
+        style.stroke,
+        style.transform,
+        style.clipPath,
+        style.mask,
+        style.filter,
+        node.getAttribute("d") ?? "",
+        own,
+      ].join("|"),
+    );
+    kids.forEach(walk);
+  };
+  walk(graphic);
+  return painted;
+}
+
 export async function verifyCargo(page, file, { w, h }) {
   const failures = [];
   const notes = [];
@@ -1011,42 +1071,7 @@ export async function verifyCargo(page, file, { w, h }) {
     const seen = await page.evaluate(() => {
       const active = document.querySelector(".step-frame.active");
       const graphic = document.querySelector(".scrolly-graphic");
-      const painted = [];
-      const walk = (node) => {
-        const style = getComputedStyle(node);
-        if (style.display === "none" || style.visibility === "hidden") return;
-        const opacity = Number(style.opacity);
-        if (opacity <= 0.01) return;
-        const box = node.getBoundingClientRect();
-        if (box.width === 0 && box.height === 0) return;
-        const kids = Array.from(node.children);
-        const own = kids.length === 0 ? (node.textContent || "").trim() : "";
-        painted.push([
-          node.tagName,
-          Math.round(box.x * 2) / 2,
-          Math.round(box.y * 2) / 2,
-          Math.round(box.width * 2) / 2,
-          Math.round(box.height * 2) / 2,
-          opacity.toFixed(2),
-          style.fill,
-          style.stroke,
-          style.transform,
-          // A BOX IS NOT THE WHOLE PICTURE. `grinnell-glacier` pays 1.5 MB for a second copy of
-          // every photograph rather than clip one, on the argument that "an element's box is the
-          // one thing a per-frame recorder can see" — true of the recorder that existed, and a
-          // reason to widen this rather than to keep buying duplicates. A clipped, masked or
-          // filtered mark is a different picture at the same box.
-          style.clipPath,
-          style.mask,
-          style.filter,
-          node.getAttribute("d") ?? "",
-          own,
-        ].join("|"));
-        kids.forEach((kid) => walk(kid));
-      };
-      walk(graphic);
-      // Every mark whose dash could be measuring its own path, and the scale the camera is
-      // drawing at — the number this file was blind to for months (see `revealDashInScreenSpace`).
+      // Every mark whose dash could be measuring its own path, and the scale the camera draws at.
       const dashed = [];
       for (const node of graphic.querySelectorAll("*")) {
         const style = getComputedStyle(node);
@@ -1068,18 +1093,70 @@ export async function verifyCargo(page, file, { w, h }) {
         svg && viewBox && Number(viewBox[2]) > 0
           ? svg.getBoundingClientRect().width / Number(viewBox[2])
           : null;
-      return {
-        id: active ? active.getAttribute("data-step") : null,
-        painted,
-        dashed,
-        scale,
-      };
+      return { id: active ? active.getAttribute("data-step") : null, dashed, scale };
     });
+    seen.painted = await page.evaluate(paintedMarks);
     const changed = previous === null ? null : fingerprintDrift(previous, seen.painted);
     previous = seen.painted;
     for (const mark of seen.dashed) if (!dashed.has(mark.id)) dashed.set(mark.id, mark);
     scales.push(seen.scale);
     shots.push({ id: seen.id ?? `step-${i + 1}`, changed });
+  }
+
+  // ── Does the picture move INSIDE a step, on a beat built to scrub? ──────────────────────────
+  //
+  // The step-to-step guard above passes a beat that shows five finished pictures and swaps between
+  // them, which is a slideshow with a crossfade — "le dessin de la ligne n'est pas progressif au
+  // scroll, il est un peu abrupt au step là". The vehicle has published a continuous signal since
+  // its eighth correction; this is what requires a beat to consume it, and only of the beats whose
+  // own markup says they should (see `requiresScrub`).
+  const framesWithContent = await page.evaluate(
+    () =>
+      Array.from(document.querySelectorAll(".step-frame")).filter(
+        (frame) => frame.querySelector("svg, img, canvas, [data-visual]") !== null,
+      ).length,
+  );
+  if (requiresScrub({ frames: stepCount, framesWithContent })) {
+    const readings = [];
+    for (let i = 0; i < stepCount - 1; i += 1) {
+      const inside = [];
+      for (const offset of [0.3, 0.45, 0.6, 0.75]) {
+        await page.evaluate(
+          (progress, steps) => {
+            const scroller = document.querySelector(".scrolly-steps");
+            const travel = scroller.scrollHeight - scroller.clientHeight;
+            scroller.scrollTop = (travel * progress) / (steps - 1);
+          },
+          i + offset,
+          stepCount,
+        );
+        // The MIDDLE of the step, never its edges: the vehicle's own 0.3s crossfade lives at the
+        // boundaries and registers as motion, so a slideshow sampled there reads as a scrub — it
+        // did, at 91%, the first time this ran. No settle predicate either: mid-step is exactly
+        // where a reader lives, and waiting for a frame to arrive alone would skip these frames.
+        // LONGER than the vehicle's own 0.3s crossfade. Each sample is a jump, so a shorter wait
+        // measures the fade the jump started rather than the drawing: a slideshow read as 91%
+        // moving that way, which is the opposite of the truth.
+        await new Promise((r) => setTimeout(r, 550));
+        inside.push(await page.evaluate(paintedMarks));
+      }
+      const drifts = inside
+        .slice(1)
+        .map((marks, at) => fingerprintDrift(inside[at], marks));
+      readings.push({ id: shots[i]?.id ?? `step-${i + 1}`, drifts });
+    }
+    for (const id of stalledSteps(readings))
+      failures.push(
+        `${where}: the picture never moved anywhere inside step ${id} — the vehicle publishes a ` +
+          `continuous \`data-progress\` and this beat drives ONE picture, so a step the reader ` +
+          `scrolls through without the drawing changing is a slideshow with a crossfade`,
+      );
+    notes.push(
+      `${where}: intra-step motion ` +
+        readings
+          .map((step) => `${(Math.max(0, ...step.drifts) * 100).toFixed(1)}%`)
+          .join(" / "),
+    );
   }
 
   for (const [before, after] of stillSteps(shots))
