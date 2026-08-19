@@ -1,0 +1,54 @@
+{
+ "viewBox": [
+  1400,
+  700
+ ],
+ "plate": [
+  2800,
+  1400
+ ],
+ "d": "M171.5 468.6L349.5 396.6L646.6 269.9L771.7 170.6L1247.8 499.4",
+ "routeLength": 1253.32,
+ "stops": [
+  {
+   "name": "Lisbon",
+   "context": "2.1°C cooler",
+   "x": 171.5,
+   "y": 468.6,
+   "badgeDy": -43,
+   "reachedAt": 0.0
+  },
+  {
+   "name": "Madrid",
+   "context": "3.4°C cooler",
+   "x": 349.5,
+   "y": 396.6,
+   "badgeDy": 48,
+   "reachedAt": 0.153201
+  },
+  {
+   "name": "Marseille",
+   "context": "2.7°C cooler",
+   "x": 646.6,
+   "y": 269.9,
+   "badgeDy": -43,
+   "reachedAt": 0.410907
+  },
+  {
+   "name": "Milan",
+   "context": "4.1°C cooler",
+   "x": 771.7,
+   "y": 170.6,
+   "badgeDy": 48,
+   "reachedAt": 0.538345
+  },
+  {
+   "name": "Athens",
+   "context": "5.0°C cooler",
+   "x": 1247.8,
+   "y": 499.4,
+   "badgeDy": -43,
+   "reachedAt": 1.0
+  }
+ ]
+}
