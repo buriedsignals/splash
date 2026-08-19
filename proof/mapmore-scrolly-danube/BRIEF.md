@@ -106,6 +106,48 @@ that tracks the camera cannot pass it even if one width happens to land inside t
 `scroll.test.ts` is the mutation, with the red it produced; under it every other guard here, and
 every sweep, stays green.
 
+## The same attribute, the other half of it (2026-08-19) — and the round above is why it survived
+
+The owner reported the river in TWO PIECES, at every scroll position, with a hole between them, and
+photographed it three times. Six hours of measurement in this tree said the file was healthy.
+
+The section above is where it hid. It settled that `non-scaling-stroke` "had nothing to do" with the
+stroke WIDTH — correct, and the widths were fixed by dividing the camera's CSS scale back out. So
+the attribute was KEPT. But the dash pattern is computed in that same space, and `stroke-dasharray`
+REPEATS forever: a pattern one route-length long, measured against a line the camera has scaled up,
+draws a head, a hole and a tail, all sliding together as the offset moves. The width argument was
+right; keeping the attribute on a MEASURING dash was not.
+
+Both halves are gone now. The two route paths declare `pathLength={1}` — the pattern is one whole
+path long whatever the scale, and the offset is a fraction — and they carry no `vector-effect`. It
+stays on the territory outlines, which dash nothing. `verify-scrolly.mjs` refuses the pairing since,
+so the belief cannot be re-adopted quietly: a dash that measures (a declared `pathLength`, or a
+moving offset) alongside `non-scaling-stroke` fails the run.
+
+**Why five rounds of instruments here missed it.** They drove the file at camera scales of 1.78,
+1.42 and 0.42 and never reproduced the picture; the symptom needs the renderer as well as the scale.
+What isolated it was an instrumented copy of the delivered page handed to the person who could see
+it, with a button that hid one layer at a time — his click proved the two pieces came from the SVG
+paths, which no amount of driving here had established.
+
+## The reveal follows the reading, and the last step has river left (2026-08-19)
+
+Two further corrections from the same report, both measured.
+
+**The cut moved.** The four reveal stops were 371 / 639 / 898 / 910 of 910, so the closing step — the
+one whose sentence carries the Iron Gate, the border run and the delta — had TWELVE samples left to
+draw, 1.3% of the river. The cut is Bulgaria's own entry now, where the subject changes anyway:
+**371 / 639 / 722 / 910**, shares 41 / 29 / 9 / 21. The gorge stays in step 3 (its sample, 682, sits
+inside 639…722); the 440 km drift moved to the closing step with the delta.
+
+**The pacing moved.** `data-progress` is the fractional index of the panel on the lane's CENTRE line,
+so a step's fraction starts counting long before that step's card has entered the frame: 93% of the
+river was drawn before the closing card appeared, and the reader spent the whole of the closing
+sentence watching a line that had stopped. `shapeForReading` holds the line still until the card
+arrives and then draws its stretch across exactly the travel the reader spends with it — 73% → 100%
+now, against 93% → 100% before. The share is geometry, read from the frame and card heights every
+frame, not a tuned constant.
+
 ## The reveal's SHAPE is guarded now, and the phone defect it found (2026-08-10)
 
 The owner, after the stroke-width fix: *"la rivière s'arrête en plein milieu et ne finit jamais
@@ -220,7 +262,7 @@ statements in an earlier literal version, so the numbers now come from the route
   810; the great-circle distance along the route between them is **438.1 km**, which rounds to 440.
 - **The Iron Gate is named in step 3, not step 2.** The gorge's nearest route sample is **index
   682**; step 2 ("plain") stops revealing at index 639, so naming it there described a stretch the
-  graphic had not yet drawn. Step 3 reveals through index 898, well past it.
+  graphic had not yet drawn. Step 3 reveals through index 722, well past it.
 - The dropped superlative was right to drop: Germany's own opening run measures **534 km**, longer
   than the 438 km Romania–Bulgaria stretch, so "the longest single stretch of the whole journey" was
   false.

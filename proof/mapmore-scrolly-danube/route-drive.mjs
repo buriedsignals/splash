@@ -172,6 +172,14 @@ export function readingShare(stepHeight, frameHeight, cardHeight) {
   return Math.min(1, Math.max(1e-6, share));
 }
 
+/** How much of a step's stretch is spent BEFORE its card enters the frame. Not zero: holding the
+ *  line perfectly still until the card arrives is what `drive.mjs` calls a slideshow, and it refused
+ *  it on all six sweeps — an assertion this beat earned from the opposite report, "faut que ce soit
+ *  fluide et que l'élément évolue au fur et à mesure". Both readings are right, and this is the
+ *  number that holds them together: the line always moves, and 85% of a stretch lands under the
+ *  sentence that names it. */
+const PRE_WINDOW_SHARE = 0.15;
+
 /**
  * A step's own fraction, remapped onto the window in which its card is readable.
  *
@@ -179,13 +187,16 @@ export function readingShare(stepHeight, frameHeight, cardHeight) {
  * fraction starts counting long before that step's card has entered the frame. Keying the reveal to
  * it drew a stretch mostly while its own sentence was still off screen: measured on this beat, 93%
  * of the river was drawn before the closing card appeared, and the reader watched a line that had
- * stopped moving for the whole of the sentence describing it. Held still until the card arrives,
- * then drawn across exactly the travel the reader spends with it.
+ * stopped moving for the whole of the sentence describing it. Now it advances across a small floor
+ * before the card arrives, and spends the rest of the stretch across exactly the travel the reader
+ * spends with it — always moving, never a slideshow.
  */
-export function shapeForReading(t, share) {
-  if (share >= 1) return t < 0 ? 0 : t > 1 ? 1 : t;
-  const shaped = (t - (1 - share)) / share;
-  return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
+export function shapeForReading(t, share, floor = PRE_WINDOW_SHARE) {
+  const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+  if (share >= 1) return clamped;
+  const entry = 1 - share;
+  if (clamped <= entry) return (floor * clamped) / entry;
+  return floor + ((1 - floor) * (clamped - entry)) / share;
 }
 
 export function revealAt(stops, position, reduced) {

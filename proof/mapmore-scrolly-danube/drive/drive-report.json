@@ -1,19 +1,19 @@
 {
-  "file": "/private/tmp/danube-r4/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "file": "/Users/rmdms/Sites/Professional/splash/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
   "sweeps": [
     {
       "label": "1600x900 down",
       "samples": 126,
-      "tallestPanelAsFractionOfPort": 0.223,
-      "portHeight": 820.5,
+      "tallestPanelAsFractionOfPort": 0.287,
+      "portHeight": 816.5,
       "span": [
         0,
         3
       ],
-      "worstStepDrift": 0.562,
+      "worstStepDrift": 0.566,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 360
+        "at": 3360
       },
       "reveal": {
         "span": [
@@ -25,28 +25,28 @@
         "frames": 126
       },
       "fluidity": {
-        "intraStepFrames": 113,
-        "paintChanged": 113,
-        "geometryChanged": 112,
+        "intraStepFrames": 112,
+        "paintChanged": 112,
+        "geometryChanged": 111,
         "fractionMoving": 0.991,
         "alphaOnlyFrames": 1,
-        "signalHeldFrames": 9
+        "signalHeldFrames": 10
       },
       "problems": []
     },
     {
       "label": "1600x900 up",
       "samples": 126,
-      "tallestPanelAsFractionOfPort": 0.223,
-      "portHeight": 820.5,
+      "tallestPanelAsFractionOfPort": 0.287,
+      "portHeight": 816.5,
       "span": [
         3,
         0
       ],
-      "worstStepDrift": 0.581,
+      "worstStepDrift": 0.567,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 3474
+        "at": 3065
       },
       "reveal": {
         "span": [
@@ -58,28 +58,28 @@
         "frames": 126
       },
       "fluidity": {
-        "intraStepFrames": 113,
-        "paintChanged": 113,
-        "geometryChanged": 113,
+        "intraStepFrames": 112,
+        "paintChanged": 112,
+        "geometryChanged": 112,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 9
+        "signalHeldFrames": 10
       },
       "problems": []
     },
     {
       "label": "1280x800 down",
-      "samples": 111,
-      "tallestPanelAsFractionOfPort": 0.254,
-      "portHeight": 720.5,
+      "samples": 110,
+      "tallestPanelAsFractionOfPort": 0.327,
+      "portHeight": 716.5,
       "span": [
         0,
         3
       ],
-      "worstStepDrift": 0.571,
+      "worstStepDrift": 0.575,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 420
+        "at": 2160
       },
       "reveal": {
         "span": [
@@ -88,40 +88,7 @@
         ],
         "reached": 0.6388,
         "worstBacktrack": 0,
-        "frames": 111
-      },
-      "fluidity": {
-        "intraStepFrames": 99,
-        "paintChanged": 99,
-        "geometryChanged": 99,
-        "fractionMoving": 1,
-        "alphaOnlyFrames": 0,
-        "signalHeldFrames": 8
-      },
-      "problems": []
-    },
-    {
-      "label": "1280x800 up",
-      "samples": 111,
-      "tallestPanelAsFractionOfPort": 0.254,
-      "portHeight": 720.5,
-      "span": [
-        3,
-        0
-      ],
-      "worstStepDrift": 0.564,
-      "progressDisagreement": {
-        "worst": 0.0005,
-        "at": 194
-      },
-      "reveal": {
-        "span": [
-          1,
-          0.3612
-        ],
-        "reached": 0.6388,
-        "worstBacktrack": 0,
-        "frames": 111
+        "frames": 110
       },
       "fluidity": {
         "intraStepFrames": 99,
@@ -129,23 +96,56 @@
         "geometryChanged": 98,
         "fractionMoving": 0.99,
         "alphaOnlyFrames": 1,
-        "signalHeldFrames": 8
+        "signalHeldFrames": 7
+      },
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "samples": 110,
+      "tallestPanelAsFractionOfPort": 0.327,
+      "portHeight": 716.5,
+      "span": [
+        3,
+        0
+      ],
+      "worstStepDrift": 0.576,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 2815
+      },
+      "reveal": {
+        "span": [
+          1,
+          0.3612
+        ],
+        "reached": 0.6388,
+        "worstBacktrack": 0,
+        "frames": 110
+      },
+      "fluidity": {
+        "intraStepFrames": 99,
+        "paintChanged": 99,
+        "geometryChanged": 98,
+        "fractionMoving": 0.99,
+        "alphaOnlyFrames": 1,
+        "signalHeldFrames": 7
       },
       "problems": []
     },
     {
       "label": "375x812 down",
       "samples": 95,
-      "tallestPanelAsFractionOfPort": 0.296,
-      "portHeight": 617.5,
+      "tallestPanelAsFractionOfPort": 0.465,
+      "portHeight": 613.5,
       "span": [
         0,
         3
       ],
-      "worstStepDrift": 0.551,
+      "worstStepDrift": 0.556,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 1980
+        "at": 1950
       },
       "reveal": {
         "span": [
@@ -157,28 +157,28 @@
         "frames": 95
       },
       "fluidity": {
-        "intraStepFrames": 84,
-        "paintChanged": 84,
-        "geometryChanged": 84,
+        "intraStepFrames": 83,
+        "paintChanged": 83,
+        "geometryChanged": 83,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 7
+        "signalHeldFrames": 8
       },
       "problems": []
     },
     {
       "label": "375x812 up",
       "samples": 95,
-      "tallestPanelAsFractionOfPort": 0.296,
-      "portHeight": 617.5,
+      "tallestPanelAsFractionOfPort": 0.465,
+      "portHeight": 613.5,
       "span": [
         3,
         0
       ],
-      "worstStepDrift": 0.565,
+      "worstStepDrift": 0.547,
       "progressDisagreement": {
         "worst": 0.0005,
-        "at": 2210
+        "at": 2102
       },
       "reveal": {
         "span": [
@@ -190,12 +190,12 @@
         "frames": 95
       },
       "fluidity": {
-        "intraStepFrames": 84,
-        "paintChanged": 84,
-        "geometryChanged": 84,
+        "intraStepFrames": 83,
+        "paintChanged": 83,
+        "geometryChanged": 83,
         "fractionMoving": 1,
         "alphaOnlyFrames": 0,
-        "signalHeldFrames": 7
+        "signalHeldFrames": 8
       },
       "problems": []
     }
@@ -206,7 +206,7 @@
     "everySampleIsOneOfTheFourStates": true
   },
   "camera": {
-    "framesMeasured": 664,
+    "framesMeasured": 662,
     "worstRasterPerPixel": 1.125,
     "clampedFrames": 0,
     "scales": [
@@ -241,21 +241,21 @@
     "widths": [
       {
         "label": "1600x900",
-        "drawnWidthPx": 3.7,
-        "samples": 228,
-        "rejected": 12
+        "drawnWidthPx": 3.77,
+        "samples": 201,
+        "rejected": 39
       },
       {
         "label": "1280x800",
-        "drawnWidthPx": 3.73,
-        "samples": 212,
-        "rejected": 28
+        "drawnWidthPx": 3.77,
+        "samples": 165,
+        "rejected": 75
       },
       {
         "label": "375x812",
-        "drawnWidthPx": 3.99,
-        "samples": 137,
-        "rejected": 103
+        "drawnWidthPx": 3.98,
+        "samples": 50,
+        "rejected": 190
       }
     ]
   },
@@ -295,11 +295,11 @@
         "runs": [
           [
             0,
-            0.98
+            0.725
           ]
         ],
-        "absent": 0.02,
-        "unobservable": 0.095
+        "absent": 0.274,
+        "unobservable": 0.085
       },
       {
         "label": "1600x900 step 4",
@@ -312,7 +312,7 @@
           ]
         ],
         "absent": 0,
-        "unobservable": 0.104
+        "unobservable": 0.159
       },
       {
         "label": "1280x800 step 1",
@@ -347,11 +347,11 @@
         "runs": [
           [
             0,
-            0.98
+            0.725
           ]
         ],
-        "absent": 0.02,
-        "unobservable": 0.144
+        "absent": 0.274,
+        "unobservable": 0.119
       },
       {
         "label": "1280x800 step 4",
@@ -364,7 +364,7 @@
           ]
         ],
         "absent": 0,
-        "unobservable": 0.204
+        "unobservable": 0.299
       },
       {
         "label": "375x812 step 1",
@@ -376,16 +376,16 @@
             0.41
           ]
         ],
-        "absent": 0.448,
-        "unobservable": 0.343
+        "absent": 0.433,
+        "unobservable": 0.358
       },
       {
         "label": "375x812 step 2",
         "step": 2,
         "fragments": 0,
         "runs": [],
-        "absent": 0,
-        "unobservable": 1
+        "absent": 0.025,
+        "unobservable": 0.975
       },
       {
         "label": "375x812 step 3",
@@ -412,25 +412,25 @@
         "label": "1600x900 step 1",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 450
+        "limitPx": 449
       },
       {
         "label": "1600x900 step 2",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 450
+        "limitPx": 449
       },
       {
         "label": "1600x900 step 3",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 450
+        "limitPx": 449
       },
       {
         "label": "1600x900 step 4",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 450
+        "limitPx": 449
       },
       {
         "label": "1280x800 step 1",
@@ -460,25 +460,25 @@
         "label": "375x812 step 1",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 181
+        "limitPx": 180
       },
       {
         "label": "375x812 step 2",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 181
+        "limitPx": 180
       },
       {
         "label": "375x812 step 3",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 181
+        "limitPx": 180
       },
       {
         "label": "375x812 step 4",
         "leaders": 0,
         "longestPx": 0,
-        "limitPx": 181
+        "limitPx": 180
       }
     ]
   }

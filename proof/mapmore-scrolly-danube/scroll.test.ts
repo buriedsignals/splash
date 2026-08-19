@@ -1307,14 +1307,30 @@ describe("the share of a step during which its card is on screen", () => {
 });
 
 describe("shaping a step's own fraction onto its card's reading window", () => {
-  it("holds the line still while the card is still below the frame", () => {
-    expect(shapeForReading(0.2, 0.4)).toBe(0);
-    expect(shapeForReading(0.6, 0.4)).toBe(0);
+  // NEVER FLAT. The first shape held the line perfectly still until the card arrived, and this
+  // beat's own driver refused it on all six sweeps — "the visual did not change … it is a slideshow
+  // there, not a scrub", the assertion earned from an earlier report of exactly the opposite defect
+  // ("faut que ce soit fluide et que l'élément évolue au fur et à mesure"). Both readings are
+  // right: the line must always move, and the bulk of a stretch belongs under the sentence that
+  // names it. So the pre-window travel is a small floor of the stretch, not zero.
+  it("keeps moving before the card arrives, but only across the floor", () => {
+    expect(shapeForReading(0, 0.4)).toBe(0);
+    expect(shapeForReading(0.3, 0.4)).toBeCloseTo(0.075, 6);
+    expect(shapeForReading(0.6, 0.4)).toBeCloseTo(0.15, 6);
   });
 
-  it("draws the whole stretch across the window the card is readable in", () => {
-    expect(shapeForReading(0.8, 0.4)).toBeCloseTo(0.5, 6);
+  it("spends the rest across the window the card is readable in", () => {
+    expect(shapeForReading(0.8, 0.4)).toBeCloseTo(0.575, 6);
     expect(shapeForReading(1, 0.4)).toBe(1);
+  });
+
+  it("never goes backwards, and never holds still", () => {
+    let previous = -1;
+    for (let i = 0; i <= 40; i += 1) {
+      const value = shapeForReading(i / 40, 0.4);
+      expect(value).toBeGreaterThan(previous);
+      previous = value;
+    }
   });
 
   it("is the identity when the card is on screen for the whole step", () => {
