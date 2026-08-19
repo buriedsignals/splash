@@ -794,6 +794,41 @@ git commit -m "feat(chart-beat,image-beat): carry the guards the static formats 
 
 ---
 
+**Done 2026-08-19** — `9d725050`. Two cells, one per skill, and both formats clean — the third and
+fourth in a row.
+
+**`chart-beat` — `screen-space-dash`.** A static frame has no reveal, so almost nothing a scrolly
+earned can happen here; a dash can, and it is this format's ordinary reference rule. Measured: 18
+components (17 beats declaring `chart / static` in their own `BRIEF.md`, plus the seed), **9 dashed
+marks, not one `strokeDashoffset` or `vectorEffect` among them**.
+
+**`image-beat` — `duplicated-payload`, and this one is WIRED rather than only tested.** The format
+embeds every photograph as a `data:` URI; `checkWeight` already refuses a beat too heavy in total, and
+nothing refused weight that carries nothing. `render-preview.mjs` now calls `duplicatedPayload` on the
+built SVG and **throws** beside `checkWeight`, naming the copies and the wasted megabytes — this
+skill's established shape, where the render script calls the checks rather than `renderStill`. The
+test asserts that call site, because a decision nothing calls is a decision that does not run.
+
+Coverage stated rather than implied: **there is no image beat under `proof/`** — the two `image` beats
+there are `image / scrolly` and belong to the vehicle — so the walking coverage is one component. The
+guard's value is at render time, for the beat that does not exist yet.
+
+**The parity test caught its own gap the moment the cells flipped.** `duplicatedPayload` became
+carried by two skills and was not in `COPIES`, and `guard-copies-parity.test.ts` refused. That
+assertion was written one task earlier precisely so that adding the next copy would be unavoidable
+rather than remembered, and it worked on its first opportunity. `revealDashInScreenSpace` is now
+walked across four scripts, `marksFromSource` across three.
+
+Mutation-checked: a `strokeDashoffset` and `vectorEffect` on `static-renewables-shift`'s `"2 2"` rule
+→ red, naming `RenewablesShiftSlope.tsx:430`; the seed's first photograph duplicated in
+`manifest.json` → `render-preview.mjs` throws *"2 copies of one 0.01 MB asset, 0.01 MB wasted"* AND
+the walking test goes red.
+
+GUARDS.md: **10 cells owed**, down from 12. Every remaining one belongs to `chart-web` or `map-web`,
+which is Task 5.
+
+---
+
 ### Task 5: `chart-web` and `map-web` — add to the drivers that already exist
 
 **Files:**
