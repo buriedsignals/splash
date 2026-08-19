@@ -199,6 +199,107 @@ git commit -m "feat(doctrine): one catalogue of earned guards, and a test that n
 
 ---
 
+### Task 1b: The Datawrapper map path, re-opened
+
+**Files:**
+- Modify: `skills/storyboard/references/datawrapper-chart-types.json` (add map treatments)
+- Modify: `skills/dw-beat/SKILL.md` (the "not for a map" line, and what replaces it)
+- Modify: `skills/dw-beat/scripts/validate-spec.mjs`
+- Create: `skills/dw-beat/test/map-treatments.test.ts`
+- Modify: `skills/storyboard/test/producer-gate.test.ts`
+
+**Interfaces:**
+- Consumes: the pinned inventory's existing `d3-maps-choropleth`, `d3-maps-symbols`, `locator-map`.
+- Produces: `splashTreatments` entries mapping `map.choropleth` → `d3-maps-choropleth`,
+  `map.proportional-symbol` → `d3-maps-symbols`, `map.locator` → `locator-map`; and
+  `validateSpec` accepting a spec whose `chartType` is one of those three.
+
+**Why it is a task and not a note.** The provider inventory already carries three map types. Every
+layer above refuses them: `dw-beat/SKILL.md:56` says "not for a map", no `splashTreatments` entry
+names one, and `producer-gate.mjs` only offers Datawrapper for chart treatments. A journalist who
+wants an ordinary static choropleth cannot be offered the thin delegated path that every ordinary
+static bar chart gets.
+
+- [ ] **Step 1: Write the failing test — a map treatment reaches a Datawrapper type**
+
+```ts
+// skills/dw-beat/test/map-treatments.test.ts
+import { describe, expect, it } from "bun:test";
+import { datawrapperTypeFor } from "../../storyboard/scripts/producer-gate.mjs";
+
+describe("an ordinary map treatment", () => {
+  it("reaches the delegated producer, the way an ordinary bar chart does", () => {
+    expect(datawrapperTypeFor("map.choropleth")).toBe("d3-maps-choropleth");
+    expect(datawrapperTypeFor("map.proportional-symbol")).toBe("d3-maps-symbols");
+    expect(datawrapperTypeFor("map.locator")).toBe("locator-map");
+  });
+});
+```
+
+- [ ] **Step 2: Run it to watch it fail**
+
+Run: `bun test skills/dw-beat/test/map-treatments.test.ts`
+Expected: FAIL — the treatments resolve to nothing, and `datawrapperTypeFor` may not be exported yet.
+
+- [ ] **Step 3: Add the three treatments to the pinned catalogue**
+
+Three `splashTreatments` entries with their aliases, beside the twelve chart ones. The catalogue's
+own validator (`producer-gate.mjs`'s `validateCatalog`) already refuses a treatment naming an unknown
+type, so a typo fails at load.
+
+- [ ] **Step 4: Run the test to watch it pass**
+
+- [ ] **Step 5: Widen the producer, and say what it still refuses**
+
+`validate-spec.mjs` accepts the three map types. `SKILL.md`'s "not for a map" becomes what is
+actually true: the delegated path serves an ORDINARY map — a choropleth, a symbol map, a locator —
+and does not serve a bespoke camera, a baked plate, a scroll-driven reveal or video, which is
+`map-beat`'s work. State the boundary rather than the refusal.
+
+- [ ] **Step 6: Prove it end to end against the live API, and look at the PNG**
+
+`dw-beat` has `prove-co2.mjs` as the pattern for a live proof. Write the map equivalent, run it with
+the real key, and OPEN the PNG it takes back. A delegated producer that has never drawn a map is not
+a producer.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add skills/dw-beat skills/storyboard GUARDS.md
+git commit -m "feat(dw-beat): an ordinary map reaches the delegated producer too"
+```
+
+---
+
+### Task 1c: Two documentation defects found while inventorying
+
+**Files:**
+- Modify: `skills/map-beat/SKILL.md:65`
+- Modify: `skills/dw-beat/scripts/map-spec.mjs` (rename to `metadata-spec.mjs`) and its importers
+
+- [ ] **Step 1: Fix the false claim about a cross-skill import**
+
+`map-beat/SKILL.md:65` says the timing vocabulary is "**imported** from `chart-video`". The code says
+the opposite and says why (`assets/timing.ts:6`: "A copy, not an import, because a skill never
+reaches across another skill's boundary at runtime", guarded byte-identical by
+`splash/test/root-template-shared.test.ts`). The code is right. This matters beyond a typo: copy +
+parity test is the mechanism this whole plan rests on, and a skill document claiming otherwise
+teaches the next author to reach across.
+
+- [ ] **Step 2: Rename `map-spec.mjs`**
+
+It maps editorial intent onto Datawrapper METADATA; it has nothing to do with cartography, and Task
+1b puts real map code in this skill, where the name would be actively misleading. Rename to
+`metadata-spec.mjs`, update its importers, run `bun test skills/dw-beat`.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "docs(map-beat,dw-beat): the timing vocabulary is a copy, and map-spec maps metadata"
+```
+
+---
+
 ### Task 2: `chart-video` — four guards and the driver that runs them
 
 **Files:**

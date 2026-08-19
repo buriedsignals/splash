@@ -104,10 +104,67 @@ MISSING, blank = not reachable.
 Two columns are worth naming: `chart-video` is reachable by four guards and carries none, and
 `map-beat` is reachable by five and carries none.
 
+## The second matrix: what can be PRODUCED, not only what can be verified
+
+The imbalance has two faces. The first is what a path can check about its own output; the second is
+whether the path exists at all. Media down, formats across — **P** = a producer exists and the
+matrix proves beats through it, **·** = the format is meaningful for that medium and no producer is
+wired, **—** = deliberately out of scope, with the reason.
+
+| medium | static | web | video | notes |
+| --- | --- | --- | --- | --- |
+| chart (bespoke) | **P** `chart-beat` | **P** `chart-web` | **P** `chart-video` | 19 types, 56 beats |
+| chart (Datawrapper) | **P** `dw-beat` | **P** `dw-beat` embed | — rendering is delegated; the provider makes no video | 12 treatments mapped |
+| map (bespoke) | **P** `map-beat` | **P** `map-web` | **P** `map-beat` | 6 types, 18 beats |
+| **map (Datawrapper)** | **·** | **·** | — | **the gap this spec adds** |
+| image | **P** `image-beat` | · | · | SP1 scope is static only, stated in the skill |
+| scrolly (vehicle) | — | **P** `scrolly` | — | assembles any medium behind one narrative |
+
+### The Datawrapper map path is closed end to end, and nothing about Datawrapper closes it
+
+This tree's own pinned provider inventory carries three map types —
+`d3-maps-choropleth`, `d3-maps-symbols`, `locator-map`
+(`skills/storyboard/references/datawrapper-chart-types.json`). Every layer above them refuses:
+
+- `skills/dw-beat/SKILL.md:56` — "**not** for a map";
+- the catalogue's 12 `splashTreatments` map **no** treatment to a map type;
+- `skills/storyboard/scripts/producer-gate.mjs` only ever offers Datawrapper for chart treatments.
+
+So a journalist who wants an ordinary static choropleth cannot be offered the thin, delegated path
+that exists for every ordinary static chart, and gets the bespoke engine or nothing. The previous
+architecture carried a `map-dw` producer; the rebuild dropped it and nothing recorded the decision.
+
+Naming note, because it will confuse whoever executes this: `skills/dw-beat/scripts/map-spec.mjs` is
+NOT a map producer — "map" there means MAPPING editorial intent onto Datawrapper metadata.
+
+### Two naming facts worth writing down before they cost someone a day
+
+- **`-beat` does not mean what the file layout suggests.** A beat is "one visual with one thing to
+  prove" (`chart-beat/SKILL.md:3`). But `chart-beat` in practice means *chart · static* ("SP1 covers
+  the static format only"), while `chart-web` and `chart-video` name FORMATS of the same medium. The
+  suffix mixes a medium axis and a format axis in one name. `map-beat` then breaks the pattern again
+  by carrying two formats.
+- **`map-beat` ships static AND video on purpose**, and the reason is good: the two "differ only in
+  an order in time" and share the bake, so splitting them would let them drift
+  (`map-beat/SKILL.md:20`). The chart engine split video out because a chart video shares almost
+  nothing with its static frame beyond pure geometry.
+
+### One documentation defect found while inventorying
+
+`skills/map-beat/SKILL.md:65` says the timing vocabulary is "**imported** from `chart-video`". The
+code says the opposite and says why: `skills/map-beat/assets/timing.ts:6` — "A copy, not an import,
+because a skill never reaches across another skill's boundary at runtime", guarded byte-identical by
+`splash/test/root-template-shared.test.ts`. The code is right and the skill document is wrong. This
+matters beyond a typo: the copy-with-a-parity-test pattern is exactly the mechanism this spec relies
+on, and a skill document claiming otherwise teaches the next author to reach across.
+
 ## Sequencing
 
 The order is by exposure, not by convenience:
 
+0. **The Datawrapper map path** — a capability gap rather than a guard gap, and the cheapest real
+   win for a newsroom: an ordinary static choropleth should reach the thin delegated producer the
+   way an ordinary static bar chart does.
 1. **`chart-video`** — 19 chart types can be produced as video, the dash-reveal defect is native to
    it, and it has no driver.
 2. **`map-beat`** — 6 map types, static and video, plates and overlays, no driver.
