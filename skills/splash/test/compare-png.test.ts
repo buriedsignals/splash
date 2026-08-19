@@ -21,9 +21,13 @@
  * This decodes PNG in ~90 lines of `node:zlib` instead: no browser, no dependency, synchronous, and
  * one substrate for all seven — which is what makes a walking parity test possible at all.
  *
- * SCOPE, stated rather than assumed: 8-bit, non-interlaced, RGB or RGBA. Measured across all
- * fourteen `preview.png` in this tree — every one is 8-bit RGB or RGBA, non-interlaced. Anything
- * else throws by name rather than decoding wrong.
+ * SCOPE: every PNG a browser reads — bit depths 1/2/4/8/16, colour types greyscale, RGB, palette,
+ * greyscale+alpha and RGBA, `tRNS` on all three types that can carry it, and Adam7 interlacing.
+ * It began narrower, at "8-bit, non-interlaced, RGB or RGBA", which is all fourteen `preview.png`
+ * in this tree and nothing else. The owner's ruling on 2026-08-19 is why it did not stay there:
+ * sharing a mechanism between skills is for carrying capability ACROSS, never for trimming to what
+ * the weakest path can afford, and the browser comparator this replaced could read all of the above.
+ * Seventeen fixtures under `fixtures/png/` cover the set; anything outside it throws by name.
  */
 import {
   describe,
@@ -41,6 +45,7 @@ import puppeteer from "puppeteer";
 import { comparePngBuffers, decodePng } from "../scripts/compare-png.mjs";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
+const FIXTURE_DIR = join(import.meta.dirname, "fixtures", "png");
 
 /** A real PNG, encoded here so the decoder is tested against every filter type rather than against
  *  whatever filter an encoder happened to choose. `filter` is applied to every scanline. */
@@ -122,6 +127,29 @@ function crc32(buf: Buffer): number {
   return c ^ 0xffffffff;
 }
 
+// EVERY SHAPE A BROWSER READS, because the browser-based comparator this one replaced could read
+// them and a shared mechanism must not be a trade down. Written by
+// `fixtures/png/make-fixtures.mjs`; each one is also decoded by Chrome in the cross-check below.
+const FIXTURES: Record<string, { first: number[]; note: string }> = {
+  "grey-1bit.png": { first: [0, 0, 0, 255], note: "1-bit greyscale scales 0/1 to 0/255" },
+  "grey-2bit.png": { first: [0, 0, 0, 255], note: "2-bit greyscale scales by 85" },
+  "grey-4bit.png": { first: [0, 0, 0, 255], note: "4-bit greyscale scales by 17" },
+  "grey-8bit.png": { first: [191, 191, 191, 255], note: "8-bit greyscale is itself" },
+  "grey-16bit.png": { first: [191, 191, 191, 255], note: "16-bit takes the high byte" },
+  "grey-alpha-8bit.png": { first: [191, 191, 191, 0], note: "STRAIGHT alpha: the grey survives at alpha 0" },
+  "grey-alpha-16bit.png": { first: [191, 191, 191, 0], note: "16-bit greyscale + alpha" },
+  "grey-trns-8bit.png": { first: [0, 0, 0, 255], note: "tRNS names one greyscale sample" },
+  "rgb-16bit.png": { first: [191, 64, 0, 255], note: "16-bit RGB" },
+  "rgba-16bit.png": { first: [191, 0, 0, 0], note: "16-bit RGBA, straight" },
+  "rgb-trns-8bit.png": { first: [0, 0, 128, 255], note: "tRNS names one RGB triple" },
+  "palette-8bit.png": { first: [17, 119, 51, 255], note: "palette index through PLTE" },
+  "palette-4bit-trns.png": { first: [17, 119, 51, 0], note: "4-bit palette, tRNS shorter than PLTE" },
+  "palette-1bit.png": { first: [255, 255, 255, 255], note: "1-bit palette" },
+  "rgba-8bit-interlaced.png": { first: [0, 0, 0, 255], note: "Adam7, RGBA" },
+  "palette-8bit-interlaced.png": { first: [17, 119, 51, 255], note: "Adam7, palette" },
+  "grey-4bit-interlaced.png": { first: [0, 0, 0, 255], note: "Adam7, sub-byte samples" },
+};
+
 const flat = (v: number) => () => [v, v, v, 255] as [number, number, number, number];
 
 describe("decodePng reads the pictures this tree actually ships", () => {
@@ -178,11 +206,41 @@ describe("decodePng reads the pictures this tree actually ships", () => {
   });
 
   it("should refuse what it cannot read, by name, rather than decoding it wrong", () => {
-    const sixteenBit = png(2, 2, flat(10));
-    sixteenBit[24] = 16; // IHDR bit depth
-    expect(() => decodePng(sixteenBit)).toThrow(/8-bit/);
     const notAPng = Buffer.from("this is not a png at all");
-    expect(() => decodePng(notAPng)).toThrow(/PNG/);
+    expect(() => decodePng(notAPng)).toThrow(/not a PNG/);
+
+    const badDepth = png(2, 2, flat(10));
+    badDepth[24] = 7; // IHDR bit depth — 7 is not one of 1/2/4/8/16
+    expect(() => decodePng(badDepth)).toThrow(/bit depth 7/);
+
+    const badType = png(2, 2, flat(10));
+    badType[25] = 5; // IHDR colour type — 1, 5 and 7 do not exist
+    expect(() => decodePng(badType)).toThrow(/colour type 5/);
+
+    const illegalPair = png(2, 2, flat(10));
+    illegalPair[24] = 4; // 4-bit RGBA is not a legal PNG
+    expect(() => decodePng(illegalPair)).toThrow(/not legal for colour type 6/);
+
+    const badInterlace = png(2, 2, flat(10));
+    badInterlace[28] = 3;
+    expect(() => decodePng(badInterlace)).toThrow(/interlace method 3/);
+  });
+
+  for (const [name, { first, note }] of Object.entries(FIXTURES)) {
+    it(`should decode ${name} — ${note}`, () => {
+      const image = decodePng(readFileSync(join(FIXTURE_DIR, name)));
+      expect(`${name} ${image.width}x${image.height}`).toBe(`${name} 12x8`);
+      expect(image.data.length).toBe(12 * 8 * 4);
+      expect([...image.data.slice(0, 4)]).toEqual(first);
+    });
+  }
+
+  it("should keep a translucent pixel's own colour, which a canvas cannot", () => {
+    // `grey-alpha-8bit.png` pixel 1 is grey 248 at alpha 20. A `<canvas>` premultiplies on
+    // `drawImage` and un-premultiplies on `getImageData`, so Chrome returns 242 for it — and 0 for
+    // any colour at alpha 0. The file says 248, and that is what this returns.
+    const image = decodePng(readFileSync(join(FIXTURE_DIR, "grey-alpha-8bit.png")));
+    expect([...image.data.slice(4, 8)]).toEqual([248, 248, 248, 20]);
   });
 });
 
@@ -300,6 +358,37 @@ describe("the pure decoder agrees with Chrome's, on the real files", () => {
     return found;
   }
 
+  const decodeInChrome = (file: Buffer, options: { withData?: boolean } = {}) =>
+    page.evaluate(
+      async (dataUrl, withData) => {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error("image failed to decode"));
+          img.src = dataUrl;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let h = 0x811c9dc5;
+        for (let i = 0; i < data.length; i++) {
+          h ^= data[i];
+          h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return {
+          width: img.width,
+          height: img.height,
+          hash: (h >>> 0).toString(16).padStart(8, "0"),
+          data: withData ? Array.from(data) : undefined,
+        };
+      },
+      `data:image/png;base64,${file.toString("base64")}`,
+      options.withData ?? false,
+    );
+
   const fnv = (data: Uint8Array): string => {
     let h = 0x811c9dc5;
     for (let i = 0; i < data.length; i++) {
@@ -319,6 +408,54 @@ describe("the pure decoder agrees with Chrome's, on the real files", () => {
     await browser?.close();
   });
 
+  /** What a `<canvas>` does to a colour on the way in and out: premultiply by alpha on `drawImage`,
+   *  un-premultiply on `getImageData`. Lossy, and at alpha 0 total.
+   *
+   *  AN OPAQUE PIXEL SURVIVES IT EXACTLY; A TRANSLUCENT ONE DOES NOT, and the residue is measured
+   *  rather than assumed: across the three fixtures with translucency, six pixels out of 288 end one
+   *  step apart from Chrome — grey 60 at alpha 60 comes back 59, grey 25 at alpha 100 comes back 25
+   *  where this rounding gives 26. Chrome's own premultiply is fixed-point and its rounding is not
+   *  specified anywhere this test can cite, so the comparison allows ONE step per channel where
+   *  alpha is under 255 and NOTHING where it is 255. A blanket tolerance would have hidden a real
+   *  disagreement in the same breath. */
+  const throughACanvas = (data: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(data.length);
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3];
+      out[i + 3] = a;
+      for (let c = 0; c < 3; c++) {
+        const premultiplied = Math.round((data[i + c] * a) / 255);
+        out[i + c] = a === 0 ? 0 : Math.round((premultiplied * 255) / a);
+      }
+    }
+    return out;
+  };
+
+  for (const name of Object.keys(FIXTURES)) {
+    it(`${name} should decode to the same pixels in both decoders`, async () => {
+      const file = readFileSync(join(FIXTURE_DIR, name));
+      const mine = decodePng(file);
+      const theirs = await decodeInChrome(file, { withData: true });
+      expect(`${name} ${mine.width}x${mine.height}`).toBe(
+        `${name} ${theirs.width}x${theirs.height}`,
+      );
+      const rounded = throughACanvas(mine.data);
+      const disagreements: string[] = [];
+      for (let i = 0; i < rounded.length; i += 4) {
+        const alpha = rounded[i + 3];
+        const slack = alpha === 255 ? 0 : 1;
+        if (alpha !== theirs.data![i + 3])
+          disagreements.push(`pixel ${i / 4}: alpha ${alpha} vs ${theirs.data![i + 3]}`);
+        for (let c = 0; c < 3; c++)
+          if (Math.abs(rounded[i + c] - theirs.data![i + c]) > slack)
+            disagreements.push(
+              `pixel ${i / 4} channel ${c}: ${rounded[i + c]} vs ${theirs.data![i + c]} (alpha ${alpha})`,
+            );
+      }
+      expect(`${name}: ${disagreements.slice(0, 4).join("; ") || "agree"}`).toBe(`${name}: agree`);
+    });
+  }
+
   for (const skill of [
     "chart-beat",
     "chart-video",
@@ -331,33 +468,9 @@ describe("the pure decoder agrees with Chrome's, on the real files", () => {
     it(`${skill}'s preview should decode to exactly the same pixels in both decoders`, async () => {
       const file = readFileSync(join(SKILLS, skill, "assets", "preview.png"));
       const mine = decodePng(file);
-      const theirs = await page.evaluate(
-        async (dataUrl) => {
-          const img = new Image();
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = () => reject(new Error("image failed to decode"));
-            img.src = dataUrl;
-          });
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-          ctx.drawImage(img, 0, 0);
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-          let h = 0x811c9dc5;
-          for (let i = 0; i < data.length; i++) {
-            h ^= data[i];
-            h = Math.imul(h, 0x01000193) >>> 0;
-          }
-          return {
-            width: img.width,
-            height: img.height,
-            hash: (h >>> 0).toString(16).padStart(8, "0"),
-          };
-        },
-        `data:image/png;base64,${file.toString("base64")}`,
-      );
+      const theirs = await decodeInChrome(file);
+      // The shipped previews are fully opaque, so the canvas round-trip is the identity on them and
+      // the comparison is straight.
       expect(`${mine.width}x${mine.height} ${fnv(mine.data)}`).toBe(
         `${theirs.width}x${theirs.height} ${theirs.hash}`,
       );

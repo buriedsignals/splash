@@ -29,14 +29,78 @@
 // `map-web` all come back 0/N here — so this limit is `scrolly`'s today, and it ends for everyone
 // the day the rasteriser is handed font files instead of a family name.
 //
-// SCOPE, stated rather than assumed: 8-bit, non-interlaced, RGB or RGBA — measured true of all
-// fourteen `preview.png` in this tree. Anything else throws by name rather than decoding wrong.
+// SCOPE: every PNG a browser reads. Bit depths 1, 2, 4, 8 and 16; colour types greyscale (0), RGB
+// (2), palette (3), greyscale+alpha (4) and RGBA (6); `tRNS` on all three types that can carry it;
+// and Adam7 interlacing. It began at "8-bit, non-interlaced, RGB or RGBA" — enough for all fourteen
+// `preview.png` here — and was widened on the owner's ruling that sharing a mechanism between skills
+// is for carrying capability ACROSS, never for trimming to what the weakest path can afford: the
+// browser comparator this replaced could read all of the above, so this one has to. Anything outside
+// still throws by name rather than decoding wrong.
+//
+// SIXTEEN-BIT SAMPLES ARE REDUCED TO EIGHT by taking the high byte, which is what Chrome does —
+// measured on `test/fixtures/png/grey-16bit.png`, where sample 63757 comes back 249 (`>> 8`) and not
+// 248 (`* 255 / 65535`). Sub-byte depths scale by `value * 255 / (2^depth - 1)`, so 4-bit sample 3
+// is 51, also measured against Chrome.
+//
+// ALPHA IS STRAIGHT HERE, AND IT IS NOT IN A CANVAS. `<canvas>` premultiplies on `drawImage` and
+// un-premultiplies on `getImageData`, so a browser-decoded translucent pixel comes back CHANGED —
+// grey 248 at alpha 20 reads as 242, and any colour at alpha 0 reads as black. This decoder returns
+// what the file says. The cross-check in `test/compare-png.test.ts` puts these values through the
+// same premultiply round-trip before comparing, rather than pretending the two agree.
 
 import { inflateSync } from "node:zlib";
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+/** The seven Adam7 passes as [xStart, yStart, xStep, yStep]. */
+const ADAM7 = [
+  [0, 0, 8, 8],
+  [4, 0, 8, 8],
+  [0, 4, 4, 8],
+  [2, 0, 4, 4],
+  [0, 2, 2, 4],
+  [1, 0, 2, 2],
+  [0, 1, 1, 2],
+];
 
-/** @returns {{ width: number, height: number, data: Uint8Array }} straight RGBA, 4 bytes per pixel */
+/** Undo the five PNG scanline filters over one pass's rows, in place, and return the raw bytes. */
+function unfilter(raw, from, rows, stride, bpp) {
+  const out = new Uint8Array(rows * stride);
+  for (let y = 0; y < rows; y++) {
+    const filter = raw[from + y * (1 + stride)];
+    const line = from + y * (1 + stride) + 1;
+    for (let i = 0; i < stride; i++) {
+      const value = raw[line + i];
+      const left = i >= bpp ? out[y * stride + i - bpp] : 0;
+      const above = y > 0 ? out[(y - 1) * stride + i] : 0;
+      const upLeft = y > 0 && i >= bpp ? out[(y - 1) * stride + i - bpp] : 0;
+      let byte = value;
+      if (filter === 1) byte = value + left;
+      else if (filter === 2) byte = value + above;
+      else if (filter === 3) byte = value + ((left + above) >> 1);
+      else if (filter === 4) {
+        const p = left + above - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - above);
+        const pc = Math.abs(p - upLeft);
+        byte = value + (pa <= pb && pa <= pc ? left : pb <= pc ? above : upLeft);
+      } else if (filter !== 0) throw new Error(`unknown PNG scanline filter ${filter}`);
+      out[y * stride + i] = byte & 0xff;
+    }
+  }
+  return out;
+}
+
+/** Read sample number `index` out of a packed scanline at `depth` bits per sample. */
+function sampleAt(row, index, depth) {
+  if (depth === 16) return (row[index * 2] << 8) | row[index * 2 + 1];
+  if (depth === 8) return row[index];
+  const perByte = 8 / depth;
+  const shift = 8 - depth * ((index % perByte) + 1);
+  return (row[Math.floor(index / perByte)] >> shift) & ((1 << depth) - 1);
+}
+
+/** @returns {{ width: number, height: number, data: Uint8Array }} STRAIGHT RGBA, 4 bytes per pixel */
 export function decodePng(buffer) {
   const bytes = Uint8Array.from(buffer);
   for (let i = 0; i < SIGNATURE.length; i++)
@@ -46,6 +110,8 @@ export function decodePng(buffer) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let at = 8;
   let header = null;
+  let palette = null;
+  let trns = null;
   const idat = [];
   while (at + 8 <= bytes.length) {
     const length = view.getUint32(at);
@@ -59,57 +125,115 @@ export function decodePng(buffer) {
         colorType: body[9],
         interlace: body[12],
       };
+    else if (type === "PLTE") palette = body.slice();
+    else if (type === "tRNS") trns = body.slice();
     else if (type === "IDAT") idat.push(body);
     else if (type === "IEND") break;
     at += 12 + length;
   }
   if (!header) throw new Error("not a PNG: no IHDR chunk");
-  if (header.depth !== 8)
-    throw new Error(`only 8-bit PNGs are read here; this one is ${header.depth}-bit`);
-  if (header.interlace !== 0)
-    throw new Error("interlaced PNGs are not read here");
-  const channels = header.colorType === 6 ? 4 : header.colorType === 2 ? 3 : 0;
+
+  const { width, height, depth, colorType, interlace } = header;
+  const channels = CHANNELS[colorType];
   if (!channels)
-    throw new Error(
-      `only RGB and RGBA PNGs are read here; this one is colour type ${header.colorType}`,
-    );
+    throw new Error(`unknown PNG colour type ${colorType}`);
+  if (![1, 2, 4, 8, 16].includes(depth))
+    throw new Error(`unknown PNG bit depth ${depth}`);
+  if ((colorType === 2 || colorType === 4 || colorType === 6) && depth < 8)
+    throw new Error(`bit depth ${depth} is not legal for colour type ${colorType}`);
+  if (colorType === 3 && depth === 16)
+    throw new Error("a palette PNG cannot be 16-bit");
+  if (colorType === 3 && !palette)
+    throw new Error("palette PNG with no PLTE chunk");
+  if (interlace !== 0 && interlace !== 1)
+    throw new Error(`unknown PNG interlace method ${interlace}`);
 
-  const { width, height } = header;
-  const stride = width * channels;
   const raw = inflateSync(Buffer.concat(idat.map((c) => Buffer.from(c))));
-  const lines = new Uint8Array(height * stride);
+  const bpp = Math.ceil((channels * depth) / 8);
+  const rgba = new Uint8Array(width * height * 4);
+  const full = (1 << depth) - 1;
+  // The 16-bit sample a `tRNS` names, compared against the sample as stored — so a 4-bit greyscale
+  // `tRNS` of 0x000A means the raw sample 10, not the 8-bit value it scales to.
+  const trnsGrey = colorType === 0 && trns ? (trns[0] << 8) | trns[1] : null;
+  const trnsRgb =
+    colorType === 2 && trns
+      ? [(trns[0] << 8) | trns[1], (trns[2] << 8) | trns[3], (trns[4] << 8) | trns[5]]
+      : null;
 
-  for (let y = 0; y < height; y++) {
-    const filter = raw[y * (1 + stride)];
-    const from = y * (1 + stride) + 1;
-    for (let i = 0; i < stride; i++) {
-      const value = raw[from + i];
-      const left = i >= channels ? lines[y * stride + i - channels] : 0;
-      const above = y > 0 ? lines[(y - 1) * stride + i] : 0;
-      const upLeft = y > 0 && i >= channels ? lines[(y - 1) * stride + i - channels] : 0;
-      let out = value;
-      if (filter === 1) out = value + left;
-      else if (filter === 2) out = value + above;
-      else if (filter === 3) out = value + ((left + above) >> 1);
-      else if (filter === 4) {
-        const p = left + above - upLeft;
-        const pa = Math.abs(p - left);
-        const pb = Math.abs(p - above);
-        const pc = Math.abs(p - upLeft);
-        out = value + (pa <= pb && pa <= pc ? left : pb <= pc ? above : upLeft);
-      } else if (filter !== 0) throw new Error(`unknown PNG scanline filter ${filter}`);
-      lines[y * stride + i] = out & 0xff;
+  const place = (x, y, samples) => {
+    const out = (y * width + x) * 4;
+    let r;
+    let g;
+    let b;
+    let a = 255;
+    if (colorType === 3) {
+      const index = samples[0];
+      r = palette[index * 3];
+      g = palette[index * 3 + 1];
+      b = palette[index * 3 + 2];
+      // A `tRNS` on a palette may be SHORTER than the palette; entries it does not reach are opaque.
+      a = trns && index < trns.length ? trns[index] : 255;
+    } else if (colorType === 0 || colorType === 4) {
+      const grey = samples[0];
+      const eight = depth === 16 ? grey >> 8 : Math.round((grey * 255) / full);
+      r = eight;
+      g = eight;
+      b = eight;
+      if (colorType === 4) a = depth === 16 ? samples[1] >> 8 : samples[1];
+      else if (trnsGrey !== null && grey === trnsGrey) a = 0;
+    } else {
+      const eight = (v) => (depth === 16 ? v >> 8 : v);
+      r = eight(samples[0]);
+      g = eight(samples[1]);
+      b = eight(samples[2]);
+      if (colorType === 6) a = eight(samples[3]);
+      else if (
+        trnsRgb &&
+        samples[0] === trnsRgb[0] &&
+        samples[1] === trnsRgb[1] &&
+        samples[2] === trnsRgb[2]
+      )
+        a = 0;
+    }
+    rgba[out] = r;
+    rgba[out + 1] = g;
+    rgba[out + 2] = b;
+    rgba[out + 3] = a;
+  };
+
+  const readPass = (from, xs, ys) => {
+    const stride = Math.ceil((xs.length * channels * depth) / 8);
+    const lines = unfilter(raw, from, ys.length, stride, bpp);
+    for (let row = 0; row < ys.length; row++) {
+      const line = lines.subarray(row * stride, (row + 1) * stride);
+      for (let col = 0; col < xs.length; col++) {
+        const samples = [];
+        for (let c = 0; c < channels; c++)
+          samples.push(sampleAt(line, col * channels + c, depth));
+        place(xs[col], ys[row], samples);
+      }
+    }
+    return ys.length * (1 + stride);
+  };
+
+  if (!interlace) {
+    readPass(
+      0,
+      Array.from({ length: width }, (_, x) => x),
+      Array.from({ length: height }, (_, y) => y),
+    );
+  } else {
+    let from = 0;
+    for (const [x0, y0, dx, dy] of ADAM7) {
+      const xs = [];
+      for (let x = x0; x < width; x += dx) xs.push(x);
+      const ys = [];
+      for (let y = y0; y < height; y += dy) ys.push(y);
+      if (!xs.length || !ys.length) continue;
+      from += readPass(from, xs, ys);
     }
   }
 
-  if (channels === 4) return { width, height, data: lines };
-  const rgba = new Uint8Array(width * height * 4);
-  for (let p = 0; p < width * height; p++) {
-    rgba[p * 4] = lines[p * 3];
-    rgba[p * 4 + 1] = lines[p * 3 + 1];
-    rgba[p * 4 + 2] = lines[p * 3 + 2];
-    rgba[p * 4 + 3] = 255;
-  }
   return { width, height, data: rgba };
 }
 
