@@ -1,11 +1,13 @@
 /**
  * THE PREMISE, TESTED: copy this skill directory on its own into a journalist's root and its seed
- * still renders. `SKILL.md` claims this, and `splash/test/seed-renders-standalone.test.ts`
- * already proves it for the four ORIGINAL craft skills — its own `CRAFT` list is a fixed array in a
- * file this skill may not touch (only `map-web/` is this task's own scope), so this is this
- * skill's OWN copy of that same proof, scoped to itself, duplicated rather than requesting an edit
- * to a file outside this directory — the same "duplicate, do not link" rule this project applies
- * everywhere a skill boundary would otherwise be crossed.
+ * still renders. `SKILL.md` claims this, and this file is this skill's own proof of it.
+ *
+ * WHY IT WAS WRITTEN, AND WHAT CHANGED SINCE. `splash/test/seed-renders-standalone.test.ts` proved
+ * the same thing for four skills through a hard-coded `CRAFT` array this skill's own task could not
+ * touch, so the claim was duplicated here rather than reaching outside this directory. On 2026-08-19
+ * that array became a filesystem discovery (`splash/test/canon-skills.ts`) and the walking guard now
+ * covers all seven canon skills, this one included. This copy is kept anyway: it is the only proof
+ * that travels WITH the skill, and a journalist who receives `map-web/` alone can run it.
  *
  * The skill directory is copied into a fresh temporary root that contains nothing else — no
  * `proof/`, no `shared/`, no sibling skill, no repository — and its own `scripts/render-preview.mjs`
@@ -39,9 +41,8 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer";
 import { comparePngBuffers } from "../scripts/compare-png.mjs";
 
 const SKILL_DIR = resolve(import.meta.dirname, "..");
@@ -52,37 +53,6 @@ const TWIN = resolve(SKILLS, "..");
 // default 5s budget the first time this runs on a machine.
 setDefaultTimeout(300000);
 
-/** A DUPLICATE of `bake-plate.mjs`'s own `resolveChrome` — see `render-preview.mjs`'s own copy for
- *  why this is duplicated rather than imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome() {
-  const candidates = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
 
 describe("map-web's seed renders from its own sample-data, alone", () => {
   it("should render the same preview with nothing but itself on disk", async () => {
@@ -116,26 +86,16 @@ describe("map-web's seed renders from its own sample-data, alone", () => {
       const rendered = readFileSync(join(out, "preview.png"));
       expect(statSync(join(out, "preview.png")).size).toBeGreaterThan(0);
 
-      // Tolerant pixel comparison, not `.equals()` — see compare-png.mjs's own header note: two
-      // Chrome launches of the identical HTML are not always byte-identical.
-      const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: resolveChrome(),
-        args: ["--no-sandbox", "--hide-scrollbars"],
-      });
-      try {
-        const page = await browser.newPage();
-        const diff = await comparePngBuffers(
-          page,
-          rendered,
-          readFileSync(join(SKILL_DIR, "assets", "preview.png")),
-        );
-        expect(`same: ${diff.same} (${diff.reason ?? "no diff"})`).toBe(
-          `same: true (no diff)`,
-        );
-      } finally {
-        await browser.close();
-      }
+      // Tolerant pixel comparison, not `.equals()` — see compare-png.mjs's own header note. It no
+      // longer borrows a browser to decode: the comparator decodes PNG itself, so this comparison
+      // costs nothing and every canon skill can carry the same copy of it.
+      const diff = comparePngBuffers(
+        rendered,
+        readFileSync(join(SKILL_DIR, "assets", "preview.png")),
+      );
+      expect(`same: ${diff.same} (${diff.reason ?? "no diff"})`).toBe(
+        `same: true (no diff)`,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

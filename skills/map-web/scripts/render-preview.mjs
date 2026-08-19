@@ -94,7 +94,9 @@ try {
     // Tolerant, not byte-exact — see compare-png.mjs's own header note: two Chrome launches of the
     // identical HTML are not always byte-identical (anti-aliasing jitter on the text-heavy
     // furniture), so a strict `.equals()` here would fail on the SAME seed, not a changed one.
-    const diff = await comparePngBuffers(page, committed, png);
+    // The comparison no longer borrows this page to decode: `compare-png.mjs` decodes PNG itself, so
+    // every canon skill can carry the same copy, including the five that never open a browser.
+    const diff = comparePngBuffers(committed, png);
     await browser.close();
     if (!diff.same) {
       console.error(
@@ -102,7 +104,9 @@ try {
       );
       process.exit(1);
     }
-    console.log("preview.png matches a fresh render of the seed.");
+    console.log(
+      `preview.png matches a fresh render of the seed (${diff.diffPixels}/${diff.totalPixels} pixels differ).`,
+    );
   } else {
     await browser.close();
     await mkdir(outDir, { recursive: true });

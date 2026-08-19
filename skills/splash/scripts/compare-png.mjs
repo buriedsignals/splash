@@ -1,111 +1,158 @@
-// twin/skills/splash/scripts/compare-png.mjs
+// Are these two PNGs the same PICTURE? — decoded, not compared byte for byte.
 //
-// A COPY of `skills/map-web/scripts/compare-png.mjs`, held to it by the parity block in
-// `skills/splash/test/compare-png.test.ts`. Copied rather than imported because a skill never reaches
-// across another skill's boundary — the same rule `render-still.mjs` and `resolveChrome` already live
-// under in this tree.
+// WHY THIS EXISTS. Every canon guard in this tree used to ask whether two PNGs were the same BYTES.
+// Three measurements on 2026-08-19 say that is the wrong question and that it was already costing:
+// `chart-video`'s preview flipped 78611 -> 78605 bytes between two machines and back again, with 20
+// of 1 166 400 pixels differing and none further apart than 8/255; `scrolly`'s own `--check` went
+// red rendering 6543 bytes where 6609 was committed, a fresh render sitting 375/576000 pixels
+// (0,065 %) from it. Both rasterise text through the SYSTEM fonts, so byte equality was asserting
+// "this PNG is reproducible on any machine", which neither resvg nor Chrome promises. The picture is
+// what the guard cares about.
 //
-// WHY THE SUITE NEEDED IT HERE. `seed-renders-standalone.test.ts` proved a skill copied alone still
-// draws THE SAME PICTURE by comparing raw bytes. On 2026-08-19 it went red for `chart-video` with 20
-// differing pixels out of 1 166 400 — 0,002 %, none further apart than 8/255, on a seed no commit had
-// touched. Byte equality was answering a stricter, wrong question, exactly as the header below already
-// said. The header is kept verbatim from the original because the reasoning is the original's.
+// WHY IT DECODES PNG ITSELF. `map-web` met this first and answered it by decoding both images on a
+// real Chrome `<canvas>`. That works where a browser is already open, and five of the seven canon
+// skills rasterise through resvg and have no other reason to launch one — a comparison must not cost
+// more than the render it checks. `node:zlib` and ninety lines do the same job synchronously, with
+// no dependency, which is also what lets every skill carry the SAME copy and be held to it.
 //
-// A tolerant PNG comparison, decoded through a real Chrome `<canvas>` rather than a byte-equality
-// check. Discovered necessary while wiring `render-preview.mjs`'s own `--check`: two headless-Chrome
-// screenshots of the IDENTICAL self-contained HTML, launched back-to-back on the same machine, were
-// NOT always byte-identical — a handful of anti-aliased text-edge pixels differ between launches
-// even with `--font-render-hinting=none`/`--disable-lcd-text` set. The rendered PICTURE is what
-// this format's own verification rule cares about (`references/map-web-discipline.md`,
-// "Verification": prove it by screenshotting, not by measuring a value that contradicts the
-// screenshot) — a handful of sub-perceptible pixels differing between two runs of the SAME input is
-// not "the seed changed and the preview did not"; `committed.equals(png)` was answering a stricter,
-// wrong question. This compares by DECODED PIXELS with a small per-channel tolerance and a tiny
-// allowed fraction of differing pixels, not by raw bytes.
+// WHAT THIS CANNOT DO, MEASURED — read this before trusting `--check` as a change detector.
+// The difference between two machines is not always low-amplitude anti-aliasing. On `scrolly`'s
+// 640x900 preview the two rasterisations differ by 382 pixels, and the amplitudes are
+// 5-8:13 · 9-16:42 · 17-32:77 · 33-64:137 · 65-128:111 · 129-255:2 — whole strokes landing in
+// different pixels, because resvg resolves the face INSTALLED on the machine
+// (`render-still.mjs`'s own header: handing resvg a font FILE "is the next step rather than this
+// one"). A real seed edit on the same preview — one label from 18px to 30px — moves 345 pixels with
+// 156 of them at 129-255. FEWER pixels than the machine difference. No threshold on count or on
+// amplitude separates those two, so on a small, text-dominated preview `--check` cannot be relied
+// on to notice a seed change; it can only refuse a picture that changed a LOT. Where the render is
+// reproducible it is exact — `chart-video`, `chart-web`, `chart-beat`, `image-beat`, `map-beat` and
+// `map-web` all come back 0/N here — so this limit is `scrolly`'s today, and it ends for everyone
+// the day the rasteriser is handed font files instead of a family name.
 //
-// No new dependency: decodes both PNGs on a real `<canvas>` inside an already-open puppeteer page
-// (Chrome already has to be on this machine for `render-preview.mjs`/`bake-plate.mjs` — this reuses
-// that requirement rather than adding an image-decoding npm package for one comparison).
+// SCOPE, stated rather than assumed: 8-bit, non-interlaced, RGB or RGBA — measured true of all
+// fourteen `preview.png` in this tree. Anything else throws by name rather than decoding wrong.
+
+import { inflateSync } from "node:zlib";
+
+const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/** @returns {{ width: number, height: number, data: Uint8Array }} straight RGBA, 4 bytes per pixel */
+export function decodePng(buffer) {
+  const bytes = Uint8Array.from(buffer);
+  for (let i = 0; i < SIGNATURE.length; i++)
+    if (bytes[i] !== SIGNATURE[i])
+      throw new Error("not a PNG: the 8-byte signature is missing");
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let at = 8;
+  let header = null;
+  const idat = [];
+  while (at + 8 <= bytes.length) {
+    const length = view.getUint32(at);
+    const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
+    const body = bytes.subarray(at + 8, at + 8 + length);
+    if (type === "IHDR")
+      header = {
+        width: view.getUint32(at + 8),
+        height: view.getUint32(at + 12),
+        depth: body[8],
+        colorType: body[9],
+        interlace: body[12],
+      };
+    else if (type === "IDAT") idat.push(body);
+    else if (type === "IEND") break;
+    at += 12 + length;
+  }
+  if (!header) throw new Error("not a PNG: no IHDR chunk");
+  if (header.depth !== 8)
+    throw new Error(`only 8-bit PNGs are read here; this one is ${header.depth}-bit`);
+  if (header.interlace !== 0)
+    throw new Error("interlaced PNGs are not read here");
+  const channels = header.colorType === 6 ? 4 : header.colorType === 2 ? 3 : 0;
+  if (!channels)
+    throw new Error(
+      `only RGB and RGBA PNGs are read here; this one is colour type ${header.colorType}`,
+    );
+
+  const { width, height } = header;
+  const stride = width * channels;
+  const raw = inflateSync(Buffer.concat(idat.map((c) => Buffer.from(c))));
+  const lines = new Uint8Array(height * stride);
+
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (1 + stride)];
+    const from = y * (1 + stride) + 1;
+    for (let i = 0; i < stride; i++) {
+      const value = raw[from + i];
+      const left = i >= channels ? lines[y * stride + i - channels] : 0;
+      const above = y > 0 ? lines[(y - 1) * stride + i] : 0;
+      const upLeft = y > 0 && i >= channels ? lines[(y - 1) * stride + i - channels] : 0;
+      let out = value;
+      if (filter === 1) out = value + left;
+      else if (filter === 2) out = value + above;
+      else if (filter === 3) out = value + ((left + above) >> 1);
+      else if (filter === 4) {
+        const p = left + above - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - above);
+        const pc = Math.abs(p - upLeft);
+        out = value + (pa <= pb && pa <= pc ? left : pb <= pc ? above : upLeft);
+      } else if (filter !== 0) throw new Error(`unknown PNG scanline filter ${filter}`);
+      lines[y * stride + i] = out & 0xff;
+    }
+  }
+
+  if (channels === 4) return { width, height, data: lines };
+  const rgba = new Uint8Array(width * height * 4);
+  for (let p = 0; p < width * height; p++) {
+    rgba[p * 4] = lines[p * 3];
+    rgba[p * 4 + 1] = lines[p * 3 + 1];
+    rgba[p * 4 + 2] = lines[p * 3 + 2];
+    rgba[p * 4 + 3] = 255;
+  }
+  return { width, height, data: rgba };
+}
 
 /**
- * @param {import('puppeteer').Page} page an already-open, otherwise-idle puppeteer page
- * @param {Buffer} a
- * @param {Buffer} b
+ * @param {Buffer|Uint8Array} a
+ * @param {Buffer|Uint8Array} b
  * @param {{ tolerance?: number, maxDiffFraction?: number }} [options]
- *   `tolerance`: the largest per-channel (R/G/B) difference still considered "the same pixel".
- *   `maxDiffFraction`: the largest share of pixels allowed to exceed that tolerance before the two
- *   images are considered genuinely different, not launch-to-launch anti-aliasing jitter.
+ *   `tolerance`: the largest per-channel (R/G/B/A) difference still counted as "the same pixel".
+ *   `maxDiffFraction`: the largest share of pixels allowed past that tolerance before the two are
+ *   a different picture rather than the same one rasterised twice.
  */
-export async function comparePngBuffers(page, a, b, options = {}) {
+export function comparePngBuffers(a, b, options = {}) {
   const { tolerance = 6, maxDiffFraction = 0.002 } = options;
-  // `page.screenshot()` returns a plain `Uint8Array` under Bun, not a Node `Buffer` — its own
-  // `.toString("base64")` silently IGNORES the encoding argument and prints a comma-joined decimal
-  // array instead (caught here the hard way: every screenshot "failed to decode" as an image
-  // because what was actually sent as the data URI was never valid base64 in the first place).
-  // `Buffer.from` on an already-real Buffer is a no-op view, so this is safe for file-read buffers
-  // too.
-  const toBase64 = (buf) => Buffer.from(buf).toString("base64");
-  const aUrl = `data:image/png;base64,${toBase64(a)}`;
-  const bUrl = `data:image/png;base64,${toBase64(b)}`;
-
-  const result = await page.evaluate(
-    async (aUrl, bUrl, tolerance) => {
-      function load(url) {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error("image failed to decode"));
-          img.src = url;
-        });
-      }
-      const [imgA, imgB] = await Promise.all([load(aUrl), load(bUrl)]);
-      if (imgA.width !== imgB.width || imgA.height !== imgB.height) {
-        return {
-          sameSize: false,
-          widthA: imgA.width,
-          heightA: imgA.height,
-          widthB: imgB.width,
-          heightB: imgB.height,
-        };
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = imgA.width;
-      canvas.height = imgA.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(imgA, 0, 0);
-      const dataA = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(imgB, 0, 0);
-      const dataB = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      let diffPixels = 0;
-      for (let i = 0; i < dataA.length; i += 4) {
-        const dr = Math.abs(dataA[i] - dataB[i]);
-        const dg = Math.abs(dataA[i + 1] - dataB[i + 1]);
-        const db = Math.abs(dataA[i + 2] - dataB[i + 2]);
-        if (dr > tolerance || dg > tolerance || db > tolerance) diffPixels++;
-      }
-      return { sameSize: true, diffPixels, totalPixels: dataA.length / 4 };
-    },
-    aUrl,
-    bUrl,
-    tolerance,
-  );
-
-  if (!result.sameSize) {
+  const left = decodePng(a);
+  const right = decodePng(b);
+  if (left.width !== right.width || left.height !== right.height)
     return {
       same: false,
-      reason: `size mismatch: ${result.widthA}x${result.heightA} vs ${result.widthB}x${result.heightB}`,
+      reason: `size mismatch: ${left.width}x${left.height} vs ${right.width}x${right.height}`,
     };
-  }
-  const fraction = result.diffPixels / result.totalPixels;
+
+  let diffPixels = 0;
+  // ALPHA IS COMPARED TOO, unlike the browser copy this replaces: a still whose ground went
+  // transparent is a different picture with every RGB channel unchanged.
+  for (let i = 0; i < left.data.length; i += 4)
+    if (
+      Math.abs(left.data[i] - right.data[i]) > tolerance ||
+      Math.abs(left.data[i + 1] - right.data[i + 1]) > tolerance ||
+      Math.abs(left.data[i + 2] - right.data[i + 2]) > tolerance ||
+      Math.abs(left.data[i + 3] - right.data[i + 3]) > tolerance
+    )
+      diffPixels++;
+
+  const totalPixels = left.width * left.height;
+  const fraction = diffPixels / totalPixels;
   return {
     same: fraction <= maxDiffFraction,
-    diffPixels: result.diffPixels,
-    totalPixels: result.totalPixels,
+    diffPixels,
+    totalPixels,
     fraction,
     reason:
       fraction > maxDiffFraction
-        ? `${result.diffPixels}/${result.totalPixels} pixels (${(fraction * 100).toFixed(3)}%) exceed tolerance ${tolerance}, over the allowed ${(maxDiffFraction * 100).toFixed(3)}%`
+        ? `${diffPixels}/${totalPixels} pixels (${(fraction * 100).toFixed(3)}%) exceed tolerance ${tolerance}, over the allowed ${(maxDiffFraction * 100).toFixed(3)}%`
         : undefined,
   };
 }

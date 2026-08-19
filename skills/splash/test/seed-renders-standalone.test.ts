@@ -41,14 +41,7 @@
  *     plate through a MapTiler key on a cold cache — a machine dependency this skill already has in
  *     its own `test/canon.test.ts`, carried here unchanged rather than newly introduced.
  */
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  setDefaultTimeout,
-} from "bun:test";
+import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import {
   cpSync,
   existsSync,
@@ -60,20 +53,18 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
-import puppeteer from "puppeteer";
 import { comparePngBuffers } from "../scripts/compare-png.mjs";
+import { canonSkills } from "./canon-skills";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = resolve(SKILLS, "..");
 const PROOF = join(TWIN, "proof");
-const CRAFT = [
-  "chart-beat",
-  "chart-web",
-  "chart-video",
-  "map-beat",
-];
+// Discovered, not typed. It was a hard-coded array of four while SEVEN skills had a canon, and the
+// three it did not name — `image-beat`, `map-web`, `scrolly` — were the three whose isolation was
+// proved by a weaker claim or by nothing. See `canon-skills.ts`.
+const CRAFT = canonSkills();
 
 // A remotion still (chart-video) and a plate-backed map render (map-beat) both run real
 // renderers here, and the map's bake path is minutes on a cold cache.
@@ -151,60 +142,9 @@ describe("a craft skill never reaches into a story workspace", () => {
   }
 });
 
-/** A DUPLICATE of the `resolveChrome` every browser-driving file in this tree carries — duplicated,
- *  not imported, for the reason `map-web/test/standalone.test.ts`'s own copy states. */
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to compare with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
-
 describe("a craft skill's seed renders from its own sample-data, alone", () => {
-  // One browser for the whole file: it decodes the two PNGs of each comparison on a real canvas, the
-  // same decoder the pictures were encoded by. Chrome is already a hard requirement here — a remotion
-  // still and a MapTiler plate bake both drive it — so this adds a page, not a dependency.
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>>;
-  let page: Awaited<ReturnType<typeof browser.newPage>>;
-
-  beforeAll(async () => {
-    browser = await puppeteer.launch({
-      executablePath: resolveChrome(),
-      headless: true,
-    });
-    page = await browser.newPage();
-    await page.setContent("<!doctype html><html><body></body></html>");
-  });
-
-  afterAll(async () => {
-    await browser?.close();
-  });
-
   for (const skill of CRAFT) {
-    it(`${skill} should render the same preview with nothing but itself on disk`, async () => {
+    it(`${skill} should render the same preview with nothing but itself on disk`, () => {
       const root = mkdtempSync(join(tmpdir(), "twin-seed-alone-"));
       try {
         // The only things beside the skill: the installed packages and the environment. No
@@ -238,7 +178,7 @@ describe("a craft skill's seed renders from its own sample-data, alone", () => {
           join(SKILLS, skill, "assets", "preview.png"),
         );
 
-        const verdict = await comparePngBuffers(page, rendered, committed);
+        const verdict = comparePngBuffers(rendered, committed);
         // Reported, never asserted: byte equality is the stricter question this test used to ask and
         // got wrong. Printing it keeps the stricter answer visible without letting it fail a build.
         console.log(

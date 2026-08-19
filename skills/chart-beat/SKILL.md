@@ -226,6 +226,10 @@ by an ordinary relative path — that import is for this skill's own tests
   defects that are not there.
 - `scripts/render-preview.mjs` — renders the seed to PNG; accepts `--out <dir>` to write the proof
   to that directory instead of `assets/preview.png`.
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `scripts/inspect-render.mjs` — `inspectSvg`: contrast against the real ground, alt-text
   presence, root `<title>` leakage. Vendored the same way, alongside `render-still.mjs`, at
   `assets/root-template/shared/chart-beat/inspect-render.mjs`.

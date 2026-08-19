@@ -231,6 +231,10 @@ const { svgPath, pngPath } = await renderStill({
   props (reading bytes, checking orientation, checking combined weight, encoding to `data:` URIs),
   then renders the seed to PNG; accepts `--out <dir>` and `--check` (re-renders and fails non-zero
   if the committed PNG no longer matches a fresh render).
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `test/render-still.test.ts` — `bun:test` coverage: `deriveFurniture`/`contrast`/`measureText`
   parity with the sibling copies, `readImageMeta` on a real PNG and a hand-built minimal JPEG,
   `readOrientation`/`checkOrientation` on a JPEG carrying a non-normal EXIF tag (throws, names the

@@ -342,6 +342,10 @@ skill into a journalist's root — the whole premise — did not build.
   supplies `measureText` as `measure` — the same division `render-web.mjs`'s `renderWeb` uses for a
   real beat, so the seed components themselves never import the rasteriser. `--check` re-renders
   and fails non-zero if the committed PNG no longer matches a fresh render of the seed.
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `test/render-web.test.ts` — `bun:test` coverage of the format's contract against a REAL shipped
   beat (the CO₂ story), rewritten against the fluid frame: CSV parsing; the words carried and the
   argument-bearing furniture drawn unconditionally; exactly one `svg.chart` with no `<text>` inside

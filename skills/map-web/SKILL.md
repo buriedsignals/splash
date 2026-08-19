@@ -324,6 +324,10 @@ for its own generic function.
   `assets/preview.png`, or `--out <dir>` to write the proof there instead. `--check` re-renders and
   fails non-zero if the committed PNG no longer matches (tolerantly — see `compare-png.mjs`) a fresh
   render.
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `scripts/compare-png.mjs` — `comparePngBuffers`, the tolerant decoded-pixel comparison both
   `render-preview.mjs --check` and `test/standalone.test.ts` use in place of a raw byte-equality
   check.

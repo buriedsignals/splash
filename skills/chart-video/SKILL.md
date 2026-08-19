@@ -205,6 +205,10 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data at its
   last frame. Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` to verify the preview is up-to-date (exits 1 if stale).
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `test/timing.test.ts` — pins the seed beat's contract rules, asserted both green and red.
 - `test/canon.test.ts` — asserts `assets/` no longer carries the stories that have been moved out.
   Also asserts the seed carries the canon's marker wording, sample data exists, and the preview is

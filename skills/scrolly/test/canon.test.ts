@@ -49,11 +49,17 @@ describe("scrolly — the canon's assets", () => {
     expect(await proc.exited).toBe(0);
   });
 
-  it("should render standalone with nothing else on disk — proof `render-preview.mjs` needs only this skill's own directory", async () => {
-    // `render-preview.mjs` reads only `assets/ScrollySeed.tsx` (relative, inside this skill) and
-    // writes to a caller-supplied --out directory: nothing here depends on a story, another skill,
-    // or a file outside this skill's own root. Proven by pointing --out at an otherwise-empty tmp
-    // directory and confirming a real PNG lands there.
+  it("should write its preview wherever --out points, and write a real PNG there", async () => {
+    // RENAMED 2026-08-19, because the old name claimed more than the body proves. It was "should
+    // render standalone with nothing else on disk", and it runs from the CHECKED-OUT tree: `proof/`,
+    // `shared/`, the repository and every sibling skill are still on disk, so pointing `--out` at an
+    // empty directory says nothing about isolation. It says `--out` is honoured and the result is a
+    // PNG, which is worth keeping and is all it is.
+    //
+    // The isolation claim is really proved by `splash/test/seed-renders-standalone.test.ts`, which
+    // copies this skill ALONE into a fresh root — no `proof/`, no `shared/`, no sibling — and
+    // requires the same picture out of it. `scrolly` was outside that walk until the same day, which
+    // is how a test could carry this name for months without anyone noticing it was empty.
     const outDir = "/tmp/scrolly-empty-root-test";
     const proc = Bun.spawn(
       ["bun", "scripts/render-preview.mjs", "--out", outDir],

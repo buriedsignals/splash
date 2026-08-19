@@ -167,6 +167,10 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 - `scripts/render-preview.mjs` — renders THIS skill's static seed from THIS skill's sample data.
   Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` mode for verification. Automakes the plate if missing.
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `assets/geo.ts` — the pure core. Imported by both formats and by the tests.
 - `assets/Co2MapStill.tsx` — the static beat. **Replace per story.** Lays its column out from both
   ends and throws if the two halves meet, because an overlap is what a reader sees first. **The

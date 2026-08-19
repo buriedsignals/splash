@@ -29,6 +29,7 @@ import {
   assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
 import { ChartWebPreviewSvg } from "../assets/ChartWebSeed.tsx";
+import { comparePngBuffers } from "./compare-png.mjs";
 
 const HERE = import.meta.dirname;
 
@@ -85,11 +86,21 @@ const png = new Resvg(svg, { fitTo: { mode: "width", value: previewWidth } })
 
 if (process.argv.includes("--check")) {
   const committed = await readFile(TARGET);
-  if (!committed.equals(png)) {
-    console.error("preview.png is stale — the seed changed and the preview did not. Re-run without --check.");
+  // THE SAME PICTURE, not the same bytes. `chart-video`'s preview flipped 78611 -> 78605 between two
+  // machines and back again; `scrolly`'s own check went red rendering 6543 where 6609 was committed.
+  // 0,002 % and 0,065 % of pixels apart, text rasterised through the SYSTEM fonts in both cases.
+  // Byte equality was asserting that this PNG is reproducible on any machine, which neither resvg
+  // nor Chrome promises — see `scripts/compare-png.mjs`.
+  const diff = comparePngBuffers(committed, png);
+  if (!diff.same) {
+    console.error(
+      `preview.png is stale — the seed changed and the preview did not (${diff.reason}). Re-run without --check.`,
+    );
     process.exit(1);
   }
-  console.log("preview.png matches a fresh render of the seed.");
+  console.log(
+    `preview.png matches a fresh render of the seed (${diff.diffPixels}/${diff.totalPixels} pixels differ).`,
+  );
 } else {
   await mkdir(outDir, { recursive: true });
   await writeFile(TARGET, png);

@@ -346,6 +346,10 @@ real beat writes its own runner in that same shape — never editing this skill'
   station changes.
 - `scripts/render-preview.mjs` — renders `DrawnGraphicFrame` standalone to `assets/preview.png` or
   `--out <dir>`; `--check` fails if the committed PNG has drifted from a fresh render.
+- `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
+  the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
+  COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by
+  `splash/test/compare-png-parity.test.ts`; read its header for what it measurably cannot do.
 - `scripts/build-sample-photo.mjs` — generates `basin-photo.png` deterministically. Re-run only if
   the scene itself should change.
 - `scripts/verify-scrolly.mjs` — the continuous-scroll guard, runnable by hand on any rendered
