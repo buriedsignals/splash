@@ -112,6 +112,29 @@ base64-embedded raster `<image href="data:image/png;base64,…">` correctly — 
 known 4×4 red square through exactly that path and reading the resulting PNG's own pixels before
 this skill's seed was written around the assumption.
 
+## Embed each photograph once
+
+**The rule.** A beat's SVG carries every photograph as a `data:` URI, and each one appears in it
+exactly once. Showing the same image at two sizes, or repeating it in a before/after, must reference
+one embedded copy — never embed it twice.
+
+**Why it is a rule and not a preference.** `checkWeight` refuses a beat whose photographs are too
+heavy in total; this refuses weight that is not carrying anything. A scrolly earned it at **1.33 MB
+inlined five times into one file**, and the shape is the same here: the natural way to write "this
+image, again" produces a second copy nobody benefits from.
+
+**What refuses it.** `scripts/verify-image.mjs` exports `duplicatedPayload`, a byte copy of the
+decision `scrolly` earned, walked by `splash/test/guard-copies-parity.test.ts`.
+`scripts/render-preview.mjs` calls it on the built SVG and **throws**, beside `checkWeight` — a beat's
+own render script must do the same, which is this skill's established shape for `checkOrientation`
+and `checkWeight` already. `test/verify-image.test.ts` asserts that call site, because a decision
+nothing calls is a decision that does not run.
+
+**The coverage this has today, stated plainly.** There is no image beat under `proof/` — the two
+`image` beats there are `image / scrolly` and belong to the scrolly vehicle — so the walking coverage
+is one component, this skill's own seed. The guard's value is at render time, for the beat that does
+not exist yet.
+
 ## How it works (the shape)
 
 1. **The brief names the photographs, their alt text, their credits, and the claim they support.**
@@ -231,6 +254,9 @@ const { svgPath, pngPath } = await renderStill({
   props (reading bytes, checking orientation, checking combined weight, encoding to `data:` URIs),
   then renders the seed to PNG; accepts `--out <dir>` and `--check` (re-renders and fails non-zero
   if the committed PNG no longer matches a fresh render).
+- `scripts/verify-image.mjs` — `duplicatedPayload`: every `data:` asset embedded more than once,
+  worst waste first. A byte copy of `scrolly`'s decision, walked by
+  `splash/test/guard-copies-parity.test.ts`, and called by `render-preview.mjs` beside `checkWeight`.
 - `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
   the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
   COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by

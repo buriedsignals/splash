@@ -9,25 +9,23 @@ checks it; blank means it cannot happen there at all.
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| duplicated-payload |  | · |  |  |  | · | · | **R** |
+| duplicated-payload |  | · |  |  |  | · | **R** | **R** |
 | projection-pairing |  |  |  |  |  | · |  | **R** |
 | plate-geometry-pairing |  |  |  |  | **R** | · |  |  |
 | plate-follows-theme |  |  |  |  | **R** | · |  | **R** |
-| screen-space-dash | · | · | **R** |  | **R** | · |  | **R** |
+| screen-space-dash | **R** | · | **R** |  | **R** | · |  | **R** |
 | reached-mark-declares |  | · | · |  |  | · |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 
-## What is still owed — 12 cells
+## What is still owed — 10 cells
 
 - `chart-web` owes **duplicated-payload**
 - `map-web` owes **duplicated-payload**
-- `image-beat` owes **duplicated-payload**
 - `map-web` owes **projection-pairing**
 - `map-web` owes **plate-geometry-pairing**
 - `map-web` owes **plate-follows-theme**
-- `chart-beat` owes **screen-space-dash**
 - `chart-web` owes **screen-space-dash**
 - `map-web` owes **screen-space-dash**
 - `chart-web` owes **reached-mark-declares**

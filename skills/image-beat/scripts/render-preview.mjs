@@ -24,6 +24,7 @@ import {
 } from "./render-still.mjs";
 import { ImageBeatSeed, imageBeatLayout } from "../assets/ImageBeatSeed.tsx";
 import { comparePngBuffers } from "./compare-png.mjs";
+import { duplicatedPayload } from "./verify-image.mjs";
 
 const HERE = import.meta.dirname;
 const SAMPLE_DIR = join(HERE, "..", "assets", "sample-data");
@@ -72,6 +73,23 @@ const layout = imageBeatLayout(photos, title);
 const svg = renderToStaticMarkup(
   createElement(ImageBeatSeed, { photos, title, ground }),
 );
+
+// WEIGHT THAT IS NOT CARRYING ANYTHING, refused here beside `checkWeight` which refuses weight that
+// is simply too much. The same photograph embedded twice is bytes no reader benefits from, and this
+// format gets there by writing exactly what a journalist would expect to write — one image shown at
+// two sizes, or repeated in a before/after. A scrolly earned this guard at 1.33 MB inlined five
+// times into one file.
+const duplicated = duplicatedPayload(svg);
+if (duplicated.length) {
+  const mb = (n) => (n / (1024 * 1024)).toFixed(2);
+  throw new Error(
+    `this beat embeds the same photograph more than once: ` +
+      duplicated
+        .map((d) => `${d.copies} copies of one ${mb(d.bytes)} MB asset, ${mb(d.wastedBytes)} MB wasted`)
+        .join("; ") +
+      `. Embed it once and reference it, or draw it once — see references/image-discipline.md.`,
+  );
+}
 
 const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
   .render()

@@ -87,6 +87,25 @@ system `/Applications/Google Chrome.app` — a prerequisite a journalist's lapto
 the preflight would then have to ask for. resvg installs with the root, renders in milliseconds,
 and exposes `getBBox()`, which is what makes a **measured** gutter possible at all.
 
+## A dash is drawn in the path's own units
+
+**The rule.** A `stroke-dasharray` in a static frame is a decorative pattern — a reference rule, a
+median line, a projection break. It must not also MEASURE the path it is on: no authored
+`stroke-dashoffset`, no declared `pathLength`, and no `vector-effect: non-scaling-stroke` under either.
+
+**Why.** `vector-effect: non-scaling-stroke` takes the stroke, and with it the dash pattern, out of
+the path's own user units. A pattern that measures the path then repeats against a length the path
+does not have, and the line draws as head, hole and tail instead of a rule. It cost a map beat six
+hours and five wrong diagnoses before anything measured it, and a static frame shows the same defect
+with nothing moving to make it obvious.
+
+**What refuses it.** `scripts/verify-static.mjs` exports `revealDashInScreenSpace`, a byte copy of the
+decision `scrolly` earned and `splash/test/guard-copies-parity.test.ts` walks; `test/verify-static.test.ts`
+reads every static chart component on disk. Measured 2026-08-19: **18 components (17 beats declaring
+`chart / static` plus this skill's seed), 9 dashed marks — `T.REFERENCE_DASH`, `MEDIAN_RULE.dash`,
+`T.AVERAGE_DASH`, `"3 3"`, `"2 2"` — and not one `strokeDashoffset` or `vectorEffect` among them.**
+A ratchet, not a repair.
+
 ## How it works (the shape)
 
 1. **The brief names the subject, the accent and the source.** The component is written from it.
@@ -226,6 +245,9 @@ by an ordinary relative path — that import is for this skill's own tests
   defects that are not there.
 - `scripts/render-preview.mjs` — renders the seed to PNG; accepts `--out <dir>` to write the proof
   to that directory instead of `assets/preview.png`.
+- `scripts/verify-static.mjs` — `revealDashInScreenSpace` and the `marksFromSource` reader that feeds
+  it, both byte copies walked by `splash/test/guard-copies-parity.test.ts`. Reads a component's own
+  text; the limit is in its header.
 - `scripts/compare-png.mjs` — `decodePng`/`comparePngBuffers`: is a fresh render the same PICTURE as
   the committed `assets/preview.png`, decided on decoded pixels rather than on bytes. A byte-identical
   COPY of `skills/splash/scripts/compare-png.mjs`, carried rather than imported and walked by

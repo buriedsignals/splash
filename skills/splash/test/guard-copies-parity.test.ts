@@ -63,6 +63,11 @@ const COPIES: Record<string, string[]> = {
     "scrolly/scripts/verify-scrolly.mjs",
     "chart-video/scripts/verify-video.mjs",
     "map-beat/scripts/verify-map.mjs",
+    "chart-beat/scripts/verify-static.mjs",
+  ],
+  duplicatedPayload: [
+    "scrolly/scripts/verify-scrolly.mjs",
+    "image-beat/scripts/verify-image.mjs",
   ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
@@ -70,6 +75,7 @@ const COPIES: Record<string, string[]> = {
   marksFromSource: [
     "chart-video/scripts/verify-video.mjs",
     "map-beat/scripts/verify-map.mjs",
+    "chart-beat/scripts/verify-static.mjs",
   ],
 };
 
