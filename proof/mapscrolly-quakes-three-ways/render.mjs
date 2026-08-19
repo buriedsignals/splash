@@ -261,7 +261,7 @@ async function render() {
       ],
       frame: createElement(HexCountFrame, {
         ...shared,
-        plate,
+        plate: "",
         frame: geometry.frame,
         facts,
         ramp: countRamp,
@@ -276,7 +276,7 @@ async function render() {
       ],
       frame: createElement(SymbolFrame, {
         ...shared,
-        plate,
+        plate: "",
         frame: geometry.frame,
         facts,
         maxRadius: MAX_SYMBOL_RADIUS,
@@ -289,7 +289,7 @@ async function render() {
       ],
       frame: createElement(HexStrengthFrame, {
         ...shared,
-        plate,
+        plate: "",
         frame: geometry.frame,
         facts,
         ramp: magRamp,

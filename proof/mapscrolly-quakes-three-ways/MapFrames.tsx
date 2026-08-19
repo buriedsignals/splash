@@ -82,6 +82,9 @@ const LIVE_STYLE = "html.qm-live [data-part=plate]{opacity:0}";
  * empty container the live map is constructed in (moved out of the frame stack at boot — see
  * `live-scroll-map.mjs`, "the live layer lives OUTSIDE the frame stack"), and the stylesheet above.
  */
+/** The id the one emitted plate answers to, and every other frame references. */
+const PLATE_ID = "quakes-plate";
+
 function PlateFrame({
   plate,
   frame,
@@ -91,6 +94,8 @@ function PlateFrame({
   annotations,
   children,
 }: {
+  /** The plate's own data URI — passed on the DEFINING frame only. Every other frame leaves it
+   *  empty and references the one copy by id. */
   plate: string;
   frame: Frame;
   ground: string;
@@ -153,13 +158,25 @@ function PlateFrame({
           preserveAspectRatio="xMidYMid meet"
           style={fit}
         >
-          <image
-            href={plate}
-            x={0}
-            y={0}
-            width={frame.width}
-            height={frame.height}
-          />
+          {/* ONE COPY OF THE PLATE, referenced three more times. Every frame draws the same 123 KiB
+              basemap, and emitting it per frame put four identical copies in the delivered file —
+              371 KiB of 1.6 MB that no reader benefits from, caught by `verify-scrolly.mjs`'s
+              duplicate-payload guard. The frame that carries `live` defines it; the others `<use>`
+              it, which is a same-document reference and resolves even though the defining frame
+              sits at opacity 0 for three steps out of four (`opacity` is not inherited, and a
+              `<use>` clone renders in ITS own context). */}
+          {plate ? (
+            <image
+              id={PLATE_ID}
+              href={plate}
+              x={0}
+              y={0}
+              width={frame.width}
+              height={frame.height}
+            />
+          ) : (
+            <use href={`#${PLATE_ID}`} />
+          )}
         </svg>
       </div>
 
