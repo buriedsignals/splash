@@ -1,0 +1,494 @@
+# Creation-process parity Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** No producing skill is weaker than its neighbour: every guard this project has earned is written down once, declared for the formats it can reach, and carried by each of them — with a test that names the gaps instead of leaving them to memory.
+
+**Architecture:** A catalogue file in `doctrine` lists each guard, the defect that earned it, the formats it is reachable in, and whether each format `carries` or `owes` it. A generator turns the catalogue into `GUARDS.md` (the readable state) and a parity test enforces the two invariants that can be enforced today: a cell claiming `carried` must really be carried, and a guard present in any skill must appear in the catalogue. Guards themselves are pure decision functions, copied per skill with their own unit tests — never imported across skills, which this tree forbids.
+
+**Tech Stack:** Bun, `bun:test`, puppeteer-core (drivers), plain `.mjs` scripts inside each skill.
+
+**Spec:** `docs/superpowers/specs/2026-08-19-creation-process-parity-design.md`
+
+## Global Constraints
+
+- Runtime is **Bun**. Tests are `bun:test`. TDD: the failing test comes first, and is watched failing.
+- **No cross-skill imports.** A guard reaching a second skill is COPIED there with its own tests; the parity test is what keeps copies honest. This is the tree's existing rule (`AGENTS.md`, "Keep skills self-contained").
+- Code, comments, identifiers, commit messages: **English**. No vendor attribution in any artefact.
+- Every guard is a PURE function over MEASUREMENTS, in the shape `skills/scrolly/scripts/verify-scrolly.mjs` already uses; browser work stays in the driver so the decision is testable without Chrome.
+- Every guard added is **mutation-checked**: reintroduce the defect, watch the guard go red, restore. A guard that was never seen red is not landed.
+- Read the picture **from the DOM, never from a screenshot**: `page.screenshot` serves a stale compositor surface on this machine (`scrolly-discipline.md`, "A step that does not redraw is not a step").
+
+---
+
+### Task 1: The catalogue, its generated state, and the parity test
+
+**Files:**
+- Create: `skills/doctrine/references/guard-catalogue.json`
+- Create: `skills/doctrine/references/guard-catalogue.md`
+- Create: `scripts/guards.mjs`
+- Create: `GUARDS.md` (generated)
+- Test: `skills/doctrine/test/guard-parity.test.ts`
+
+**Interfaces:**
+- Produces: `readCatalogue()` → `{ guards: Guard[] }` where `Guard = { id, refuses, earnedBy, decidedBy, formats: Record<skill, "carried" | "owed"> }`; `carriedBy(skill)` → guard ids a skill's scripts actually export; `owedRows(catalogue)` → `[{ guard, skill }]`.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// skills/doctrine/test/guard-parity.test.ts
+import { describe, expect, it } from "bun:test";
+import { carriedBy, readCatalogue, owedRows } from "../../../scripts/guards.mjs";
+
+describe("the guard catalogue", () => {
+  it("names, for every guard, what it refuses and the defect that earned it", () => {
+    for (const guard of readCatalogue().guards) {
+      expect(guard.refuses.length).toBeGreaterThan(20);
+      expect(guard.earnedBy.length).toBeGreaterThan(20);
+      expect(guard.decidedBy).toMatch(/^[a-zA-Z]+$/);
+    }
+  });
+
+  // The invariant that can be enforced today: a cell that CLAIMS a guard must really carry it.
+  // An `owed` cell is debt, printed in GUARDS.md, not a failure — a permanently red suite teaches
+  // a reader to ignore it.
+  it("carries every guard it claims to carry", () => {
+    const catalogue = readCatalogue();
+    for (const guard of catalogue.guards)
+      for (const [skill, state] of Object.entries(guard.formats))
+        if (state === "carried")
+          expect(carriedBy(skill)).toContain(guard.decidedBy);
+  });
+
+  // The other direction, and the one that stops the catalogue rotting: a guard written into a skill
+  // and never declared is a rule nobody else will ever inherit.
+  it("declares every guard any skill already carries", () => {
+    const declared = new Set(readCatalogue().guards.map((g) => g.decidedBy));
+    for (const skill of ["scrolly", "chart-web", "map-web", "chart-video", "map-beat", "chart-beat", "image-beat", "dw-beat"])
+      for (const fn of carriedBy(skill)) expect(declared).toContain(fn);
+  });
+});
+```
+
+- [ ] **Step 2: Run it to watch it fail**
+
+Run: `bun test skills/doctrine/test/guard-parity.test.ts`
+Expected: FAIL — `Cannot find module '../../../scripts/guards.mjs'`.
+
+- [ ] **Step 3: Write the catalogue with the eight guards that exist today**
+
+`skills/doctrine/references/guard-catalogue.json`, one entry per guard. Fill `formats` from the spec's
+table — `carried` only for `scrolly`, `owed` for every other reachable cell, and omit a skill entirely
+where the defect is not reachable.
+
+```json
+{
+  "guards": [
+    {
+      "id": "duplicated-payload",
+      "decidedBy": "duplicatedPayload",
+      "refuses": "an asset inlined more than once into a self-contained delivered file",
+      "earnedBy": "a delivered route scrolly carried the same 340 KiB basemap plate five times, 1.33 MB of a 1.80 MB page",
+      "formats": { "scrolly": "carried", "chart-web": "owed", "map-web": "owed", "image-beat": "owed" }
+    },
+    {
+      "id": "projection-pairing",
+      "decidedBy": "projectionDisagreements",
+      "refuses": "a raster plate and the overlay drawn on it fitting differently — cover pairs with slice, contain with meet, fill with none",
+      "earnedBy": "at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland",
+      "formats": { "scrolly": "carried", "map-beat": "owed", "map-web": "owed" }
+    },
+    {
+      "id": "plate-follows-theme",
+      "decidedBy": "plateFollowsGround",
+      "refuses": "a baked plate on the opposite luminance side from the ground the beat declares",
+      "earnedBy": "a beat declared ground #16191B and white labels over a dataviz-light plate: correct furniture, unreadable",
+      "formats": { "scrolly": "carried", "map-beat": "owed", "map-web": "owed" }
+    },
+    {
+      "id": "screen-space-dash",
+      "decidedBy": "revealDashInScreenSpace",
+      "refuses": "a dash that measures its own path while vector-effect: non-scaling-stroke computes it in screen space",
+      "earnedBy": "a route drawn as head, hole and tail because the pattern was measured against a line the camera had scaled up",
+      "formats": { "scrolly": "carried", "chart-beat": "owed", "chart-web": "owed", "chart-video": "owed", "map-beat": "owed", "map-web": "owed" }
+    },
+    {
+      "id": "reached-mark-declares",
+      "decidedBy": "neverReached",
+      "refuses": "a mark still data-state=pending when the reveal has ended",
+      "earnedBy": "stop badges kept the fill they were SSR'd with while the line arrived: the narrative got there and the picture never said so",
+      "formats": { "scrolly": "carried", "chart-web": "owed", "chart-video": "owed", "map-web": "owed" }
+    },
+    {
+      "id": "step-redraws",
+      "decidedBy": "stillSteps",
+      "refuses": "two consecutive steps painting the same picture",
+      "earnedBy": "a five-stop scrolly repainted 4.4/0/0/0 % of its marks: one identical picture five times",
+      "formats": { "scrolly": "carried" }
+    },
+    {
+      "id": "scrub-not-slideshow",
+      "decidedBy": "stalledSteps",
+      "refuses": "a step whose picture never moves inside itself, on a beat built to scrub",
+      "earnedBy": "five finished SSR'd pictures passed every other guard and still jumped at each boundary",
+      "formats": { "scrolly": "carried" }
+    },
+    {
+      "id": "model-declared",
+      "decidedBy": "requiresScrub",
+      "refuses": "nothing on its own — it reads which model a beat is built on, off the markup",
+      "earnedBy": "an assembly and a scrub owe different things, and guessing which is which misfires on both",
+      "formats": { "scrolly": "carried" }
+    }
+  ]
+}
+```
+
+- [ ] **Step 4: Write the reader and the generator**
+
+```js
+// scripts/guards.mjs
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+const ROOT = new URL("..", import.meta.url).pathname;
+
+export function readCatalogue() {
+  return JSON.parse(readFileSync(join(ROOT, "skills/doctrine/references/guard-catalogue.json"), "utf8"));
+}
+
+/** The guard decision functions a skill's own scripts actually export. */
+export function carriedBy(skill) {
+  const dir = join(ROOT, "skills", skill, "scripts");
+  if (!existsSync(dir)) return [];
+  const names = [];
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".mjs")))
+    for (const match of readFileSync(join(dir, file), "utf8").matchAll(/export function ([a-zA-Z]+)/g))
+      names.push(match[1]);
+  return names;
+}
+
+/** Every cell a format is reachable by and does not carry — the debt, enumerated. */
+export function owedRows(catalogue) {
+  return catalogue.guards.flatMap((guard) =>
+    Object.entries(guard.formats)
+      .filter(([, state]) => state === "owed")
+      .map(([skill]) => ({ guard: guard.id, skill })),
+  );
+}
+```
+
+- [ ] **Step 5: Run the test to watch it pass**
+
+Run: `bun test skills/doctrine/test/guard-parity.test.ts`
+Expected: PASS, 3 tests.
+
+- [ ] **Step 6: Generate `GUARDS.md` and check it in**
+
+Add to `scripts/guards.mjs` a `--write` / `--check` pair mirroring `scripts/matrix.mjs`: `--write`
+renders the coverage table plus a "what is owed" list from `owedRows`, `--check` fails if the file has
+drifted. Add `"guards": "bun scripts/guards.mjs --write"` and `"guards:check": "bun scripts/guards.mjs --check"` to
+`package.json`, and `bun run guards:check` to the release baseline in `AGENTS.md`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add skills/doctrine scripts/guards.mjs GUARDS.md package.json AGENTS.md
+git commit -m "feat(doctrine): one catalogue of earned guards, and a test that names what each format owes"
+```
+
+---
+
+### Task 2: `chart-video` — four guards and the driver that runs them
+
+**Files:**
+- Create: `skills/chart-video/scripts/verify-video.mjs`
+- Create: `skills/chart-video/test/verify-video.test.ts`
+- Modify: `skills/doctrine/references/guard-catalogue.json` (four cells `owed` → `carried`)
+- Modify: `skills/chart-video/SKILL.md`
+
+**Interfaces:**
+- Consumes: the catalogue's guard ids and function names from Task 1.
+- Produces: `revealDashInScreenSpace(marks)`, `neverReached(marks)`, `duplicatedPayload(html)` (for the beat's own generated build file), `plateFollowsGround({ ground, plate })` — each exported from `verify-video.mjs`, each with the same signature as its `scrolly` twin so the parity test can compare them.
+
+- [ ] **Step 1: Write the failing test — the dash guard, on this format's own shape**
+
+```ts
+// skills/chart-video/test/verify-video.test.ts
+import { describe, expect, it } from "bun:test";
+import { revealDashInScreenSpace } from "../scripts/verify-video.mjs";
+
+// A line reveal is this format's native mechanism: the path is dashed by its own length and the
+// offset runs to zero across the build. Under `vector-effect: non-scaling-stroke` that pattern is
+// measured in screen space, where the path's own length does not live, and it repeats — head, hole,
+// tail. It cost a map beat months before anything measured it.
+describe("a dash that measures its own path", () => {
+  it("refuses it in screen space", () => {
+    expect(
+      revealDashInScreenSpace([
+        { id: "line", dasharray: "820px", dashoffset: "410px", vectorEffect: "non-scaling-stroke" },
+      ]),
+    ).toEqual(["line"]);
+  });
+
+  it("leaves a decorative dash alone", () => {
+    expect(
+      revealDashInScreenSpace([
+        { id: "grid", dasharray: "2px 4px", dashoffset: "0px", vectorEffect: "non-scaling-stroke" },
+      ]),
+    ).toEqual([]);
+  });
+});
+```
+
+- [ ] **Step 2: Run it to watch it fail**
+
+Run: `bun test skills/chart-video/test/verify-video.test.ts`
+Expected: FAIL — `Cannot find module '../scripts/verify-video.mjs'`.
+
+- [ ] **Step 3: Copy the four decision functions verbatim from `verify-scrolly.mjs`**
+
+Copy `revealDashInScreenSpace`, `neverReached`, `duplicatedPayload` and `plateFollowsGround` into
+`skills/chart-video/scripts/verify-video.mjs`, with their doc-comments intact — the comments carry the
+defect that earned each one, and a copy without them is a rule nobody will understand in six months.
+Add the header this file needs:
+
+```js
+// Verifies what a chart VIDEO carries, after the render ladder has proved it exists.
+//
+// `render-video.mjs` proves a file was produced and its final frame looks right. Nothing until now
+// asked whether the reveal that produced it is measured in a space its own length lives in, or
+// whether a mark the build reaches ever says so. Both defects are native to this format: a line
+// reveal is a dash whose offset runs to zero, and an annotation arriving is exactly the
+// "reached mark" case.
+```
+
+- [ ] **Step 4: Run the test to watch it pass**
+
+Run: `bun test skills/chart-video/test/verify-video.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Write the driver that measures a rendered video beat**
+
+The driver opens the beat's own Remotion composition in a browser at the frames the render ladder
+already extracts (`render-video.mjs` writes four), reads the marks with a DOM walk — never a
+screenshot — and hands the measurements to the four decision functions.
+
+```js
+export async function verifyVideoBeat(page, url, { frames }) {
+  const failures = [];
+  const readMarks = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll("[stroke-dasharray], [style*='stroke-dasharray']")).map((node) => {
+        const style = getComputedStyle(node);
+        return {
+          id: node.getAttribute("data-part") ?? node.tagName.toLowerCase(),
+          dasharray: style.strokeDasharray,
+          dashoffset: style.strokeDashoffset,
+          pathLength: node.getAttribute("pathLength"),
+          vectorEffect: style.vectorEffect,
+        };
+      }),
+    );
+  const seen = new Map();
+  for (const frame of frames) {
+    await page.goto(`${url}&frame=${frame}`, { waitUntil: "networkidle0" });
+    for (const mark of await readMarks()) if (!seen.has(mark.id)) seen.set(mark.id, mark);
+  }
+  for (const id of revealDashInScreenSpace([...seen.values()]))
+    failures.push(`${id} reveals itself with a dash while carrying vector-effect: non-scaling-stroke`);
+  return { failures };
+}
+```
+
+- [ ] **Step 6: Mutation-check each of the four**
+
+For each guard: reintroduce its defect in one beat under `proof/` that this skill renders, run the
+driver, watch it go red, restore, watch it go green. Record the two numbers in the SKILL.md section
+written in step 7. A guard never seen red is not landed.
+
+- [ ] **Step 7: Write the rules into `skills/chart-video/SKILL.md` and flip the catalogue cells**
+
+Four bullets in the skill's own voice, each naming the defect and the measurement, then
+`"chart-video": "carried"` on those four guards in `guard-catalogue.json`, then `bun run guards`.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add skills/chart-video skills/doctrine GUARDS.md
+git commit -m "feat(chart-video): carry the four guards this format can reach"
+```
+
+---
+
+### Task 3: `map-beat` — five guards and the driver that runs them
+
+**Files:**
+- Create: `skills/map-beat/scripts/verify-map.mjs`
+- Create: `skills/map-beat/test/verify-map.test.ts`
+- Modify: `skills/doctrine/references/guard-catalogue.json`
+- Modify: `skills/map-beat/SKILL.md`
+
+**Interfaces:**
+- Produces: `projectionDisagreements(frames)`, `plateFollowsGround({ ground, plate })`, `revealDashInScreenSpace(marks)`, `duplicatedPayload(html)`, `neverReached(marks)` — same signatures as their twins.
+
+- [ ] **Step 1: Write the failing test — the two guards this format earned elsewhere and can reach here**
+
+```ts
+// skills/map-beat/test/verify-map.test.ts
+import { describe, expect, it } from "bun:test";
+import { plateFollowsGround, projectionDisagreements } from "../scripts/verify-map.mjs";
+
+describe("a baked plate under a declared ground", () => {
+  it("refuses a light plate under a dark ground", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.83 })).toBe(false);
+  });
+
+  it("accepts a mid-grey plate under either", () => {
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.42 })).toBe(true);
+  });
+});
+
+describe("a plate and the overlay drawn on it", () => {
+  it("refuses a cropped plate under a contained overlay", () => {
+    expect(projectionDisagreements([{ id: "frame", fit: "cover", par: "xMidYMid meet" }])).toEqual([
+      { id: "frame", fit: "cover", par: "xMidYMid meet", expected: "xMidYMid slice" },
+    ]);
+  });
+});
+```
+
+- [ ] **Step 2: Run it to watch it fail**
+
+Run: `bun test skills/map-beat/test/verify-map.test.ts`
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Copy the five decision functions with their doc-comments**
+
+Same treatment as Task 2, step 3, into `skills/map-beat/scripts/verify-map.mjs`.
+
+- [ ] **Step 4: Run the test to watch it pass**
+
+Run: `bun test skills/map-beat/test/verify-map.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Write the driver, and make it read the plate through a canvas**
+
+The luminance of the plate is a DOM read: draw the plate into an `OffscreenCanvas` and average, the
+way `verify-scrolly.mjs` does. Do NOT sample a screenshot.
+
+- [ ] **Step 6: Run it over every map beat on disk and record what it finds**
+
+`proof/` holds 18 map beats over 6 types. Run the driver over all of them; every failure is either a
+real defect to fix in its own commit or a guard to narrow, and the choice is made per finding, in
+writing, in the commit message.
+
+- [ ] **Step 7: Mutation-check, flip the catalogue cells, regenerate `GUARDS.md`, commit**
+
+```bash
+git add skills/map-beat skills/doctrine GUARDS.md
+git commit -m "feat(map-beat): carry the five guards this format can reach"
+```
+
+---
+
+### Task 4: `chart-beat` and `image-beat` — the static pair
+
+**Files:**
+- Create: `skills/chart-beat/scripts/verify-static.mjs`, `skills/chart-beat/test/verify-static.test.ts`
+- Create: `skills/image-beat/scripts/verify-image.mjs`, `skills/image-beat/test/verify-image.test.ts`
+- Modify: `skills/doctrine/references/guard-catalogue.json`
+
+**Interfaces:**
+- Produces: `revealDashInScreenSpace` (chart-beat: a static frame can still carry a dashed annotation whose offset is authored), `duplicatedPayload` (image-beat: its export inlines photographs).
+
+- [ ] **Step 1: Write the failing tests for both, in the same shape as Tasks 2 and 3**
+- [ ] **Step 2: Run them to watch them fail**
+- [ ] **Step 3: Copy the decision functions with their doc-comments**
+- [ ] **Step 4: Run to watch them pass**
+- [ ] **Step 5: Mutation-check each guard in each skill**
+- [ ] **Step 6: Flip the catalogue cells, regenerate, commit**
+
+```bash
+git commit -m "feat(chart-beat,image-beat): carry the guards the static formats can reach"
+```
+
+---
+
+### Task 5: `chart-web` and `map-web` — add to the drivers that already exist
+
+**Files:**
+- Modify: `skills/chart-web/scripts/verify-web.mjs`, `skills/chart-web/test/`
+- Modify: `skills/map-web/scripts/verify-interaction.mjs`, `skills/map-web/test/`
+- Modify: `skills/doctrine/references/guard-catalogue.json`
+
+These two have drivers; the guards are added to them rather than created beside them. `chart-web`
+owes duplicated-payload, screen-space-dash and reached-mark; `map-web` owes those three plus
+projection-pairing and plate-follows-theme.
+
+- [ ] **Step 1: Write the failing tests, one per owed guard per skill**
+- [ ] **Step 2: Run them to watch them fail**
+- [ ] **Step 3: Copy the decision functions into each driver, doc-comments intact**
+- [ ] **Step 4: Run to watch them pass**
+- [ ] **Step 5: Run each driver over every beat of its format on disk and triage the findings in writing**
+- [ ] **Step 6: Mutation-check, flip the cells, regenerate, commit**
+
+---
+
+### Task 6: `dw-beat` — what is checkable when rendering is delegated
+
+**Files:**
+- Modify: `skills/dw-beat/scripts/verify-range-annotation.mjs` or create `verify-owned.mjs`
+- Modify: `skills/doctrine/references/guard-catalogue.json`
+
+Datawrapper renders; this skill owns the request and the artefact that comes back. Only guards about
+the OWNED artefact apply — the PNG's own contrast and the embed's payload. Declare the rest
+unreachable in the catalogue, with the reason in the row, so a later reader does not re-litigate it.
+
+- [ ] **Step 1: Write the failing test for the owned-artefact guards**
+- [ ] **Step 2–5: the same cycle**
+- [ ] **Step 6: Mark the unreachable cells in the catalogue with their reason, regenerate, commit**
+
+---
+
+### Task 7: Close the loop — the parity test starts refusing debt
+
+**Files:**
+- Modify: `skills/doctrine/test/guard-parity.test.ts`
+- Modify: `AGENTS.md`
+
+- [ ] **Step 1: Write the failing test — no cell may still be `owed`**
+
+```ts
+it("owes nothing: every reachable format carries every guard it can reach", () => {
+  expect(owedRows(readCatalogue())).toEqual([]);
+});
+```
+
+- [ ] **Step 2: Run it — it passes only if Tasks 2-6 are complete; any remaining cell names itself**
+- [ ] **Step 3: Add `bun run guards:check` to the release baseline in `AGENTS.md`**
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "feat(doctrine): the parity test refuses debt, not only false claims"
+```
+
+---
+
+## Self-review
+
+**Spec coverage.** Catalogue → Task 1. Parity test → Tasks 1 and 7. `chart-video` → Task 2.
+`map-beat` → Task 3. `chart-beat`/`image-beat` → Task 4. `chart-web`/`map-web` → Task 5. `dw-beat` →
+Task 6. Generated `GUARDS.md` → Task 1 step 6, regenerated in every later task. Mutation-checking →
+a step in every task.
+
+**Placeholders.** Tasks 4, 5 and 6 give the cycle rather than repeating the same test bodies a third
+and fourth time; the shapes are fully written in Tasks 2 and 3 and are copied. The one thing an
+executor must NOT invent is a decision function's signature — every one is fixed in the Interfaces
+block of Tasks 2 and 3.
+
+**Type consistency.** `duplicatedPayload(html)`, `projectionDisagreements(frames)`,
+`revealDashInScreenSpace(marks)`, `neverReached(marks)`, `plateFollowsGround({ ground, plate })`,
+`stillSteps(shots, floor)`, `stalledSteps(readings)`, `requiresScrub({ frames, framesWithContent })` —
+these are the names in `verify-scrolly.mjs` today and the names every copy must keep, because the
+parity test compares them by name.
