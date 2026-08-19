@@ -190,7 +190,14 @@ export function ImageSequence({
             overflow: "hidden",
           }}
         >
-          {/* The OUTGOING photograph: the whole frame. */}
+          {/* BOTH photographs, ONE element each. The frame shows the outgoing picture whole and
+              the incoming one clipped to the seam — it used to ship a SECOND copy of every
+              photograph inside a growing box, on the argument that a box is the one thing a
+              per-frame recorder can see and a clip is not. That argument was paid for in bytes:
+              1.50 MB of a 3.05 MB page, half of it, on the beat whose evidence is photographs and
+              whose reader is most likely on a phone. `verify-scrolly.mjs` now fingerprints
+              `clip-path`, `mask` and `filter` alongside every box, so the wipe is measured where it
+              actually happens. */}
           {photographs.map((p, i) => (
             <img
               key={`plate-${p.year}`}
@@ -204,42 +211,17 @@ export function ImageSequence({
                 height: "100%",
                 objectFit: "contain",
                 display: "block",
-                opacity: i === from ? 1 : 0,
+                // The OUTGOING photograph is painted whole; the INCOMING one is the same element,
+                // clipped to the width the seam has travelled and lifted above it. One copy of each
+                // photograph in the file instead of two.
+                opacity: i === from || (i === to && t > 0) ? 1 : 0,
+                zIndex: i === to && t > 0 ? 1 : 0,
+                clipPath:
+                  i === to && t > 0
+                    ? `inset(0 ${(100 - seamFraction * 100).toFixed(4)}% 0 0)`
+                    : "none",
               }}
             />
-          ))}
-          {/* The INCOMING photograph: a box growing from the left with the picture inside it at the
-              frame's own width, so the picture does not stretch as the box grows. A clip-path would
-              have done the same thing without changing any element's BOX — and an element's box is
-              the one thing a per-frame recorder can see, which is how this beat shipped frozen with
-              every guard green. Geometry, deliberately, not a filter. */}
-          {photographs.map((p, i) => (
-            <div
-              key={`reveal-${p.year}`}
-              data-reveal={i}
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: i === to ? `${(seamFraction * 100).toFixed(4)}%` : 0,
-                overflow: "hidden",
-                opacity: i === to && t > 0 ? 1 : 0,
-              }}
-            >
-              <img
-                src={sources[i]}
-                alt=""
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  height: "100%",
-                  maxWidth: "none",
-                  display: "block",
-                }}
-              />
-            </div>
           ))}
           <div
             data-part="seam"

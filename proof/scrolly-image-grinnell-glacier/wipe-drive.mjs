@@ -150,7 +150,6 @@ export function initImageWipe(root, count) {
   const column = root.querySelector("[data-part=column]");
   const stack = root.querySelector("[data-part=stack]");
   const plates = Array.from(root.querySelectorAll("[data-plate]"));
-  const reveals = Array.from(root.querySelectorAll("[data-reveal]"));
   const seam = root.querySelector("[data-part=seam]");
   const years = Array.from(root.querySelectorAll("[data-year]"));
   const credits = Array.from(root.querySelectorAll("[data-credit]"));
@@ -186,18 +185,17 @@ export function initImageWipe(root, count) {
     // the boundary between them was.
     root.dataset.wipe = JSON.stringify({ from, to, t: Number(t.toFixed(4)), seamPx: Math.round(x) });
 
-    // The OUTGOING photograph is the whole frame; the incoming one is a box growing from the left
-    // with the picture inside it at the frame's own width, so the picture does not stretch as the
-    // box grows. A clip would have done the same thing without changing any element's BOX, which is
-    // the one thing a per-frame recorder can see — this is deliberately geometry, not a filter.
+    // The OUTGOING photograph is the whole frame; the INCOMING one is the SAME element, clipped to
+    // the width the seam has travelled and lifted above it. It used to be a second copy of the
+    // picture inside a growing box, on the argument that a box is the one thing a per-frame
+    // recorder can see and a clip is not — true of the recorder that existed then, and it cost
+    // 1.50 MB of a 3.05 MB page. `verify-scrolly.mjs` fingerprints `clip-path` now, so the wipe is
+    // measured where it happens and the second copy is not owed.
     plates.forEach((plate, i) => {
-      plate.style.opacity = i === from ? "1" : "0";
-    });
-    reveals.forEach((reveal, i) => {
-      reveal.style.opacity = i === to && t > 0 ? "1" : "0";
-      reveal.style.width = i === to ? `${x}px` : "0px";
-      const picture = reveal.firstElementChild;
-      if (picture) picture.style.width = `${box.width}px`;
+      const incoming = i === to && t > 0;
+      plate.style.opacity = i === from || incoming ? "1" : "0";
+      plate.style.zIndex = incoming ? "1" : "0";
+      plate.style.clipPath = incoming ? `inset(0 ${box.width - x}px 0 0)` : "none";
     });
     if (seam) {
       seam.style.left = `${x}px`;
