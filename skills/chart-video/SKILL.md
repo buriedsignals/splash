@@ -110,6 +110,44 @@ the root template is a change to a different skill, and it drags a ~93 MB Chrome
 download into every journalist's install, which is a distribution decision, not a code decision.
 Whoever ships the video format for real makes that call and moves the two packages.
 
+## Reveal a line by re-drawing it, never by sliding a dash
+
+**The rule.** A line arriving is the path RE-GENERATED from the points it has reached —
+`drawnSoFar(points, progress)`, which eleven beats here already use — not one finished path hidden by
+a `stroke-dasharray` whose offset runs to zero.
+
+**Why, and the six hours it cost elsewhere.** A dash pattern repeats forever. Set it to the path's own
+length and it draws exactly one dash and one gap, which reads as a reveal — until something computes
+that pattern in a space the path's length does not live in. `vector-effect: non-scaling-stroke` does
+exactly that: it takes the stroke, and with it the dash, out of user units. The line then draws head,
+hole and tail, all three sliding together, and the map beat where this happened took six hours and
+five wrong diagnoses before anyone measured it. `drawnSoFar` cannot have the defect: there is no
+pattern to compute in the wrong space.
+
+**What refuses it here.** `scripts/verify-video.mjs` exports `revealDashInScreenSpace`, a byte copy of
+the decision `scrolly` earned, and `test/verify-video.test.ts` walks every `*Video.tsx` this
+repository ships — the seed and 25 beats under `proof/` — and fails one that carries a measuring dash
+(a declared `pathLength`, or an offset that is not zero) under a non-scaling stroke. Measured on
+2026-08-19: **18 beats carry a `strokeDasharray`, 22 marks in all, every one of them decorative — a
+reference rule, a drop line, a bracket — and none carries a `strokeDashoffset` or a `vectorEffect`.**
+Nothing is being fixed here. The guard exists so the first person who reaches for
+`strokeDashoffset` in a beat whose plot scales is told at once instead of in six months.
+
+**It reads the component's text, not a rendered DOM, and that is a limit.** A scrolly ships an HTML
+file a browser can be pointed at; a chart video ships an mp4 and PNGs, artifacts with no attributes in
+them. A video beat's marks exist as marks only inside Remotion's own render, and reaching in means
+driving `remotion/Internals` — a guard built on another package's internals is brittle by
+construction. So a dash assembled in a helper and spread into an element is invisible to it. Every
+dash in the corpus is written literally today, the reader finds 22 of 22, and the walking test asserts
+that count so the reader going quiet fails instead of passing.
+
+**What this skill still owes.** `reached-mark-declares` — a mark the build reaches that never says so.
+`scrolly` answers it with `data-state="pending"` flipped to `reached`, and **no video beat here
+declares `data-state` at all**: this format signals arrival with opacity driven by `progressOf`, which
+the guard cannot read. Adopting the vocabulary would be a real change to how a beat is written, not a
+guard to copy, so the cell stays `owed` in `doctrine/references/guard-catalogue.json` rather than
+being marked carried by a check that reads nothing.
+
 ## How it works (the shape)
 
 1. **Read the motion grammar**, then write the timing contract before the drawing. The edit is the
@@ -202,6 +240,9 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
   Imports `deriveFurniture` from this skill's OWN `scripts/render-still.mjs` (a copy, not the
   `chart-beat` original — a skill never imports another skill), in node, and passes the result
   in as props.
+- `scripts/verify-video.mjs` — `revealDashInScreenSpace`, the one guard this format both reaches and
+  carries, plus `marksFromSource` which reads a beat's dashed elements out of its own component. A
+  copy of `scrolly`'s decision, walked by `doctrine/test/guard-parity.test.ts`.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data at its
   last frame. Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` to verify the preview is up-to-date (exits 1 if stale).

@@ -27,7 +27,7 @@
       "decidedBy": "revealDashInScreenSpace",
       "refuses": "a dash that measures its own path while vector-effect: non-scaling-stroke computes it in screen space, where that length does not live",
       "earnedBy": "a river drawn as head, hole and tail because a pattern one route long was measured against a line the camera had scaled up 1.68x; six hours and five wrong diagnoses",
-      "formats": { "scrolly": "carried", "chart-beat": "owed", "chart-web": "owed", "chart-video": "owed", "map-beat": "owed", "map-web": "owed" }
+      "formats": { "scrolly": "carried", "chart-beat": "owed", "chart-web": "owed", "chart-video": "carried", "map-beat": "owed", "map-web": "owed" }
     },
     {
       "id": "reached-mark-declares",

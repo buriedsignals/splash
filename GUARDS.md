@@ -12,13 +12,13 @@ checks it; blank means it cannot happen there at all.
 | duplicated-payload |  | · |  |  |  | · | · | **R** |
 | projection-pairing |  |  |  |  | · | · |  | **R** |
 | plate-follows-theme |  |  |  |  | · | · |  | **R** |
-| screen-space-dash | · | · | · |  | · | · |  | **R** |
+| screen-space-dash | · | · | **R** |  | · | · |  | **R** |
 | reached-mark-declares |  | · | · |  |  | · |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 
-## What is still owed — 15 cells
+## What is still owed — 14 cells
 
 - `chart-web` owes **duplicated-payload**
 - `map-web` owes **duplicated-payload**
@@ -29,7 +29,6 @@ checks it; blank means it cannot happen there at all.
 - `map-web` owes **plate-follows-theme**
 - `chart-beat` owes **screen-space-dash**
 - `chart-web` owes **screen-space-dash**
-- `chart-video` owes **screen-space-dash**
 - `map-beat` owes **screen-space-dash**
 - `map-web` owes **screen-space-dash**
 - `chart-web` owes **reached-mark-declares**
