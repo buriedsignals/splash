@@ -300,6 +300,52 @@ git commit -m "docs(map-beat,dw-beat): the timing vocabulary is a copy, and map-
 
 ---
 
+### Task 1d: The canon guards reach every skill that has a canon
+
+**Found 2026-08-19**, while the owner asked why the seed-alone proof names four skills. It is not a
+deliberate scope; it is a fixed array nobody grew. Seven skills carry the full canon
+(`scripts/render-preview.mjs` + `assets/preview.png` + `assets/sample-data/` + `output-proof/`):
+`chart-beat`, `chart-web`, `chart-video`, `map-beat`, `image-beat`, `map-web`, `scrolly`. Both guards
+in `skills/splash/test/` hard-code the same list of FOUR.
+
+| skill | seed renders alone | output-proof is the preview |
+| --- | --- | --- |
+| chart-beat, chart-web, chart-video, map-beat | `splash/test/seed-renders-standalone` | `splash/test/canon-shape` |
+| map-web | its OWN copy, `map-web/test/standalone.test.ts` (tolerant compare) | **nothing** |
+| scrolly | **a weaker claim** — `scrolly/test/canon.test.ts:52` runs `render-preview.mjs --out /tmp/...` from the CHECKED-OUT tree and asserts only the PNG magic bytes. The repository, `proof/`, `shared/` and every sibling skill are still on disk, so it proves the output is a PNG, not that the skill is self-contained | **nothing** |
+| image-beat | **nothing** | **nothing** |
+
+What the gap already cost, measured rather than feared — `assets/preview.png` was regenerated in
+Tom's `bc308ab8` ("fix: make Splash test-ready", 2026-08-11) and `output-proof/preview.png` was not:
+
+```
+image-beat   identical
+map-web      DIFFER   36565/3686400 pixels (0,992 %) beyond tolerance 6   2048x1800 both
+scrolly      DIFFER    1164/576000  pixels (0,202 %) beyond tolerance 6    640x900  both
+chart-beat, chart-web, chart-video, map-beat   identical
+```
+
+Two stale proofs — "the artifact a reader opens to see what the skill produces, guarded by nothing",
+which is the exact sentence `canon-shape.test.ts`'s own docstring gives as its reason to exist.
+
+**Files:**
+- Modify: `skills/splash/test/canon-shape.test.ts` (the `CRAFT` array)
+- Modify: `skills/splash/test/seed-renders-standalone.test.ts` (the `CRAFT` array)
+- Modify: `skills/scrolly/test/canon.test.ts:52` (raise the claim to a real isolated root, or delete
+  it in favour of the walking one — do not leave two claims of different strength under one name)
+- Regenerate: `skills/map-web/output-proof/preview.png`, `skills/scrolly/output-proof/preview.png`
+
+**The one judgement this task must make, not assume:** the seed-alone proof for `scrolly` and
+`map-web` costs a MapTiler bake and a full scroll capture. If a walked case is too slow for the
+suite it may be moved, never dropped — and the reason must be written where the reader of the
+`CRAFT` array will see it. A list that excludes a skill must say why, beside the list.
+
+**Verification:** mutation — stale one `output-proof/preview.png` by a pixel block and watch
+`canon-shape` name that skill; point one seed at a file outside its own directory and watch
+`seed-renders-standalone` name it.
+
+---
+
 ### Task 2: `chart-video` — four guards and the driver that runs them
 
 **Files:**
