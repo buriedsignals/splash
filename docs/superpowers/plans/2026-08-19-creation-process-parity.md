@@ -440,7 +440,7 @@ said `#FFFFFF` on all three, against a guard reporting black) instead of re-runn
 
 ---
 
-### Task 1f: The picture comparator must not be a trade — OPEN
+### Task 1f: The picture comparator must not be a trade — closed 2026-08-19, `b4b28097`
 
 Raised by the owner on 2026-08-19, on the wording "to be shareable, the comparator had to lose its
 browser": sharing between skills is for CARRYING capability across, not for trimming to whatever the
@@ -459,12 +459,27 @@ The last two rows are capability that was there and is not any more. It does not
 fourteen `preview.png` in the tree are 8-bit RGB or RGBA, non-interlaced, measured — but "it does not
 bite today" is what every one of the defects in this plan was, once.
 
-**The work:** widen `decodePng` to greyscale (colour type 0), palette + `tRNS` (3), greyscale+alpha
-(4), 16-bit depth, and Adam7 interlace; keep the named refusal for anything still outside. Each
-addition arrives with its own round-trip test AND a cross-check against Chrome's decoder on a real
-file of that kind, because the synthetic round-trip alone cannot catch a bug the encoder shares —
-measured: a broken Paeth predictor stayed green until the fixture stopped being a linear gradient.
-Then re-copy to all eight skills; `compare-png-parity.test.ts` holds them.
+**Done.** `decodePng` reads bit depths 1/2/4/8/16, colour types 0/2/3/4/6, `tRNS` on greyscale, on
+RGB and on a palette (including a `tRNS` shorter than its `PLTE`), and Adam7 interlacing. Two
+constants were MEASURED against Chrome rather than chosen: 16-bit reduces by the high byte (sample
+63757 → 249, not the 248 that `* 255 / 65535` gives) and sub-byte depths scale by `255 / (2^d - 1)`.
+
+**And it gained a capability the browser one never had.** `<canvas>` premultiplies on `drawImage`
+and un-premultiplies on `getImageData`, so Chrome returns grey **242** for a pixel the file says is
+**248 at alpha 20**, and black for any colour at alpha 0. The pure decoder returns what the file
+says. That is now the second thing this comparator does that its predecessor could not, after
+comparing the alpha channel at all.
+
+17 fixtures under `skills/splash/test/fixtures/png/`, written by a generator committed beside them,
+each decoded twice — by `decodePng` and by Chrome — and required to agree. Opaque pixels exactly;
+translucent ones within one step per channel, because Chrome's premultiply rounding is fixed-point
+and unspecified: six pixels out of 288 land one apart, and they are NAMED in the test rather than
+absorbed by a blanket tolerance.
+
+Mutation-checked one capability at a time, since a decoder that is only round-tripped against its own
+encoder proves nothing: sub-byte scaling removed → 4 red · 16-bit rounded instead of `>> 8` → 2 red ·
+a `tRNS` shorter than its palette mishandled → 1 red · two Adam7 passes swapped → 3 red · greyscale
+`tRNS` ignored → 1 red. 59 pass. Eight copies re-synced, parity green, all seven `--check` green.
 
 ---
 
