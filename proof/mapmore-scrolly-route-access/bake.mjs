@@ -51,8 +51,11 @@ const flag = (name, fallback) => {
 const [width, height] = flag("--size", "1400x700").split("x").map(Number);
 const outDir = flag("--out", join(HERE, "plate"));
 
-/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — a beat's own
- *  scripts stay copy-pasteable. */
+/**
+ * Headless Chrome has to be FOUND before it can be gated (rule 6). puppeteer's own download is
+ * missing on a clean install often enough that the chart format wrote the same note; this resolves
+ * the candidates in order and fails naming every path it looked in.
+ */
 function resolveChrome() {
   const candidates = [];
   if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
@@ -64,9 +67,12 @@ function resolveChrome() {
         join(cache, build, "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
         join(cache, build, "chrome-linux64/chrome"),
       );
-  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome");
-  const found = candidates.find((c) => existsSync(c));
-  if (!found) throw new Error(`no Chrome to bake with — looked at ${candidates.join(", ")}`);
+  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+  const found = candidates.find((path) => existsSync(path));
+  if (!found)
+    throw new Error(
+      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
+    );
   return found;
 }
 

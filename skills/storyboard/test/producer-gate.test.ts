@@ -12,6 +12,7 @@ import {
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import {
   DATAWRAPPER_TREATMENTS,
+  DATAWRAPPER_TREATMENT_MEDIA,
   datawrapperTypesForTreatment,
   whereIs,
 } from "../../splash/scripts/where.mjs";
@@ -101,11 +102,30 @@ describe("the Datawrapper catalogue", () => {
       ),
     );
     expect([...DATAWRAPPER_TREATMENTS.entries()]).toEqual([...expected.entries()]);
+    // The medium travels with the alias, and must not drift either: a copy that knows the types but
+    // not which medium they answer for would hand a chart slot a locator map.
+    const media = new Map(
+      DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) =>
+        mapping.aliases.map((alias) => [normalizeTreatment(alias), mapping.medium]),
+      ),
+    );
+    expect([...DATAWRAPPER_TREATMENT_MEDIA.entries()]).toEqual([...media.entries()]);
+    // Each alias resolves for ITS OWN medium. This loop used to ask every alias as a chart, back
+    // when the gate hard-coded `medium !== "chart"` and the three map types the pinned inventory
+    // has always carried were unreachable. A treatment answers for one medium: "locator" is a map,
+    // and a chart slot must not be handed one because the word matched.
     for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
       for (const alias of mapping.aliases) {
         expect(
-          datawrapperTypesForTreatment({ medium: "chart", format: "web", treatment: alias }),
+          datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: alias }),
         ).toEqual(mapping.datawrapperTypes);
+        expect(
+          datawrapperTypesForTreatment({
+            medium: mapping.medium === "chart" ? "map" : "chart",
+            format: "web",
+            treatment: alias,
+          }),
+        ).toBeNull();
       }
     }
     for (const treatment of ["Histogram", "Treemap", "Diverging stacked bar"]) {

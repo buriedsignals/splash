@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "splash.visual-catalog",
-  "catalogRevision": "sha256:569532e17b0ab933a826a582a3ff18dcde33891cf04d69581659cc61b32572d7",
+  "catalogRevision": "sha256:1ea8475377e6c81296df0df6b397527720998e19c04530b580606decfb74ddc2",
   "mediums": [
     {
       "id": "chart",
@@ -157,7 +157,10 @@
       "label": "Datawrapper",
       "producer": "dw-beat",
       "capability": "datawrapper",
-      "medium": "chart",
+      "media": [
+        "chart",
+        "map"
+      ],
       "formats": [
         "static",
         "web"
@@ -362,6 +365,54 @@
             "waterfall"
           ],
           "defaultProviderType": "waterfall"
+        },
+        {
+          "treatmentId": "map.choropleth",
+          "format": "static",
+          "providerTypes": [
+            "d3-maps-choropleth"
+          ],
+          "defaultProviderType": "d3-maps-choropleth"
+        },
+        {
+          "treatmentId": "map.choropleth",
+          "format": "web",
+          "providerTypes": [
+            "d3-maps-choropleth"
+          ],
+          "defaultProviderType": "d3-maps-choropleth"
+        },
+        {
+          "treatmentId": "map.locator",
+          "format": "static",
+          "providerTypes": [
+            "locator-map"
+          ],
+          "defaultProviderType": "locator-map"
+        },
+        {
+          "treatmentId": "map.locator",
+          "format": "web",
+          "providerTypes": [
+            "locator-map"
+          ],
+          "defaultProviderType": "locator-map"
+        },
+        {
+          "treatmentId": "map.proportional-symbol",
+          "format": "static",
+          "providerTypes": [
+            "d3-maps-symbols"
+          ],
+          "defaultProviderType": "d3-maps-symbols"
+        },
+        {
+          "treatmentId": "map.proportional-symbol",
+          "format": "web",
+          "providerTypes": [
+            "d3-maps-symbols"
+          ],
+          "defaultProviderType": "d3-maps-symbols"
         }
       ]
     }

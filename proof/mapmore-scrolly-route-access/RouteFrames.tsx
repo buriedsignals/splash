@@ -70,6 +70,27 @@ export function RouteFrame({
       "data-visual": "route-access",
       style: { position: "absolute", inset: 0, background: ground },
     },
+    // THE FALLBACK, FIRST AND UNDERNEATH: the baked plate, in its own SVG at the same viewBox and
+    // the same fit as the marks, so the two describe one place whatever the live layer does. A
+    // reader with no network, no key or no JavaScript keeps this picture whole.
+    createElement(
+      "svg",
+      {
+        xmlns: "http://www.w3.org/2000/svg",
+        viewBox: `0 0 ${width} ${height}`,
+        preserveAspectRatio: "xMidYMid meet",
+        style: { position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" },
+      },
+      createElement("image", { id: PLATE_ID, href: plate, x: 0, y: 0, width, height }),
+    ),
+    // The LIVE layer's container: empty in the markup, filled by `live-map.mjs` at boot, and sized
+    // to the letterboxed rectangle the marks are drawn in. It sits OVER the baked plate and UNDER
+    // the marks, so a reader with no network, no key or no JavaScript still gets the whole picture
+    // from the raster underneath.
+    createElement("div", {
+      "data-part": "live",
+      style: { position: "absolute", left: 0, top: 0, width: 0, height: 0 },
+    }),
     createElement(
       "svg",
       {
@@ -84,7 +105,6 @@ export function RouteFrame({
           display: "block",
         },
       },
-      createElement("image", { id: PLATE_ID, href: plate, x: 0, y: 0, width, height }),
       // The halo first, then the line, both on the same `d` and the same fractional offset, so the
       // halo can never lag the line it is haloing.
       createElement("path", {

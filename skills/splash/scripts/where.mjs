@@ -179,8 +179,45 @@ export const DATAWRAPPER_TREATMENTS = new Map([
   ["stacked column", ["d3-bars-stacked", "stacked-column-chart"]],
   ["waterfall", ["waterfall"]],
   ["waterfall bridge", ["waterfall"]],
+  // The three map types the pinned inventory has always carried, and which nothing above them
+  // could reach until the gate stopped hard-coding `medium === "chart"`.
+  ["choropleth", ["d3-maps-choropleth"]],
+  ["map choropleth", ["d3-maps-choropleth"]],
+  ["choropleth map", ["d3-maps-choropleth"]],
+  ["proportional symbol", ["d3-maps-symbols"]],
+  ["map proportional symbol", ["d3-maps-symbols"]],
+  ["symbol map", ["d3-maps-symbols"]],
+  ["bubble map", ["d3-maps-symbols"]],
+  ["locator", ["locator-map"]],
+  ["map locator", ["locator-map"]],
+  ["locator map", ["locator-map"]],
 ]);
 
+/** The aliases that answer for a MAP. Every other alias in the table above is a chart. */
+const MAP_TREATMENT_ALIASES = new Set([
+  "choropleth",
+  "map choropleth",
+  "choropleth map",
+  "proportional symbol",
+  "map proportional symbol",
+  "symbol map",
+  "bubble map",
+  "locator",
+  "map locator",
+  "locator map",
+]);
+
+/** Which medium each alias answers for. A treatment serves ONE medium — "locator" is a map, and a
+ *  chart slot must not be handed one because the word matched. DECLARED, not derived: the first
+ *  version tested the alias against /choropleth|symbol|bubble|locator/ and called "scatter and
+ *  bubble" a map. Carried beside the table above for the same reason it is — this reader cannot
+ *  import another skill at runtime — and held in parity by the same test. */
+export const DATAWRAPPER_TREATMENT_MEDIA = new Map(
+  [...DATAWRAPPER_TREATMENTS.keys()].map((alias) => [
+    alias,
+    MAP_TREATMENT_ALIASES.has(alias) ? "map" : "chart",
+  ]),
+);
 function normalizeTreatment(value) {
   return String(value ?? "")
     .normalize("NFKD")
@@ -194,8 +231,11 @@ function normalizeTreatment(value) {
 }
 
 export function datawrapperTypesForTreatment({ medium, format, treatment }) {
-  if (medium !== "chart" || (format !== "static" && format !== "web")) return null;
-  return DATAWRAPPER_TREATMENTS.get(normalizeTreatment(treatment)) ?? null;
+  if ((medium !== "chart" && medium !== "map") || (format !== "static" && format !== "web"))
+    return null;
+  const alias = normalizeTreatment(treatment);
+  if (DATAWRAPPER_TREATMENT_MEDIA.get(alias) !== medium) return null;
+  return DATAWRAPPER_TREATMENTS.get(alias) ?? null;
 }
 
 function producerGapFor(slot) {

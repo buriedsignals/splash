@@ -32,3 +32,15 @@ newsroom.json
 # for: the defect is invisible from inside a working install, where the file is supposed to exist.
 NEWSROOM-PROFILE.md
 brand.json
+
+# A skill's own built demo. `skills/scrolly/dist/index.html` is 5.6 MB of rendered page with a real
+# MapTiler key substituted into it, and a `git add skills/scrolly` swept it into a commit. Built
+# output is reproducible from its source; a key in the history is not reversible.
+skills/*/dist/
+
+# Runtime data, never source: `harness/flue` alone is 9.2 GB of local model and run state, and it is
+# what made `git add -A` walk for minutes. Excluded so ordinary git stays usable.
+harness/
+
+# Backups of the key file. A `.env` is never committed, and neither is a copy of one.
+.env.bak*

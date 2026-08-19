@@ -74,7 +74,9 @@ const delegatedProducer = z.strictObject({
   label: nonEmpty,
   producer: id,
   capability: id,
-  medium: id,
+  // MEDIA, plural: the delegated provider has three map types as well as its charts, and a single
+  // `medium` here is what kept them unreachable while the pinned inventory carried them.
+  media: idArray,
   formats: idArray,
 });
 const sizeRule = z.discriminatedUnion("kind", [
@@ -321,9 +323,10 @@ export function validateVisualCatalog(
       fail(
         `delegated producer ${row.id} names unknown capability ${JSON.stringify(row.capability)}`,
       );
-    if (!mediums.has(row.medium))
-      fail(
-        `delegated producer ${row.id} names unknown medium ${JSON.stringify(row.medium)}`,
+    for (const medium of row.media)
+      if (!mediums.has(medium))
+        fail(
+          `delegated producer ${row.id} names unknown medium ${JSON.stringify(medium)}`,
       );
     if (!row.formats.length)
       fail(`delegated producer ${row.id} has no publication format`);
@@ -496,8 +499,11 @@ export function validateVisualCatalog(
       fail(`delegated producer ${row.id} has no maintained mapping adapter`);
     const usedMappings = new Set();
     const mappings = [];
-    for (const treatmentRow of treatmentsWithProof.filter(
-      (candidate) => candidate.medium === row.medium,
+    // The delegated provider serves more than one medium: it has three map types as well as its
+    // charts, and declaring a single `medium` here is what kept them unreachable while the pinned
+    // inventory carried them the whole time.
+    for (const treatmentRow of treatmentsWithProof.filter((candidate) =>
+      row.media.includes(candidate.medium),
     )) {
       for (const format of row.formats) {
         const match = datawrapperMatch({

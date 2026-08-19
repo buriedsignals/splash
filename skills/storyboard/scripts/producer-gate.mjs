@@ -1,6 +1,11 @@
 import catalog from "../references/datawrapper-chart-types.json" with { type: "json" };
 
+// Datawrapper renders a fixed picture or a hosted embed; it makes no video and drives no scroll.
 const SUPPORTED_FORMATS = new Set(["static", "web"]);
+/** The media the delegated provider has types for. A treatment declares its own — the gate used to
+ *  hard-code `chart`, which closed the map path end to end while the pinned inventory carried three
+ *  map types the whole time. */
+const SUPPORTED_MEDIA = new Set(["chart", "map"]);
 const PRODUCERS = new Set(["custom", "datawrapper"]);
 
 export function normalizeTreatment(value) {
@@ -27,6 +32,11 @@ function validateCatalog(value) {
     if (!mapping?.treatment || !Array.isArray(mapping.aliases) || mapping.aliases.length === 0) {
       throw new Error("Datawrapper catalogue has an incomplete Splash treatment mapping");
     }
+    if (!SUPPORTED_MEDIA.has(mapping.medium)) {
+      throw new Error(
+        `Datawrapper treatment ${JSON.stringify(mapping.treatment)} declares no medium the provider serves`,
+      );
+    }
     for (const alias of mapping.aliases) {
       const normalized = normalizeTreatment(alias);
       if (!normalized || aliases.has(normalized)) {
@@ -52,8 +62,11 @@ const BY_ALIAS = new Map(
 );
 
 export function datawrapperMatch({ medium, format, treatment }) {
-  if (medium !== "chart" || !SUPPORTED_FORMATS.has(format)) return null;
-  return BY_ALIAS.get(normalizeTreatment(treatment)) ?? null;
+  if (!SUPPORTED_MEDIA.has(medium) || !SUPPORTED_FORMATS.has(format)) return null;
+  const match = BY_ALIAS.get(normalizeTreatment(treatment)) ?? null;
+  // A treatment answers for its OWN medium only: "locator" is a map and nothing else, and a slot
+  // asking for a chart must not be handed one because the word matched.
+  return match && match.medium === medium ? match : null;
 }
 
 export function producerGap(slot) {

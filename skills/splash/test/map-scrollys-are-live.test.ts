@@ -77,6 +77,7 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
  */
 const MAP_SCROLLY_PAGES = [
   "proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "proof/mapmore-scrolly-route-access/render/route-access.html",
   "proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html",
   "proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html",
 ];

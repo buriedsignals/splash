@@ -6,15 +6,24 @@
 // patched, because its three defects were all in HOW the picture was assembled, not in what it
 // said. Its geography, its plate, its stops and its prose are carried over unchanged.
 
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, Fragment } from "react";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { deriveFurniture } from "../../skills/scrolly/scripts/render-still.mjs";
+import { createRequire } from "node:module";
 import { RouteFrame } from "./RouteFrames.tsx";
 
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
+const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
+
 const HERE = dirname(fileURLToPath(import.meta.url));
+/** Beside this beat, never in /tmp: the delivered file is the beat's own artefact, and a render that
+ *  lands somewhere else is one nobody can review from the tree. An explicit argument still overrides
+ *  at runtime. */
+const OUT_DIR = join(HERE, "render");
 
 const TITLE = "Five evening stops, five ways to make heat relief reachable";
 const SOURCE =
@@ -47,7 +56,7 @@ const PROSE = [
   ],
 ];
 
-async function render({ outDir = join(HERE, "render") } = {}) {
+async function render({ outDir = OUT_DIR } = {}) {
   const geometry = JSON.parse(await readFile(join(HERE, "route.json"), "utf8"));
   const palette = await readFile(join(HERE, "PALETTE.md"), "utf8");
   const ground = /ground:\s*"([^"]+)"/.exec(palette)[1];
@@ -74,8 +83,19 @@ async function render({ outDir = join(HERE, "render") } = {}) {
   // of the stack on boot and scrubs it. The first rebuild gave every step its own finished picture:
   // guard-clean, and a slideshow. Five pictures cannot draw a line under the reader's gesture.
   const driver = await readFile(join(HERE, "route-drive.mjs"), "utf8");
+  const liveSource = await readFile(join(HERE, "live-map.mjs"), "utf8");
+  const maplibreJs = await readFile(MAPLIBRE_JS, "utf8");
+  const maplibreCss = await readFile(MAPLIBRE_CSS, "utf8");
+  const camera = JSON.parse(await readFile(join(HERE, "plate", "camera.json"), "utf8"));
+  // The key is a PLACEHOLDER in the committed file — this repository is public, and a key in a
+  // delivered artefact is a key in the history. `deliver` substitutes at delivery.
+  const livePlan = {
+    styleUrl: `https://api.maptiler.com/maps/${camera.style}/style.json?key=__MAPTILER` + `_KEY__`,
+    bake: { center: camera.center, zoom: camera.zoom, width: camera.size[0], height: camera.size[1] },
+  };
   const boot =
     driver.replace(/^export /gm, "") +
+    liveSource.replace(/^export /gm, "") +
     `\n;(function () {\n` +
     `  if (window.__routeAccessStarted) return;\n` +
     `  window.__routeAccessStarted = true;\n` +
@@ -84,6 +104,7 @@ async function render({ outDir = join(HERE, "render") } = {}) {
     `  function boot() {\n` +
     `    var root = document.querySelector('[data-visual="route-access"]');\n` +
     `    if (!root) return;\n` +
+    `    initLiveMap(root, ${JSON.stringify(livePlan)});\n` +
     `    initRouteAccess(root, ${JSON.stringify({ stops: geometry.stops.map((s) => s.reachedAt), accent, muted: furniture.muted })});\n` +
     `  }\n` +
     `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
@@ -109,12 +130,16 @@ async function render({ outDir = join(HERE, "render") } = {}) {
             Fragment,
             null,
             visual,
+            // maplibre-gl INLINED rather than loaded from a CDN: a `<script src>` would trade
+            // payload for a SECOND third-party host, and this file's whole request budget is one —
+            // api.maptiler.com. The measured price of the ruling is stated in BRIEF.md.
+            createElement("style", { dangerouslySetInnerHTML: { __html: maplibreCss } }),
+            createElement("script", { dangerouslySetInnerHTML: { __html: maplibreJs } }),
             createElement("script", { dangerouslySetInnerHTML: { __html: boot } }),
           )
         : createElement("div"),
   }));
 
-  await mkdir(outDir, { recursive: true });
   const { outPath, panelContrast } = await renderScrolly({
     steps,
     title: TITLE,
