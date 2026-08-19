@@ -273,13 +273,6 @@ export function duplicatedPayload(html) {
 const DARK_SIDE = 0.25;
 const LIGHT_SIDE = 0.6;
 
-/** Whether a baked plate is on the same side as the ground its beat declared.
- *
- *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
- *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
- *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
- *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
- *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
 /** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
  *
  *  THE `null` IS THE POINT. This guard failed three correct beats by reading
@@ -321,6 +314,14 @@ export function surfaceLuminance(css) {
     0.0722 * channel(channels[2])
   );
 }
+
+/** Whether a baked plate is on the same side as the ground its beat declared.
+ *
+ *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+ *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
+ *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
+ *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
+ *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
 
 export function plateFollowsGround({ ground, plate }) {
   if (plate == null || ground == null) return true;

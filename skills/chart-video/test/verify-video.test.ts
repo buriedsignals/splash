@@ -108,6 +108,21 @@ describe("reading a video beat's marks out of its own component", () => {
     expect(revealDashInScreenSpace(marks)).toEqual([]);
   });
 
+  // A reveal is written as a style object as often as it is written as attributes, and the LAST
+  // property in that object is where a brace-balancing reader gets it wrong: it ran to the closing
+  // `}` and returned `1 - reached }`, which parses as NaN and would have flagged a mark for the
+  // wrong reason.
+  it("reads the style-object form, including its last property", () => {
+    const marks = marksFromSource(
+      `<path style={{ strokeDasharray: 1, strokeDashoffset: 1 - reached }} vectorEffect="non-scaling-stroke" />`,
+      "Beat.tsx",
+    );
+    expect(marks).toHaveLength(1);
+    expect(marks[0].dasharray).toBe("1");
+    expect(marks[0].dashoffset).toBe("1 - reached");
+    expect(revealDashInScreenSpace(marks)).toEqual(["Beat.tsx:1 path"]);
+  });
+
   it("names each mark by its file and line, so a failure points at one place", () => {
     const marks = marksFromSource(`<g>\n</g>\n<path strokeDasharray="4 4" />`, "Beat.tsx");
     expect(marks[0].id).toBe("Beat.tsx:3 path");

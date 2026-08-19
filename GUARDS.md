@@ -10,26 +10,25 @@ checks it; blank means it cannot happen there at all.
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | duplicated-payload |  | · |  |  |  | · | · | **R** |
-| projection-pairing |  |  |  |  | · | · |  | **R** |
-| plate-follows-theme |  |  |  |  | · | · |  | **R** |
-| screen-space-dash | · | · | **R** |  | · | · |  | **R** |
+| projection-pairing |  |  |  |  |  | · |  | **R** |
+| plate-geometry-pairing |  |  |  |  | **R** | · |  |  |
+| plate-follows-theme |  |  |  |  | **R** | · |  | **R** |
+| screen-space-dash | · | · | **R** |  | **R** | · |  | **R** |
 | reached-mark-declares |  | · | · |  |  | · |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 
-## What is still owed — 14 cells
+## What is still owed — 12 cells
 
 - `chart-web` owes **duplicated-payload**
 - `map-web` owes **duplicated-payload**
 - `image-beat` owes **duplicated-payload**
-- `map-beat` owes **projection-pairing**
 - `map-web` owes **projection-pairing**
-- `map-beat` owes **plate-follows-theme**
+- `map-web` owes **plate-geometry-pairing**
 - `map-web` owes **plate-follows-theme**
 - `chart-beat` owes **screen-space-dash**
 - `chart-web` owes **screen-space-dash**
-- `map-beat` owes **screen-space-dash**
 - `map-web` owes **screen-space-dash**
 - `chart-web` owes **reached-mark-declares**
 - `chart-video` owes **reached-mark-declares**
@@ -48,6 +47,12 @@ checks it; blank means it cannot happen there at all.
 **Refuses:** a raster plate and the overlay drawn on it fitting differently: cover pairs with slice, contain with meet, fill with none
 
 **Earned by:** at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear
+
+### plate-geometry-pairing — `plateMatchesGeometry`
+
+**Refuses:** a baked plate whose aspect ratio is not the frame its own marks were projected into, so the default xMidYMid meet letterboxes it under them
+
+**Earned by:** the same defect projection-pairing names, reached by this format's other mechanism: a map beat composites its plate as an <image> inside the marks' own SVG, where there is no object-fit to disagree with a preserveAspectRatio and the disagreement is between the plate's own ratio and its box
 
 ### plate-follows-theme — `plateFollowsGround`
 

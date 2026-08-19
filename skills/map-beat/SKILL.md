@@ -87,6 +87,45 @@ real story, write the declarative `beats/<outputId>/MAP-BAKE.json` described by 
 validates the treatment, camera, geography, data, expected outputs, and input digests before it
 hydrates the key and its recorded browser.
 
+## What is verified after the render, and how it is decided from two files
+
+`render-map.mjs` proves the artefacts exist and that the join and the claim check pass.
+`scripts/verify-map.mjs` asks the two questions this format's doctrine spends most of its words on,
+and both are decidable from the bake's own output — no rasteriser, no browser, no screenshot.
+
+**The plate must describe the frame its marks were projected into.** `bake-plate.mjs` writes
+`plate/plate.png` and `plate/geometry.json` side by side, and the geometry records the FRAME every
+point's pixel position was computed in. A beat draws the plate as one `<image>` filling that frame;
+an `<image>` whose own aspect ratio differs from its box is letterboxed by the default
+`preserveAspectRatio="xMidYMid meet"` — scaled down and centred — so the basemap shifts while the
+marks do not, and every one of them lands somewhere the basemap never claimed. Nothing in the render
+fails; the picture is simply wrong. `plateMatchesGeometry` compares the two ratios and allows one
+part in a thousand, which is the rounding an integer frame forces (936×827 baked at 2× is
+1872×1654) and nothing a reader could see. Measured 2026-08-19 across the 16 beats on disk that carry
+a geometry: **every one agrees to 0.000 %, at exactly 2.00×.**
+
+**The plate must be on the same side of the theme as the ground the beat declares.** The delivered
+route beat declared `--ground: #16191B`, painted every label white — right for that ground — over a
+basemap baked in `dataviz-light`, and what a reader saw was white text on a pale map. The ground is
+read from the beat's own `PALETTE.md`, the plate's mean luminance from `compare-png.mjs`'s decoder on
+a 64×32 grid, and `plateFollowsGround` refuses only the two-sided disagreement: a dark beat and a
+light beat are equally legitimate, and a mid-grey plate belongs to neither side. Measured across the
+17 plated beats: **every plate is on its ground's side** — sixteen light plates from 0.661 to 0.893
+under `#FFFFFF`, one dark plate at 0.016 under `#16191B`.
+
+**Not `projectionDisagreements`, and the reason matters.** That decision compares an `<img>`'s CSS
+`object-fit` against the `preserveAspectRatio` of the SVG over it. `object-fit` appears in exactly
+two files in this whole tree, both scrolly IMAGE beats, and in **no map component at all** — a map
+beat composites its plate inside the marks' own SVG, in the marks' own coordinate system, so there
+are not two projections that could disagree. Same defect, different mechanism, different decision:
+`doctrine/references/guard-catalogue.json` carries them as two rows, and `map-beat` is blank on the
+one it cannot reach rather than permanently owing it.
+
+**And a dash that measures its own path is refused here too.** `revealDashInScreenSpace`, the copy
+`scrolly` earned. This format's two dashed map components (`FlowMapVideo`, `LocatorVideo`) divide
+their pattern by the camera's scale, which is the correct compensation, and neither declares a
+`vectorEffect` — nothing is being repaired, the guard is a ratchet.
+
 ## How it works (the shape)
 
 1. **Freeze the data and the shapes.** A csv and a GeoJSON on disk, not a URL fetched at render.
@@ -164,6 +203,10 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   of its own and is not a beat: no claim, no BRIEF. Also drives the world-map-in-portrait decision
   at 1080x1920 both ways, so the rule is a picture and not a paragraph.
 - `scripts/render-map.mjs` — the render ladder, the join, the claim check, the beat's own words.
+- `scripts/verify-map.mjs` — `plateMatchesGeometry` (this format's own), plus `plateFollowsGround`,
+  `surfaceLuminance` and `revealDashInScreenSpace` carried from `scrolly` as byte-identical copies,
+  walked by `splash/test/guard-copies-parity.test.ts`. Reads the bake's own two files, never a
+  screenshot. `test/verify-map.test.ts` runs it over every plated beat on disk.
 - `scripts/render-preview.mjs` — renders THIS skill's static seed from THIS skill's sample data.
   Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` mode for verification. Automakes the plate if missing.
