@@ -725,6 +725,52 @@ git commit -m "feat(map-beat): carry the five guards this format can reach"
 
 ---
 
+**Done 2026-08-19** — `1e5959b0`. The plan said five guards; the catalogue said three; measuring
+changed *which* three.
+
+**`plateMatchesGeometry` is new, and `projection-pairing` turned out to be unreachable here.** The
+catalogue pointed `projectionDisagreements` at this skill — a decision that compares an `<img>`'s CSS
+`object-fit` against the `preserveAspectRatio` of the SVG over it. Measured: `object-fit` appears in
+**exactly two files in the whole tree**, both scrolly IMAGE beats, and in **no map component at all**.
+A map beat composites its plate as an `<image>` INSIDE the marks' own SVG, in the marks' own
+coordinate system; there are not two projections that could disagree. The same DEFECT is reachable by
+this format's own mechanism — a plate whose aspect ratio is not its box's letterboxes under the
+default `xMidYMid meet` — so it is a second catalogue row, and `map-beat` is now BLANK on
+`projection-pairing` rather than permanently owing a cell nobody could ever fill.
+
+**Both plate questions are decided from two files.** `bake-plate.mjs` writes `plate/plate.png` and
+`plate/geometry.json` side by side, and the geometry records the frame every point's pixel position
+was computed in — so no rasteriser, no browser, no screenshot. Measured across what is on disk:
+
+| | result |
+| --- | --- |
+| plate ratio vs projected frame, 16 beats with a geometry | **all 0.000 % apart, at exactly 2.00×** |
+| plate side vs declared ground, 17 plated beats | **all on their ground's side** — 16 light plates 0.661–0.893 under `#FFFFFF`, one dark at 0.016 under `#16191B` |
+| dashed map components | 2, both dividing the pattern by the camera's scale, neither declaring a `vectorEffect` |
+
+Three ratchets, nothing repaired — the third task in a row where the format turned out to be clean and
+the guard's job is to keep it that way.
+
+**A second parity mechanism had to exist, one level under the catalogue.** `carriedBy` reads a NAME
+out of an array, and a name is not a behaviour: two copies of `revealDashInScreenSpace` that had
+drifted apart would both satisfy `guard-parity.test.ts` while the format with the weakened copy ships
+what its neighbour refuses. `skills/splash/test/guard-copies-parity.test.ts` compares each copied
+decision's doc comment AND body byte for byte — and the SHOUTING_CASE constants it decides with,
+which it earned by its own mutation: `DARK_SIDE` 0.25 → 0.40 in one copy left the test **green** until
+constants were followed. Its last assertion refuses a decision carried by two skills and not walked,
+so adding the next one is unavoidable rather than remembered.
+
+**Found and fixed while doing it:** `marksFromSource` read only the attribute form, so
+`style={{ strokeDasharray: 1, strokeDashoffset: x }}` — how every route reveal in this tree is
+actually written — came back with no offset and **passed**. Both copies now read it, including the
+last property in the object, which a brace-balancing reader got wrong as `1 - reached }`. The reader
+was one afternoon old and had already drifted between two skills; that is the whole argument for the
+file above, made by accident.
+
+GUARDS.md: **12 cells owed**, down from 14.
+
+---
+
 ### Task 4: `chart-beat` and `image-beat` — the static pair
 
 **Files:**
