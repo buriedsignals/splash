@@ -62,7 +62,8 @@ and record which fired.
 | Pure core | `assets/geo.ts` | The study set, the alias table, the join, the classes, the ramp, `scalePosition`, ring arithmetic, the claim check. No browser, no rasteriser — which is why BOTH formats can import it |
 | Static | `assets/Co2MapStill.tsx` | One beat, 900 × 560, text column beside a square plate |
 | Video | `assets/Co2MapVideo.tsx` | The same beat with an order. Exports `arrivalProgress`, the reveal's stagger, testable without a browser |
-| Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **imported** from `chart-video`, never re-implemented |
+| Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **not** re-implemented here |
+| Vocabulary | `assets/timing-contract.ts` | A **copy** of `chart-video/assets/timing.ts`, never an import — a skill does not reach across another skill's boundary at runtime. Held byte-identical to its source by `splash/test/root-template-shared.test.ts`, so it cannot drift in silence |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The Remotion composition; `durationInFrames` IS `MAP_TIMING.total` |
 | Render | `scripts/render-map.mjs` | The ladder: still → final frame → mp4. Runs the join and the claim check, derives the furniture in node |
 | Preview | `scripts/render-preview.mjs` | The seed rendered from sample data. Generates `assets/preview.png` and validates it with `--check` |

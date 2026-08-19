@@ -1,3 +1,9 @@
+// RENAMED from `map-spec.mjs` on 2026-08-19. "Map" here was the verb — it MAPS editorial intent onto
+// Datawrapper's metadata shape — and it never had anything to do with cartography. That was harmless
+// until this skill gained a real map path — `test/map-treatments.test.ts` pins `d3-maps-choropleth`,
+// `d3-maps-symbols` and `locator-map` reaching the delegated producer — at which point a file called
+// `map-spec.mjs` beside genuine map work reads as the map producer, and is not one.
+//
 // Editorial intent in, Datawrapper metadata out — nothing else. There is no chart-type registry
 // here: every function below runs the same way regardless of `spec.chartType` (`"d3-lines"`,
 // `"d3-bars"`, whatever the editorial phase already chose). The Datawrapper-side field names

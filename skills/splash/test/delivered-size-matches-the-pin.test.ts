@@ -57,7 +57,12 @@ const PROOF = join(TWIN, "proof");
  * migrating in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const UNPINNED_BEATS = 43;
+const UNPINNED_BEATS = 44;
+// RAISED BY ONE on 2026-08-19, and the diff is the point: `mapmore-scrolly-route-access` is a
+// scrolly, and a scrolly has no export size to pin — the paragraph above says so. A ratchet that
+// could not admit a new unpinnable beat would be answered by pinning something false, which is
+// worse than a number that moved in the open with its reason beside it. It may still only go DOWN
+// for anything that CAN be pinned.
 
 function beatDirs(): string[] {
   if (!existsSync(PROOF)) return [];

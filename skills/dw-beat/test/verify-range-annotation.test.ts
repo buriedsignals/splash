@@ -15,7 +15,7 @@ describe("verifyRangeAnnotation", () => {
   });
 });
 
-// This is the exact live round-trip the task requires to pin `map-spec.mjs`'s range-annotation
+// This is the exact live round-trip the task requires to pin `metadata-spec.mjs`'s range-annotation
 // shape: create a chart, PATCH the candidate, GET it back, export the PNG, look at it. It is
 // written and ready — it has simply never run in an environment with a working token (see
 // references/range-annotation-shape.md §3). The moment DATAWRAPPER_TOKEN is set, this stops

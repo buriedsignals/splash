@@ -1,4 +1,4 @@
-// The live round-trip `map-spec.mjs`'s range-annotation shape is pinned by: create a small real
+// The live round-trip `metadata-spec.mjs`'s range-annotation shape is pinned by: create a small real
 // chart, PATCH one candidate `visualize["range-annotations"]` entry, GET the chart back to see
 // exactly what Datawrapper kept, export the PNG, and write it to disk so a human looks at it —
 // because a key existing in a schema is not the same claim as a rule actually rendering where it

@@ -8,7 +8,7 @@ import { lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { hostname } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { validateChartSpec } from "./validate-spec.mjs";
-import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./map-spec.mjs";
+import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./metadata-spec.mjs";
 import { toCsv } from "./csv.mjs";
 import { chartIdForPath, createChart, setChartData, patchChart, publishChart, exportChartPng } from "./dw-client.mjs";
 import { sizeFor } from "./sizes.mjs";

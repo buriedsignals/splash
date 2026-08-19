@@ -134,8 +134,10 @@ So a journalist who wants an ordinary static choropleth cannot be offered the th
 that exists for every ordinary static chart, and gets the bespoke engine or nothing. The previous
 architecture carried a `map-dw` producer; the rebuild dropped it and nothing recorded the decision.
 
-Naming note, because it will confuse whoever executes this: `skills/dw-beat/scripts/map-spec.mjs` is
-NOT a map producer — "map" there means MAPPING editorial intent onto Datawrapper metadata.
+Naming note, because it confused a reader before it was fixed: `skills/dw-beat/scripts/map-spec.mjs`
+was NOT a map producer — "map" there was the verb, MAPPING editorial intent onto Datawrapper
+metadata. **Renamed to `metadata-spec.mjs` on 2026-08-19** (Task 1c), along with its test, once this
+skill gained a real map path and the old name started reading as the producer it is not.
 
 ### Two naming facts worth writing down before they cost someone a day
 

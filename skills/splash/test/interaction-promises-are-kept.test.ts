@@ -889,6 +889,10 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     probed: 3,
   },
   // ── scrolly: no per-mark tooltip, so nothing is probed at all and nothing should be.
+  "proof/mapmore-scrolly-route-access/render/route-access.html": {
+    measurable: false,
+    probed: 0,
+  },
   "proof/mapmore-scrolly-danube/render/danube-scrolly.html": {
     measurable: false,
     probed: 0,

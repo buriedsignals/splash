@@ -8,7 +8,7 @@ import {
   renameValueColumn,
   isBarEncoded,
   computeYRange,
-} from "../scripts/map-spec.mjs";
+} from "../scripts/metadata-spec.mjs";
 
 const DATA = [
   { year: 1950, co2Mt: 10.25 },

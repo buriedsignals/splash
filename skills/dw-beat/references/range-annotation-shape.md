@@ -15,7 +15,7 @@ chart `jUDCp`, a two-point line from (2000, 1) to (2010, 9), PATCHed with the ca
 `GET`ting the chart back returned the exact same object (Datawrapper changed nothing — no field
 dropped, none rewritten), and the exported PNG shows a solid horizontal rule drawn precisely at
 `y=5`, spanning `x0=2000` to `x1=2010`, in the sent colour. This is the shape now shipped by
-`map-spec.mjs`'s `buildRangeAnnotation`, **confirmed by render, not only by source**:
+`metadata-spec.mjs`'s `buildRangeAnnotation`, **confirmed by render, not only by source**:
 
 ```json
 {
@@ -74,7 +74,7 @@ API should be approached before a live round-trip is possible:
 - **`JsonCRDT.benchmark.ts`** (same repo, same directory) carries a full default `metadata`
   literal for a `d3-lines` chart, confirming `'range-annotations': []` and `'text-annotations': []`
   both live directly under `metadata.visualize`, and confirming `metadata.describe['source-name']`
-  and `metadata.describe.intro` as the field names this skill's own `map-spec.mjs` writes to.
+  and `metadata.describe.intro` as the field names this skill's own `metadata-spec.mjs` writes to.
 
 - **Two independent third-party re-implementations agree with the primary source and with each
   other**, having each been built against real API responses: a Pydantic model
@@ -87,7 +87,7 @@ API should be approached before a live round-trip is possible:
 built around: a `RangeAnnotation` has no field for text.** There is no `text`, `label`, `caption` or
 `displayText` key anywhere in the type. A rule with nothing paired to it is a line with no caption —
 exactly the defect `robertritz`'s notes describe hitting on a real published chart. That is why
-`validate-spec.mjs` refuses a `rangeAnnotations` entry with no `label`, and why `map-spec.mjs`'s
+`validate-spec.mjs` refuses a `rangeAnnotations` entry with no `label`, and why `metadata-spec.mjs`'s
 `buildRangeAnnotation` always emits **two** objects from one editorial entry: the rule
 (`range-annotations`) and a paired `text-annotations` entry positioned at the rule's far edge.
 
@@ -95,7 +95,7 @@ exactly the defect `robertritz`'s notes describe hitting on a real published cha
 
 - **`x0`/`x1` span choice.** For a horizontal rule (`type: "y"`), the two ends of the line need an
   x-span. Some third-party notes claim the string sentinels `"-Infinity"`/`"Infinity"` make a rule
-  or band extend to the plot edges; this was not independently confirmed here, so `map-spec.mjs`
+  or band extend to the plot edges; this was not independently confirmed here, so `metadata-spec.mjs`
   does not rely on it — it instead computes `x0`/`x1` from the actual min/max of the chart's own x
   column, which is correct by construction and is exactly what rendered correctly on the live probe
   above.
@@ -112,7 +112,7 @@ exactly the defect `robertritz`'s notes describe hitting on a real published cha
   from a paid account, but no static export from this skill carries a bare newsroom source line
   today.
 - **The y-axis fit (`custom-range-y`) is confirmed to work and to not anchor at zero** — live on
-  `KDo4J`: `["7", "49"]` visibly removed the zero baseline and the `0` tick. `map-spec.mjs` computes
+  `KDo4J`: `["7", "49"]` visibly removed the zero baseline and the `0` tick. `metadata-spec.mjs` computes
   this from the data's own min/max (plus any y-axis range annotation's value), padded 8%, for every
   chart type except the bar/column family (`isBarEncoded`) — a bar's mark encodes by length from a
   baseline, so it keeps zero in view on purpose.
@@ -125,7 +125,7 @@ bun run skills/dw-beat/scripts/prove-co2.mjs
 ```
 
 Both require `DATAWRAPPER_TOKEN` in the environment. Open the PNGs each one writes. If either the
-rule or the fitted y-axis no longer renders as described above, this document and `map-spec.mjs` are
+rule or the fitted y-axis no longer renders as described above, this document and `metadata-spec.mjs` are
 wrong and need correcting from what actually rendered — not from another reading of `chartTypes.ts`.
 
 ## Sources

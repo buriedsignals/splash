@@ -19,7 +19,7 @@ furniture to derive, no render ladder to climb. Where
 project pins one format per element, and this skill never builds both.
 
 The production path has four jobs: **validate** the `ChartSpec` (fail loud on anything unrecognised),
-**map** it onto Datawrapper's own metadata shape (`scripts/map-spec.mjs` — editorial intent in,
+**map** it onto Datawrapper's own metadata shape (`scripts/metadata-spec.mjs` — editorial intent in,
 Datawrapper field names out, the same code path regardless of chart type), **call** the five real
 provider operations in order (`scripts/dw-client.mjs`), and **orchestrate** that sequence into one owned
 artifact (`scripts/produce.mjs`). The complete provider inventory and the conservative mapping live
@@ -37,7 +37,7 @@ credential workflow.
 
 The one capability worth building this properly for: Datawrapper's line-chart engine carries a
 **`range-annotations`** key, separate from `text-annotations` — a drawn reference rule or shaded
-band at a fixed value, not just a floating label asserting one. `scripts/map-spec.mjs` exposes it
+band at a fixed value, not just a floating label asserting one. `scripts/metadata-spec.mjs` exposes it
 from the start (`buildRangeAnnotation`), because a text annotation can only *say* "the curve comes
 back under this level" and a rule *shows* it.
 
@@ -61,7 +61,7 @@ back under this level" and a rule *shows* it.
 TypeScript type has no `text`, `label`, `caption` or `displayText` key, confirmed straight from
 `chartTypes.ts` in Datawrapper's own public repository (`references/range-annotation-shape.md`).**
 A rule with nothing paired to it renders as a line with no caption — exactly the defect that shows up
-on a real published chart if you send only the rule. `buildRangeAnnotation` in `map-spec.mjs` always
+on a real published chart if you send only the rule. `buildRangeAnnotation` in `metadata-spec.mjs` always
 returns **two** objects from one editorial entry — the rule (`range-annotations`) and a paired
 `text-annotations` entry positioned at the rule's far edge — and `validateChartSpec` refuses a
 `rangeAnnotations` entry with no `label` before either is ever built. If you ever find yourself
@@ -99,7 +99,7 @@ established it.
 | Layer | File | Role |
 | --- | --- | --- |
 | Validation | `scripts/validate-spec.mjs` | `validateChartSpec(spec)` — fails loud, listing every problem at once, on an unknown top-level field, a missing required one, or a malformed annotation entry |
-| Mapping | `scripts/map-spec.mjs` | `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation` — editorial `ChartSpec` in, Datawrapper `metadata.describe`/`metadata.visualize` out. The one file that knows Datawrapper's own field names |
+| Mapping | `scripts/metadata-spec.mjs` | `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation` — editorial `ChartSpec` in, Datawrapper `metadata.describe`/`metadata.visualize` out. The one file that knows Datawrapper's own field names |
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
 | API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchChart`/`patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — thin real HTTP calls with hard request and response-body deadlines; `fetchFn` is injectable for deterministic contract tests and the credential-gated checks use the real network |
 | Orchestrator | `scripts/produce.mjs` | `produce(spec, {storiesRoot, storyId, outputId, name, size, token, fetchFn})` — resolve the canonical beat, serialize same-beat revisions, validate → write `spec.json` → create or reuse the chart ID in `DATAWRAPPER.json` (persisting `state: prepared` before follow-up calls) → set data → patch title/type/language/metadata → publish → write `renders/<name>.html` for web or export and verify `renders/<name>.png` for static → advance the receipt to `state: local-complete`. `{outDir}` remains only as the legacy one-shot compatibility shape |
@@ -157,22 +157,22 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
 | Want | Knob | Where |
 | --- | --- | --- |
 | How many real API calls one `produce` run makes | First run: `4` for web or `5` for static; a resumed beat makes one fewer because it reuses `DATAWRAPPER.json`'s chart ID instead of creating another chart | `produce.mjs` |
-| Default reference-line weight | `2` px (`strokeWidth`) | `buildRangeAnnotation`, `map-spec.mjs` |
+| Default reference-line weight | `2` px (`strokeWidth`) | `buildRangeAnnotation`, `metadata-spec.mjs` |
 | Default reference-line style | `"solid"` (`strokeType`) | `buildRangeAnnotation` |
 | Opacity for a drawn line vs a shaded band | `100` / `20` | `buildRangeAnnotation` |
 | How far a range annotation's label sits above its line | `6` px (`dy: -6`, y-axis rules only) | `buildRangeAnnotation` |
 | Default text-annotation font size | `14` px | `buildTextAnnotation` |
 | The three export sizes a static may be produced at | `SIZES` (landscape 1920×1080, square 1080×1080, portrait 1080×1920), at `zoom: 1` — the row IS the delivered pixel size | `sizes.mjs` |
 | Static export width / zoom, when `exportChartPng` is called directly | `900` px / `2`× | `exportChartPng` default, `dw-client.mjs` |
-| Which data column a rule/colour reads as "the value series" | the data's 2nd column (`columns()`) | `map-spec.mjs` |
-| How much the fitted y-range pads beyond the data's own min/max | `0.08` (8%) | `Y_RANGE_PAD`, `map-spec.mjs` |
-| Which chart types keep a zero-anchored axis instead of a fitted one | `/bars\|column/i` on `chartType` | `isBarEncoded`, `map-spec.mjs` |
-| Whether a chart requests removal of forced Datawrapper attribution | always `false` (plan-gated on a free token — §gotcha) | `buildChartPayload`, `map-spec.mjs` |
+| Which data column a rule/colour reads as "the value series" | the data's 2nd column (`columns()`) | `metadata-spec.mjs` |
+| How much the fitted y-range pads beyond the data's own min/max | `0.08` (8%) | `Y_RANGE_PAD`, `metadata-spec.mjs` |
+| Which chart types keep a zero-anchored axis instead of a fitted one | `/bars\|column/i` on `chartType` | `isBarEncoded`, `metadata-spec.mjs` |
+| Whether a chart requests removal of forced Datawrapper attribution | always `false` (plan-gated on a free token — §gotcha) | `buildChartPayload`, `metadata-spec.mjs` |
 
 ## Files
 
 - `scripts/validate-spec.mjs` — `validateChartSpec`.
-- `scripts/map-spec.mjs` — `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation`,
+- `scripts/metadata-spec.mjs` — `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation`,
   `resolveSeriesLabel`, `humanizeColumnName`, `renameValueColumn`, `isBarEncoded`, `computeYRange`.
   Reads Datawrapper's own field names from `references/range-annotation-shape.md`'s sources, never
   invents one.
@@ -198,7 +198,7 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
   and `JsonCRDT.benchmark.ts`, cross-checked against two independent third-party re-implementations;
   also records the live-tested findings on vendor attribution (plan-gated, not fixable from code)
   and the fitted y-axis (confirmed working).
-- `test/{validate-spec,map-spec,csv,dw-client,produce,verify-range-annotation,prove-co2}.test.ts` —
+- `test/{validate-spec,metadata-spec,csv,dw-client,produce,verify-range-annotation,prove-co2}.test.ts` —
   `bun:test` coverage. Every real-network assertion follows `splash/test/keys.test.ts`'s own
   `it.skipIf(!token)` convention: skipped, never faked, when `DATAWRAPPER_TOKEN` is absent from the
   environment; the actual proof the moment it is present.

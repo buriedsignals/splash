@@ -277,7 +277,7 @@ git commit -m "feat(dw-beat): an ordinary map reaches the delegated producer too
 - Modify: `skills/map-beat/SKILL.md:65`
 - Modify: `skills/dw-beat/scripts/map-spec.mjs` (rename to `metadata-spec.mjs`) and its importers
 
-- [ ] **Step 1: Fix the false claim about a cross-skill import**
+- [x] **Step 1: Fix the false claim about a cross-skill import**
 
 `map-beat/SKILL.md:65` says the timing vocabulary is "**imported** from `chart-video`". The code says
 the opposite and says why (`assets/timing.ts:6`: "A copy, not an import, because a skill never
@@ -286,17 +286,41 @@ reaches across another skill's boundary at runtime", guarded byte-identical by
 parity test is the mechanism this whole plan rests on, and a skill document claiming otherwise
 teaches the next author to reach across.
 
-- [ ] **Step 2: Rename `map-spec.mjs`**
+- [x] **Step 2: Rename `map-spec.mjs`**
 
 It maps editorial intent onto Datawrapper METADATA; it has nothing to do with cartography, and Task
 1b puts real map code in this skill, where the name would be actively misleading. Rename to
 `metadata-spec.mjs`, update its importers, run `bun test skills/dw-beat`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "docs(map-beat,dw-beat): the timing vocabulary is a copy, and map-spec maps metadata"
 ```
+
+**Done 2026-08-19.** `map-beat/SKILL.md` now carries a `Vocabulary` row naming
+`assets/timing-contract.ts` as a COPY held byte-identical by `splash/test/root-template-shared.test.ts`;
+`map-spec.mjs`/`map-spec.test.ts` became `metadata-spec.mjs`/`metadata-spec.test.ts` with a header
+recording the rename, and all 11 `SKILL.md`/`references/` mentions followed. `bun test skills/dw-beat`
+115 pass · 3 skip (live Datawrapper token absent), `skill-md-matches-code` green.
+
+**A general guard for this defect class was attempted, measured, and rejected — the measurement,
+so nobody re-attempts it blind.** The defect is prose asserting a cross-skill import that the code
+forbids, and `no-cross-skill-imports.test.ts` already proves ZERO such imports exist, so any such
+assertion is false by construction. Three successively tighter text rules were run over all fifteen
+`SKILL.md`:
+
+| rule | offenders on a clean tree | catches the real defect? |
+| --- | --- | --- |
+| import-word + sibling-skill name, same line | 16 (15 of them denials — "carried not imported", "a skill never imports another skill") | yes, drowned |
+| …by block, skipping fenced code and `test/` paths, minus any block containing a negation | 0 | **no** — "is **imported** from `chart-video`, never re-implemented" is suppressed by its own trailing "never" |
+| …negation must sit within 40 chars BEFORE the import word | 9 false positives (a sibling merely NAMED elsewhere in a block whose import is about the skill's own code) | yes |
+
+The third is the only one that works and it costs nine standing exclusions, which is a guard that
+will be silenced rather than obeyed. The limit is real: "which skill does this sentence say the
+import is FROM" is not decidable from the text. `skill-md-matches-code.test.ts` already documents
+this class in its own "WHAT IT PROVABLY DOES NOT CATCH" — this note extends that list rather than
+pretending otherwise.
 
 ---
 
