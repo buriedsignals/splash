@@ -130,12 +130,14 @@ export function RouteFrame({
             cx: stop.x,
             cy: stop.y,
             r: 5,
+            "data-fill": "stop",
             fill: arrived ? accent : muted,
           }),
           createElement("circle", {
             cx: stop.x,
             cy: stop.y + stop.badgeDy,
             r: 16,
+            "data-fill": "stop",
             fill: arrived ? accent : muted,
           }),
           createElement(

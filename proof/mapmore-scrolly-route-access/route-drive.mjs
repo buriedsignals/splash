@@ -60,6 +60,14 @@ export function revealFraction(stops, position, reduced = false, shape = (t) => 
 /** A stop the route has not reached is present but held back — the map only ever gains ground. */
 const DIM = 0.28;
 
+/** Whether the line has got to a stop. Its COLOUR says so — the first driver moved each stop's
+ *  opacity and nothing else, so every stop kept the fill it was SSR'd with, muted, whatever the
+ *  reader did: "les points steps ne se colorisent pas de la couleur au passage, il reste gris
+ *  foncé". A stop is reached or it is not. */
+export function stopReached(fraction, reachedAt) {
+  return fraction >= reachedAt;
+}
+
 /** Each stop fades in over the stretch that reaches it, so nothing pops. */
 export function stopOpacity(fraction, reachedAt, previousReachedAt) {
   const from = previousReachedAt ?? 0;
@@ -126,6 +134,10 @@ export function initRouteAccess(root, config) {
         el.style.opacity = String(
           stopOpacity(fraction, config.stops[i], i === 0 ? null : config.stops[i - 1]),
         );
+        // The COLOUR, not only the strength: a stop the line has reached is drawn in the accent.
+        const fill = stopReached(fraction, config.stops[i]) ? config.accent : config.muted;
+        for (const mark of el.querySelectorAll("[data-fill='stop']"))
+          mark.setAttribute("fill", fill);
       });
       // Published so a verification run can read the REVEAL, not just look at a picture.
       root.dataset.reveal = fraction.toFixed(4);

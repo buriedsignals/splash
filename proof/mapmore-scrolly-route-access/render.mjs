@@ -84,7 +84,7 @@ async function render({ outDir = join(HERE, "render") } = {}) {
     `  function boot() {\n` +
     `    var root = document.querySelector('[data-visual="route-access"]');\n` +
     `    if (!root) return;\n` +
-    `    initRouteAccess(root, ${JSON.stringify({ stops: geometry.stops.map((s) => s.reachedAt) })});\n` +
+    `    initRouteAccess(root, ${JSON.stringify({ stops: geometry.stops.map((s) => s.reachedAt), accent, muted: furniture.muted })});\n` +
     `  }\n` +
     `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
     `  else boot();\n` +
