@@ -158,6 +158,36 @@ export function ease(t) {
  * for, so under it the reveal SNAPS to the nearer step: every territory still arrives, every
  * sentence still lands on the picture it names, and there is no motion between two of them.
  */
+/**
+ * The share of one step's travel during which that step's own card is on screen.
+ *
+ * A step is taller than the frame (the vehicle's own 140%) and the card is centred in it, so the
+ * card is visible for half a frame on either side of the centre line — plus its own height. Read
+ * from the DOM every frame rather than fixed, because a card's height is its prose's, and a step's
+ * height is the vehicle's.
+ */
+export function readingShare(stepHeight, frameHeight, cardHeight) {
+  if (!(stepHeight > 0)) return 1;
+  const share = (frameHeight / 2 + cardHeight / 2) / stepHeight;
+  return Math.min(1, Math.max(1e-6, share));
+}
+
+/**
+ * A step's own fraction, remapped onto the window in which its card is readable.
+ *
+ * `data-progress` is the fractional index of the panel on the lane's CENTRE LINE, so a step's
+ * fraction starts counting long before that step's card has entered the frame. Keying the reveal to
+ * it drew a stretch mostly while its own sentence was still off screen: measured on this beat, 93%
+ * of the river was drawn before the closing card appeared, and the reader watched a line that had
+ * stopped moving for the whole of the sentence describing it. Held still until the card arrives,
+ * then drawn across exactly the travel the reader spends with it.
+ */
+export function shapeForReading(t, share) {
+  if (share >= 1) return t < 0 ? 0 : t > 1 ? 1 : t;
+  const shaped = (t - (1 - share)) / share;
+  return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
+}
+
 export function revealAt(stops, position, reduced) {
   const last = stops.length - 1;
   const p = position < 0 ? 0 : position > last ? last : position;
@@ -370,7 +400,20 @@ export function initRouteScrolly(root, config, onCamera) {
     // the same read either way.
     const stripe = stripeOf(root, frame);
 
-    const reveal = revealAt(config.stops, position, reduced.matches);
+    // The reveal follows the READING, not the index. `data-progress` counts panels arriving at the
+    // lane's centre line, so a step's fraction starts long before that step's card is on screen;
+    // `shapeForReading` holds the line still until it arrives and then draws its stretch across
+    // exactly the travel the reader spends with it. Both heights are read here rather than fixed:
+    // the card's is its prose's, the step's is the vehicle's.
+    const stepBox = document.querySelector(".step")?.getBoundingClientRect();
+    const cardBox = document.querySelector(".step-panel")?.getBoundingClientRect();
+    const share = readingShare(stepBox?.height ?? 0, frame.height, cardBox?.height ?? 0);
+    const step = Math.floor(position);
+    const shaped = Math.min(
+      config.stops.length - 1,
+      step + shapeForReading(position - step, share),
+    );
+    const reveal = revealAt(config.stops, shaped, reduced.matches);
     const fraction = lengthFractionAt(config.cum, reveal);
 
     root.dataset.position = position.toFixed(3);
@@ -404,7 +447,11 @@ export function initRouteScrolly(root, config, onCamera) {
     // The line grows. `strokeDasharray` is the whole length and the offset is what is still to
     // come, both in the path's own user units — the ONE length `render.mjs` computed from the same
     // rounded coordinates the `d` attribute carries, never a second measurement of it.
-    const hidden = (config.routeLength * (1 - fraction)).toFixed(2);
+    // A FRACTION, not plate units: the paths declare `pathLength={1}`, so the dash is one whole
+    // path long whatever the camera's scale. In plate units, under `vector-effect:
+    // non-scaling-stroke`, the pattern was measured in SCREEN space and repeated on any viewport
+    // whose scale exceeded 1 — dash, gap, dash. See `MapFrame.tsx` for the full account.
+    const hidden = (1 - fraction).toFixed(5);
     for (const el of routes) el.style.strokeDashoffset = hidden;
 
     let leaderPath = "";

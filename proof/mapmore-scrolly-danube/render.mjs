@@ -164,24 +164,33 @@ function buildStepGroups({ viennaCountriesBefore, borderRunKm }) {
           "several of them touched only because the river itself IS the border here.",
       ],
     },
+    // THE LAST TWO STEPS WERE ONE STEP'S WORTH OF RIVER AND THREE STEPS' WORTH OF STORY. Measured
+    // on the delivered file: the four cutoffs were 371 / 639 / 898 / 910 of 910, so the closing step
+    // — the one whose sentence carries the Iron Gate, the border run and the delta — had TWELVE
+    // samples of 910 left to draw, 1.3% of the river, while the reader scrolled a full step. The
+    // owner saw it before any instrument did: "à partir de ce step là la rivière ne grandit plus".
+    // The cut moves to Bulgaria's own entry, which is where the sentence changes subject anyway:
+    // the gorge belongs to the Serbian-Romanian border, the 440 km drift belongs to the
+    // Romania-Bulgaria one. Shares become 41 / 29 / 9 / 21 instead of 41 / 29 / 28 / 1.3.
     {
       id: "border-run",
-      throughKey: "BGR",
-      addKeys: ["ROU", "BGR"],
+      throughKey: "ROU",
+      addKeys: ["ROU"],
       prose: [
-        `The river then squeezes through the Iron Gate gorge on the Serbian-Romanian border, ` +
-          `then drifts back and forth across the Romania-Bulgaria border for close to ` +
-          `${Math.round(borderRunKm / 10) * 10} km before the two countries' banks settle apart.`,
+        "The river then squeezes through the Iron Gate gorge on the Serbian-Romanian border — the " +
+          "narrowest passage of its whole course, and the point where it stops being a plains river.",
       ],
     },
     {
       id: "delta",
       throughKey: "UKR",
-      addKeys: ["UKR"],
+      addKeys: ["BGR", "UKR"],
       prose: [
-        "The river finally splits into its delta near the Ukrainian border and empties into the Black " +
-          "Sea — the ninth of the ten countries the Danube touches on its way there (Moldova's short " +
-          "frontage near Giurgiulești does not register at this map's resolution).",
+        `Below the gorge it drifts back and forth across the Romania-Bulgaria border for close to ` +
+          `${Math.round(borderRunKm / 10) * 10} km before the two countries' banks settle apart, then ` +
+          `splits into its delta near the Ukrainian border and empties into the Black Sea — the ninth ` +
+          `of the ten countries the Danube touches on its way there (Moldova's short frontage near ` +
+          `Giurgiulești does not register at this map's resolution).`,
       ],
     },
   ];

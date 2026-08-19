@@ -141,7 +141,8 @@ export function MapFrame({
   // The opening state, SSR'd: the reveal at progress 0, which is the first step's own picture and
   // the one a reader with no JavaScript keeps.
   const reveal0 = revealAt(stops, 0, false);
-  const hidden0 = routeLength * (1 - lengthFractionAt(cum, reveal0));
+  // NORMALISED, not in plate units: see the route paths below for what that cost.
+  const hidden0 = 1 - lengthFractionAt(cum, reveal0);
   const d = routePath(route);
 
   return (
@@ -226,8 +227,30 @@ export function MapFrame({
 
           {/* THE ROUTE, DRAWN WHOLE AND HIDDEN BY A DASH. Two paths, one halo and one accent, with
               the same `d` and therefore the same length — so one offset drives both and the halo
-              can never lag the line it is haloing. `pathLength` is not used: the dash numbers come
-              from the length `render.mjs` computed off these exact rounded coordinates. */}
+              can never lag the line it is haloing.
+              `pathLength={1}` NORMALISES the length the dash is measured against, and it is the fix
+              for the defect the owner reported three times before it was named: the dash used to be
+              `routeLength` (1272.04) in plate units, computed in node, while these paths carry
+              `vector-effect: non-scaling-stroke` — which measures the stroke, AND ITS DASH PATTERN,
+              in SCREEN space. The camera scales the plate to the reader's frame, so on any viewport
+              where that scale exceeds 1 the pattern is shorter than the line it is dashing and
+              REPEATS: dash, gap, dash — a head, a hole and a tail, all moving together with the
+              offset, which is exactly what he saw and photographed. It never reproduced in this
+              tree's own headless runs because their scale sat near 1. With `pathLength={1}` the
+              dash is one whole path long whatever the scale, and the offset is a fraction. This
+              beat's own test file already described the repeat as a mutation to be caught
+              (`scroll.test.ts`, "the head, a hole, and the tail"); nothing measured it in a browser
+              at a scale that produced it.
+              AND `vector-effect: non-scaling-stroke` IS GONE FROM THESE TWO PATHS, which is the
+              other half of the same defect. It is kept on the territory outlines, where there is no
+              dash to misplace. Here it took the stroke — and with it the DASH — out of the path's
+              own user units and into screen space, which is the one space `pathLength` cannot
+              normalise: the pattern was then measured against a line 1.68x longer on a 1512px
+              viewport, and repeated. The widths never needed it either: `strokeWidthsFor` already
+              divides the intended SCREEN width back out of the camera's scale, so the two were
+              compensating the same scale twice. This tree's own headless runs sat at a scale near
+              1, where both errors vanish — which is why five rounds of measurement here saw
+              nothing and the owner's screen showed it every time. */}
           <path
             data-part="route"
             data-layer="halo"
@@ -238,8 +261,8 @@ export function MapFrame({
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity={0.85}
-            vectorEffect="non-scaling-stroke"
-            style={{ strokeDasharray: routeLength, strokeDashoffset: hidden0 }}
+            pathLength={1}
+            style={{ strokeDasharray: 1, strokeDashoffset: hidden0 }}
           />
           <path
             data-part="route"
@@ -250,8 +273,8 @@ export function MapFrame({
             strokeWidth={strokes.route}
             strokeLinecap="round"
             strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            style={{ strokeDasharray: routeLength, strokeDashoffset: hidden0 }}
+            pathLength={1}
+            style={{ strokeDasharray: 1, strokeDashoffset: hidden0 }}
           />
         </svg>
       </div>

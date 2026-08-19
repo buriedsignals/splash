@@ -244,6 +244,8 @@ import {
   revealAt,
   STROKE_SCREEN_PX,
   strokeWidthsFor,
+  readingShare,
+  shapeForReading,
 } from "./route-drive.mjs";
 import {
   bakeZoomOf,
@@ -1273,5 +1275,54 @@ describe("the committed artifact still carries the live MapTiler layer", () => {
     // budget of this file is one host, api.maptiler.com, and the plate is not on it.
     expect(count('src="http')).toBe(0);
     expect(count("<link ")).toBe(0);
+  });
+});
+
+
+// ── THE LINE IS DRAWN WHILE ITS SENTENCE IS BEING READ ────────────────────────────────────────
+//
+// The reveal was keyed to `data-progress`, which is the fractional index of the panel ON THE LANE'S
+// CENTRE LINE — so a step's stretch was drawn across the whole step, most of it before that step's
+// own card had entered the frame at all. Measured on the delivered file at 1499x862 and again at
+// 1500x860: the last card enters at progress 2.60 with the river ALREADY at 93%, and is fully
+// readable at 2.81 with the river at 98%. The reader spends the entire life of the closing sentence
+// watching a line that has stopped moving — which is what the owner reported, twice, before any
+// instrument saw it.
+//
+// The share is geometry, not a tuned constant: a step is 140% of the frame and the card is centred
+// in it, so the card is on screen for (half a frame + half a card) of a step's travel.
+
+describe("the share of a step during which its card is on screen", () => {
+  it("is half a frame plus half a card, over the step's own height", () => {
+    expect(readingShare(1400, 1000, 200)).toBeCloseTo(0.4286, 4);
+  });
+
+  it("is the whole step when the card is as tall as the step", () => {
+    expect(readingShare(1000, 800, 1200)).toBe(1);
+  });
+
+  it("never returns zero, so a shaped position can always be computed", () => {
+    expect(readingShare(1400, 0, 0)).toBeGreaterThan(0);
+  });
+});
+
+describe("shaping a step's own fraction onto its card's reading window", () => {
+  it("holds the line still while the card is still below the frame", () => {
+    expect(shapeForReading(0.2, 0.4)).toBe(0);
+    expect(shapeForReading(0.6, 0.4)).toBe(0);
+  });
+
+  it("draws the whole stretch across the window the card is readable in", () => {
+    expect(shapeForReading(0.8, 0.4)).toBeCloseTo(0.5, 6);
+    expect(shapeForReading(1, 0.4)).toBe(1);
+  });
+
+  it("is the identity when the card is on screen for the whole step", () => {
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) expect(shapeForReading(t, 1)).toBeCloseTo(t, 6);
+  });
+
+  it("clamps rather than running past either end", () => {
+    expect(shapeForReading(-0.2, 0.4)).toBe(0);
+    expect(shapeForReading(1.4, 0.4)).toBe(1);
   });
 });
