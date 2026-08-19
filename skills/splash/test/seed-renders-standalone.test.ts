@@ -17,10 +17,21 @@
  *
  * 2. THE SEED ACTUALLY RENDERS IN ISOLATION. The skill directory is copied into a fresh temporary
  *    root that contains nothing else — no `proof/`, no `shared/`, no sibling skill, no repository —
- *    and its own `scripts/render-preview.mjs` is run there. The result must be byte-identical to the
+ *    and its own `scripts/render-preview.mjs` is run there. The result must be THE SAME PICTURE as the
  *    `assets/preview.png` this repository ships, which makes this a stronger claim than "it exits 0":
- *    the isolated copy draws THE SAME PICTURE, so nothing it needed was silently supplied from
- *    outside the directory.
+ *    the isolated copy draws the same thing, so nothing it needed was silently supplied from outside
+ *    the directory.
+ *
+ *    "The same picture" is decided by decoded pixels, not by raw bytes. It was raw bytes until
+ *    2026-08-19, when `chart-video` went red on a seed no commit had touched: 20 differing pixels out
+ *    of 1 166 400 (0,002 %), none further apart than 8/255, same dimensions, no metadata — the
+ *    anti-aliasing jitter two headless-Chrome launches produce from identical input.
+ *    `skills/map-web/scripts/compare-png.mjs` had already met this and written down why byte equality
+ *    "was answering a stricter, wrong question"; its decision function is copied into
+ *    `skills/splash/scripts/compare-png.mjs` and held to the original by `compare-png.test.ts`.
+ *    Byte equality is still MEASURED and printed on every run, so a picture that is bit-for-bit
+ *    reproducible stays visibly so and the day it stops being so is visible too — it is reported,
+ *    not asserted.
  *
  * What the temporary root does carry, and why neither weakens the claim:
  *   - `node_modules`, symlinked. A skill's own `SKILL.md` declares its npm dependencies; a
@@ -30,7 +41,14 @@
  *     plate through a MapTiler key on a cold cache — a machine dependency this skill already has in
  *     its own `test/canon.test.ts`, carried here unchanged rather than newly introduced.
  */
-import { describe, it, expect, setDefaultTimeout } from "bun:test";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  setDefaultTimeout,
+} from "bun:test";
 import {
   cpSync,
   existsSync,
@@ -42,8 +60,10 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
+import puppeteer from "puppeteer";
+import { comparePngBuffers } from "../scripts/compare-png.mjs";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = resolve(SKILLS, "..");
@@ -131,9 +151,60 @@ describe("a craft skill never reaches into a story workspace", () => {
   }
 });
 
+/** A DUPLICATE of the `resolveChrome` every browser-driving file in this tree carries — duplicated,
+ *  not imported, for the reason `map-web/test/standalone.test.ts`'s own copy states. */
+function resolveChrome(): string {
+  const candidates: string[] = [];
+  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
+  const cache = join(homedir(), ".cache/puppeteer/chrome");
+  if (existsSync(cache))
+    for (const build of readdirSync(cache).sort().reverse())
+      candidates.push(
+        join(
+          cache,
+          build,
+          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(
+          cache,
+          build,
+          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(cache, build, "chrome-linux64/chrome"),
+      );
+  candidates.push(
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  );
+  const found = candidates.find((path) => existsSync(path));
+  if (!found)
+    throw new Error(
+      `no Chrome to compare with. Looked in:\n  ${candidates.join("\n  ")}`,
+    );
+  return found;
+}
+
 describe("a craft skill's seed renders from its own sample-data, alone", () => {
+  // One browser for the whole file: it decodes the two PNGs of each comparison on a real canvas, the
+  // same decoder the pictures were encoded by. Chrome is already a hard requirement here — a remotion
+  // still and a MapTiler plate bake both drive it — so this adds a page, not a dependency.
+  let browser: Awaited<ReturnType<typeof puppeteer.launch>>;
+  let page: Awaited<ReturnType<typeof browser.newPage>>;
+
+  beforeAll(async () => {
+    browser = await puppeteer.launch({
+      executablePath: resolveChrome(),
+      headless: true,
+    });
+    page = await browser.newPage();
+    await page.setContent("<!doctype html><html><body></body></html>");
+  });
+
+  afterAll(async () => {
+    await browser?.close();
+  });
+
   for (const skill of CRAFT) {
-    it(`${skill} should render the same preview with nothing but itself on disk`, () => {
+    it(`${skill} should render the same preview with nothing but itself on disk`, async () => {
       const root = mkdtempSync(join(tmpdir(), "twin-seed-alone-"));
       try {
         // The only things beside the skill: the installed packages and the environment. No
@@ -163,11 +234,21 @@ describe("a craft skill's seed renders from its own sample-data, alone", () => {
 
         const rendered = readFileSync(join(out, "preview.png"));
         expect(statSync(join(out, "preview.png")).size).toBeGreaterThan(0);
-        expect(
-          rendered.equals(
-            readFileSync(join(SKILLS, skill, "assets", "preview.png")),
-          ),
-        ).toBe(true);
+        const committed = readFileSync(
+          join(SKILLS, skill, "assets", "preview.png"),
+        );
+
+        const verdict = await comparePngBuffers(page, rendered, committed);
+        // Reported, never asserted: byte equality is the stricter question this test used to ask and
+        // got wrong. Printing it keeps the stricter answer visible without letting it fail a build.
+        console.log(
+          `note   ${skill}: bytes ${rendered.equals(committed) ? "identical" : `differ (${rendered.length} rendered vs ${committed.length} committed)`}` +
+            `, pixels beyond tolerance ${verdict.diffPixels ?? "n/a"}/${verdict.totalPixels ?? "n/a"}`,
+        );
+        expect(`${skill}: ${verdict.reason ?? "same picture"}`).toBe(
+          `${skill}: same picture`,
+        );
+        expect(verdict.same).toBe(true);
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
