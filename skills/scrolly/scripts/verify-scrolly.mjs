@@ -280,6 +280,48 @@ const LIGHT_SIDE = 0.6;
  *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
  *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
  *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
+/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
+ *
+ *  THE `null` IS THE POINT. This guard failed three correct beats by reading
+ *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
+ *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
+ *  it has been missed. Returning a number there is how a broken instrument reports confidently.
+ *
+ *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
+ *  reading available without compositing the whole stack. */
+export function surfaceLuminance(css) {
+  if (typeof css !== "string") return null;
+  const value = css.trim();
+  if (!value || value === "transparent" || value === "none") return null;
+  let channels = null;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1]
+            .split("")
+            .map((d) => d + d)
+            .join("")
+        : hex[1];
+    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
+  } else if (/^rgba?\(/i.test(value)) {
+    const parts = value.match(/[\d.]+/g);
+    if (!parts || parts.length < 3) return null;
+    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
+    channels = parts.slice(0, 3).map(Number);
+  }
+  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
+  const channel = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return (
+    0.2126 * channel(channels[0]) +
+    0.7152 * channel(channels[1]) +
+    0.0722 * channel(channels[2])
+  );
+}
+
 export function plateFollowsGround({ ground, plate }) {
   if (plate == null || ground == null) return true;
   const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
@@ -1295,9 +1337,18 @@ export async function verifyCargo(page, file, { w, h }) {
     );
   }
 
-  // THE PLATE AGAINST THE THEME, both as numbers. The ground is read off the rendered page rather
-  // than off a stylesheet, and the plate is sampled through a canvas — a DOM read, not a compositor
-  // one, which is the only kind this file trusts since a screenshot lied to it.
+  // THE PLATE AGAINST THE THEME, both as numbers.
+  //
+  // THE GROUND IS THE ONE THE BEAT DECLARES, `--ground`, and the reason is a false failure this guard
+  // shipped: it read `getComputedStyle(".scrolly").backgroundColor`, and `.scrolly` sets no
+  // background, so the computed value is `rgba(0, 0, 0, 0)` and the luminance maths read its zeros as
+  // pure black. Three correct light beats — `danube-scrolly`, `one-map-four-readings`,
+  // `quakes-four-maps`, all `--ground: #FFFFFF` under light plates — were failed at three widths
+  // each, and the one beat that passed passed by luck, its declared ground being genuinely dark.
+  //
+  // The page returns STRINGS and node decides: `surfaceLuminance` is pure, tested without Chrome,
+  // and returns `null` for a colour with zero alpha, so nothing downstream can mistake "not read"
+  // for "black". Only the plate's mean is computed in the page, because that one is pixels.
   const surfaces = await page.evaluate(async () => {
     const relative = (rgb) => {
       const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number);
@@ -1308,12 +1359,17 @@ export async function verifyCargo(page, file, { w, h }) {
       return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
     };
     const root = document.querySelector(".scrolly");
-    const ground = root ? relative(getComputedStyle(root).backgroundColor) : null;
+    const declared = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ground")
+      .trim();
+    const painted = root ? getComputedStyle(root).backgroundColor : "";
+    const body = getComputedStyle(document.body).backgroundColor;
     const graphic = document.querySelector(".scrolly-graphic");
     const source =
       graphic?.querySelector("img[src^='data:']") ??
       graphic?.querySelector("image[href^='data:'], image[*|href^='data:']");
-    if (!source) return { ground, plate: null };
+    const grounds = { declared, painted, body };
+    if (!source) return { ...grounds, plate: null };
     const href = source.getAttribute("src") ?? source.getAttribute("href");
     const bitmap = await new Promise((settle) => {
       const img = new Image();
@@ -1321,7 +1377,7 @@ export async function verifyCargo(page, file, { w, h }) {
       img.onerror = () => settle(null);
       img.src = href;
     });
-    if (!bitmap) return { ground, plate: null };
+    if (!bitmap) return { ...grounds, plate: null };
     const canvas = new OffscreenCanvas(64, 32);
     const context = canvas.getContext("2d", { willReadFrequently: true });
     context.drawImage(bitmap, 0, 0, 64, 32);
@@ -1329,18 +1385,26 @@ export async function verifyCargo(page, file, { w, h }) {
     let sum = 0;
     for (let px = 0; px < data.length; px += 4)
       sum += relative(`rgb(${data[px]},${data[px + 1]},${data[px + 2]})`);
-    return { ground, plate: sum / (data.length / 4) };
+    return { ...grounds, plate: sum / (data.length / 4) };
   });
-  if (!plateFollowsGround(surfaces))
+  const ground =
+    surfaceLuminance(surfaces.declared) ??
+    surfaceLuminance(surfaces.painted) ??
+    surfaceLuminance(surfaces.body);
+  if (!plateFollowsGround({ ground, plate: surfaces.plate }))
     failures.push(
       `${where}: the baked plate and the ground this beat declares are on opposite sides — ground ` +
-        `luminance ${surfaces.ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}. The furniture ` +
+        `luminance ${ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}. The furniture ` +
         `derives from the ground, so it will be right and unreadable: white labels over a light ` +
         `basemap, or ink over a dark one. Bake the plate in the style the theme asked for`,
     );
   if (surfaces.plate != null)
     notes.push(
-      `${where}: ground luminance ${surfaces.ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}`,
+      ground == null
+        ? `${where}: a plate is on the page and NO ground could be read from it (\`--ground\` ` +
+          `"${surfaces.declared}", .scrolly "${surfaces.painted}", body "${surfaces.body}") — the ` +
+          `plate-against-theme guard did not run here`
+        : `${where}: ground luminance ${ground.toFixed(3)}, plate ${surfaces.plate.toFixed(3)}`,
     );
 
   for (const id of revealDashInScreenSpace([...dashed.values()]))

@@ -1017,11 +1017,24 @@ as the fault, flipped the beat to a light ground, and in doing so overturned som
 editorial decision without saying so. A theme is a choice. A plate that disagrees with it is a bug.
 
 This is the one disagreement in the format a machine CAN settle, because both sides are numbers: the
-ground is declared and the plate can be sampled. `verify-scrolly.mjs` measures both — the ground off
-the rendered page, the plate through a canvas, a DOM read rather than a compositor one — and refuses
-them being on opposite sides. It prescribes no direction: dark beats and light beats are equally
-legitimate, and a mid-grey plate belongs to neither side and is left alone. Run against the delivered
-file it reports ground 0.000 against plate 0.828 and fails; against the rebuild, 0.000 and 0.015.
+ground is declared and the plate can be sampled. `verify-scrolly.mjs` measures both — the ground from
+the beat's own `--ground`, the plate through a canvas, a DOM read rather than a compositor one — and
+refuses them being on opposite sides. It prescribes no direction: dark beats and light beats are
+equally legitimate, and a mid-grey plate belongs to neither side and is left alone. Run against the
+delivered file it reports ground 0.009 against plate 0.828 and fails; against the rebuild, 0.009 and
+0.015.
+
+**READ THE GROUND THE BEAT DECLARES, NOT THE BOX IT SITS IN — this guard shipped the mistake first.**
+It began by reading `getComputedStyle(document.querySelector(".scrolly")).backgroundColor`. `.scrolly`
+sets no background — `html, body` carry `background: var(--ground)` — so the computed value is
+`rgba(0, 0, 0, 0)`, and luminance maths that ignore alpha read those zeros as pure black. Every beat
+in the tree measured "ground 0.000". Three correct light beats failed at three widths each
+(`danube-scrolly` plate 0.890, `one-map-four-readings` 0.700, `quakes-four-maps` 0.658, all declaring
+`--ground: #FFFFFF`), and the one beat that passed passed by luck: its declared ground really is
+dark, so black landed on the right side. **A transparent surface has not been measured; it has been
+missed**, and an instrument that returns a number there is confidently wrong. `surfaceLuminance`
+returns `null` for zero alpha, is pure and tested without a browser, and the guard now says out loud
+in a note when it could read no ground at all instead of running on a fiction.
 
 **And the accent moves with the ground.** The original's #0B6B61 measures 2.77:1 against its own
 declared ground — under the 3:1 a thin line owes a reader — and only ever worked because the plate

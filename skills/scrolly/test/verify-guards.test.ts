@@ -24,6 +24,7 @@ import {
   stalledSteps,
   neverReached,
   plateFollowsGround,
+  surfaceLuminance,
 } from "../scripts/verify-scrolly.mjs";
 
 // ── G1. Two steps that paint the same picture ────────────────────────────────────────────────
@@ -493,6 +494,48 @@ describe("marks that the narrative reaches", () => {
 // numbers: the ground is declared and the plate can be measured. What it must not do is prescribe a
 // direction — a dark beat and a light beat are both legitimate; what is refused is the two sides
 // being on opposite ones.
+
+// THE GUARD WAS WRONG BEFORE THE BEATS WERE, and this block is what it cost.
+//
+// `plateFollowsGround` failed three beats on this branch — `danube-scrolly`, `one-map-four-readings`
+// and `quakes-four-maps`, at three widths each — reporting "ground luminance 0.000" against plates at
+// 0.890 / 0.700 / 0.658. All three declare `--ground: #FFFFFF` in their own `:root`, and all three
+// are light beats with a light plate: correct. The reading came from
+// `getComputedStyle(document.querySelector(".scrolly")).backgroundColor`, and `.scrolly` sets no
+// background at all — so the computed value is `rgba(0, 0, 0, 0)`, TRANSPARENT, and the luminance
+// maths read its zeros as pure black. The one beat that passed, `route-access`, passed by luck: its
+// declared ground really is dark, so "black" happened to land on the right side.
+//
+// A transparent surface is not a black one; it is a surface that has not been read. The fix is two
+// things at once — read the ground the beat DECLARES (`--ground`), and make a colour with zero alpha
+// return `null` so no caller can mistake it for a measurement.
+describe("a surface that was never painted is not a black surface", () => {
+  it("reads an opaque colour", () => {
+    expect(surfaceLuminance("rgb(255, 255, 255)")).toBeCloseTo(1, 6);
+    expect(surfaceLuminance("rgb(0, 0, 0)")).toBeCloseTo(0, 6);
+  });
+
+  it("reads the hex a beat writes in its own :root", () => {
+    expect(surfaceLuminance("#FFFFFF")).toBeCloseTo(1, 6);
+    expect(surfaceLuminance("  #16191B ")).toBeCloseTo(0.009450, 5);
+  });
+
+  it("refuses a fully transparent colour rather than calling it black", () => {
+    expect(surfaceLuminance("rgba(0, 0, 0, 0)")).toBe(null);
+    expect(surfaceLuminance("transparent")).toBe(null);
+  });
+
+  it("refuses an absent or unreadable value", () => {
+    expect(surfaceLuminance("")).toBe(null);
+    expect(surfaceLuminance("   ")).toBe(null);
+    expect(surfaceLuminance(null)).toBe(null);
+    expect(surfaceLuminance("var(--ground)")).toBe(null);
+  });
+
+  it("keeps a colour that is merely translucent, which IS painted", () => {
+    expect(surfaceLuminance("rgba(255, 255, 255, 0.5)")).toBeCloseTo(1, 6);
+  });
+});
 
 describe("a baked plate under a declared ground", () => {
   it("refuses a light plate under a dark ground", () => {
