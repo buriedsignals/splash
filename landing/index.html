@@ -277,6 +277,10 @@
       padding: calc(var(--nav-height) + 28px) 24px 72px;
     }
     .step--product { flex-direction: column; }
+    .step--menu {
+      flex-direction: column;
+      justify-content: flex-start;
+    }
 
 
     .step:first-child { min-height: 128svh; }
@@ -348,15 +352,17 @@
 
     .process-step {
       position: relative;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      align-items: start;
-      gap: 10px;
+      display: block;
       padding: 14px 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--ground-raised);
       text-align: left;
+    }
+    .process-step-head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
     }
 
     .process-step:not(:last-child)::after {
@@ -382,7 +388,7 @@
     }
 
     .process-step h3 {
-      margin: 2px 0 5px;
+      margin: 0;
       color: var(--text);
       font-size: 0.78rem;
       font-weight: 700;
@@ -391,7 +397,7 @@
     }
 
     .process-step p {
-      margin: 0;
+      margin: 10px 0 0;
       color: var(--muted);
       font-size: 0.72rem;
       line-height: 1.4;
@@ -405,6 +411,13 @@
       margin: 18px auto 0;
       padding: 0 24px;
       text-align: left;
+    }
+    .product-docs {
+      justify-self: start;
+      color: var(--teal);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-underline-offset: 3px;
     }
 
     .pill-group {
@@ -515,12 +528,22 @@
       margin-top: 24px;
       flex-wrap: wrap;
     }
-    .cta-row + p {
-      margin-top: 18px;
-      color: var(--text);
-      font-weight: 600;
+    .final-cta {
+      position: sticky;
+      bottom: 24px;
+      z-index: 20;
+      width: min(760px, calc(100% - 48px));
+      margin: auto auto 0;
+      padding-top: 24px;
       text-align: center;
     }
+
+    .final-cta h2 {
+      margin: 0 0 16px;
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+    }
+
+    .final-cta .cta-row { margin-top: 0; }
 
 
     .button-primary,
@@ -591,6 +614,11 @@
         width: 100%;
         margin-top: 16px;
         padding: 0 24px;
+      }
+      .final-cta {
+        bottom: 16px;
+        width: 100%;
+        padding: 20px 24px 0;
       }
       .signal-shell { width: min(92vw, 420px); }
       .process-steps {
@@ -717,25 +745,26 @@
           <div class="pill-group"><span class="pill-label">Contains</span><div class="pill-row"><span class="pill">15 skills</span></div></div>
           <div class="pill-group"><span class="pill-label">Uses</span><div class="pill-row"><span class="pill">Datawrapper</span><span class="pill">D3</span><span class="pill">Remotion</span><span class="pill">MapTiler</span></div></div>
           <div class="pill-group"><span class="pill-label">Produces</span><div class="pill-row"><span class="pill">Charts</span><span class="pill">Cartography</span><span class="pill">Video</span><span class="pill">Scrollytelling</span><span class="pill">Web / iframe</span><span class="pill">Print</span></div></div>
+          <a class="product-docs" href="https://github.com/buriedsignals/splash#documentation" target="_blank" rel="noopener">Read the docs</a>
         </div>
       </section>
 
       <section class="step step--process" data-step="7">
         <article class="story-card story-card--wide" data-scene="5" data-chapter="What Splash does">
-          <h2>How Splash turns reporting into visual journalism.</h2>
-          <p>Splash gives AI agents a newsroom process for making visual journalism. It guides the agent to read the story and data, ask what the visual should communicate, check which forms the evidence can support, and propose the strongest options.</p>
-          <p>After you choose, the agent produces the visual and shows it for review. You can approve it or request changes. Splash then prepares the chosen output for print, web, video or scrollytelling.</p>
+          <h2>How Splash turns reporting into graphics.</h2>
+          <p>Splash guides the agent to understand the story and data, decide what the visual should communicate, and propose forms the evidence supports.</p>
+          <p>You choose the direction. The agent produces a draft for review, then prepares the approved output for print, web, video or scrollytelling.</p>
           <div class="process-steps" role="list" aria-label="How Splash turns reporting into visual journalism">
-            <div class="process-step" role="listitem"><span class="process-number">1</span><div><h3>Understand</h3><p>The agent reads the story and data.</p></div></div>
-            <div class="process-step" role="listitem"><span class="process-number">2</span><div><h3>Recommend</h3><p>Splash guides it toward visual forms the evidence supports.</p></div></div>
-            <div class="process-step" role="listitem"><span class="process-number">3</span><div><h3>Decide</h3><p>You choose the treatment and format.</p></div></div>
-            <div class="process-step" role="listitem"><span class="process-number">4</span><div><h3>Produce</h3><p>The agent creates a visual for review.</p></div></div>
-            <div class="process-step" role="listitem"><span class="process-number">5</span><div><h3>Publish</h3><p>You approve the final output.</p></div></div>
+            <div class="process-step" role="listitem"><div class="process-step-head"><span class="process-number">1</span><h3>Understand</h3></div><p>The agent reads the story and data.</p></div>
+            <div class="process-step" role="listitem"><div class="process-step-head"><span class="process-number">2</span><h3>Recommend</h3></div><p>Splash guides it toward visual forms the evidence supports.</p></div>
+            <div class="process-step" role="listitem"><div class="process-step-head"><span class="process-number">3</span><h3>Decide</h3></div><p>You choose the treatment and format.</p></div>
+            <div class="process-step" role="listitem"><div class="process-step-head"><span class="process-number">4</span><h3>Produce</h3></div><p>The agent creates a visual for review.</p></div>
+            <div class="process-step" role="listitem"><div class="process-step-head"><span class="process-number">5</span><h3>Publish</h3></div><p>You approve the final output.</p></div>
           </div>
         </article>
       </section>
 
-      <section class="step" data-step="8" id="menu">
+      <section class="step step--menu" data-step="8" id="menu">
         <article class="story-card story-card--wide" data-scene="6" data-chapter="Make a Splash">
           <h2>One story. The right visual form.</h2>
           <div class="menu-section">
@@ -810,12 +839,14 @@
             </details>
           </div>
           <p>Bring the reporting and the data. Splash handles the production flow; you make the editorial decisions.</p>
+        </article>
+        <div class="final-cta">
+          <h2>Go make a Splash.</h2>
           <div class="cta-row">
             <a class="button-primary" href="https://github.com/buriedsignals/splash#installation" target="_blank" rel="noopener">Install Splash</a>
             <a class="button-secondary" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">View on GitHub</a>
           </div>
-          <p>Go make a Splash.</p>
-        </article>
+        </div>
       </section>
     </div>
   </main>
