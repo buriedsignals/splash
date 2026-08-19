@@ -368,6 +368,43 @@ suite it may be moved, never dropped — and the reason must be written where th
 `canon-shape` name that skill; point one seed at a file outside its own directory and watch
 `seed-renders-standalone` name it.
 
+**Done 2026-08-19** — `f5b798ac`. Bigger than written above, because the measurement moved twice
+while executing it:
+
+1. The list is now DISCOVERED (`skills/splash/test/canon-skills.ts`): all four canon assets on disk
+   = walked, and an exclusion must carry a written reason. There are none. `seed-renders-standalone`
+   walks seven in 26 s, and `image-beat`, `map-web` and `scrolly` are proved isolated for the first
+   time.
+2. `map-web/output-proof/preview.png` really was stale (0,991 %); `scrolly`'s was not (0,177 %, and
+   a fresh render sits 0,065 % from it). Both are now copies of `assets/preview.png`, and
+   `canon-shape` keeps BYTE equality — the one place it is still the right question, because it
+   compares a file to a copy of itself rather than to a re-render.
+3. **The `--check` in six skills was the same wrong question**, and it was live-red: `scrolly`'s
+   canon test was failing on this branch, rendering 6543 bytes where `bc308ab8` committed 6609,
+   with the seed and the renderer untouched since. Byte equality asserts a render is reproducible
+   ACROSS MACHINES; nothing here promises that. All seven now compare decoded pixels.
+4. The comparator had to lose its browser to be shareable. `map-web`'s decoded on a Chrome
+   `<canvas>`; five of the seven canon skills rasterise through resvg and open no browser, so a copy
+   would have cost more than the render it checks. `compare-png.mjs` decodes PNG through
+   `node:zlib` — 8-bit, RGB/RGBA, non-interlaced, which is all fourteen `preview.png` here — and is
+   byte-identical in eight skills, walked by `compare-png-parity.test.ts`.
+
+**The limit, measured, and the follow-up it names.** `scrolly`'s machine-to-machine difference is
+382 pixels with amplitudes `5-8:13 · 9-16:42 · 17-32:77 · 33-64:137 · 65-128:111 · 129-255:2` —
+glyph reflow, not anti-aliasing. A real seed edit on the same preview (one label 18px → 30px) moves
+**345** pixels, 156 of them at 129-255. FEWER than the machine difference. No threshold on count or
+amplitude separates them, so on a small text-dominated preview `--check` cannot be relied on to
+notice a seed change. Written into the comparator's header in all eight copies. **It ends when the
+rasteriser is handed font FILES instead of a family name** — `chart-beat/scripts/render-still.mjs`'s
+own header already names that as "the next step rather than this one", across 22 vendored copies.
+That is a task this plan should carry; it is not in it yet.
+
+**Found while running the full suite, and NOT caused by this work** (verified against a stashed
+tree, identical before and after): `skills/scrolly/test/scroll-integrity.test.ts` is red with nine
+failures of the plate-follows-the-theme guard — `danube-scrolly`, `one-map-four-readings` and
+`quakes-four-maps`, at three widths each, all shipping a light plate under a `#000` ground. Real
+debt, correctly named by a guard added earlier in this branch, and not yet paid.
+
 ---
 
 ### Task 2: `chart-video` — four guards and the driver that runs them
