@@ -10,7 +10,7 @@
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import puppeteer from "puppeteer";
 import { keyboardReachesEveryMark } from "../scripts/detect-reachable-by-keyboard.mjs";
 
@@ -101,8 +101,26 @@ describe("Tab reaches every mark and each one names itself", () => {
   });
 });
 
-/** Every delivered `chart-web` page on disk, told apart from its `map-web` sibling the same way
- *  `accessible-table.test.ts` does: which format's own `renderWeb` actually wrote the file. */
+/** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path —
+ *  told apart from its `map-web` sibling (both live under `proof/`, both ship self-contained HTML
+ *  with `data-detail` marks) by the one thing that cannot drift silently: which format's own
+ *  `renderWeb` actually wrote the file. Checked against the page's OWN directory and its PARENT:
+ *  a runner usually sits beside its own output (`proof/co2-suisse/render-web.mjs` next to
+ *  `co2.html`) but not always — `proof/web-co2-ranking/render-web.mjs` writes one directory down,
+ *  into `dist/co2-ranking.html` — and a same-directory-only check silently skipped that page
+ *  (measured 2026-08-20, reproduced standalone: 17 files found, not 18). */
+function importsChartWebRenderer(dir: string): boolean {
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".mjs"))
+    .some((name) =>
+      readFileSync(join(dir, name), "utf8").includes(
+        "skills/chart-web/scripts/render-web.mjs",
+      ),
+    );
+}
+
+/** Every delivered `chart-web` page on disk — the same discovery `accessible-table.test.ts` uses. */
 function chartWebArtifacts(): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
@@ -112,14 +130,7 @@ function chartWebArtifacts(): string[] {
       else if (entry.name.endsWith(".html")) {
         const source = readFileSync(path, "utf8");
         if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        const dirHasChartWebImport = readdirSync(dir)
-          .filter((name) => name.endsWith(".mjs"))
-          .some((name) =>
-            readFileSync(join(dir, name), "utf8").includes(
-              "skills/chart-web/scripts/render-web.mjs",
-            ),
-          );
-        if (dirHasChartWebImport) found.push(path);
+        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
       }
     }
   };
@@ -130,9 +141,12 @@ function chartWebArtifacts(): string[] {
 describe("every chart-web page on disk", () => {
   it("is reachable by Tab and names every one of its marks", async () => {
     const files = chartWebArtifacts();
-    // Same floor as `accessible-table.test.ts`, for the same reason: a count under this means the
-    // walk stopped finding beats, not that the beats got better.
-    expect(files.length).toBeGreaterThanOrEqual(17);
+    // Same exact count as `accessible-table.test.ts`, for the same reason: this walker used to be
+    // the same-directory-only version (measured 2026-08-20: 17 files, silently missing
+    // `web-co2-ranking/dist/co2-ranking.html`, whose runner writes one directory down from its own
+    // output) until fix round 1 gave it the parent-directory fallback above. Asserted exactly, not
+    // just a floor, so a count that creeps back down to 17 fails loudly.
+    expect(files.length).toBe(18);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {
