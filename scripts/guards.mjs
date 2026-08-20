@@ -7,7 +7,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PRODUCING_SKILLS } from "./traits.mjs";
+import { PRODUCING_SKILLS, traitsOf } from "./traits.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -43,33 +43,66 @@ export function carriedBy(skill) {
   return names;
 }
 
-/** Every cell whose blankness was ARGUED rather than obvious — a guard retired after measurement, or
- *  a whole column blank because the format works differently. Nobody looks for a scroll step in a
- *  static chart, and a reason there would be noise; a reason here is what stops the next reader
- *  re-opening a question this chantier already measured and closed. */
+/** The skills a rule reaches: those whose declared traits contain every trait it requires.
+ *
+ *  COMPUTED, NEVER TYPED. The hand-typed version of this shipped on 2026-08-19 and had already
+ *  failed by the next morning: `reveal-completes` named `chart-video` because that is the skill
+ *  someone was working in, while `map-beat` — same timing contract, six video beats on disk — was
+ *  not named and therefore owed nothing. A set nobody derives is a set nobody notices. */
+export function reachable(rule) {
+  return PRODUCING_SKILLS.filter((skill) => {
+    const traits = traitsOf(skill);
+    return rule.requires.every((id) => traits.includes(id));
+  }).sort();
+}
+
+/** A state or an exception written against a skill the rule does not reach — the anti-noise
+ *  invariant. A cartographic rule cannot be written onto a chart skill even by hand. */
+export function strayRows(catalogue) {
+  return catalogue.rules.flatMap((rule) => {
+    const derived = new Set(reachable(rule));
+    return [...Object.keys(rule.states ?? {}), ...Object.keys(rule.exceptions ?? {})]
+      .filter((skill) => !derived.has(skill))
+      .map((skill) => ({ rule: rule.id, skill }));
+  });
+}
+
+/** A skill the rule reaches and which says nothing at all — neither carried, nor owed, nor excepted.
+ *  This is the invariant that makes a fix impossible to leave behind: the day a skill has the trait,
+ *  the cell exists. */
+export function unstatedRows(catalogue) {
+  return catalogue.rules.flatMap((rule) =>
+    reachable(rule)
+      .filter((skill) => !(skill in (rule.states ?? {})) && !(skill in (rule.exceptions ?? {})))
+      .map((skill) => ({ rule: rule.id, skill })),
+  );
+}
+
+/** Every cell whose blankness was ARGUED rather than obvious — a genuine exception within the
+ *  reachable set, not the ordinary absence a missing trait already proves. */
 export function unreachableRows(catalogue) {
-  return catalogue.guards.flatMap((guard) =>
-    Object.entries(guard.unreachable ?? {}).map(([skill, reason]) => ({
-      guard: guard.id,
+  return catalogue.rules.flatMap((rule) =>
+    Object.entries(rule.exceptions ?? {}).map(([skill, reason]) => ({
+      rule: rule.id,
       skill,
       reason,
     })),
   );
 }
 
-/** Every cell a format is reachable by and does not carry — the debt, enumerated. */
+/** Every cell a skill is reachable by and does not carry — the debt, enumerated. */
 export function owedRows(catalogue) {
-  return catalogue.guards.flatMap((guard) =>
-    Object.entries(guard.formats)
+  return catalogue.rules.flatMap((rule) =>
+    Object.entries(rule.states)
       .filter(([, state]) => state === "owed")
-      .map(([skill]) => ({ guard: guard.id, skill })),
+      .map(([skill]) => ({ rule: rule.id, skill })),
   );
 }
 
 export function renderGuardsDoc(catalogue) {
   const skills = PRODUCING_SKILLS;
-  const cell = (guard, skill) =>
-    guard.formats[skill] === "carried" ? "**R**" : guard.formats[skill] === "owed" ? "·" : "";
+  const cell = (rule, skill) =>
+    rule.states[skill] === "carried" ? "**R**" : rule.states[skill] === "owed" ? "·" : "";
   const owed = owedRows(catalogue);
   return [
     "# The guards, and what each creation process carries",
@@ -77,42 +110,44 @@ export function renderGuardsDoc(catalogue) {
     "**Generated — do not edit by hand.** `bun scripts/guards.mjs --write` rewrites this file;",
     "`bun scripts/guards.mjs --check` fails if it has drifted from the catalogue.",
     "",
-    "A guard is listed for a skill only where the defect it catches is REACHABLE there. **R** means the",
-    "skill's own verification scripts declare it; **·** means the defect can happen there and nothing",
-    "checks it; blank means it cannot happen there at all — and where that blankness was argued rather",
-    "than obvious, the argument is written out below the table.",
+    "A guard is listed for a skill only where the defect it catches is REACHABLE there — computed from",
+    "the traits the skill declares. **R** means the skill's own verification scripts declare it; **·**",
+    "means the defect can happen there and nothing checks it; blank means it cannot happen there at all",
+    "— and where that blankness is a genuine exception rather than a missing trait, the argument is",
+    "written out below the table.",
     "",
     `| guard | ${skills.join(" | ")} |`,
     `| --- | ${skills.map(() => "---").join(" | ")} |`,
-    ...catalogue.guards.map(
-      (guard) => `| ${guard.id} | ${skills.map((skill) => cell(guard, skill)).join(" | ")} |`,
+    ...catalogue.rules.map(
+      (rule) => `| ${rule.id} | ${skills.map((skill) => cell(rule, skill)).join(" | ")} |`,
     ),
     "",
     `## What is still owed — ${owed.length} cell${owed.length === 1 ? "" : "s"}`,
     "",
     owed.length
-      ? owed.map((row) => `- \`${row.skill}\` owes **${row.guard}**`).join("\n")
+      ? owed.map((row) => `- \`${row.skill}\` owes **${row.rule}**`).join("\n")
       : "Nothing. Every format carries every guard it can reach.",
     "",
     `## Why a cell is blank, where the blankness was argued — ${unreachableRows(catalogue).length} of them`,
     "",
-    "Only the cells a reader would otherwise re-open: one retired after being measured absent, or one",
-    "belonging to a format that works differently end to end.",
+    "Only the cells a reader would otherwise re-open: a skill within the reachable set that is still",
+    "excepted for a documented reason. A skill outside the reachable set needs no entry — the absent",
+    "trait already proves it.",
     "",
     ...unreachableRows(catalogue).map(
-      (row) => `- \`${row.skill}\` cannot reach **${row.guard}** — ${row.reason}`,
+      (row) => `- \`${row.skill}\` cannot reach **${row.rule}** — ${row.reason}`,
     ),
     "",
     "## What each guard refuses, and the defect that earned it",
     "",
-    ...catalogue.guards.flatMap((guard) => [
-      `### ${guard.id} — \`${guard.decidedBy}\``,
+    ...catalogue.rules.flatMap((rule) => [
+      `### ${rule.id} — \`${rule.decidedBy}\``,
       "",
-      `**Refuses:** ${guard.refuses}`,
+      `**Refuses:** ${rule.refuses}`,
       "",
-      `**Earned by:** ${guard.earnedBy}`,
+      `**Earned by:** ${rule.earnedBy}`,
       "",
-      ...(guard.alsoReachedBy ? [`**Also reached by:** ${guard.alsoReachedBy}`, ""] : []),
+      ...(rule.alsoReachedBy ? [`**Also reached by:** ${rule.alsoReachedBy}`, ""] : []),
     ]),
   ].join("\n");
 }
@@ -129,6 +164,6 @@ if (import.meta.main) {
     console.log("GUARDS.md matches the catalogue");
   } else {
     writeFileSync(path, wanted);
-    console.log(`GUARDS.md ← ${readCatalogue().guards.length} guards`);
+    console.log(`GUARDS.md ← ${readCatalogue().rules.length} guards`);
   }
 }

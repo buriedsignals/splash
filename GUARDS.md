@@ -3,46 +3,38 @@
 **Generated — do not edit by hand.** `bun scripts/guards.mjs --write` rewrites this file;
 `bun scripts/guards.mjs --check` fails if it has drifted from the catalogue.
 
-A guard is listed for a skill only where the defect it catches is REACHABLE there. **R** means the
-skill's own verification scripts declare it; **·** means the defect can happen there and nothing
-checks it; blank means it cannot happen there at all — and where that blankness was argued rather
-than obvious, the argument is written out below the table.
+A guard is listed for a skill only where the defect it catches is REACHABLE there — computed from
+the traits the skill declares. **R** means the skill's own verification scripts declare it; **·**
+means the defect can happen there and nothing checks it; blank means it cannot happen there at all
+— and where that blankness is a genuine exception rather than a missing trait, the argument is
+written out below the table.
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| duplicated-payload |  | **R** |  |  |  | **R** | **R** | **R** |
+| duplicated-payload |  | **R** |  |  | · | **R** | **R** | **R** |
 | projection-pairing |  |  |  |  |  |  |  | **R** |
-| plate-geometry-pairing |  |  |  |  | **R** | **R** |  |  |
+| plate-geometry-pairing |  |  |  |  | **R** | **R** |  | · |
 | plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
-| screen-space-dash | **R** | **R** | **R** |  | **R** | **R** |  | **R** |
+| screen-space-dash | **R** | **R** | **R** |  | **R** | **R** | · | **R** |
 | reached-mark-declares |  |  |  |  |  |  |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
-| reveal-completes |  |  | **R** |  |  |  |  |  |
+| reveal-completes |  |  | **R** |  | · |  |  |  |
 
-## What is still owed — 0 cells
+## What is still owed — 4 cells
 
-Nothing. Every format carries every guard it can reach.
+- `map-beat` owes **duplicated-payload**
+- `scrolly` owes **plate-geometry-pairing**
+- `image-beat` owes **screen-space-dash**
+- `map-beat` owes **reveal-completes**
 
-## Why a cell is blank, where the blankness was argued — 13 of them
+## Why a cell is blank, where the blankness was argued — 0 of them
 
-Only the cells a reader would otherwise re-open: one retired after being measured absent, or one
-belonging to a format that works differently end to end.
+Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
+excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
+trait already proves it.
 
-- `dw-beat` cannot reach **duplicated-payload** — the delivered web artefact is a page whose body is a single iframe to the hosted chart: it inlines no asset at all, so none can be inlined twice
-- `map-beat` cannot reach **projection-pairing** — retired after measurement, not left owed: object-fit appears in exactly two files in this tree, both scrolly IMAGE beats, and in no cartographic component. A map beat composites its plate as an <image> INSIDE the marks' own SVG, in their coordinate system, so there are not two projections that could disagree. The same defect is reachable here by the format's other mechanism, which is what plate-geometry-pairing was written for
-- `map-web` cannot reach **projection-pairing** — retired on the same measurement one task later: object-fit appears in none of the 23 web artifacts. This format composites its plate the way map-beat does, and pairs its ratio against the projected frame instead
-- `dw-beat` cannot reach **projection-pairing** — there is no raster plate and no overlay drawn on it: the artefact is one exported image, or an iframe to a hosted chart
-- `dw-beat` cannot reach **plate-geometry-pairing** — nothing is baked here. There is no plate.png and no geometry.json recording the frame marks were projected into, because this format projects nothing
-- `dw-beat` cannot reach **screen-space-dash** — this producer authors no marks. A dashed rule is a Datawrapper enum (a range annotation's strokeType) drawn by Datawrapper's own renderer, and the vector-effect that makes the defect possible is not ours to write
-- `chart-web` cannot reach **reached-mark-declares** — retired after measurement: this guard's precondition is a reveal that ENDS, and nothing in this format reveals. Across its 15 delivered pages there is not one requestAnimationFrame and not one @keyframes; the only animations are 120ms hover transitions on a colour. A web chart is a finished picture with detail on demand, so no mark can be pending when a reveal ends
-- `map-web` cannot reach **reached-mark-declares** — retired on the same measurement: the four animations each of its pages carries are inside maplibre-gl itself — the loading spinner and the user-location pulse — not in the beat. The beat's own picture is finished when the page loads
-- `chart-video` cannot reach **reached-mark-declares** — the defect IS reachable here, and the DECLARATION is not the reading. A video signals arrival with opacity driven by a progress and declares no data-state anywhere; the owner's decision (plan, Task 7, 2026-08-20) was to read the last frame instead, which for this format is arithmetic. See reveal-completes
-- `dw-beat` cannot reach **step-redraws** — there are no steps: nothing here is driven by a reader's gesture or by a frame number
-- `dw-beat` cannot reach **scrub-not-slideshow** — there is nothing to scrub: a delegated chart has one state
-- `dw-beat` cannot reach **model-declared** — it reads which of the two scroll models a beat is built on, off the markup. A delegated chart is built on neither
-- `scrolly` cannot reach **reveal-completes** — a reader drives the reveal here, so there is no last frame to end on: the same defect is caught by reached-mark-declares, which this format has the vocabulary for
 
 ## What each guard refuses, and the defect that earned it
 
@@ -56,7 +48,7 @@ belonging to a format that works differently end to end.
 
 **Refuses:** a raster plate and the overlay drawn on it fitting differently: cover pairs with slice, contain with meet, fill with none
 
-**Earned by:** at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear
+**Earned by:** at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear. `map-beat` and `map-web` do not reach this rule — neither ships an <img> with object-fit at all, so there is no second projection to disagree with the first: a map beat composites its plate as an <image> inside its own marks' SVG, in their coordinate system, and pairs its ratio against the projected frame instead. That is the same defect reached by this format's other mechanism, which is what plate-geometry-pairing was written for
 
 ### plate-geometry-pairing — `plateMatchesGeometry`
 

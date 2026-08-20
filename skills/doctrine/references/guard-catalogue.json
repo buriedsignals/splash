@@ -1,140 +1,146 @@
 {
-  "$comment": "The single written list of guards this project has earned. Read by scripts/guards.mjs, enforced by skills/doctrine/test/guard-parity.test.ts, rendered into GUARDS.md. `formats` names only the skills the defect is REACHABLE in: a static chart cannot have a stalled scroll step, and declaring it would be noise. `carried` means the skill's own verification script exports that decision function; `owed` is debt. `unreachable` is the third state and the one a reader needs prose for: a cell blank because it was MEASURED absent, or blank because the whole format works differently. Most blank cells need no entry — nobody would look for a scroll step in a static chart — so a reason is written exactly where one was retired after measurement, or where a format's whole column is blank and a reader would otherwise re-open the question.",
-  "guards": [
+  "$comment": "The single written list of guards this project has earned. Read by scripts/guards.mjs, enforced by skills/doctrine/test/guard-parity.test.ts, rendered into GUARDS.md. Each rule carries `requires`: the traits (scripts/traits.mjs) a skill must declare for the rule to reach it at all — reachability is DERIVED, never typed. `states` names only skills the derivation reaches: `carried` means the skill's own verification script exports that decision function; `owed` is debt. `exceptions` is the third state, for a skill the derivation reaches but which is nonetheless argued not to carry it — a claim with a reason attached, not a restatement of a missing trait, which the derivation already proves on its own. A skill outside the derived set needs no entry anywhere: that blankness is now structural, not argued.",
+  "rules": [
     {
       "id": "duplicated-payload",
+      "kind": "guard",
+      "requires": ["inlines-its-assets"],
       "decidedBy": "duplicatedPayload",
       "refuses": "an asset inlined more than once into a self-contained delivered file",
       "earnedBy": "a delivered route scrolly carried the same 340 KiB basemap plate five times — 1.33 MB of a 1.80 MB page, on a beat a newsroom would open on a phone",
-      "formats": {
+      "states": {
         "scrolly": "carried",
         "chart-web": "carried",
         "map-web": "carried",
-        "image-beat": "carried"
+        "image-beat": "carried",
+        "map-beat": "owed"
       },
-      "unreachable": {
-        "dw-beat": "the delivered web artefact is a page whose body is a single iframe to the hosted chart: it inlines no asset at all, so none can be inlined twice"
-      }
+      "exceptions": {}
     },
     {
       "id": "projection-pairing",
+      "kind": "guard",
+      "requires": [
+        "ships-standalone-html",
+        "inlines-its-assets",
+        "reader-driven-reveal"
+      ],
       "decidedBy": "projectionDisagreements",
       "refuses": "a raster plate and the overlay drawn on it fitting differently: cover pairs with slice, contain with meet, fill with none",
-      "earnedBy": "at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear",
-      "formats": {
+      "earnedBy": "at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear. `map-beat` and `map-web` do not reach this rule — neither ships an <img> with object-fit at all, so there is no second projection to disagree with the first: a map beat composites its plate as an <image> inside its own marks' SVG, in their coordinate system, and pairs its ratio against the projected frame instead. That is the same defect reached by this format's other mechanism, which is what plate-geometry-pairing was written for",
+      "states": {
         "scrolly": "carried"
       },
-      "unreachable": {
-        "map-beat": "retired after measurement, not left owed: object-fit appears in exactly two files in this tree, both scrolly IMAGE beats, and in no cartographic component. A map beat composites its plate as an <image> INSIDE the marks' own SVG, in their coordinate system, so there are not two projections that could disagree. The same defect is reachable here by the format's other mechanism, which is what plate-geometry-pairing was written for",
-        "map-web": "retired on the same measurement one task later: object-fit appears in none of the 23 web artifacts. This format composites its plate the way map-beat does, and pairs its ratio against the projected frame instead",
-        "dw-beat": "there is no raster plate and no overlay drawn on it: the artefact is one exported image, or an iframe to a hosted chart"
-      }
+      "exceptions": {}
     },
     {
       "id": "plate-geometry-pairing",
+      "kind": "guard",
+      "requires": ["bakes-a-plate"],
       "decidedBy": "plateMatchesGeometry",
       "refuses": "a baked plate whose aspect ratio is not the frame its own marks were projected into, so the default xMidYMid meet letterboxes it under them",
       "earnedBy": "the same defect projection-pairing names, reached by this format's other mechanism: a map beat composites its plate as an <image> inside the marks' own SVG, where there is no object-fit to disagree with a preserveAspectRatio and the disagreement is between the plate's own ratio and its box",
-      "formats": {
+      "states": {
         "map-beat": "carried",
-        "map-web": "carried"
+        "map-web": "carried",
+        "scrolly": "owed"
       },
-      "unreachable": {
-        "dw-beat": "nothing is baked here. There is no plate.png and no geometry.json recording the frame marks were projected into, because this format projects nothing"
-      }
+      "exceptions": {}
     },
     {
       "id": "plate-follows-theme",
+      "kind": "guard",
+      "requires": ["owns-a-surface-it-did-not-choose"],
       "decidedBy": "plateFollowsGround",
       "refuses": "a baked plate on the opposite luminance side from the ground its beat declares",
       "earnedBy": "a beat declared ground #16191B and painted white labels on a dark halo over a dataviz-light plate: furniture correct for its theme, and unreadable",
-      "formats": {
+      "states": {
         "scrolly": "carried",
         "map-beat": "carried",
         "map-web": "carried",
         "dw-beat": "carried"
       },
-      "unreachable": {},
+      "exceptions": {},
       "alsoReachedBy": "dw-beat, where the surface is not a baked plate but the PNG a delegated renderer hands back. This producer's spec requires an accent and has no field for a ground, so Datawrapper paints on whatever surface its own theme chooses and a story that declared a dark ground can be delivered a white rectangle. Same decision, same tuning constants, different measurement."
     },
     {
       "id": "screen-space-dash",
+      "kind": "guard",
+      "requires": ["draws-own-geometry"],
       "decidedBy": "revealDashInScreenSpace",
       "refuses": "a dash that measures its own path while vector-effect: non-scaling-stroke computes it in screen space, where that length does not live",
       "earnedBy": "a river drawn as head, hole and tail because a pattern one route long was measured against a line the camera had scaled up 1.68x; six hours and five wrong diagnoses",
-      "formats": {
+      "states": {
         "scrolly": "carried",
         "chart-beat": "carried",
         "chart-web": "carried",
         "chart-video": "carried",
         "map-beat": "carried",
-        "map-web": "carried"
+        "map-web": "carried",
+        "image-beat": "owed"
       },
-      "unreachable": {
-        "dw-beat": "this producer authors no marks. A dashed rule is a Datawrapper enum (a range annotation's strokeType) drawn by Datawrapper's own renderer, and the vector-effect that makes the defect possible is not ours to write"
-      }
+      "exceptions": {}
     },
     {
       "id": "reached-mark-declares",
+      "kind": "guard",
+      "requires": ["reader-driven-reveal"],
       "decidedBy": "neverReached",
       "refuses": "a mark still data-state=pending when the reveal has ended",
       "earnedBy": "stop badges kept the fill they were SSR'd with while the line arrived at each of them: the narrative got there and the picture never said so",
-      "formats": {
+      "states": {
         "scrolly": "carried"
       },
-      "unreachable": {
-        "chart-web": "retired after measurement: this guard's precondition is a reveal that ENDS, and nothing in this format reveals. Across its 15 delivered pages there is not one requestAnimationFrame and not one @keyframes; the only animations are 120ms hover transitions on a colour. A web chart is a finished picture with detail on demand, so no mark can be pending when a reveal ends",
-        "map-web": "retired on the same measurement: the four animations each of its pages carries are inside maplibre-gl itself — the loading spinner and the user-location pulse — not in the beat. The beat's own picture is finished when the page loads",
-        "chart-video": "the defect IS reachable here, and the DECLARATION is not the reading. A video signals arrival with opacity driven by a progress and declares no data-state anywhere; the owner's decision (plan, Task 7, 2026-08-20) was to read the last frame instead, which for this format is arithmetic. See reveal-completes"
-      }
+      "exceptions": {}
     },
     {
       "id": "step-redraws",
+      "kind": "guard",
+      "requires": ["reader-driven-reveal"],
       "decidedBy": "stillSteps",
       "refuses": "two consecutive steps painting the same picture",
       "earnedBy": "a five-stop scrolly repainted 4.4 / 0.0 / 0.0 / 0.0 % of its marks across four transitions: one identical picture, five times",
-      "formats": {
+      "states": {
         "scrolly": "carried"
       },
-      "unreachable": {
-        "dw-beat": "there are no steps: nothing here is driven by a reader's gesture or by a frame number"
-      }
+      "exceptions": {}
     },
     {
       "id": "scrub-not-slideshow",
+      "kind": "guard",
+      "requires": ["reader-driven-reveal"],
       "decidedBy": "stalledSteps",
       "refuses": "a step whose picture never moves anywhere inside itself, on a beat built to scrub",
       "earnedBy": "five finished SSR'd pictures passed every other guard and still jumped at each boundary: the line never drew under the reader's gesture",
-      "formats": {
+      "states": {
         "scrolly": "carried"
       },
-      "unreachable": {
-        "dw-beat": "there is nothing to scrub: a delegated chart has one state"
-      }
+      "exceptions": {}
     },
     {
       "id": "model-declared",
+      "kind": "guard",
+      "requires": ["reader-driven-reveal"],
       "decidedBy": "requiresScrub",
       "refuses": "nothing on its own: it reads which of the two models a beat is built on, off the markup",
       "earnedBy": "an assembly and a scrub owe different things, and guessing which is which misfires on both — the seed's four media have nothing to scrub between",
-      "formats": {
+      "states": {
         "scrolly": "carried"
       },
-      "unreachable": {
-        "dw-beat": "it reads which of the two scroll models a beat is built on, off the markup. A delegated chart is built on neither"
-      }
+      "exceptions": {}
     },
     {
       "id": "reveal-completes",
+      "kind": "guard",
+      "requires": ["timed-build-that-ends"],
       "decidedBy": "neverArrives",
       "refuses": "a ramp whose input range outruns the progress driving it, so the mark it reveals is still arriving when the composition ends",
       "earnedBy": "the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down — a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops",
-      "formats": {
-        "chart-video": "carried"
+      "states": {
+        "chart-video": "carried",
+        "map-beat": "owed"
       },
-      "unreachable": {
-        "scrolly": "a reader drives the reveal here, so there is no last frame to end on: the same defect is caught by reached-mark-declares, which this format has the vocabulary for"
-      }
+      "exceptions": {}
     }
   ]
 }
