@@ -243,6 +243,10 @@ before it drives anything; `test/verify-guards.test.ts` runs all four over every
    section states for every format in this twin, sharpened by this format's own gotcha above: a
    computed value can lie, a screenshot cannot.
 
+## Colours
+
+`scripts/render-web.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: print the proposal and end the turn, never choose on their behalf. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
+
 ## Quick start
 
 ```sh

@@ -44,6 +44,7 @@ written out below the tables.
 | cartographic-rules |  |  |  |  | **R** | **R** |  | **R** |
 | motion-grammar |  |  | **R** |  | **R** |  |  |  |
 | static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
+| palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -74,16 +75,16 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -214,3 +215,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a source's own value with no shape to receive it, unless the beat declared its source out of scope
 
 **Earned by:** joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for "Atlantis", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong
+
+### palette-names-its-source — `palette/SKILL.md`
+
+**Refuses:** a craft skill whose own render reads a palette and never says, where an author reads it, where PALETTE.md comes from or what to do when readPalette refuses it — the proposal's own dead end, not the refusal itself
+
+**Earned by:** a stress test hit readPalette's throw with no PALETTE.md anywhere above the beat and no route back to palette's own proposal. The refusal was correct — a render that defaulted to a colour nobody chose would publish a newsroom's identity by accident — and the dead end was not: no craft skill's own SKILL.md said where the file it reads comes from, and palette's own documentation assumes a journalist is sitting there to answer, with nothing named for when nobody is

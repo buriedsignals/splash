@@ -156,6 +156,10 @@ ramps, none with a bound the reveal cannot reach.**
    the **final frame first**, then the mp4, then extract four frames — one inside `reference`, one
    mid-`reveal`, one as the subject lands, and the last — and look at all four.
 
+## Colours
+
+`scripts/render-map.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: print the proposal and end the turn, never choose on their behalf. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
+
 ## Quick start
 
 ```sh

@@ -109,8 +109,16 @@ export function readPalette(dir, { stopAt } = {}) {
     current = parent;
   }
   throw new Error(
-    `No PALETTE.md found for ${start}. Run palette's proposal, let the journalist choose, ` +
-      `and record the answer. Looked in:\n  ${searched.join("\n  ")}`,
+    `No PALETTE.md found for ${start}. This beat refuses to render without one, deliberately: a ` +
+      `colour nobody chose would publish a newsroom's identity by accident.\n` +
+      `Next: call proposePalette({ newsroom, subject }) and formatProposal(...) ` +
+      `(skills/palette/scripts/palette.mjs, skills/palette/scripts/format-proposal.mjs), show the ` +
+      `printed proposal to the journalist, and record their answer in PALETTE.md ` +
+      `(skills/palette/assets/PALETTE.example.md is the shape) at or above this beat.\n` +
+      `When no journalist is available to answer right now: print the same proposal and end the ` +
+      `turn there — the same rule this project's every other human gate follows. Do not pick an ` +
+      `option on the journalist's behalf, and do not write PALETTE.md yourself.\n` +
+      `Looked in:\n  ${searched.join("\n  ")}`,
   );
 }
 

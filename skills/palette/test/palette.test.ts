@@ -493,4 +493,47 @@ describe("readPalette", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  // FINDING 7: the throw used to end at "let the journalist choose" — correct, and a dead end.
+  // Nothing told an agent HOW to run the proposal, and nothing said what to do when no journalist
+  // is there to answer right now. Both are named here, and named without ever writing a default.
+  it("should name the exact next action: run the proposal and record the answer", () => {
+    const root = mkdtempSync(join(tmpdir(), "palette-"));
+    try {
+      const beat = join(root, "beats", "1-solar");
+      mkdirSync(beat, { recursive: true });
+      let message = "";
+      try {
+        readPalette(beat, { stopAt: root });
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toContain("proposePalette");
+      expect(message).toContain("formatProposal");
+      expect(message).toContain("PALETTE.md");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // FINDING 7: the non-interactive path. Ending the turn is this project's own answer to "no
+  // human is here right now" (splash/SKILL.md, "Human gates stop the turn") — never picking on
+  // the journalist's behalf, and never writing the file that stands for their answer.
+  it("should name what to do when no journalist is available to answer right now", () => {
+    const root = mkdtempSync(join(tmpdir(), "palette-"));
+    try {
+      const beat = join(root, "beats", "1-solar");
+      mkdirSync(beat, { recursive: true });
+      let message = "";
+      try {
+        readPalette(beat, { stopAt: root });
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toContain("end the turn");
+      expect(message).toContain("do not write PALETTE.md yourself");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

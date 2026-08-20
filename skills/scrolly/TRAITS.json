@@ -7,6 +7,7 @@
     "reader-driven-reveal",
     "ships-standalone-html",
     "inlines-its-assets",
-    "reads-a-journalists-csv"
+    "reads-a-journalists-csv",
+    "reads-a-palette"
   ]
 }

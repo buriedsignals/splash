@@ -262,6 +262,10 @@ identical treatment from the scaffold's point of view.
    tick label clipped by the frame's own left edge, and a dashed rule striking through the words of
    the label that names it — none of which any test noticed.
 
+## Colours
+
+`scripts/render-scrolly.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: print the proposal and end the turn, never choose on their behalf. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
+
 ## Quick start
 
 ```sh

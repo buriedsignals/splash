@@ -5,6 +5,7 @@
     "bakes-a-plate",
     "owns-a-surface-it-did-not-choose",
     "ships-standalone-html",
-    "inlines-its-assets"
+    "inlines-its-assets",
+    "reads-a-palette"
   ]
 }

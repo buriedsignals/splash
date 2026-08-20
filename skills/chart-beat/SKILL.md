@@ -144,8 +144,10 @@ import rainfall from "./data.json";
 // The two colours the journalist chose, read back from the `PALETTE.md` that `palette`
 // proposed and they answered. Never hex literals here: a beat that names its own colours is a
 // beat that ignores the newsroom's charter, however carefully the charter was collected. If no
-// `PALETTE.md` exists at or above this beat, this THROWS and names every directory it searched —
-// rendering in a colour nobody chose is the failure it exists to prevent.
+// `PALETTE.md` exists at or above this beat, this THROWS, names the exact next action — call
+// `proposePalette`/`formatProposal`, show the journalist the proposal, record their answer — and
+// names what to do when nobody is there to answer right now: print the proposal and end the
+// turn, never choose on their behalf. That is `palette-names-its-source`, `skills/palette/SKILL.md`.
 const { ground, accent } = readPalette(import.meta.dirname, { stopAt: process.cwd() });
 
 // RainfallAnnemasse is THIS beat's own component, written from the seed's shape — not imported

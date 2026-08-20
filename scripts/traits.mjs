@@ -157,6 +157,20 @@ export const TRAITS = [
     // a way that would self-satisfy it — a re-export statement is not a declaration.
     witness: (skill) => anySource(skill, /export function joinValues\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
+  {
+    id: "reads-a-palette",
+    describes: "its own render calls readPalette, so the ground and accent it draws in come from a journalist's recorded answer, never a literal",
+    // Witnessed by the CALL, not a mention of the name — `dw-beat` names `readPalette` twice in its
+    // own comments (verify-owned.mjs, sizes.mjs), each time drawing an ANALOGY to its own unrelated
+    // throw ("the same way `readPalette` throws"), and neither is followed by a `(` — dw-beat never
+    // calls the function, because it delegates rendering to Datawrapper and threads its accent a
+    // different way. Measured: `readPalette\(` (the call, not the bare name) appears in the real
+    // render/preview scripts of exactly seven producing skills — chart-beat, chart-web, chart-video,
+    // map-beat, map-web, image-beat, scrolly — and in none of dw-beat's. Excluding `verify-*`/
+    // `detect-*` matches the convention every other guard-adjacent trait already uses, even though
+    // no such file currently mentions this call at all.
+    witness: (skill) => anySource(skill, /readPalette\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+  },
 ];
 
 export function traitsOf(skill) {

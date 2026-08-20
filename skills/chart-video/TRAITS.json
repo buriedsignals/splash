@@ -3,6 +3,7 @@
   "traits": [
     "draws-own-geometry",
     "timed-build-that-ends",
-    "reads-a-journalists-csv"
+    "reads-a-journalists-csv",
+    "reads-a-palette"
   ]
 }
