@@ -37,6 +37,15 @@
  *      operable from the keyboard the same way any radio group always is. See `SKILL.md`, "When to
  *      use" for the test this format applies before adding a filter to a real beat — most beats
  *      should not have one.
+ *   6. THE SAME FACTS, FOR A READER WHO CANNOT SEE THE PICTURE — nothing in this file draws it.
+ *      `data-detail`, item 2's own attribute, is already every mark's own fact in one string; a
+ *      reader with no spatial access to the chart still needs it read LINEARLY, all of it, not one
+ *      mark at a time. That is mechanics, not this story's concern, so it lives in
+ *      `scripts/render-web.mjs`'s `accessibleTable` — read every `data-detail` back off the SSR'd
+ *      markup and print an opt-in `<table>` after it, one row per mark, visually hidden until
+ *      focused. Generic across every beat this format ships, present and future: a component never
+ *      writes this table itself, the same way it never writes `buildCss` or the tooltip div.
+ *      (`same-facts-without-the-picture`, `doctrine/references/guard-catalogue.json`.)
  *
  * A seed is a real beat, not a mechanics demo (`references/web-discipline.md` was written against
  * exactly this file's own first build, and updated against this one). This one draws a real claim —

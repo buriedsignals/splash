@@ -89,7 +89,7 @@ body {
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
      give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
      letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
      chart the reader has seen.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
@@ -167,6 +167,46 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 }
 #tooltip[hidden] { display: none; }
 
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+
 .chart-plot.ranking-plot {
   grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
   min-height: var(--min-plot-h);
@@ -199,27 +239,28 @@ svg.chart rect.row-hit:hover, svg.chart rect.row-hit.row-active {
 </head>
 <body>
 <figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--category-size:14px;--category-weight:500;--value-size:14px;--value-weight:500"><div class="chart-header" style="margin-bottom:18px"><h2 class="chart-title">Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies</h2><p class="chart-caveat">Essentially level with Sweden, and little more than half of Poland&#x27;s, the highest of the group.</p></div><div class="chart-plot ranking-plot" style="--y-gutter:109px;--r-gutter:37px;--x-axis-h:0px;--min-plot-h:260px;aspect-ratio:786 / 400"><div class="y-axis"><span class="cat-label" style="top:5%;color:#616161;font-weight:500">Poland</span><span class="cat-label" style="top:15%;color:#616161;font-weight:500">Germany</span><span class="cat-label" style="top:25%;color:#616161;font-weight:500">Norway</span><span class="cat-label" style="top:35%;color:#616161;font-weight:500">Austria</span><span class="cat-label" style="top:45%;color:#616161;font-weight:500">Italy</span><span class="cat-label" style="top:55%;color:#616161;font-weight:500">Spain</span><span class="cat-label" style="top:65%;color:#616161;font-weight:500">United Kingdom</span><span class="cat-label" style="top:75%;color:#616161;font-weight:500">France</span><span class="cat-label" style="top:85%;color:#0B7A75;font-weight:700">Switzerland</span><span class="cat-label" style="top:95%;color:#616161;font-weight:500">Sweden</span></div><svg role="group" aria-label="Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 640 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="640" height="400" fill="#FFFFFF"></rect><line x1="0" x2="0" y1="0" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="0" y="6" width="640" height="28" fill="#616161"></rect><rect x="0" y="46" width="611.8615881313476" height="28" fill="#616161"></rect><rect x="0" y="86" width="602.7130201487275" height="28" fill="#616161"></rect><rect x="0" y="126" width="558.6455441311248" height="28" fill="#616161"></rect><rect x="0" y="166" width="459.91477872037467" height="28" fill="#616161"></rect><rect x="0" y="206" width="415.72373399417427" height="28" fill="#616161"></rect><rect x="0" y="246" width="409.10546808484435" height="28" fill="#616161"></rect><rect x="0" y="286" width="358.80737213446525" height="28" fill="#616161"></rect><rect x="0" y="326" width="324.9383009551151" height="28" fill="#0B7A75"></rect><rect x="0" y="366" width="324.6642893776673" height="28" fill="#616161"></rect><rect class="row-hit" x="0" y="0" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: 7.080 t" data-detail="Poland · 7.080 t"></rect><rect class="row-hit" x="0" y="40" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: 6.769 t" data-detail="Germany · 6.769 t"></rect><rect class="row-hit" x="0" y="80" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Norway: 6.668 t" data-detail="Norway · 6.668 t"></rect><rect class="row-hit" x="0" y="120" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Austria: 6.180 t" data-detail="Austria · 6.180 t"></rect><rect class="row-hit" x="0" y="160" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: 5.088 t" data-detail="Italy · 5.088 t"></rect><rect class="row-hit" x="0" y="200" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: 4.599 t" data-detail="Spain · 4.599 t"></rect><rect class="row-hit" x="0" y="240" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: 4.526 t" data-detail="United Kingdom · 4.526 t"></rect><rect class="row-hit" x="0" y="280" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: 3.969 t" data-detail="France · 3.969 t"></rect><rect class="row-hit" x="0" y="320" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: 3.595 t" data-detail="Switzerland · 3.595 t"></rect><rect class="row-hit" x="0" y="360" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Sweden: 3.592 t" data-detail="Sweden · 3.592 t"></rect></svg><div class="overlay" aria-hidden="true"><span class="value-label" style="left:100%;top:5%;color:#616161;font-weight:500">7.1 t</span><span class="value-label" style="left:95.6%;top:15%;color:#616161;font-weight:500">6.8 t</span><span class="value-label" style="left:94.2%;top:25%;color:#616161;font-weight:500">6.7 t</span><span class="value-label" style="left:87.3%;top:35%;color:#616161;font-weight:500">6.2 t</span><span class="value-label" style="left:71.9%;top:45%;color:#616161;font-weight:500">5.1 t</span><span class="value-label" style="left:65%;top:55%;color:#616161;font-weight:500">4.6 t</span><span class="value-label" style="left:63.9%;top:65%;color:#616161;font-weight:500">4.5 t</span><span class="value-label" style="left:56.1%;top:75%;color:#616161;font-weight:500">4.0 t</span><span class="value-label" style="left:50.8%;top:85%;color:#0B7A75;font-weight:700">3.6 t</span><span class="value-label" style="left:50.7%;top:95%;color:#616161;font-weight:500">3.6 t</span></div></div><p class="chart-source">Source: Global Carbon Budget (2025), via Our World in Data · 2024 data</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>Poland · 7.080 t</td></tr><tr><td>Germany · 6.769 t</td></tr><tr><td>Norway · 6.668 t</td></tr><tr><td>Austria · 6.180 t</td></tr><tr><td>Italy · 5.088 t</td></tr><tr><td>Spain · 4.599 t</td></tr><tr><td>United Kingdom · 4.526 t</td></tr><tr><td>France · 3.969 t</td></tr><tr><td>Switzerland · 3.595 t</td></tr><tr><td>Sweden · 3.592 t</td></tr></tbody></table></div>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
 //
-// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
-// per `doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").
 //
 // What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
 // `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
-// the static and video genres use, and baked into the SVG at build time. This script only reads
+// the static and video formats use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
 // beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
@@ -319,14 +360,14 @@ function initChart(svg, tooltip) {
  * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
  * component draws immediately after a visible path — to hover, tap and keyboard focus.
  *
- * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this genre is a point or a box, and
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
  * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
  * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
  * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
  * ends (both values, the change between them, the category), which is exactly the thing a
  * per-endpoint tooltip cannot say however many endpoints it answers.
  *
- * `pointer-events: stroke` is the load-bearing property, and it is set in the genre's stylesheet
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
  * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
  * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
  * aims at the line they can see and hits a target twice the touch-target floor.
@@ -440,6 +481,70 @@ function initLines(root, tooltip) {
   });
 }
 
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
 function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
@@ -447,6 +552,7 @@ function initAll() {
     initChart(svg, tooltip);
     initLines(svg, tooltip);
   });
+  initEntrance(document);
 }
 
 // Guarded rather than a bare top-level call: this file is also imported directly by

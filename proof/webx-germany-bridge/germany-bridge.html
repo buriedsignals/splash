@@ -89,7 +89,7 @@ body {
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
      give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
      letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
      chart the reader has seen.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
@@ -167,33 +167,74 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 }
 #tooltip[hidden] { display: none; }
 
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+
 .step-hit { cursor: pointer; }
 .step-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
 <body>
 <figure class="chart-figure" style="--ground:#FFFFFF;--accent:#D55E00;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:700;--note-size:11px"><div class="chart-header"><h2 class="chart-title">Germany generated 143 fewer terawatt-hours in 2024 than in 2015</h2><p class="chart-caveat">The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.</p></div><div class="chart-legend" style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px 20px;margin:12px 0 14px;font-size:13px;font-weight:600;color:#000000"><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#0072B2"></span>Increase</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#D55E00"></span>Decrease</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#616161"></span>Total</span></div><div class="chart-plot" style="--y-gutter:29.51171875px;--x-axis-h:46px;aspect-ratio:749.51171875 / 446"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#616161">0</span><span class="axis-label y" style="top:75%;color:#616161">200</span><span class="axis-label y" style="top:50%;color:#616161">400</span><span class="axis-label y" style="top:25%;color:#616161">600</span><span class="axis-label y" style="top:0%;color:#616161">800</span></div><svg role="group" aria-label="Germany generated 143 fewer terawatt-hours in 2024 than in 2015" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 720 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Waterfall chart of Germany&#x27;s electricity generation, 2015 to 2024, in terawatt-hours: 639.2 TWh in 2015, plus 102.7 TWh from renewables, minus 91.8 TWh from the nuclear phase-out, minus 154.1 TWh from a falling fossil share, arriving at 496.0 TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany&#x27;s generation reached immediately after that step.</desc><rect x="0" y="0" width="720" height="400" fill="#FFFFFF"></rect><line x1="0" x2="720" y1="400" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="300" y2="300" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="200" y2="200" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="100" y2="100" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="0" y2="0" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="112.32000000000001" x2="151.92000000000002" y1="80.39999999999998" y2="80.39999999999998" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="264.24" x2="303.84000000000003" y1="29.049999999999976" y2="29.049999999999976" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="416.16" x2="455.76000000000005" y1="74.94999999999993" y2="74.94999999999993" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="568.08" x2="607.6800000000001" y1="151.99999999999994" y2="151.99999999999994" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><g><rect x="0" y="80.39999999999998" width="112.32000000000001" height="319.6" fill="#616161"></rect></g><g><rect x="151.92000000000002" y="29.049999999999976" width="112.32000000000001" height="51.35" fill="#0072B2"></rect><rect class="step-hit" x="151.92000000000002" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Renewables: +102.7 TWh — running total after this step: 741.9 TWh" data-detail="Renewables +102.7 TWh · running total: 741.9 TWh"></rect></g><g><rect x="303.84000000000003" y="29.049999999999976" width="112.32000000000001" height="45.899999999999956" fill="#D55E00"></rect><rect class="step-hit" x="303.84000000000003" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Nuclear: −91.8 TWh — running total after this step: 650.1 TWh" data-detail="Nuclear −91.8 TWh · running total: 650.1 TWh"></rect></g><g><rect x="455.76000000000005" y="74.94999999999993" width="112.32000000000001" height="77.05000000000001" fill="#D55E00"></rect><rect class="step-hit" x="455.76000000000005" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Fossil fuel: −154.1 TWh — running total after this step: 496.0 TWh" data-detail="Fossil fuel −154.1 TWh · running total: 496.0 TWh"></rect></g><g><rect x="607.6800000000001" y="152" width="112.32000000000001" height="248" fill="#616161"></rect></g></svg><div class="overlay" aria-hidden="true"><span style="position:absolute;left:7.8%;top:20.1%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">639.2</span><span style="position:absolute;left:28.9%;top:7.3%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">+102.7</span><span style="position:absolute;left:50%;top:7.3%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">−91.8</span><span style="position:absolute;left:71.1%;top:18.7%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">−154.1</span><span style="position:absolute;left:92.2%;top:38%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">496.0</span></div><div class="x-axis"><span class="axis-label x" style="left:7.8%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">2015 total generation</span><span class="axis-label x" style="left:28.9%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Renewables</span><span class="axis-label x" style="left:50%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Nuclear</span><span class="axis-label x" style="left:71.1%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Fossil fuel</span><span class="axis-label x" style="left:92.2%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">2024 total generation</span></div></div><p class="chart-source">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>Renewables +102.7 TWh · running total: 741.9 TWh</td></tr><tr><td>Nuclear −91.8 TWh · running total: 650.1 TWh</td></tr><tr><td>Fossil fuel −154.1 TWh · running total: 496.0 TWh</td></tr></tbody></table></div>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
 //
-// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
-// per `doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").
 //
 // What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
 // `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
-// the static and video genres use, and baked into the SVG at build time. This script only reads
+// the static and video formats use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
 // beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
@@ -293,14 +334,14 @@ function initChart(svg, tooltip) {
  * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
  * component draws immediately after a visible path — to hover, tap and keyboard focus.
  *
- * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this genre is a point or a box, and
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
  * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
  * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
  * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
  * ends (both values, the change between them, the category), which is exactly the thing a
  * per-endpoint tooltip cannot say however many endpoints it answers.
  *
- * `pointer-events: stroke` is the load-bearing property, and it is set in the genre's stylesheet
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
  * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
  * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
  * aims at the line they can see and hits a target twice the touch-target floor.
@@ -414,6 +455,70 @@ function initLines(root, tooltip) {
   });
 }
 
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
 function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
@@ -421,6 +526,7 @@ function initAll() {
     initChart(svg, tooltip);
     initLines(svg, tooltip);
   });
+  initEntrance(document);
 }
 
 // Guarded rather than a bare top-level call: this file is also imported directly by

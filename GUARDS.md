@@ -24,19 +24,28 @@ written out below the tables.
 | model-declared |  |  |  |  |  |  |  | **R** |
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
 
+## capability
+
+| capability | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| same-facts-without-the-picture |  | **R** |  |  |  |  |  |  |
+
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
 ## What is still owed — 0 cells
 
 Nothing. Every format carries every rule it can reach.
 
-## Why a cell is blank, where the blankness was argued — 1 of them
+## Why a cell is blank, where the blankness was argued — 4 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
 trait already proves it.
 
 - `image-beat` cannot reach **screen-space-dash** — measured 2026-08-20: the seed's rendered artifact (skills/image-beat/assets/ImageBeatSeed.tsx) is exactly three element kinds — rect, image, text — and none carries a stroke; 0 of 1 components this format has ever drawn (no proof/ beat exists outside the two image/scrolly beats, which draw with the vehicle's own component, never this seed) carry any dash-capable mark. Structural, not incidental: references/image-discipline.md draws the boundary itself — "a photograph is not a chart: nothing here is computed from the data, because there is no data" — so this format's vocabulary never grows a stroked path the way a chart's or a map's marks can. Unlike map-web (screen-space-dash, carried at zero dashed marks as a ratchet over a population that legitimately could grow), there is no population here to ratchet over.
+- `map-web` cannot reach **same-facts-without-the-picture** — measured 2026-08-20 against all 4 delivered map-web pages (mapgen-symbol-web, mapgen-dot-web, mapgen-hexgrid-web, mapgen-locator-web): every one already ships an opt-in accessible table carrying the SAME facts the marks announce, but organised into typed columns (e.g. <th>Where</th><td>Magnitude</td><td>Date</td>) rather than one cell holding the joined data-detail string this detector compares against verbatim, so tableCarriesTheMarks reports 100% missing on every one of them (quake-symbol.html: 17/17; dot-population.html: 42/42; hex-grid.html: 156/156; locator.html: 11/11) even though a screen reader's own table navigation reads the identical facts, arguably more usefully split by column than chart-web's single joined cell. Not carried by this detector's exact string-identity contract, and not debt either: closing it would mean either weakening the check chart-web's own table exists to satisfy, or reshaping a table already in production for four shipped beats — a call for the format's own owner, not one this task makes unilaterally
+- `dw-beat` cannot reach **same-facts-without-the-picture** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file
+- `scrolly` cannot reach **same-facts-without-the-picture** — measured 2026-08-20 across every delivered scrolly beat (8 proof/ directories, including the two whose CHART track draws real data: scrolly-chart-eu-carbon, scrolly-one-chart-swiss-life-expectancy): zero marks, on any of the four tracks, carry data-detail anywhere. ChartFrame in assets/ScrollySeed.tsx draws one continuous line plus two annotated points, never chart-web's per-reading interactive marks, and none of the image/diagram/map tracks use the convention either. tableCarriesTheMarks passes vacuously (marks: 0) on every delivered page: there is no population of per-reading facts here for a table to gather
 
 ## What each skill is
 
@@ -118,3 +127,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a ramp whose input range outruns the progress driving it, so the mark it reveals is still arriving when the composition ends
 
 **Earned by:** the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down — a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops
+
+### same-facts-without-the-picture — `tableCarriesTheMarks`
+
+**Offers:** a reader who cannot see the graphic gets the same values, in a table carrying the marks' own numbers
+
+**Earned by:** map-web shipped an opt-in accessible table from its first version while chart-web shipped none, on the same trait: a chart is exactly as unreadable to a screen reader as a map, and nothing said so

@@ -165,6 +165,7 @@ ${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: p
 </head>
 <body>
 ${markup}
+${accessibleTable(markup)}
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 ${inlineScript}
@@ -193,6 +194,36 @@ function escapeHtml(text) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/**
+ * THE SAME FACTS, FOR A READER WHO CANNOT SEE THE PICTURE (`same-facts-without-the-picture`,
+ * `doctrine/references/guard-catalogue.json`). GATHERED, not authored: every mark this format
+ * draws already carries `data-detail` — the exact string handed to `aria-label` and to the hover
+ * tooltip — so this reads the SSR'd markup back for every one of them and prints them again,
+ * linearly, as one row per mark, in the order the component drew them. Mechanics, not a story's own
+ * concern: it is generic across every beat this format ships (present and future), which is why it
+ * lives here beside `buildCss` rather than in any one component — a beat's own bespoke geometry
+ * never changes what a `data-detail` string looks like.
+ *
+ * Detected against the delivered page by `scripts/detect-accessible-table.mjs`'s
+ * `tableCarriesTheMarks`, which compares each cell here against each mark's own `data-detail` —
+ * so a table that drifted from the picture would fail exactly as loudly as no table at all.
+ *
+ * Visually hidden until focused (`.chart-accessible-table` in `buildCss` below): a beat with 300
+ * marks would otherwise print a 300-row table ahead of — or crowding — the chart itself for every
+ * sighted reader, which nothing asked for. `tabindex="0"` is on the WRAPPING `<div>`, not the
+ * `<table>` itself — measured on the life-expectancy beat (74 rows): a `<table>` under the auto
+ * table layout algorithm refuses to shrink below its own content's minimum width, a caption's
+ * `nowrap` text included, so `width: 1px` on the table element itself was silently ignored and the
+ * hidden box was still 332x1648px — invisible (`clip` still painted none of it) but 261px of it
+ * still counted toward the page's own scrollable height. A plain `<div>` has no such floor; the
+ * table inside it lays out normally once the div (and so the table) is revealed by focus. */
+function accessibleTable(markup) {
+  const values = [...markup.matchAll(/data-detail="([^"]+)"/g)].map((match) => match[1]);
+  if (values.length === 0) return "";
+  const rows = values.map((value) => `<tr><td>${value}</td></tr>`).join("");
+  return `<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody>${rows}</tbody></table></div>`;
 }
 
 /**
@@ -605,6 +636,46 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
+
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
 
 ${filterRules}
 

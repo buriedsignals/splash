@@ -89,7 +89,7 @@ body {
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
      give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
      letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
      chart the reader has seen.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
@@ -167,33 +167,74 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 }
 #tooltip[hidden] { display: none; }
 
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+
 .segment-hit { cursor: pointer; }
 .segment-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
 <body>
 <figure class="chart-figure" style="--ground:#FFFFFF;--accent:#009E73;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:700;--note-size:12px"><div class="chart-header"><h2 class="chart-title">Norway ran its grid on 99% renewables; Poland leaned on fossil fuel</h2><p class="chart-caveat">Norway generated 99% of its electricity from renewables in 2024, the highest share of six countries compared here; Poland leaned hardest on fossil fuel, at 69%.</p></div><div class="chart-legend" style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px 20px;margin:12px 0 14px;font-size:13px;font-weight:600;color:#000000"><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#009E73"></span>Renewables (hydro, wind, solar, bio)</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#0072B2"></span>Nuclear</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#D55E00"></span>Fossil (gas, oil, coal)</span></div><div class="chart-plot" style="--y-gutter:43.57421875px;--x-axis-h:36px;aspect-ratio:743.57421875 / 436"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#616161">0</span><span class="axis-label y" style="top:80%;color:#616161">20</span><span class="axis-label y" style="top:60%;color:#616161">40</span><span class="axis-label y" style="top:40%;color:#616161">60</span><span class="axis-label y" style="top:20%;color:#616161">80</span><span class="axis-label y" style="top:0%;color:#616161">100 %</span></div><svg role="group" aria-label="Norway ran its grid on 99% renewables; Poland leaned on fossil fuel" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 700 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>100%-stacked bar chart of six countries&#x27; 2024 electricity generation by source: renewables, nuclear, fossil. Norway is 99% renewable, the highest of the group; Poland draws 69% from fossil fuel, the highest fossil share. Every segment&#x27;s exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus, including segments too thin to carry a printed label.</desc><rect x="0" y="0" width="700" height="400" fill="#FFFFFF"></rect><line x1="0" x2="700" y1="400" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="320" y2="320" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="240" y2="240" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="160" y2="160" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="80" y2="80" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="0" y2="0" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="16.333333333333336" y="5.575711285086848" width="84" height="394.42428871491313" fill="#009E73"></rect><rect x="16.333333333333336" y="5.575711285086848" width="84" height="0" fill="#0072B2"></rect><rect x="16.333333333333336" y="0" width="84" height="5.575711285086848" fill="#D55E00"></rect><rect x="133" y="122.56752831832705" width="84" height="277.43247168167295" fill="#009E73"></rect><rect x="133" y="4.832994481556785" width="84" height="117.73453383677027" fill="#0072B2"></rect><rect x="133" y="0" width="84" height="4.832994481556785" fill="#D55E00"></rect><rect x="249.66666666666669" y="130.20288375653942" width="84" height="269.79711624346055" fill="#009E73"></rect><rect x="249.66666666666669" y="7.604950874058902" width="84" height="122.59793288248052" fill="#0072B2"></rect><rect x="249.66666666666669" y="-8.881784197001252e-14" width="84" height="7.604950874058991" fill="#D55E00"></rect><rect x="366.3333333333333" y="165.43075465231155" width="84" height="234.56924534768845" fill="#009E73"></rect><rect x="366.3333333333333" y="165.43075465231155" width="84" height="0" fill="#0072B2"></rect><rect x="366.3333333333333" y="0" width="84" height="165.43075465231155" fill="#D55E00"></rect><rect x="483" y="275.41250290495003" width="84" height="124.58749709504997" fill="#009E73"></rect><rect x="483" y="275.41250290495003" width="84" height="0" fill="#0072B2"></rect><rect x="483" y="0" width="84" height="275.41250290495003" fill="#D55E00"></rect><rect x="599.6666666666667" y="291.295524938588" width="84" height="108.70447506141198" fill="#009E73"></rect><rect x="599.6666666666667" y="20.40656484744914" width="84" height="270.88896009113887" fill="#0072B2"></rect><rect x="599.6666666666667" y="-8.881784197001252e-14" width="84" height="20.40656484744923" fill="#D55E00"></rect><rect class="segment-hit" x="16.333333333333336" y="5.575711285086848" width="84" height="394.42428871491313" fill="transparent" tabindex="0" role="img" aria-label="Norway, renewables: 98.61% of generation, 154.9 TWh" data-detail="Norway · Renewables (hydro, wind, solar, bio) 98.61% (154.9 TWh)"></rect><rect class="segment-hit" x="16.333333333333336" y="5.575711285086848" width="84" height="4" fill="transparent" tabindex="0" role="img" aria-label="Norway, nuclear: 0.00% of generation, 0.0 TWh" data-detail="Norway · Nuclear 0.00% (0.0 TWh)"></rect><rect class="segment-hit" x="16.333333333333336" y="0" width="84" height="5.575711285086848" fill="transparent" tabindex="0" role="img" aria-label="Norway, fossil: 1.39% of generation, 2.2 TWh" data-detail="Norway · Fossil (gas, oil, coal) 1.39% (2.2 TWh)"></rect><rect class="segment-hit" x="133" y="122.56752831832705" width="84" height="277.43247168167295" fill="transparent" tabindex="0" role="img" aria-label="Sweden, renewables: 69.36% of generation, 119.4 TWh" data-detail="Sweden · Renewables (hydro, wind, solar, bio) 69.36% (119.4 TWh)"></rect><rect class="segment-hit" x="133" y="4.832994481556785" width="84" height="117.73453383677027" fill="transparent" tabindex="0" role="img" aria-label="Sweden, nuclear: 29.43% of generation, 50.7 TWh" data-detail="Sweden · Nuclear 29.43% (50.7 TWh)"></rect><rect class="segment-hit" x="133" y="0" width="84" height="4.832994481556785" fill="transparent" tabindex="0" role="img" aria-label="Sweden, fossil: 1.21% of generation, 2.1 TWh" data-detail="Sweden · Fossil (gas, oil, coal) 1.21% (2.1 TWh)"></rect><rect class="segment-hit" x="249.66666666666669" y="130.20288375653942" width="84" height="269.79711624346055" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, renewables: 67.45% of generation, 52.9 TWh" data-detail="Switzerland · Renewables (hydro, wind, solar, bio) 67.45% (52.9 TWh)"></rect><rect class="segment-hit" x="249.66666666666669" y="7.604950874058902" width="84" height="122.59793288248052" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, nuclear: 30.65% of generation, 24.0 TWh" data-detail="Switzerland · Nuclear 30.65% (24.0 TWh)"></rect><rect class="segment-hit" x="249.66666666666669" y="-8.881784197001252e-14" width="84" height="7.604950874058991" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, fossil: 1.90% of generation, 1.5 TWh" data-detail="Switzerland · Fossil (gas, oil, coal) 1.90% (1.5 TWh)"></rect><rect class="segment-hit" x="366.3333333333333" y="165.43075465231155" width="84" height="234.56924534768845" fill="transparent" tabindex="0" role="img" aria-label="Germany, renewables: 58.64% of generation, 290.9 TWh" data-detail="Germany · Renewables (hydro, wind, solar, bio) 58.64% (290.9 TWh)"></rect><rect class="segment-hit" x="366.3333333333333" y="165.43075465231155" width="84" height="4" fill="transparent" tabindex="0" role="img" aria-label="Germany, nuclear: 0.00% of generation, 0.0 TWh" data-detail="Germany · Nuclear 0.00% (0.0 TWh)"></rect><rect class="segment-hit" x="366.3333333333333" y="0" width="84" height="165.43075465231155" fill="transparent" tabindex="0" role="img" aria-label="Germany, fossil: 41.36% of generation, 205.1 TWh" data-detail="Germany · Fossil (gas, oil, coal) 41.36% (205.1 TWh)"></rect><rect class="segment-hit" x="483" y="275.41250290495003" width="84" height="124.58749709504997" fill="transparent" tabindex="0" role="img" aria-label="Poland, renewables: 31.15% of generation, 53.6 TWh" data-detail="Poland · Renewables (hydro, wind, solar, bio) 31.15% (53.6 TWh)"></rect><rect class="segment-hit" x="483" y="275.41250290495003" width="84" height="4" fill="transparent" tabindex="0" role="img" aria-label="Poland, nuclear: 0.00% of generation, 0.0 TWh" data-detail="Poland · Nuclear 0.00% (0.0 TWh)"></rect><rect class="segment-hit" x="483" y="0" width="84" height="275.41250290495003" fill="transparent" tabindex="0" role="img" aria-label="Poland, fossil: 68.85% of generation, 118.5 TWh" data-detail="Poland · Fossil (gas, oil, coal) 68.85% (118.5 TWh)"></rect><rect class="segment-hit" x="599.6666666666667" y="291.295524938588" width="84" height="108.70447506141198" fill="transparent" tabindex="0" role="img" aria-label="France, renewables: 27.18% of generation, 152.7 TWh" data-detail="France · Renewables (hydro, wind, solar, bio) 27.18% (152.7 TWh)"></rect><rect class="segment-hit" x="599.6666666666667" y="20.40656484744914" width="84" height="270.88896009113887" fill="transparent" tabindex="0" role="img" aria-label="France, nuclear: 67.72% of generation, 380.5 TWh" data-detail="France · Nuclear 67.72% (380.5 TWh)"></rect><rect class="segment-hit" x="599.6666666666667" y="-8.881784197001252e-14" width="84" height="20.40656484744923" fill="transparent" tabindex="0" role="img" aria-label="France, fossil: 5.10% of generation, 28.7 TWh" data-detail="France · Fossil (gas, oil, coal) 5.10% (28.7 TWh)"></rect></svg><div class="overlay" aria-hidden="true"><span style="position:absolute;left:8.3%;top:50.7%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">99%</span><span style="position:absolute;left:25%;top:65.3%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">69%</span><span style="position:absolute;left:25%;top:15.9%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#FFFFFF;white-space:nowrap">29%</span><span style="position:absolute;left:41.7%;top:66.3%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">67%</span><span style="position:absolute;left:41.7%;top:17.2%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#FFFFFF;white-space:nowrap">31%</span><span style="position:absolute;left:58.3%;top:70.7%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">59%</span><span style="position:absolute;left:58.3%;top:20.7%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">41%</span><span style="position:absolute;left:75%;top:84.4%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">31%</span><span style="position:absolute;left:75%;top:34.4%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">69%</span><span style="position:absolute;left:91.7%;top:86.4%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">27%</span><span style="position:absolute;left:91.7%;top:39%;transform:translate(-50%, -50%);font-size:13px;font-weight:700;color:#FFFFFF;white-space:nowrap">68%</span></div><div class="x-axis"><span class="axis-label x" style="left:8.3%;top:6px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">Norway</span><span class="axis-label x" style="left:25%;top:22px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">Sweden</span><span class="axis-label x" style="left:41.7%;top:6px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">Switzerland</span><span class="axis-label x" style="left:58.3%;top:22px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">Germany</span><span class="axis-label x" style="left:75%;top:6px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">Poland</span><span class="axis-label x" style="left:91.7%;top:22px;white-space:nowrap;text-align:center;line-height:1.15;font-size:12px;color:#616161">France</span></div></div><p class="chart-source">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>Norway · Renewables (hydro, wind, solar, bio) 98.61% (154.9 TWh)</td></tr><tr><td>Norway · Nuclear 0.00% (0.0 TWh)</td></tr><tr><td>Norway · Fossil (gas, oil, coal) 1.39% (2.2 TWh)</td></tr><tr><td>Sweden · Renewables (hydro, wind, solar, bio) 69.36% (119.4 TWh)</td></tr><tr><td>Sweden · Nuclear 29.43% (50.7 TWh)</td></tr><tr><td>Sweden · Fossil (gas, oil, coal) 1.21% (2.1 TWh)</td></tr><tr><td>Switzerland · Renewables (hydro, wind, solar, bio) 67.45% (52.9 TWh)</td></tr><tr><td>Switzerland · Nuclear 30.65% (24.0 TWh)</td></tr><tr><td>Switzerland · Fossil (gas, oil, coal) 1.90% (1.5 TWh)</td></tr><tr><td>Germany · Renewables (hydro, wind, solar, bio) 58.64% (290.9 TWh)</td></tr><tr><td>Germany · Nuclear 0.00% (0.0 TWh)</td></tr><tr><td>Germany · Fossil (gas, oil, coal) 41.36% (205.1 TWh)</td></tr><tr><td>Poland · Renewables (hydro, wind, solar, bio) 31.15% (53.6 TWh)</td></tr><tr><td>Poland · Nuclear 0.00% (0.0 TWh)</td></tr><tr><td>Poland · Fossil (gas, oil, coal) 68.85% (118.5 TWh)</td></tr><tr><td>France · Renewables (hydro, wind, solar, bio) 27.18% (152.7 TWh)</td></tr><tr><td>France · Nuclear 67.72% (380.5 TWh)</td></tr><tr><td>France · Fossil (gas, oil, coal) 5.10% (28.7 TWh)</td></tr></tbody></table></div>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
 //
-// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
-// per `doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").
 //
 // What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
 // `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
-// the static and video genres use, and baked into the SVG at build time. This script only reads
+// the static and video formats use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
 // beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
@@ -293,14 +334,14 @@ function initChart(svg, tooltip) {
  * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
  * component draws immediately after a visible path — to hover, tap and keyboard focus.
  *
- * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this genre is a point or a box, and
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
  * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
  * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
  * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
  * ends (both values, the change between them, the category), which is exactly the thing a
  * per-endpoint tooltip cannot say however many endpoints it answers.
  *
- * `pointer-events: stroke` is the load-bearing property, and it is set in the genre's stylesheet
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
  * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
  * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
  * aims at the line they can see and hits a target twice the touch-target floor.
@@ -414,6 +455,70 @@ function initLines(root, tooltip) {
   });
 }
 
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
 function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
@@ -421,6 +526,7 @@ function initAll() {
     initChart(svg, tooltip);
     initLines(svg, tooltip);
   });
+  initEntrance(document);
 }
 
 // Guarded rather than a bare top-level call: this file is also imported directly by

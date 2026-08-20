@@ -31,9 +31,13 @@ describe("the guard catalogue", () => {
     const rules = readCatalogue().rules;
     expect(rules.length).toBeGreaterThan(0);
     for (const rule of rules) {
-      expect(rule.refuses.length).toBeGreaterThan(20);
+      // A guard REFUSES a defect; a capability OFFERS something a reader gains — one field or the
+      // other, never both, and every rule has one of them.
+      expect((rule.refuses ?? rule.offers).length).toBeGreaterThan(20);
       expect(rule.earnedBy.length).toBeGreaterThan(20);
-      expect(rule.decidedBy).toMatch(/^[a-zA-Z]+$/);
+      // decidedBy names a guard's own decision function; detectedBy names a capability's own — the
+      // same DECLARED-NOT-INFERRED contract `carriedBy` reads, under whichever name its kind uses.
+      expect(rule.decidedBy ?? rule.detectedBy).toMatch(/^[a-zA-Z]+$/);
     }
   });
 
@@ -49,12 +53,12 @@ describe("the guard catalogue", () => {
     for (const rule of readCatalogue().rules)
       for (const [skill, state] of Object.entries(rule.states))
         if (state === "carried")
-          expect(carriedBy(skill)).toContain(rule.decidedBy);
+          expect(carriedBy(skill)).toContain(rule.decidedBy ?? rule.detectedBy);
   });
 
   it("declares every guard any skill already carries", () => {
     const declared = new Set(
-      readCatalogue().rules.map((rule) => rule.decidedBy),
+      readCatalogue().rules.map((rule) => rule.decidedBy ?? rule.detectedBy),
     );
     for (const skill of PRODUCING_SKILLS)
       for (const name of carriedBy(skill))
@@ -103,12 +107,9 @@ describe("the guard catalogue", () => {
   // `exceptions` — in prose the next reader can disagree with — that the defect cannot happen
   // there, which is a claim with a name attached and a measurement behind it.
   //
-  it(
-    "owes nothing: every reachable format carries every guard it can reach",
-    () => {
-      expect(owedRows(readCatalogue())).toEqual([]);
-    },
-  );
+  it("owes nothing: every reachable format carries every guard it can reach", () => {
+    expect(owedRows(readCatalogue())).toEqual([]);
+  });
 });
 
 // appended to skills/doctrine/test/guard-parity.test.ts
@@ -160,21 +161,28 @@ describe("the generated state says what a reader needs", () => {
   it("prints the traits table, so a reader sees WHY a rule reaches a skill", () => {
     const heading = "## What each skill is";
     const start = doc.indexOf(heading);
-    expect(start, "the \"## What each skill is\" section is missing from the document").toBeGreaterThan(-1);
+    expect(
+      start,
+      'the "## What each skill is" section is missing from the document',
+    ).toBeGreaterThan(-1);
     const afterHeading = doc.slice(start + heading.length);
     const nextHeading = afterHeading.indexOf("\n## ");
-    const section = nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading);
+    const section =
+      nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading);
 
     for (const skill of PRODUCING_SKILLS) {
-      const row = section.split("\n").find((line) => line.startsWith(`| ${skill} |`));
+      const row = section
+        .split("\n")
+        .find((line) => line.startsWith(`| ${skill} |`));
       expect(row, `${skill} has no row in the traits table`).toBeDefined();
       const cells = (row ?? "").split("|").map((cell) => cell.trim());
-      const named = TRAITS.filter((trait, index) => cells[index + 2] === "\u2713").map(
-        (trait) => trait.id,
-      );
-      expect(named.sort(), `${skill}'s row disagrees with its TRAITS.json`).toEqual(
-        [...traitsOf(skill)].sort(),
-      );
+      const named = TRAITS.filter(
+        (trait, index) => cells[index + 2] === "\u2713",
+      ).map((trait) => trait.id);
+      expect(
+        named.sort(),
+        `${skill}'s row disagrees with its TRAITS.json`,
+      ).toEqual([...traitsOf(skill)].sort());
     }
   });
 
@@ -201,18 +209,22 @@ describe("renderGuardsDoc handles every kind at once, on a synthetic catalogue",
   });
   const guardRule = fixtureRule("guard", {
     decidedBy: "fixtureGuardDecided",
-    refuses: "a fixture defect used only to prove the renderer handles three kinds at once",
+    refuses:
+      "a fixture defect used only to prove the renderer handles three kinds at once",
   });
   const capabilityRule = fixtureRule("capability", {
     detectedBy: "fixtureCapabilityDetected",
-    offers: "a fixture capability used only to prove the renderer handles three kinds at once",
+    offers:
+      "a fixture capability used only to prove the renderer handles three kinds at once",
   });
   const disciplineRule = fixtureRule("discipline", {
     writtenIn: "fixtureDisciplineWritten",
   });
 
   it("prints three matrices in order guard, capability, discipline, with the discipline note right after", () => {
-    const doc = renderGuardsDoc({ rules: [guardRule, capabilityRule, disciplineRule] });
+    const doc = renderGuardsDoc({
+      rules: [guardRule, capabilityRule, disciplineRule],
+    });
     const guardAt = doc.indexOf("## guard");
     const capabilityAt = doc.indexOf("## capability");
     const disciplineAt = doc.indexOf("## discipline");
@@ -221,10 +233,14 @@ describe("renderGuardsDoc handles every kind at once, on a synthetic catalogue",
     const nextHeadingAt = doc.indexOf("\n## ", disciplineRowAt);
 
     expect(guardAt, "no ## guard heading").toBeGreaterThan(-1);
-    expect(capabilityAt, "## capability must come after ## guard").toBeGreaterThan(guardAt);
-    expect(disciplineAt, "## discipline must come after ## capability").toBeGreaterThan(
+    expect(
       capabilityAt,
-    );
+      "## capability must come after ## guard",
+    ).toBeGreaterThan(guardAt);
+    expect(
+      disciplineAt,
+      "## discipline must come after ## capability",
+    ).toBeGreaterThan(capabilityAt);
     expect(
       disciplineRowAt,
       "the discipline matrix never printed its own rule's row",

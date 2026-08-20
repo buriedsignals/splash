@@ -56,6 +56,7 @@ import {
   marksFromSource,
   revealDashInScreenSpace,
 } from "./verify-guards.mjs";
+import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -909,14 +910,18 @@ if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
 
 // ===== CARGO — what the shipped file CONTAINS, before anything is driven =====
 //
-// Two decisions this format reaches, run on the artifact itself rather than on the page a browser
+// Three decisions this format reaches, run on the artifact itself rather than on the page a browser
 // renders from it: they need no browser, so making them wait behind one would only make them
-// skippable. They live in `verify-guards.mjs` because importing THIS file runs it.
+// skippable. Two live in `verify-guards.mjs`; the third, the accessible table
+// (`same-facts-without-the-picture`, `doctrine/references/guard-catalogue.json`), lives in
+// `detect-accessible-table.mjs` because it is a capability rather than a guard, and this is where
+// its declared `GUARDS` name is actually run against the file `render` just wrote.
 {
   const html = readFileSync(filePath, "utf8");
   const mb = (n) => (n / (1024 * 1024)).toFixed(2);
   const twice = duplicatedPayload(html);
   const measuring = revealDashInScreenSpace(marksFromSource(html, basename(filePath)));
+  const table = tableCarriesTheMarks(html);
   console.log(`\nCARGO — what the file carries`);
   for (const found of twice)
     console.log(
@@ -924,8 +929,12 @@ if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
     );
   for (const id of measuring)
     console.log(`  FAIL  ${id} reveals with a dash that measures its own path under a non-scaling stroke`);
-  if (!twice.length && !measuring.length)
-    console.log(`  ok    every asset inlined once; every dash drawn in the path's own units`);
+  for (const value of table.missing)
+    console.log(`  FAIL  the accessible table is missing a mark's own fact: ${value}`);
+  if (!twice.length && !measuring.length && !table.missing.length)
+    console.log(
+      `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`,
+    );
   else process.exitCode = 1;
 }
 if (wantShots) await mkdir(outDir, { recursive: true });
