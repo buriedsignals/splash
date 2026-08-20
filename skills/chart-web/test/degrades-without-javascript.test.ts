@@ -126,7 +126,13 @@ function chartWebArtifacts(): string[] {
 describe("every chart-web page on disk", () => {
   it("keeps every mark when scripting is taken away", async () => {
     const files = chartWebArtifacts();
-    expect(files.length).toBeGreaterThanOrEqual(17);
+    // Same exact count as `accessible-table.test.ts` and `keyboard-reach.test.ts`, for the same
+    // reason: a `>= 17` floor still clears when the walk silently drops back to 17, which is
+    // exactly the defect the parent-directory fallback above was written to fix. Asserted exactly.
+    // A 19th delivered beat SHOULD turn this red — bump the number here (and its three siblings:
+    // `accessible-table.test.ts`, `keyboard-reach.test.ts`, `reduced-motion.test.ts`) rather than
+    // loosen it back to a floor.
+    expect(files.length).toBe(18);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {

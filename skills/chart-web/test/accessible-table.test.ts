@@ -197,7 +197,10 @@ describe("every chart-web page on disk", () => {
     // the same shape as `verify-guards.test.ts`'s own floor. Asserted exactly, not just a floor:
     // `webArtifacts()`-style walks are exactly the kind of check that silently drops a page (this
     // one did, on `web-co2-ranking`, until the parent-directory lookup was added), so a count that
-    // creeps back down to 17 must fail loudly rather than still clear a `>= 17` floor.
+    // creeps back down to 17 must fail loudly rather than still clear a `>= 17` floor. A 19th
+    // delivered beat SHOULD turn this red — bump the number here (and its three siblings:
+    // `keyboard-reach.test.ts`, `reduced-motion.test.ts`, `degrades-without-javascript.test.ts`)
+    // rather than loosen it back to a floor.
     expect(files.length).toBe(18);
     const offenders: string[] = [];
     for (const file of files) {

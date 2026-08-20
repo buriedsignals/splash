@@ -145,7 +145,10 @@ describe("every chart-web page on disk", () => {
     // the same-directory-only version (measured 2026-08-20: 17 files, silently missing
     // `web-co2-ranking/dist/co2-ranking.html`, whose runner writes one directory down from its own
     // output) until fix round 1 gave it the parent-directory fallback above. Asserted exactly, not
-    // just a floor, so a count that creeps back down to 17 fails loudly.
+    // just a floor, so a count that creeps back down to 17 fails loudly. A 19th delivered beat
+    // SHOULD turn this red — bump the number here (and its three siblings: `accessible-table
+    // .test.ts`, `reduced-motion.test.ts`, `degrades-without-javascript.test.ts`) rather than
+    // loosen it back to a floor.
     expect(files.length).toBe(18);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];

@@ -179,7 +179,7 @@ ${inlineScript}
   // weight is whatever the markup, the inline script and the accessible table above sum to.
   // `weightAgainstCeiling` (`scripts/detect-weight-has-a-ceiling.mjs`) is the capability
   // `doctrine/references/guard-catalogue.json` names `weight-has-a-ceiling`, measured against
-  // this format's own 17 delivered pages right here, at the moment the file becomes a fact.
+  // this format's own 18 delivered pages right here, at the moment the file becomes a fact.
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
