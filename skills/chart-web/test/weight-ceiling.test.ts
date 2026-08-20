@@ -5,11 +5,11 @@
  * bytes — a limit on what goes IN. Nothing has ever measured what comes OUT: the delivered file
  * itself, once every asset it inlines is already inside it. `weightAgainstCeiling` is that
  * measurement, and `CEILING_BYTES` (`../scripts/detect-weight-has-a-ceiling.mjs`) is this format's
- * own ceiling, set at the heaviest of the 17 delivered `chart-web` pages measured 2026-08-20.
+ * own ceiling, set at the heaviest of the 18 delivered `chart-web` pages measured 2026-08-20.
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   weightAgainstCeiling,
   CEILING_BYTES,
@@ -41,9 +41,24 @@ describe("weightAgainstCeiling", () => {
   });
 });
 
-/** Every delivered `chart-web` page on disk, told apart from its `map-web` sibling the same way
- *  `test/keyboard-reach.test.ts`'s own `chartWebArtifacts()` does: which format's own `renderWeb`
- *  actually wrote the file. */
+/** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path,
+ *  checked against the page's OWN directory and its PARENT — a runner usually sits beside its own
+ *  output but not always (`proof/web-co2-ranking/render-web.mjs` writes one directory down, into
+ *  `dist/co2-ranking.html`), the same fallback `test/keyboard-reach.test.ts`'s own
+ *  `importsChartWebRenderer()` carries after fix round 1 caught a same-directory-only version
+ *  silently skipping that 18th page. */
+function importsChartWebRenderer(dir: string): boolean {
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".mjs"))
+    .some((name) =>
+      readFileSync(join(dir, name), "utf8").includes(
+        "skills/chart-web/scripts/render-web.mjs",
+      ),
+    );
+}
+
+/** Every delivered `chart-web` page on disk — the same discovery `test/keyboard-reach.test.ts` uses. */
 function chartWebArtifacts(): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
@@ -53,14 +68,7 @@ function chartWebArtifacts(): string[] {
       else if (entry.name.endsWith(".html")) {
         const source = readFileSync(path, "utf8");
         if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        const dirHasChartWebImport = readdirSync(dir)
-          .filter((name) => name.endsWith(".mjs"))
-          .some((name) =>
-            readFileSync(join(dir, name), "utf8").includes(
-              "skills/chart-web/scripts/render-web.mjs",
-            ),
-          );
-        if (dirHasChartWebImport) found.push(path);
+        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
       }
     }
   };
@@ -71,9 +79,9 @@ function chartWebArtifacts(): string[] {
 describe("every chart-web page on disk", () => {
   it("weighs at or under this format's own measured ceiling", () => {
     const files = chartWebArtifacts();
-    // Same floor as `test/keyboard-reach.test.ts`, for the same reason: a count under this means
-    // the walk stopped finding beats, not that the beats got lighter.
-    expect(files.length).toBeGreaterThanOrEqual(17);
+    // Same exact count as `test/keyboard-reach.test.ts`, for the same reason: a count that creeps
+    // back down means the walk stopped finding beats, not that the beats got lighter.
+    expect(files.length).toBe(18);
     const offenders: string[] = [];
     for (const file of files) {
       const bytes = statSync(file).size;

@@ -19,9 +19,11 @@ export function weightAgainstCeiling(bytes, ceiling) {
   return { bytes, ceiling, over: bytes > ceiling };
 }
 
-/** THIS FORMAT'S OWN CEILING, measured 2026-08-20 across all 17 delivered `chart-web` pages on
+/** THIS FORMAT'S OWN CEILING, measured 2026-08-20 across all 18 delivered `chart-web` pages on
  *  disk (the same population `test/keyboard-reach.test.ts` and `test/accessible-table.test.ts`
- *  walk): sizes ranged 29 065 - 121 616 bytes. Set at the heaviest one measured
+ *  walk, after fix round 1 gave the walker its parent-directory fallback — a same-directory-only
+ *  version undercounts to 17, silently missing `web-co2-ranking/dist/co2-ranking.html`): sizes
+ *  ranged 29 065 - 121 616 bytes. Set at the heaviest one measured
  *  (`weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html`, 121 616 bytes) —
  *  today's population is what earns the line, not a round number that felt right. */
 export const CEILING_BYTES = 121616;
