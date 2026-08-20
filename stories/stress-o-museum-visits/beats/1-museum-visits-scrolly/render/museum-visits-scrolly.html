@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Museum visits rose every year — then a partial reading arrived</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #16191B;
+  --ink: #FFFFFF;
+  --muted: #a6a8a8;
+  --grid: #404244;
+  /* THE BAND A BEAT'S OWN FRAMES STILL KEEP CLEAR AT THEIR BOTTOM, if that beat keeps one
+     (`CONTENT_TOP` in a beat's own frame file). It is DECLARED, never consumed: this scaffold
+     places nothing against it, and since the ninth correction there is no band it COULD place
+     anything against — the card travels the whole height of the frame at a uniform rate and rests
+     nowhere. The seed passes 0 and its own frames use their full height again; the beats that
+     still derive a camera or a plot box from their own copy pass theirs, and it is emitted so the
+     number is readable off the delivered file. See references/scrolly-discipline.md, "A reserved
+     band cannot survive a card that crosses everything." */
+  --prose-lane: 0%;
+  /* The card's own side gutter, on the viewports wide enough to have one — see `.step`, below,
+     for the two regimes and the width that separates them. */
+  --prose-gutter: clamp(16px, 6vw, 56px);
+}
+* { box-sizing: border-box; }
+/* THE PAGE DOES NOT SCROLL, and that is the whole model this format now runs on. The component is
+   exactly one frame tall; the ONLY thing in the document with scroll distance is
+   `.scrolly-steps`, the prose column. See references/scrolly-discipline.md, "The graphic is fixed
+   and the page does not scroll," for the seventh correction that replaced the sticky model and for
+   the measurement that condemned it. This is also what makes the file safe to embed in a CMS
+   article: a component that scrolls its own prose never steals the host page's scroll. */
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+/* `.scrolly` itself carries NO width constraint — a sixth correction. The fourth build's fix
+   constrained THIS element to a 640px reading measure, which centred it correctly but also capped
+   every child inside it, including the GRAPHIC, to that same narrow column — a visual meant to
+   fill the frame it sits in, stranded in the middle of a wide page instead. The reading measure now
+   belongs to the two things that are actually PROSE — `.scrolly-header`, below, and
+   `.step-panel` (`.step`'s own `justify-content: center` already centres it, see "Measuring prose
+   over the graphic") — never to `.scrolly-track`/`.scrolly-graphic`, which are left to size
+   themselves to their parent's own full width, all the way out to `body`. See
+   references/scrolly-discipline.md, "The graphic fills the width it is given."
+
+   The HEIGHT rule is the SEVENTH correction, and it is a change of model rather than of a number.
+   `.scrolly` is a three-row grid exactly one frame tall: the header and bottom credit take what
+   they need, and the track takes everything left (`minmax(0, 1fr)` — never `1fr` alone, whose `auto` minimum
+   would let a tall track push the component past the frame and put the document back in the
+   scrolling business). Nothing in this grid ever moves. */
+.scrolly {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+/* The header takes the same width as the graphic beneath it — no reading-measure cap. It used to
+   sit in a centred 640px column, and that was the mismatch the owner named: a title stopping at
+   640px above a full-bleed graphic reads as a broken box (see references/scrolly-discipline.md,
+   "The reading measure belongs to the prose"). What survives the reversal is the GUTTER: the side
+   padding SCALES with the viewport (`clamp`) rather than sitting at a fixed 16px, so the header
+   never touches the frame's own edge at any width, on a maximised desktop or a phone. The header
+   states the beat's own argument in full, unconditional and ahead of every step's own reveal — and,
+   deliberately, ahead of the sticky graphic too: it sits in plain document flow, scrolled past once,
+   so it is never the thing a step's prose panel has to be measured against. The STEP PANEL keeps
+   its own measure (`.step-panel`, below): that is prose travelling OVER the graphic, not
+   furniture beside it, and the reversal does not reach it.
+
+   THE HEADER NEVER MOVES — a seventh correction, and the owner's own words: "on scroll d'abord
+   dans la page, ce qui fait disparaître le titre, alors que ça devrait être fixe." Under the
+   sticky model the header was the first casualty of the reader's first gesture: the DOCUMENT
+   scrolled, so the title slid away before the graphic had even finished arriving. It is now row 1
+   of `.scrolly`'s own grid, OUTSIDE the one element that scrolls, so it is fixed by construction
+   rather than by a `position` keyword that has to be got right. `margin-bottom` is gone with it:
+   the gap now belongs to the header's own padding, because a margin between two grid rows would
+   show the page's ground where the frame should start. */
+.scrolly-header {
+  padding: 4px clamp(16px, 6vw, 56px) 10px;
+}
+.scrolly-header h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+/* The source follows the visual in DOM and layout order. It is page furniture, not part of the
+   headline, and placing it here keeps the credit at the visual's floor at every viewport. */
+.scrolly > .source {
+  margin: 0;
+  padding: 8px clamp(16px, 6vw, 56px) 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* THE GRAPHIC FILLS THE FRAME, AND THE CARD TRAVELS OVER IT. The graphic is a layer of a track that
+   never moves — it does not stick, it does not catch up and it does not unpin. That is the SEVENTH
+   correction, unchanged. The EIGHTH correction took the prose OUT of this box and into a column
+   beside it; the NINTH puts it back on top, which is the shape the owner asked for:
+
+     "Le panel avec le texte ne doit pas être sur le côté mais centré et par dessus le contenu
+      visuel."
+
+   The eighth correction's split was a sound answer to a real defect — an opaque panel travelling a
+   box it SHARES with the graphic crosses every part of that graphic at some offset, and no
+   reservation survives a travelling occluder — and it is not the form. Two cells make a collision
+   impossible by never letting the two things meet; this format's whole grammar is that they DO meet
+   and that meeting is legible. So the collision is answered the other way: the card is fully
+   OPAQUE, painted with the exact `--ground` this render's furniture was derived from, and
+   `renderScrolly` asserts ink-on-ground clears 4.5:1 before it writes a byte. Wherever the card
+   sits — over the photograph, over the plot, over the basemap — the colour a reader's eye meets is
+   `--ground`, and the only contrast question is the one `deriveFurniture` already answers.
+
+   WHAT THE CARD COVERS, measured rather than hoped for (a continuous scroll, both directions, three
+   widths — see references/scrolly-discipline.md, "What the card covers"): a 410px-wide stripe down
+   the middle of the frame at every desktop width (26% of 1600, 32% of 1280) and the full width of a
+   phone, sweeping the whole height once per step. It crosses one of a frame's own labels on 44-165
+   animation frames of a ~230-frame pass, and the graphic stands entirely clear on 12-35 of them.
+   None of that is avoidable while the card travels the frame, and pretending otherwise is what the
+   eighth correction's reservation did.
+
+   `overflow: hidden` on the track is what keeps the assembly one frame tall; the two layers share
+   the box on purpose. */
+.scrolly-track {
+  position: relative;
+  overflow: hidden;
+}
+.scrolly-graphic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.frame-stack { position: absolute; inset: 0; }
+/* Every step's own frame is SSR'd and stacked in the SAME box (an `<img>` and an `<svg>` sit in
+   an identical wrapper — this scaffold does not know which is which). Exactly one wrapper carries
+   `.active` at build time (this file's own `renderScrolly`, never the frame component) — that is
+   the ENTIRE no-JS contract: with the inline script absent, the CSS below is what keeps that one
+   frame visible and every other one invisible, permanently. */
+/* Exactly ONE frame is ever visible at a time — opacity 0 or 1, never anything between. The step
+   this is pinned to (this file's own `renderScrolly`, the `active` class in the SSR'd markup) is
+   the SOLE thing that changes which one that is: nothing here writes an intermediate opacity from
+   scroll position. A reader must be able to perceive a STILL image with the prose travelling over
+   it — not a graphic that visibly blends between two unrelated frames for the whole of a step's own
+   scroll distance, which is what this file's own third build shipped and the fourth correction
+   removed (see references/scrolly-discipline.md, "The graphic is fixed; only the text moves," for
+   the measurement that caught it: the two frames sampled at ELEVEN scroll positions spanning the
+   full track, and at every single one — including the very last, nowhere near settled — both were
+   still a blend, never once a clean 0/1). */
+.step-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.step-frame.active { opacity: 1; }
+.step-frame img,
+.step-frame svg { display: block; width: 100%; height: 100%; }
+/* Reduced motion: a reader who asks for no animation gets no animation — the swap becomes an
+   instant cut instead of a fade. This is the ONLY animated property this format ships, and it only
+   ever plays at a STEP BOUNDARY (when `assets/interaction.mjs`'s `initScrolly` moves the `active`
+   class) — never continuously from scroll position, which is what made the graphic itself, not just
+   its swap, look like it was still in motion the whole time a reader scrolled through a step. */
+@media (prefers-reduced-motion: no-preference) {
+  .step-frame { transition: opacity 0.3s ease; }
+}
+
+/* THE ONE SCROLLER IN THE DOCUMENT. Nothing else in the page has scroll distance — `body` is
+   `overflow: hidden` and exactly one frame tall — so the reader's wheel, finger and arrow keys
+   move THIS layer and nothing else. The prose travels; the graphic and the header do not.
+
+   `tabindex="0"` on this element (written in the markup, not here) is not decoration and it is not
+   optional: taking the scroll off the document takes the reader's default keyboard scrolling with
+   it, and a scroll container that cannot be focused cannot be driven by a keyboard at all in every
+   browser. Focusing it restores Page Down / arrow / space over the prose — the same reach the
+   document used to give for free. See references/scrolly-discipline.md, "Keyboard and screen
+   readers reach every step." */
+.scrolly-steps {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* NO BACKGROUND, and that is the whole of the ninth correction in one declaration: this layer
+     covers the graphic edge to edge, so anything it paints is a scrim over the visual. The only
+     opaque thing in it is the card. The eighth correction gave this element `background:
+     var(--ground)` and a 1px border because it was a COLUMN of its own beside the graphic; both
+     go with the column. */
+}
+/* Prose is ALWAYS in normal document flow — nothing here is display:none or visibility:hidden, and
+   nothing removes a paragraph from the accessibility tree. A screen reader or keyboard user reaches
+   every step's own text by reading or tabbing through the page exactly like any other paragraph;
+   scrolling is only what changes the GRAPHIC and which panel is PAINTED, never what puts the words
+   in the document.
+
+   `.step`'s own horizontal padding carries the gutter on the viewports that have one, so the card
+   never sits flush against the frame's own edge there.
+
+   `align-items: center` is what makes the card TRAVEL, and it is the eighth correction, kept.
+   Centred in a step taller than the frame it scrolls inside, the card crosses the whole frame once
+   per step: it enters at the bottom edge, passes the middle, and leaves past the top, moving by
+   exactly the reader's own scroll on every single animation frame. Nothing clamps it and nothing
+   parks it — a card that stops is the defect the owner named ("le panel avec le texte ne bouge
+   plus"), and pinning one is what the eighth correction reversed.
+
+   `140%`, AND THE NUMBER IS MEASURED. A step is the distance between two consecutive card centres,
+   so the share of a pass on which NO card is over the graphic is `1 - (L + p) / S` for a track of
+   height L, a card of height p and a step of S. At 115% — the eighth correction's value, chosen
+   when the card lived beside the graphic and covering it was impossible — that share is 3%: driven,
+   the seed measured 0 clear animation frames out of 217 at all three widths, so a reader never once
+   saw the visual unobstructed. Raising S buys clear air and costs LOCK-STEP, because the active
+   step flips when the incoming card enters the bottom edge, at `progress = i + 1 - (L + p)/(2S)`;
+   the guard's own ceiling is 0.65 of a step. Driven at three heights on the seed: 115% gave 0/217
+   clear and a worst drift of 0.50; 140% gave 28-31 clear of ~230 and 0.58; 170% gave 48-58 clear
+   and 0.64-0.66 — at or over the ceiling. 140% is the largest step with real margin on both, and
+   it also happens to be the height at which two cards are NEVER on screen at once (measured 0/231
+   at every width, against 1-14 at 115%), which over a graphic is worth having: two opaque cards
+   beside a visual is a boundary, two opaque cards ON it is a wall.
+
+   Every step is the same height, INCLUDING the last.
+
+   `140%`, not `140vh` — a seventh correction, kept: a step's scroll distance is a multiple of the
+   SCROLLPORT the prose scrolls inside, which is the track itself. `vh` would count the fixed
+   header too and make every step taller than the box it is read in.
+
+   THE TWO REGIMES, and this is the one lever the vehicle has against the defect the owner reported
+   in the round the card was last centred ("the 'flood day' label reduced to 'flo…'"). A label
+   sitting UNDER the card reads as absent, which is what a card over a picture means; a label the
+   card's own VERTICAL EDGE cuts down the middle reads as broken text, and it stays broken for every
+   frame the card spends at that row. So the card is either comfortably narrower than the frame —
+   its edges landing in the middle, where a frame does not put its axis furniture — or exactly as
+   wide as it, with no edge inside the frame at all. Never in between. Frames keep their own margin
+   content in the outer ~15% of their box (`CHART_LAYOUT`'s y-axis gutter is `max(62px, 13%)`), so
+   "comfortably narrower" is at most 70% of the frame's width; the card's own reading measure
+   renders at 410px, and 410 / 0.7 = 586, which is where the regimes change. Driven at 375px, the
+   in-between shape cut the chart's own y-axis labels for 42 consecutive animation frames; edge to
+   edge, it cuts nothing at all — measured 0 sliced runs at that width on all five beats. */
+.step {
+  min-height: 140%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* NARROW: no gutter, so the card can reach both edges and have no edge inside the frame. */
+  padding: 0;
+}
+
+/* THE CARD TRAVELS, CENTRED, OVER THE VISUAL. An ordinary flow box, centred in a step taller than
+   the frame, moving with the scroll like every other word on the page — the rule that ships is the
+   absence of a rule. No `position`, no offset, nothing that could park it.
+
+   The card is OPAQUE, painted with the exact `--ground` this render's furniture was derived from —
+   never a translucent scrim, whose EFFECTIVE colour would be a blend with whatever part of the
+   graphic happened to sit behind it at a given scroll position, changing frame to frame and pixel
+   to pixel. An opaque card has no such ambiguity, and it is what makes the ninth correction's
+   answer to the collision problem measurable at all: wherever the card sits, the background a
+   reader's eye meets is `--ground`, so the only contrast question left is ink-on-ground — asserted
+   at build time by `renderScrolly`'s own tripwire and again, off the LIVE computed styles of a
+   driven browser, by `scripts/verify-scrolly.mjs`'s assertion F.
+
+   NARROW REGIME BY DEFAULT: `max-width: 100%` and no gutter, so on a phone the card spans the
+   frame edge to edge and has no vertical edge inside it to slice a label against. The reading
+   measure is the OVERRIDE, below — the mobile-first order this file already keeps, for the same
+   reason: the viewport with the least room to spare is the one a browser that ignores the query
+   should get. */
+.step-panel {
+  max-width: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--grid);
+  padding: 14px 16px;
+}
+
+/* THE READING MEASURE, once the frame is wide enough for the card to be comfortably narrower than
+   it. 586px is where a 410px card stops being 70% of the frame (see `.step`, above, for why 70% is
+   the line and what the in-between shape measured); 600px is that with a little room, and it is
+   also below every desktop and laptop this format is checked at. */
+@media (min-width: 600px) {
+  .step { padding: 0 var(--prose-gutter); }
+  .step-panel { max-width: min(46ch, 100%); }
+}
+.step-panel p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.step-panel p + p { margin-top: 10px; }
+
+/* NO CARD IS EVER HIDDEN, and that is the eighth correction removing a mechanism rather than
+   tuning one. The seventh build faded every panel that was not `in-lane` to `opacity: 0`, because a
+   `bottom`-sticky panel un-pinned one panel-height before the next one parked and spent that gap
+   opaque and climbing over the graphic's own labels — real, measured, and closed by not painting it.
+
+   THE NINTH CORRECTION PUTS THE CARD BACK OVER THE GRAPHIC AND STILL DOES NOT REINSTATE THE FADE.
+   A card mid-fade is a TRANSLUCENT box over the visual, which is the one thing "Measuring prose
+   over the graphic" forbids outright: its effective colour is a blend nobody can measure. Opaque
+   and travelling is measurable; translucent and travelling is not. And the reader would watch the
+   words they are reading DISSOLVE halfway up the frame instead of scrolling out of it, which is
+   the owner's own defect wearing a different costume.
+
+   Gone with it: `pickLanePanel`, the `in-lane` class, and `.scrolly--live` — a class whose only
+   consumer was the rule above, and which existed so that a page whose script never ran could not
+   hide a word. With no rule that hides a word, there is nothing left for it to guard. */
+</style>
+</head>
+<body>
+<article class="scrolly" data-prose-lane="0">
+  <header class="scrolly-header">
+    <h2>Museum visits rose every year — then a partial reading arrived</h2>
+  </header>
+  <div class="scrolly-track">
+    <div class="scrolly-graphic">
+      <div class="frame-stack">
+      <div class="step-frame active" data-step="step-1" aria-hidden="true">
+<div style="position:absolute;inset:0;background:#16191B;overflow:hidden"><div style="position:absolute;left:max(70px, 13.00%);top:14.00%;width:calc(97.00% - max(70px, 13.00%));height:72.00%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible"><line x1="0" x2="1000" y1="500" y2="500" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="454.54545454545456" y2="454.54545454545456" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="409.0909090909091" y2="409.0909090909091" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="363.6363636363636" y2="363.6363636363636" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="318.1818181818182" y2="318.1818181818182" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="272.72727272727275" y2="272.72727272727275" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="227.2727272727273" y2="227.2727272727273" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="181.8181818181818" y2="181.8181818181818" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="136.36363636363637" y2="136.36363636363637" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="90.90909090909088" y2="90.90909090909088" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="45.454545454545496" y2="45.454545454545496" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="43.99999999999999" y="125.45454545454544" width="112.00000000000001" height="374.54545454545456" fill="#D4A853" opacity="1"></rect><rect x="244" y="86.36363636363637" width="112.00000000000001" height="413.6363636363636" fill="#D4A853" opacity="0"></rect><rect x="444" y="55.454545454545496" width="112.00000000000001" height="444.5454545454545" fill="#D4A853" opacity="0"></rect><rect x="644" y="44.54545454545456" width="112.00000000000001" height="455.45454545454544" fill="#D4A853" opacity="0"></rect></svg></div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 72.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">0k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 65.45% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">50k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 58.91% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">100k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 52.36% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">150k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 45.82% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">200k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 39.27% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">250k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 32.73% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">300k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 26.18% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">350k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 19.64% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">400k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 13.09% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">450k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 6.55% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">500k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 0.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">550k visits</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2022</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2023</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2024</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2025</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:700;color:#a6a8a8;opacity:1">2026 (Jan-Mar)</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 18.07% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">412,000</div></div>
+      </div>
+      <div class="step-frame" data-step="step-2" aria-hidden="true">
+<div style="position:absolute;inset:0;background:#16191B;overflow:hidden"><div style="position:absolute;left:max(70px, 13.00%);top:14.00%;width:calc(97.00% - max(70px, 13.00%));height:72.00%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible"><line x1="0" x2="1000" y1="500" y2="500" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="454.54545454545456" y2="454.54545454545456" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="409.0909090909091" y2="409.0909090909091" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="363.6363636363636" y2="363.6363636363636" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="318.1818181818182" y2="318.1818181818182" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="272.72727272727275" y2="272.72727272727275" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="227.2727272727273" y2="227.2727272727273" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="181.8181818181818" y2="181.8181818181818" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="136.36363636363637" y2="136.36363636363637" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="90.90909090909088" y2="90.90909090909088" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="45.454545454545496" y2="45.454545454545496" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="43.99999999999999" y="125.45454545454544" width="112.00000000000001" height="374.54545454545456" fill="#D4A853" opacity="1"></rect><rect x="244" y="86.36363636363637" width="112.00000000000001" height="413.6363636363636" fill="#D4A853" opacity="1"></rect><rect x="444" y="55.454545454545496" width="112.00000000000001" height="444.5454545454545" fill="#D4A853" opacity="0"></rect><rect x="644" y="44.54545454545456" width="112.00000000000001" height="455.45454545454544" fill="#D4A853" opacity="0"></rect></svg></div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 72.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">0k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 65.45% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">50k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 58.91% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">100k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 52.36% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">150k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 45.82% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">200k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 39.27% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">250k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 32.73% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">300k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 26.18% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">350k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 19.64% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">400k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 13.09% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">450k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 6.55% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">500k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 0.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">550k visits</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2022</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2023</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2024</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2025</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:700;color:#a6a8a8;opacity:1">2026 (Jan-Mar)</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 18.07% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">412,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 12.44% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">455,000</div></div>
+      </div>
+      <div class="step-frame" data-step="step-3" aria-hidden="true">
+<div style="position:absolute;inset:0;background:#16191B;overflow:hidden"><div style="position:absolute;left:max(70px, 13.00%);top:14.00%;width:calc(97.00% - max(70px, 13.00%));height:72.00%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible"><line x1="0" x2="1000" y1="500" y2="500" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="454.54545454545456" y2="454.54545454545456" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="409.0909090909091" y2="409.0909090909091" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="363.6363636363636" y2="363.6363636363636" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="318.1818181818182" y2="318.1818181818182" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="272.72727272727275" y2="272.72727272727275" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="227.2727272727273" y2="227.2727272727273" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="181.8181818181818" y2="181.8181818181818" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="136.36363636363637" y2="136.36363636363637" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="90.90909090909088" y2="90.90909090909088" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="45.454545454545496" y2="45.454545454545496" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="43.99999999999999" y="125.45454545454544" width="112.00000000000001" height="374.54545454545456" fill="#D4A853" opacity="1"></rect><rect x="244" y="86.36363636363637" width="112.00000000000001" height="413.6363636363636" fill="#D4A853" opacity="1"></rect><rect x="444" y="55.454545454545496" width="112.00000000000001" height="444.5454545454545" fill="#D4A853" opacity="1"></rect><rect x="644" y="44.54545454545456" width="112.00000000000001" height="455.45454545454544" fill="#D4A853" opacity="0"></rect></svg></div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 72.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">0k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 65.45% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">50k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 58.91% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">100k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 52.36% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">150k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 45.82% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">200k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 39.27% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">250k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 32.73% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">300k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 26.18% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">350k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 19.64% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">400k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 13.09% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">450k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 6.55% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">500k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 0.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">550k visits</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2022</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2023</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2024</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:0">2025</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:700;color:#a6a8a8;opacity:1">2026 (Jan-Mar)</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 18.07% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">412,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 12.44% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">455,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 7.99% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">489,000</div></div>
+      </div>
+      <div class="step-frame" data-step="step-4" aria-hidden="true">
+<div style="position:absolute;inset:0;background:#16191B;overflow:hidden"><div style="position:absolute;left:max(70px, 13.00%);top:14.00%;width:calc(97.00% - max(70px, 13.00%));height:72.00%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible"><line x1="0" x2="1000" y1="500" y2="500" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="454.54545454545456" y2="454.54545454545456" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="409.0909090909091" y2="409.0909090909091" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="363.6363636363636" y2="363.6363636363636" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="318.1818181818182" y2="318.1818181818182" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="272.72727272727275" y2="272.72727272727275" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="227.2727272727273" y2="227.2727272727273" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="181.8181818181818" y2="181.8181818181818" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="136.36363636363637" y2="136.36363636363637" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="90.90909090909088" y2="90.90909090909088" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="45.454545454545496" y2="45.454545454545496" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="43.99999999999999" y="125.45454545454544" width="112.00000000000001" height="374.54545454545456" fill="#D4A853" opacity="1"></rect><rect x="244" y="86.36363636363637" width="112.00000000000001" height="413.6363636363636" fill="#D4A853" opacity="1"></rect><rect x="444" y="55.454545454545496" width="112.00000000000001" height="444.5454545454545" fill="#D4A853" opacity="1"></rect><rect x="644" y="44.54545454545456" width="112.00000000000001" height="455.45454545454544" fill="#D4A853" opacity="1"></rect></svg></div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 72.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">0k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 65.45% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">50k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 58.91% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">100k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 52.36% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">150k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 45.82% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">200k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 39.27% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">250k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 32.73% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">300k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 26.18% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">350k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 19.64% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">400k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 13.09% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">450k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 6.55% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">500k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 0.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">550k visits</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2022</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2023</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2024</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2025</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:700;color:#a6a8a8;opacity:1">2026 (Jan-Mar)</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 18.07% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">412,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 12.44% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">455,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 7.99% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">489,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 6.41% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">501,000</div></div>
+      </div>
+      <div class="step-frame" data-step="step-5" aria-hidden="true">
+<div style="position:absolute;inset:0;background:#16191B;overflow:hidden"><div style="position:absolute;left:max(70px, 13.00%);top:14.00%;width:calc(97.00% - max(70px, 13.00%));height:72.00%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible"><line x1="0" x2="1000" y1="500" y2="500" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="454.54545454545456" y2="454.54545454545456" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="409.0909090909091" y2="409.0909090909091" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="363.6363636363636" y2="363.6363636363636" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="318.1818181818182" y2="318.1818181818182" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="272.72727272727275" y2="272.72727272727275" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="227.2727272727273" y2="227.2727272727273" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="181.8181818181818" y2="181.8181818181818" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="136.36363636363637" y2="136.36363636363637" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="90.90909090909088" y2="90.90909090909088" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="45.454545454545496" y2="45.454545454545496" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="43.99999999999999" y="125.45454545454544" width="112.00000000000001" height="374.54545454545456" fill="#D4A853" opacity="1"></rect><rect x="244" y="86.36363636363637" width="112.00000000000001" height="413.6363636363636" fill="#D4A853" opacity="1"></rect><rect x="444" y="55.454545454545496" width="112.00000000000001" height="444.5454545454545" fill="#D4A853" opacity="1"></rect><rect x="644" y="44.54545454545456" width="112.00000000000001" height="455.45454545454544" fill="#D4A853" opacity="1"></rect></svg></div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 72.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">0k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 65.45% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">50k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 58.91% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">100k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 52.36% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">150k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 45.82% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">200k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 39.27% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">250k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 32.73% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">300k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 26.18% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">350k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 19.64% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">400k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 13.09% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">450k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 6.55% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">500k</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:0;top:calc(14.00% + 0.00% - 7px);width:max(70px, 13.00%);text-align:right;padding-right:10px;font-size:14px;color:#a6a8a8">550k visits</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2022</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2023</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2024</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:400;color:#a6a8a8;opacity:1">2025</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(86.00% + 10px);transform:translateX(-50%);font-size:14px;font-weight:700;color:#a6a8a8;opacity:1">2026 (Jan-Mar)</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.10000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 18.07% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">412,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.30000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 12.44% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">455,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.50000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 7.99% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">489,000</div><div style="position:absolute;font-family:Helvetica, Arial, sans-serif;white-space:nowrap;left:calc(max(70px, 13.00%) + 0.70000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 6.41% - 24px);transform:translateX(-50%);font-size:15px;font-weight:600;color:#D4A853">501,000</div><div style="position:absolute;left:calc(max(70px, 13.00%) + 0.90000 * (97.00% - max(70px, 13.00%)));top:calc(14.00% + 37.44%);transform:translateX(-50%);width:190px;text-align:center;font-size:14px;line-height:1.35;color:#a6a8a8;font-family:Helvetica, Arial, sans-serif">118,000 visits<br/>(Jan–Mar only —<br/>not a full year,<br/>not plotted)</div></div>
+      </div>
+      </div>
+    </div>
+    <div class="scrolly-steps" tabindex="0">
+      <section class="step active" data-step="step-1">
+        <div class="step-panel" data-step="step-1">
+          <p>In 2022, the museum recorded 412,000 visits — the first full year in this run of official counts.</p>
+        </div>
+      </section>
+      <section class="step" data-step="step-2">
+        <div class="step-panel" data-step="step-2">
+          <p>2023: 455,000 visits, up from the year before. Visits grew every year in this run.</p>
+        </div>
+      </section>
+      <section class="step" data-step="step-3">
+        <div class="step-panel" data-step="step-3">
+          <p>2024: 489,000 visits — still rising, the third straight full year of growth.</p>
+        </div>
+      </section>
+      <section class="step" data-step="step-4">
+        <div class="step-panel" data-step="step-4">
+          <p>2025: 501,000 visits. From 2022 to 2025, visits rose every year, a gain of 21.6%.</p>
+        </div>
+      </section>
+      <section class="step" data-step="step-5">
+        <div class="step-panel" data-step="step-5">
+          <p>The ministry's only 2026 figure so far: 118,000 visits, covering January-March. That is 2026 (Jan-Mar) — three months, not a fifth full year — and it is not shown as a bar beside the four above, because it is not one.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+  <p class="source">National Museum, official visit counts, 2022-2025 (complete years) plus the 2026 (Jan-Mar) reading (partial, Jan-Mar only). Colours recorded in PALETTE.md by the newsroom.</p>
+</article>
+<script>
+(function () {
+// twin/skills/scrolly/assets/interaction.mjs
+//
+// The one script this format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-scrolly.mjs` (which strips the `export` keyword from each top-level declaration,
+// the same trick `chart-web/scripts/render-web.mjs` already uses, so this file can also sit as
+// a plain classic `<script>` — no `type="module"`, so it keeps working in a CMS iframe or a
+// sandboxed embed that restricts module scripts).
+//
+// `pickActiveStep` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/render-scrolly.test.ts`). `initScrolly`/`initAll` are DOM wiring and are NOT unit-tested
+// here: per `doctrine`'s own verification rule, an interactive format is verified by driving a
+// real browser, not by asserting against a DOM emulation nobody looked at
+// (`references/scrolly-discipline.md`, "Verification").
+//
+// ONE mechanism decides which step is active: on every scroll of the prose column, MEASURE where
+// each panel currently is and give the step to whichever panel occupies the most of the prose lane.
+// That is the whole of it. There is no observer, no threshold list and no rootMargin.
+//
+// AND SINCE THE EIGHTH CORRECTION THERE IS ONLY ONE DECISION LEFT. This file used to make two —
+// which FRAME the graphic shows, and which PANEL may be painted (`pickLanePanel`, the `in-lane`
+// class, `.scrolly--live`). The second existed because a `bottom`-sticky panel un-pinned one
+// panel-height before the next one parked and spent that gap opaque and climbing over the graphic's
+// own labels. Nothing withholds paint any more: the NINTH correction puts the card back over the
+// graphic on purpose — "le panel avec le texte ne doit pas être sur le côté mais centré et par
+// dessus le contenu visuel" — and answers the collision by making the card OPAQUE and its
+// ink-on-ground contrast measurable, not by hiding it. The lane is the scrollport itself, which is
+// now the whole frame again, so nothing here reads `data-prose-lane` or a panel's own `bottom`
+// offset.
+//
+// WHY THERE IS NO INTERSECTIONOBSERVER ANY MORE, and this is the correction this file exists to
+// carry. Every build up to the sixth used one, and picked the winner out of the entries of the
+// CURRENT CALLBACK — the delta set, the panels whose ratio had just crossed one of
+// `[0, 0.25, 0.5, 0.75, 1]`. A callback that heard about exactly one panel therefore activated that
+// panel unconditionally, whatever every other panel was doing. On a teleport (scroll straight to an
+// offset, wait, read) that is harmless: the browser recomputes every panel at once, so the delta
+// set IS the full state and the winner is right. On a CONTINUOUS scroll — a wheel, a finger, the
+// only way a reader has ever actually read one of these — the outgoing and incoming panels cross
+// thresholds on alternating frames, so the active class OSCILLATED between them, each flip
+// restarting the 0.3s opacity transition from wherever the last one had got to.
+//
+// Measured, in a driven Chrome, scrolling continuously through the whole track of all five beats on
+// disk at three widths — fifteen runs: in FOURTEEN of them at least one step's frame was never
+// painted at all, the graphic lagged the prose by up to 1,800px, and roughly 45% of every animation
+// frame drawn was a BLEND of two frames rather than one settled image. The same pages, probed at 25
+// discrete offsets with 450ms of stillness after each, measured 25/25 clean — one frame at exactly
+// opacity 1, every other at exactly 0. Both measurements were honest. The instrument was blind by
+// construction, and the vehicle was broken.
+//
+// The rule below cannot oscillate, and that is a property of the rule rather than a tuning of it:
+// it reads the CURRENT position of EVERY panel on every scroll, and lane occupancy changes
+// monotonically as a panel enters and leaves, so the winner changes exactly once per boundary,
+// whatever speed the reader scrolls at and however many frames the browser skipped.
+//
+// What this file does NOT do: decide which step is narratively "first", or know what kind of
+// content a `.step-frame` holds — an `<img>`, an `<svg>`, or anything else a future beat hands the
+// scaffold. The first step's own frame is already marked `active` in the SSR'd markup by
+// `scripts/render-scrolly.mjs`'s own loop over `steps` — this file never assigns that class for the
+// first time, only moves it as the reader scrolls. With this script entirely absent, the page still
+// shows that one step's own frame and every step's own prose, unchanged — see
+// references/scrolly-discipline.md, "What survives with JavaScript disabled."
+
+/**
+ * Pure decision function: given where every panel currently sits and where the prose lane is —
+ * both in the scrollport's own coordinates, both measured by the caller, so this function has
+ * nothing DOM-shaped to accept — returns the `stepId` whose panel occupies the most of the lane,
+ * or `null` when no panel is in the lane at all.
+ *
+ * `panels` is `{ stepId, top, bottom }[]`. `lane` is `{ top, bottom }`.
+ *
+ * THE FULL STATE, NEVER A DELTA. Every panel is passed in, every time, and the winner is decided
+ * against all of them — the property that makes the outcome a function of the reader's position
+ * rather than of which panels happened to change since the last frame. See this file's own header
+ * for the measurement that condemned the delta-set rule this replaced.
+ *
+ * `null` means no panel is in the lane, NOT that the reader has left the track — the caller keeps
+ * whichever step was active last, which is what stops the gap between two panels from clearing the
+ * server-rendered default.
+ *
+ * Nothing here reads how many panels were passed or assumes any particular count — the same loop
+ * resolves a winner whether the page carries two steps or eight.
+ */
+function pickActiveStep(panels, lane) {
+  let winner = null;
+  for (const panel of panels) {
+    const overlap = laneOverlap(panel, lane);
+    if (overlap <= 0) continue;
+    if (!winner || overlap > winner.overlap)
+      winner = { stepId: panel.stepId, overlap: overlap };
+  }
+  return winner ? winner.stepId : null;
+}
+
+function laneOverlap(panel, lane) {
+  return Math.min(panel.bottom, lane.bottom) - Math.max(panel.top, lane.top);
+}
+
+/**
+ * THE CONTINUOUS SIGNAL — the second thing this file publishes, and the one whose absence made a
+ * scroll-driven visual read as a slideshow with a fade.
+ *
+ * The owner, after driving the two single-visual beats: *"Pour le scrolly navigation, on y est pas
+ * du tout. Pourquoi tu ne suis pas un peu le principe d'une animation au scrolly, faut que ce soit
+ * fluide et que l'élément évolue au fur et à mesure du temps."* He is right, and it was a MISSING
+ * SIGNAL rather than a tuning problem: the vehicle published a step state and a boundary transition
+ * that finishes exactly when the step flips, so nothing a consumer could read CHANGED while the
+ * reader scrolled through the middle of a step. The visual caught up at the handover.
+ *
+ * Returns the FRACTIONAL INDEX of the prose panel sitting on the lane's own centre line: exactly
+ * `i` when panel `i`'s centre is on that line, exactly `i + 1` when panel `i + 1`'s is, and a
+ * smooth interpolation in between. Range `0 … panels.length - 1`, clamped at both ends (before the
+ * first panel reaches the line and after the last one passes it there is nowhere further to go).
+ *
+ * WHY IT IS MEASURED OVER THE PANELS AND NOT OVER THE SCROLLER'S OWN `scrollTop`. A raw
+ * `scrollTop / scrollHeight` fraction is cheaper and is the wrong number: it says how far the
+ * CONTAINER has moved, and the reader is looking at the CARDS. Interpolating between the two card
+ * centres that bracket the line makes "the visual reaches the moment this sentence names" and "this
+ * sentence reaches the middle of its column" the same event, at any panel height and any step
+ * height, on a phone and on a desktop alike. The scrub and the caption cannot drift apart, because
+ * they are the same measurement.
+ *
+ * It is also, deliberately, in LOCK-STEP with `pickActiveStep` rather than a second opinion about
+ * the same thing: for panels of equal height the max-overlap winner changes at exactly the moment
+ * this function passes `i + 0.5` — the two rules meet, and `scripts/verify-scrolly.mjs` asserts
+ * that they stay met on every recorded animation frame rather than leaving it as an argument.
+ *
+ * `panels` is `{ stepId, top, bottom }[]` in document order; `lane` is `{ top, bottom }`. Same
+ * inputs as `pickActiveStep`, measured once by the caller and handed to both.
+ */
+function measureProgress(panels, lane) {
+  if (panels.length === 0) return 0;
+  const line = (lane.top + lane.bottom) / 2;
+  const centres = panels.map(function (p) {
+    return (p.top + p.bottom) / 2;
+  });
+  // Panels are in document order, so their centres increase with index and the LAST one at or
+  // above the line is the one the reader is on.
+  let i = -1;
+  for (let k = 0; k < centres.length; k++) if (centres[k] <= line) i = k;
+  if (i < 0) return 0;
+  if (i >= centres.length - 1) return centres.length - 1;
+  const span = centres[i + 1] - centres[i];
+  if (!(span > 0)) return i;
+  const u = (line - centres[i]) / span;
+  return i + Math.max(0, Math.min(1, u));
+}
+
+/**
+ * Wires one `.scrolly` root's steps to its frames by measuring THE SCROLLPORT — `.scrolly-steps`,
+ * the transparent layer the cards travel in, which since the ninth correction covers the graphic
+ * edge to edge (`scripts/render-scrolly.mjs`'s own `buildCss`). The scrollport IS the lane: "in the
+ * lane" and "inside the element that scrolls" are the same rect, so there is no fraction to read off
+ * the markup and no offset to subtract.
+ *
+ * **What is measured is the PANEL, not the section.** An earlier build watched the `.step` sections
+ * through a thin band at the middle of the screen, which asked "whose 115%-tall section crosses the
+ * centre right now" — a different question from the one that matters, "whose words is the reader
+ * actually beside", with a different answer for a large fraction of every step. Measuring the panel
+ * makes the active step and the visible prose the same fact by construction.
+ *
+ * **The scroller is the card layer, never the document.** The page itself does not scroll (see
+ * `references/scrolly-discipline.md`, "The graphic is fixed and the page does not scroll"), so the
+ * event this listens to is `.scrolly-steps`'s own.
+ *
+ * Every `.step`/`.step-panel`/`.step-frame` triple is matched by its shared `data-step` id, baked
+ * into the markup at build time — this function never invents an id, and never reads how many steps
+ * there are to decide how to behave, so it wires N steps exactly as it wires two.
+ */
+function initScrolly(root) {
+  const steps = Array.prototype.slice.call(root.querySelectorAll(".step"));
+  const panels = Array.prototype.slice.call(
+    root.querySelectorAll(".step-panel"),
+  );
+  const frames = Array.prototype.slice.call(
+    root.querySelectorAll(".step-frame"),
+  );
+  const scroller = root.querySelector(".scrolly-steps");
+  if (
+    steps.length === 0 ||
+    frames.length === 0 ||
+    panels.length === 0 ||
+    !scroller
+  )
+    return;
+
+  let currentFrame = null;
+  /** Which frame the graphic shows. HELD across the gap between two steps, and since the ninth
+   *  correction that gap is real and deliberate: a step is 140% of the frame, so the outgoing card
+   *  leaves past the top before the incoming one enters at the bottom, and for 12-15% of a pass no
+   *  card is over the graphic at all. `pickActiveStep` returns null through that gap and the last
+   *  frame stays — the reader looks at the visual, uncovered, and the frame swaps as the next card
+   *  arrives to narrate it. */
+  function activate(stepId) {
+    if (stepId === currentFrame) return;
+    currentFrame = stepId;
+    steps.forEach((s) =>
+      s.classList.toggle("active", s.getAttribute("data-step") === stepId),
+    );
+    frames.forEach((f) =>
+      f.classList.toggle("active", f.getAttribute("data-step") === stepId),
+    );
+  }
+
+  function update() {
+    const port = scroller.getBoundingClientRect();
+    // The lane is the scrollport itself — read live rather than cached, because a resize changes it
+    // and because the card's own regime changes with the width (edge to edge on a phone, a measured
+    // stripe on a desktop), which nobody here should be re-deriving.
+    const lane = { top: port.top, bottom: port.bottom };
+    const measured = panels.map(function (p) {
+      const r = p.getBoundingClientRect();
+      return {
+        stepId: p.getAttribute("data-step"),
+        top: r.top,
+        bottom: r.bottom,
+      };
+    });
+    const next = pickActiveStep(measured, lane);
+    if (next) activate(next);
+    // PUBLISHED, not consumed here. This scaffold draws nothing itself — it hands the number to
+    // whatever visual a beat re-parented into the frame stack, on the element a consumer can
+    // already find (the same root that carries `data-prose-lane`). Written every frame the reader
+    // scrolls, so a consumer's own rAF paint reads a value that is at most one frame old.
+    root.setAttribute("data-progress", measureProgress(measured, lane).toFixed(4));
+  }
+
+  // `scroll` fires at most once per animation frame in every engine, and it fires BEFORE the frame
+  // is painted, so the class is already right for the frame the reader actually sees. No rAF
+  // trampoline: adding one would deliberately paint one frame of the wrong step.
+  scroller.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+}
+
+function initAll() {
+  document.querySelectorAll(".scrolly").forEach((root) => {
+    initScrolly(root);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-scrolly.test.ts` (for the pure `pickActiveStep` helper), in a context with no
+// `document`. In the browser the guard is always true, so the inlined `<script>` still self-starts
+// the moment it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+})();
+</script>
+<script>
+(function () {
+// twin/skills/scrolly/assets/embed-exit.mjs
+//
+// The exit emitter: the ONLY message a Splash page ever sends its parent. A cross-origin iframe
+// cannot scroll the page that contains it, and Chrome does not chain scroll out of one — measured:
+// at the end of a scrolly's inner `.scrolly-steps` scrollport the reader is stuck, and removing
+// `overscroll-behavior: contain` does NOT free them. So the page ASKS instead: `{ splash: 1, v: 1,
+// type: "release", direction: "up" | "down" }`, posted to `window.parent`, which
+// `skills/deliver/assets/splash-iframe-scroller.js` listens for and acts on.
+//
+// Inlined verbatim into the self-contained scrolly HTML by `scripts/render-scrolly.mjs`, the same
+// way that file already inlines `interaction.mjs` — see that file's own doc-comment for why the
+// inlining strips `export` and wraps the result in an IIFE (two inlined scripts sharing one global
+// scope, and a name collision between them has already shipped and been measured once).
+//
+// `decideRelease` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/embed-exit.test.ts`). `initEmbedExit` is DOM wiring and is NOT unit-tested here — same
+// rule `interaction.mjs` states for `initScrolly`: an interactive format is verified by driving a
+// real browser, not by asserting against a DOM emulation nobody looked at.
+//
+// THE TECHNIQUE THAT MAKES "OVERSCROLL, NEVER MERE ARRIVAL" TRUE BY CONSTRUCTION RATHER THAN BY
+// TIMING. The naive rule — "release when the scrollport is at an edge and the gesture points past
+// it" — fires on the very tick that FIRST reaches the edge, because that tick is already, by
+// definition, at the edge by the time it is observed. That would carry a reader out of every
+// scrolly the instant they finish reading it, before they have any chance to keep reading past the
+// last step's own last line. The fix is not a delay: it is asking a different question. Record
+// which edge the scrollport was at when THIS GESTURE STARTED — wheel needs no separate
+// gesture-start event, because every wheel tick is its own gesture, so the edge read just before
+// applying it IS the start; a touch drag needs `touchstart`, because a whole drag is one gesture —
+// and release only when a gesture that BEGAN at an edge continues pushing past it. The tick that
+// first reaches an edge began somewhere before it, so it fails this test and nothing releases;
+// the NEXT gesture begins already sitting there, and any push further in that direction releases
+// immediately.
+
+/**
+ * Pure decision: should THIS gesture release the reader out of the scrollport, and in which
+ * direction.
+ *
+ * `startEdge` — which edge, `"top"` or `"bottom"`, the scrollport sat at when THIS gesture began,
+ * or `null` when it began mid-track (neither edge). For a wheel tick, the caller passes the edge
+ * read immediately BEFORE this tick is applied, because a wheel tick has no separate "start" of
+ * its own — it IS its own gesture. For a touch drag, the caller records this once, at
+ * `touchstart`, and reuses it for every `touchmove` of that same drag.
+ *
+ * `direction` — which way THIS gesture is currently pushing: `"up"` (scrolling toward the top /
+ * scrollTop decreasing) or `"down"` (scrolling toward the bottom / scrollTop increasing).
+ *
+ * Returns the direction to release in, or `null` to do nothing. Releases only when the gesture
+ * BEGAN at an edge and is STILL pushing further in that same direction:
+ * `startEdge === "top" && direction === "up"`, or `startEdge === "bottom" && direction === "down"`.
+ *
+ * MERE ARRIVAL NEVER RELEASES. The tick that first reaches an edge began somewhere before it, so
+ * for THAT tick `startEdge` is `null` or the opposite edge — it fails the test above by
+ * construction. The caller never has to remember "did we just arrive" as separate state; the
+ * gesture-start bookkeeping the caller already needs to do is the only state this needs.
+ *
+ * TRADE-OFF, stated rather than hidden: a gesture that starts mid-track and reaches an edge within
+ * that same unbroken gesture does NOT release, even on the very tick that overshoots — because
+ * `startEdge` is recorded once, at the gesture's start, and never updated mid-gesture. Only the
+ * NEXT gesture, which now begins already sitting at that edge, can release. This trades "release
+ * one gesture later than physically possible" for "never mistake an ordinary scroll through the
+ * track for an escape attempt" — the whole point of anchoring the decision on where the gesture
+ * STARTED rather than on where the pointer happens to be right now.
+ */
+function decideRelease(startEdge, direction) {
+  if (startEdge === "top" && direction === "up") return "up";
+  if (startEdge === "bottom" && direction === "down") return "down";
+  return null;
+}
+
+/** Tolerance, in pixels, for calling a scrollport's own float-rounded `scrollTop` "at an edge". */
+const EDGE_PX = 2;
+
+/** Which edge (`"top"` | `"bottom"` | `null`) a scrollport currently sits at. Pure given the three
+ *  numbers a scrollport exposes — kept separate from `decideRelease` so the DOM-touching part of
+ *  reading a rect stays a one-line call site in `initEmbedExit`, not folded into the decision
+ *  itself. */
+function edgeAt(el) {
+  if (el.scrollTop <= EDGE_PX) return "top";
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_PX) return "bottom";
+  return null;
+}
+
+/**
+ * Wires `.scrolly-steps` — the same scrollport `interaction.mjs`'s own `initScrolly` measures — to
+ * post a `release` message at `window.parent` when a gesture that began at one of its own edges
+ * keeps pushing past it. INERT when the page is not framed (`window.parent === window`): there is
+ * no one to ask, and nothing here reaches for `window.top` or any other escape hatch instead — a
+ * page opened directly, not embedded, is simply not this script's problem. NEVER changes layout:
+ * this file only listens and posts; it does not touch a style, a class or the DOM.
+ */
+function initEmbedExit() {
+  if (window.parent === window) return;
+  const scroller = document.querySelector(".scrolly-steps");
+  if (!scroller) return;
+
+  // Wheel has no gesture-start event of its own — every tick IS its own gesture — so the edge is
+  // simply kept current: read once up front, then refreshed after every `scroll` the scrollport
+  // actually completes.
+  let wheelEdge = edgeAt(scroller);
+  scroller.addEventListener(
+    "scroll",
+    function () {
+      wheelEdge = edgeAt(scroller);
+    },
+    { passive: true },
+  );
+
+  function post(direction) {
+    window.parent.postMessage({ splash: 1, v: 1, type: "release", direction: direction }, "*");
+  }
+
+  scroller.addEventListener(
+    "wheel",
+    function (event) {
+      const direction = event.deltaY < 0 ? "up" : event.deltaY > 0 ? "down" : null;
+      if (!direction) return;
+      const released = decideRelease(wheelEdge, direction);
+      if (released) post(released);
+    },
+    { passive: true },
+  );
+
+  // Touch IS one gesture across `touchstart` → `touchmove`* → `touchend`, so its start edge is
+  // recorded exactly once, at `touchstart`, and reused for every `touchmove` of that same drag —
+  // the mechanism that makes "reached the edge mid-drag" not release (see `decideRelease`'s own
+  // doc-comment on that trade-off).
+  let touchStartEdge = null;
+  let touchStartY = 0;
+  scroller.addEventListener(
+    "touchstart",
+    function (event) {
+      touchStartEdge = edgeAt(scroller);
+      touchStartY = event.touches[0].clientY;
+    },
+    { passive: true },
+  );
+
+  scroller.addEventListener(
+    "touchmove",
+    function (event) {
+      const y = event.touches[0].clientY;
+      // A touch drag's direction is the INVERSE of a wheel's: dragging the finger DOWN the screen
+      // scrolls the content UP (scrollTop decreases), the same convention native touch scrolling
+      // already uses.
+      const direction = y > touchStartY ? "up" : y < touchStartY ? "down" : null;
+      if (!direction) return;
+      const released = decideRelease(touchStartEdge, direction);
+      if (released) post(released);
+    },
+    { passive: true },
+  );
+}
+
+// Guarded rather than a bare top-level call, matching `interaction.mjs`'s own guard: this file is
+// also imported directly by `test/embed-exit.test.ts` (for the pure `decideRelease` function), in
+// a context with no `document`. In the browser the guard is always true, so the inlined `<script>`
+// still self-starts the moment it is parsed, unchanged.
+if (typeof document !== "undefined") initEmbedExit();
+
+})();
+</script>
+</body>
+</html>

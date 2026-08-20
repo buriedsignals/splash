@@ -1,0 +1,50 @@
+{
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "step",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 1,
+      "max": 5,
+      "sum": 15,
+      "gaps": null
+    },
+    {
+      "name": "period",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"2026 (Jan-Mar)\" has one, \"2022\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "visits",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 118000,
+      "max": 501000,
+      "sum": 1975000,
+      "gaps": null
+    },
+    {
+      "name": "complete",
+      "type": "text",
+      "missing": 0,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
