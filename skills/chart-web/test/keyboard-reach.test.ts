@@ -154,7 +154,10 @@ describe("every chart-web page on disk", () => {
       for (const file of files) {
         await page.goto(`file://${file}`, { waitUntil: "load" });
         const found = await keyboardReachesEveryMark(page);
-        if (found.focusable !== found.marks || found.detailShown !== found.marks)
+        // `|| found.marks === 0` — otherwise a zero-mark page passes vacuously (`0 !== 0` is
+        // false on both sides). Its sibling `degrades-without-javascript.test.ts` already refuses
+        // `marksWithJs === 0` the same way.
+        if (found.focusable !== found.marks || found.detailShown !== found.marks || found.marks === 0)
           offenders.push(`${file.slice(TWIN.length + 1)}: ${JSON.stringify(found)}`);
       }
     } finally {

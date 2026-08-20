@@ -202,6 +202,11 @@ describe("every chart-web page on disk", () => {
     const offenders: string[] = [];
     for (const file of files) {
       const found = tableCarriesTheMarks(readFileSync(file, "utf8"));
+      // A zero-mark page passes vacuously otherwise — `found.missing` is empty because there is
+      // nothing to be missing FROM, not because the table carries anything. Its sibling
+      // `degrades-without-javascript.test.ts` already refuses `marksWithJs === 0` the same way.
+      if (found.marks === 0)
+        offenders.push(`${file.slice(TWIN.length + 1)}: 0 marks`);
       for (const value of found.missing)
         offenders.push(`${file.slice(TWIN.length + 1)}: missing "${value}"`);
     }
