@@ -208,13 +208,14 @@ const url = `file://${resolve(htmlPath)}`;
   const measuring = revealDashInScreenSpace(marksFromSource(html, basename(htmlPath)));
   // same-facts-without-the-picture (doctrine/references/guard-catalogue.json) — the accessible
   // table's own capability, on the SAME artifact as the two guards above, for the same reason: it
-  // needs no browser either. STILL `owed` for this format as of 2026-08-20 (fix round 1): the
-  // table itself is OPT-IN per beat (`render-web.mjs`'s `regionTable`, off for this seed and for
-  // some real beats by the format's own design — `map-web-discipline.md`, "The accessibility
-  // question" — names exactly what leaving it off costs, so a beat with `table.rows === 0` is a
-  // documented CHOICE, never a defect this check should fail on). A beat that DOES carry a table is
-  // held to the same completeness `chart-web` is: `table.rows > 0` with any mark still `missing` is
-  // a table that drifted from the picture, and that fails exactly as it does there.
+  // needs no browser either. `carried` for this format since commit 3ca29ce4 (2026-08-20) and
+  // measured on all 6 of its delivered pages since (fix round, same day): `render-web.mjs`'s
+  // `regionTable` now defaults to TRUE, so a beat driven here with `table.rows === 0` is missing a
+  // capability the catalogue says this format carries — not making a "documented CHOICE" this check
+  // should look past, which is the reading that used to sit here and is exactly the false `carried`
+  // a review found. It is held to the same completeness `chart-web` is: any mark still `missing`
+  // from the table — whether because a row disagrees with it or because there is no table at all —
+  // fails exactly as loudly as it does there.
   const table = tableCarriesTheMarks(html);
   console.log(`\nCARGO — what the file carries`);
   for (const found of twice)
@@ -223,15 +224,17 @@ const url = `file://${resolve(htmlPath)}`;
     );
   for (const id of measuring)
     console.log(`  FAIL  ${id} reveals with a dash that measures its own path under a non-scaling stroke`);
-  if (table.rows > 0)
+  if (table.marks > 0 && table.rows === 0)
+    console.log(
+      `  FAIL  no accessible table on this beat: same-facts-without-the-picture is carried for this format, not opt-in — ${table.marks} mark(s) with no fallback`,
+    );
+  else
     for (const value of table.missing)
       console.log(`  FAIL  the accessible table is missing a mark's own fact: ${value}`);
-  const tableBroken = table.rows > 0 && table.missing.length > 0;
+  const tableBroken = table.missing.length > 0;
   if (!twice.length && !measuring.length && !tableBroken)
     console.log(
-      table.rows > 0
-        ? `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`
-        : `  ok    every asset inlined once; every dash drawn in the path's own units; no accessible table on this beat (opt-in, off here)`,
+      `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`,
     );
   else process.exitCode = 1;
 }
