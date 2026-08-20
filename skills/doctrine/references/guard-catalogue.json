@@ -43,7 +43,7 @@
       "states": {
         "map-beat": "carried",
         "map-web": "carried",
-        "scrolly": "owed"
+        "scrolly": "carried"
       },
       "exceptions": {}
     },

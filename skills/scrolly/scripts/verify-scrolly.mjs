@@ -183,6 +183,7 @@ export const GUARDS = [
   "stalledSteps",
   "neverReached",
   "plateFollowsGround",
+  "plateMatchesGeometry",
 ];
 
 /** THE THREE CARGO GUARDS. Everything else in this file measures the VEHICLE — the handover, the
@@ -330,6 +331,35 @@ export function plateFollowsGround({ ground, plate }) {
   const two = side(plate);
   if (one === "middle" || two === "middle") return true;
   return one === two;
+}
+
+/** How far a plate's aspect ratio may sit from its frame's before it letterboxes. A frame is
+ *  integers and a ratio is not: 936x827 baked at 2x is 1872x1654, and the two ratios agree to five
+ *  decimals. One part in a thousand covers that rounding and nothing a reader could see — the
+ *  smallest real disagreement in this corpus's history was 8%. */
+const ASPECT_SLACK = 0.001;
+
+/** Does the baked plate describe the frame its own marks were projected into?
+ *
+ *  A map beat draws the plate as one `<image>` filling the frame. An `<image>` whose own aspect ratio
+ *  differs from the box it is given is letterboxed by the default `preserveAspectRatio="xMidYMid
+ *  meet"` — scaled down and centred — so the basemap shifts and shrinks while the projected marks do
+ *  not, and every one of them lands somewhere the basemap never claimed. Nothing in the render fails;
+ *  the picture is simply wrong, which is the same shape as the cropped-plate defect a scrolly earned
+ *  its projection guard from.
+ *
+ *  Returns the numbers as well as the verdict: a failure a reader cannot act on is half a failure. */
+export function plateMatchesGeometry({ plate, frame }) {
+  const plateRatio = plate.width / plate.height;
+  const frameRatio = frame.width / frame.height;
+  const drift = Math.abs(plateRatio - frameRatio) / frameRatio;
+  return {
+    ok: drift <= ASPECT_SLACK,
+    plateRatio,
+    frameRatio,
+    drift,
+    scale: plate.width / frame.width,
+  };
 }
 
 /** Marks a beat declared PENDING that were still pending when the scroll ended.

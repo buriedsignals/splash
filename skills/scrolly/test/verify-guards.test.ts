@@ -11,7 +11,7 @@
 // `verifyOne`, and what decides pass or fail is testable without Chrome.
 
 import { describe, it, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   stillSteps,
@@ -24,8 +24,13 @@ import {
   stalledSteps,
   neverReached,
   plateFollowsGround,
+  plateMatchesGeometry,
   surfaceLuminance,
 } from "../scripts/verify-scrolly.mjs";
+import { decodePng } from "../scripts/compare-png.mjs";
+
+const SKILL = join(import.meta.dirname, "..");
+const PROOF = join(SKILL, "..", "..", "proof");
 
 // ── G1. Two steps that paint the same picture ────────────────────────────────────────────────
 //
@@ -563,5 +568,85 @@ describe("a baked plate under a declared ground", () => {
 
   it("says nothing when there is no plate to measure", () => {
     expect(plateFollowsGround({ ground: 0.009, plate: null })).toBe(true);
+  });
+});
+
+// ── G8. A baked plate that does not describe the frame its own marks were projected into ────────
+//
+// The MAP track's own bake (`bake-plate.mjs`) writes `plate/plate.png` and a geometry file recording
+// the FRAME the marks were projected into, side by side — exactly the shape `map-beat` and `map-web`
+// already earned `plateMatchesGeometry` from. This vehicle draws the plate as one `<image>` filling
+// that frame; an `<image>` whose own aspect ratio disagrees with its box is letterboxed by the
+// default `preserveAspectRatio="xMidYMid meet"`, so the basemap shifts and shrinks under marks that
+// do not move with it. `projection-pairing` does not reach this — that decision compares an
+// `<img>`'s CSS `object-fit` against an overlaid SVG's `preserveAspectRatio`, and this vehicle's own
+// MAP track composites its plate as an `<image>` INSIDE the marks' own SVG the same way `map-beat`
+// and `map-web` do, so there is no second projection for the first to disagree with. Same defect,
+// this format's other mechanism.
+describe("a baked plate and the frame its own marks were projected into", () => {
+  it("refuses a plate whose aspect ratio is not the frame's", () => {
+    expect(
+      plateMatchesGeometry({ plate: { width: 1672, height: 960 }, frame: { width: 836, height: 520 } }),
+    ).toMatchObject({ ok: false });
+  });
+
+  it("accepts the exact pairing this format's own seed bakes", () => {
+    expect(
+      plateMatchesGeometry({ plate: { width: 2000, height: 1280 }, frame: { width: 1000, height: 640 } }),
+    ).toMatchObject({ ok: true, scale: 2 });
+  });
+});
+
+/** Every scrolly beat on disk whose own MAP track bakes a plate, found the way `map-web`'s own walk
+ *  is: from `BRIEF.md`'s declared Medium rather than a name pattern, so a beat that stops being a
+ *  map track drops out on its own. This vehicle's other three tracks (image, diagram, chart) bake no
+ *  plate at all, and a walk that did not filter by medium would only be adding zeros to a count that
+ *  is supposed to mean something. */
+function mapTrackBeats(): { name: string; dir: string }[] {
+  const found = [];
+  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = join(PROOF, entry.name);
+    const brief = join(dir, "BRIEF.md");
+    if (!existsSync(brief)) continue;
+    const medium = (/\*\*Medium\s*\/\s*format:\*\*\s*([^.\n]+)/.exec(readFileSync(brief, "utf8"))?.[1] ?? "")
+      .toLowerCase()
+      .replace(/\*/g, "");
+    if (/map/.test(medium) && /scrolly/.test(medium)) found.push({ name: entry.name, dir });
+  }
+  return found;
+}
+
+describe("every map-track scrolly beat on disk", () => {
+  it("bakes a plate that describes the frame its own marks were projected into", () => {
+    const beats = mapTrackBeats();
+    expect(beats.length).toBeGreaterThanOrEqual(4);
+    const offenders: string[] = [];
+    let checked = 0;
+    for (const { name, dir } of beats) {
+      const geometryPath = join(dir, "plate", "geometry.json");
+      const platePath = join(dir, "plate", "plate.png");
+      // `mapmore-scrolly-route-access` records its camera in `camera.json` instead, recovered from
+      // a delivered file rather than baked from a brief — named rather than silently skipped: a
+      // beat with no geometry is a beat this guard cannot speak about, the same shape `map-beat`'s
+      // own walk names it by.
+      if (!existsSync(geometryPath) || !existsSync(platePath)) continue;
+      const geometry = JSON.parse(readFileSync(geometryPath, "utf8"));
+      if (!geometry.frame) continue;
+      checked++;
+      const png = decodePng(readFileSync(platePath));
+      const verdict = plateMatchesGeometry({
+        plate: { width: png.width, height: png.height },
+        frame: geometry.frame,
+      });
+      if (!verdict.ok)
+        offenders.push(
+          `${name}: plate ${png.width}x${png.height} (${verdict.plateRatio.toFixed(4)}) against frame ` +
+            `${geometry.frame.width}x${geometry.frame.height} (${verdict.frameRatio.toFixed(4)}) — ` +
+            `${(verdict.drift * 100).toFixed(3)}% apart`,
+        );
+    }
+    expect(checked).toBeGreaterThanOrEqual(3);
+    expect(offenders).toEqual([]);
   });
 });

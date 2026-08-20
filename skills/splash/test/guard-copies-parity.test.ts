@@ -72,7 +72,11 @@ const COPIES: Record<string, string[]> = {
     "map-web/scripts/verify-guards.mjs",
     "dw-beat/scripts/verify-owned.mjs",
   ],
-  plateMatchesGeometry: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
+  plateMatchesGeometry: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
   groundFromPalette: [
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
