@@ -180,7 +180,13 @@ describe("every copied guard decision is still the same decision", () => {
     );
     const shared = catalogue.rules
       .filter(
-        (rule: { states: Record<string, string> }) =>
+        (rule: { kind: string; states: Record<string, string> }) =>
+          // A discipline names no decision function at all — `disciplineIsWritten` reads PROSE, a
+          // skill's own sentence in its own words, and two skills carrying the same discipline are
+          // not two copies of one decision the way two `plateFollowsGround`s are. Requiring them
+          // byte-identical would be requiring every skill to say the same thing about a doctrine it
+          // reads for its own reasons, which is not what this test exists to catch.
+          rule.kind !== "discipline" &&
           Object.values(rule.states).filter((state) => state === "carried").length > 1,
       )
       // `decidedBy` names a guard's own decision function; `detectedBy` names a capability's own —

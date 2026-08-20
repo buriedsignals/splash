@@ -35,6 +35,14 @@ written out below the tables.
 | weight-has-a-ceiling |  | **R** |  |  | **R** | **R** | **R** | **R** |
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 
+## discipline
+
+| discipline | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cartographic-rules |  |  |  |  | **R** | **R** |  | **R** |
+| motion-grammar |  |  | **R** |  | **R** |  |  |  |
+| static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
+
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
 ## What is still owed — 0 cells
@@ -174,3 +182,21 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is — an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists
 
 **Earned by:** this format's own discipline (references/image-discipline.md, "Alt text and credit") already requires both, and imageBeatLayout already refuses to render a photo missing either one — a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same "a decision nothing calls is a decision that does not run" standard duplicatedPayload is already held to
+
+### cartographic-rules — `doctrine/references/geo-discipline.md`
+
+**Refuses:** a map beat's own furniture written as if baking a plate were generic instead of governed by twelve named rules — an ungated capture that can hang forever, a moving camera captured live instead of translated inside one fixed plate, tile fragments drawn as a line before they are baked into ordered GeoJSON
+
+**Earned by:** map-beat's own CO₂ choropleth paid for seven of the twelve rules one at a time, each one bought by a defect that reached a render before it was written down — an ungated capture that hung forever the first time a tile never resolved, a shimmering moving camera, a fill that would not close because its fragments were never ordered — so the next format that bakes a plate reads the twelve rather than re-earning them
+
+### motion-grammar — `doctrine/references/motion-grammar.md`
+
+**Refuses:** a timed build that reinvents its own reveal order and furniture from nothing — dense ticks on a frame the reader cannot pause on, an end-label pinned to its final position before the mark carrying it has arrived, the conclusion treated as furniture instead of the one event a video's own stack has to end on
+
+**Earned by:** the same end-label mistake — gated on a signal describing the whole composition and pinned to a mark's eventual position, instead of gated on that mark's own local progress — shipped independently in both a scroll-driven build and a timed one before the grammar named which two rules are format-scoped and why applying either outside its own format produces exactly that defect
+
+### static-discipline — `chart-beat/references/static-discipline.md`
+
+**Refuses:** a beat's own component reinventing composition from nothing — an accent carrying more than one meaning, furniture that does not derive from the ground, a scale that hides zero on a bar, a gap in the data quietly bridged into a claim of continuity the data does not support
+
+**Earned by:** written against the first static beat and re-earned by every format that draws its own marks since, on the same rule for the same reason: a beat is not finished because its tests are green — its pixels still have to be looked at, whether they sit still, animate to a last frame, scroll under a reader's own gesture, or bake behind a live map

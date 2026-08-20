@@ -16,8 +16,9 @@ cell this skill closes.
 
 The one seed proven through this skill, a proportional-symbol map of a sample of thirteen European
 metro-area populations (`assets/MapWebSeed.tsx`), draws from the SAME baked-plate approach
-`map-beat` ships for its own two formats (`doctrine/references/geo-discipline.md` rules 1,
-2, 4, 6, 7, 9, 12): `scripts/bake-plate.mjs` spends the camera once, and the component draws an
+`map-beat` ships for its own two formats — the `cartographic-rules`
+(`doctrine/references/geo-discipline.md`) rules 1,
+2, 4, 6, 7, 9, 12: `scripts/bake-plate.mjs` spends the camera once, and the component draws an
 `<image>` and some `<circle>`s. **Since ruling R1 (2026-08-10) that render is the FALLBACK layer,
 not the beat**: the page ships a live MapTiler map over it (`assets/live-map.mjs` — MapTiler's own
 zoom and pan, leashed to the subject's area after the runtime fit, one `setFilter` vocabulary shared
@@ -100,7 +101,8 @@ never regresses the one channel that serves a screen-reader user.
 **A static render can be checked with a PNG; an interactive one cannot — and a map's own
 accessibility question is not the same question a chart's web format already answered.** Every rule
 in `geo-discipline.md` about the pixels still applies to this format's own furniture (the legend, the
-labels, the water tint), but the thing unique to THIS format — does hovering point X show point X's
+labels, the water tint), the same way `static-discipline.md` (`chart-beat/references/static-discipline.md`)
+applies to any format that draws its own geometry, but the thing unique to THIS format — does hovering point X show point X's
 own exact value, does Tab reach every one of the points AND every control (filter radios, the zoom
 checkbox), does the accessible table read correctly, do the map and its legend survive JavaScript
 being off — is a *behaviour over time*, provable only by driving a real browser and using it. See

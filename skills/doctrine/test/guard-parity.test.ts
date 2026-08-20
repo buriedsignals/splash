@@ -20,6 +20,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   carriedBy,
+  disciplineIsWritten,
   owedRows,
   readCatalogue,
   unreachableRows,
@@ -37,7 +38,9 @@ describe("the guard catalogue", () => {
       expect(rule.earnedBy.length).toBeGreaterThan(20);
       // decidedBy names a guard's own decision function; detectedBy names a capability's own — the
       // same DECLARED-NOT-INFERRED contract `carriedBy` reads, under whichever name its kind uses.
-      expect(rule.decidedBy ?? rule.detectedBy).toMatch(/^[a-zA-Z]+$/);
+      // A discipline has neither: it names no function at all, only the document it is WRITTEN in.
+      if (rule.kind === "discipline") expect(rule.writtenIn).toMatch(/\.md$/);
+      else expect(rule.decidedBy ?? rule.detectedBy).toMatch(/^[a-zA-Z]+$/);
     }
   });
 
@@ -52,8 +55,14 @@ describe("the guard catalogue", () => {
   it("carries every guard it claims to carry", () => {
     for (const rule of readCatalogue().rules)
       for (const [skill, state] of Object.entries(rule.states))
-        if (state === "carried")
-          expect(carriedBy(skill)).toContain(rule.decidedBy ?? rule.detectedBy);
+        if (state === "carried") {
+          // A discipline is PROSE a skill has to have WRITTEN, never a decision function it
+          // exports — `disciplineIsWritten` reads for the rule's own id, exactly the way
+          // `carriedBy` reads a guard's or a capability's name out of a `GUARDS` array.
+          if (rule.kind === "discipline")
+            expect(disciplineIsWritten(skill, rule.id)).toBe(true);
+          else expect(carriedBy(skill)).toContain(rule.decidedBy ?? rule.detectedBy);
+        }
   });
 
   it("declares every guard any skill already carries", () => {
@@ -257,5 +266,29 @@ describe("renderGuardsDoc handles every kind at once, on a synthetic catalogue",
   it("prints no discipline heading at all when no discipline rule exists", () => {
     const doc = renderGuardsDoc({ rules: [guardRule, capabilityRule] });
     expect(doc).not.toContain("## discipline");
+  });
+});
+
+// TASK 7: a discipline is prose a skill has to have WRITTEN where an author reads it — checked
+// for PRESENCE, never mechanically. `disciplineIsWritten` is that check, tested directly here
+// before anything in the catalogue depends on it.
+describe("disciplineIsWritten reads a skill's own docs for a rule's id", () => {
+  it("finds an id already written into a skill's own SKILL.md", () => {
+    // `chart-beat/SKILL.md` names `static-discipline.md` — the doctrine file, not the id below —
+    // repeatedly on its own; this is presence of a SUBSTRING, proven against real files on disk,
+    // not a fixture standing in for them.
+    expect(disciplineIsWritten("chart-beat", "static-discipline")).toBe(true);
+  });
+
+  it("finds an id written into a skill's own references/, not just its SKILL.md", () => {
+    expect(disciplineIsWritten("image-beat", "static-discipline")).toBe(true);
+  });
+
+  it("returns false for an id that appears nowhere in the skill's own docs", () => {
+    expect(disciplineIsWritten("chart-beat", "an-id-no-file-here-has-ever-named")).toBe(false);
+  });
+
+  it("returns false for a skill with no docs at all", () => {
+    expect(disciplineIsWritten("not-a-real-skill", "static-discipline")).toBe(false);
   });
 });

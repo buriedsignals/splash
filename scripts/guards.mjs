@@ -43,6 +43,27 @@ export function carriedBy(skill) {
   return names;
 }
 
+/** Whether a skill's own SKILL.md or references/*.md WRITES a discipline's rule id, anywhere.
+ *
+ *  A discipline is prose, never a decision function: there is nothing to import and nothing to
+ *  call, so this is the same DECLARED-NOT-INFERRED contract `carriedBy` reads for a guard, one
+ *  level down — presence of the rule's own `id` as a literal substring, checked against the exact
+ *  files an author actually opens (`SKILL.md`, everything under `references/`), and nothing more.
+ *  `GUARDS.md` says so out loud: "Disciplines are checked for PRESENCE where an author reads them,
+ *  and are not mechanically verified." This function IS that check — it does not read whether the
+ *  rule is FOLLOWED, only whether it is written down where a reader of the skill would find it. */
+export function disciplineIsWritten(skill, ruleId) {
+  const dir = join(ROOT, "skills", skill);
+  const files = [join(dir, "SKILL.md")];
+  const refDir = join(dir, "references");
+  if (existsSync(refDir))
+    for (const name of readdirSync(refDir))
+      if (name.endsWith(".md")) files.push(join(refDir, name));
+  return files.some(
+    (file) => existsSync(file) && readFileSync(file, "utf8").includes(ruleId),
+  );
+}
+
 /** The skills a rule reaches: those whose declared traits contain every trait it requires.
  *
  *  COMPUTED, NEVER TYPED. The hand-typed version of this shipped on 2026-08-19 and had already

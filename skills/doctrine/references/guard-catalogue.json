@@ -240,6 +240,51 @@
         "image-beat": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "cartographic-rules",
+      "kind": "discipline",
+      "requires": ["bakes-a-plate"],
+      "refuses": "a map beat's own furniture written as if baking a plate were generic instead of governed by twelve named rules — an ungated capture that can hang forever, a moving camera captured live instead of translated inside one fixed plate, tile fragments drawn as a line before they are baked into ordered GeoJSON",
+      "earnedBy": "map-beat's own CO₂ choropleth paid for seven of the twelve rules one at a time, each one bought by a defect that reached a render before it was written down — an ungated capture that hung forever the first time a tile never resolved, a shimmering moving camera, a fill that would not close because its fragments were never ordered — so the next format that bakes a plate reads the twelve rather than re-earning them",
+      "writtenIn": "doctrine/references/geo-discipline.md",
+      "states": {
+        "map-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
+    },
+    {
+      "id": "motion-grammar",
+      "kind": "discipline",
+      "requires": ["timed-build-that-ends"],
+      "refuses": "a timed build that reinvents its own reveal order and furniture from nothing — dense ticks on a frame the reader cannot pause on, an end-label pinned to its final position before the mark carrying it has arrived, the conclusion treated as furniture instead of the one event a video's own stack has to end on",
+      "earnedBy": "the same end-label mistake — gated on a signal describing the whole composition and pinned to a mark's eventual position, instead of gated on that mark's own local progress — shipped independently in both a scroll-driven build and a timed one before the grammar named which two rules are format-scoped and why applying either outside its own format produces exactly that defect",
+      "writtenIn": "doctrine/references/motion-grammar.md",
+      "states": {
+        "chart-video": "carried",
+        "map-beat": "carried"
+      },
+      "exceptions": {}
+    },
+    {
+      "id": "static-discipline",
+      "kind": "discipline",
+      "requires": ["draws-own-geometry"],
+      "refuses": "a beat's own component reinventing composition from nothing — an accent carrying more than one meaning, furniture that does not derive from the ground, a scale that hides zero on a bar, a gap in the data quietly bridged into a claim of continuity the data does not support",
+      "earnedBy": "written against the first static beat and re-earned by every format that draws its own marks since, on the same rule for the same reason: a beat is not finished because its tests are green — its pixels still have to be looked at, whether they sit still, animate to a last frame, scroll under a reader's own gesture, or bake behind a live map",
+      "writtenIn": "chart-beat/references/static-discipline.md",
+      "states": {
+        "chart-beat": "carried",
+        "chart-video": "carried",
+        "chart-web": "carried",
+        "image-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

@@ -22,8 +22,8 @@ static and video formats differ only in an **order in time**, and they must not 
 camera; keeping them in one skill is what makes "same bounds, two resolutions" a fact rather than
 an intention.
 
-The doctrine is `doctrine/references/geo-discipline.md` — twelve rules, five of them written
-against this build.
+The doctrine is `doctrine/references/geo-discipline.md` — the `cartographic-rules`, twelve of
+them, five written against this build.
 
 ## When to use
 
@@ -258,8 +258,9 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   the claim check, and the camera at every scale: the six rungs, the admitted ratios, the
   world-map-in-portrait limit, Mercator's area bias against the beat's own legend, and the mark
   ceiling. Three mutations are recorded at its foot with the output they produced.
-- `test/timing.test.ts` — every structural rule of the motion grammar, green on the shipped timing
-  and red on a timing mutated to break exactly that rule.
+- `test/timing.test.ts` — every structural rule of the `motion-grammar`
+  (`doctrine/references/motion-grammar.md`), green on the shipped timing and red on a timing
+  mutated to break exactly that rule.
 - `test/canon.test.ts` — validation that both format seeds carry the canon's marker wording and
   explicit format labels, and that sample data exists with sufficient variation.
 - **No departed beats.** Nothing has ever moved out of this skill: it ships exactly two seeds, one
