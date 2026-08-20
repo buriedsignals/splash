@@ -46,7 +46,9 @@ describe("this format's ceiling carries a margin above today's measured maximum"
   // RULED 2026-08-20: a ceiling set at EXACTLY today's champion has no margin — the next delivered
   // beat one byte heavier than `MEASURED_MAX_BYTES` used to trip this guard on ordinary growth.
   it("does not trip on a file one byte heavier than today's measured maximum", () => {
-    expect(weightAgainstCeiling(MEASURED_MAX_BYTES + 1, CEILING_BYTES).over).toBe(false);
+    expect(
+      weightAgainstCeiling(MEASURED_MAX_BYTES + 1, CEILING_BYTES).over,
+    ).toBe(false);
   });
 });
 
@@ -54,13 +56,21 @@ describe("every map-web page on disk", () => {
   it("weighs at or under this format's own measured ceiling", () => {
     // DISCOVERED, not listed — see `scripts/discover-pages.mjs`'s own header note: this used to
     // walk 4 hardcoded directories and silently skip 2 of the format's 6 delivered pages.
+    //
+    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
+    // genuinely new delivered map-web page (2026-08-20/21). This count is an exact ratchet on
+    // purpose — the next beat is expected to redden it too, bumped deliberately rather than widened
+    // into a floor.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(6);
+    expect(files.length).toBe(7);
     const offenders: string[] = [];
     for (const file of files) {
       const bytes = statSync(file).size;
       const found = weightAgainstCeiling(bytes, CEILING_BYTES);
-      if (found.over) offenders.push(`${file.slice(TWIN.length + 1)}: ${JSON.stringify(found)}`);
+      if (found.over)
+        offenders.push(
+          `${file.slice(TWIN.length + 1)}: ${JSON.stringify(found)}`,
+        );
     }
     expect(offenders).toEqual([]);
   });

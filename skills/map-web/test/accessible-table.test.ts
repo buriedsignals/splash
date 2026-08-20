@@ -155,8 +155,13 @@ describe("this format's own real pages, measured against the widened detector", 
     // DISCOVERED, not listed: this used to walk 4 hardcoded `mapgen-*-web` directories and never
     // opened `mapgen-choropleth-web` or this skill's own `output-proof/population.html` — 2 of the
     // format's 6 delivered pages the catalogue's `carried` claim was never actually measured against.
+    //
+    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
+    // genuinely new delivered map-web page (2026-08-20/21). This count is an exact ratchet on
+    // purpose — the next beat is expected to redden it too, bumped deliberately rather than widened
+    // into a floor.
     const pages = discoverMapWebPages();
-    expect(pages.length).toBe(6);
+    expect(pages.length).toBe(7);
     const offenders: string[] = [];
     for (const page of pages) {
       const found = tableCarriesTheMarks(page.html);

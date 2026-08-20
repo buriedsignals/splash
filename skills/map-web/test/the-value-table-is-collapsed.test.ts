@@ -101,6 +101,11 @@ describe("every committed map page keeps its value table collapsed", () => {
   it("should find the pages it is supposed to be checking", () => {
     // Anti-vacuity, and the reason this is not a bare `for` loop: a sweep that finds no work to do
     // passes, which is exactly how a guard stops covering what was added after it.
+    //
+    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
+    // genuinely new delivered map-web page, added 2026-08-20/21. A count this exact is a ratchet on
+    // purpose — the next beat is expected to redden this list too, and whoever adds it is expected
+    // to bump it deliberately, by name, rather than have the guard widen itself into a floor.
     expect(pages.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
@@ -108,6 +113,7 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
     ]);
   });
 
@@ -115,7 +121,8 @@ describe("every committed map page keeps its value table collapsed", () => {
     // The second anti-vacuity clause, and the one that matters most here: "no page renders an
     // expanded table" is trivially true of a tree with no tables in it. `regionTable` now defaults
     // to true (`same-facts-without-the-picture`, 2026-08-20), and the seed carries it like every
-    // other beat — the floor is all six committed pages.
+    // other beat — the floor is all seven committed pages, including the housing-pressure
+    // choropleth's own 8-row table of every country it declares.
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
@@ -124,6 +131,7 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
     ]);
   });
 
