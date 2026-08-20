@@ -13,7 +13,7 @@ written out below the tables.
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| duplicated-payload |  | **R** |  |  | **R** | **R** | **R** | **R** |
+| duplicated-payload |  |  |  |  | **R** | **R** | **R** | **R** |
 | projection-pairing |  |  |  |  |  |  |  | **R** |
 | plate-geometry-pairing |  |  |  |  | **R** | **R** |  | **R** |
 | plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
@@ -32,7 +32,7 @@ written out below the tables.
 | reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
 | honours-reduced-motion |  | **R** |  |  |  |  |  |  |
 | degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
-| weight-has-a-ceiling |  | **R** |  |  | **R** | **R** | **R** | **R** |
+| weight-has-a-ceiling |  |  |  |  | **R** | **R** | **R** | **R** |
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 
 ## discipline
@@ -75,7 +75,7 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 | skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | chart-beat | ✓ |  |  |  |  |  |  |  |  |
-| chart-web | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |
 | chart-video | ✓ |  |  |  | ✓ |  |  |  |  |
 | dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  |
 | map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  |

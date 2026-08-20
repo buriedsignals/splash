@@ -34,14 +34,18 @@ export const PRODUCING_SKILLS = [
 
 const skillDir = (skill) => join(ROOT, "skills", skill);
 
-/** Every `.mjs` and `.ts`/`.tsx` under a skill's `scripts/` and `assets/`, as text. */
-function sources(skill) {
+/** Every `.mjs` and `.ts`/`.tsx` under a skill's `scripts/` and `assets/`, as text. `exclude`, when
+ *  given, is a FILENAME pattern to leave out — for a witness that must read what a skill RENDERS
+ *  rather than the guard machinery written afterward to check it (see `inlines-its-assets` below,
+ *  the one witness that needs this). */
+function sources(skill, { exclude } = {}) {
   const out = [];
   for (const sub of ["scripts", "assets"]) {
     const dir = join(skillDir(skill), sub);
     if (!existsSync(dir)) continue;
     for (const name of readdirSync(dir)) {
       if (!/\.(mjs|ts|tsx)$/.test(name)) continue;
+      if (exclude && exclude.test(name)) continue;
       out.push(readFileSync(join(dir, name), "utf8"));
     }
   }
@@ -49,7 +53,7 @@ function sources(skill) {
 }
 
 const has = (skill, relative) => existsSync(join(skillDir(skill), relative));
-const anySource = (skill, pattern) => sources(skill).some((text) => pattern.test(text));
+const anySource = (skill, pattern, options) => sources(skill, options).some((text) => pattern.test(text));
 
 /** A single source file both CALLS a write function and names an `.html` target — not just mentions
  *  the extension somewhere, which a bare substring match cannot tell apart from a comment, a URL, or
@@ -99,7 +103,26 @@ export const TRAITS = [
   {
     id: "inlines-its-assets",
     describes: "it embeds its own images or fonts into the delivered file as data URIs",
-    witness: (skill) => anySource(skill, /data:image|data:font|base64/),
+    // GUARD-MACHINERY EXCLUDED (ruled 2026-08-20): this witness used to read the whole `scripts/`
+    // directory, so a `verify-*.mjs`'s own doc comment and regex LITERAL — written to DETECT a
+    // `data:` URI, never to write one — satisfied it on their own. Measured on `chart-web`: the
+    // only three hits were `verify-guards.mjs:23` (a doc comment), `verify-guards.mjs:33`
+    // (`duplicatedPayload`'s own regex source), and `detect-weight-has-a-ceiling.mjs:7`
+    // ("pre-base64" in a doc comment) — and not one of its 18 delivered pages contains `base64,`.
+    // A witness downstream of the thing it protects means the cheapest way to make a red
+    // `duplicated-payload` or `weight-has-a-ceiling` cell go away is to delete the decision
+    // function that watches for it — the exact escape hatch this whole mechanism exists to close.
+    // `verify-*.mjs` and `detect-*.mjs` are excluded: this witness now reads only what a skill's
+    // own render/asset code actually writes. Checked every other trait built on `anySource` for the
+    // same shape (a match found ONLY inside `verify-*`/`detect-*`, never in real production code):
+    // `delegates-rendering` and `owns-a-surface-it-did-not-choose` (`exportChartPng`) both also
+    // match `dw-beat/scripts/dw-client.mjs` and `produce.mjs`; `reader-driven-reveal`
+    // (`data-progress`) also matches `scrolly/assets/interaction.mjs` and `ScrollySeed.tsx`;
+    // `embeds-reader-photos` (`manifest.json`) matches only `render-preview.mjs`, never a
+    // `verify-*`/`detect-*` file, and is additionally gated on `build-sample-photos.mjs` existing.
+    // None of the four share this trait's defect.
+    witness: (skill) =>
+      anySource(skill, /data:image|data:font|base64/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
   {
     id: "embeds-reader-photos",

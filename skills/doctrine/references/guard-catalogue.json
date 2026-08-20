@@ -10,7 +10,6 @@
       "earnedBy": "a delivered route scrolly carried the same 340 KiB basemap plate five times — 1.33 MB of a 1.80 MB page, on a beat a newsroom would open on a phone",
       "states": {
         "scrolly": "carried",
-        "chart-web": "carried",
         "map-web": "carried",
         "image-beat": "carried",
         "map-beat": "carried"
@@ -221,7 +220,6 @@
       "earnedBy": "image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them",
       "detectedBy": "weightAgainstCeiling",
       "states": {
-        "chart-web": "carried",
         "map-beat": "carried",
         "map-web": "carried",
         "image-beat": "carried",
