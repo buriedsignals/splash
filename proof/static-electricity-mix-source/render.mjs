@@ -24,16 +24,49 @@ import {
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { TYPE, ElectricityMixStack, rungsFor } from "./ElectricityMixStack.tsx";
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 const RENEWABLE_COLUMNS = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower"];
 const FOSSIL_COLUMNS = ["Gas", "Oil", "Coal"];
 
 function parseCsv(text) {
-  const [header, ...rows] = text.trim().split(/\r?\n/);
-  const cols = header.split(",");
+  const [header, ...rows] = parseCsvRows(text.trim());
+  const cols = header;
   return rows.map((row) => {
-    const cells = row.split(",");
+    const cells = row;
     const rec = {};
     cols.forEach((c, i) => (rec[c] = cells[i]));
     return rec;

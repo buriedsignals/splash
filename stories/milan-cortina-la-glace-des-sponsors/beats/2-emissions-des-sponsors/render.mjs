@@ -5,13 +5,46 @@ import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import { RepartitionEmissions } from "./RepartitionEmissions.tsx";
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STORY = join(HERE, "..", "..");
 const profile = JSON.parse(await readFile(join(STORY, "source", "profile.json"), "utf8"));
 const csv = await readFile(join(STORY, "source", "data.csv"), "utf8");
-const [header, ...rows] = csv.trim().split(/\r?\n/);
-const cols = header.split(",");
-const records = rows.map((r) => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v])));
+const [header, ...rows] = parseCsvRows(csv.trim());
+const cols = header;
+const records = rows.map((r) => Object.fromEntries(r.map((v, i) => [cols[i], v])));
 
 const parts = records.map((r) => ({
   actor: r.acteur,

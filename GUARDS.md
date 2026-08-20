@@ -23,6 +23,7 @@ written out below the tables.
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
+| csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
 
 ## capability
 
@@ -72,16 +73,16 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -200,3 +201,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a beat's own component reinventing composition from nothing — an accent carrying more than one meaning, furniture that does not derive from the ground, a scale that hides zero on a bar, a gap in the data quietly bridged into a claim of continuity the data does not support
 
 **Earned by:** written against the first static beat and re-earned by every format that draws its own marks since, on the same rule for the same reason: a beat is not finished because its tests are green — its pixels still have to be looked at, whether they sit still, animate to a last frame, scroll under a reader's own gesture, or bake behind a live map
+
+### csv-split-by-hand — `csvSplitByHand`
+
+**Refuses:** a beat's own reader cutting a csv row on every literal comma instead of a parser that understands a quoted field
+
+**Earned by:** proof/more-line-swiss-life-expectancy/render.mjs — the worked example every craft skill points authors at — cut its rows with row.split(","); against the stress data it would have silently corrupted "1,234.5" into two fields and torn "Netherlands, the" in half. Measured 2026-08-20: 84 files across proof/, stories/ and this project's own skill scripts/assets did the same (several, like map-beat/assets/geo.ts, take already-read csv text and never name the .csv extension at all), while skills/intake/scripts/csv.mjs already shipped a real RFC 4180 reader that none of them used

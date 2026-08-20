@@ -1,4 +1,37 @@
 /**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
  * The pure half of the dot-density WEB beat: population csv parsing, the loud join, the dot-value
  * derivation, the seeded deterministic scatter, and — new in this format — the per-country anchor a
  * hit target sits on and the frame test that keeps every drawn dot inside the picture. No browser,
@@ -19,8 +52,8 @@ export type PopulationRow = { code: string; name: string; population: number };
 
 /** @parity */
 export function parsePopulationCsv(csv: string): PopulationRow[] {
-  const [header, ...rows] = csv.trim().split(/\r?\n/);
-  const columns = (header ?? "").split(",");
+  const [header, ...rows] = parseCsvRows(csv.trim());
+  const columns = (header ?? []);
   const codeAt = columns.indexOf("Code");
   const nameAt = columns.indexOf("Country");
   const popAt = columns.indexOf("Population");
@@ -31,7 +64,7 @@ export function parsePopulationCsv(csv: string): PopulationRow[] {
   return rows
     .filter((r) => r.length > 0)
     .map((r) => {
-      const cells = r.split(",");
+      const cells = r;
       const population = Number(cells[popAt]);
       if (!Number.isFinite(population))
         throw new Error(`bad population value in row: ${r}`);

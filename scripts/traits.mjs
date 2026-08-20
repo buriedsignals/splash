@@ -129,6 +129,21 @@ export const TRAITS = [
     describes: "the evidence it carries is the journalist's own photographs, not a drawing",
     witness: (skill) => anySource(skill, /manifest\.json/) && has(skill, "scripts/build-sample-photos.mjs"),
   },
+  {
+    id: "reads-a-journalists-csv",
+    describes: "its own scripts or assets ingest a frozen .csv, rather than receiving already-typed values",
+    // GUARD-MACHINERY EXCLUDED, same reasoning `inlines-its-assets` was ruled on 2026-08-20: the
+    // guard this trait reaches (`csvSplitByHand`) names its OWN defect with the word "csv"
+    // throughout its doc comment, which satisfies a literal-`.csv`-path witness on its own, in the
+    // very file that decides the guard. Measured after adding the guard to all four reachable
+    // skills: excluding `verify-*`/`detect-*` keeps the witness to the real production reads,
+    // several of which turned out not to reference a `.csv` PATH at all — `map-beat/assets/geo.ts`
+    // takes a `csv: string` parameter handed to it already read, and never names the extension —
+    // so the witness matches the WORD, not the file extension: `chart-video/scripts/render-video.mjs`,
+    // `dw-beat/scripts/prove-co2.mjs`, `map-beat/scripts/render-map.mjs` and `assets/geo.ts`,
+    // `scrolly/scripts/render-scrolly.mjs`, `assets/gauge-data.ts` and `scripts/extent-range.mjs`.
+    witness: (skill) => anySource(skill, /\bcsv\b/i, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+  },
 ];
 
 export function traitsOf(skill) {

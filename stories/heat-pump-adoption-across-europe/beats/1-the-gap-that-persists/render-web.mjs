@@ -8,15 +8,48 @@ import { fileURLToPath } from "node:url";
 import { renderWeb as renderWebFunc } from "/Users/tomvaillant/.agents/skills/chart-web/scripts/render-web.mjs";
 import { SlopeWeb, FRAME, parseSlopeData } from "./SlopeWeb.tsx";
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STORY_DIR = resolve(HERE, "../..");
 
 function parseCsv(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",");
+  const lines = parseCsvRows(text.trim());
+  const headers = lines[0];
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
-    const cells = lines[i].split(",");
+    const cells = lines[i];
     const row = {};
     for (let j = 0; j < headers.length; j++) {
       const h = headers[j];

@@ -66,6 +66,24 @@ describe("valuesFromCsv", () => {
   it("should refuse a csv whose value column it cannot find", () => {
     expect(() => valuesFromCsv("a,b,c\n1,2,3\n", 2023)).toThrow(/Code|Year/);
   });
+
+  // The coordinator's own finding, folded in here rather than left for later: `Number("0x1F")` is
+  // 31, not a refusal — the exact gotcha `skills/intake/scripts/profile.mjs` already guards against
+  // for the profiler's own column typing. A join reading the same shape of csv deserves the same
+  // discipline, copied rather than imported.
+  it("should refuse a hex-shaped cell instead of silently reading it as a number", () => {
+    const hex = "Entity,Code,Year,value\nSwitzerland,CHE,2023,0x1F\n";
+    expect(() => valuesFromCsv(hex, 2023)).toThrow(/CHE.*0x1F/);
+  });
+
+  it("should read a thousands-grouped cell instead of silently dropping it as no-data", () => {
+    const grouped = 'Entity,Code,Year,value\nSwitzerland,CHE,2023,"1,234.5"\n';
+    expect(valuesFromCsv(grouped, 2023).get("CHE")).toBeCloseTo(1234.5, 6);
+  });
+
+  it("should still treat a genuinely blank cell as absence, not a refusal", () => {
+    expect(valuesFromCsv(CSV, 2023).has("NWH")).toBe(false);
+  });
 });
 
 describe("joinValues", () => {

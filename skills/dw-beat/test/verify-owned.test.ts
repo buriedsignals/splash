@@ -35,6 +35,7 @@ import { deflateSync } from "node:zlib";
 import {
   GUARDS,
   assertExportedSurface,
+  csvSplitByHand,
   groundForBeat,
   groundFromPalette,
   plateFollowsGround,
@@ -160,8 +161,16 @@ function storyTree(where: "beat" | "story" | "nowhere", ground = "#16191B") {
 }
 
 describe("the guard a delegated producer still carries", () => {
-  it("declares the one catalogue guard this format can reach", () => {
-    expect(GUARDS).toEqual(["plateFollowsGround"]);
+  it("declares the two catalogue guards this format can reach", () => {
+    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand"]);
+  });
+
+  it("does not hand-split the csv it fetches for the CO2 proof", () => {
+    const source = readFileSync(
+      join(import.meta.dirname, "..", "scripts", "prove-co2.mjs"),
+      "utf8",
+    );
+    expect(csvSplitByHand(source)).toEqual([]);
   });
 
   it("refuses an export on the opposite side from the ground the story declared", () => {

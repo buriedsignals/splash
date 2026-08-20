@@ -40,6 +40,7 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
+  csvSplitByHand,
   marksFromSource,
   neverArrives,
   rampsFromSource,
@@ -193,6 +194,21 @@ describe("every chart video on disk reveals in a space its own length lives in",
     expect(files).toBeGreaterThanOrEqual(20);
     expect(marks).toBeGreaterThanOrEqual(15);
     expect(offenders).toEqual([]);
+  });
+});
+
+// FINDING 4 (stress test, 2026-08-20): `render-video.mjs` reads the frozen csv itself — the only
+// file in this skill's own scripts/assets that does — and used to cut its rows on a bare comma, the
+// same defect `proof/more-line-swiss-life-expectancy/render.mjs` (the pattern beat every craft skill
+// points authors at) shipped with. Read here from disk rather than pinned as a fixture string, so a
+// reintroduced `row.split(",")` in the real file turns this red, not just a copy of it.
+describe("the csv this skill reads is not cut on a bare comma", () => {
+  it("should find no hand-split field in render-video.mjs", () => {
+    const source = readFileSync(
+      join(SKILL, "scripts", "render-video.mjs"),
+      "utf8",
+    );
+    expect(csvSplitByHand(source)).toEqual([]);
   });
 });
 

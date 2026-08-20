@@ -1,4 +1,37 @@
 /**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
  * THIS BEAT'S OWN READING LAYER — three frozen inputs, and every figure the beat says out loud.
  *
  * The beat carries THREE media and therefore three kinds of evidence, and they answer three
@@ -46,13 +79,13 @@ const PHOTO_HEADER =
   "order,year,photographer,collection,licence,source_page,file_url,original_width,original_height,original_sha256,crop_width,delivered_file,delivered_width,delivered_height,delivered_sha256";
 
 export function readPhotographs(text: string): Photograph[] {
-  const lines = text.trim().split(/\r?\n/);
+  const lines = parseCsvRows(text.trim());
   if (lines[0].trim() !== PHOTO_HEADER)
     throw new Error(
       `photographs.csv header changed: expected\n  ${PHOTO_HEADER}\ngot\n  ${lines[0]}`,
     );
   const rows = lines.slice(1).map((line) => {
-    const c = line.split(",");
+    const c = line;
     if (c.length !== 15)
       throw new Error(`expected 15 cells, got ${c.length}: ${line}`);
     return {
@@ -155,13 +188,13 @@ const BALANCE_HEADER =
  * missing row would make that arithmetic quietly wrong rather than loudly absent.
  */
 export function parseBalance(text: string): Balance[] {
-  const lines = text.trim().split(/\r?\n/);
+  const lines = parseCsvRows(text.trim());
   if (lines[0]!.trim() !== BALANCE_HEADER)
     throw new Error(
       `reference-glaciers.csv header changed: expected\n  ${BALANCE_HEADER}\ngot\n  ${lines[0]}`,
     );
   const rows = lines.slice(1).map((line) => {
-    const c = line.split(",");
+    const c = line;
     if (c.length !== 3)
       throw new Error(`expected 3 cells, got ${c.length}: ${line}`);
     const value = Number(c[1]);

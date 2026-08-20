@@ -110,6 +110,12 @@ const COPIES: Record<string, string[]> = {
     "map-beat/scripts/verify-map.mjs",
   ],
   neverArrives: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
+  csvSplitByHand: [
+    "chart-video/scripts/verify-video.mjs",
+    "dw-beat/scripts/verify-owned.mjs",
+    "map-beat/scripts/verify-map.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.

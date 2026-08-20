@@ -3,6 +3,7 @@
   "traits": [
     "delegates-rendering",
     "owns-a-surface-it-did-not-choose",
-    "ships-standalone-html"
+    "ships-standalone-html",
+    "reads-a-journalists-csv"
   ]
 }

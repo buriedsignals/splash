@@ -5,6 +5,7 @@
     "bakes-a-plate",
     "owns-a-surface-it-did-not-choose",
     "timed-build-that-ends",
-    "inlines-its-assets"
+    "inlines-its-assets",
+    "reads-a-journalists-csv"
   ]
 }

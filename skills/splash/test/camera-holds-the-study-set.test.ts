@@ -62,6 +62,39 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
 
 /**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
  * How many of each beat's own catalogued rows fall outside its own committed frame, and whether
  * the beat's BRIEF is required to say so. Recorded from a measurement, not from a bake's log.
  */
@@ -101,14 +134,13 @@ function readPointBeats(): PointBeat[] {
     const geometry = JSON.parse(readFileSync(geometryPath, "utf8"));
     if (!geometry.frameCorners) continue;
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".csv"))) {
-      const lines = readFileSync(join(dir, file), "utf8").trim().split(/\r?\n/);
-      const head = lines[0]!.split(",").map((h) => h.trim().toLowerCase());
+      const lines = parseCsvRows(readFileSync(join(dir, file), "utf8").trim());
+      const head = lines[0]!.map((h) => h.trim().toLowerCase());
       const lonAt = head.findIndex((h) => h === "lon" || h === "longitude");
       const latAt = head.findIndex((h) => h === "lat" || h === "latitude");
       if (lonAt < 0 || latAt < 0) continue;
       const rows: { lon: number; lat: number }[] = [];
-      for (const line of lines.slice(1)) {
-        const cells = line.split(",");
+      for (const cells of lines.slice(1)) {
         const lon = Number(cells[lonAt]);
         const lat = Number(cells[latAt]);
         if (Number.isFinite(lon) && Number.isFinite(lat))

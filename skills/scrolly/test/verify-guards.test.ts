@@ -15,6 +15,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   stillSteps,
+  csvSplitByHand,
   duplicatedPayload,
   projectionDisagreements,
   STEP_REDRAW_FLOOR,
@@ -648,5 +649,26 @@ describe("every map-track scrolly beat on disk", () => {
     }
     expect(checked).toBeGreaterThanOrEqual(3);
     expect(offenders).toEqual([]);
+  });
+});
+
+// FINDING 4 (stress test, 2026-08-20): `render-scrolly.mjs` names the sample Potomac `.csv` path
+// but never parses it itself — that happens in `assets/gauge-data.ts`'s `parseReadings`, the SEED's
+// own "REPLACE ME with your own beat's data reading" data layer every scrolly CHART track is meant
+// to copy, which cut a row on a bare comma until this fix (its sibling `parseRdb`, tab-separated
+// USGS RDB rather than csv, is untouched — a different format with no comma-quoting problem to
+// have). Both files are checked, read from disk rather than pinned as fixture strings, so a naive
+// `row.split(",")` reintroduced into either real file — the pattern the stress test found in
+// `proof/more-line-swiss-life-expectancy/render.mjs`, the worked example every craft skill points
+// authors at — turns this red instead of passing quietly.
+describe("the csv this skill reads is not cut on a bare comma", () => {
+  it("should find no hand-split field in render-scrolly.mjs", () => {
+    const source = readFileSync(join(SKILL, "scripts", "render-scrolly.mjs"), "utf8");
+    expect(csvSplitByHand(source)).toEqual([]);
+  });
+
+  it("should find no hand-split field in assets/gauge-data.ts, where parseReadings actually parses", () => {
+    const source = readFileSync(join(SKILL, "assets", "gauge-data.ts"), "utf8");
+    expect(csvSplitByHand(source)).toEqual([]);
   });
 });

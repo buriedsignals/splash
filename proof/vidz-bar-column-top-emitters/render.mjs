@@ -33,6 +33,39 @@ import {
 } from "#shared/chart-video/sizes.mjs";
 import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
@@ -78,8 +111,8 @@ const WORDS = [
  * names instead would be exactly the "typed instead of computed" failure this file exists to avoid.
  */
 export function countriesInYear(csv, year) {
-  const [header, ...rows] = csv.trim().split(/\r?\n/);
-  const columns = header.split(",");
+  const [header, ...rows] = parseCsvRows(csv.trim());
+  const columns = header;
   const entityAt = columns.indexOf("Entity");
   const codeAt = columns.indexOf("Code");
   const yearAt = columns.indexOf("Year");
@@ -88,7 +121,7 @@ export function countriesInYear(csv, year) {
     throw new Error(`csv has no Entity / Code / Year / Annual CO₂ column, got: ${header}`);
 
   return rows
-    .map((row) => row.split(","))
+    .map((row) => row)
     .filter((cells) => Number(cells[yearAt]) === year)
     .filter((cells) => cells[codeAt] && !cells[codeAt].startsWith("OWID"))
     .map((cells) => ({ country: cells[entityAt], gt: Number(cells[valueAt]) / 1e9 }))

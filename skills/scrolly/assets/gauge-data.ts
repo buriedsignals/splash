@@ -1,4 +1,37 @@
 /**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
  * REPLACE ME with your own beat's data reading. Do not parameterise me.
  *
  * This seed's own data layer: the two frozen files under `sample-data/` in, the handful of facts
@@ -71,14 +104,14 @@ export function parseRdb(text: string): Record<string, string>[] {
  *  id (`68426_00060_00003`), which is why it is found by SUFFIX rather than by a literal — a
  *  different site would publish the same statistic under a different id. */
 export function parseReadings(csv: string): Reading[] {
-  const lines = csv.split(/\r?\n/).filter((l) => l.length > 0);
-  const header = lines[0].split(",");
+  const lines = parseCsvRows(csv).filter((l) => l.length > 0);
+  const header = lines[0];
   const dateAt = header.indexOf("date");
   const valueAt = header.indexOf("discharge_cfs");
   if (dateAt < 0 || valueAt < 0)
     throw new Error(`expected date,discharge_cfs columns, got: ${lines[0]}`);
   return lines.slice(1).map((line) => {
-    const cells = line.split(",");
+    const cells = line;
     const value = Number(cells[valueAt]);
     if (!Number.isFinite(value))
       throw new Error(

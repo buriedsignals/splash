@@ -49,6 +49,7 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
+  csvSplitByHand,
   duplicatedPayload,
   groundFromPalette,
   marksFromSource,
@@ -417,5 +418,30 @@ describe("every map video on disk ends with nothing still on its way", () => {
     expect(undecidable).toBeLessThan(ramps / 4);
     expect(unreadable).toEqual([]);
     expect(offenders).toEqual([]);
+  });
+});
+
+// FINDING 4 (stress test, 2026-08-20): this skill's own `render-map.mjs` names a `.csv` path but
+// delegates the actual read to `valuesFromCsv` — which lives in `assets/geo.ts`, not this file, and
+// itself cut a row on a bare comma until this fix. Both are checked: the entrypoint, because that is
+// where the trait's own witness reads the `.csv` reference, and `assets/geo.ts`, because that is
+// where the parsing — and the pattern the stress test found in
+// `proof/more-line-swiss-life-expectancy/render.mjs`, the worked example every craft skill points
+// authors at — actually happens. Read from disk rather than pinned as a fixture string, so a naive
+// `row.split(",")` reintroduced into either real file turns this red instead of passing quietly.
+describe("the csv this skill reads is not cut on a bare comma", () => {
+  it("should find no hand-split field in render-map.mjs", () => {
+    const source = readFileSync(join(SKILL, "scripts", "render-map.mjs"), "utf8");
+    expect(csvSplitByHand(source)).toEqual([]);
+  });
+
+  it("should find no hand-split field in assets/geo.ts, where valuesFromCsv actually parses", () => {
+    const source = readFileSync(join(SKILL, "assets", "geo.ts"), "utf8");
+    expect(csvSplitByHand(source)).toEqual([]);
+  });
+
+  it("should find no hand-split field in scripts/extent-range.mjs, this skill's own dev instrument", () => {
+    const source = readFileSync(join(SKILL, "scripts", "extent-range.mjs"), "utf8");
+    expect(csvSplitByHand(source)).toEqual([]);
   });
 });

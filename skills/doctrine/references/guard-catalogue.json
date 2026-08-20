@@ -289,6 +289,21 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "csv-split-by-hand",
+      "kind": "guard",
+      "requires": ["reads-a-journalists-csv"],
+      "decidedBy": "csvSplitByHand",
+      "refuses": "a beat's own reader cutting a csv row on every literal comma instead of a parser that understands a quoted field",
+      "earnedBy": "proof/more-line-swiss-life-expectancy/render.mjs — the worked example every craft skill points authors at — cut its rows with row.split(\",\"); against the stress data it would have silently corrupted \"1,234.5\" into two fields and torn \"Netherlands, the\" in half. Measured 2026-08-20: 84 files across proof/, stories/ and this project's own skill scripts/assets did the same (several, like map-beat/assets/geo.ts, take already-read csv text and never name the .csv extension at all), while skills/intake/scripts/csv.mjs already shipped a real RFC 4180 reader that none of them used",
+      "states": {
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

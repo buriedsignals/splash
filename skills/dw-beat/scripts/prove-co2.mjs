@@ -9,21 +9,54 @@
 
 import { produce } from "./produce.mjs";
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const CSV_URL = "https://ourworldindata.org/grapher/annual-co2-emissions-per-country.csv?country=~CHE";
 
 export async function fetchSwissCo2Since1950(fetchFn = fetch) {
   const response = await fetchFn(CSV_URL);
   if (!response.ok) throw new Error(`OWID fetch failed: ${response.status}`);
   const text = await response.text();
-  const lines = text.trim().split("\n");
-  const header = lines[0].split(",");
+  const lines = parseCsvRows(text.trim());
+  const header = lines[0];
   const entityIndex = header.indexOf("Entity");
   const yearIndex = header.indexOf("Year");
   const co2Index = header.indexOf("Annual CO₂ emissions");
 
   const rows = [];
   for (const line of lines.slice(1)) {
-    const cells = line.split(",");
+    const cells = line;
     if (cells[entityIndex] !== "Switzerland") continue;
     const year = Number(cells[yearIndex]);
     if (year < 1950) continue;

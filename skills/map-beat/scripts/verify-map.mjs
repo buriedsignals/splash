@@ -40,6 +40,7 @@ export const GUARDS = [
   "plateMatchesGeometry",
   "duplicatedPayload",
   "neverArrives",
+  "csvSplitByHand",
 ];
 
 /** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
@@ -394,4 +395,31 @@ export function rampsFromSource(source, where, { total }) {
     });
   }
   return ramps;
+}
+
+/** A `.csv` this script reads whose own row is cut on every literal comma instead of a parser that
+ *  understands a quoted field — the pattern beat `proof/more-line-swiss-life-expectancy/render.mjs`
+ *  shipped for months and every author since copied: `"1,234.5"` (a thousands separator) and
+ *  `"Netherlands, the"` (a name carrying its own comma) both tear in two under a bare
+ *  `row.split(",")`, silently — an extra field, every column after it one off, and nothing throws.
+ *
+ *  Reads SOURCE TEXT, not a delivered artifact: the defect lives in how a beat is WRITTEN, not in
+ *  what it renders, so there is no rendered signal to inspect after the fact.
+ *
+ *  Two shapes have to appear TOGETHER for a match. A newline split that tokenises rows by hand
+ *  (`.split(/\r?\n/)`, or the quoted `"\n"` / `"\r\n"` forms) is proof the source is walking a csv's
+ *  own rows itself; paired with a bare single-comma split (`.split(",")`, either quote style) that
+ *  cuts each one into fields. Either alone proves nothing — a comma split with no row split nearby
+ *  is cutting something else (`place.split(" of ").pop().split(",")[0]`, a sentence, not a row: the
+ *  false positive measured against `proof/mapgen-symbol-web/render-web.mjs`, which mentions "csv"
+ *  repeatedly and reads a real one through a proper parser elsewhere), and a row split with no
+ *  comma split nearby means the
+ *  fields are read some other, safe way. Returns every offending `.split(",")` snippet found; empty
+ *  means this source does not hand-cut a comma on its own csv rows. */
+export function csvSplitByHand(source) {
+  if (!/\bcsv\b/i.test(source)) return [];
+  const rowSplitByHand =
+    /\.split\(\s*(\/\\r\?\\n\/|["'`]\\r\\n["'`]|["'`]\\n["'`])\s*\)/.test(source);
+  if (!rowSplitByHand) return [];
+  return [...source.matchAll(/\.split\(\s*(["'`]),\1\s*\)/g)].map((m) => m[0]);
 }

@@ -14,6 +14,39 @@
  * ramp — a quantity encoding, which is a different thing — built on a plain hex mix.
  */
 
+/**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 export type Ring = [number, number][];
 export type Frame = { width: number; height: number };
 
@@ -120,14 +153,34 @@ export const CO2_BREAKS = [2, 4, 6, 8, 10];
 
 // ── Reading the source ─────────────────────────────────────────────────────────────────────────
 
+// A number a human wrote, and nothing else — mirrors `skills/intake/scripts/profile.mjs`'s own
+// NUMERIC_RE/THOUSANDS_RE discipline for the same reason: `Number("0x1F")` is 31, and
+// `Number("1,234.5")` is NaN, silently dropped by a bare `Number.isFinite` guard as if the country
+// had no reading at all. Deliberately narrower than `Number()`, and never trusted before the
+// regex. Not imported — no cross-skill runtime import — a plain copy of the same two shapes.
+const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/** `raw` read as the number a human wrote, or `null` when it is neither a plain decimal nor a
+ *  thousands-grouped one — never a value `Number()` alone would accept on its own authority. */
+function readHonestNumber(raw: string): number | null {
+  if (NUMERIC_RE.test(raw)) return Number(raw);
+  if (THOUSANDS_RE.test(raw)) return Number(raw.replace(/,/g, ""));
+  return null;
+}
+
 /**
  * One year out of the frozen OWID csv, keyed by the source's own code. Blank cells are absences,
- * not zeroes — a country with no reading must reach the join as missing so the join can decide.
+ * not zeroes — a country with no reading must reach the join as missing so the join can decide. A
+ * NON-blank cell that cannot be read honestly (not a plain number, not a thousands-grouped one) is
+ * refused loudly, naming the code and the raw text — the mirror of the same "a decision nothing
+ * calls is a decision that does not run" standard `joinValues`, immediately below, is already held
+ * to: a cell silently dropped as if absent is a value that vanished, not one that was never there.
  
  *  @parity-exempt: takes a `year` where the beat animates one and does not where it does not; the frozen CSVs differ in shape, not the join. */
 export function valuesFromCsv(csv: string, year: number): Map<string, number> {
-  const [header, ...rows] = csv.trim().split(/\r?\n/);
-  const columns = (header ?? "").split(",");
+  const [header, ...rows] = parseCsvRows(csv.trim());
+  const columns = (header ?? []);
   const codeAt = columns.indexOf("Code");
   const yearAt = columns.indexOf("Year");
   if (codeAt < 0 || yearAt < 0)
@@ -136,11 +189,16 @@ export function valuesFromCsv(csv: string, year: number): Map<string, number> {
 
   const values = new Map<string, number>();
   for (const row of rows) {
-    const cells = row.split(",");
+    const cells = row;
     if (Number(cells[yearAt]) !== year) continue;
-    const value = Number(cells[valueAt]);
-    if (!cells[codeAt] || cells[valueAt] === "" || !Number.isFinite(value))
-      continue;
+    if (!cells[codeAt]) continue;
+    const raw = cells[valueAt] ?? "";
+    if (raw === "") continue;
+    const value = readHonestNumber(raw);
+    if (value === null)
+      throw new Error(
+        `${cells[codeAt]}: "${raw}" is not a value this join can read honestly — neither a plain number nor a thousands-grouped one`,
+      );
     values.set(cells[codeAt]!, value);
   }
   return values;

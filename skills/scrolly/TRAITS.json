@@ -6,6 +6,7 @@
     "owns-a-surface-it-did-not-choose",
     "reader-driven-reveal",
     "ships-standalone-html",
-    "inlines-its-assets"
+    "inlines-its-assets",
+    "reads-a-journalists-csv"
   ]
 }

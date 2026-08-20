@@ -1,4 +1,37 @@
 /**
+ * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
+ * a proof/story workspace is not a skill either. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/**
  * The pure half of this choropleth beat: the study set, the join, the classes, the ramp, the ring
  * arithmetic, the claim check. A physical copy of `map-beat/assets/geo.ts`'s shape, adapted —
  * not an import — because a skill never reaches across another skill's boundary at runtime, and a
@@ -104,9 +137,22 @@ export const CHOROPLETH_BREAKS = [2, 4, 6, 8, 10];
  * decide.
  
  *  @parity-exempt: takes a `year` where the beat animates one and does not where it does not; the frozen CSVs differ in shape, not the join. */
+// A number a human wrote, and nothing else — mirrors `skills/intake/scripts/profile.mjs`'s own
+// NUMERIC_RE/THOUSANDS_RE discipline for the same reason: `Number("0x1F")` is 31, and
+// `Number("1,234.5")` is NaN, silently dropped by a bare `Number.isFinite` guard as if the country
+// had no reading at all. Not imported — no cross-skill runtime import — a plain copy.
+const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+function readHonestNumber(raw: string): number | null {
+  if (NUMERIC_RE.test(raw)) return Number(raw);
+  if (THOUSANDS_RE.test(raw)) return Number(raw.replace(/,/g, ""));
+  return null;
+}
+
 export function valuesFromCsv(csv: string, year: number): Map<string, number> {
-  const [header, ...rows] = csv.trim().split(/\r?\n/);
-  const columns = (header ?? "").split(",");
+  const [header, ...rows] = parseCsvRows(csv.trim());
+  const columns = (header ?? []);
   const codeAt = columns.indexOf("Code");
   const yearAt = columns.indexOf("Year");
   if (codeAt < 0 || yearAt < 0)
@@ -115,11 +161,16 @@ export function valuesFromCsv(csv: string, year: number): Map<string, number> {
 
   const values = new Map<string, number>();
   for (const row of rows) {
-    const cells = row.split(",");
+    const cells = row;
     if (Number(cells[yearAt]) !== year) continue;
-    const value = Number(cells[valueAt]);
-    if (!cells[codeAt] || cells[valueAt] === "" || !Number.isFinite(value))
-      continue;
+    if (!cells[codeAt]) continue;
+    const raw = cells[valueAt] ?? "";
+    if (raw === "") continue;
+    const value = readHonestNumber(raw);
+    if (value === null)
+      throw new Error(
+        `${cells[codeAt]}: "${raw}" is not a value this join can read honestly — neither a plain number nor a thousands-grouped one`,
+      );
     values.set(cells[codeAt]!, value);
   }
   return values;
