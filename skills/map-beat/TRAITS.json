@@ -3,7 +3,6 @@
   "traits": [
     "draws-own-geometry",
     "bakes-a-plate",
-    "projects-geography",
     "owns-a-surface-it-did-not-choose",
     "timed-build-that-ends",
     "inlines-its-assets"

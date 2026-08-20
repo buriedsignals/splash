@@ -51,6 +51,15 @@ function sources(skill) {
 const has = (skill, relative) => existsSync(join(skillDir(skill), relative));
 const anySource = (skill, pattern) => sources(skill).some((text) => pattern.test(text));
 
+/** A single source file both CALLS a write function and names an `.html` target — not just mentions
+ *  the extension somewhere, which a bare substring match cannot tell apart from a comment, a URL, or
+ *  an unrelated string. The two must share one file: two different sources each matching half of it
+ *  would prove nothing about either. */
+const writesHtmlArtifact = (skill) =>
+  sources(skill).some(
+    (text) => /\bwrite(File(Sync)?|Atomic)\s*\(/.test(text) && /\.html["'`]/.test(text),
+  );
+
 export const TRAITS = [
   {
     id: "draws-own-geometry",
@@ -60,11 +69,6 @@ export const TRAITS = [
   {
     id: "bakes-a-plate",
     describes: "it bakes a basemap raster and the frame its marks were projected into, side by side",
-    witness: (skill) => has(skill, "scripts/bake-plate.mjs"),
-  },
-  {
-    id: "projects-geography",
-    describes: "it resolves a camera and projects coordinates into a frame's pixels",
     witness: (skill) => has(skill, "scripts/bake-plate.mjs"),
   },
   {
@@ -90,7 +94,7 @@ export const TRAITS = [
   {
     id: "ships-standalone-html",
     describes: "it writes an HTML file a reader opens with no server and no build",
-    witness: (skill) => anySource(skill, /\.html\b/),
+    witness: writesHtmlArtifact,
   },
   {
     id: "inlines-its-assets",
@@ -100,7 +104,7 @@ export const TRAITS = [
   {
     id: "embeds-reader-photos",
     describes: "the evidence it carries is the journalist's own photographs, not a drawing",
-    witness: (skill) => anySource(skill, /manifest\.json/) && has(skill, "scripts/build-sample-photo.mjs"),
+    witness: (skill) => anySource(skill, /manifest\.json/) && has(skill, "scripts/build-sample-photos.mjs"),
   },
 ];
 
