@@ -210,4 +210,64 @@ describe("profileTable", () => {
     expect(v.unit).toBeUndefined();
     expect(v.reason).toMatch(/0x1F/);
   });
+
+  it("should report the gaps in a year column with a hole in the middle", () => {
+    // stress-d-asylum-gap's own shape: 2008-2012, then a jump straight to 2015.
+    const table = profileTable([
+      ["year", "applications"],
+      ["2008", "1487"],
+      ["2009", "1423"],
+      ["2010", "1419"],
+      ["2011", "1211"],
+      ["2012", "1217"],
+      ["2015", "2100"],
+      ["2016", "2240"],
+      ["2017", "2310"],
+    ]);
+    const year = table.columns.find((c) => c.name === "year");
+    expect(year.gaps).toEqual([2013, 2014]);
+  });
+
+  it("should report no gaps for a year column with none", () => {
+    const table = profileTable([
+      ["year"],
+      ["2020"],
+      ["2021"],
+      ["2022"],
+    ]);
+    expect(table.columns.find((c) => c.name === "year").gaps).toEqual([]);
+  });
+
+  it("should not report gaps for a plain measurement column, even one with integer values and an uneven spacing", () => {
+    // A price column is not a sequence with holes — any two rows can legitimately sit any
+    // distance apart, so "gaps" is meaningless here and must not be invented.
+    const table = profileTable([
+      ["price"],
+      ["10"],
+      ["25"],
+      ["4000"],
+    ]);
+    expect(table.columns.find((c) => c.name === "price").gaps).toBe(null);
+  });
+
+  it("should not report gaps for a text column", () => {
+    expect(
+      profileTable(ROWS).columns.find((c) => c.name === "commune").gaps,
+    ).toBe(null);
+  });
+
+  it("should respect an evenly-spaced year column's own cadence rather than assuming every year", () => {
+    // Every 5 years, no value missing — must not flag 2001-2004, 2006-2009, ... as gaps.
+    const table = profileTable([
+      ["year"],
+      ["2000"],
+      ["2005"],
+      ["2010"],
+      ["2020"],
+    ]);
+    const year = table.columns.find((c) => c.name === "year");
+    // The grain here is 5 (the smallest step actually observed), and 2015 is the one
+    // multiple-of-5 slot between 2010 and 2020 that never shows up.
+    expect(year.gaps).toEqual([2015]);
+  });
 });

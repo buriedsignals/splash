@@ -97,6 +97,47 @@ function typeOf(values) {
   };
 }
 
+// A column reports its gaps only when it plausibly IS a sequence, where skipping a step is
+// itself information — a calendar year is one; a price, a percentage, a headcount are not,
+// because any two rows in those columns can legitimately sit any distance apart, and reporting
+// "gaps" there would just be inventing a step size nobody claimed. The test is the column's own
+// IDENTITY, not its statistics: a name that reads as a year/date/année, or (name-agnostic, for a
+// column like "year" with no better name at hand) an integer range that only a calendar year
+// would plausibly sit in — the exact heuristic storyboard's ground-claim.mjs already uses to find
+// the year column for its own checks (`findYearColumn`), reused here rather than invented twice.
+// `date`-typed columns qualify too, but only when every value is a plain four-digit year: this
+// profiler's `date` type also accepts "YYYY-MM" and "YYYY-MM-DD", and a mixed-granularity column
+// has no single well-defined step, so it is left unflagged rather than guessed at.
+const SEQUENCE_NAME_RE = /year|date|ann[ée]e/i;
+
+function isSequenceColumn(name, type, sequenceValues) {
+  if (sequenceValues.length < 2) return false;
+  if (type === "date") return true; // sequenceValues is already restricted to plain years — see below
+  if (type !== "number") return false;
+  if (!sequenceValues.every(Number.isInteger)) return false;
+  if (SEQUENCE_NAME_RE.test(name)) return true;
+  return sequenceValues.every((n) => n >= 1500 && n <= 2100);
+}
+
+// Which points the sequence's own grain skips, between its lowest and highest value. The grain is
+// the SMALLEST step actually observed between two consecutive distinct values — never assumed to
+// be 1 — so a column paced every 5 years with nothing missing is not flagged just for not
+// counting by one; only a step that column itself establishes can be reported as broken.
+// Reporting only: this never repairs, fills or interpolates a missing value.
+function findGaps(sequenceValues) {
+  const distinct = [...new Set(sequenceValues)].sort((a, b) => a - b);
+  if (distinct.length < 2) return [];
+  let step = Infinity;
+  for (let i = 1; i < distinct.length; i++) step = Math.min(step, distinct[i] - distinct[i - 1]);
+  if (!Number.isFinite(step) || step <= 0) return [];
+  const present = new Set(distinct);
+  const gaps = [];
+  for (let v = distinct[0]; v <= distinct[distinct.length - 1]; v += step) {
+    if (!present.has(v)) gaps.push(v);
+  }
+  return gaps;
+}
+
 // A row is duplicated when it repeats another row's DATA byte-for-byte —
 // reported, never removed: the journalist decides what a repeated row means.
 function findDuplicateRows(body) {
@@ -124,10 +165,16 @@ export function profileTable(rows) {
   const columns = header.map((name, index) => {
     const values = body.map((row) => (row[index] ?? "").trim());
     const { type, reason, unit } = typeOf(values);
+    const present = values.filter((v) => v !== "");
     const numbers =
       type === "number"
-        ? values.filter((v) => v !== "").map((v) => Number(unit ? splitUnit(v).core : stripThousands(v)))
+        ? present.map((v) => Number(unit ? splitUnit(v).core : stripThousands(v)))
         : [];
+    // Only a plain four-digit year reads unambiguously as one step of a date column's sequence —
+    // see isSequenceColumn's header for why "YYYY-MM"/"YYYY-MM-DD" are left out here.
+    const sequenceValues =
+      type === "number" ? numbers : type === "date" && present.every((v) => /^\d{4}$/.test(v)) ? present.map(Number) : [];
+    const gaps = isSequenceColumn(name, type, sequenceValues) ? findGaps(sequenceValues) : null;
     return {
       name,
       type,
@@ -142,6 +189,9 @@ export function profileTable(rows) {
       // range of the column it sums, so without this the only check that can see it reads it as a
       // number the data refutes — which is exactly what it did (storyboard's ground-claim.mjs).
       sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
+      // Which values a sequence-like column's own grain skips — see isSequenceColumn/findGaps.
+      // `null` for any column where "gaps" is not a meaningful question, not merely an unanswered one.
+      gaps,
     };
   });
   return { rowCount: body.length, columns, duplicates: findDuplicateRows(body) };
