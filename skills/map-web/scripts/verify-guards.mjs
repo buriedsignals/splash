@@ -30,7 +30,35 @@ export const GUARDS = [
   "plateMatchesGeometry",
   "plateFollowsGround",
   "pageLanguageMatchesStory",
+  "credentialReadsWithoutAlias",
 ];
+
+/** Every credential name this skill's own scripts read straight off `env`/`process.env` by its
+ *  literal CANONICAL property name — `MAPTILER_KEY`, `DATAWRAPPER_TOKEN` — never a name built at
+ *  runtime, which is what an alias-resolving loop (`names.map((n) => env[n])`) looks like to a
+ *  text scan and is already safe by construction: it reads every alias in the same expression, so
+ *  there is no narrower name for it to have missed. */
+export function credentialNamesRead(source) {
+  const names = new Set();
+  for (const m of source.matchAll(/\benv(?:\.|\[["'`])([A-Z][A-Z0-9_]*_(?:KEY|TOKEN))\b/g))
+    names.add(m[1]);
+  return [...names];
+}
+
+/** A credential read by its canonical name with no `<NAME>_ALIASES` list declared ANYWHERE in the
+ *  same source — the exact shape finding 2 found twice: a raw `process.env.DATAWRAPPER_TOKEN` /
+ *  `process.env.MAPTILER_KEY` read with nothing to fall back to when the root's `.env` holds the
+ *  credential under a different name (`DATAWRAPPER_API_TOKEN`, `REMOTION_MAPTILER_KEY`). The
+ *  alias-list convention is declared-not-inferred, the same contract `carriedBy` reads a guard's
+ *  own name by: a skill that reads a canonical name and never declares its own list for it is
+ *  refused, and one that reads the name AND declares the list survives — this cannot see whether
+ *  the read actually consults the list, which is why `source` is the WHOLE skill, not one file:
+ *  `dw-beat/scripts/sealed-produce.mjs` reads `DATAWRAPPER_TOKEN` and imports its resolver from
+ *  `produce.mjs` rather than declaring a second list of its own, and only the combined source
+ *  proves that is not the same gap this rule refuses. */
+export function credentialReadsWithoutAlias(source) {
+  return credentialNamesRead(source).filter((name) => !source.includes(`${name}_ALIASES`));
+}
 
 /** Does the delivered page's own `<html lang>` agree with the language recorded for its story?
  *

@@ -32,6 +32,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { decodePng } from "../scripts/compare-png.mjs";
 import {
+  credentialNamesRead,
+  credentialReadsWithoutAlias,
   duplicatedPayload,
   groundFromPalette,
   marksFromSource,
@@ -263,3 +265,43 @@ describe("assertRecordedLanguage", () => {
   });
 });
 
+/**
+ * FINDING 2 (round-two stress, added to this wave by the coordinator): a credential read by its
+ * canonical name with no declared alias list is the exact gap that let a real, present token under
+ * the root's own name (DATAWRAPPER_API_TOKEN) read back as "not set" — this is the guard,
+ * `doctrine/references/guard-catalogue.json`'s `credential-alias-reconciled`, carried byte for byte
+ * by every producing skill that reads a provider credential (`splash/test/guard-copies-parity.test.ts`).
+ */
+describe("credentialReadsWithoutAlias", () => {
+  it("says nothing about a canonical name that declares its own alias list", () => {
+    const source = 'const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY"];\nconst k = env.MAPTILER_KEY;';
+    expect(credentialNamesRead(source)).toEqual(["MAPTILER_KEY"]);
+    expect(credentialReadsWithoutAlias(source)).toEqual([]);
+  });
+
+  it("refuses a canonical name read with no alias list anywhere in the source", () => {
+    const source = 'const token = process.env.DATAWRAPPER_TOKEN;\nif (!token) throw new Error("no token");';
+    expect(credentialReadsWithoutAlias(source)).toEqual(["DATAWRAPPER_TOKEN"]);
+  });
+
+  it("does not mistake an ordinary data-selection constant for a credential", () => {
+    // `SUBJECT_KEY` (this skill's own `assets/MapWebSeed.tsx`) names which point is the subject,
+    // not a credential — a bare `_KEY` substring is not enough to be read as one.
+    const source = 'const SUBJECT_KEY = "paris";\nconst isSubject = point.key === SUBJECT_KEY;';
+    expect(credentialNamesRead(source)).toEqual([]);
+  });
+
+  it("this skill's whole own source carries no credential read without a declared alias", () => {
+    const dirs = [join(SKILL, "scripts"), join(SKILL, "assets")];
+    let combined = "";
+    for (const dir of dirs) {
+      if (!existsSync(dir)) continue;
+      for (const name of readdirSync(dir)) {
+        if (!/\.(mjs|ts|tsx)$/.test(name)) continue;
+        if (/^(verify|detect)-.*\.mjs$/.test(name)) continue;
+        combined += readFileSync(join(dir, name), "utf8") + "\n";
+      }
+    }
+    expect(credentialReadsWithoutAlias(combined)).toEqual([]);
+  });
+});

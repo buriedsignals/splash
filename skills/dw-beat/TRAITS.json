@@ -4,6 +4,7 @@
     "delegates-rendering",
     "owns-a-surface-it-did-not-choose",
     "ships-standalone-html",
-    "reads-a-journalists-csv"
+    "reads-a-journalists-csv",
+    "reads-a-provider-credential"
   ]
 }

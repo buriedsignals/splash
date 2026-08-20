@@ -171,6 +171,34 @@ export const TRAITS = [
     // no such file currently mentions this call at all.
     witness: (skill) => anySource(skill, /readPalette\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
+  {
+    id: "reads-a-provider-credential",
+    describes: "its own scripts read a live third-party API key or token off the environment, by its canonical name or a declared alias list — so a name the root's .env holds under a different alias is a live risk, not a hypothetical one",
+    // FINDING 2 (stress round two): the root's `.env` names the Datawrapper credential
+    // `DATAWRAPPER_API_TOKEN` and MapTiler's key `MAPTILER_API_KEY`/`REMOTION_MAPTILER_KEY`/
+    // `VITE_MAPTILER_KEY` — the engine's own names — while two live code paths read a bare
+    // `process.env.DATAWRAPPER_TOKEN`/`process.env.MAPTILER_KEY` with no fallback at all, so a
+    // real, present credential under an alias read back as "not set". `map-beat`/`map-web`/
+    // `scrolly`'s own `bake-plate.mjs` already carried a `MAPTILER_KEY_ALIASES` array before this
+    // was named; `dw-beat` earned its own `DATAWRAPPER_TOKEN_ALIASES` closing the gap.
+    //
+    // Witnessed by EITHER a literal `env.NAME`/`env["NAME"]` property read of a canonical
+    // `..._KEY`/`..._TOKEN` name, OR a declared `..._KEY_ALIASES`/`..._TOKEN_ALIASES` list —
+    // never a bare `..._KEY`/`..._TOKEN` substring on its own, which is exactly the pattern that
+    // makes `map-web/assets/MapWebSeed.tsx`'s own `SUBJECT_KEY` (a data-selection constant with no
+    // credential in it at all) a false positive: measured directly, the bare-substring form matches
+    // it and the property-read/alias-list form does not. `scrolly/scripts/bake-plate.mjs` reads its
+    // key through a loop over an array of names (`names.map((name) => process.env[name])`) rather
+    // than any literal property — already alias-safe by construction, and caught here by its own
+    // `MAPTILER_KEY_ALIASES` declaration rather than by the read. Excluding `verify-*`/`detect-*`
+    // matches the convention every other guard-adjacent trait already uses.
+    witness: (skill) =>
+      anySource(
+        skill,
+        /\benv(\.|\[["'`])[A-Z][A-Z0-9_]*_(KEY|TOKEN)\b|\b[A-Z][A-Z0-9_]*_(KEY|TOKEN)_ALIASES\b/,
+        { exclude: /^(verify|detect)-.*\.mjs$/ },
+      ),
+  },
 ];
 
 export function traitsOf(skill) {

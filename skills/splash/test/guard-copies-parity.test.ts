@@ -125,6 +125,22 @@ const COPIES: Record<string, string[]> = {
     "scrolly/scripts/verify-scrolly.mjs",
     "dw-beat/scripts/verify-owned.mjs",
   ],
+  // FINDING 2 (round-two stress, added to this wave by the coordinator): a credential read by its
+  // canonical name with no declared alias list is the exact gap that let a real, present token
+  // under the root's own name (DATAWRAPPER_API_TOKEN) read back as "not set". Carried by every
+  // producing skill whose own scripts read a provider credential at all.
+  credentialNamesRead: [
+    "dw-beat/scripts/verify-owned.mjs",
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
+  credentialReadsWithoutAlias: [
+    "dw-beat/scripts/verify-owned.mjs",
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.

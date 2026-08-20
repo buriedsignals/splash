@@ -26,6 +26,7 @@ written out below the tables.
 | csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
 | unmatched-value-hides |  |  |  |  | **R** |  |  |  |
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
+| credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
 
 ## capability
 
@@ -86,16 +87,16 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ | ✓ |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -250,3 +251,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a delivered page's <html lang> disagreeing with the language recorded for its story
 
 **Earned by:** renderWeb's own HTML shell hard-coded <html lang="fr">, baked in for its first caller, a French CO₂ beat; every English beat rendered through it misdeclared its language to a screen reader and to a translation engine, and a stress beat had to patch the shipped file in its own runner rather than have the skill fix it — the same shape, uncaught, in every proof/web* fixture that carries the identical patch
+
+### credential-alias-reconciled — `credentialReadsWithoutAlias`
+
+**Refuses:** a provider credential read by its canonical env name with no declared alias list for the names the root's own .env holds it under
+
+**Earned by:** root .env names the Datawrapper credential DATAWRAPPER_API_TOKEN and MapTiler's key MAPTILER_API_KEY/REMOTION_MAPTILER_KEY/VITE_MAPTILER_KEY — the engine's own names — while dw-beat's CLI entry and sealed-produce.mjs read a bare process.env.DATAWRAPPER_TOKEN and splash/scripts/run-operation.mjs read a bare process.env.MAPTILER_KEY, so preflight reported the capability open on a real, present token and production refused "no token" one phase later; map-beat/map-web/scrolly's own bake-plate.mjs had already reconciled the MapTiler side with a declared alias list before this was named

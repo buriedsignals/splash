@@ -26,6 +26,7 @@ import {
   mkdirSync,
   writeFileSync,
   existsSync,
+  readdirSync,
   readFileSync,
   realpathSync,
 } from "node:fs";
@@ -35,6 +36,8 @@ import { deflateSync } from "node:zlib";
 import {
   GUARDS,
   assertExportedSurface,
+  credentialNamesRead,
+  credentialReadsWithoutAlias,
   csvSplitByHand,
   groundForBeat,
   groundFromPalette,
@@ -43,6 +46,9 @@ import {
   plateLuminance,
   surfaceLuminance,
 } from "../scripts/verify-owned.mjs";
+import { resolve } from "node:path";
+
+const SKILL = resolve(import.meta.dirname, "..");
 import { produce } from "../scripts/produce.mjs";
 
 /** The five calls `produce` makes, answered without a network — `produce.test.ts`'s own fake, kept
@@ -163,7 +169,7 @@ function storyTree(where: "beat" | "story" | "nowhere", ground = "#16191B") {
 
 describe("the guard a delegated producer still carries", () => {
   it("declares the catalogue guards this format can reach", () => {
-    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand", "pageLanguageMatchesStory"]);
+    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand", "pageLanguageMatchesStory", "credentialReadsWithoutAlias"]);
   });
 
   it("does not hand-split the csv it fetches for the CO2 proof", () => {
@@ -303,3 +309,36 @@ describe("pageLanguageMatchesStory", () => {
   });
 });
 
+/**
+ * FINDING 2 (round-two stress, added to this wave by the coordinator): a credential read by its
+ * canonical name with no declared alias list is the exact gap that let a real, present token under
+ * the root's own name (DATAWRAPPER_API_TOKEN) read back as "not set" — this is the guard,
+ * `doctrine/references/guard-catalogue.json`'s `credential-alias-reconciled`, carried byte for byte
+ * by every producing skill that reads a provider credential (`splash/test/guard-copies-parity.test.ts`).
+ */
+describe("credentialReadsWithoutAlias", () => {
+  it("says nothing about a canonical name that declares its own alias list", () => {
+    const source = 'const DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"];\nconst t = env.DATAWRAPPER_TOKEN;';
+    expect(credentialNamesRead(source)).toEqual(["DATAWRAPPER_TOKEN"]);
+    expect(credentialReadsWithoutAlias(source)).toEqual([]);
+  });
+
+  it("refuses a canonical name read with no alias list anywhere in the source", () => {
+    const source = 'const token = process.env.DATAWRAPPER_TOKEN;\nif (!token) throw new Error("no token");';
+    expect(credentialReadsWithoutAlias(source)).toEqual(["DATAWRAPPER_TOKEN"]);
+  });
+
+  it("this skill's whole own source carries no credential read without a declared alias", () => {
+    const dirs = [join(SKILL, "scripts"), join(SKILL, "assets")];
+    let combined = "";
+    for (const dir of dirs) {
+      if (!existsSync(dir)) continue;
+      for (const name of readdirSync(dir)) {
+        if (!/\.(mjs|ts|tsx)$/.test(name)) continue;
+        if (/^(verify|detect)-.*\.mjs$/.test(name)) continue;
+        combined += readFileSync(join(dir, name), "utf8") + "\n";
+      }
+    }
+    expect(credentialReadsWithoutAlias(combined)).toEqual([]);
+  });
+});

@@ -430,6 +430,23 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "credential-alias-reconciled",
+      "kind": "guard",
+      "requires": [
+        "reads-a-provider-credential"
+      ],
+      "decidedBy": "credentialReadsWithoutAlias",
+      "refuses": "a provider credential read by its canonical env name with no declared alias list for the names the root's own .env holds it under",
+      "earnedBy": "root .env names the Datawrapper credential DATAWRAPPER_API_TOKEN and MapTiler's key MAPTILER_API_KEY/REMOTION_MAPTILER_KEY/VITE_MAPTILER_KEY — the engine's own names — while dw-beat's CLI entry and sealed-produce.mjs read a bare process.env.DATAWRAPPER_TOKEN and splash/scripts/run-operation.mjs read a bare process.env.MAPTILER_KEY, so preflight reported the capability open on a real, present token and production refused \"no token\" one phase later; map-beat/map-web/scrolly's own bake-plate.mjs had already reconciled the MapTiler side with a declared alias list before this was named",
+      "states": {
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }
