@@ -31,6 +31,7 @@ written out below the tables.
 | same-facts-without-the-picture |  | **R** |  |  |  | · |  |  |
 | reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
 | honours-reduced-motion |  | **R** |  |  |  |  |  |  |
+| degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -38,7 +39,7 @@ Disciplines are checked for PRESENCE where an author reads them, and are not mec
 
 - `map-web` owes **same-facts-without-the-picture**
 
-## Why a cell is blank, where the blankness was argued — 8 of them
+## Why a cell is blank, where the blankness was argued — 10 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
@@ -52,6 +53,8 @@ trait already proves it.
 - `map-web` cannot reach **honours-reduced-motion** — measured 2026-08-20: neither MapWebSeed.tsx nor render-web.mjs declares any entrance/build motion of its own — no data-entrance-motion, no @keyframes this skill wrote. The only `prefers-reduced-motion` reference in a delivered page belongs to the bundled MapLibre GL JS vendor library (a `prefersReducedMotion` getter, plus unconditional vendor CSS like `.maplibregl-marker{transition:opacity .2s}`) which this skill did not write and does not gate. motionUnderReduce reports {movedFrames: 0} under both conditions on all 4 delivered beats — vacuous, and confirms nothing about a mechanism this skill does not have
 - `scrolly` cannot reach **honours-reduced-motion** — measured 2026-08-20: this format's own reveal IS gated correctly (render-scrolly.mjs: `.step-frame{transition:opacity .3s ease}` inside `@media (prefers-reduced-motion: no-preference)`, proven by this format's own dedicated instrument, verify-scrolly.mjs's verifyStates) but it is driven by the reader's OWN scroll over `.scrolly-steps`, an internal element this format owns rather than the page itself — assertion A of verify-scrolly.mjs states THE PAGE DOES NOT SCROLL by design. motionUnderReduce drives page-level scroll (document.scrollingElement) precisely so no format-specific container name has to live inside a function the shared-copy contract requires byte-identical everywhere it is carried; against a page that structurally never scrolls at the document level, it reports {movedFrames: 0} under both conditions on every delivered scrolly beat — vacuous on THIS detector, not evidence of a defect, and not a claim this skill's own verifyStates does not already make correctly by its own, different mechanism
 - `dw-beat` cannot reach **honours-reduced-motion** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks and authoring zero motion of its own. motionUnderReduce reports {movedFrames: 0} under both conditions vacuously — whatever the hosted embed itself does lives behind a cross-origin boundary this skill does not own and cannot drive a media-feature emulation into from its own delivered file
+- `scrolly` cannot reach **degrades-without-javascript** — measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them — there is no per-reading fact here for either count to be about
+- `dw-beat` cannot reach **degrades-without-javascript** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file
 
 ## What each skill is
 
@@ -151,3 +154,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a reader who told their OS they want less motion gets a page that never interpolates an opacity or a scale — the finished graphic, immediately, with no build to sit through and no ramp to be caught mid-flight by
 
 **Earned by:** chart-web's own entrance (render-web.mjs's entranceCss()) was written CORRECTLY from the start — every keyframe lives inside `@media (prefers-reduced-motion: no-preference)` rather than a `reduce` reset — but nothing had ever driven a real page under `reduce` and measured that the claim holds; this is that measurement, generalised to a detector any format ships
+
+### degrades-without-javascript — `staticFrameSurvives`
+
+**Offers:** a reader whose script never ran — blocked, failed to load, an embed's host CSP, a crawler — still gets every mark's own reading, not a mount point that only fills in once a script runs
+
+**Earned by:** same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone — a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for

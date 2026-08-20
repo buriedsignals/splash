@@ -194,6 +194,24 @@
         "scrolly": "measured 2026-08-20: this format's own reveal IS gated correctly (render-scrolly.mjs: `.step-frame{transition:opacity .3s ease}` inside `@media (prefers-reduced-motion: no-preference)`, proven by this format's own dedicated instrument, verify-scrolly.mjs's verifyStates) but it is driven by the reader's OWN scroll over `.scrolly-steps`, an internal element this format owns rather than the page itself — assertion A of verify-scrolly.mjs states THE PAGE DOES NOT SCROLL by design. motionUnderReduce drives page-level scroll (document.scrollingElement) precisely so no format-specific container name has to live inside a function the shared-copy contract requires byte-identical everywhere it is carried; against a page that structurally never scrolls at the document level, it reports {movedFrames: 0} under both conditions on every delivered scrolly beat — vacuous on THIS detector, not evidence of a defect, and not a claim this skill's own verifyStates does not already make correctly by its own, different mechanism",
         "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks and authoring zero motion of its own. motionUnderReduce reports {movedFrames: 0} under both conditions vacuously — whatever the hosted embed itself does lives behind a cross-origin boundary this skill does not own and cannot drive a media-feature emulation into from its own delivered file"
       }
+    },
+    {
+      "id": "degrades-without-javascript",
+      "kind": "capability",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "a reader whose script never ran — blocked, failed to load, an embed's host CSP, a crawler — still gets every mark's own reading, not a mount point that only fills in once a script runs",
+      "earnedBy": "same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone — a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for",
+      "detectedBy": "staticFrameSurvives",
+      "states": {
+        "chart-web": "carried",
+        "map-web": "carried"
+      },
+      "exceptions": {
+        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them — there is no per-reading fact here for either count to be about",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file"
+      }
     }
   ]
 }

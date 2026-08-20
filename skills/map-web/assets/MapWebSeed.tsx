@@ -362,7 +362,11 @@ export function MapWebSeed({
                 `reachable-by-keyboard` (`scripts/detect-reachable-by-keyboard.mjs`'s
                 `keyboardReachesEveryMark`) — carried here since a `<button>` is natively focusable
                 and needs no `tabIndex`, measured against every delivered beat rather than assumed
-                from this comment. */}
+                from this comment. The same "baked in at build time, not assembled by the inline
+                script" fact is also `degrades-without-javascript`
+                (`scripts/detect-degrades-without-javascript.mjs`'s `staticFrameSurvives`): the
+                population of `data-detail` marks a no-JS reader gets is the same population
+                scripting would have wired for interaction. */}
             {drawn.map((point) => {
               const detail = pointDetail(point);
               const xPct = (point.px / frame.width) * 100;

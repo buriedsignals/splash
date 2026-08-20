@@ -23,7 +23,11 @@
  *      `doctrine/references/guard-catalogue.json` names `reachable-by-keyboard`
  *      (`scripts/detect-reachable-by-keyboard.mjs`'s `keyboardReachesEveryMark`) — carried here
  *      since the day this seed was first written, measured against every delivered beat rather than
- *      assumed from this comment.
+ *      assumed from this comment. The SAME "not assembled by the inline script" fact is also
+ *      `degrades-without-javascript` (`scripts/detect-degrades-without-javascript.mjs`'s
+ *      `staticFrameSurvives`): every `data-detail` a mark carries is baked at build time too, so the
+ *      population of marks a no-JS reader gets is the same population scripting would have wired
+ *      for interaction — never smaller.
  *   3. One invisible `.hit-area` rectangle, shared by mouse and touch: `assets/interaction.mjs`
  *      resolves a pointer or a tap anywhere over the plot to the nearest reading by x, so a phone
  *      reader is never asked to land a tap on a 5px circle.

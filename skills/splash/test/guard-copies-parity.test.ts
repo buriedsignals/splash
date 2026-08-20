@@ -131,6 +131,14 @@ const COPIES: Record<string, string[]> = {
     "chart-web/scripts/detect-reachable-by-keyboard.mjs",
     "map-web/scripts/detect-reachable-by-keyboard.mjs",
   ],
+  // A capability, not a guard, carried by the same two skills for the same underlying reason: both
+  // bake every mark's `data-detail` at build time rather than assemble it from a script, so the
+  // population survives scripting being removed. A copy that read the count differently before and
+  // after the reload would silently redefine "survives" per format.
+  staticFrameSurvives: [
+    "chart-web/scripts/detect-degrades-without-javascript.mjs",
+    "map-web/scripts/detect-degrades-without-javascript.mjs",
+  ],
   // A capability, not a guard: same-facts-without-the-picture, now carried by two skills after fix
   // round 1 widened the detector to accept a value split across typed columns as well as one
   // joined cell -- a copy that only kept the exact-cell path (or only the fallback) would refuse a
