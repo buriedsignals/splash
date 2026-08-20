@@ -41,7 +41,26 @@ export const GUARDS = ["tableCarriesTheMarks"];
  *  must appear in the row's own RAW text as a standalone run, bounded by anything except a letter, a
  *  number, or a HYPHEN specifically — `"A"` in `"A-band"` is bounded by a hyphen on its right and
  *  fails; `"9"` in `"M7.9"` is bounded by a period, not a hyphen, and still passes. Multi-character
- *  tokens are unaffected and still compared by plain set membership, exactly as ruled above. */
+ *  tokens are unaffected and still compared by plain set membership, exactly as ruled above.
+ *
+ *  THE SPLITTER WAS MANUFACTURING THE ONE-CHARACTER TOKENS IT THEN HAD TO PATCH AROUND. Ruled again
+ *  2026-08-20, fix round 2, after a review found the hyphen-aware standalone check above still
+ *  ACCEPTED the same defect it was written to refuse the moment the compound used a different glue
+ *  character: `"A · Canada"` against a row reading `"Canada, magnitude class A_band"` (underscore),
+ *  `"A/band"` (slash) or `"A.band"` (period) all passed, because the check only ever excluded a
+ *  hyphen from a valid boundary. Fixed at the SOURCE rather than by widening that exclusion list
+ *  first: the splitter itself was tearing an ordinary decimal or thousands-grouped number in two —
+ *  `"68.9"` → `"68"`, `"9"`; `"83,287,273"` → `"83"`, `"287"`, `"273"` — manufacturing the very
+ *  one-character tokens the boundary check then had to reason about. The tokeniser now keeps a run
+ *  of digits WHOLE across an internal `.` or `,` that sits between two digits, so `"68.9"` and
+ *  `"83,287,273"` are each one token and `"M7.9"` is one token too, not two — the standalone check
+ *  below is never even reached for the case it used to have to rescue. A one-character token can
+ *  still arise from an ordinary short word (`"A"`, `"E"`), so the standalone check stays, but its
+ *  boundary is now held against every glue character the tokeniser was ever going to split on when
+ *  it tore a compound in half — hyphen, underscore, slash, and a period not already claimed by the
+ *  digit rule above — not the hyphen alone. A space, a comma, or any other genuine word boundary is
+ *  still a valid boundary, exactly as before: `"E"` in `"47 km E of Nara, Japan"` is bounded by
+ *  spaces on both sides and still passes. */
 export function tableCarriesTheMarks(html) {
   const values = [...html.matchAll(/data-detail="([^"]+)"/g)].map((match) => match[1]);
   const table = /<table[\s\S]*?<\/table>/.exec(html)?.[0] ?? "";
@@ -49,13 +68,14 @@ export function tableCarriesTheMarks(html) {
     [...source.matchAll(/<t[dh][^>]*>([^<]*)<\/t[dh]>/g)].map((match) => match[1].trim());
   const cells = cellTexts(table);
   const rows = (table.match(/<tr\b/g) ?? []).length;
-  const tokenise = (text) => text.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const tokenise = (text) =>
+    [...text.matchAll(/[\p{L}\p{N}]+(?:[.,]\d+)*/gu)].map((match) => match[0]);
   const rowTexts = [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map((match) =>
     cellTexts(match[1]).join(" "),
   );
   const rowTokenSets = rowTexts.map((text) => new Set(tokenise(text)));
   const standalone = (token, rowText) =>
-    new RegExp(`(?<![\\p{L}\\p{N}-])${token}(?![\\p{L}\\p{N}-])`, "u").test(rowText);
+    new RegExp(`(?<![\\p{L}\\p{N}\\-_/.])${token}(?![\\p{L}\\p{N}\\-_/.])`, "u").test(rowText);
   const missing = values.filter((value) => {
     if (cells.includes(value)) return false;
     const tokens = tokenise(value);

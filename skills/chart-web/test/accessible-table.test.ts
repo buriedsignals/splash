@@ -101,6 +101,47 @@ describe("an accessible table carries the marks' own values", () => {
     expect(found.missing).toEqual(["A · Canada"]);
   });
 
+  // RULED AGAIN 2026-08-20 (fix round 2, adversarial cases from the review that found this): the
+  // hyphen-aware standalone check above still ACCEPTED the same defect the moment the compound used
+  // a different glue character — the standalone check only ever excluded a hyphen from a valid
+  // boundary, so a token torn from a compound by underscore, slash or a bare period still read as
+  // "standalone". All three below were measured, standalone, to be falsely ACCEPTED before this fix.
+  it("refuses a value whose own letter is only half of an underscore-joined compound identifier", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="A · Canada"/></svg><table><tr><td>Canada, magnitude class A_band</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["A · Canada"]);
+  });
+
+  it("refuses a value whose own letter is only half of a slash-joined compound identifier", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="A · Canada"/></svg><table><tr><td>Canada, magnitude class A/band</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["A · Canada"]);
+  });
+
+  it("refuses a value whose own letter is only half of a period-joined compound identifier", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="A · Canada"/></svg><table><tr><td>Canada, magnitude class A.band</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["A · Canada"]);
+  });
+
+  it("keeps a decimal or a thousands-grouped number whole rather than tearing it into single-digit tokens", () => {
+    // Fixed at the source, fix round 2: the splitter used to tear "68.9" into "68"/"9" and
+    // "83,287,273" into "83"/"287"/"273", manufacturing the one-character tokens the standalone
+    // check above had to reason about in the first place. A row that spells the same numbers out
+    // whole still carries them, and one that only has the torn pieces does not.
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="68.9 · pop. 83,287,273"/></svg><table><tr><td>68.9</td><td>pop. 83,287,273</td></tr></table>`,
+    );
+    expect(found.missing).toEqual([]);
+    const refused = tableCarriesTheMarks(
+      `<svg><circle data-detail="68.9 · pop. 83,287,273"/></svg><table><tr><td>68 point 9</td><td>pop. 83 million 287 thousand 273</td></tr></table>`,
+    );
+    expect(refused.missing).toEqual(["68.9 · pop. 83,287,273"]);
+  });
+
   it("still accepts a one-character token bounded by something other than a hyphen", () => {
     // The same shape as the real quake beats: "9" in "M7.9" is bounded by a period, not a hyphen,
     // and a row that spells the same fact out with a period in the same place still carries it.
