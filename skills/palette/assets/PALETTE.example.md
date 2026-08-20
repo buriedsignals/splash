@@ -35,3 +35,9 @@ publish in a colour nobody chose, and it would look like a decision.
 `journalist` is a real answer. When someone gives two hex codes directly, that is not a failure of
 the proposal — it is the proposal working, and the file should say so rather than pretending the
 newsroom's own charter produced them.
+
+When no journalist is there to answer, this file may still be written — from the proposal's own
+measured `recommended` option, never an invented colour, never one that failed the floor above —
+with `origin` naming that option's own source (`subject` or `newsroom`) and a line of prose saying
+no journalist answered. `skills/palette/SKILL.md`, "When nobody is there to answer", has the full
+rule and the one case that still has to stop instead.

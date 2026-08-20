@@ -41,7 +41,45 @@ This skill closes that. It does four things and refuses a fifth:
 
 The fifth thing — **writing a colour anywhere** — it does not do. There is no write path in this
 skill, not a commented-out one, not a flag. `PALETTE.md` is authored from the journalist's answer,
-the same way `NEWSROOM.md` is.
+the same way `NEWSROOM.md` is — or, when no journalist is present, from the proposal's own
+measured recommendation, exactly as described below.
+
+## When nobody is there to answer (unattended and batch runs)
+
+`readPalette`'s refusal used to say "print the same proposal and end the turn there... do not
+write PALETTE.md yourself" for this case too, matching the interactive rule ("Human gates stop
+the turn", `splash/SKILL.md`). Every unattended run this project has produced — eight stress
+stories (`stress-a`, `-c`, `-d`, `-e`, `-f`, `-g`, `-h`, `-i`) across two stress rounds — wrote
+`PALETTE.md` anyway, because ending the turn with no one to resume it does not pause a
+decision, it abandons the beat. A rule every reader breaks is not a rule.
+
+So the two cases are genuinely different, and only one of them stops:
+
+- **A journalist is present.** Show the printed proposal, end the turn, and record their answer —
+  including the escape ("give me the two hex codes"), which is `origin: journalist`. This is the
+  interactive human gate, unchanged.
+- **No journalist is present, and `proposePalette`'s own `recommended` names an option.** The
+  proposal already measured every option against the 3:1 floor; `recommended` never names one
+  that failed it (see "Measures", above). Write `PALETTE.md` yourself, using **exactly** that
+  option's `ground` and `accent` (and `accents`, when the newsroom records further ones) — never a
+  colour invented for the occasion, never an option the proposal itself marked failing. Set
+  `origin` to that option's own `origin` (`subject` or `newsroom`; an unattended run is never
+  `journalist`, because no journalist answered). Say so in the file's own prose: that no
+  journalist was present, and which option was recorded and why — a documented, reasoned
+  departure from `recommended` toward another PASSING option is legitimate (see
+  `stories/stress-e-electricity-mix/PALETTE.md`, which declines a subject convention that would
+  have miscoded the chart's own accent), inventing one is not. This is `origin` doing the job its
+  own field already claims: "a render is allowed to say where its colours came from"
+  (`assets/PALETTE.example.md`) — an unattended run is one more thing it is allowed to say.
+- **No journalist is present, and `recommended` is `null`.** Nothing in the proposal cleared the
+  floor — the one case with no safe default. This is where the old rule still holds: print the
+  proposal and end the turn there, the same rule this project's every other human gate follows. Do
+  not invent a colour and do not pick a failing one.
+
+This is narrower than it may look: it is a proposal this skill has already fully measured, written
+to a local file a later run can still revise, never an irreversible action taken in a journalist's
+name. It does not generalise to `splash/SKILL.md`'s other human gates — G2b's format choice, final
+delivery confirmation — which stay exactly as strict as they already are.
 
 ## When to use
 

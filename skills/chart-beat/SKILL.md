@@ -146,8 +146,11 @@ import rainfall from "./data.json";
 // beat that ignores the newsroom's charter, however carefully the charter was collected. If no
 // `PALETTE.md` exists at or above this beat, this THROWS, names the exact next action — call
 // `proposePalette`/`formatProposal`, show the journalist the proposal, record their answer — and
-// names what to do when nobody is there to answer right now: print the proposal and end the
-// turn, never choose on their behalf. That is `palette-names-its-source`, `skills/palette/SKILL.md`.
+// names what to do when nobody is there to answer right now: record the proposal's own
+// recommended option — never inventing a colour, never one that failed the 3:1 floor — with
+// `origin` naming its source and the file's own prose saying no journalist answered; a
+// proposal with no passing option still ends the turn there. That is `palette-names-its-source`,
+// `skills/palette/SKILL.md`.
 const { ground, accent } = readPalette(import.meta.dirname, { stopAt: process.cwd() });
 
 // RainfallAnnemasse is THIS beat's own component, written from the seed's shape — not imported

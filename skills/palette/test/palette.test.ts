@@ -516,10 +516,13 @@ describe("readPalette", () => {
     }
   });
 
-  // FINDING 7: the non-interactive path. Ending the turn is this project's own answer to "no
-  // human is here right now" (splash/SKILL.md, "Human gates stop the turn") — never picking on
-  // the journalist's behalf, and never writing the file that stands for their answer.
-  it("should name what to do when no journalist is available to answer right now", () => {
+  // FINDING 9 (round-two stress): the old text told an agent to "end the turn" and "do not
+  // write PALETTE.md yourself" for the unattended case too — and every unattended run this
+  // project produced wrote the file anyway, using the proposal's own measured recommendation,
+  // because ending a turn nobody resumes abandons the beat rather than pausing it. The refusal
+  // now names that path honestly: record `recommended` (never invented, never a failing option),
+  // with `origin` naming its source. Only a proposal with nothing passing still ends the turn.
+  it("should name the unattended default: record the proposal's own recommended option, never invent one", () => {
     const root = mkdtempSync(join(tmpdir(), "palette-"));
     try {
       const beat = join(root, "beats", "1-solar");
@@ -530,8 +533,28 @@ describe("readPalette", () => {
       } catch (e) {
         message = (e as Error).message;
       }
+      expect(message).toContain("recommended");
+      expect(message).toContain("origin");
+      expect(message).toContain("no journalist answered");
+      expect(message).toContain("Never invent a colour");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should still name ending the turn as the one case with nothing to record", () => {
+    const root = mkdtempSync(join(tmpdir(), "palette-"));
+    try {
+      const beat = join(root, "beats", "1-solar");
+      mkdirSync(beat, { recursive: true });
+      let message = "";
+      try {
+        readPalette(beat, { stopAt: root });
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toContain("null recommendation");
       expect(message).toContain("end the turn");
-      expect(message).toContain("do not write PALETTE.md yourself");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

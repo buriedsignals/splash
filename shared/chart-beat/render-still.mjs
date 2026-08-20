@@ -164,9 +164,15 @@ export function readPalette(dir, { stopAt } = {}) {
       `(skills/palette/scripts/palette.mjs, skills/palette/scripts/format-proposal.mjs), show the ` +
       `printed proposal to the journalist, and record their answer in PALETTE.md ` +
       `(skills/palette/assets/PALETTE.example.md is the shape) at or above this beat.\n` +
-      `When no journalist is available to answer right now: print the same proposal and end the ` +
-      `turn there — the same rule this project's every other human gate follows. Do not pick an ` +
-      `option on the journalist's behalf, and do not write PALETTE.md yourself.\n` +
+      `When no journalist is available to answer right now, the proposal's own measurement is ` +
+      `the default: call proposePalette and read its recommended field. A named option WRITES ` +
+      `— use exactly its ground and accent (and accents, when the newsroom carries more), set ` +
+      `origin to that option's own origin, and say in the file's own prose that no journalist ` +
+      `answered and which option was recorded — the shape every unattended stress story already ` +
+      `carries. Never invent a colour and never record one that failed the 3:1 floor. A null ` +
+      `recommendation — nothing passed — is the one case with no safe default: print the ` +
+      `proposal and end the turn there, the same rule this project's every other human gate ` +
+      `follows.\n` +
       `Looked in:\n  ${searched.join("\n  ")}`,
   );
 }
