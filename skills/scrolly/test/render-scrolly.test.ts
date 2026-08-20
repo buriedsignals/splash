@@ -454,6 +454,7 @@ describe("renderScrolly — the full self-contained page", () => {
         title: "t",
         source: "s",
         ground: "#FFFFFF",
+        language: "en",
         outDir: "/tmp/scrolly-test-refuse",
         name: "x.html",
       }),
@@ -467,6 +468,7 @@ describe("renderScrolly — the full self-contained page", () => {
         title: "t",
         source: "s",
         ground: "#FFFFFF",
+        language: "en",
         outDir: "/tmp/scrolly-test-dup",
         name: "x.html",
       }),
@@ -512,6 +514,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "A generic two-step scrolly",
       source: "Test fixture",
       ground: "#FFFFFF",
+      language: "en",
       outDir,
       name: "test.html",
     });
@@ -598,6 +601,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-overlap",
       name: "x.html",
     });
@@ -629,6 +633,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-centred-panel",
       name: "x.html",
     });
@@ -649,6 +654,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-lane",
       name: "x.html",
     });
@@ -678,6 +684,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-card-width",
       name: "x.html",
     });
@@ -698,6 +705,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       // What a beat that still derives a camera or a plot box from its own copy of the constant
       // passes. The scaffold records it; it places nothing against it.
       proseLane: 0.36,
@@ -716,6 +724,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-lane-none",
       name: "x.html",
     });
@@ -732,6 +741,7 @@ describe("renderScrolly — the full self-contained page", () => {
         title: "t",
         source: "s",
         ground: "#FFFFFF",
+        language: "en",
         proseLane: 0.9,
         outDir: "/tmp/scrolly-test-lane-refuse",
         name: "x.html",
@@ -752,6 +762,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-one-panel",
       name: "x.html",
     });
@@ -780,6 +791,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-fixed-graphic",
       name: "x.html",
     });
@@ -817,6 +829,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-full-width",
       name: "x.html",
     });
@@ -841,6 +854,7 @@ describe("renderScrolly — the full self-contained page", () => {
       title: "t",
       source: "s",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-no-progressive",
       name: "x.html",
     });
@@ -863,6 +877,7 @@ describe("renderScrolly — the full self-contained page", () => {
         title: "t",
         source: "s",
         ground: "#FFFFFF",
+        language: "en",
         outDir: `/tmp/scrolly-test-n${n}`,
         name: "x.html",
       });
@@ -895,6 +910,7 @@ describe("renderScrolly — the exit emitter is inlined alongside the interactio
       title: "Exit emitter fixture",
       source: "Test fixture",
       ground: "#FFFFFF",
+      language: "en",
       outDir: "/tmp/scrolly-test-embed-exit",
       name: "x.html",
     });

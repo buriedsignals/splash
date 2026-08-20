@@ -116,6 +116,15 @@ const COPIES: Record<string, string[]> = {
     "map-beat/scripts/verify-map.mjs",
     "scrolly/scripts/verify-scrolly.mjs",
   ],
+  // FINDING 1 (stress round two): a delivered page's own `<html lang>` used to be a literal baked
+  // in for its first caller — every skill that ships a standalone page can carry the same defect,
+  // so the check reads the artefact rather than trusting what the render step meant to write.
+  pageLanguageMatchesStory: [
+    "chart-web/scripts/verify-guards.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+    "dw-beat/scripts/verify-owned.mjs",
+  ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.

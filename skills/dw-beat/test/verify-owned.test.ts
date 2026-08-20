@@ -38,6 +38,7 @@ import {
   csvSplitByHand,
   groundForBeat,
   groundFromPalette,
+  pageLanguageMatchesStory,
   plateFollowsGround,
   plateLuminance,
   surfaceLuminance,
@@ -161,8 +162,8 @@ function storyTree(where: "beat" | "story" | "nowhere", ground = "#16191B") {
 }
 
 describe("the guard a delegated producer still carries", () => {
-  it("declares the two catalogue guards this format can reach", () => {
-    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand"]);
+  it("declares the catalogue guards this format can reach", () => {
+    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand", "pageLanguageMatchesStory"]);
   });
 
   it("does not hand-split the csv it fetches for the CO2 proof", () => {
@@ -281,3 +282,24 @@ describe("the guard runs inside produce, not only inside a test", () => {
     expect(readFileSync(result.pngPath).length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * FINDING 1 (stress round two): the delivered iframe page's own `<html lang>` used to fall back to
+ * `"en"` the instant `spec.language` sanitised to nothing — this is the guard on the DELIVERED page,
+ * `doctrine/references/guard-catalogue.json`'s `page-declares-story-language`, the same decision
+ * `chart-web`, `map-web` and `scrolly` carry byte for byte (`splash/test/guard-copies-parity.test.ts`).
+ */
+describe("pageLanguageMatchesStory", () => {
+  it("agrees when the page's own <html lang> matches the recorded language", () => {
+    expect(pageLanguageMatchesStory('<html lang="fr-FR"><head></head></html>', "fr-FR")).toBe(true);
+  });
+
+  it("refuses a page whose <html lang> is a different language than recorded", () => {
+    expect(pageLanguageMatchesStory('<html lang="en"><head></head></html>', "fr-FR")).toBe(false);
+  });
+
+  it("refuses a page with no <html lang> attribute at all", () => {
+    expect(pageLanguageMatchesStory("<html><head></head></html>", "fr-FR")).toBe(false);
+  });
+});
+

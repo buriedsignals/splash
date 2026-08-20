@@ -298,7 +298,18 @@ function specDigest(spec) {
 function iframePage(url, title, language) {
   const safeUrl = String(url).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
   const safeTitle = String(title).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-  const safeLanguage = String(language).replace(/[^A-Za-z0-9_-]/g, "") || "en";
+  // The delivered page's own `lang` used to fall back to `"en"` the instant sanitisation stripped
+  // every character out of `spec.language` — validate-spec.mjs only checks the field is non-empty,
+  // never that it looks like a language tag, so a value that is real prose but no ASCII letters at
+  // all (an emoji flag, a script this sanitiser has no allowance for) sailed through as an English
+  // page nobody asked for. `spec.language` is the story's own recorded answer
+  // (`STORYBOARD.md`'s `language:` field); a page that cannot honour it says so loudly instead.
+  const safeLanguage = String(language).replace(/[^A-Za-z0-9_-]/g, "");
+  if (safeLanguage === "")
+    throw new Error(
+      `spec.language ${JSON.stringify(language)} has no ASCII letters left after sanitising to an ` +
+        `HTML lang attribute — this is never defaulted to "en"`,
+    );
   return `<!doctype html>
 <html lang="${safeLanguage}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title>
 <style>html,body,iframe{width:100%;height:100%;margin:0;border:0}body{min-height:600px}</style></head>

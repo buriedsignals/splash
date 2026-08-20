@@ -11,12 +11,14 @@
 // `verifyOne`, and what decides pass or fail is testable without Chrome.
 
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   stillSteps,
   csvSplitByHand,
   duplicatedPayload,
+  pageLanguageMatchesStory,
   projectionDisagreements,
   STEP_REDRAW_FLOOR,
   fingerprintDrift,
@@ -29,6 +31,7 @@ import {
   surfaceLuminance,
 } from "../scripts/verify-scrolly.mjs";
 import { decodePng } from "../scripts/compare-png.mjs";
+import { assertRecordedLanguage, render, SEED } from "../scripts/render-scrolly.mjs";
 
 const SKILL = join(import.meta.dirname, "..");
 const PROOF = join(SKILL, "..", "..", "proof");
@@ -672,3 +675,53 @@ describe("the csv this skill reads is not cut on a bare comma", () => {
     expect(csvSplitByHand(source)).toEqual([]);
   });
 });
+
+/**
+ * FINDING 1 (stress round two): `renderScrolly`'s own HTML shell used to hard-code `<html lang="en">`
+ * regardless of what a beat actually said — this is the guard on the DELIVERED page,
+ * `doctrine/references/guard-catalogue.json`'s `page-declares-story-language`.
+ */
+describe("pageLanguageMatchesStory", () => {
+  it("agrees when the page's own <html lang> matches the recorded language", () => {
+    expect(pageLanguageMatchesStory('<html lang="en"><head></head></html>', "en")).toBe(true);
+  });
+
+  it("refuses a page whose <html lang> is a different language than recorded", () => {
+    expect(pageLanguageMatchesStory('<html lang="fr"><head></head></html>', "en")).toBe(false);
+  });
+
+  it("refuses a page with no <html lang> attribute at all", () => {
+    expect(pageLanguageMatchesStory("<html><head></head></html>", "en")).toBe(false);
+  });
+
+  it("checks this format's own seed against the language it was told to write", async () => {
+    const outDir = mkdtempSync(join(tmpdir(), "scrolly-lang-"));
+    try {
+      const { outPath } = await render({ outDir });
+      const html = readFileSync(outPath, "utf8");
+      expect(pageLanguageMatchesStory(html, SEED.language)).toBe(true);
+      expect(pageLanguageMatchesStory(html, "fr")).toBe(false);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("assertRecordedLanguage", () => {
+  it("returns the trimmed tag when it is a real language code", () => {
+    expect(assertRecordedLanguage("en")).toBe("en");
+    expect(assertRecordedLanguage(" fr ")).toBe("fr");
+    expect(assertRecordedLanguage("de-CH")).toBe("de-CH");
+  });
+
+  it("refuses a missing language rather than defaulting to English", () => {
+    expect(() => assertRecordedLanguage(undefined)).toThrow(/never detected.*never defaulted/s);
+    expect(() => assertRecordedLanguage("")).toThrow();
+    expect(() => assertRecordedLanguage("   ")).toThrow();
+  });
+
+  it("refuses a string that is not a language code", () => {
+    expect(() => assertRecordedLanguage("French")).toThrow(/not a language code/);
+  });
+});
+

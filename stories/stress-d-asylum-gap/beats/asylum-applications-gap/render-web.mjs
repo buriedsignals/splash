@@ -10,7 +10,7 @@
 //
 // Usage:  bun render-web.mjs [outDir] [--data <csv>]
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
@@ -132,6 +132,9 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   console.log(`rebound across the gap: ${preGapLast.year} ${preGapLast.applications} -> ${postGapFirst.year} ${postGapFirst.applications} = ${reboundPct}%`);
   console.log(`title: ${title}`);
 
+  // This beat's words are English throughout, and `renderWeb` now takes that language as a real
+  // input rather than hard-coding one: no more post-hoc patch of the shipped file. See
+  // `skills/chart-web/scripts/render-web.mjs`'s own `assertRecordedLanguage`.
   const { outPath } = await renderWeb({
     component: AsylumGapWeb,
     props: {
@@ -148,23 +151,11 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       lowYear: low.year,
       lowLabel: "the decade's low point",
       gapLabel: "No data for 2013–2014",
+      language: "en",
     },
     outDir,
     name,
   });
-
-  // renderWeb's own HTML shell hard-codes `<html lang="fr">` (baked in for its first real caller,
-  // the French CO₂ beat — see skills/chart-web/scripts/render-web.mjs). This beat's words are
-  // English throughout, so the shipped page is patched the one way `proof/web-income-life-expectancy`
-  // already establishes as the precedent for this exact toolchain gap: fail loud if the marker the
-  // patch expects is gone, never silently leave the wrong language declared.
-  const raw = await readFile(outPath, "utf8");
-  const langMarker = '<html lang="fr">';
-  if (!raw.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  await writeFile(outPath, raw.replace(langMarker, '<html lang="en">'));
 
   return { outPath, readings: data.length };
 }

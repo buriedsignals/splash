@@ -366,6 +366,44 @@ describe("produce", () => {
     }
   });
 
+  // FINDING 1 (stress round two): the delivered iframe page's own `<html lang>` used to fall back
+  // to `"en"` the instant `spec.language` sanitised to nothing, silently misdeclaring the page's
+  // language rather than refusing. `spec.language` is the story's own recorded answer
+  // (`STORYBOARD.md`'s `language:` field); the delivered page now carries it verbatim, and never
+  // the silent fallback.
+  it("should write the delivered page's own <html lang> from spec.language, verbatim", async () => {
+    const { fetchFn } = fakeDatawrapper();
+    const { root, identity } = await storyBeat("dw-lang-beat-");
+    try {
+      const result = await produce(baseSpec({ format: "web", language: "fr-FR" }), {
+        ...identity,
+        name: "co2",
+        token: "secret",
+        fetchFn,
+      });
+      expect(await readFile(result.htmlPath, "utf8")).toContain('<html lang="fr-FR">');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should refuse rather than default to English when the language sanitises to nothing", async () => {
+    const { fetchFn } = fakeDatawrapper();
+    const { root, identity } = await storyBeat("dw-lang-empty-");
+    try {
+      await expect(
+        produce(baseSpec({ format: "web", language: "\u{1F1EB}\u{1F1F7}" }), {
+          ...identity,
+          name: "co2",
+          token: "secret",
+          fetchFn,
+        }),
+      ).rejects.toThrow(/never defaulted to "en"/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("should persist a new chart ID before configuration so a failed run retries the same chart", async () => {
     const base = fakeDatawrapper();
     const { root, beatDir, identity } = await storyBeat("dw-prepared-beat-");

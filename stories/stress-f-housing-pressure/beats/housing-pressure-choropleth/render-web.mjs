@@ -125,6 +125,8 @@ const SEED = {
   // api.maptiler.com) — the page then ships as the fallback layer alone, which is exactly what it
   // was before the ruling.
   live: true,
+  // This beat's article and takeaway are English throughout — see `assertRecordedLanguage`, above.
+  language: "en",
 };
 const PLATE_SIZE = 496;
 // FROZEN BESIDE THE BEAT, for the same reason readPalette walks up to the story: a basemap living
@@ -588,7 +590,32 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
+/** THE LANGUAGE THE DELIVERED PAGE IS WRITTEN IN, read off what the story recorded — never
+ *  detected from the prose and never defaulted. `renderWeb`'s own HTML shell used to hard-code
+ *  `<html lang="fr">`, baked in for its first caller (a French CO₂ beat); every beat written in
+ *  another language misdeclared itself to a screen reader and to a translation engine, and the gap
+ *  was patched per-beat in a runner rather than closed here. Same shape ruling R4 already settled
+ *  for `deliver`'s own hand-over documents (`skills/deliver/scripts/journalist-language.mjs`): the
+ *  language is RECORDED for the story, confirmed with the journalist, and handed in — this function
+ *  only refuses to ship without one, or with one that is not a real language tag.
+ *
+ *  Throws rather than defaulting to English: a page silently declaring the wrong language is
+ *  exactly the defect this exists to close, and a default is how it would come back. */
+function assertRecordedLanguage(language) {
+  const recorded = String(language ?? "").trim();
+  if (recorded === "")
+    throw new Error(
+      "a delivered page declares the language it is written in, and none was given — pass the story's own recorded language (STORYBOARD.md's `language:` field, or the beat's own recorded answer) as `props.language`. It is never detected from the prose and never defaulted",
+    );
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(recorded))
+    throw new Error(
+      `language ${JSON.stringify(recorded)} is not a language code (fr, en, de-CH) — pass the code, not the language's name`,
+    );
+  return recorded;
+}
+
 async function renderMapWeb({ component, table, props, outDir, name, live = false, plan = null }) {
+  const language = assertRecordedLanguage(props.language);
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = discloseTable(
@@ -612,7 +639,7 @@ async function renderMapWeb({ component, table, props, outDir, name, live = fals
     : "";
 
   const html = `<!doctype html>
-<html lang="en">
+<html lang="${language}">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
@@ -1011,6 +1038,7 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
       alt,
       ground: SEED.ground,
       accent: SEED.accent,
+      language: SEED.language,
     },
     outDir,
     name,

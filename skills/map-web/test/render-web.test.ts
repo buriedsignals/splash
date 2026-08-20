@@ -72,6 +72,7 @@ const BASE = {
   alt: "Three circles on a fixture map.",
   ground: "#FFFFFF",
   accent: "#0B7A75",
+  language: "en",
 };
 
 function renderSeed(overrides: Partial<typeof BASE> = {}) {

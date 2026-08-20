@@ -27,19 +27,22 @@
  * Four ratchets. Nothing is being repaired.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { decodePng } from "../scripts/compare-png.mjs";
 import {
   duplicatedPayload,
   groundFromPalette,
   marksFromSource,
+  pageLanguageMatchesStory,
   plateFollowsGround,
   plateLuminance,
   plateMatchesGeometry,
   revealDashInScreenSpace,
   surfaceLuminance,
 } from "../scripts/verify-guards.mjs";
+import { DEFAULT_DATA_PATH, DEFAULT_PLATE_DIR, assertRecordedLanguage, render, SEED } from "../scripts/render-web.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
@@ -206,3 +209,57 @@ describe("every map web beat on disk", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * FINDING 1 (stress round two): `renderMapWeb`'s own HTML shell used to hard-code `<html lang="en">`
+ * regardless of what a beat actually said — this is the guard on the DELIVERED page,
+ * `doctrine/references/guard-catalogue.json`'s `page-declares-story-language`.
+ */
+describe("pageLanguageMatchesStory", () => {
+  it("agrees when the page's own <html lang> matches the recorded language", () => {
+    expect(pageLanguageMatchesStory('<html lang="en"><head></head></html>', "en")).toBe(true);
+  });
+
+  it("refuses a page whose <html lang> is a different language than recorded", () => {
+    expect(pageLanguageMatchesStory('<html lang="fr"><head></head></html>', "en")).toBe(false);
+  });
+
+  it("refuses a page with no <html lang> attribute at all", () => {
+    expect(pageLanguageMatchesStory("<html><head></head></html>", "en")).toBe(false);
+  });
+
+  it("checks this format's own seed against the language it was told to write", async () => {
+    const outDir = mkdtempSync(join(tmpdir(), "map-web-lang-"));
+    try {
+      const { outPath } = await render({
+        dataPath: DEFAULT_DATA_PATH,
+        plateDir: DEFAULT_PLATE_DIR,
+        outDir,
+      });
+      const html = readFileSync(outPath, "utf8");
+      expect(pageLanguageMatchesStory(html, SEED.language)).toBe(true);
+      expect(pageLanguageMatchesStory(html, "fr")).toBe(false);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("assertRecordedLanguage", () => {
+  it("returns the trimmed tag when it is a real language code", () => {
+    expect(assertRecordedLanguage("en")).toBe("en");
+    expect(assertRecordedLanguage(" fr ")).toBe("fr");
+    expect(assertRecordedLanguage("de-CH")).toBe("de-CH");
+  });
+
+  it("refuses a missing language rather than defaulting to English", () => {
+    expect(() => assertRecordedLanguage(undefined)).toThrow(/never detected.*never defaulted/s);
+    expect(() => assertRecordedLanguage("")).toThrow();
+    expect(() => assertRecordedLanguage("   ")).toThrow();
+  });
+
+  it("refuses a string that is not a language code", () => {
+    expect(() => assertRecordedLanguage("French")).toThrow(/not a language code/);
+  });
+});
+

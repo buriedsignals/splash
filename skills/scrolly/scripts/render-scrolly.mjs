@@ -62,7 +62,32 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * identically — SSR it, wrap it, toggle which wrapped copy is visible. That is the entire contract
  * that makes this scaffold able to assemble different media without knowing it is doing so.
  */
-async function renderScrolly({ steps, title, source, ground, outDir, name, proseLane = 0 }) {
+/** THE LANGUAGE THE DELIVERED PAGE IS WRITTEN IN, read off what the story recorded — never
+ *  detected from the prose and never defaulted. `renderWeb`'s own HTML shell used to hard-code
+ *  `<html lang="fr">`, baked in for its first caller (a French CO₂ beat); every beat written in
+ *  another language misdeclared itself to a screen reader and to a translation engine, and the gap
+ *  was patched per-beat in a runner rather than closed here. Same shape ruling R4 already settled
+ *  for `deliver`'s own hand-over documents (`skills/deliver/scripts/journalist-language.mjs`): the
+ *  language is RECORDED for the story, confirmed with the journalist, and handed in — this function
+ *  only refuses to ship without one, or with one that is not a real language tag.
+ *
+ *  Throws rather than defaulting to English: a page silently declaring the wrong language is
+ *  exactly the defect this exists to close, and a default is how it would come back. */
+function assertRecordedLanguage(language) {
+  const recorded = String(language ?? "").trim();
+  if (recorded === "")
+    throw new Error(
+      "a delivered page declares the language it is written in, and none was given — pass the story's own recorded language (STORYBOARD.md's `language:` field, or the beat's own recorded answer) as `props.language`. It is never detected from the prose and never defaulted",
+    );
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(recorded))
+    throw new Error(
+      `language ${JSON.stringify(recorded)} is not a language code (fr, en, de-CH) — pass the code, not the language's name`,
+    );
+  return recorded;
+}
+
+async function renderScrolly({ steps, title, source, ground, language, outDir, name, proseLane = 0 }) {
+  const pageLanguage = assertRecordedLanguage(language);
   if (!(proseLane >= 0 && proseLane < 0.6))
     throw new Error(
       `proseLane is the fraction of its own height a beat's frames keep clear at the bottom; got ${proseLane}`,
@@ -133,7 +158,7 @@ ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
   const inlineEmbedExit = inlineable(embedExitSource);
 
   const html = `<!doctype html>
-<html lang="en">
+<html lang="${pageLanguage}">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(title)}</title>
@@ -522,6 +547,8 @@ const SEED = {
     "(sample-data/potomac-2024.csv). Station: USGS site file (potomac-station.rdb). Map: MapTiler " +
     "dataviz-light basemap, © OpenStreetMap contributors. The opening scene and the instrument " +
     "diagram are drawings of how a staff gauge works, not photographs of this station.",
+  // The seed's own words are English throughout — see `assertRecordedLanguage`, above.
+  language: "en",
 };
 const SAMPLE_DATA = join(HERE, "../assets/sample-data");
 const DEFAULT_OUT_DIR = "/tmp/scrolly-twin";
@@ -623,6 +650,7 @@ async function render({ outDir, name = OUTPUT_NAME }) {
     title: SEED.title,
     source: SEED.source,
     ground: SEED.ground,
+    language: SEED.language,
     outDir,
     name,
   });
@@ -640,4 +668,4 @@ if (import.meta.main) {
   );
 }
 
-export { render, renderScrolly, SEED };
+export { render, renderScrolly, SEED, assertRecordedLanguage };

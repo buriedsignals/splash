@@ -29,7 +29,22 @@ export const GUARDS = [
   "revealDashInScreenSpace",
   "plateMatchesGeometry",
   "plateFollowsGround",
+  "pageLanguageMatchesStory",
 ];
+
+/** Does the delivered page's own `<html lang>` agree with the language recorded for its story?
+ *
+ *  Reads the ARTEFACT, never re-derives it: `recorded` is the story's own answer (`STORYBOARD.md`'s
+ *  `language:` field, or a beat's own recorded equivalent), handed in by the caller — this function
+ *  never detects a language from prose and never assumes English. `renderWeb`'s own HTML shell used
+ *  to hard-code `lang="fr"` regardless of what a beat actually said, discovered when an English beat
+ *  had to patch its own runner to fix it after the fact; this is the guard that would have caught it
+ *  on the delivered file, not just at render time. */
+export function pageLanguageMatchesStory(html, recorded) {
+  const found = /<html[^>]*\slang="([^"]*)"/i.exec(html);
+  if (!found) return false;
+  return found[1] === String(recorded ?? "").trim();
+}
 
 /** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
  *  defect: reporting those would bury the 1.33 MB one under a list of nothing. */

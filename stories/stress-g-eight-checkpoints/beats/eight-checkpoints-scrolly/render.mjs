@@ -120,6 +120,7 @@ async function render() {
     title,
     source,
     ground,
+    language: "en",
     outDir,
     name: "eight-checkpoints.html",
   });

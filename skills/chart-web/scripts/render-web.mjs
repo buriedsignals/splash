@@ -91,6 +91,8 @@ const SEED = {
   title: "Rainfall over the sample town fell by a third",
   source: "Sample data — not a real measurement",
   alt: "A line falling from 912 to 604 across eleven readings.",
+  // The seed's own words are English throughout — see `assertRecordedLanguage`, below.
+  language: "en",
 };
 /** Where the seed's own data lives, and what its own output is named. A real beat's runner points at
  *  its own frozen series and names its own file — a different story's data does not sit at this
@@ -114,7 +116,33 @@ const OUTPUT_NAME = "rainfall.html";
  * composition — so every web beat shares one implementation of the colour rule and the
  * text-measurement rule, never a copy per story.
  */
+
+/** THE LANGUAGE THE DELIVERED PAGE IS WRITTEN IN, read off what the story recorded — never
+ *  detected from the prose and never defaulted. `renderWeb`'s own HTML shell used to hard-code
+ *  `<html lang="fr">`, baked in for its first caller (a French CO₂ beat); every beat written in
+ *  another language misdeclared itself to a screen reader and to a translation engine, and the gap
+ *  was patched per-beat in a runner rather than closed here. Same shape ruling R4 already settled
+ *  for `deliver`'s own hand-over documents (`skills/deliver/scripts/journalist-language.mjs`): the
+ *  language is RECORDED for the story, confirmed with the journalist, and handed in — this function
+ *  only refuses to ship without one, or with one that is not a real language tag.
+ *
+ *  Throws rather than defaulting to English: a page silently declaring the wrong language is
+ *  exactly the defect this exists to close, and a default is how it would come back. */
+function assertRecordedLanguage(language) {
+  const recorded = String(language ?? "").trim();
+  if (recorded === "")
+    throw new Error(
+      "a delivered page declares the language it is written in, and none was given — pass the story's own recorded language (STORYBOARD.md's `language:` field, or the beat's own recorded answer) as `props.language`. It is never detected from the prose and never defaulted",
+    );
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(recorded))
+    throw new Error(
+      `language ${JSON.stringify(recorded)} is not a language code (fr, en, de-CH) — pass the code, not the language's name`,
+    );
+  return recorded;
+}
+
 async function renderWeb({ component, props, outDir, name }) {
+  const language = assertRecordedLanguage(props.language);
   const furniture = deriveFurniture(props.ground);
 
   // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
@@ -154,7 +182,7 @@ async function renderWeb({ component, props, outDir, name }) {
   const inlineScript = inlineable(interactionSource);
 
   const html = `<!doctype html>
-<html lang="fr">
+<html lang="${language}">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
@@ -708,6 +736,7 @@ async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       ground: SEED.ground,
       accent: SEED.accent,
       frame: FRAME,
+      language: SEED.language,
       // The seed's own filter declaration and the keys it draws. A beat that wants none omits both
       // lines — nothing downstream needs a `false` anywhere.
       filter: seedFilterDeclaration(data.map((d) => d.year)),
@@ -733,4 +762,4 @@ if (import.meta.main) {
   console.log(`web beat → ${outPath}  [${readings} readings]`);
 }
 
-export { render, renderWeb, SEED, buildCss };
+export { render, renderWeb, SEED, buildCss, assertRecordedLanguage };

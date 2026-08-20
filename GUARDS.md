@@ -25,6 +25,7 @@ written out below the tables.
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
 | csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
 | unmatched-value-hides |  |  |  |  | **R** |  |  |  |
+| page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 
 ## capability
 
@@ -243,3 +244,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** an author reads, at the terminal, the same two numbers framing-serves-the-point asks them to reconsider a treatment from — the values' own spread against the plot's zero-based extent, and the largest mark against the group's median — without computing either by hand or asking
 
 **Earned by:** the discipline says WHEN to reconsider a treatment; nothing printed the two numbers an author would reconsider it FROM. render.mjs already prints diagnostic reads for a dozen other decisions in these two stress beats alone (the palette chosen, the duplicate row dropped, the period formats seen) — this is the same convention, applied to the one decision the stress test found nothing supporting. A reading, never a refusal: framingMeasurement never throws and never picks a treatment
+
+### page-declares-story-language — `pageLanguageMatchesStory`
+
+**Refuses:** a delivered page's <html lang> disagreeing with the language recorded for its story
+
+**Earned by:** renderWeb's own HTML shell hard-coded <html lang="fr">, baked in for its first caller, a French CO₂ beat; every English beat rendered through it misdeclared its language to a screen reader and to a translation engine, and a stress beat had to patch the shipped file in its own runner rather than have the skill fix it — the same shape, uncaught, in every proof/web* fixture that carries the identical patch
