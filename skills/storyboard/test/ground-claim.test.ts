@@ -318,3 +318,68 @@ describe("the real profileTable output, fed to the real grounding check", () => 
     expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
   });
 });
+
+// Finding 1 (2026-08-20 stress test): a direction word ("risen", "fell", ...) paired with an
+// ordered pair of numbers must be checked for agreement with that pair's own order, not just
+// whether each number independently sits inside a column's range. Fixture is the frozen
+// stress-c-vacant-homes profile, verbatim (stories/stress-c-vacant-homes/source/profile.json).
+const VACANT_HOMES_PROFILE = {
+  rowCount: 4,
+  columns: [
+    { name: "year", type: "number", missing: 0, distinct: 4, min: 2019, max: 2022, sum: 8082 },
+    { name: "vacant_homes_pct", type: "number", missing: 0, distinct: 4, min: 7.2, max: 8.4, sum: 31.3 },
+  ],
+};
+
+describe("groundTakeaway — a direction word checked against its own numbers' order", () => {
+  it("should refute the stress takeaway: 'risen' but the pair itself falls from 8.4 to 7.2", () => {
+    const claims = groundTakeaway(
+      "The share of vacant homes has risen steadily over the last four years, from 8.4% to 7.2%.",
+      VACANT_HOMES_PROFILE,
+    );
+    // The old bug: both numbers land inside vacant_homes_pct's [7.2, 8.4] range and are marked
+    // "supported" twice, with "risen" never inspected at all.
+    expect(claims.some((c) => c.verdict === "supported")).toBe(false);
+    const trend = claims.find((c) => c.verdict === "contradicted");
+    expect(trend).toBeTruthy();
+    expect(trend.detail).toContain("8.4");
+    expect(trend.detail).toContain("7.2");
+    expect(trend.detail).toContain("risen");
+  });
+
+  it("should confirm the corrected takeaway: 'fell' and the pair does fall from 8.4 to 7.2", () => {
+    const claims = groundTakeaway(
+      "The share of vacant homes fell every year from 2019 to 2022, from 8.4% to 7.2%.",
+      VACANT_HOMES_PROFILE,
+    );
+    expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
+    expect(claims.some((c) => c.verdict === "supported")).toBe(true);
+  });
+
+  it("should mark a number pair unverifiable, never supported, when the direction word is too far away to pair with it", () => {
+    const profile = {
+      columns: [{ name: "value", type: "number", min: 0, max: 10, sum: 8 }],
+    };
+    // "rose" is ~180 characters away from the "from 5 to 3" pair below — far outside any
+    // reasonable pairing window. Without this guard, checkNumericRanges would silently mark
+    // both 5 and 3 "supported" because each sits inside [0, 10], never inspecting "rose" at all.
+    const claims = groundTakeaway(
+      "Reported figures rose sharply across the whole region this quarter, according to " +
+        "officials who briefed reporters at length about the methodology behind the count. " +
+        "Elsewhere, a separate reading went from 5 to 3.",
+      profile,
+    );
+    expect(claims.some((c) => c.verdict === "supported")).toBe(false);
+    expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
+    expect(claims.some((c) => c.verdict === "unverifiable")).toBe(true);
+  });
+
+  it("should return no claim at all for a direction word with no numbers — ranges alone carry no order", () => {
+    // Deliberate: min/max on a column say nothing about which end came first in time, so there
+    // is no numeric anchor here for this check to place a verdict on at all. See the doc comment
+    // at the top of ground-claim.mjs for the reasoning.
+    expect(
+      groundTakeaway("Vacancy is climbing, year after year.", VACANT_HOMES_PROFILE),
+    ).toEqual([]);
+  });
+});

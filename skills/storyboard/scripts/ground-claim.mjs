@@ -11,7 +11,9 @@
 // (it never looks at a rendered chart or a spec). Everything it cannot actually check comes back
 // "unverifiable" with a reason — it never returns "supported" for something it did not verify,
 // because silence and confirmation must not look alike (a rule this branch has had to learn three
-// times already).
+// times already; the third time was the stress test of 2026-08-20 — see shape 6 below, where a
+// direction word paired with an ordered number pair used to fall through to two independent
+// range checks and come back "supported" twice on a sentence the data flatly contradicted).
 //
 // profile shape expected here:
 //   {
@@ -39,10 +41,44 @@
 //      — checked against every row in the claimed window, not just the boundary year.
 //   4. "highest/lowest ever" — checked against every row in the profile.
 //   5. "first time" claims — always unverifiable; there is no mechanical check for this shape.
+//   6. A TREND word ("rose", "risen", "rising", "climbed", "grew", "increased", "up" / "fell",
+//      "fallen", "dropped", "declined", "shrank", "down") paired with an ordered "from A to B"
+//      number pair in the same takeaway, checked for AGREEMENT between the word's direction and
+//      the pair's own order — not merely whether A and B each independently sit inside some
+//      column's range, which is the check that let a "risen ... from 8.4% to 7.2%" sentence come
+//      back "supported" twice (2026-08-20 stress test, stress-c-vacant-homes). Three deliberate
+//      boundaries on this shape, all governed by "unverifiable, never silence, never confirmation"
+//      for what it cannot see:
+//        - A "from A to B" pair where BOTH numbers read as a plausible four-digit calendar year
+//          (1500-2100, no decimal point — see `looksLikeYearSpan`) is treated as a date range, not
+//          a value pair, and is left to the ordinary per-number range check (shape 1a), which
+//          resolves it correctly on its own — those numbers are real years in the data, and
+//          "supported" for them is not a guess, it is what checking a year against the year
+//          column's range actually establishes. This is what keeps "fell ... from 2019 to 2022,
+//          from 8.4% to 7.2%" from misreading the YEAR span as the value pair and flagging a false
+//          contradiction against a direction word that was never about the years at all.
+//        - A "from A to B" value pair (not a year span) with NO trend word within reach (120
+//          characters either side — the same order of magnitude every other windowed pattern in
+//          this file uses) is "unverifiable" if a trend word exists ANYWHERE ELSE in the takeaway
+//          (the sentence is making a directional claim, it is just too far from this exact pair
+//          for this regex-only check to responsibly pair the two), and is left unclaimed — to the
+//          ordinary per-number range check — only when the takeaway contains no trend word at all,
+//          i.e. is not making a directional claim in the first place.
+//        - A trend word with NO "from A to B" number pair anywhere in the takeaway at all (e.g.
+//          "Vacancy is climbing, year after year.") produces no claim. This was a deliberate call,
+//          not an oversight: a column's `min`/`max` range carries no notion of *when* the min or
+//          the max occurred, so there is no way to read a direction out of a range alone without
+//          inventing an ordering the profile does not state — and `rows`, where present, is keyed
+//          to a specific year or comparison this shape's regex does not extract, so reaching into
+//          it here would be exactly the natural-language parser this function is built not to
+//          become. Silence here is the same silence "Renewables overtook coal as the main source"
+//          already gets: a sentence shape this function was never taught to recognise at all, not
+//          a claim it recognised and declined to check.
 //
 // Only a value that contradicts a fact this function DID establish comes back "contradicted": the
-// year comparisons and the superlatives, which read real rows. Everything the function merely
-// failed to place is information for the journalist, not a refusal.
+// year comparisons, the superlatives and the trend-word/pair agreement check, which read real rows
+// or a real number pair. Everything the function merely failed to place is information for the
+// journalist, not a refusal.
 
 const NUMBER_RE = /-?\d+(?:\.\d+)?/g;
 
@@ -86,6 +122,43 @@ const SUPERLATIVE_EVER_RE = /\b(lowest|highest)\b[\s\S]{0,20}?\bever\b/gi;
 const YEAR_NEAR_RE = /\b(\d{4})\b/g;
 
 const FIRST_TIME_RE = /\bfirst\s+time\b/gi;
+
+// Shape 6 — a trend word ("rose", "fell", ...) checked for agreement with an ordered "from A to
+// B" number pair. Kept deliberately small and explicit rather than a generic "verb list" the way
+// this file's other patterns are.
+const TREND_UP_WORDS = new Set(["rose", "risen", "rising", "climbed", "grew", "increased", "up"]);
+const TREND_DOWN_WORDS = new Set(["fell", "fallen", "dropped", "declined", "shrank", "down"]);
+const TREND_DIRECTION_RE = /\b(rose|risen|rising|climbed|grew|increased|up|fell|fallen|dropped|declined|shrank|down)\b/gi;
+
+function trendDirectionOf(word) {
+  const w = word.toLowerCase();
+  if (TREND_UP_WORDS.has(w)) return "up";
+  if (TREND_DOWN_WORDS.has(w)) return "down";
+  return null;
+}
+
+// "from <A> to <B>", optionally each side carrying a trailing "%" — the shape the stress
+// takeaway actually uses ("from 8.4% to 7.2%"). Deliberately does not try to cover every phrasing
+// a trend could be written in ("A to B", "A, down to B", ...) — see the header for why this stays
+// a regex over one recognised shape rather than a natural-language parser.
+const FROM_TO_PAIR_RE = /\bfrom\s+(-?\d+(?:\.\d+)?)\s*%?\s*to\s+(-?\d+(?:\.\d+)?)\s*%?/gi;
+
+// How far (in characters) a trend word is allowed to sit from a "from A to B" pair and still be
+// read as describing it — the same order of magnitude every other windowed pattern above uses.
+const TREND_WINDOW = 120;
+
+// A "from A to B" pair where both sides are a plausible four-digit calendar year is a date range
+// ("from 2019 to 2022"), not a measured value pair — see the header's first bullet under shape 6.
+function looksLikeYearSpan(rawA, rawB) {
+  const isYear = (raw) => /^\d{4}$/.test(raw) && Number(raw) >= 1500 && Number(raw) <= 2100;
+  return isYear(rawA) && isYear(rawB);
+}
+
+function distanceBetween(spanA, spanB) {
+  if (spanA.end <= spanB.start) return spanB.start - spanA.end;
+  if (spanB.end <= spanA.start) return spanA.start - spanB.end;
+  return 0;
+}
 
 function overlaps(a, b) {
   return a.start < b.end && a.end > b.start;
@@ -170,6 +243,51 @@ function extractComparisons(text) {
     found.push({ kind: "first-time", raw: m[0], ...span });
   }
 
+  // Shape 6 — trend word vs. the pair's own order. Computed once so every "from A to B" pair in
+  // the takeaway can be matched against its nearest candidate.
+  const trendWords = [...text.matchAll(TREND_DIRECTION_RE)].map((m) => ({
+    word: m[0],
+    start: m.index,
+    end: m.index + m[0].length,
+  }));
+
+  for (const m of text.matchAll(FROM_TO_PAIR_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    if (looksLikeYearSpan(m[1], m[2])) continue; // a date range, not a value pair — see header
+
+    const numA = Number(m[1]);
+    const numB = Number(m[2]);
+
+    let nearest = null;
+    let nearestDistance = Infinity;
+    for (const candidate of trendWords) {
+      const d = distanceBetween(span, candidate);
+      if (d < nearestDistance) {
+        nearest = candidate;
+        nearestDistance = d;
+      }
+    }
+
+    if (nearest && nearestDistance <= TREND_WINDOW) {
+      found.push({ kind: "trend", directionWord: nearest.word, numA, numB, raw: m[0], ...span });
+    } else if (nearest) {
+      // A trend word exists in this takeaway, just not close enough to this pair to pair
+      // confidently with it — "unverifiable", never left to fall through to the per-number range
+      // check, which would silently mark both numbers "supported" without ever reading the word.
+      found.push({
+        kind: "trend-unlinked",
+        nearestWord: nearest.word,
+        numA,
+        numB,
+        raw: m[0],
+        ...span,
+      });
+    }
+    // No trend word anywhere in the takeaway: not a directional claim at all — left unclaimed, to
+    // the ordinary per-number range check (shape 1a).
+  }
+
   return found;
 }
 
@@ -198,6 +316,33 @@ function rowValue(rows, yearField, valueField, year) {
 
 function resolveComparison(item, profile) {
   const claim = item.raw.trim();
+
+  if (item.kind === "trend") {
+    const wordDirection = trendDirectionOf(item.directionWord);
+    const pairDirection = item.numB > item.numA ? "up" : item.numB < item.numA ? "down" : "flat";
+    if (pairDirection === "flat") {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail: `both numbers in this pair are ${item.numA}, so no direction can be read from it`,
+      };
+    }
+    const holds = wordDirection === pairDirection;
+    return {
+      claim,
+      verdict: holds ? "supported" : "contradicted",
+      detail: holds
+        ? `"${item.directionWord}" agrees with the pair's own order: ${item.numA} to ${item.numB} is ${pairDirection === "up" ? "an increase" : "a decrease"}`
+        : `"${item.directionWord}" claims a ${wordDirection === "up" ? "rise" : "fall"}, but the pair itself goes from ${item.numA} to ${item.numB}, which is ${pairDirection === "up" ? "a rise" : "a fall"}`,
+    };
+  }
+  if (item.kind === "trend-unlinked") {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `a direction word ("${item.nearestWord}") appears in the takeaway but not close enough to the ${item.numA} to ${item.numB} pair to verify agreement with it`,
+    };
+  }
 
   if (item.kind === "first-time") {
     return { claim, verdict: "unverifiable", detail: "\"first time\" claims are not mechanically checked" };
