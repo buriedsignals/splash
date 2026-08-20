@@ -5,14 +5,15 @@
 
 A guard is listed for a skill only where the defect it catches is REACHABLE there. **R** means the
 skill's own verification scripts declare it; **·** means the defect can happen there and nothing
-checks it; blank means it cannot happen there at all.
+checks it; blank means it cannot happen there at all — and where that blankness was argued rather
+than obvious, the argument is written out below the table.
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | duplicated-payload |  | **R** |  |  |  | **R** | **R** | **R** |
 | projection-pairing |  |  |  |  |  |  |  | **R** |
 | plate-geometry-pairing |  |  |  |  | **R** | **R** |  |  |
-| plate-follows-theme |  |  |  |  | **R** | **R** |  | **R** |
+| plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
 | screen-space-dash | **R** | **R** | **R** |  | **R** | **R** |  | **R** |
 | reached-mark-declares |  | · | · |  |  | · |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
@@ -24,6 +25,22 @@ checks it; blank means it cannot happen there at all.
 - `chart-web` owes **reached-mark-declares**
 - `chart-video` owes **reached-mark-declares**
 - `map-web` owes **reached-mark-declares**
+
+## Why a cell is blank, where the blankness was argued — 10 of them
+
+Only the cells a reader would otherwise re-open: one retired after being measured absent, or one
+belonging to a format that works differently end to end.
+
+- `dw-beat` cannot reach **duplicated-payload** — the delivered web artefact is a page whose body is a single iframe to the hosted chart: it inlines no asset at all, so none can be inlined twice
+- `map-beat` cannot reach **projection-pairing** — retired after measurement, not left owed: object-fit appears in exactly two files in this tree, both scrolly IMAGE beats, and in no cartographic component. A map beat composites its plate as an <image> INSIDE the marks' own SVG, in their coordinate system, so there are not two projections that could disagree. The same defect is reachable here by the format's other mechanism, which is what plate-geometry-pairing was written for
+- `map-web` cannot reach **projection-pairing** — retired on the same measurement one task later: object-fit appears in none of the 23 web artifacts. This format composites its plate the way map-beat does, and pairs its ratio against the projected frame instead
+- `dw-beat` cannot reach **projection-pairing** — there is no raster plate and no overlay drawn on it: the artefact is one exported image, or an iframe to a hosted chart
+- `dw-beat` cannot reach **plate-geometry-pairing** — nothing is baked here. There is no plate.png and no geometry.json recording the frame marks were projected into, because this format projects nothing
+- `dw-beat` cannot reach **screen-space-dash** — this producer authors no marks. A dashed rule is a Datawrapper enum (a range annotation's strokeType) drawn by Datawrapper's own renderer, and the vector-effect that makes the defect possible is not ours to write
+- `dw-beat` cannot reach **reached-mark-declares** — there is no reveal: a delegated chart is one finished picture, and no mark is ever pending
+- `dw-beat` cannot reach **step-redraws** — there are no steps: nothing here is driven by a reader's gesture or by a frame number
+- `dw-beat` cannot reach **scrub-not-slideshow** — there is nothing to scrub: a delegated chart has one state
+- `dw-beat` cannot reach **model-declared** — it reads which of the two scroll models a beat is built on, off the markup. A delegated chart is built on neither
 
 ## What each guard refuses, and the defect that earned it
 
@@ -50,6 +67,8 @@ checks it; blank means it cannot happen there at all.
 **Refuses:** a baked plate on the opposite luminance side from the ground its beat declares
 
 **Earned by:** a beat declared ground #16191B and painted white labels on a dark halo over a dataviz-light plate: furniture correct for its theme, and unreadable
+
+**Also reached by:** dw-beat, where the surface is not a baked plate but the PNG a delegated renderer hands back. This producer's spec requires an accent and has no field for a ground, so Datawrapper paints on whatever surface its own theme chooses and a story that declared a dark ground can be delivered a white rectangle. Same decision, same tuning constants, different measurement.
 
 ### screen-space-dash — `revealDashInScreenSpace`
 

@@ -12,6 +12,7 @@ import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./meta
 import { toCsv } from "./csv.mjs";
 import { chartIdForPath, createChart, setChartData, patchChart, publishChart, exportChartPng } from "./dw-client.mjs";
 import { sizeFor } from "./sizes.mjs";
+import { assertExportedSurface } from "./verify-owned.mjs";
 
 export function datawrapperFormatFor(format) {
   if (format === "static") return "static";
@@ -435,6 +436,11 @@ async function produceUnlocked(
     zoom: 1,
   });
   assertExportedSize(png, size, row);
+  // The second thing that can only be read off the bytes that came back. `assertExportedSize` catches
+  // an export that is the wrong SHAPE; this catches one painted on the opposite side from the ground
+  // the story declared — silent, valid, correct, and a white rectangle in a dark column. Both run
+  // before the file is written, so a refused export leaves nothing behind to be delivered by mistake.
+  if (beatDir) assertExportedSurface(png, beatDir);
   if (!rendersDir) throw new Error("a static Datawrapper beat needs outDir or beatDir");
   if (beatDir) await ensureRealDirectory(rendersDir, "Datawrapper renders directory");
   else await mkdir(rendersDir, { recursive: true });

@@ -48,6 +48,20 @@ export function carriedBy(skill) {
   return names;
 }
 
+/** Every cell whose blankness was ARGUED rather than obvious — a guard retired after measurement, or
+ *  a whole column blank because the format works differently. Nobody looks for a scroll step in a
+ *  static chart, and a reason there would be noise; a reason here is what stops the next reader
+ *  re-opening a question this chantier already measured and closed. */
+export function unreachableRows(catalogue) {
+  return catalogue.guards.flatMap((guard) =>
+    Object.entries(guard.unreachable ?? {}).map(([skill, reason]) => ({
+      guard: guard.id,
+      skill,
+      reason,
+    })),
+  );
+}
+
 /** Every cell a format is reachable by and does not carry — the debt, enumerated. */
 export function owedRows(catalogue) {
   return catalogue.guards.flatMap((guard) =>
@@ -70,7 +84,8 @@ export function renderGuardsDoc(catalogue) {
     "",
     "A guard is listed for a skill only where the defect it catches is REACHABLE there. **R** means the",
     "skill's own verification scripts declare it; **·** means the defect can happen there and nothing",
-    "checks it; blank means it cannot happen there at all.",
+    "checks it; blank means it cannot happen there at all — and where that blankness was argued rather",
+    "than obvious, the argument is written out below the table.",
     "",
     `| guard | ${skills.join(" | ")} |`,
     `| --- | ${skills.map(() => "---").join(" | ")} |`,
@@ -84,6 +99,15 @@ export function renderGuardsDoc(catalogue) {
       ? owed.map((row) => `- \`${row.skill}\` owes **${row.guard}**`).join("\n")
       : "Nothing. Every format carries every guard it can reach.",
     "",
+    `## Why a cell is blank, where the blankness was argued — ${unreachableRows(catalogue).length} of them`,
+    "",
+    "Only the cells a reader would otherwise re-open: one retired after being measured absent, or one",
+    "belonging to a format that works differently end to end.",
+    "",
+    ...unreachableRows(catalogue).map(
+      (row) => `- \`${row.skill}\` cannot reach **${row.guard}** — ${row.reason}`,
+    ),
+    "",
     "## What each guard refuses, and the defect that earned it",
     "",
     ...catalogue.guards.flatMap((guard) => [
@@ -93,6 +117,7 @@ export function renderGuardsDoc(catalogue) {
       "",
       `**Earned by:** ${guard.earnedBy}`,
       "",
+      ...(guard.alsoReachedBy ? [`**Also reached by:** ${guard.alsoReachedBy}`, ""] : []),
     ]),
   ].join("\n");
 }

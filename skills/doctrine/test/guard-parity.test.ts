@@ -18,7 +18,13 @@
 //     this once the debt is paid.
 
 import { describe, expect, it } from "bun:test";
-import { carriedBy, owedRows, readCatalogue, PRODUCING_SKILLS } from "../../../scripts/guards.mjs";
+import {
+  carriedBy,
+  owedRows,
+  readCatalogue,
+  unreachableRows,
+  PRODUCING_SKILLS,
+} from "../../../scripts/guards.mjs";
 
 describe("the guard catalogue", () => {
   it("names, for every guard, what it refuses and the defect that earned it", () => {
@@ -49,6 +55,27 @@ describe("the guard catalogue", () => {
     const declared = new Set(readCatalogue().guards.map((guard) => guard.decidedBy));
     for (const skill of PRODUCING_SKILLS)
       for (const name of carriedBy(skill)) expect([...declared]).toContain(name);
+  });
+
+  // THE THIRD STATE, and the one that rots quietest. A blank cell says "this defect cannot happen
+  // here", and two of them in this catalogue were RETIRED after measurement rather than being
+  // obvious — `projection-pairing` for `map-beat` and for `map-web`, each after a count of how many
+  // files in the tree carry an `object-fit` at all. A retirement with no reason beside it is
+  // indistinguishable from a cell nobody ever thought about, and the next reader either re-measures
+  // it or, worse, reads the blank as an oversight and adds debt that was never owed.
+  it("gives a real reason for every cell whose blankness was argued", () => {
+    for (const row of unreachableRows(readCatalogue())) {
+      expect(PRODUCING_SKILLS).toContain(row.skill);
+      expect(row.reason.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("never says a cell is both unreachable and a state", () => {
+    for (const guard of readCatalogue().guards)
+      for (const skill of Object.keys(guard.unreachable ?? {}))
+        expect(`${guard.id} × ${skill}: ${guard.formats[skill] ?? "blank"}`).toBe(
+          `${guard.id} × ${skill}: blank`,
+        );
   });
 
   // Not an assertion about the debt's SIZE — that is the plan's job — but about it being readable.

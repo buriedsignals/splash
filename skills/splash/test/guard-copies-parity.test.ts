@@ -61,15 +61,28 @@ const COPIES: Record<string, string[]> = {
     "scrolly/scripts/verify-scrolly.mjs",
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
+    // The fourth copy measures something none of the others do: not a plate this tree baked, but the
+    // PNG a delegated renderer handed back. The decision cannot tell them apart, which is the whole
+    // argument for copying it rather than writing a fourth one.
+    "dw-beat/scripts/verify-owned.mjs",
   ],
   surfaceLuminance: [
     "scrolly/scripts/verify-scrolly.mjs",
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
+    "dw-beat/scripts/verify-owned.mjs",
   ],
   plateMatchesGeometry: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
-  groundFromPalette: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
-  plateLuminance: ["map-beat/scripts/verify-map.mjs", "map-web/scripts/verify-guards.mjs"],
+  groundFromPalette: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "dw-beat/scripts/verify-owned.mjs",
+  ],
+  plateLuminance: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "dw-beat/scripts/verify-owned.mjs",
+  ],
   revealDashInScreenSpace: [
     "scrolly/scripts/verify-scrolly.mjs",
     "chart-video/scripts/verify-video.mjs",

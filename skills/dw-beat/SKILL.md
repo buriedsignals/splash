@@ -52,8 +52,13 @@ back under this level" and a rule *shows* it.
   storyboard.mjs`) — this skill invents no new vocabulary for what a beat already carries.
 - To draw a reference line or band a reader must **see**, not just read about: pass
   `rangeAnnotations: [{ value, label }]`.
-- **Not** for a bespoke chart needing a render ladder, video, or rich interaction (`chart-beat`
-  is that path), and **not** for a map.
+- For an **ordinary map**, exactly as for an ordinary bar chart: a choropleth
+  (`map.choropleth` → `d3-maps-choropleth`), a proportional-symbol map (`map.proportional-symbol` →
+  `d3-maps-symbols`) or a locator (`map.locator` → `locator-map`). The pinned inventory carried
+  these three the whole time and every layer above used to refuse them, this page included.
+- **Not** for a bespoke chart needing a render ladder, video, or rich interaction (`chart-beat` is
+  that path), and not for a bespoke map: a chosen camera, a baked basemap plate, a scroll-driven
+  reveal or video is `map-beat`'s work. The line is the WORK, not the medium.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -103,8 +108,39 @@ established it.
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
 | API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchChart`/`patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — thin real HTTP calls with hard request and response-body deadlines; `fetchFn` is injectable for deterministic contract tests and the credential-gated checks use the real network |
 | Orchestrator | `scripts/produce.mjs` | `produce(spec, {storiesRoot, storyId, outputId, name, size, token, fetchFn})` — resolve the canonical beat, serialize same-beat revisions, validate → write `spec.json` → create or reuse the chart ID in `DATAWRAPPER.json` (persisting `state: prepared` before follow-up calls) → set data → patch title/type/language/metadata → publish → write `renders/<name>.html` for web or export and verify `renders/<name>.png` for static → advance the receipt to `state: local-complete`. `{outDir}` remains only as the legacy one-shot compatibility shape |
+| Owned-artefact guard | `scripts/verify-owned.mjs` | `assertExportedSurface(bytes, beatDir)` — the one guard in `GUARDS.md` this format can reach, called by `produce.mjs` before the PNG is written |
 | Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that confirms the candidate range-annotation shape by rendering it — run for real, live-confirmed (`references/range-annotation-shape.md` §2) |
 | Proof | `scripts/prove-co2.mjs` | The real case: Swiss territorial CO₂, 1950-2024, a range annotation at the 1967 level |
+
+## The one guard a delegated producer still carries
+
+**Everything you can check here, you have to read off the bytes that came back.** Two things are
+read, both before the file is written, so a refused export leaves nothing behind to deliver by
+mistake:
+
+- `assertExportedSize` — the export is the size that was asked for. A wrong SHAPE is loud.
+- `assertExportedSurface` — the export is on the same luminance side as the ground the story
+  declared in its `PALETTE.md`. A wrong SIDE is silent: the PNG is valid, the chart is correct, the
+  accent is the house one, and it lands in the article as a white rectangle in a dark column.
+
+The decision is `plateFollowsGround`, copied byte for byte from `scrolly`, `map-beat` and `map-web`
+and walked by `splash/test/guard-copies-parity.test.ts`. Only the measurement is this skill's own:
+the surface is an exported PNG rather than a baked plate, and the decision cannot tell them apart.
+No ground declared anywhere above the beat means nothing to compare, so nothing is decoded and
+nothing is refused — `null`, never a default.
+
+**Why it can only refuse, and what would let it do better.** `ChartSpec` REQUIRES an accent
+(`color`) and has no field for a ground: Datawrapper paints on whatever surface its own theme
+chooses, and this producer never asks. Widening it means sending a background or a Datawrapper theme
+and then CONFIRMING, against the live API, that the field is honoured where it was asked for —
+`scripts/verify-range-annotation.mjs` exists because a key in a schema is not the same claim as a
+rule actually rendering. That needs a real token, so it is a measured follow-up and not a guess.
+Until then a dark-ground story gets a loud refusal naming both luminances, which is the correct
+half of the fix and never the wrong picture.
+
+The rest of the catalogue is not weak here, it is unreachable — no marks of ours to carry a dash, no
+reveal to arrive anywhere, nothing baked. Each of those cells carries its reason in
+`doctrine/references/guard-catalogue.json`, rendered into `GUARDS.md`, so nobody re-opens it.
 
 ## How it works (the shape)
 
@@ -190,6 +226,12 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
   legacy one-shot `<spec.json> <outDir>` shape remains
   available but is not a published-chart revision path. Managed production enters through
   `scripts/sealed-produce.mjs` and Engine's `datawrapper-produce` operation instead.
+- `scripts/verify-owned.mjs` — `assertExportedSurface` and the guard behind it, `plateFollowsGround`,
+  copied byte for byte from the three skills that bake a plate and walked by
+  `splash/test/guard-copies-parity.test.ts`. `produce.mjs` calls it; a decision nothing calls is a
+  decision that does not run.
+- `scripts/compare-png.mjs` — the tree's own PNG decoder, carried (not imported) like every other
+  copy of it, so the surface an export came back on can be read without a browser.
 - `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed
   (`references/range-annotation-shape.md` §2).
 - `scripts/prove-co2.mjs` — the real Swiss CO₂ proof case, fetching Our World in Data directly.
@@ -198,7 +240,7 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
   and `JsonCRDT.benchmark.ts`, cross-checked against two independent third-party re-implementations;
   also records the live-tested findings on vendor attribution (plan-gated, not fixable from code)
   and the fitted y-axis (confirmed working).
-- `test/{validate-spec,metadata-spec,csv,dw-client,produce,verify-range-annotation,prove-co2}.test.ts` —
+- `test/{validate-spec,metadata-spec,csv,dw-client,produce,map-treatments,verify-owned,verify-range-annotation,prove-co2}.test.ts` —
   `bun:test` coverage. Every real-network assertion follows `splash/test/keys.test.ts`'s own
   `it.skipIf(!token)` convention: skipped, never faked, when `DATAWRAPPER_TOKEN` is absent from the
   environment; the actual proof the moment it is present.
