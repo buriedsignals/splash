@@ -27,6 +27,7 @@ written out below the tables.
 | unmatched-value-hides |  |  |  |  | **R** |  |  |  |
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
+| reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
 
 ## capability
 
@@ -264,3 +265,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** the graphic occupies a real, measured share of the window it is opened in, at every tested width, never a fraction of it stranded beside empty ground
 
 **Earned by:** stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width
+
+### reveal-fills-the-frame — `compositionFillsTheFrame`
+
+**Refuses:** a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not
+
+**Earned by:** skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal

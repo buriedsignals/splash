@@ -465,6 +465,20 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "reveal-fills-the-frame",
+      "kind": "guard",
+      "requires": [
+        "reader-driven-reveal"
+      ],
+      "decidedBy": "compositionFillsTheFrame",
+      "refuses": "a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not",
+      "earnedBy": "skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal",
+      "states": {
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

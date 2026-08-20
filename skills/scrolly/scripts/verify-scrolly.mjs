@@ -187,6 +187,7 @@ export const GUARDS = [
   "csvSplitByHand",
   "pageLanguageMatchesStory",
   "credentialReadsWithoutAlias",
+  "compositionFillsTheFrame",
 ];
 
 /** Every credential name this skill's own scripts read straight off `env`/`process.env` by its
@@ -436,6 +437,47 @@ export function requiresScrub({ frames, framesWithContent }) {
   if (!(frames > 1)) return false;
   return framesWithContent < frames;
 }
+
+/** FINDING 4 (round-two stress): does the DRAWING inside the fixed graphic actually use the frame
+ *  it was given — never just whether the CONTAINER fills the window, which `fills-its-frame`
+ *  (`scripts/detect-fills-its-frame.mjs`, carried by every `ships-standalone-html` format) already
+ *  answers, and which this vehicle's own scaffold guarantees by construction regardless of what a
+ *  beat draws inside it. `stress-g-eight-checkpoints` delivered a graphic covering roughly 15% of a
+ *  1440x900 frame; measured against every delivered scrolly under `proof/` (the same population
+ *  `fingerprintDrift` walks), it was not the outlier — `scrolly-one-chart-swiss-life-expectancy`'s
+ *  own chart track reads even thinner (a single annotated line in an otherwise empty frame), and
+ *  `assets/ScrollySeed.tsx`'s own `ChartFrame` draws the SAME shape this format's SKILL.md promises
+ *  every beat a "FIXED graphic that fills the frame": a chart-track scrolly has never actually done
+ *  that, an image or map track routinely does (20%+ of the frame is picture). `floor` is that
+ *  format's own measured population, never invented — see this file's own caller for the number.
+ *  `under` is strictly `<`, not `<=`, the same reasoning `weightAgainstCeiling` states for `over`: a
+ *  frame sitting exactly on the floor is the measurement the floor was taken FROM, not yet a
+ *  violation of it. */
+export function compositionFillsTheFrame(fraction, floor) {
+  return { fraction, floor, under: fraction < floor };
+}
+
+/** THIS VEHICLE'S OWN FLOOR, measured 2026-08-20 (pixel-sampled ink coverage — the fraction of a
+ *  delivered page's own window differing from its ground colour by more than a perceptual
+ *  threshold, on a 144x90 grid) across every delivered scrolly under `proof/` plus
+ *  `stress-g-eight-checkpoints`, each read at its OWN FIRST step (the step every one of these beats
+ *  opens on, and the fairest like-for-like comparison: a first step is a beat's own worst case for a
+ *  composition that fills IN as a reading grows, never a cherry-picked best frame):
+ *    scrolly-one-chart-swiss-life-expectancy: 2.2%
+ *    scrolly-chart-eu-carbon:                 7.1%
+ *    scrolly-image-grinnell-glacier:          22.2%
+ *    scrolly-mixed-grinnell-ice:               28.2%
+ *    stress-g-eight-checkpoints (before fix): 3.6%
+ *    stress-g-eight-checkpoints (after fix):  3.7%
+ *  `stress-g` was not the outlier this measurement set out to find — the lowest reading in the whole
+ *  population belongs to this format's own seed-taught chart-track convention
+ *  (`assets/ScrollySeed.tsx`'s `ChartFrame`), which stress-g's own `CheckpointFrame.tsx` was built
+ *  in the same spirit as. `MEASURED_MIN_FRACTION` is that lowest reading; `MARGIN_FRACTION` keeps
+ *  the floor from sitting exactly on a correct, already-thin chart-track reading while still
+ *  catching a frame that went genuinely blank. */
+export const MEASURED_MIN_FRACTION = 0.022;
+export const MARGIN_FRACTION = 0.01;
+export const FLOOR_FRACTION = MEASURED_MIN_FRACTION - MARGIN_FRACTION;
 
 /** Steps whose picture never moved anywhere inside themselves, on a beat built to scrub. The
  *  vehicle has published a continuous signal since its eighth correction; this is what finally

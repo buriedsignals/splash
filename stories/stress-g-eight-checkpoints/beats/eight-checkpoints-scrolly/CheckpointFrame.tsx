@@ -35,11 +35,30 @@ export const TRACK = {
 const FONT = "Helvetica, Arial, sans-serif";
 const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
 
-type Furniture = { ground: string; ink: string; muted: string; grid: string; accent: string };
+type Furniture = {
+  ground: string;
+  ink: string;
+  muted: string;
+  grid: string;
+  accent: string;
+};
 
-function Label({ style, children }: { style: CSSProperties; children: React.ReactNode }) {
+function Label({
+  style,
+  children,
+}: {
+  style: CSSProperties;
+  children: React.ReactNode;
+}) {
   return (
-    <div style={{ position: "absolute", fontFamily: FONT, whiteSpace: "nowrap", ...style }}>
+    <div
+      style={{
+        position: "absolute",
+        fontFamily: FONT,
+        whiteSpace: "nowrap",
+        ...style,
+      }}
+    >
       {children}
     </div>
   );
@@ -65,21 +84,43 @@ export function CheckpointFrame({
 }: Furniture & { reading: Reading; maxValue: number }) {
   const ceiling = Math.ceil(maxValue / 20) * 20;
   const ticks = niceTicks(maxValue);
-  const at = (v: number) => TRACK.left + (v / ceiling) * (TRACK.right - TRACK.left);
+  const at = (v: number) =>
+    TRACK.left + (v / ceiling) * (TRACK.right - TRACK.left);
   const trackY = TRACK.y * VIEWBOX.height;
-  const barHeight = 22;
+  // FINDING 4 (round-two stress): measured against every delivered scrolly under proof/, this
+  // frame's own ink covered roughly 3.6% of a 1440x900 frame at a 22px bar — thinner than every
+  // other chart-track scrolly measured (2.2%-7.1%) and far below an image/diagram track (22%-28%),
+  // for the same reason all of them read thin: a chart-track frame draws a single stat annotated in
+  // otherwise-empty space, the same shape `assets/ScrollySeed.tsx`'s own `ChartFrame` draws at
+  // 2.2%. Doubled here, within this frame's own room: the axis label row sits at TRACK.y + 0.12
+  // (36 viewbox px below centre), so a bar can grow to 52px before its own tick marks (barHeight/2
+  // + 10) reach that row — 44px leaves a safe 4px clear.
+  const barHeight = 44;
   const fraction = at(reading.value);
   const trackX0 = TRACK.left * VIEWBOX.width;
   const trackX1 = TRACK.right * VIEWBOX.width;
   const barX1 = fraction * VIEWBOX.width;
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: ground,
+        overflow: "hidden",
+      }}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`0 0 ${VIEWBOX.width} ${VIEWBOX.height}`}
         preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
       >
         {/* The empty track, full length, drawn first so the filled bar sits over it. */}
         <rect
@@ -123,10 +164,10 @@ export function CheckpointFrame({
           position: "absolute",
           left: pct(fraction),
           top: pct(TRACK.y),
-          width: "18px",
-          height: "18px",
-          marginLeft: "-9px",
-          marginTop: "-9px",
+          width: "26px",
+          height: "26px",
+          marginLeft: "-13px",
+          marginTop: "-13px",
           borderRadius: "50%",
           background: accent,
           border: `2px solid ${ground}`,
@@ -176,7 +217,7 @@ export function CheckpointFrame({
       <Label
         style={{
           left: pct(TRACK.left),
-          top: pct(TRACK.y - 0.20),
+          top: pct(TRACK.y - 0.2),
           fontSize: "18px",
           color: accent,
         }}
