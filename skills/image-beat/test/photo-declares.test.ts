@@ -118,3 +118,61 @@ describe("the seed's own artifact", () => {
     expect(found.missingCredit).toBe(0);
   });
 });
+
+// Finding 8 (round-two stress): `imageBeatLayout` throws before drawing an EMPTY alt or credit,
+// so the detector's own failure mode was unreachable through the normal write path — a beat
+// could only ever reach this measurement carrying fields that are already non-empty. The stress
+// story `stories/stress-h-site-photographs` shipped anyway, by naming the gap in the text itself
+// (`"[alt text not supplied by the newsroom]"`) rather than leaving the field blank — a real,
+// frozen, delivered beat the write-time refusal never sees, because the string it is checking is
+// not empty. A capability that reports this artefact clean has not measured anything: this is
+// the decision that it does not, by treating a bracket-wrapped placeholder the same as absence.
+describe("photosDeclareAltAndCredit reads a placeholder as absence, not as an answer", () => {
+  it("counts a bracket-wrapped alt placeholder as missing, not present", () => {
+    const html = `<g role="img" aria-label="[alt text not supplied by the newsroom]" data-credit="Jane Doe"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 1,
+      missingCredit: 0,
+    });
+  });
+
+  it("counts a bracket-wrapped credit placeholder as missing, not present", () => {
+    const html = `<g role="img" aria-label="A glacier front" data-credit="[credit not supplied by the newsroom]"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 0,
+      missingCredit: 1,
+    });
+  });
+
+  it("does not flag ordinary prose that merely contains a bracket", () => {
+    const html = `<g role="img" aria-label="A sign reading [closed] hangs on the gate" data-credit="Jane Doe"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 0,
+      missingCredit: 0,
+    });
+  });
+});
+
+describe("the delivered stress-h beat — the failure mode made reachable", () => {
+  it("reports the placeholder alt and the placeholder credit it actually shipped, not clean", () => {
+    const STORIES = resolve(SKILL, "..", "..", "stories");
+    const svg = readFileSync(
+      join(
+        STORIES,
+        "stress-h-site-photographs",
+        "beats",
+        "stress-h-site-photographs",
+        "renders",
+        "still.svg",
+      ),
+      "utf8",
+    );
+    const found = photosDeclareAltAndCredit(svg);
+    expect(found.photos).toBe(3);
+    expect(found.missingAlt).toBe(1);
+    expect(found.missingCredit).toBe(1);
+  });
+});
