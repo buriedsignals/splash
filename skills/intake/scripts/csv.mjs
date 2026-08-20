@@ -2,6 +2,10 @@
 // RFC 4180. A naive split on "," is the bug this file exists to prevent.
 
 export function parseCsv(text) {
+  // A byte-order mark, when a journalist's editor writes one, sits before the
+  // very first field of the very first row — strip it once, here, so a header
+  // like "country" never carries it into a downstream column name.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const rows = [];
   let row = [];
   let field = "";

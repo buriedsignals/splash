@@ -76,4 +76,12 @@ describe("profileTable", () => {
     expect(v.type).toBe("text");
     expect(v.min).toBe(null);
   });
+
+  it("should trim a header name padded with spaces, leaving its own values untouched", () => {
+    const table = profileTable([
+      [" price_eur ", "country"],
+      ["1", "Netherlands, the"],
+    ]);
+    expect(table.columns.map((c) => c.name)).toEqual(["price_eur", "country"]);
+  });
 });

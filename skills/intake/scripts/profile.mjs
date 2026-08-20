@@ -18,7 +18,11 @@ function typeOf(values) {
 }
 
 export function profileTable(rows) {
-  const [header = [], ...body] = rows;
+  const [rawHeader = [], ...body] = rows;
+  // A header name is metadata, not data — trim it. A value's own leading or
+  // trailing space stays exactly as written; the journalist's data is not ours
+  // to rewrite (e.g. "Netherlands, the" as a value must round-trip untouched).
+  const header = rawHeader.map((name) => name.trim());
   const columns = header.map((name, index) => {
     const values = body.map((row) => (row[index] ?? "").trim());
     const type = typeOf(values);
