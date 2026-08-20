@@ -597,12 +597,20 @@ body {
   width: 100%;
   width: min(100cqw, calc(100cqh * ${aspect}));
   max-width: 100%;
-  /* Left-aligned, not centred. When the WINDOW's height is what bounds the map, the leftover room
-     is horizontal, and a centred map floats away from the title, the filter chips and the legend —
-     which are all flush left, at full width. Flush left puts every edge of the beat on one line and
-     collects the spare room as a margin. When width is what binds (the common case), the map fills
-     it and this does nothing at all. */
-  margin-inline: 0 auto;
+  /* CENTRED (finding 3, round-two stress — this was flush-left before, and the reasoning for that
+     turned out not to hold: the title, the filter chips and the legend are never the map's own
+     width to align an edge WITH — every one of them already spans the full stage at 100%, so a
+     flush-left map's "aligned edge" was aligned with nothing narrower than itself. When the
+     WINDOW's height is what bounds the map (a plate whose own aspect is close to square, on a wide
+     desktop window), the leftover room is horizontal, and dumping the whole of it on one side reads
+     exactly the way it measured: a choropleth in the left half of a 1440x900 window, empty ground
+     filling the right half outright — not a smaller map, a broken one. Centred, the same leftover
+     room splits evenly and reads as a deliberately framed, smaller map, which is what it is: this
+     format never stretches a plate to fill a shape it was not baked for (geo-discipline.md — that
+     is a lie about distance and shape), so a plate whose own true aspect is squarer than the
+     window it opens in is SMALLER by design, and centring is how a smaller graphic sits in the
+     space it was given without looking like a layout failure. */
+  margin-inline: auto;
   /* 'visible', not 'hidden'. The plate and its circles are already clipped to the frame by the
      SVG's own clipPath, so the only thing this would clip is a point LABEL — a name, which is
      data. A label's width is a fixed number of CSS pixels while the frame it is placed in is a

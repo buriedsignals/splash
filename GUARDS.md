@@ -39,6 +39,7 @@ written out below the tables.
 | weight-has-a-ceiling |  |  |  |  | **R** | **R** | **R** | **R** |
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 | framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |
+| fills-its-frame |  | **R** |  | **R** |  | **R** |  | **R** |
 
 ## discipline
 
@@ -257,3 +258,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a provider credential read by its canonical env name with no declared alias list for the names the root's own .env holds it under
 
 **Earned by:** root .env names the Datawrapper credential DATAWRAPPER_API_TOKEN and MapTiler's key MAPTILER_API_KEY/REMOTION_MAPTILER_KEY/VITE_MAPTILER_KEY — the engine's own names — while dw-beat's CLI entry and sealed-produce.mjs read a bare process.env.DATAWRAPPER_TOKEN and splash/scripts/run-operation.mjs read a bare process.env.MAPTILER_KEY, so preflight reported the capability open on a real, present token and production refused "no token" one phase later; map-beat/map-web/scrolly's own bake-plate.mjs had already reconciled the MapTiler side with a declared alias list before this was named
+
+### fills-its-frame — `graphicFillsItsFrame`
+
+**Offers:** the graphic occupies a real, measured share of the window it is opened in, at every tested width, never a fraction of it stranded beside empty ground
+
+**Earned by:** stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width

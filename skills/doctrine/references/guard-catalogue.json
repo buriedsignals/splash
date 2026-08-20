@@ -447,6 +447,24 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "fills-its-frame",
+      "kind": "capability",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "the graphic occupies a real, measured share of the window it is opened in, at every tested width, never a fraction of it stranded beside empty ground",
+      "earnedBy": "stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width",
+      "detectedBy": "graphicFillsItsFrame",
+      "walkedBy": "test/frame-fills-window.test.ts",
+      "states": {
+        "chart-web": "carried",
+        "dw-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

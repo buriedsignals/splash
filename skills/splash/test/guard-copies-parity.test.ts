@@ -192,6 +192,16 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/detect-weight-has-a-ceiling.mjs",
     "scrolly/scripts/detect-weight-has-a-ceiling.mjs",
   ],
+  // FINDING 3 (round-two stress): the fraction of the reader's own window the graphic's own box
+  // actually covers, against a per-format floor — same shape as weightAgainstCeiling, a shared
+  // comparison with the ceiling/floor itself living outside the compared span as each copy's own
+  // measured constant.
+  graphicFillsItsFrame: [
+    "chart-web/scripts/detect-fills-its-frame.mjs",
+    "map-web/scripts/detect-fills-its-frame.mjs",
+    "scrolly/scripts/detect-fills-its-frame.mjs",
+    "dw-beat/scripts/detect-fills-its-frame.mjs",
+  ],
   // FINDING 8's own capability, carried by the three chart formats. Declared in
   // `render-still.mjs` itself (a beat's `render.mjs` calls it directly, on the values it is about
   // to draw, the same way it already calls `readPalette` there) rather than in a `detect-*.mjs` —

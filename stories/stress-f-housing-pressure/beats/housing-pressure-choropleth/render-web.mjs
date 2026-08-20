@@ -745,10 +745,16 @@ body {
   width: 100%;
   width: min(100cqw, calc(100cqh * ${aspect}));
   max-width: 100%;
-  /* Left-aligned, not centred: when the WINDOW's height is what bounds the map, the leftover room
-     is horizontal, and a centred map floats away from the title, the legend and the caveat, which
-     are all flush left at full width. */
-  margin-inline: 0 auto;
+  /* CENTRED (finding 3, round-two stress): this beat's plate is baked square (496x496) against a
+     wide desktop window, so the stage's own height is what bounds the map and the leftover room is
+     horizontal. Left-aligned, that room measured as a choropleth in the left half of a 1440x900
+     window with the right half empty ground — not a smaller map, a broken-looking one. The title,
+     the legend and the caveat are never the map's own width to keep an edge aligned WITH — every
+     one already spans the full stage at 100% — so centring loses no real alignment and reads as a
+     deliberately framed, smaller map: this format never stretches a plate to a shape it was not
+     baked for (geo-discipline.md), so a plate whose own aspect is squarer than the window is
+     smaller by design. See skills/map-web/scripts/render-web.mjs's own copy of this note. */
+  margin-inline: auto;
   overflow: hidden;
   border: 1px solid var(--muted);
 }
