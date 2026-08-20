@@ -50,6 +50,16 @@ current operating instructions unless a canonical document above links to them.
 - Use the smallest craft skill that fits the approved editorial intent. Ranking
   informs agent judgment; it does not replace that judgment or override the
   journalist's confirmed takeaway.
+- **No tool attribution in any artefact.** A commit message, a code comment, a
+  rendered file and a document in this repository never name the assistant that
+  produced them — no co-author trailer, no session link, no generated-with line.
+  A runtime that appends one has to be corrected at the point the message is
+  written, not afterwards.
+- **Never `git commit --amend` in a shared working tree.** Two agents worked this
+  tree at once on 2026-08-20; an amend taken to strip an injected trailer absorbed
+  the other's staged files and dropped their commit. Write the message correctly
+  the first time; if an amend is genuinely unavoidable, verify with
+  `git show --stat HEAD` that it carries only your own files.
 
 ## Production output revisions
 
