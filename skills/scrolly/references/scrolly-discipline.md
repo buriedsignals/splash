@@ -1075,7 +1075,32 @@ over Switzerland**, at a scale that made every stop a 4px smear. A plate and the
 pair `cover` with `slice`, `contain` with `meet`, `fill` with `none`. The alignment half of the
 attribute stays the beat's own business.
 
-### A reveal is measured in the path's own units, never in screen space
+### A route reveal draws the points it has reached — no dash at all
+
+**The rule, since 2026-08-20.** A line that grows under the reader's scroll is the path RE-GENERATED
+from the samples reached (`drawnSoFar(route, cum, fraction)`), never a finished path hidden by a
+`stroke-dasharray`. `chart-video` has revealed lines this way in eleven beats and needed no doctrine
+for it, because the mechanism has no pattern in it and therefore nothing to compute in the wrong
+space. This section below is what the dash cost before it was replaced, and it is kept because the
+lesson outlives the mechanism.
+
+**By LENGTH, not by index.** The video's own `drawnSoFar` walks samples by index — right for a chart
+whose x IS time. A route's samples are not evenly spaced: on the Danube the longest segment is 23.6x
+the median, so an index walk races the head through the sparse stretches and crawls it through the
+dense ones. Walk the same normalised cumulative length the reveal is measured with, computed from the
+same rounded coordinates the `d` attribute carries, and the head lands where the measurement says.
+
+**The driver is inlined into the page as source text**, which is what makes a scrolly self-contained,
+so it cannot import: each route beat carries its own copy, and `splash/test/route-reveal-parity.test.ts`
+holds every copy byte-identical. A copy that differs differs by accident.
+
+**And the verification moves with the mechanism.** A probe that fingerprinted `stroke-dashoffset`
+reads the drawn path's own length instead; a guard that asserted the `d` attribute held the whole
+route asks the same three questions of the samples the page CARRIES and adds the one it could not ask
+before — that what is drawn is exactly the prefix the reveal reaches. A guard deleted alongside the
+mechanism it watched is a guard that never has to be right again.
+
+### The dash that earned the rule above: measured in the path's own units, never in screen space
 
 **The defect that took six hours and five wrong diagnoses, and the reason it survived them.** The
 Danube beat drew its river with `stroke-dasharray` set to the route's own length and an offset that

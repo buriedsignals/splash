@@ -641,7 +641,7 @@ Mutation-checked: a `strokeDashoffset` and a `vectorEffect` added to the referen
 
 ---
 
-### Task 2b: Carry `drawnSoFar` the other way, into `scrolly` — OPEN
+### Task 2b: Carry `drawnSoFar` the other way, into `scrolly` — DONE
 
 The mirror of Task 2, and the reason it is worth writing down: the capability traffic between these
 two skills runs BOTH ways. `scrolly` reveals a route with a dash and a `pathLength`, and it took six
@@ -654,6 +654,52 @@ no guard. Whether every scrolly reveal can be re-expressed that way is a real qu
 reveal a shape whose points are not ordered, and `drawnSoFar` cannot — so this is a design task, not
 a copy. It belongs in the same plan because it is the same rule: a fix that stays in the skill it was
 found in is three quarters of a fix.
+
+---
+
+**Done 2026-08-20** — `bac20cba`. Both beats, and the question above answered by measurement rather
+than argued.
+
+**The population is two, and both are routes.** A sweep of the tree found exactly two scrolly beats
+revealing with a dash — `mapmore-scrolly-danube` and `mapmore-scrolly-route-access` — and both draw an
+ORDERED polyline, which is the case `drawnSoFar` covers without reservation. The worry this task was
+opened with (a dash can reveal a shape whose points are not ordered) is real and applies to no beat
+this tree has.
+
+**It could not be a copy, and the reason is arithmetic.** The video's `drawnSoFar` walks by INDEX.
+
+```
+Danube route, 911 samples: longest segment / median = 23.65
+```
+
+An index walk would race the head through the sparse stretches and crawl it through the dense ones.
+The port walks by LENGTH — off `cum`, the normalised cumulative length the dash was already measured
+against, computed from the same rounded coordinates the `d` attribute carries. So the head lands
+exactly where the dash put it, and that is asserted as a PROPERTY (`drawnSoFar` is the inverse of
+`lengthFractionAt` at every authored stop) rather than checked by eye.
+
+**What the two beats had already paid for made this small.** Danube's `cum` and `lengthFractionAt`
+existed and were already arc-length correct; route-access's five stops ARE its polyline's vertices
+and their `reachedAt` IS its cumulative length. Neither beat needed a new measurement — only a
+different last step: write a `d`, not an offset.
+
+**The verification moved with the mechanism instead of being deleted with it**, which is the part
+worth remembering:
+
+| what watched the dash | what watches the redraw |
+| --- | --- |
+| `drive.mjs` fingerprinted `getComputedStyle(el).strokeDashoffset` | `getTotalLength()`, which changes on every frame the river advances and cannot be spoofed by a style that never took |
+| `scroll.test.ts` read the whole route out of the SSR'd `d` | the same three questions asked of the samples the PAGE CARRIES, plus one that could not be asked before: the `d` in the file is exactly the prefix the opening reveal reaches |
+
+**Looked at, not asserted at.** `verify-scrolly` over both beats at three viewports: **0 failures, 42
+notes**, the Danube included at camera scale 1.78 — the regime the dash failed in. Painted-pixel
+shape at every step and viewport: **1 fragment, run [0, 1], absent 0**. Six driven sweeps: reveal
+0.3612 → 1, `worstBacktrack` 0. And the frames themselves, opened and read.
+
+Four mutations, four named reds: a copy's `t === 0` guard removed → the parity test diffs the body; a
+dash written back into one driver → *"reveals by redrawing, with no dash left in any of them"*; the
+SSR `d` restored to the whole river → the new prefix assertion; the page's route truncated after
+badge 4 → **the same message the old guard gave**, which is how the port proves it kept the guard.
 
 ---
 
