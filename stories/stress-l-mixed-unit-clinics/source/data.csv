@@ -1,0 +1,9 @@
+code,country,value,unit
+FRA,France,1240,clinics
+DEU,Germany,1880,clinics
+ESP,Spain,910,clinics
+ITA,Italy,1105,clinics
+POL,Poland,18.4,per 100k
+SWE,Sweden,21.9,per 100k
+NLD,Netherlands,17.2,per 100k
+BEL,Belgium,19.8,per 100k
