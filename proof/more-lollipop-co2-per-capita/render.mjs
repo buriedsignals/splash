@@ -76,7 +76,7 @@ function parseCsv(text) {
   const [header, ...rows] = parseCsvRows(text.trim());
   const cols = header;
   return rows
-    .filter((row) => row.length > 0)
+    .filter((row) => row.some((cell) => cell.trim() !== ""))
     .map((row) => {
       const cells = row;
       const rec = {};

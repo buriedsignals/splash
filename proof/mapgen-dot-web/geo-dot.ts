@@ -62,7 +62,7 @@ export function parsePopulationCsv(csv: string): PopulationRow[] {
       `population csv missing Code/Country/Population column, got: ${header}`,
     );
   return rows
-    .filter((r) => r.length > 0)
+    .filter((r) => r.some((cell) => cell.trim() !== ""))
     .map((r) => {
       const cells = r;
       const population = Number(cells[popAt]);

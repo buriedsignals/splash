@@ -320,7 +320,7 @@ function parseCsv(text) {
   const [header, ...rows] = parseCsvRows(text.trim());
   const cols = header;
   return rows
-    .filter((r) => r.length > 0)
+    .filter((r) => r.some((cell) => cell.trim() !== ""))
     .map((row) => {
       if (row.includes('"')) throw new Error(`quoted field in frozen data, parser is too simple: ${row}`);
       const cells = row;

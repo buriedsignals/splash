@@ -104,7 +104,7 @@ export function parseRdb(text: string): Record<string, string>[] {
  *  id (`68426_00060_00003`), which is why it is found by SUFFIX rather than by a literal — a
  *  different site would publish the same statistic under a different id. */
 export function parseReadings(csv: string): Reading[] {
-  const lines = parseCsvRows(csv).filter((l) => l.length > 0);
+  const lines = parseCsvRows(csv).filter((l) => l.some((cell) => cell.trim() !== ""));
   const header = lines[0];
   const dateAt = header.indexOf("date");
   const valueAt = header.indexOf("discharge_cfs");

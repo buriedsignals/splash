@@ -57,7 +57,7 @@ export function parseRouteCsv(csv: string): LonLat[] {
   if (lonAt < 0 || latAt < 0)
     throw new Error(`route csv has no lon/lat column, got: ${header}`);
   return rows
-    .filter((r) => r.length > 0)
+    .filter((r) => r.some((cell) => cell.trim() !== ""))
     .map((r) => {
       const cells = r;
       return [Number(cells[lonAt]), Number(cells[latAt])] as LonLat;
