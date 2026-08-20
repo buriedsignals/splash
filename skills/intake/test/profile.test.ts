@@ -84,4 +84,45 @@ describe("profileTable", () => {
     ]);
     expect(table.columns.map((c) => c.name)).toEqual(["price_eur", "country"]);
   });
+
+  it("should type a column with a thousands separator as number, once the column settles the convention", () => {
+    // "1,234.5" pairs a comma with a later decimal point — that ordering only
+    // reads as thousands-then-decimal, so it settles the whole column.
+    const table = profileTable([
+      ["price"],
+      ["1,234.5"],
+      ["987.25"],
+    ]);
+    const price = table.columns.find((c) => c.name === "price");
+    expect(price.type).toBe("number");
+    expect(price.min).toBe(987.25);
+    expect(price.max).toBe(1234.5);
+    expect(price.sum).toBeCloseTo(2221.75);
+  });
+
+  it("should keep an unsettled thousands-vs-decimal-comma column as text, with the reason recorded", () => {
+    // Neither value pairs its comma with a decimal point, so nothing in the
+    // column says whether the comma groups thousands or stands for a decimal.
+    const table = profileTable([
+      ["price"],
+      ["1,234"],
+      ["2,345"],
+    ]);
+    const price = table.columns.find((c) => c.name === "price");
+    expect(price.type).toBe("text");
+    expect(price.min).toBe(null);
+    expect(price.reason).toMatch(/ambiguous/);
+  });
+
+  it("should not attach a reason to a column that never looked numeric", () => {
+    const commune = profileTable(ROWS).columns.find((c) => c.name === "commune");
+    expect(commune.reason).toBeUndefined();
+  });
+
+  it("should record a reason when a hex-looking value sits beside a plain numeric one", () => {
+    const table = profileTable([["v"], [" 12 "], ["0x1F"]]);
+    const v = table.columns.find((c) => c.name === "v");
+    expect(v.type).toBe("text");
+    expect(v.reason).toMatch(/0x1F/);
+  });
 });
