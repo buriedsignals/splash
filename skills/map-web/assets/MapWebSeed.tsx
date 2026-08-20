@@ -492,7 +492,7 @@ export function RegionTable({
             className={point.key === SUBJECT_KEY ? "subject" : undefined}
           >
             <th scope="row">{point.name}</th>
-            <td>{`${fr(point.value)} ${UNIT}`}</td>
+            <td>{`${fr(point.value)} ${UNIT_WORD}`}</td>
           </tr>
         ))}
       </tbody>

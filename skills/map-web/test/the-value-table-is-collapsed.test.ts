@@ -42,8 +42,7 @@
  *    and passed on the three that had. The count was the measurement.
  */
 import { describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deriveFurniture } from "../scripts/render-still.mjs";
@@ -53,8 +52,7 @@ import {
   livePlan,
   renderMapWeb,
 } from "../scripts/render-web.mjs";
-
-const TWIN = join(import.meta.dirname, "..", "..", "..");
+import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
 
 /**
  * The page's own MARKUP, with every `<style>` and `<script>` block taken out first.
@@ -97,45 +95,8 @@ function tableCount(html: string): number {
   return (markup(html).match(/<table\b/gi) ?? []).length;
 }
 
-/**
- * A page is a map-web beat if it is the rendered HTML of the seed or of a `mapgen-*-web` beat —
- * decided by PATH, with the format's own root class kept as a widener so a beat living somewhere
- * else is still caught. Copied deliberately from `the-live-layer-is-in-the-artifact.test.ts`: the
- * two guards must sweep the same set, or one of them silently covers less than the other.
- */
-function committedMapWebPages(): { rel: string; html: string }[] {
-  const tracked = execFileSync("git", ["ls-files", "-z", "--", "."], {
-    cwd: TWIN,
-    encoding: "utf8",
-  })
-    .split("\0")
-    .filter((rel) => rel.endsWith(".html"));
-  const pages = [];
-  for (const rel of tracked) {
-    const path = join(TWIN, rel);
-    let stat;
-    try {
-      stat = statSync(path);
-    } catch {
-      continue;
-    }
-    if (!stat.isFile()) continue;
-    const html = readFileSync(path, "utf8");
-    if (isMapWebPath(rel) || html.includes('class="map-web-page"'))
-      pages.push({ rel, html });
-  }
-  return pages;
-}
-
-function isMapWebPath(rel: string): boolean {
-  return (
-    /^proof\/mapgen-[a-z]+-web\//.test(rel) ||
-    rel.startsWith("skills/map-web/output-proof/")
-  );
-}
-
 describe("every committed map page keeps its value table collapsed", () => {
-  const pages = committedMapWebPages();
+  const pages = discoverMapWebPages();
 
   it("should find the pages it is supposed to be checking", () => {
     // Anti-vacuity, and the reason this is not a bare `for` loop: a sweep that finds no work to do
@@ -152,8 +113,9 @@ describe("every committed map page keeps its value table collapsed", () => {
 
   it("should be looking at pages that actually have a table to collapse", () => {
     // The second anti-vacuity clause, and the one that matters most here: "no page renders an
-    // expanded table" is trivially true of a tree with no tables in it. The seed ships
-    // `regionTable: false` and has none, so the floor is the five beats that opt in.
+    // expanded table" is trivially true of a tree with no tables in it. `regionTable` now defaults
+    // to true (`same-facts-without-the-picture`, 2026-08-20), and the seed carries it like every
+    // other beat — the floor is all six committed pages.
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
@@ -161,6 +123,7 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
+      "skills/map-web/output-proof/population.html",
     ]);
   });
 

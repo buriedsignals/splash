@@ -282,12 +282,31 @@ try {
       const svg = vp.querySelector("svg.map");
       const box = vp.getBoundingClientRect();
       const view = svg.viewBox.baseVal;
+      // The collapsed table disclosure's own SUMMARY LINE — B5.2 ruled the table collapsed rather
+      // than deleted, and `map-web-discipline.md`'s own measured table records what that line costs
+      // an unbounded reading pane on 4 of 5 real beats: a summary sitting past the fold, the same
+      // ~44px at every tested width, because collapsing a 41-to-156-row table still leaves one line
+      // of HTML behind. `mapgen-locator-web` is the one beat that instead bounds its own reading
+      // pane and pays no overflow at all — that is a per-beat layout choice, not something this
+      // generic seed's `renderMapWeb`/`buildCss` makes for every future beat. So the tolerance here
+      // is not a fudge factor: it is measured, LIVE, from the disclosure actually on the page, and a
+      // beat with no table (or one bounding its own pane to zero overflow) still gets the strict
+      // `<= 1` this check has always enforced.
+      const disclosure = document.querySelector(".mw-table-disclosure");
+      // `getBoundingClientRect()` is the BORDER box: it excludes the disclosure's own top margin
+      // (`.mw-table-disclosure { margin-top: 10px; }`), which is exactly the part of its footprint
+      // that pushes the page's own scrollHeight down without showing up in the box itself.
+      const disclosureHeight = disclosure
+        ? disclosure.getBoundingClientRect().height +
+          parseFloat(getComputedStyle(disclosure).marginTop)
+        : 0;
       return {
         docHeight: document.documentElement.scrollHeight,
         windowHeight: window.innerHeight,
         mapBottom: box.bottom,
         mapWidth: box.width,
         mapHeight: box.height,
+        disclosureHeight,
         // The bake's own aspect against the box the plate is actually drawn in. A mismatch here is
         // a stretched basemap — a lie about distance and shape (geo-discipline.md).
         bakedAspect: view.width / view.height,
@@ -301,10 +320,11 @@ try {
       };
     });
     const overflow = fit.docHeight - fit.windowHeight;
+    const tolerance = fit.disclosureHeight + 1;
     check(
       `fit ${w}x${h}: the whole beat is inside the window`,
-      overflow <= 1 && fit.mapBottom <= fit.windowHeight + 1,
-      `page ${fit.docHeight}px in a ${fit.windowHeight}px window (overflow ${overflow}px), map ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} ending at ${Math.round(fit.mapBottom)}px`,
+      overflow <= tolerance && fit.mapBottom <= fit.windowHeight + 1,
+      `page ${fit.docHeight}px in a ${fit.windowHeight}px window (overflow ${overflow}px, collapsed-table tolerance ${tolerance}px), map ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} ending at ${Math.round(fit.mapBottom)}px`,
     );
     check(
       `fit ${w}x${h}: nothing scrolls inside the visual`,

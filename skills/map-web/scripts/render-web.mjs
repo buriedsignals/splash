@@ -4,7 +4,7 @@
 // charts: rung one and two of a map beat are the still and the video
 // (`map-beat/scripts/render-map.mjs`); this turns the SAME baked plate into one self-contained
 // HTML file — one fluid SVG (geometry only) plus its full HTML overlay (furniture, controls), the
-// accessible region table when the beat opted into it (`regionTable`, off by default), one inlined
+// accessible region table this format carries by default (`regionTable`, opt-OUT per beat), one inlined
 // interaction script, no external request once the plate is inlined as a data URI. The beat it
 // writes fits the reader's window: see `buildCss`'s own "FIT THE WINDOW" note.
 //
@@ -75,11 +75,13 @@ const SEED = {
   // the SVG draws from, so the swap cannot change how big a circle is.
   subjectKey: "paris",
   waterFill: "#aac9e0",
-  // The accessible region table: OPT-IN per beat, and off here. What that costs a reader with no
-  // spatial access to the map is stated plainly in references/map-web-discipline.md, "The
-  // accessibility question" — read it before leaving this false in a beat of your own. Turning it
-  // on costs one word here; every `.pt` button keeps its own `aria-label` either way.
-  regionTable: false,
+  // The accessible region table: ON by default, the same way `chart-web`'s own accessible table is
+  // baked into every page unconditionally — `same-facts-without-the-picture` in the catalogue says
+  // this format CARRIES the capability, and a capability that ships off unless a beat's author
+  // remembers to turn it on is not carried, it is hoped for. What leaving it off costs a reader with
+  // no spatial access to the map is stated plainly in references/map-web-discipline.md, "The
+  // accessibility question" — read it before setting this false in a beat of your own.
+  regionTable: true,
   // What the collapsed disclosure's own summary calls its rows (B5.2). It is a beat's word, not a
   // format's: "metro areas" here, "countries" on a choropleth, "cells" on a hex grid. `discloseTable`
   // refuses to invent one.
@@ -114,10 +116,13 @@ const OUTPUT_NAME = "population.html";
  * disk. Generic across every map-web beat: it does not know a story's own point count or its own
  * filter groups.
  *
- * `regionTable` (default FALSE) is the accessible region table's own switch. It is opt-in rather
- * than automatic, and `references/map-web-discipline.md`'s "The accessibility question" states in
- * full what a reader with no spatial access to the map loses when a beat leaves it off — a beat
- * making that choice should have read it.
+ * `regionTable` (default TRUE) is the accessible region table's own switch. It ships ON by
+ * default — `same-facts-without-the-picture` in the catalogue says this format CARRIES the
+ * capability, and a default that ships it off is a capability a beat's author has to remember to
+ * turn on, which is the exact failure this mechanism exists to abolish. `references/
+ * map-web-discipline.md`'s "The accessibility question" states in full what a reader with no
+ * spatial access to the map loses when a beat opts OUT — a beat making that choice should have
+ * read it.
  */
 /**
  * R1b — THE KEY NEVER ENTERS THE REPOSITORY. R1 accepted the key being visible to a reader of a
@@ -295,7 +300,7 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
-async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, tableRowNoun = null, live = false, plan = null }) {
+async function renderMapWeb({ component, table, props, outDir, name, regionTable = true, tableRowNoun = null, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable

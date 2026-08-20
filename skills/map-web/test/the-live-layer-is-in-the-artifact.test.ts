@@ -150,6 +150,11 @@ async function buildLive(): Promise<string> {
       props: BASE as never,
       outDir,
       name: "beat.html",
+      // This file is about the LIVE LAYER, not the table — `regionTable` defaults to true since
+      // 2026-08-20 (`same-facts-without-the-picture`), so a build with nothing to say about the
+      // table opts out explicitly rather than tripping `discloseTable`'s own "named no
+      // tableRowNoun" throw for a capability this file never measures.
+      regionTable: false,
       live: true,
       plan: livePlan({
         geometry: GEOMETRY,

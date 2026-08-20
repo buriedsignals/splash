@@ -221,16 +221,18 @@ consumer of the geometry uses, so the table's order and a sighted keyboard user'
 Left/Right/Home/End order are the same order — nobody gets a *different* map depending on how they
 read it, only a different medium for the same one.
 
-### The table is OPT-IN, and this is what leaving it off costs
+### The table is ON BY DEFAULT, and this is what opting out costs
 
-**The owner's call, taken with the reasoning above intact rather than against it:** `renderMapWeb`'s
-`regionTable` option defaults to **false**, and this skill's own seed leaves it false. A beat that
-wants the table writes one word.
+**Reopened 2026-08-20: the catalogue's own `same-facts-without-the-picture` entry says this format
+CARRIES the capability, and a default that ships it off unless a beat's author remembers to turn it
+on is not carried — it is hoped for, which is exactly the failure this whole mechanism exists to
+abolish.** `renderMapWeb`'s `regionTable` option now defaults to **true**, and this skill's own seed
+carries it. A beat with a real reason to leave the table off writes one word to turn it off.
 
-**State it plainly, because a default is what most beats will ship with.** A map is a spatial
-medium. A screen-reader user has no spatial access to it. The table was the answer to that fact —
-the only one this format found that is honest — and **a beat that leaves it off has no answer.**
-Concretely, that reader loses:
+**State it plainly, because opting out is now a beat's own decision, not something a silent default
+reaches for on its behalf.** A map is a spatial medium. A screen-reader user has no spatial access to
+it. The table was the answer to that fact — the only one this format found that is honest — and **a
+beat that opts out has no answer.** Concretely, that reader loses:
 
 - **the complete set of readings.** With the table, they have all thirteen names and all thirteen
   values, in a stable order, exactly as exact as a sighted reader's hover. Without it, the values
@@ -340,8 +342,8 @@ the table because the buttons are "already accessible" would be wrong (spatial a
 access), and dropping the per-point `aria-label`s because the table exists would ALSO be wrong (a
 keyboard user reading the map spatially, point by point, is a real and different reading strategy
 from reading the table top to bottom). Neither substitutes for the other — which is the reason the
-opt-in above is a real cost and not a tidy-up: **a beat that ships the table has two channels; a
-beat that leaves it off has one, and it is the spatial one.** **The filter narrows both channels
+opt-out above is a real cost and not a tidy-up: **a beat that ships the table has two channels; a
+beat that turns it off has one, and it is the spatial one.** **The filter narrows both channels
 together, never one alone** — see "Filters" below.
 
 ## Touch and hover share one target
@@ -644,10 +646,12 @@ code** — clicking every chip in a real browser at 1600 × 900:
   would make the page consistent and the editorial problem invisible; the honest answer is that a
   filter must not offer an option that excludes the subject, which is a decision about the beat, not
   about this format's code.
-- **The accessible region table is unverified live.** The CSS rule that narrows it exists and is the
-  same shape as the others, but this seed ships `regionTable: false`, so no table renders and the
-  measurement above counted zero rows in every state. A beat that turns the table on should be
-  driven before anyone claims the filter reaches it.
+- **The accessible region table's own filter interaction is unverified live.** The CSS rule that
+  narrows it exists and is the same shape as the others, but the measurement above was taken while
+  the seed still shipped `regionTable: false` and counted zero rows in every state. The seed now
+  ships `regionTable: true` (2026-08-20, `same-facts-without-the-picture`), so it does render a
+  table — this specific filter-times-table measurement has not been re-driven since, and should be
+  before anyone claims the filter reaches its rows.
 
 ### The price, measured
 

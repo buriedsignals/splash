@@ -83,7 +83,6 @@ export type NamedRegion = BakedShape & {
 type NamedRow = { key: string; name: string; value: number | null };
 
 // ===== CONFIG — edit for your story =====
-const UNIT = "t";
 const UNIT_WORD = "tonnes of CO₂ per person";
 const SUBJECT_KEY = "FRO";
 const COMPARISON_KEY = "ALB";
@@ -522,7 +521,7 @@ export function RegionTable({
             <td>
               {region.value === null
                 ? NO_DATA_LABEL
-                : `${en(region.value)} ${UNIT}`}
+                : `${en(region.value)} ${UNIT_WORD}`}
             </td>
           </tr>
         ))}

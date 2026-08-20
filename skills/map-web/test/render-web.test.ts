@@ -399,12 +399,15 @@ describe("RegionTable", () => {
   });
 
   it("should print the exact same formatted value the map's own data-detail carries", () => {
+    // `pointDetail`'s own unit is the WORD, not the letter abbreviation `M` the legend uses — the
+    // table has to carry the word too, or `same-facts-without-the-picture`'s own token check has
+    // nothing in the row to match a mark's own "million inhabitants" against.
     const furniture = deriveFurniture(BASE.ground);
     const html = renderToStaticMarkup(
       createElement(RegionTable, { points: POINTS, ...furniture }),
     );
-    expect(html).toContain("11,0 M");
-    expect(html).toContain("1,4 M");
+    expect(html).toContain("11,0 million inhabitants");
+    expect(html).toContain("1,4 million inhabitants");
   });
 
   it("should tag every row with its own data-group SLUG, the same filter that narrows the map", () => {
@@ -426,6 +429,10 @@ describe("RegionTable", () => {
 describe("renderMapWeb", () => {
   const PROPS = { ...BASE, geometry: GEOMETRY };
 
+  // `tableRowNoun` defaults to a real word here because `regionTable` itself now defaults to TRUE
+  // (`same-facts-without-the-picture`, 2026-08-20): a test exercising something OTHER than the
+  // table would otherwise trip `discloseTable`'s own "named no tableRowNoun" throw on every one of
+  // them. A test about the table itself overrides it explicitly.
   async function build(options: Record<string, unknown> = {}) {
     const outDir = mkdtempSync(join(tmpdir(), "map-web-render-"));
     try {
@@ -435,6 +442,7 @@ describe("renderMapWeb", () => {
         props: PROPS as any,
         outDir,
         name: "beat.html",
+        tableRowNoun: "metro areas",
         ...options,
       });
       return readFileSync(join(outDir, "beat.html"), "utf8");
@@ -443,14 +451,22 @@ describe("renderMapWeb", () => {
     }
   }
 
-  it("should leave the accessible region table OUT by default — it is opt-in per beat", async () => {
+  it("should render the accessible region table ON by default — opting out is per beat", async () => {
+    // Ruled 2026-08-20: a default that ships the table off unless a beat's author remembers to turn
+    // it on is not a carried capability, it is a hoped-for one — exactly the failure this mechanism
+    // exists to abolish. `renderMapWeb`'s own `regionTable` default flipped from false to true.
     const html = await build();
-    expect(html).not.toContain('class="region-table"');
-    // What a reader without the table still has, and what the discipline file weighs the choice
-    // against: every point is still a labelled, focusable button.
+    expect(html).toContain('class="region-table"');
+    // What a reader WITH the table still keeps: every point is still a labelled, focusable button —
+    // the table is a second channel, not a replacement for the first (see "Two channels, not one").
     expect(html).toContain(
       'aria-label="Alpha City : 11,0 million inhabitants"',
     );
+  });
+
+  it("should let a beat opt OUT of the table with one word", async () => {
+    const html = await build({ regionTable: false });
+    expect(html).not.toContain('class="region-table"');
   });
 
   it("should render the table when the beat asks for it, with one row per point", async () => {
@@ -467,8 +483,9 @@ describe("renderMapWeb", () => {
 
   it("should refuse to render a table the beat gave no word for", async () => {
     // The invariant this format keeps everywhere: nothing renders in a value nobody chose. A summary
-    // reading "Table of values — 3 undefined" would be worse than the throw.
-    await expect(build({ regionTable: true })).rejects.toThrow(/tableRowNoun/);
+    // reading "Table of values — 3 undefined" would be worse than the throw. `regionTable` defaults
+    // to true now, so leaving `tableRowNoun` unset is enough to reach it with no other option set.
+    await expect(build({ tableRowNoun: undefined })).rejects.toThrow(/tableRowNoun/);
   });
 
   it("should generate a filter selector quoting the SLUG, never an HTML-escaped group name", async () => {

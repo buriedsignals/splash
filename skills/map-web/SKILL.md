@@ -1,6 +1,6 @@
 ---
 name: map-web
-description: Use to produce a map beat in the WEB format — a self-contained interactive HTML page that fits the reader's window, where hovering or focusing a region gives its exact value, a size legend stays readable, and an opt-in accessible table can carry the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
+description: Use to produce a map beat in the WEB format — a self-contained interactive HTML page that fits the reader's window, where hovering or focusing a region gives its exact value, a size legend stays readable, and an accessible table (on by default, opt-out per beat) carries the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
 ---
 
 # map-web — bake the plate once, draw circles a reader can interrogate, and answer for the reader who cannot see the shape
@@ -45,9 +45,9 @@ accessible answer to that fact.
   written. No brief, no code — same rule every format in this twin follows.
 - When the argument is stronger with **every region's exact value available on demand** than with
   the handful a static legend has room to label. The linear table for a reader with no spatial
-  access is available beside it (`regionTable`, off by default) — read
+  access ships beside it by default (`regionTable`, opt-out per beat) — read
   `references/map-web-discipline.md`, "The accessibility question", which states plainly what
-  leaving it off costs that reader, before deciding either way. A choropleth (regions shaded by value) or a proportional-symbol map
+  turning it off costs that reader, before deciding either way. A choropleth (regions shaded by value) or a proportional-symbol map
   (circles sized by value) both qualify — this seed is the symbol case; a choropleth's own web beat
   reuses `map-beat/assets/geo.ts`'s join/ramp logic (carried as its own copy, the same rule this
   skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
@@ -162,16 +162,16 @@ to prove the web mechanics AND the accessibility answer on first; a choropleth's
 next one to write, importing this skill's OWN copy of `map-beat/assets/geo.ts`'s join/ramp logic
 rather than `geo-symbol.ts`.
 
-**Why the accessible table is opt-in, and what that means for a beat that says nothing.**
-`renderMapWeb`'s `regionTable` defaults to FALSE — the owner's call. It takes no width/layout prop
-either: the same thirteen facts do not read differently at 375px than at 1600px, and this format
-ships one layout. When a beat opts in, the table is SSR'd after the map, inside the same
-`.map-web-page` wrapper the filter's own `:has()` CSS is scoped to, so one filter narrows both. When
-a beat leaves it off — as this seed does — a reader with no spatial access to the map has the
-`.pt` buttons' own `aria-label`s and nothing else, and
-`references/map-web-discipline.md`'s "The accessibility question" states exactly what is lost by
+**Why the accessible table ships by default, and what opting out costs.**
+`renderMapWeb`'s `regionTable` defaults to TRUE (2026-08-20) — a capability the catalogue says this
+format CARRIES cannot depend on a beat's author remembering to turn it on. It takes no width/layout
+prop either: the same thirteen facts do not read differently at 375px than at 1600px, and this
+format ships one layout. The table is SSR'd after the map, inside the same `.map-web-page` wrapper
+the filter's own `:has()` CSS is scoped to, so one filter narrows both. When a beat opts OUT, a
+reader with no spatial access to the map has the `.pt` buttons' own `aria-label`s and nothing else,
+and `references/map-web-discipline.md`'s "The accessibility question" states exactly what is lost by
 that: the complete set of readings, the comparison the beat is about, and a reading that does not
-cost thirteen separate interactions. Read it before choosing; do not choose by not deciding.
+cost thirteen separate interactions. Read it before opting out; do not opt out by not deciding.
 
 ## Four guards, two substrates
 
@@ -225,9 +225,10 @@ before it drives anything; `test/verify-guards.test.ts` runs all four over every
    sidestepped by keeping each reference mark's own unit short ("M") and spending the full word once,
    in the caption; the legend's own swatch size is deliberately NOT derived from the map's own
    (container-scaled) circle size — see "Text is HTML, not SVG."
-5. **Decide about the table, deliberately** (`regionTable`). On, it is rendered from the same
-   `readingOrder` the keyboard's Left/Right/Home/End uses — one order, two media, tagged with the
-   SAME `data-group` the filter reads on the map. Off — the default — read what that costs first.
+5. **Decide about the table, deliberately** (`regionTable`). On BY DEFAULT, it is rendered from
+   the same `readingOrder` the keyboard's Left/Right/Home/End uses — one order, two media, tagged
+   with the SAME `data-group` the filter reads on the map. Turning it off is the exception — read
+   what that costs first.
 6. **Add a filter only if the test in "When to use" passes** — most beats need
    neither. Both are pure CSS (`:has()`), so wiring one in costs no new JavaScript. Every group
    travels as its SLUG, the one vocabulary the markup and the generated selector share.
@@ -299,7 +300,7 @@ for its own generic function.
 | The padding the runtime fit leaves around the study set | `48px` | `fitBoundsOptions`, `assets/live-map.mjs` |
 | How far a drawn mark may sit from its camera-derived size | `1%` | `SCALE_TOLERANCE`, `scripts/verify-live-map.mjs` |
 | How far a pointer walk may differ from the drawn edge | `3px` | `POINTER_TOLERANCE_PX`, `scripts/verify-live-map.mjs` |
-| Whether the beat ships the accessible region table at all (opt-in — read the discipline file's "The accessibility question" first) | `false` | `regionTable`, `SEED` in `render-web.mjs` (the option on `renderMapWeb`) |
+| Whether the beat ships the accessible region table at all (on by default, opt-out per beat — read the discipline file's "The accessibility question" first) | `true` | `regionTable`, `SEED` in `render-web.mjs` (the option on `renderMapWeb`) |
 | The smallest height the map is ever squeezed to before the page scrolls again | `180px` | `.mw-stage`'s `min-height`, `buildCss` in `render-web.mjs` |
 | The filter chip's own height (a pointer target, not a text row) | `32px` | `.mw-chip`'s `min-height`, `buildCss` in `render-web.mjs` |
 | How many reference sizes the legend shows | `3` | `niceReferenceValues`'s `count` default, `geo-symbol.ts` |
@@ -320,7 +321,7 @@ for its own generic function.
   complete beat (thirteen European metro areas, Paris the largest, a three-region filter), not a
   stripped mechanics demo. One fluid render, bounded to the window by `.mw-stage`: an SVG carrying
   only geometry, an HTML overlay carrying every piece of furniture and every control, and
-  `RegionTable`, the accessible table a beat opts into.
+  `RegionTable`, the accessible table this format carries by default.
 - `assets/geo-symbol.ts` — this skill's OWN copy of the pure proportional-symbol geometry, trimmed
   to what this format draws (no polygon join — a symbol map has none), plus `groupsOf`/`slugOf`, the
   filter's own shared vocabulary between the component and the CSS `render-web.mjs` generates.

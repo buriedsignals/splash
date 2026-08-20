@@ -25,9 +25,8 @@
  * identically to a reader tabbing between them.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { tableCarriesTheMarks } from "../scripts/detect-accessible-table.mjs";
+import { discoverMapWebPages } from "../scripts/discover-pages.mjs";
 
 describe("an accessible table carries the marks' own values", () => {
   const page = (table: string) =>
@@ -151,40 +150,20 @@ describe("an accessible table carries the marks' own values", () => {
   });
 });
 
-/** The 4 delivered `mapgen-*-web` beats — the same set `test/keyboard-reach.test.ts`'s own
- *  `mapWebArtifacts()` walks, duplicated rather than imported. */
-function mapWebArtifacts(): string[] {
-  const SKILL = resolve(import.meta.dirname, "..");
-  const TWIN = resolve(SKILL, "..", "..");
-  const PROOF = join(TWIN, "proof");
-  const dirs = [
-    "mapgen-symbol-web",
-    "mapgen-dot-web",
-    "mapgen-hexgrid-web",
-    "mapgen-locator-web",
-  ];
-  const found: string[] = [];
-  for (const dir of dirs) {
-    const full = join(PROOF, dir);
-    if (!existsSync(full)) continue;
-    for (const entry of readdirSync(full))
-      if (entry.endsWith(".html")) found.push(join(full, entry));
-  }
-  return found;
-}
-
 describe("this format's own real pages, measured against the widened detector", () => {
   it("carries every mark's own fact on every delivered page — no owed pair left", () => {
-    const files = mapWebArtifacts();
-    expect(files.length).toBeGreaterThanOrEqual(4);
+    // DISCOVERED, not listed: this used to walk 4 hardcoded `mapgen-*-web` directories and never
+    // opened `mapgen-choropleth-web` or this skill's own `output-proof/population.html` — 2 of the
+    // format's 6 delivered pages the catalogue's `carried` claim was never actually measured against.
+    const pages = discoverMapWebPages();
+    expect(pages.length).toBe(6);
     const offenders: string[] = [];
-    for (const file of files) {
-      const html = readFileSync(file, "utf8");
-      const found = tableCarriesTheMarks(html);
+    for (const page of pages) {
+      const found = tableCarriesTheMarks(page.html);
       expect(found.marks).toBeGreaterThan(0);
       if (found.missing.length > 0)
         offenders.push(
-          `${file}: missing ${JSON.stringify(found.missing.slice(0, 3))}`,
+          `${page.rel}: missing ${JSON.stringify(found.missing.slice(0, 3))}`,
         );
     }
     expect(offenders).toEqual([]);

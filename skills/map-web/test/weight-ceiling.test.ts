@@ -2,22 +2,18 @@
  * THE SAME MEASUREMENT AS `chart-web/test/weight-ceiling.test.ts`, ON THIS FORMAT'S OWN FILES.
  *
  * `weightAgainstCeiling` is generic; `CEILING_BYTES` (`../scripts/detect-weight-has-a-ceiling.mjs`)
- * is this format's own — set at the heaviest of the 4 delivered `mapgen-*-web` pages measured
- * 2026-08-20, the same population `test/keyboard-reach.test.ts`'s own `mapWebArtifacts()` walks.
+ * is this format's own — set at the heaviest of the 6 delivered pages `discoverMapWebPages()`
+ * (`../scripts/discover-pages.mjs`) finds, the same discovery every other sweep in this format uses.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { statSync } from "node:fs";
 import {
   weightAgainstCeiling,
   CEILING_BYTES,
   MEASURED_MAX_BYTES,
   MARGIN_BYTES,
 } from "../scripts/detect-weight-has-a-ceiling.mjs";
-
-const SKILL = resolve(import.meta.dirname, "..");
-const TWIN = resolve(SKILL, "..", "..");
-const PROOF = join(TWIN, "proof");
+import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
 
 describe("weightAgainstCeiling", () => {
   it("says a file under the ceiling is not over", () => {
@@ -54,23 +50,12 @@ describe("this format's ceiling carries a margin above today's measured maximum"
   });
 });
 
-/** The 4 delivered `mapgen-*-web` beats — the same set `test/keyboard-reach.test.ts`'s own
- *  `mapWebArtifacts()` walks, duplicated rather than imported. */
-function mapWebArtifacts(): string[] {
-  const dirs = ["mapgen-symbol-web", "mapgen-dot-web", "mapgen-hexgrid-web", "mapgen-locator-web"];
-  const found: string[] = [];
-  for (const dir of dirs) {
-    const full = join(PROOF, dir);
-    if (!existsSync(full)) continue;
-    for (const entry of readdirSync(full)) if (entry.endsWith(".html")) found.push(join(full, entry));
-  }
-  return found;
-}
-
 describe("every map-web page on disk", () => {
   it("weighs at or under this format's own measured ceiling", () => {
-    const files = mapWebArtifacts();
-    expect(files.length).toBeGreaterThanOrEqual(4);
+    // DISCOVERED, not listed — see `scripts/discover-pages.mjs`'s own header note: this used to
+    // walk 4 hardcoded directories and silently skip 2 of the format's 6 delivered pages.
+    const files = discoverMapWebPages().map((page) => page.abs);
+    expect(files.length).toBe(6);
     const offenders: string[] = [];
     for (const file of files) {
       const bytes = statSync(file).size;

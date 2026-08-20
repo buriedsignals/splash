@@ -9,13 +9,10 @@
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import puppeteer from "puppeteer";
 import { keyboardReachesEveryMark } from "../scripts/detect-reachable-by-keyboard.mjs";
-
-const SKILL = resolve(import.meta.dirname, "..");
-const TWIN = resolve(SKILL, "..", "..");
-const PROOF = join(TWIN, "proof");
+import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
 
 setDefaultTimeout(600000);
 
@@ -38,23 +35,12 @@ function resolveChrome(): string {
   return found;
 }
 
-/** The 4 delivered `mapgen-*-web` beats — this format's own generation set, the same 4 files
- *  `same-facts-without-the-picture`'s `map-web` exception in the catalogue measures. */
-function mapWebArtifacts(): string[] {
-  const dirs = ["mapgen-symbol-web", "mapgen-dot-web", "mapgen-hexgrid-web", "mapgen-locator-web"];
-  const found: string[] = [];
-  for (const dir of dirs) {
-    const full = join(PROOF, dir);
-    if (!existsSync(full)) continue;
-    for (const entry of readdirSync(full)) if (entry.endsWith(".html")) found.push(join(full, entry));
-  }
-  return found;
-}
-
 describe("every map-web page on disk", () => {
   it("is reachable by Tab and names every one of its marks", async () => {
-    const files = mapWebArtifacts();
-    expect(files.length).toBeGreaterThanOrEqual(4);
+    // DISCOVERED, not listed — see `scripts/discover-pages.mjs`'s own header note: this used to
+    // walk 4 hardcoded directories and silently skip 2 of the format's 6 delivered pages.
+    const files = discoverMapWebPages().map((page) => page.abs);
+    expect(files.length).toBe(6);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {
