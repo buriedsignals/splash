@@ -24,6 +24,7 @@ import {
   owedRows,
   readCatalogue,
   unreachableRows,
+  walkedByExists,
   PRODUCING_SKILLS,
 } from "../../../scripts/guards.mjs";
 
@@ -63,6 +64,29 @@ describe("the guard catalogue", () => {
             expect(disciplineIsWritten(skill, rule.id)).toBe(true);
           else expect(carriedBy(skill)).toContain(rule.decidedBy ?? rule.detectedBy);
         }
+  });
+
+  // A capability declaring its name in `states` proves nothing about a SWEEP existing to measure
+  // it against a delivered page — `carriedBy` only reads that a `GUARDS`/detector array names the
+  // function, and a detector can go on existing after the walking test that called it against real
+  // artefacts is deleted. `walkedBy` closes that: every capability names the test file that walks
+  // it, and every skill claiming `carried` must have that file, mentioning the detector by name.
+  it("names, for every carried capability, the test file that walks it", () => {
+    for (const rule of readCatalogue().rules) {
+      if (rule.kind !== "capability") continue;
+      expect(`${rule.id} names a walkedBy`).toBe(
+        rule.walkedBy ? `${rule.id} names a walkedBy` : `${rule.id} names no walkedBy`,
+      );
+      for (const [skill, state] of Object.entries(rule.states))
+        if (state === "carried")
+          expect(
+            `${rule.id} × ${skill}: ${rule.walkedBy} exists and mentions ${rule.detectedBy}`,
+          ).toBe(
+            walkedByExists(skill, rule)
+              ? `${rule.id} × ${skill}: ${rule.walkedBy} exists and mentions ${rule.detectedBy}`
+              : `${rule.id} × ${skill}: ${rule.walkedBy} missing, or silent about ${rule.detectedBy}`,
+          );
+    }
   });
 
   it("declares every guard any skill already carries", () => {

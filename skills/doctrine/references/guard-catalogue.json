@@ -149,6 +149,7 @@
       "offers": "a reader who cannot see the graphic gets the same values, in a table carrying the marks' own numbers",
       "earnedBy": "map-web shipped an opt-in accessible table from its first version while chart-web shipped none, on the same trait: a chart is exactly as unreadable to a screen reader as a map, and nothing said so",
       "detectedBy": "tableCarriesTheMarks",
+      "walkedBy": "test/accessible-table.test.ts",
       "states": {
         "chart-web": "carried",
         "map-web": "carried"
@@ -167,6 +168,7 @@
       "offers": "a reader with no pointer gets to every mark by Tab, in order, and hears or reads its own reading — never merely a `tabIndex` that gets there with nothing to say",
       "earnedBy": "same-facts-without-the-picture proved a screen reader could get the numbers through a table; nothing yet proved a reader who cannot USE a pointer at all — the keyboard-only case a mouse-and-touch verification never drives — could get to a single mark on the picture itself",
       "detectedBy": "keyboardReachesEveryMark",
+      "walkedBy": "test/keyboard-reach.test.ts",
       "states": {
         "chart-web": "carried",
         "map-web": "carried"
@@ -185,6 +187,7 @@
       "offers": "a reader who told their OS they want less motion gets a page that never interpolates an opacity or a scale — the finished graphic, immediately, with no build to sit through and no ramp to be caught mid-flight by",
       "earnedBy": "chart-web's own entrance (render-web.mjs's entranceCss()) was written CORRECTLY from the start — every keyframe lives inside `@media (prefers-reduced-motion: no-preference)` rather than a `reduce` reset — but nothing had ever driven a real page under `reduce` and measured that the claim holds; this is that measurement, generalised to a detector any format ships",
       "detectedBy": "motionUnderReduce",
+      "walkedBy": "test/reduced-motion.test.ts",
       "states": {
         "chart-web": "carried"
       },
@@ -203,6 +206,7 @@
       "offers": "a reader whose script never ran — blocked, failed to load, an embed's host CSP, a crawler — still gets every mark's own reading, not a mount point that only fills in once a script runs",
       "earnedBy": "same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone — a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for",
       "detectedBy": "staticFrameSurvives",
+      "walkedBy": "test/degrades-without-javascript.test.ts",
       "states": {
         "chart-web": "carried",
         "map-web": "carried"
@@ -219,6 +223,7 @@
       "offers": "a reader on a slow connection or a metered one never downloads more than this format's own beats have ever actually weighed — the delivered file's own size, measured against a ceiling earned from today's population rather than assumed ahead of it",
       "earnedBy": "image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them",
       "detectedBy": "weightAgainstCeiling",
+      "walkedBy": "test/weight-ceiling.test.ts",
       "states": {
         "map-beat": "carried",
         "map-web": "carried",
@@ -234,6 +239,7 @@
       "offers": "a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is — an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists",
       "earnedBy": "this format's own discipline (references/image-discipline.md, \"Alt text and credit\") already requires both, and imageBeatLayout already refuses to render a photo missing either one — a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same \"a decision nothing calls is a decision that does not run\" standard duplicatedPayload is already held to",
       "detectedBy": "photosDeclareAltAndCredit",
+      "walkedBy": "test/photo-declares.test.ts",
       "states": {
         "image-beat": "carried"
       },

@@ -64,6 +64,24 @@ export function disciplineIsWritten(skill, ruleId) {
   );
 }
 
+/** Whether a capability's own walking sweep exists where it claims to, and actually reads the
+ *  detector it names.
+ *
+ *  A capability cell used to be confirmed by nothing more than a name sitting in an array: delete
+ *  `map-web/test/accessible-table.test.ts` outright and every catalogue invariant stayed green,
+ *  because `detect-accessible-table.mjs` still declared `tableCarriesTheMarks` and nothing checked
+ *  that a SWEEP existed to call it against a delivered page. `walkedBy` is a path relative to the
+ *  carrying skill's own directory — this reads that the file is THERE, and that its own text
+ *  mentions the rule's `detectedBy` name, the same DECLARED-NOT-INFERRED contract `carriedBy` and
+ *  `disciplineIsWritten` already read one level over. It does not read whether the sweep is
+ *  correct, only whether one exists and is about the right function — `traits.test.ts`'s own
+ *  both-directions witness is the mechanism that keeps THAT honest. */
+export function walkedByExists(skill, rule) {
+  if (!rule.walkedBy) return false;
+  const file = join(ROOT, "skills", skill, rule.walkedBy);
+  return existsSync(file) && readFileSync(file, "utf8").includes(rule.detectedBy);
+}
+
 /** The skills a rule reaches: those whose declared traits contain every trait it requires.
  *
  *  COMPUTED, NEVER TYPED. The hand-typed version of this shipped on 2026-08-19 and had already
