@@ -140,15 +140,23 @@ export function densityClassLabel(index: number, breaks: number[]): string {
  *  NUMBER stays, as `#{rank}` (a symbol, not a word, so there is no letter for the table to carry):
  *  it is the one part of the old phrase not already carried by `count` and `classLabel`, and it is
  *  what keeps two cells of the same count and class from reading identically to a reader tabbing
- *  between them. "earthquakes" drops for the same reason "Rank" does: `densityClassLabel` already
- *  ends in "events", three words later in this same string, so nothing is lost by not saying it
- *  twice. */
+ *  between them.
+ *
+ *  "earthquakes" STAYS (ruled again 2026-08-20, fix round: a review measured every one of this
+ *  beat's 156 marks losing this word and named it a real loss, not decoration, unlike "Rank" and
+ *  "of 156" above). It is the UNIT of `count`, the number right before it — `densityClassLabel`'s
+ *  own trailing "events" names a DIFFERENT number, the class's own bucket boundary (`63+ events`),
+ *  not this cell's count. A reader who tabs to a mark hears its accessible name with no column
+ *  header in scope (`map-web-discipline.md`, "Two channels, not one") — "#1 — 1374 — Class 5 …"
+ *  leaves 1374 with nothing beside it naming what it counts; "events" three words later, attached
+ *  to a different number, does not rescue that. `DensityTable`'s own "Event count" column carries
+ *  the same word on the same cell for the same reason. */
 export function cellDetail(
   cell: HexCell,
   rank: number,
   breaks: number[],
 ): string {
-  return `#${rank} — ${cell.count} — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
+  return `#${rank} — ${cell.count} earthquakes — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
 }
 
 /** THE ONE PLACE A CELL'S COLOUR IS DECIDED. The SVG hex below and the live `fill` layer's own
@@ -441,7 +449,7 @@ export function DensityTable({
               className={cell.key === subjectKey ? "subject" : undefined}
             >
               <th scope="row">{rank}</th>
-              <td>{cell.count}</td>
+              <td>{`${cell.count} earthquakes`}</td>
               <td>{densityClassLabel(classIndex, breaks)}</td>
               <td>{whereOf(cell.key)}</td>
             </tr>
