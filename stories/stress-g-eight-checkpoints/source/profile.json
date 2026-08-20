@@ -1,0 +1,36 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "step",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 1,
+      "max": 8,
+      "sum": 36
+    },
+    {
+      "name": "label",
+      "type": "text",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "value",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 0,
+      "max": 140,
+      "sum": 416
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
