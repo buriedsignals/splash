@@ -152,7 +152,7 @@
       "detectedBy": "tableCarriesTheMarks",
       "states": {
         "chart-web": "carried",
-        "map-web": "owed"
+        "map-web": "carried"
       },
       "exceptions": {
         "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file",

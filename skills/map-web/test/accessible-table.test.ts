@@ -7,16 +7,26 @@
  * cases `chart-web/test/accessible-table.test.ts` proves, over this skill's own import, so a copy
  * that drifted would be caught here even before the parity test ran.
  *
- * `same-facts-without-the-picture` is declared `owed` here, not `carried` (fix round 1, 2026-08-20):
- * 2 of this format's 4 delivered pages (`mapgen-dot-web/dot-population.html`,
- * `mapgen-hexgrid-web/hex-grid.html`) still fail even the widened fallback, because their own
- * `data-detail` strings carry descriptive WORDS ("people", "dots", "earthquakes") that never appear
- * literally in any table cell on any row — a genuine gap, not a shape difference the fallback can
- * close. Closing it means re-rendering those two beats, which this fix round was told not to do; no
- * walking assertion against the real delivered pages is written here for that reason — it would
- * either lie about the two known failures or hard-fail a suite this round is not meant to redden.
+ * `same-facts-without-the-picture` is `carried` here (Task 6, 2026-08-20). Fix round 1 left it
+ * `owed`: 2 of this format's 4 delivered pages (`mapgen-dot-web/dot-population.html`,
+ * `mapgen-hexgrid-web/hex-grid.html`) still failed the widened fallback, because their own
+ * `data-detail` strings carried words no table cell held — measured, not assumed, on both:
+ * `dot-population`'s "people"/"dots" name the unit of a number that IS the whole content of its
+ * column and appear nowhere else in the string, so `CountryTable`'s own Population/Dots-drawn cells
+ * now carry them too ("2,411,658 people", not "2,411,658") — the table strictly gains a word, the
+ * tooltip is untouched. `hex-grid`'s `cellDetail` carried a different shape of gap: "Rank N of 156"
+ * named a GLOBAL CONSTANT (156, identical on all 156 rows, already stated once in the table's own
+ * caption) plus the table's own "Rank" column header repeated as a word, and "earthquakes" repeated
+ * "events" three words later in the same string (`densityClassLabel` already ends in it) — genuine
+ * decoration, not a fact a reader loses by its absence, so `cellDetail` drops "of 156", "Rank" and
+ * "earthquakes" rather than forcing three columns to repeat them 156 times each. The rank NUMBER
+ * stays (as `#{rank}`, no letter to match): it is the one part of that phrase not already carried by
+ * `count` and `classLabel`, and it is what keeps two cells of the same count and class from reading
+ * identically to a reader tabbing between them.
  */
 import { describe, expect, it } from "bun:test";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { tableCarriesTheMarks } from "../scripts/detect-accessible-table.mjs";
 
 describe("an accessible table carries the marks' own values", () => {
@@ -25,15 +35,20 @@ describe("an accessible table carries the marks' own values", () => {
 
   it("accepts a table holding every fact the graphic announces", () => {
     const found = tableCarriesTheMarks(
-      page(`<table><tr><td>1950 · 68.9 years</td></tr><tr><td>1951 · 68.7 years</td></tr></table>`),
+      page(
+        `<table><tr><td>1950 · 68.9 years</td></tr><tr><td>1951 · 68.7 years</td></tr></table>`,
+      ),
     );
     expect(found.missing).toEqual([]);
     expect(found).toMatchObject({ rows: 2, marks: 2 });
   });
 
   it("refuses a table of the wrong facts as firmly as no table at all", () => {
-    expect(tableCarriesTheMarks(page(`<table><tr><td>1066 · nothing</td></tr></table>`)).missing)
-      .toEqual(["1950 · 68.9 years", "1951 · 68.7 years"]);
+    expect(
+      tableCarriesTheMarks(
+        page(`<table><tr><td>1066 · nothing</td></tr></table>`),
+      ).missing,
+    ).toEqual(["1950 · 68.9 years", "1951 · 68.7 years"]);
     expect(tableCarriesTheMarks(page("")).missing).toEqual([
       "1950 · 68.9 years",
       "1951 · 68.7 years",
@@ -41,7 +56,9 @@ describe("an accessible table carries the marks' own values", () => {
   });
 
   it("says nothing about a page whose marks announce nothing", () => {
-    expect(tableCarriesTheMarks("<svg><path d='M0 0'/></svg>")).toMatchObject({ marks: 0 });
+    expect(tableCarriesTheMarks("<svg><path d='M0 0'/></svg>")).toMatchObject({
+      marks: 0,
+    });
   });
 
   const quakePage = (table: string) =>
@@ -93,21 +110,42 @@ describe("an accessible table carries the marks' own values", () => {
   });
 });
 
+/** The 4 delivered `mapgen-*-web` beats — the same set `test/keyboard-reach.test.ts`'s own
+ *  `mapWebArtifacts()` walks, duplicated rather than imported. */
+function mapWebArtifacts(): string[] {
+  const SKILL = resolve(import.meta.dirname, "..");
+  const TWIN = resolve(SKILL, "..", "..");
+  const PROOF = join(TWIN, "proof");
+  const dirs = [
+    "mapgen-symbol-web",
+    "mapgen-dot-web",
+    "mapgen-hexgrid-web",
+    "mapgen-locator-web",
+  ];
+  const found: string[] = [];
+  for (const dir of dirs) {
+    const full = join(PROOF, dir);
+    if (!existsSync(full)) continue;
+    for (const entry of readdirSync(full))
+      if (entry.endsWith(".html")) found.push(join(full, entry));
+  }
+  return found;
+}
+
 describe("this format's own real pages, measured against the widened detector", () => {
-  it("carries the fact fully on the two beats whose value is a name/number/date split (unaffected by the still-owed pair)", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { resolve } = await import("node:path");
-    const SKILL = resolve(import.meta.dirname, "..");
-    const TWIN = resolve(SKILL, "..", "..");
-    const clean = [
-      "proof/mapgen-symbol-web/quake-symbol.html",
-      "proof/mapgen-locator-web/locator.html",
-    ];
-    for (const rel of clean) {
-      const html = readFileSync(resolve(TWIN, rel), "utf8");
+  it("carries every mark's own fact on every delivered page — no owed pair left", () => {
+    const files = mapWebArtifacts();
+    expect(files.length).toBeGreaterThanOrEqual(4);
+    const offenders: string[] = [];
+    for (const file of files) {
+      const html = readFileSync(file, "utf8");
       const found = tableCarriesTheMarks(html);
       expect(found.marks).toBeGreaterThan(0);
-      expect(found.missing).toEqual([]);
+      if (found.missing.length > 0)
+        offenders.push(
+          `${file}: missing ${JSON.stringify(found.missing.slice(0, 3))}`,
+        );
     }
+    expect(offenders).toEqual([]);
   });
 });

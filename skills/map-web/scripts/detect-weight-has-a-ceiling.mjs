@@ -19,10 +19,12 @@ export function weightAgainstCeiling(bytes, ceiling) {
   return { bytes, ceiling, over: bytes > ceiling };
 }
 
-/** THIS FORMAT'S OWN CEILING, measured 2026-08-20 across the 4 delivered `mapgen-*-web` pages
- *  (the same population `test/keyboard-reach.test.ts`'s `mapWebArtifacts()` walks): sizes ranged
- *  1 095 318 - 1 809 429 bytes — an order of magnitude above `chart-web`'s own ceiling, because
- *  the baked basemap plate this format inlines is far heavier than any geometry `chart-web` draws.
- *  Set at the heaviest one measured (`mapgen-dot-web/dot-population.html`, 1 809 429 bytes) —
- *  today's population is what earns the line, not a round number that felt right. */
-export const CEILING_BYTES = 1809429;
+/** THIS FORMAT'S OWN CEILING, re-measured 2026-08-20 (Task 6) across the 4 delivered `mapgen-*-web`
+ *  pages (the same population `test/keyboard-reach.test.ts`'s `mapWebArtifacts()` walks) after
+ *  `dot-population.html` and `hex-grid.html` were re-rendered to close `same-facts-without-the-picture`:
+ *  sizes ranged 1 095 318 - 1 809 942 bytes — an order of magnitude above `chart-web`'s own ceiling,
+ *  because the baked basemap plate this format inlines is far heavier than any geometry `chart-web`
+ *  draws. Set at the heaviest one measured (`mapgen-dot-web/dot-population.html`, 1 809 942 bytes,
+ *  up 513 bytes from the prior measurement — 42 rows each gaining " people"/" dots") — today's
+ *  population is what earns the line, not a round number that felt right. */
+export const CEILING_BYTES = 1809942;

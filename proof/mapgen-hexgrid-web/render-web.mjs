@@ -175,7 +175,6 @@ export function livePlan({
   const frame = geometry.frame;
   const drawnSize = hexSize * HEX_DRAW_SHRINK;
   const ranked = rankedCells(cells);
-  const total = ranked.length;
 
   const anchors = {};
   const features = [];
@@ -214,7 +213,7 @@ export function livePlan({
         // one here — and falls back to the feature's own `detail`. Both are `cellDetail`, the one
         // implementation, so there is no second formatting of the same three numbers.
         name: `Cell ranked ${i + 1}`,
-        detail: cellDetail(cell, i + 1, total, breaks),
+        detail: cellDetail(cell, i + 1, breaks),
         color: cellFill(cell, breaks, ramp),
         edgeColor: edge.color,
         edgeWidth: edge.width,

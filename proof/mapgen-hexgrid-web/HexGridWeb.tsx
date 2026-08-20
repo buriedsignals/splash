@@ -131,14 +131,24 @@ export function densityClassLabel(index: number, breaks: number[]): string {
 /** One cell's own detail string — rank, count, class — never a second formatting of the same
  *  numbers. The hit target's `aria-label`/`title`/`data-detail`, the live layer's tooltip (which
  *  reads `data-detail` off the matching `.pt`) and the plan's own `detail` property are all this
- *  one string. */
+ *  one string.
+ *
+ *  SAYS ONLY WHAT `DensityTable` BELOW ALSO SAYS (ruled 2026-08-20, `same-facts-without-the-picture`):
+ *  the total row count never varied per cell — every one of 156 rows said "of 156", a GLOBAL
+ *  CONSTANT already stated once in the table's own caption, not a per-row fact for 156 cells to
+ *  repeat — and the word "Rank" is the table's own column header, adding nothing past it. The rank
+ *  NUMBER stays, as `#{rank}` (a symbol, not a word, so there is no letter for the table to carry):
+ *  it is the one part of the old phrase not already carried by `count` and `classLabel`, and it is
+ *  what keeps two cells of the same count and class from reading identically to a reader tabbing
+ *  between them. "earthquakes" drops for the same reason "Rank" does: `densityClassLabel` already
+ *  ends in "events", three words later in this same string, so nothing is lost by not saying it
+ *  twice. */
 export function cellDetail(
   cell: HexCell,
   rank: number,
-  total: number,
   breaks: number[],
 ): string {
-  return `Rank ${rank} of ${total} — ${cell.count} earthquakes — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
+  return `#${rank} — ${cell.count} — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
 }
 
 /** THE ONE PLACE A CELL'S COLOUR IS DECIDED. The SVG hex below and the live `fill` layer's own
@@ -222,7 +232,6 @@ export function HexGridWeb({
 
   const { frame } = geometry;
   const ranked = rankedCells(cells);
-  const total = ranked.length;
 
   if (!ranked.some((c) => c.key === subjectKey))
     throw new Error(`no cell for the subject ${subjectKey}`);
@@ -311,7 +320,7 @@ export function HexGridWeb({
               print (see this file's own header). */}
           <div className="mw-overlay">
             {ranked.map((cell, i) => {
-              const detail = cellDetail(cell, i + 1, total, breaks);
+              const detail = cellDetail(cell, i + 1, breaks);
               return (
                 <button
                   key={cell.key}

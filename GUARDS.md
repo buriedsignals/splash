@@ -28,7 +28,7 @@ written out below the tables.
 
 | capability | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| same-facts-without-the-picture |  | **R** |  |  |  | · |  |  |
+| same-facts-without-the-picture |  | **R** |  |  |  | **R** |  |  |
 | reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
 | honours-reduced-motion |  | **R** |  |  |  |  |  |  |
 | degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
@@ -37,9 +37,9 @@ written out below the tables.
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 1 cell
+## What is still owed — 0 cells
 
-- `map-web` owes **same-facts-without-the-picture**
+Nothing. Every format carries every rule it can reach.
 
 ## Why a cell is blank, where the blankness was argued — 10 of them
 

@@ -341,6 +341,14 @@ function ringPath(parts: Pt[][][]): string {
  * It also carries the distinction the picture cannot make: dots are scattered uniformly inside each
  * country, so how TIGHTLY a cloud fills its country is population per unit area — a different
  * quantity from the population the title is about. The table's own columns keep the two apart.
+ *
+ * EVERY CELL SAYS ITS OWN UNIT (ruled 2026-08-20, `same-facts-without-the-picture`): `countryDetail`
+ * below reads "N people, M dots" on the picture's own hover text, and neither word repeats anywhere
+ * else in that string — dropping them would leave a bare pair of numbers ambiguous out of context,
+ * on the one channel every reader gets regardless of how they reach this page. So the table gains
+ * the words instead: "Population" and "Dots drawn" name the COLUMN, "people" and "dots" are printed
+ * inside each cell's own text, which is what a table-reading screen reader hears whether or not it
+ * announces the header alongside the value. The tooltip is unchanged either way.
  */
 export function CountryTable({
   countries,
@@ -372,8 +380,8 @@ export function CountryTable({
             className={NAMED.includes(c.key) ? "subject" : undefined}
           >
             <th scope="row">{c.name}</th>
-            <td>{en(c.population, 0)}</td>
-            <td>{en(c.dots.length, 0)}</td>
+            <td>{`${en(c.population, 0)} people`}</td>
+            <td>{`${en(c.dots.length, 0)} dots`}</td>
           </tr>
         ))}
       </tbody>
