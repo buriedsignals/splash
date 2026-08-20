@@ -23,7 +23,20 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  (the same population `same-facts-without-the-picture`'s own `scrolly` exception in
  *  `doctrine/references/guard-catalogue.json` measured): sizes ranged 76 859 - 2 581 397 bytes —
  *  the heaviest of any format here, since a mixed-media beat can inline an image track, a drawn
- *  track and a baked map plate in one file. Set at the heaviest one measured
- *  (`scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html`, 2 581 397 bytes) — today's
- *  population is what earns the line, not a round number that felt right. */
-export const CEILING_BYTES = 2581397;
+ *  track and a baked map plate in one file. `MEASURED_MAX_BYTES` is the heaviest one measured
+ *  (`scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html`) — today's population is what
+ *  earns the line, not a round number that felt right.
+ *
+ *  A CEILING SET AT EXACTLY TODAY'S CHAMPION HAS NO MARGIN. Ruled 2026-08-20 after a review found
+ *  that the next delivered beat one byte heavier than `MEASURED_MAX_BYTES` would have tripped this
+ *  guard, in every one of the five formats that carry it. `MARGIN_BYTES` is not a percentage picked
+ *  because it felt right: it is the largest jump this population has ALREADY taken between two
+ *  delivered pages sitting next to each other by size — 1 019 874 bytes, the step from
+ *  `scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html` (89 834 bytes, a single chart track)
+ *  to `mapmore-scrolly-danube/render/danube-scrolly.html` (1 109 708 bytes, the first mixed
+ *  map-and-chart page). This format's own 33x range is not a smooth gradient: it is driven by how
+ *  many media tracks one beat assembles, and the margin matches the size of that one jump — adding
+ *  one more track class — rather than a smooth percentage of the max. */
+export const MEASURED_MAX_BYTES = 2581397;
+export const MARGIN_BYTES = 1019874;
+export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;

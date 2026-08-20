@@ -24,7 +24,18 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  `dot-population.html` and `hex-grid.html` were re-rendered to close `same-facts-without-the-picture`:
  *  sizes ranged 1 095 318 - 1 809 942 bytes — an order of magnitude above `chart-web`'s own ceiling,
  *  because the baked basemap plate this format inlines is far heavier than any geometry `chart-web`
- *  draws. Set at the heaviest one measured (`mapgen-dot-web/dot-population.html`, 1 809 942 bytes,
- *  up 513 bytes from the prior measurement — 42 rows each gaining " people"/" dots") — today's
- *  population is what earns the line, not a round number that felt right. */
-export const CEILING_BYTES = 1809942;
+ *  draws. `MEASURED_MAX_BYTES` is the heaviest one measured (`mapgen-dot-web/dot-population.html`) —
+ *  today's population is what earns the line, not a round number that felt right.
+ *
+ *  A CEILING SET AT EXACTLY TODAY'S CHAMPION HAS NO MARGIN. Ruled 2026-08-20 after a review found
+ *  that the next delivered beat one byte heavier than `MEASURED_MAX_BYTES` would have tripped this
+ *  guard, in every one of the five formats that carry it. `MARGIN_BYTES` is not a percentage picked
+ *  because it felt right: it is the largest jump this population has ALREADY taken between two
+ *  delivered pages sitting next to each other by size — 530 373 bytes, the step from
+ *  `mapgen-hexgrid-web/hex-grid.html` (1 279 569 bytes) to `mapgen-dot-web/dot-population.html`
+ *  (1 809 942 bytes). This format's overall range is a narrow 1.65x, but its four kinds of map
+ *  (symbol, locator, hex grid, dot) do not weigh evenly — the margin matches the biggest jump
+ *  already on disk between two of them, not a smooth percentage of the max. */
+export const MEASURED_MAX_BYTES = 1809942;
+export const MARGIN_BYTES = 530373;
+export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;

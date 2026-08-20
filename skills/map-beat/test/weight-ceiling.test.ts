@@ -14,6 +14,8 @@ import { join, resolve } from "node:path";
 import {
   weightAgainstCeiling,
   CEILING_BYTES,
+  MEASURED_MAX_BYTES,
+  MARGIN_BYTES,
 } from "../scripts/detect-weight-has-a-ceiling.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
@@ -39,6 +41,19 @@ describe("weightAgainstCeiling", () => {
 
   it("does not count a file sitting exactly on the ceiling as over", () => {
     expect(weightAgainstCeiling(200, 200).over).toBe(false);
+  });
+});
+
+describe("this format's ceiling carries a margin above today's measured maximum", () => {
+  it("states both numbers, and the ceiling is exactly their sum", () => {
+    expect(MARGIN_BYTES).toBeGreaterThan(0);
+    expect(CEILING_BYTES).toBe(MEASURED_MAX_BYTES + MARGIN_BYTES);
+  });
+
+  // RULED 2026-08-20: a ceiling set at EXACTLY today's champion has no margin — the next delivered
+  // beat one byte heavier than `MEASURED_MAX_BYTES` used to trip this guard on ordinary growth.
+  it("does not trip on a file one byte heavier than today's measured maximum", () => {
+    expect(weightAgainstCeiling(MEASURED_MAX_BYTES + 1, CEILING_BYTES).over).toBe(false);
   });
 });
 

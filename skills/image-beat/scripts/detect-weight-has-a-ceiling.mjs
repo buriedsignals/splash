@@ -19,15 +19,25 @@ export function weightAgainstCeiling(bytes, ceiling) {
   return { bytes, ceiling, over: bytes > ceiling };
 }
 
-/** THIS FORMAT'S OWN CEILING. Measured 2026-08-20: there is NO image beat under `proof/` yet — the
- *  two `image` beats there are `image / scrolly` and belong to the vehicle, the same fact
- *  `test/verify-image.test.ts` already states for `duplicatedPayload`. The one measurement
- *  available is this skill's own seed, rendered from its own sample photographs exactly as
- *  `test/verify-image.test.ts`'s "the seed's own artifact" describes: 38 682 bytes — RE-MEASURED
- *  the same day after `every-photo-says-what-it-shows` added `data-credit` to the seed's own
- *  markup (38 424 -> 38 682, +258 bytes across 3 photos), which is exactly the re-check this
- *  number exists to survive rather than go stale silently. Set at that number rather than invented
- *  ahead of it — a real beat's own photographs will very likely weigh more than three placeholder
- *  thumbnails, which is a fact for the day a real beat exists to re-measure, not one this ceiling
- *  should guess at now. */
-export const CEILING_BYTES = 38682;
+/** THIS FORMAT'S OWN CEILING is NOT taken from its own seed render. Ruled 2026-08-20 after a review
+ *  found that the number here used to be 38 682 bytes — the byte length of this skill's own seed
+ *  SVG, rendered from three PLACEHOLDER THUMBNAILS in `assets/sample-data`, re-measured once already
+ *  when `data-credit` was added (38 424 -> 38 682) but never checked against real work. There is no
+ *  image beat under `proof/` yet to measure instead — the two `image` beats there are `image /
+ *  scrolly` and belong to the vehicle, the same fact `test/verify-image.test.ts` states for
+ *  `duplicatedPayload` — so a ceiling here cannot be "the heaviest one measured" the way the other
+ *  four formats' can. Left at the seed's own number, it stood for placeholder thumbnails as if they
+ *  were a real beat's own photographs, which this skill's own `references/image-discipline.md`
+ *  already admits they are not.
+ *
+ *  Taken instead from this skill's own EXISTING weight discipline: `checkWeight`
+ *  (`scripts/render-still.mjs`) already refuses a beat about to embed more than
+ *  `RAW_PHOTOGRAPH_LIMIT_BYTES` (20 MB, `WEIGHT_LIMIT_BYTES` there) of RAW, pre-base64 photograph
+ *  bytes — the one number this format's own weight discipline states about real photographs rather
+ *  than placeholders. `references/image-discipline.md`, "Weight", states the other half: base64
+ *  itself costs roughly a third more bytes than the file it encodes. `CEILING_BYTES` applies that
+ *  same documented ratio to `checkWeight`'s own limit, so a beat sitting right at the largest set of
+ *  photographs `checkWeight` will still let through does not also trip this guard on the way out. */
+export const RAW_PHOTOGRAPH_LIMIT_BYTES = 20 * 1024 * 1024;
+export const BASE64_INFLATION = 4 / 3;
+export const CEILING_BYTES = Math.ceil(RAW_PHOTOGRAPH_LIMIT_BYTES * BASE64_INFLATION);
