@@ -76,10 +76,11 @@
         "chart-web": "carried",
         "chart-video": "carried",
         "map-beat": "carried",
-        "map-web": "carried",
-        "image-beat": "owed"
+        "map-web": "carried"
       },
-      "exceptions": {}
+      "exceptions": {
+        "image-beat": "measured 2026-08-20: the seed's rendered artifact (skills/image-beat/assets/ImageBeatSeed.tsx) is exactly three element kinds \u2014 rect, image, text \u2014 and none carries a stroke; 0 of 1 components this format has ever drawn (no proof/ beat exists outside the two image/scrolly beats, which draw with the vehicle's own component, never this seed) carry any dash-capable mark. Structural, not incidental: references/image-discipline.md draws the boundary itself \u2014 \"a photograph is not a chart: nothing here is computed from the data, because there is no data\" \u2014 so this format's vocabulary never grows a stroked path the way a chart's or a map's marks can. Unlike map-web (screen-space-dash, carried at zero dashed marks as a ratchet over a population that legitimately could grow), there is no population here to ratchet over."
+      }
     },
     {
       "id": "reached-mark-declares",

@@ -17,7 +17,7 @@ written out below the tables.
 | projection-pairing |  |  |  |  |  |  |  | **R** |
 | plate-geometry-pairing |  |  |  |  | **R** | **R** |  | **R** |
 | plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
-| screen-space-dash | **R** | **R** | **R** |  | **R** | **R** | · | **R** |
+| screen-space-dash | **R** | **R** | **R** |  | **R** | **R** |  | **R** |
 | reached-mark-declares |  |  |  |  |  |  |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
@@ -26,16 +26,17 @@ written out below the tables.
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 1 cell
+## What is still owed — 0 cells
 
-- `image-beat` owes **screen-space-dash**
+Nothing. Every format carries every rule it can reach.
 
-## Why a cell is blank, where the blankness was argued — 0 of them
+## Why a cell is blank, where the blankness was argued — 1 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
 trait already proves it.
 
+- `image-beat` cannot reach **screen-space-dash** — measured 2026-08-20: the seed's rendered artifact (skills/image-beat/assets/ImageBeatSeed.tsx) is exactly three element kinds — rect, image, text — and none carries a stroke; 0 of 1 components this format has ever drawn (no proof/ beat exists outside the two image/scrolly beats, which draw with the vehicle's own component, never this seed) carry any dash-capable mark. Structural, not incidental: references/image-discipline.md draws the boundary itself — "a photograph is not a chart: nothing here is computed from the data, because there is no data" — so this format's vocabulary never grows a stroked path the way a chart's or a map's marks can. Unlike map-web (screen-space-dash, carried at zero dashed marks as a ratchet over a population that legitimately could grow), there is no population here to ratchet over.
 
 ## What each skill is
 
