@@ -56,9 +56,8 @@ export function parseReadings(csv: string): Reading[] {
     );
   const entities = new Set<string>();
   const readings = lines
-    .filter((line) => line.trim())
-    .map((line) => {
-      const cells = line;
+    .filter((cells) => cells.some((cell) => cell.trim() !== ""))
+    .map((cells) => {
       entities.add(cells[entityAt] ?? "");
       return { year: Number(cells[yearAt]), value: Number(cells[valueAt]) };
     })
