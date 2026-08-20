@@ -313,14 +313,14 @@ beat WAS the table, so this is the whole of the change:
 | `mapgen-dot-web` | 42 countries | 2092 → **944** px | 2051 → **856** px |
 | `mapgen-hexgrid-web` | 156 cells | 5186 → **944** px | 12855 → **856** px |
 | `mapgen-locator-web` | 11 organisations | 900 → **900** px | 812 → **812** px |
-| `map-web` seed | none (`regionTable: false`) | 900 px, unchanged | 812 px, unchanged |
+| `map-web` seed | 13 metro areas | 900 → **944** px | 812 → **856** px |
 
 **And the composition consequence, because it is real and a reader meets it before anyone reads this
 file.** Every one of these beats is already sized to fit one window ("Fit the window" above), so a
 collapsed page is the beat plus one 34 px summary line — and below that, nothing. At 1600×900 that
 lands at **944 px against a 900 px window**: the summary sits 44 px past the fold, so the page keeps
 a scrollbar for a single line of text. At 375×812 it is **856 against 812**, the same 44 px. That is
-the honest cost of the ruling on these four beats, and it is a smaller cost than four thousand pixels
+the honest cost of the ruling on these five beats, and it is a smaller cost than four thousand pixels
 of table.
 
 `mapgen-locator-web` is the exception in both directions, and it is the one to copy: its table
