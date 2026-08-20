@@ -75,7 +75,6 @@ The initial vocabulary, with the witness that proves each one:
 | trait | witness (checked, never trusted) |
 | --- | --- |
 | `draws-own-geometry` | the skill writes marks itself — `scripts/render-still.mjs` present |
-| `projects-geography` | `scripts/bake-plate.mjs`, which is where a camera is resolved and points are projected — the same file that witnesses `bakes-a-plate`, because in this tree nothing projects without baking |
 | `bakes-a-plate` | `scripts/bake-plate.mjs` writing `plate.png` **and** `geometry.json` |
 | `owns-a-surface-it-did-not-choose` | either witness of `bakes-a-plate`, or a provider client returning an artefact (`delegates-rendering`) — derived from the other two rather than declared on its own |
 | `timed-build-that-ends` | a timing contract declaring a `total` (`assets/timing.ts`) |
@@ -122,7 +121,10 @@ scrolly          Y      .      Y        Y            .
 | `states` | per derived skill: `carried` or `owed` |
 | `exceptions` | per derived skill: the **measured** reason it does not apply despite the trait |
 
-A cartographic rule requires `projects-geography`, so it cannot land on a chart skill. A future
+A cartographic rule requires `bakes-a-plate` — the trait that witnesses a camera, a projection and the
+raster they produce — so it cannot land on a chart skill. (This design first carried a separate
+`projects-geography`; it was removed during execution on 2026-08-20 because its witness was
+byte-identical to `bakes-a-plate`'s, and two ids that cannot diverge are two names for one fact.) A future
 `map-video` inherits every cartographic rule the day it declares the trait, with nobody remembering.
 
 ### 3. Derivation and the five invariants

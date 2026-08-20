@@ -159,11 +159,6 @@ export const TRAITS = [
     witness: (skill) => has(skill, "scripts/bake-plate.mjs"),
   },
   {
-    id: "projects-geography",
-    describes: "it resolves a camera and projects coordinates into a frame's pixels",
-    witness: (skill) => has(skill, "scripts/bake-plate.mjs"),
-  },
-  {
     id: "delegates-rendering",
     describes: "the delivered artefact is produced by a provider and fetched, never drawn here",
     witness: (skill) => anySource(skill, /api\.datawrapper\.de|exportChartPng/),
@@ -239,7 +234,7 @@ Expected: PASS, four assertions.
 
 1. Add `"bakes-a-plate"` to `skills/chart-beat/TRAITS.json` → expect *"chart-beat claims unproven: bakes-a-plate"*. Restore.
 2. Remove `"timed-build-that-ends"` from `skills/map-beat/TRAITS.json` → expect *"map-beat hides: timed-build-that-ends"*. Restore.
-3. Rename `skills/map-web/scripts/bake-plate.mjs` to `bake-plate.mjs.bak` → expect *"map-web claims unproven: bakes-a-plate, projects-geography, owns-a-surface-it-did-not-choose"*. Restore.
+3. Rename `skills/map-web/scripts/bake-plate.mjs` to `bake-plate.mjs.bak` → expect *"map-web claims unproven: bakes-a-plate, owns-a-surface-it-did-not-choose"*. Restore.
 
 Record the three messages in the commit body.
 
@@ -251,6 +246,14 @@ git commit -m "feat(doctrine): a skill declares what it is, and its own files pr
 ```
 
 ---
+
+> **RULING TAKEN DURING EXECUTION, 2026-08-20 (`507972b9`).** Task 1's review found that
+> `projects-geography` and `bakes-a-plate` shared a byte-identical witness, so the two ids could never
+> diverge — two names for one checkable fact. `projects-geography` is REMOVED from the vocabulary; a
+> rule that would have required it requires `bakes-a-plate`. If a skill ever projects without baking,
+> the trait comes back then, with a witness of its own. Two other witnesses were tightened in the same
+> round: `embeds-reader-photos` named the wrong filename and missed `image-beat` entirely, and
+> `ships-standalone-html` matched a mention rather than a written artefact.
 
 ### Task 2: Rules reach skills through traits, not through names
 
@@ -698,7 +701,7 @@ and nothing more, and the generated document says so.
   skill's `SKILL.md` and `references/*.md` for the id.
 - [ ] **Step 2: Run it to watch it fail.**
 - [ ] **Step 3: Declare the first three disciplines** — the cartographic rules (`requires:
-  ["projects-geography"]`), the motion grammar (`requires: ["timed-build-that-ends"]`), the static
+  ["bakes-a-plate"]`), the motion grammar (`requires: ["timed-build-that-ends"]`), the static
   discipline (`requires: ["draws-own-geometry"]`). Each names the reference document that carries it.
 - [ ] **Step 4: Run to watch it pass**, filling the gaps by writing the rule id into the skills that
   reach it and do not name it.
