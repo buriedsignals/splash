@@ -173,9 +173,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 
 ### weight-has-a-ceiling — `weightAgainstCeiling`
 
-**Offers:** a reader on a slow connection or a metered one never downloads more than this format's own beats have ever actually weighed — the delivered file's own size, measured against a ceiling earned from today's population rather than assumed ahead of it
+**Offers:** a reader on a slow connection or a metered one never downloads more than the delivered file's own size, measured against a ceiling grounded in this format's own numbers rather than a round one invented ahead of them. NOT UNIFORMLY "earned from today's population": map-beat, map-web and scrolly take their ceiling from today's HEAVIEST DELIVERED file plus a margin measured from the biggest jump already on disk between two of them; image-beat has no delivered artefact yet to measure and takes its ceiling instead from its own EXISTING weight discipline (checkWeight's 20 MB raw-photograph limit, inflated by the base64 ratio image-discipline.md already documents) — a real number, but an assumed one, not a measured one.
 
-**Earned by:** image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them
+**Earned by:** image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them. That measurement wants a DELIVERED population to weigh, and image-beat had none yet — so its own cell is the one exception: `checkWeight`'s own limit, not a delivered ceiling, until a real beat exists to measure instead
 
 ### every-photo-says-what-it-shows — `photosDeclareAltAndCredit`
 
