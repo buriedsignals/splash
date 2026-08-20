@@ -4,9 +4,11 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import {
   datawrapperFormatFor,
+  missingDatawrapperTokenMessage,
   parseProduceCli,
   produce,
   resolveDatawrapperBeatIdentity,
+  resolveDatawrapperToken,
 } from "../scripts/produce.mjs";
 
 function baseSpec(overrides = {}) {
@@ -86,7 +88,12 @@ async function storyBeat(prefix = "dw-story-") {
     storyId: "emissions-story",
     outputId: "1-emissions",
   };
-  const beatDir = join(identity.storiesRoot, identity.storyId, "beats", identity.outputId);
+  const beatDir = join(
+    identity.storiesRoot,
+    identity.storyId,
+    "beats",
+    identity.outputId,
+  );
   await mkdir(beatDir, { recursive: true });
   return { root, beatDir, identity };
 }
@@ -160,7 +167,9 @@ describe("produce", () => {
   it("should pin both canonical-to-provider format mappings", () => {
     expect(datawrapperFormatFor("web")).toBe("interactive");
     expect(datawrapperFormatFor("static")).toBe("static");
-    expect(() => datawrapperFormatFor("interactive")).toThrow(/canonical Splash formats/);
+    expect(() => datawrapperFormatFor("interactive")).toThrow(
+      /canonical Splash formats/,
+    );
   });
 
   it("should send the mapped payload's title, type and language on chart creation", async () => {
@@ -216,7 +225,9 @@ describe("produce", () => {
       "year,Norway adoption,Sweden,UK\n2021,54,52,5\n2025,64,62,9",
     );
     const patch = JSON.parse(calls.find((c) => c.method === "PATCH").body);
-    expect(patch.metadata.visualize["custom-range-y"].map(Number)[0]).toBeLessThan(5);
+    expect(
+      patch.metadata.visualize["custom-range-y"].map(Number)[0],
+    ).toBeLessThan(5);
   });
 
   it("should never let the raw column name reach the CSV header or the custom-colors key sent to Datawrapper", async () => {
@@ -302,12 +313,18 @@ describe("produce", () => {
         fetchFn,
       });
       expect(first.htmlPath).toBe(
-        join(resolveDatawrapperBeatIdentity(identity).beatDir, "renders", "co2.html"),
+        join(
+          resolveDatawrapperBeatIdentity(identity).beatDir,
+          "renders",
+          "co2.html",
+        ),
       );
       expect(await readFile(first.htmlPath, "utf8")).toContain(
         'src="https://datawrapper.dwcdn.net/aBcDe/1/"',
       );
-      const receipt = JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"));
+      const receipt = JSON.parse(
+        await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"),
+      );
       expect(receipt).toMatchObject({
         schemaVersion: 2,
         provider: "datawrapper",
@@ -317,27 +334,33 @@ describe("produce", () => {
         editableSpec: "spec.json",
         renderedArtifact: "renders/co2.html",
       });
-      expect(JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway).toBe(
-        "Emissions fell",
-      );
+      expect(
+        JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway,
+      ).toBe("Emissions fell");
 
-      await produce(baseSpec({ format: "web", takeaway: "Emissions fell further" }), {
-        ...identity,
-        name: "co2",
-        token: "secret",
-        fetchFn,
-      });
+      await produce(
+        baseSpec({ format: "web", takeaway: "Emissions fell further" }),
+        {
+          ...identity,
+          name: "co2",
+          token: "secret",
+          fetchFn,
+        },
+      );
       expect(
         calls.filter(
-          (call) => call.method === "POST" && call.url === "https://api.datawrapper.de/v3/charts",
+          (call) =>
+            call.method === "POST" &&
+            call.url === "https://api.datawrapper.de/v3/charts",
         ),
       ).toHaveLength(1);
-      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8")).chartId).toBe(
-        "aBcDe",
-      );
-      expect(JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway).toBe(
-        "Emissions fell further",
-      );
+      expect(
+        JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"))
+          .chartId,
+      ).toBe("aBcDe");
+      expect(
+        JSON.parse(await readFile(join(beatDir, "spec.json"), "utf8")).takeaway,
+      ).toBe("Emissions fell further");
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -350,27 +373,45 @@ describe("produce", () => {
     const fetchFn = async (url, init = {}) => {
       if (String(url).endsWith("/charts/aBcDe/data") && failDataOnce) {
         failDataOnce = false;
-        base.calls.push({ url: String(url), method: init.method ?? "GET", body: init.body });
+        base.calls.push({
+          url: String(url),
+          method: init.method ?? "GET",
+          body: init.body,
+        });
         return new Response("injected data failure", { status: 500 });
       }
       return base.fetchFn(url, init);
     };
     try {
       await expect(
-        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
+        produce(baseSpec({ format: "web" }), {
+          ...identity,
+          token: "secret",
+          fetchFn,
+        }),
       ).rejects.toThrow(/set chart data failed/);
-      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"))).toMatchObject({
+      expect(
+        JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8")),
+      ).toMatchObject({
         state: "prepared",
         chartId: "aBcDe",
       });
 
-      await produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn });
+      await produce(baseSpec({ format: "web" }), {
+        ...identity,
+        token: "secret",
+        fetchFn,
+      });
       expect(
         base.calls.filter(
-          (call) => call.method === "POST" && call.url === "https://api.datawrapper.de/v3/charts",
+          (call) =>
+            call.method === "POST" &&
+            call.url === "https://api.datawrapper.de/v3/charts",
         ),
       ).toHaveLength(1);
-      expect(JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"))).toMatchObject({
+      expect(
+        JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8")),
+      ).toMatchObject({
         state: "local-complete",
         chartId: "aBcDe",
       });
@@ -383,7 +424,11 @@ describe("produce", () => {
     const base = fakeDatawrapper();
     const { root, beatDir, identity } = await storyBeat("dw-failed-revision-");
     try {
-      await produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn: base.fetchFn });
+      await produce(baseSpec({ format: "web" }), {
+        ...identity,
+        token: "secret",
+        fetchFn: base.fetchFn,
+      });
       let failData = true;
       const fetchFn = async (url, init = {}) => {
         if (String(url).endsWith("/charts/aBcDe/data") && failData) {
@@ -393,9 +438,15 @@ describe("produce", () => {
         return base.fetchFn(url, init);
       };
       await expect(
-        produce(baseSpec({ format: "web", takeaway: "Revised" }), { ...identity, token: "secret", fetchFn }),
+        produce(baseSpec({ format: "web", takeaway: "Revised" }), {
+          ...identity,
+          token: "secret",
+          fetchFn,
+        }),
       ).rejects.toThrow(/set chart data failed/);
-      const receipt = JSON.parse(await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"));
+      const receipt = JSON.parse(
+        await readFile(join(beatDir, "DATAWRAPPER.json"), "utf8"),
+      );
       expect(receipt).toMatchObject({
         schemaVersion: 2,
         state: "prepared",
@@ -464,13 +515,23 @@ describe("produce", () => {
     const { fetchFn, calls } = fakeDatawrapper();
     try {
       const [first, second] = await Promise.all([
-        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
-        produce(baseSpec({ format: "web" }), { ...identity, token: "secret", fetchFn }),
+        produce(baseSpec({ format: "web" }), {
+          ...identity,
+          token: "secret",
+          fetchFn,
+        }),
+        produce(baseSpec({ format: "web" }), {
+          ...identity,
+          token: "secret",
+          fetchFn,
+        }),
       ]);
       expect(first.chartId).toBe("aBcDe");
       expect(second.chartId).toBe("aBcDe");
       expect(
-        calls.filter((call) => call.method === "POST" && call.url.endsWith("/charts")),
+        calls.filter(
+          (call) => call.method === "POST" && call.url.endsWith("/charts"),
+        ),
       ).toHaveLength(1);
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -532,7 +593,9 @@ describe("produce at one pinned export size", () => {
   });
 
   it("should ask Datawrapper for the row's own pixels at zoom 1 — the frame IS the file", async () => {
-    const { fetchFn, calls } = fakeDatawrapper({ pngBytes: fakePng(1080, 1920) });
+    const { fetchFn, calls } = fakeDatawrapper({
+      pngBytes: fakePng(1080, 1920),
+    });
     const outDir = await mkdtemp(join(tmpdir(), "dw-beat-"));
     try {
       await produce(baseSpec(), {
@@ -582,5 +645,54 @@ describe("produce at one pinned export size", () => {
     } finally {
       await rm(outDir, { recursive: true, force: true });
     }
+  });
+});
+
+// Finding 2 (round-two stress): the root's `.env` names the Datawrapper credential
+// `DATAWRAPPER_API_TOKEN` — the engine's own name — and a naive `process.env.DATAWRAPPER_TOKEN`
+// read refuses a valid, present token because it looked under the wrong name. `resolveDatawrapperToken`
+// is the same reconciliation `skills/splash/scripts/keys.mjs` already does for its own capability
+// rows, duplicated here (no cross-skill runtime import) so the producer that actually throws
+// "no token" sees what the root actually holds before it refuses.
+describe("resolveDatawrapperToken", () => {
+  it("should read the canonical DATAWRAPPER_TOKEN when set", () => {
+    expect(resolveDatawrapperToken({ DATAWRAPPER_TOKEN: "canonical" })).toBe(
+      "canonical",
+    );
+  });
+
+  it("should fall back to DATAWRAPPER_API_TOKEN, the root's own name, when DATAWRAPPER_TOKEN is absent", () => {
+    expect(
+      resolveDatawrapperToken({ DATAWRAPPER_API_TOKEN: "root-name" }),
+    ).toBe("root-name");
+  });
+
+  it("should prefer the canonical name when both are set", () => {
+    expect(
+      resolveDatawrapperToken({
+        DATAWRAPPER_TOKEN: "canonical",
+        DATAWRAPPER_API_TOKEN: "root-name",
+      }),
+    ).toBe("canonical");
+  });
+
+  it("should return empty when neither name is set", () => {
+    expect(resolveDatawrapperToken({})).toBe("");
+  });
+});
+
+describe("missingDatawrapperTokenMessage", () => {
+  it("should name both the variable it looked for and that the root holds neither", () => {
+    expect(missingDatawrapperTokenMessage({})).toBe(
+      "no Datawrapper token — looked for DATAWRAPPER_TOKEN or DATAWRAPPER_API_TOKEN, and the root holds neither — no mock, no fallback: a real token is required to produce a Datawrapper beat.",
+    );
+  });
+
+  it("should never print a credential's value, even one sitting under an unlisted name", () => {
+    const message = missingDatawrapperTokenMessage({
+      DATAWRAPPER_API_TOKEN: "",
+      SOME_OTHER_SECRET: "should-never-appear-in-a-message",
+    });
+    expect(message).not.toContain("should-never-appear-in-a-message");
   });
 });

@@ -20,6 +20,35 @@ export function datawrapperFormatFor(format) {
   throw new Error(`Datawrapper supports canonical Splash formats static and web, got ${JSON.stringify(format)}`);
 }
 
+// Finding 2 (round-two stress): the root's `.env` names this credential `DATAWRAPPER_API_TOKEN` —
+// the engine's own name for the same key — and a naive `process.env.DATAWRAPPER_TOKEN` read
+// refuses a valid, present token because it looked under the wrong name. This is the same
+// reconciliation `skills/splash/scripts/keys.mjs`'s `resolveEnvKey` already performs for its own
+// capability rows, DUPLICATED here (no cross-skill runtime import — every producer that can throw
+// "no token" carries its own copy) rather than imported, so this file stays copy-pasteable on its
+// own. Canonical name wins when both happen to be set; the alias is read only when the canonical
+// name is entirely absent.
+const DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"];
+
+export function resolveDatawrapperToken(env) {
+  if (env.DATAWRAPPER_TOKEN) return env.DATAWRAPPER_TOKEN;
+  for (const alias of DATAWRAPPER_TOKEN_ALIASES) {
+    if (env[alias]) return env[alias];
+  }
+  return "";
+}
+
+/** Names every variable this producer looked for, never a value — this fires only once
+ * `resolveDatawrapperToken` has already failed under every known name, so "the root holds
+ * neither" is always true when this runs. */
+export function missingDatawrapperTokenMessage() {
+  const names = ["DATAWRAPPER_TOKEN", ...DATAWRAPPER_TOKEN_ALIASES];
+  return (
+    `no Datawrapper token — looked for ${names.join(" or ")}, and the root holds neither — ` +
+    "no mock, no fallback: a real token is required to produce a Datawrapper beat."
+  );
+}
+
 export const DATAWRAPPER_RECORD = "DATAWRAPPER.json";
 export const DATAWRAPPER_SPEC = "spec.json";
 const DATAWRAPPER_LOCK = ".datawrapper-production.lock";
@@ -530,7 +559,8 @@ if (import.meta.main) {
   const specPath = identity ? join(identity.beatDir, DATAWRAPPER_SPEC) : parsed.specPath;
   const spec = JSON.parse(await Bun.file(specPath).text());
   if (parsed.formatArg) spec.format = parsed.formatArg;
-  const token = process.env.DATAWRAPPER_TOKEN ?? "";
+  const token = resolveDatawrapperToken(process.env);
+  if (!token) throw new Error(missingDatawrapperTokenMessage());
   const result = await produce(spec, {
     ...(identity
       ? { storiesRoot: identity.storiesRoot, storyId: identity.storyId, outputId: identity.outputId }

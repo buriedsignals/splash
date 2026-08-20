@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { produce } from "./produce.mjs";
+import { missingDatawrapperTokenMessage, produce, resolveDatawrapperToken } from "./produce.mjs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -46,12 +46,18 @@ export async function produceSealed(
   );
   const spec = JSON.parse(await readFileFn(specPath, "utf8"));
   spec.format = request.format;
+  // Finding 2 (round-two stress): a closed operation spawns with `--no-env-file` and inherits
+  // exactly the env its caller handed it — which, outside the Engine-managed broker path, is
+  // whatever the root `.env` loaded, under the root's own name (`DATAWRAPPER_API_TOKEN`). Reading
+  // `process.env.DATAWRAPPER_TOKEN` alone refused a real, present token for exactly that reason.
+  const token = resolveDatawrapperToken(process.env);
+  if (!token) throw new Error(missingDatawrapperTokenMessage());
   return produceFn(spec, {
     storiesRoot: request.storiesRoot,
     storyId: request.storyId,
     outputId: request.outputId,
     size: request.size,
-    token: process.env.DATAWRAPPER_TOKEN ?? "",
+    token,
     fetchFn,
   });
 }

@@ -3,7 +3,7 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { runPreflight } from "./preflight.mjs";
-import { probeCloudflare, probeDatawrapper, probeMapTiler } from "./keys.mjs";
+import { probeCloudflare, probeDatawrapper, probeMapTiler, resolveEnvKey } from "./keys.mjs";
 import { bakeMapContract } from "./sealed-map-bake.mjs";
 
 export const OPERATION_IDS = Object.freeze([
@@ -299,10 +299,15 @@ export async function runOperation(
     }
     case "provider-check-maptiler":
       requireParameters(request, []);
-      return probeMapTiler(process.env.MAPTILER_KEY ?? "", fetchFn);
+      // Finding 2 (round-two stress): the root's own name for this key can be
+      // MAPTILER_API_KEY / REMOTION_MAPTILER_KEY / VITE_MAPTILER_KEY, not only the canonical
+      // MAPTILER_KEY `preflight` already reconciles for its status row — the live probe must
+      // agree with that row, or a capability reported open here refuses right after.
+      return probeMapTiler(resolveEnvKey(process.env, "MAPTILER_KEY"), fetchFn);
     case "provider-check-datawrapper":
       requireParameters(request, []);
-      return probeDatawrapper(process.env.DATAWRAPPER_TOKEN ?? "", fetchFn);
+      // Same reconciliation for DATAWRAPPER_API_TOKEN, the root's own name.
+      return probeDatawrapper(resolveEnvKey(process.env, "DATAWRAPPER_TOKEN"), fetchFn);
     case "provider-check-cloudflare":
       requireParameters(request, []);
       return probeCloudflare(
@@ -324,7 +329,7 @@ export async function runOperation(
         outputId,
         contractDigest: parameters.contractDigest,
         browserPath: process.env.SPLASH_BROWSER_PATH,
-        mapTilerKey: process.env.MAPTILER_KEY,
+        mapTilerKey: resolveEnvKey(process.env, "MAPTILER_KEY"),
       });
     }
     case "datawrapper-produce": {

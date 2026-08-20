@@ -90,6 +90,50 @@ describe("closed Splash operation runner", () => {
     expect(JSON.stringify(result)).not.toContain("broker-canary-12345");
   });
 
+  // Finding 2 (round-two stress): the root's own name for this credential is
+  // `DATAWRAPPER_API_TOKEN`; the canonical name `DATAWRAPPER_TOKEN` is `keys.mjs`'s alias, not the
+  // root's. `preflight` already resolved this for its status row — the live operation itself did
+  // not, and refused a token that was sitting one key over.
+  test("Datawrapper provider probe resolves DATAWRAPPER_API_TOKEN, the root's own name, when DATAWRAPPER_TOKEN is absent", async () => {
+    const fixture = await storyFixture();
+    process.env.DATAWRAPPER_API_TOKEN = "root-name-canary-12345";
+    let observed = "";
+    const result = await runOperation(
+      "provider-check-datawrapper",
+      fixture.request,
+      {
+        fetchFn: async (url: string | URL, init?: any) => {
+          observed = String(init?.headers?.Authorization ?? "");
+          return new Response("{}", { status: 200 });
+        },
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(observed).toContain("root-name-canary-12345");
+    expect(JSON.stringify(result)).not.toContain("root-name-canary-12345");
+    delete process.env.DATAWRAPPER_API_TOKEN;
+  });
+
+  test("MapTiler provider probe resolves REMOTION_MAPTILER_KEY, one of the root's engine-shared names, when MAPTILER_KEY is absent", async () => {
+    const fixture = await storyFixture();
+    process.env.REMOTION_MAPTILER_KEY = "remotion-canary-12345";
+    let observed = "";
+    const result = await runOperation(
+      "provider-check-maptiler",
+      fixture.request,
+      {
+        fetchFn: async (url: string | URL) => {
+          observed = String(url);
+          return new Response("{}", { status: 200 });
+        },
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(observed).toContain("remotion-canary-12345");
+    expect(JSON.stringify(result)).not.toContain("remotion-canary-12345");
+    delete process.env.REMOTION_MAPTILER_KEY;
+  });
+
   test("Datawrapper production reads the canonical beat spec and dispatches only story identity", async () => {
     const fixture = await storyFixture();
     await mkdir(join(fixture.story, "beats", "chart"), { recursive: true });
@@ -170,6 +214,35 @@ describe("closed Splash operation runner", () => {
       "beats/map/map-bake/revision/plate.png",
     ]);
     expect(JSON.stringify(result)).not.toContain("broker-map-canary-12345");
+  });
+
+  test("map production resolves VITE_MAPTILER_KEY, one of the root's engine-shared names, when MAPTILER_KEY is absent", async () => {
+    const fixture = await storyFixture();
+    await mkdir(join(fixture.story, "beats", "map"), { recursive: true });
+    process.env.VITE_MAPTILER_KEY = "vite-map-canary-12345";
+    let dispatched: any = null;
+    const contractDigest = `sha256:${"a".repeat(64)}`;
+    await runOperation(
+      "map-bake",
+      {
+        ...fixture.request,
+        outputId: "map",
+        parameters: { contractDigest },
+      },
+      {
+        mapBakeFn: async (input) => {
+          dispatched = input;
+          return {
+            operation: "map-bake",
+            outputId: "map",
+            contractDigest,
+            outputs: [],
+          };
+        },
+      },
+    );
+    expect(dispatched.mapTilerKey).toBe("vite-map-canary-12345");
+    delete process.env.VITE_MAPTILER_KEY;
   });
 
   test("map delivery writes the client-publishable key only to the final artifact", async () => {
