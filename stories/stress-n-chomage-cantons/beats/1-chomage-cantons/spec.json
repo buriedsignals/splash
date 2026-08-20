@@ -1,0 +1,117 @@
+{
+  "takeaway": "Le taux de chômage varie du simple au triple selon les cantons : de 1,7 % à Appenzell Rhodes-Intérieures à 6,4 % à Neuchâtel, avec Genève juste derrière à 5,8 %.",
+  "limits": "Taux par canton ; l'article gelé (source/article.md) ne précise ni la source ni l'année de référence.",
+  "credit": "Intake de l'article, source/data.csv (gelé)",
+  "effectiveDate": "données gelées, année non précisée",
+  "language": "fr-FR",
+  "color": "#D4A853",
+  "chartType": "d3-bars",
+  "format": "web",
+  "seriesLabel": "Taux de chômage (%)",
+  "data": [
+    {
+      "canton": "Neuchâtel",
+      "taux": 6.4
+    },
+    {
+      "canton": "Ticino",
+      "taux": 6.1
+    },
+    {
+      "canton": "Genève",
+      "taux": 5.8
+    },
+    {
+      "canton": "Jura",
+      "taux": 5.5
+    },
+    {
+      "canton": "Vaud",
+      "taux": 5.2
+    },
+    {
+      "canton": "Basel-Stadt",
+      "taux": 4.9
+    },
+    {
+      "canton": "Valais",
+      "taux": 4.4
+    },
+    {
+      "canton": "Zürich",
+      "taux": 4.1
+    },
+    {
+      "canton": "Solothurn",
+      "taux": 4
+    },
+    {
+      "canton": "Fribourg",
+      "taux": 3.9
+    },
+    {
+      "canton": "Schaffhausen",
+      "taux": 3.8
+    },
+    {
+      "canton": "Basel-Landschaft",
+      "taux": 3.7
+    },
+    {
+      "canton": "Aargau",
+      "taux": 3.6
+    },
+    {
+      "canton": "Bern",
+      "taux": 3.4
+    },
+    {
+      "canton": "Sankt Gallen",
+      "taux": 3.1
+    },
+    {
+      "canton": "Thurgau",
+      "taux": 3
+    },
+    {
+      "canton": "Luzern",
+      "taux": 2.9
+    },
+    {
+      "canton": "Glarus",
+      "taux": 2.8
+    },
+    {
+      "canton": "Graubünden",
+      "taux": 2.6
+    },
+    {
+      "canton": "Schwyz",
+      "taux": 2.4
+    },
+    {
+      "canton": "Uri",
+      "taux": 2.3
+    },
+    {
+      "canton": "Zug",
+      "taux": 2.2
+    },
+    {
+      "canton": "Appenzell Ausserrhoden 🏔️",
+      "taux": 2.1
+    },
+    {
+      "canton": "Obwalden",
+      "taux": 2
+    },
+    {
+      "canton": "Nidwalden",
+      "taux": 1.9
+    },
+    {
+      "canton": "Appenzell Innerrhoden",
+      "taux": 1.7
+    }
+  ]
+}

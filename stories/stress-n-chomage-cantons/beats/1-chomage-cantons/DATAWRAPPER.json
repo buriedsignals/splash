@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "provider": "datawrapper",
+  "state": "local-complete",
+  "outputId": "1-chomage-cantons",
+  "chartId": "1u88u",
+  "chartType": "d3-bars",
+  "format": "web",
+  "attemptId": "fafc2884-de83-4aa9-92be-18d884359492",
+  "specDigest": "sha256:431de75adb0af3aadd6d6b96c81f0c71a9822a9a84fcf599047462bac5e56f6c",
+  "publicUrl": "https://datawrapper.dwcdn.net/1u88u/1/",
+  "editableSpec": "spec.json",
+  "renderedArtifact": "renders/chart.html",
+  "createdAt": "2026-08-20T23:34:29.699Z",
+  "updatedAt": "2026-08-20T23:34:32.640Z"
+}
