@@ -1,0 +1,18 @@
+{
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "{",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
