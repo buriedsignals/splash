@@ -1,0 +1,29 @@
+{
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "region",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "failed_inspections",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 7,
+      "max": 7,
+      "sum": 42,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
