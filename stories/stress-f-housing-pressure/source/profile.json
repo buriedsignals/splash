@@ -1,0 +1,36 @@
+{
+  "rowCount": 9,
+  "columns": [
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 0,
+      "distinct": 9,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 9,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "pressure",
+      "type": "text",
+      "missing": 0,
+      "distinct": 9,
+      "min": null,
+      "max": null,
+      "sum": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
