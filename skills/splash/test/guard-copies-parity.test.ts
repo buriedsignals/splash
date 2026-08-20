@@ -131,6 +131,15 @@ const COPIES: Record<string, string[]> = {
     "chart-web/scripts/detect-reachable-by-keyboard.mjs",
     "map-web/scripts/detect-reachable-by-keyboard.mjs",
   ],
+  // A capability, not a guard: same-facts-without-the-picture, now carried by two skills after fix
+  // round 1 widened the detector to accept a value split across typed columns as well as one
+  // joined cell -- a copy that only kept the exact-cell path (or only the fallback) would refuse a
+  // table its sibling accepts, silently narrowing what "the same facts" means depending which
+  // skill's copy a reader happened to be looking at.
+  tableCarriesTheMarks: [
+    "chart-web/scripts/detect-accessible-table.mjs",
+    "map-web/scripts/detect-accessible-table.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

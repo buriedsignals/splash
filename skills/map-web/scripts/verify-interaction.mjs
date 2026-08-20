@@ -53,6 +53,7 @@ import {
   marksFromSource,
   revealDashInScreenSpace,
 } from "./verify-guards.mjs";
+import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 
 /** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
@@ -205,6 +206,16 @@ const url = `file://${resolve(htmlPath)}`;
   const mb = (n) => (n / (1024 * 1024)).toFixed(2);
   const twice = duplicatedPayload(html);
   const measuring = revealDashInScreenSpace(marksFromSource(html, basename(htmlPath)));
+  // same-facts-without-the-picture (doctrine/references/guard-catalogue.json) — the accessible
+  // table's own capability, on the SAME artifact as the two guards above, for the same reason: it
+  // needs no browser either. STILL `owed` for this format as of 2026-08-20 (fix round 1): the
+  // table itself is OPT-IN per beat (`render-web.mjs`'s `regionTable`, off for this seed and for
+  // some real beats by the format's own design — `map-web-discipline.md`, "The accessibility
+  // question" — names exactly what leaving it off costs, so a beat with `table.rows === 0` is a
+  // documented CHOICE, never a defect this check should fail on). A beat that DOES carry a table is
+  // held to the same completeness `chart-web` is: `table.rows > 0` with any mark still `missing` is
+  // a table that drifted from the picture, and that fails exactly as it does there.
+  const table = tableCarriesTheMarks(html);
   console.log(`\nCARGO — what the file carries`);
   for (const found of twice)
     console.log(
@@ -212,8 +223,16 @@ const url = `file://${resolve(htmlPath)}`;
     );
   for (const id of measuring)
     console.log(`  FAIL  ${id} reveals with a dash that measures its own path under a non-scaling stroke`);
-  if (!twice.length && !measuring.length)
-    console.log(`  ok    every asset inlined once; every dash drawn in the path's own units`);
+  if (table.rows > 0)
+    for (const value of table.missing)
+      console.log(`  FAIL  the accessible table is missing a mark's own fact: ${value}`);
+  const tableBroken = table.rows > 0 && table.missing.length > 0;
+  if (!twice.length && !measuring.length && !tableBroken)
+    console.log(
+      table.rows > 0
+        ? `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`
+        : `  ok    every asset inlined once; every dash drawn in the path's own units; no accessible table on this beat (opt-in, off here)`,
+    );
   else process.exitCode = 1;
 }
 console.log(`driving ${url}\n`);

@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tableCarriesTheMarks } from "../scripts/detect-accessible-table.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
@@ -49,13 +49,56 @@ describe("an accessible table carries the marks' own values", () => {
       marks: 0,
     });
   });
+
+  // RULED 2026-08-20 (fix round 1): a capability states what a reader GETS, not how a table is
+  // SHAPED. The exact-cell check above is the cheap primary path; these two prove the fallback it
+  // was widened with, over `map-web`'s own real shape — a value split across typed columns
+  // (<th>name</th><td>number</td><td>date</td>) rather than joined into one cell.
+  const quakePage = (table: string) =>
+    `<svg><circle data-detail="M9.1 · 2011 Great Tohoku Earthquake, Japan · 2011-03-11"/></svg>${table}`;
+
+  it("accepts a row that splits the same fact across typed columns", () => {
+    const found = tableCarriesTheMarks(
+      quakePage(
+        `<table><tr><th>2011 Great Tohoku Earthquake, Japan</th><td>M9.1</td><td>2011-03-11</td><td>Japan &amp; Kuril arc</td></tr></table>`,
+      ),
+    );
+    expect(found.missing).toEqual([]);
+  });
+
+  it("refuses a row that shares only some of the value's own tokens", () => {
+    // Same row, minus the magnitude cell: "M9" is never anywhere in this row's own text, so the
+    // fact is not fully present in ANY single row — not even mostly present, refused.
+    const found = tableCarriesTheMarks(
+      quakePage(
+        `<table><tr><th>2011 Great Tohoku Earthquake, Japan</th><td>2011-03-11</td></tr></table>`,
+      ),
+    );
+    expect(found.missing).toEqual([
+      "M9.1 · 2011 Great Tohoku Earthquake, Japan · 2011-03-11",
+    ]);
+  });
 });
 
-/** Every delivered `chart-web` page on disk — told apart from its `map-web` sibling (both live
- *  under `proof/`, both ship self-contained HTML with `data-detail` marks) by the one thing that
- *  cannot drift silently: which format's own `renderWeb` actually wrote the file. A story's own
- *  `render-web.mjs` runner imports it by path, so that import is read back off disk rather than
- *  guessed from a directory name. */
+/** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path —
+ *  told apart from its `map-web` sibling (both live under `proof/`, both ship self-contained HTML
+ *  with `data-detail` marks) by the one thing that cannot drift silently: which format's own
+ *  `renderWeb` actually wrote the file. Checked against the page's OWN directory and its PARENT:
+ *  a runner usually sits beside its own output (`proof/co2-suisse/render-web.mjs` next to
+ *  `co2.html`) but not always — `proof/web-co2-ranking/render-web.mjs` writes one directory down,
+ *  into `dist/co2-ranking.html` — and a same-directory-only check silently skipped that page
+ *  (measured 2026-08-20, reproduced standalone: 17 files found, not 18). */
+function importsChartWebRenderer(dir: string): boolean {
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".mjs"))
+    .some((name) =>
+      readFileSync(join(dir, name), "utf8").includes(
+        "skills/chart-web/scripts/render-web.mjs",
+      ),
+    );
+}
+
 function chartWebArtifacts(): string[] {
   const found: string[] = [];
   const walk = (dir: string) => {
@@ -65,14 +108,7 @@ function chartWebArtifacts(): string[] {
       else if (entry.name.endsWith(".html")) {
         const source = readFileSync(path, "utf8");
         if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        const dirHasChartWebImport = readdirSync(dir)
-          .filter((name) => name.endsWith(".mjs"))
-          .some((name) =>
-            readFileSync(join(dir, name), "utf8").includes(
-              "skills/chart-web/scripts/render-web.mjs",
-            ),
-          );
-        if (dirHasChartWebImport) found.push(path);
+        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
       }
     }
   };
@@ -83,10 +119,14 @@ function chartWebArtifacts(): string[] {
 describe("every chart-web page on disk", () => {
   it("carries every mark's own fact in its accessible table", () => {
     const files = chartWebArtifacts();
-    // Measured 2026-08-20: 18 delivered pages, from 3 marks (germany-bridge) to 300
-    // (small-multiples-co2-per-capita). A count under this floor means the walk stopped finding
-    // beats, not that the beats got better — the same shape as `verify-guards.test.ts`'s own floor.
-    expect(files.length).toBeGreaterThanOrEqual(17);
+    // Measured 2026-08-20 (recount after fixing the parent-directory lookup above): 18
+    // delivered pages, from 3 marks (germany-bridge) to 300 (small-multiples-co2-per-capita). A
+    // count under this floor means the walk stopped finding beats, not that the beats got better —
+    // the same shape as `verify-guards.test.ts`'s own floor. Asserted exactly, not just a floor:
+    // `webArtifacts()`-style walks are exactly the kind of check that silently drops a page (this
+    // one did, on `web-co2-ranking`, until the parent-directory lookup was added), so a count that
+    // creeps back down to 17 must fail loudly rather than still clear a `>= 17` floor.
+    expect(files.length).toBe(18);
     const offenders: string[] = [];
     for (const file of files) {
       const found = tableCarriesTheMarks(readFileSync(file, "utf8"));
