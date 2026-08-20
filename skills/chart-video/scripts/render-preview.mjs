@@ -116,6 +116,19 @@ if (process.argv.includes("--check")) {
     `preview.png matches a fresh render of the seed (${diff.diffPixels}/${diff.totalPixels} pixels differ).`,
   );
 } else {
-  console.log(`wrote ${TARGET} at frame ${LAST_FRAME} (${elapsed}s) — now open it and look at it.`);
+  // No --out override: this IS the canonical regenerate, so the proof a reader opens is a COPY of
+  // the exact bytes remotion just wrote to TARGET — never a second still render (not
+  // byte-reproducible across launches, see compare-png.mjs's own header) and never a second command
+  // (the step three regenerations in a row forgot: bc308ab8, 97293519, and the state this branch
+  // found).
+  let proofNote = "";
+  if (outDirArg === -1) {
+    const proofDir = join(HERE, "..", "output-proof");
+    await mkdir(proofDir, { recursive: true });
+    const rendered = await readFile(TARGET);
+    await writeFile(join(proofDir, "preview.png"), rendered);
+    proofNote = ` and ${join(proofDir, "preview.png")}`;
+  }
+  console.log(`wrote ${TARGET}${proofNote} at frame ${LAST_FRAME} (${elapsed}s) — now open it and look at it.`);
   await rm(propsPath);
 }

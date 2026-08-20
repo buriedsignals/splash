@@ -104,5 +104,16 @@ if (process.argv.includes("--check")) {
 } else {
   await mkdir(outDir, { recursive: true });
   await writeFile(TARGET, png);
-  console.log(`wrote ${TARGET} (${png.length} bytes) — now open it and look at it.`);
+  // No --out override: this IS the canonical regenerate, so the proof a reader opens is written from
+  // the SAME buffer in the SAME run — never a second render (not byte-reproducible across launches,
+  // see compare-png.mjs's own header) and never a second command (the step three regenerations in a
+  // row forgot: bc308ab8, 97293519, and the state this branch found).
+  let proofNote = "";
+  if (outDirArg === -1) {
+    const proofDir = join(HERE, "..", "output-proof");
+    await mkdir(proofDir, { recursive: true });
+    await writeFile(join(proofDir, "preview.png"), png);
+    proofNote = ` and ${join(proofDir, "preview.png")}`;
+  }
+  console.log(`wrote ${TARGET}${proofNote} (${png.length} bytes) — now open it and look at it.`);
 }
