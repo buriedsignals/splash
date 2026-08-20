@@ -383,3 +383,51 @@ describe("groundTakeaway — a direction word checked against its own numbers' o
     ).toEqual([]);
   });
 });
+
+// stories/stress-e-electricity-mix/source/profile.json, verbatim — share_pct sums to 95.2, not
+// 100, while the article claims the six shares "make up the whole of national supply".
+const ELECTRICITY_MIX_PROFILE = {
+  rowCount: 6,
+  columns: [
+    { name: "source", type: "text", missing: 0, distinct: 6, min: null, max: null, sum: null },
+    { name: "share_pct", type: "number", missing: 0, distinct: 6, min: -4.1, max: 41.2, sum: 95.2 },
+  ],
+  duplicates: { count: 0, rows: [] },
+};
+
+describe("groundTakeaway — a part-to-whole totality claim checked against the column's own sum", () => {
+  it("should contradict a totality claim when the summed share column does not add up to the whole, naming both numbers", () => {
+    const claims = groundTakeaway(
+      "Together these make up the whole of national supply.",
+      ELECTRICITY_MIX_PROFILE,
+    );
+    const totality = claims.find((c) => c.claim.toLowerCase().includes("whole"));
+    expect(totality).toBeTruthy();
+    expect(totality.verdict).toBe("contradicted");
+    expect(totality.detail).toContain("95.2");
+    expect(totality.detail).toContain("100");
+    expect(totality.detail).toContain("share_pct");
+  });
+
+  it("should support a totality claim when the summed share column does add up to the whole", () => {
+    const profile = {
+      columns: [
+        { name: "share_pct", type: "number", missing: 0, distinct: 3, min: 20, max: 50, sum: 100 },
+      ],
+    };
+    const claims = groundTakeaway("All of the shares together make up the whole of supply.", profile);
+    const totality = claims.find((c) => /whole|all of/i.test(c.claim));
+    expect(totality).toBeTruthy();
+    expect(totality.verdict).toBe("supported");
+  });
+
+  it("should mark a totality claim unverifiable, never supported and never silent, when no share column can be identified", () => {
+    const profile = {
+      columns: [{ name: "tonnes", type: "number", missing: 0, distinct: 3, min: 9, max: 14, sum: 34 }],
+    };
+    const claims = groundTakeaway("Together these make up the whole of the total.", profile);
+    const totality = claims.find((c) => /whole/i.test(c.claim));
+    expect(totality).toBeTruthy();
+    expect(totality.verdict).toBe("unverifiable");
+  });
+});

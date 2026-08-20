@@ -74,11 +74,20 @@
 //          become. Silence here is the same silence "Renewables overtook coal as the main source"
 //          already gets: a sentence shape this function was never taught to recognise at all, not
 //          a claim it recognised and declined to check.
+//   7. A part-to-whole TOTALITY claim — "the whole of", "all of", "together ... make up", "100%" —
+//      checked against `sum` on the ONE column identifiable as a share/percentage (by name, or by
+//      the `unit: "%"` intake's profiler now records — see profile.mjs), because "the whole" only
+//      has a fixed numeric meaning (100) for a column made of percentages; a plain measurement
+//      column summing to, say, 34 has no independent number to call "the whole" against, so
+//      totality is never checked there. Zero or more than one such column is "unverifiable", never
+//      guessed at (2026-08-20 stress test, stress-e-electricity-mix: share_pct summed to 95.2
+//      while the article said the six shares "make up the whole of national supply", and nothing
+//      before this shape ever read `sum` against that claim at all).
 //
 // Only a value that contradicts a fact this function DID establish comes back "contradicted": the
-// year comparisons, the superlatives and the trend-word/pair agreement check, which read real rows
-// or a real number pair. Everything the function merely failed to place is information for the
-// journalist, not a refusal.
+// year comparisons, the superlatives, the trend-word/pair agreement check and the totality check,
+// which read real rows, a real number pair, or a real column total. Everything the function merely
+// failed to place is information for the journalist, not a refusal.
 
 const NUMBER_RE = /-?\d+(?:\.\d+)?/g;
 
@@ -146,6 +155,32 @@ const FROM_TO_PAIR_RE = /\bfrom\s+(-?\d+(?:\.\d+)?)\s*%?\s*to\s+(-?\d+(?:\.\d+)?
 // How far (in characters) a trend word is allowed to sit from a "from A to B" pair and still be
 // read as describing it — the same order of magnitude every other windowed pattern above uses.
 const TREND_WINDOW = 120;
+
+// Shape 7 — a part-to-whole TOTALITY claim ("the whole of", "all of", "together ... make up",
+// "100%"), checked against the ONE column that reads as a share/percentage — see resolveComparison
+// for why it is restricted to that column rather than any numeric column the profile happens to
+// carry, and the header for the shape's full reasoning.
+const TOTALITY_WHOLE_RE = /\bthe\s+whole\s+of\b/gi;
+const TOTALITY_ALL_RE = /\ball\s+of\b/gi;
+const TOTALITY_TOGETHER_RE = /\btogether\b[\s\S]{0,40}?\bmake(?:s)?\s+up\b/gi;
+const TOTALITY_PERCENT_RE = /\b100\s?%/g;
+const TOTALITY_PATTERNS = [TOTALITY_WHOLE_RE, TOTALITY_ALL_RE, TOTALITY_TOGETHER_RE, TOTALITY_PERCENT_RE];
+
+// A column this shape is willing to call "the whole" of — a share or a percentage, identified by
+// its own name (the profile carries no other marker for this in the fixtures this file has seen)
+// or by the `unit` intake's profiler records when a column's cells carry a literal "%" — never
+// guessed onto an arbitrary numeric column just because a takeaway happens to use the word "whole".
+const SHARE_COLUMN_NAME_RE = /pct|percent|proportion|share/i;
+
+function isShareColumn(column) {
+  return column.unit === "%" || SHARE_COLUMN_NAME_RE.test(column.name);
+}
+
+// What "the whole" means for a share/percentage column, and how much rounding slack a takeaway
+// is allowed before its total reads as genuinely off — mirrors AGGREGATE_TOLERANCE's own floor,
+// not invented fresh for this shape.
+const TOTALITY_WHOLE_VALUE = 100;
+const TOTALITY_TOLERANCE = 1;
 
 // A "from A to B" pair where both sides are a plausible four-digit calendar year is a date range
 // ("from 2019 to 2022"), not a measured value pair — see the header's first bullet under shape 6.
@@ -288,6 +323,26 @@ function extractComparisons(text) {
     // the ordinary per-number range check (shape 1a).
   }
 
+  // Shape 7 — a totality claim. One claim per takeaway, spanning the earliest trigger phrase to
+  // the latest: "Together these make up the whole of national supply" trips both
+  // TOTALITY_TOGETHER_RE and TOTALITY_WHOLE_RE on the same sentence, and that is one claim about
+  // one column's sum, not two independent ones.
+  const totalityMatches = [];
+  for (const re of TOTALITY_PATTERNS) {
+    for (const m of text.matchAll(re)) {
+      totalityMatches.push({ start: m.index, end: m.index + m[0].length });
+    }
+  }
+  if (totalityMatches.length > 0) {
+    totalityMatches.sort((a, b) => a.start - b.start);
+    const first = totalityMatches[0];
+    const last = totalityMatches[totalityMatches.length - 1];
+    const span = { start: first.start, end: Math.max(first.end, last.end) };
+    if (!found.some((f) => overlaps(f, span))) {
+      found.push({ kind: "totality", raw: text.slice(span.start, span.end), ...span });
+    }
+  }
+
   return found;
 }
 
@@ -347,6 +402,33 @@ function resolveComparison(item, profile) {
   if (item.kind === "first-time") {
     return { claim, verdict: "unverifiable", detail: "\"first time\" claims are not mechanically checked" };
   }
+
+  if (item.kind === "totality") {
+    const columns = Array.isArray(profile.columns) ? profile.columns : [];
+    const shareColumns = columns.filter(
+      (c) => c.type === "number" && c.sum !== null && c.sum !== undefined && isShareColumn(c),
+    );
+    if (shareColumns.length !== 1) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail:
+          shareColumns.length === 0
+            ? "no share/percentage column in the profile to check this total against"
+            : "more than one share/percentage column in the profile — cannot tell which this total claims to be the whole of",
+      };
+    }
+    const column = shareColumns[0];
+    const holds = Math.abs(column.sum - TOTALITY_WHOLE_VALUE) <= TOTALITY_TOLERANCE;
+    return {
+      claim,
+      verdict: holds ? "supported" : "contradicted",
+      detail: holds
+        ? `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE})`
+        : `claims the whole, but column "${column.name}" sums to ${column.sum}, not ${TOTALITY_WHOLE_VALUE}`,
+    };
+  }
+
   if (!item.direction) {
     return { claim, verdict: "unverifiable", detail: "comparison direction word not recognised" };
   }
