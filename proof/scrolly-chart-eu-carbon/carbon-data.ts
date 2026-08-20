@@ -67,14 +67,14 @@ const HEADER = "Entity,Code,Year,CO₂ emissions per capita";
 
 export function parseReadings(text: string): Reading[] {
   const lines = parseCsvRows(text.trim());
-  const header = lines[0].trim();
+  const header = lines[0].join(",");
   if (header !== HEADER)
     throw new Error(
       `eu-co2-per-capita.csv header changed: expected ${JSON.stringify(HEADER)}, got ${JSON.stringify(header)}`,
     );
   const out: Reading[] = [];
   for (const line of lines.slice(1)) {
-    if (!line.trim()) continue;
+    if (!line.some((cell) => cell.trim() !== "")) continue;
     const cell = line;
     if (cell.length !== 4)
       throw new Error(`expected 4 cells, got ${cell.length}: ${line}`);

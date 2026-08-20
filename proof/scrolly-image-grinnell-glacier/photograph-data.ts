@@ -67,7 +67,7 @@ const HEADER =
 
 export function readPhotographs(text: string): Photograph[] {
   const lines = parseCsvRows(text.trim());
-  if (lines[0].trim() !== HEADER)
+  if (lines[0].join(",") !== HEADER)
     throw new Error(
       `photographs.csv header changed: expected\n  ${HEADER}\ngot\n  ${lines[0]}`,
     );

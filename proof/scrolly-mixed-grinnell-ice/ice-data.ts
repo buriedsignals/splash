@@ -80,7 +80,7 @@ const PHOTO_HEADER =
 
 export function readPhotographs(text: string): Photograph[] {
   const lines = parseCsvRows(text.trim());
-  if (lines[0].trim() !== PHOTO_HEADER)
+  if (lines[0].join(",") !== PHOTO_HEADER)
     throw new Error(
       `photographs.csv header changed: expected\n  ${PHOTO_HEADER}\ngot\n  ${lines[0]}`,
     );
@@ -189,7 +189,7 @@ const BALANCE_HEADER =
  */
 export function parseBalance(text: string): Balance[] {
   const lines = parseCsvRows(text.trim());
-  if (lines[0]!.trim() !== BALANCE_HEADER)
+  if (lines[0]!.join(",") !== BALANCE_HEADER)
     throw new Error(
       `reference-glaciers.csv header changed: expected\n  ${BALANCE_HEADER}\ngot\n  ${lines[0]}`,
     );

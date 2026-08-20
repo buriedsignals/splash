@@ -153,7 +153,7 @@ export function readingsFromCsv(csv) {
 
   const byYear = new Map();
   for (const line of rows) {
-    if (!line.trim()) continue;
+    if (!line.some((cell) => cell.trim() !== "")) continue;
     const cells = line;
     const year = Number(cells[yearAt]);
     if (year !== OPEN_YEAR && year !== CLOSE_YEAR) continue;
