@@ -96,6 +96,7 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/verify-image.mjs",
     "chart-web/scripts/verify-guards.mjs",
     "map-web/scripts/verify-guards.mjs",
+    "map-beat/scripts/verify-map.mjs",
   ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed

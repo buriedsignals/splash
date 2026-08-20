@@ -31,12 +31,19 @@
  *      (`FlowMapVideo`, `LocatorVideo`) divide theirs by the camera's scale, which is the correct
  *      compensation, and neither declares a `vectorEffect`
  *
- * Nothing here is being repaired. All three are ratchets.
+ * A FOURTH QUESTION, added once the trait derivation named it: `renderStill` writes the format's own
+ * STILL as an SVG with the baked plate inlined as a `data:` URI, beside the PNG it rasterises from —
+ * a self-contained delivered file, and `duplicatedPayload` is the guard `chart-web`, `image-beat`,
+ * `map-web` and `scrolly` already carry for exactly that shape. Measured 2026-08-19 across the 7
+ * stills this format has rendered to disk: 0 inline any asset twice.
+ *
+ * Nothing here is being repaired. All four are ratchets.
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
+  duplicatedPayload,
   groundFromPalette,
   marksFromSource,
   plateFollowsGround,
@@ -167,6 +174,27 @@ describe("reading a map component's dashed marks", () => {
   });
 });
 
+describe("what a rendered still carries", () => {
+  it("names an asset inlined more than once", () => {
+    const blob = "A".repeat(4096);
+    expect(
+      duplicatedPayload(
+        `<image href="data:image/png;base64,${blob}"/><image href="data:image/png;base64,${blob}"/>`,
+      ),
+    ).toEqual([{ copies: 2, bytes: 4096, wastedBytes: 4096 }]);
+  });
+
+  it("leaves a single plate and every icon under the payload floor alone", () => {
+    const blob = "A".repeat(4096);
+    expect(duplicatedPayload(`<image href="data:image/png;base64,${blob}"/>`)).toEqual([]);
+    expect(
+      duplicatedPayload(
+        `<image href="data:image/svg+xml;base64,YWJj"/><image href="data:image/svg+xml;base64,YWJj"/>`,
+      ),
+    ).toEqual([]);
+  });
+});
+
 /** Every beat on disk that carries a baked plate. */
 function platedBeats(): { name: string; dir: string }[] {
   const found = [];
@@ -225,6 +253,41 @@ describe("every baked plate on disk", () => {
         );
     }
     expect(checked).toBeGreaterThanOrEqual(15);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/** Every `render/static.svg` this format's own render ladder has produced — rung 1 of it, and the
+ *  only place an inlined base64 plate becomes a self-contained delivered file. `renderStill`
+ *  (`render-still.mjs`) writes it beside the PNG it rasterises from; a video-only beat that never
+ *  calls `--still` carries none, which is why this counts the files that exist on disk rather than
+ *  every beat's own directory. */
+function mapStills(): { name: string; file: string }[] {
+  const found: { name: string; file: string }[] = [];
+  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const file = join(PROOF, entry.name, "render", "static.svg");
+    if (existsSync(file)) found.push({ name: entry.name, file });
+  }
+  return found;
+}
+
+describe("every map beat's own still on disk", () => {
+  it("inlines its baked plate once, never twice", () => {
+    const stills = mapStills();
+    // Measured 2026-08-19: 7 of this format's beats on disk render a still — every beat that
+    // asks `render-map.mjs` for `--still`, whether or not it also ships a video. A floor below
+    // that count catches a reader that went quiet without pinning the corpus's exact size.
+    expect(stills.length).toBeGreaterThanOrEqual(6);
+    const offenders: string[] = [];
+    for (const { name, file } of stills) {
+      const svg = readFileSync(file, "utf8");
+      for (const found of duplicatedPayload(svg))
+        offenders.push(
+          `${name}: ${found.copies} copies of one ${(found.bytes / (1024 * 1024)).toFixed(2)} MB ` +
+            `asset, ${(found.wastedBytes / (1024 * 1024)).toFixed(2)} MB wasted`,
+        );
+    }
     expect(offenders).toEqual([]);
   });
 });

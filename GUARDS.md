@@ -13,7 +13,7 @@ written out below the tables.
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| duplicated-payload |  | **R** |  |  | · | **R** | **R** | **R** |
+| duplicated-payload |  | **R** |  |  | **R** | **R** | **R** | **R** |
 | projection-pairing |  |  |  |  |  |  |  | **R** |
 | plate-geometry-pairing |  |  |  |  | **R** | **R** |  | · |
 | plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
@@ -26,9 +26,8 @@ written out below the tables.
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 4 cells
+## What is still owed — 3 cells
 
-- `map-beat` owes **duplicated-payload**
 - `scrolly` owes **plate-geometry-pairing**
 - `image-beat` owes **screen-space-dash**
 - `map-beat` owes **reveal-completes**

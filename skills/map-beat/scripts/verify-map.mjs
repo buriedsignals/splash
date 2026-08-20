@@ -17,12 +17,49 @@
 // its plate as an `<image>` INSIDE the marks' own SVG, in the marks' own coordinate system, so there
 // are not two projections that could disagree. The same DEFECT is reachable here by another
 // mechanism, and `plateMatchesGeometry` is what decides it.
+//
+// `renderStill` (`render-still.mjs`) also writes the format's own STILL — an SVG with the same baked
+// plate inlined as a `data:` URI — beside the PNG it rasterises from. That is a self-contained
+// delivered file inlining an asset, the exact shape `duplicatedPayload` was written for; it lives
+// here for the same reason the other two do.
 
 import { decodePng } from "./compare-png.mjs";
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["plateFollowsGround", "revealDashInScreenSpace", "plateMatchesGeometry"];
+export const GUARDS = [
+  "plateFollowsGround",
+  "revealDashInScreenSpace",
+  "plateMatchesGeometry",
+  "duplicatedPayload",
+];
+
+/** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the
+ *  defect: reporting those would bury the 1.33 MB one under a list of nothing. */
+const PAYLOAD_FLOOR = 1024;
+
+/** Every data: asset inlined more than once, worst waste first. A weight ceiling would have been
+ *  arbitrary — this tree's own image scrolly is legitimately 3 MB — but a second copy of one asset
+ *  is bytes no reader benefits from, whatever the beat, and it is the file-side fingerprint of a
+ *  visual duplicated into every step frame. */
+export function duplicatedPayload(html) {
+  const blobs = new Map();
+  for (const match of html.matchAll(/data:[a-z/+.-]+;base64,([A-Za-z0-9+/=]+)/gi)) {
+    const body = match[1];
+    if (body.length < PAYLOAD_FLOOR) continue;
+    const seen = blobs.get(body) ?? { copies: 0, bytes: body.length };
+    seen.copies += 1;
+    blobs.set(body, seen);
+  }
+  return [...blobs.values()]
+    .filter((b) => b.copies > 1)
+    .map((b) => ({
+      copies: b.copies,
+      bytes: b.bytes,
+      wastedBytes: (b.copies - 1) * b.bytes,
+    }))
+    .sort((a, b) => b.wastedBytes - a.wastedBytes);
+}
 
 /** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
  *
