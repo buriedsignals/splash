@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "provider": "datawrapper",
+  "state": "prepared",
+  "outputId": "stress-i-median-wages",
+  "chartId": "d0WKR",
+  "chartType": "d3-lines",
+  "format": "static",
+  "attemptId": "05a50ca5-1bb7-4349-bd26-9af929db01ee",
+  "specDigest": "sha256:442407beb0a26f7b986023b71a581e11f09c3b8487685e31543c377f890b8396",
+  "editableSpec": "spec.json",
+  "createdAt": "2026-08-20T20:38:33.575Z",
+  "updatedAt": "2026-08-20T20:38:33.575Z"
+}

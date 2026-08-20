@@ -1,0 +1,45 @@
+{
+  "takeaway": "The median wage rose in every year from 2015 to 2022, from 2,410 to 2,848 euros.",
+  "limits": "Not adjusted for inflation.",
+  "credit": "Stress-test newsroom",
+  "effectiveDate": "2022 data",
+  "language": "en-US",
+  "color": "#5AA9E6",
+  "chartType": "d3-lines",
+  "format": "static",
+  "seriesLabel": "Median monthly wage (EUR)",
+  "data": [
+    {
+      "year": 2015,
+      "median_wage_eur": 2410
+    },
+    {
+      "year": 2016,
+      "median_wage_eur": 2455
+    },
+    {
+      "year": 2017,
+      "median_wage_eur": 2510
+    },
+    {
+      "year": 2018,
+      "median_wage_eur": 2588
+    },
+    {
+      "year": 2019,
+      "median_wage_eur": 2661
+    },
+    {
+      "year": 2020,
+      "median_wage_eur": 2694
+    },
+    {
+      "year": 2021,
+      "median_wage_eur": 2755
+    },
+    {
+      "year": 2022,
+      "median_wage_eur": 2848
+    }
+  ]
+}

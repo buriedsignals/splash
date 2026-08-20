@@ -1,0 +1,27 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 2015,
+      "max": 2022,
+      "sum": 16148
+    },
+    {
+      "name": "median_wage_eur",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 2410,
+      "max": 2848,
+      "sum": 20921
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
