@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "source": "Hydro",
+      "share": 41.2
+    },
+    {
+      "source": "Nuclear",
+      "share": 29.4
+    },
+    {
+      "source": "Solar",
+      "share": 11.7
+    },
+    {
+      "source": "Wind",
+      "share": 8.9
+    },
+    {
+      "source": "Other",
+      "share": 8.1
+    },
+    {
+      "source": "Imports",
+      "share": -4.1
+    }
+  ],
+  "title": "Hydro and nuclear supply seven in ten units of the country's electricity",
+  "source": "Source: national electricity registry, as reported in the frozen dataset for this story · shares as published, not rescaled to sum to 100",
+  "caveat": "The article states these six shares \"make up the whole of national supply.\" They do not: they sum to 95.2%, 4.8 points short of 100. Imports are counted as a negative share (-4.1%) because the country exported more electricity than it bought.",
+  "axisTitle": "Reported share of national electricity supply, %",
+  "subjectSource": "Imports",
+  "conclusion": "The six reported shares sum to 95.2%, not 100% — 4.8 percentage points of national supply this dataset does not account for.",
+  "ground": "#16191B",
+  "accent": "#D4A853",
+  "ink": "#FFFFFF",
+  "muted": "#a6a8a8",
+  "grid": "#404244"
+}
