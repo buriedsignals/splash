@@ -7,21 +7,16 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PRODUCING_SKILLS } from "./traits.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Every skill that PRODUCES a visual. `deliver`, `storyboard`, `intake` and the rest shape or ship
- *  a beat; they never draw one, so a guard about a drawing cannot reach them. */
-export const PRODUCING_SKILLS = [
-  "chart-beat",
-  "chart-web",
-  "chart-video",
-  "dw-beat",
-  "map-beat",
-  "map-web",
-  "image-beat",
-  "scrolly",
-];
+ *  a beat; they never draw one, so a guard about a drawing cannot reach them.
+ *
+ *  Defined in `traits.mjs` (a fact about skills, which is what that module is about) and re-exported
+ *  here so every existing importer of this module keeps working unchanged. */
+export { PRODUCING_SKILLS };
 
 export function readCatalogue() {
   return JSON.parse(
