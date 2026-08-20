@@ -78,6 +78,37 @@ describe("an accessible table carries the marks' own values", () => {
       "M9.1 · 2011 Great Tohoku Earthquake, Japan · 2011-03-11",
     ]);
   });
+
+  // RULED AGAIN 2026-08-20 (fix round 1, adversarial cases from the review that found this): a
+  // review found the first version of the fallback compared a token against the row's RAW TEXT
+  // with `String.includes` — a plain substring test — so a short token matches inside an unrelated
+  // longer one. Both cases below were measured, standalone, to be falsely ACCEPTED by that version.
+  it("refuses a value whose own numeral is only a substring of an unrelated year", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="9 · Springfield"/></svg><table><tr><td>Springfield, pop. 1990</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["9 · Springfield"]);
+  });
+
+  it("refuses a value whose own letter is only half of an unrelated compound identifier", () => {
+    // "A-band" tokenises to "A" and "band" under the SAME splitter used on the value — a plain set
+    // of tokens cannot tell "A" apart from a token that only exists because a hyphenated compound
+    // got torn in half, which is why a one-character token is held to a stricter, hyphen-aware
+    // standalone check rather than plain set membership.
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="A · Canada"/></svg><table><tr><td>Canada, magnitude class A-band</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["A · Canada"]);
+  });
+
+  it("still accepts a one-character token bounded by something other than a hyphen", () => {
+    // The same shape as the real quake beats: "9" in "M7.9" is bounded by a period, not a hyphen,
+    // and a row that spells the same fact out with a period in the same place still carries it.
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="M7.9 · 47 km E of Nara, Japan · 2011-03-11"/></svg><table><tr><td>47 km E of Nara, Japan</td><td>M7.9</td><td>2011-03-11</td></tr></table>`,
+    );
+    expect(found.missing).toEqual([]);
+  });
 });
 
 /** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path —

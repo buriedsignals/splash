@@ -66,6 +66,31 @@ describe("an accessible table carries the marks' own values", () => {
       "M9.1 · 2011 Great Tohoku Earthquake, Japan · 2011-03-11",
     ]);
   });
+
+  // RULED AGAIN 2026-08-20 (fix round 1, adversarial cases from the review that found this): a
+  // review found the first version of the fallback compared a token against the row's RAW TEXT
+  // with `String.includes` — a plain substring test — so a short token matches inside an unrelated
+  // longer one. Both cases below were measured, standalone, to be falsely ACCEPTED by that version.
+  it("refuses a value whose own numeral is only a substring of an unrelated year", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="9 · Springfield"/></svg><table><tr><td>Springfield, pop. 1990</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["9 · Springfield"]);
+  });
+
+  it("refuses a value whose own letter is only half of an unrelated compound identifier", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="A · Canada"/></svg><table><tr><td>Canada, magnitude class A-band</td></tr></table>`,
+    );
+    expect(found.missing).toEqual(["A · Canada"]);
+  });
+
+  it("still accepts a one-character token bounded by something other than a hyphen", () => {
+    const found = tableCarriesTheMarks(
+      `<svg><circle data-detail="M7.9 · 47 km E of Nara, Japan · 2011-03-11"/></svg><table><tr><td>47 km E of Nara, Japan</td><td>M7.9</td><td>2011-03-11</td></tr></table>`,
+    );
+    expect(found.missing).toEqual([]);
+  });
 });
 
 describe("this format's own real pages, measured against the widened detector", () => {
