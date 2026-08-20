@@ -7,7 +7,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PRODUCING_SKILLS, traitsOf } from "./traits.mjs";
+import { PRODUCING_SKILLS, TRAITS, traitsOf } from "./traits.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -99,6 +99,28 @@ export function owedRows(catalogue) {
   );
 }
 
+/** The order a matrix appears in when its kind has any rules at all. A kind absent from the
+ *  catalogue prints no heading and no empty table — an empty matrix teaches a reader nothing a
+ *  missing heading does not already say. */
+const KIND_ORDER = ["guard", "capability", "discipline"];
+
+/** One matrix, for one kind, restricted to that kind's own rules. The first column is named after
+ *  the kind so a reader scanning headings never has to check which table they are looking at. */
+function matrixFor(catalogue, kind, skills, cell) {
+  const rules = catalogue.rules.filter((rule) => rule.kind === kind);
+  if (rules.length === 0) return [];
+  return [
+    `## ${kind}`,
+    "",
+    `| ${kind} | ${skills.join(" | ")} |`,
+    `| --- | ${skills.map(() => "---").join(" | ")} |`,
+    ...rules.map(
+      (rule) => `| ${rule.id} | ${skills.map((skill) => cell(rule, skill)).join(" | ")} |`,
+    ),
+    "",
+  ];
+}
+
 export function renderGuardsDoc(catalogue) {
   const skills = PRODUCING_SKILLS;
   const cell = (rule, skill) =>
@@ -110,23 +132,20 @@ export function renderGuardsDoc(catalogue) {
     "**Generated — do not edit by hand.** `bun scripts/guards.mjs --write` rewrites this file;",
     "`bun scripts/guards.mjs --check` fails if it has drifted from the catalogue.",
     "",
-    "A guard is listed for a skill only where the defect it catches is REACHABLE there — computed from",
-    "the traits the skill declares. **R** means the skill's own verification scripts declare it; **·**",
-    "means the defect can happen there and nothing checks it; blank means it cannot happen there at all",
+    "A rule is listed for a skill only where what it names is REACHABLE there — computed from the",
+    "traits the skill declares. **R** means the skill's own verification scripts declare it; **·**",
+    "means it can happen there and nothing checks it yet; blank means it cannot happen there at all",
     "— and where that blankness is a genuine exception rather than a missing trait, the argument is",
-    "written out below the table.",
+    "written out below the tables.",
     "",
-    `| guard | ${skills.join(" | ")} |`,
-    `| --- | ${skills.map(() => "---").join(" | ")} |`,
-    ...catalogue.rules.map(
-      (rule) => `| ${rule.id} | ${skills.map((skill) => cell(rule, skill)).join(" | ")} |`,
-    ),
+    ...KIND_ORDER.flatMap((kind) => matrixFor(catalogue, kind, skills, cell)),
+    "Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.",
     "",
     `## What is still owed — ${owed.length} cell${owed.length === 1 ? "" : "s"}`,
     "",
     owed.length
       ? owed.map((row) => `- \`${row.skill}\` owes **${row.rule}**`).join("\n")
-      : "Nothing. Every format carries every guard it can reach.",
+      : "Nothing. Every format carries every rule it can reach.",
     "",
     `## Why a cell is blank, where the blankness was argued — ${unreachableRows(catalogue).length} of them`,
     "",
@@ -138,12 +157,29 @@ export function renderGuardsDoc(catalogue) {
       (row) => `- \`${row.skill}\` cannot reach **${row.rule}** — ${row.reason}`,
     ),
     "",
-    "## What each guard refuses, and the defect that earned it",
+    "## What each skill is",
+    "",
+    "WHY a rule reaches a skill, not restated from the matrices above: the traits",
+    "`skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES",
+    "some of these; a skill that carries all of them is reachable, computed, never typed.",
+    "",
+    `| skill | ${TRAITS.map((trait) => trait.id).join(" | ")} |`,
+    `| --- | ${TRAITS.map(() => "---").join(" | ")} |`,
+    ...skills.map((skill) => {
+      const owned = traitsOf(skill);
+      return `| ${skill} | ${TRAITS.map((trait) => (owned.includes(trait.id) ? "✓" : "")).join(" | ")} |`;
+    }),
+    "",
+    "## What each rule refuses, and the defect that earned it",
     "",
     ...catalogue.rules.flatMap((rule) => [
-      `### ${rule.id} — \`${rule.decidedBy}\``,
+      `### ${rule.id} — \`${rule.decidedBy ?? rule.detectedBy ?? rule.writtenIn}\``,
       "",
-      `**Refuses:** ${rule.refuses}`,
+      rule.refuses
+        ? `**Refuses:** ${rule.refuses}`
+        : rule.offers
+          ? `**Offers:** ${rule.offers}`
+          : "",
       "",
       `**Earned by:** ${rule.earnedBy}`,
       "",

@@ -93,12 +93,13 @@ bun --no-env-file run guards:check
 ```
 
 `guards:check` is the one that is not about this change alone. `GUARDS.md` is generated from
-`skills/doctrine/references/guard-catalogue.json`, which lists every guard this project has earned,
-the defect that earned it, and — per producing skill — whether that skill carries it, or why the
-defect cannot happen there. Since 2026-08-20 the parity test **refuses debt**: a cell the catalogue
-says is reachable and nobody carries is a red, not a note. So a guard that reaches a second format
-is either carried there, or argued unreachable in prose the next reader can disagree with. Never
-blank a cell to get to green.
+`skills/doctrine/references/guard-catalogue.json`, the single written list of what this project has
+earned. A fix or a capability that touches a mechanism more than one skill has is declared as a
+**rule**, at the moment it is made — not later. A rule declares the **traits** it requires, never
+skills: the set it reaches is derived, so a skill that acquires the trait inherits the rule without
+anyone remembering. The suite **refuses debt**: a reachable cell nobody carries is a named red, and
+the only two ways out are to carry it, or to write an exception with the measurement behind it.
+**Removing a trait to escape a rule is refused by that trait's witness.**
 
 For installer, host-projection, or MCP-app changes, also run the focused suites and the canonical
 Engine doctor or lifecycle checks appropriate to the change:

@@ -119,6 +119,7 @@ describe("the guard catalogue", () => {
 // appended to skills/doctrine/test/guard-parity.test.ts
 import {
   reachable,
+  renderGuardsDoc,
   strayRows,
   unstatedRows,
 } from "../../../scripts/guards.mjs";
@@ -150,5 +151,23 @@ describe("a rule reaches skills through what they are", () => {
   it("declares a kind the mechanism knows how to confirm", () => {
     for (const rule of readCatalogue().rules)
       expect(["guard", "capability", "discipline"]).toContain(rule.kind);
+  });
+});
+
+describe("the generated state says what a reader needs", () => {
+  const doc = renderGuardsDoc(readCatalogue());
+
+  it("prints one matrix per kind that has rules", () => {
+    for (const kind of new Set(readCatalogue().rules.map((rule) => rule.kind)))
+      expect(doc).toContain(`## ${kind}`);
+  });
+
+  it("prints the traits table, so a reader sees WHY a rule reaches a skill", () => {
+    expect(doc).toContain("## What each skill is");
+    for (const skill of PRODUCING_SKILLS) expect(doc).toContain(skill);
+  });
+
+  it("says out loud that a discipline is not mechanically verified", () => {
+    expect(doc).toContain("not mechanically verified");
   });
 });

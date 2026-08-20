@@ -3,11 +3,13 @@
 **Generated — do not edit by hand.** `bun scripts/guards.mjs --write` rewrites this file;
 `bun scripts/guards.mjs --check` fails if it has drifted from the catalogue.
 
-A guard is listed for a skill only where the defect it catches is REACHABLE there — computed from
-the traits the skill declares. **R** means the skill's own verification scripts declare it; **·**
-means the defect can happen there and nothing checks it; blank means it cannot happen there at all
+A rule is listed for a skill only where what it names is REACHABLE there — computed from the
+traits the skill declares. **R** means the skill's own verification scripts declare it; **·**
+means it can happen there and nothing checks it yet; blank means it cannot happen there at all
 — and where that blankness is a genuine exception rather than a missing trait, the argument is
-written out below the table.
+written out below the tables.
+
+## guard
 
 | guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -21,6 +23,8 @@ written out below the table.
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 | reveal-completes |  |  | **R** |  | · |  |  |  |
+
+Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
 ## What is still owed — 4 cells
 
@@ -36,7 +40,24 @@ excepted for a documented reason. A skill outside the reachable set needs no ent
 trait already proves it.
 
 
-## What each guard refuses, and the defect that earned it
+## What each skill is
+
+WHY a rule reaches a skill, not restated from the matrices above: the traits
+`skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
+some of these; a skill that carries all of them is reachable, computed, never typed.
+
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |
+| chart-web | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  |
+
+## What each rule refuses, and the defect that earned it
 
 ### duplicated-payload — `duplicatedPayload`
 
