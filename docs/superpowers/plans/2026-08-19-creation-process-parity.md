@@ -1020,6 +1020,62 @@ So `owedRows() === []` is reachable in exactly two ways, and they are not equiva
 
 Do not let the choice be made by whichever one turns the suite green. Whoever executes this asks the
 owner, records the answer here with its reason, and only then writes the assertion.
+
+---
+
+**Done 2026-08-20** — `7957cdb0`. **0 cells owed, from 15 when this plan opened.**
+
+**THE OWNER'S ANSWER, asked and recorded: neither option.** The binary above was built on a
+measurement that had not been taken — whether those three formats REVEAL at all. Taken now:
+
+```
+chart-web    15 delivered pages   0 requestAnimationFrame, 0 @keyframes
+                                  the only animations: 120ms hover transitions on a colour
+map-web       5 delivered pages   4 animations each, all inside maplibre-gl itself
+                                  (the loading spinner, the user-location pulse) — none in the beat
+chart-video  26 components        every beat is a timed build with an end
+```
+
+`reached-mark-declares` needs a reveal that ENDS. Two of the three cells were therefore never debt,
+and are retired with that measurement written into the catalogue — the same move
+`projection-pairing` got twice, with a stronger argument than the plan feared: the mechanism is not
+merely unused, the format has none.
+
+**The third cell is real, and the owner chose how to read it** (2026-08-20, both questions asked
+before a line was written). Not the vocabulary — importing `data-state` into 26 components buys a
+declaration that can lie, and a declaration is not what a reader receives. The LAST FRAME instead.
+The first attempt at that was a dead end worth recording: `<Freeze frame={N}>` server-rendered
+**throws** (`useCurrentFrame() can only be called inside a component that was registered as a
+composition`), so a video beat has a DOM only inside the Chrome Remotion drives itself — the second
+question put that cost in front of the owner (a second rendering pipeline on an undocumented seam)
+and the answer was the arithmetic reading.
+
+**Which is not vacuous, and that was the thing to check.** `checkTiming` already refuses a contract
+whose `hold` does not end at `total`, so no NAMED event can be running at the end — a guard built on
+those would have been theatre. The offender is one level down: every `interpolate` in this corpus
+drives off an already-normalised progress, and a progress is CLAMPED at 1, so a range ending above 1
+never reaches its own end.
+
+```
+178 ramps across 26 components — 160 literal bounds, 18 computed and decided on by nothing, 0 taking a raw frame
+  0 offenders
+```
+
+Fourth format in a row that comes out clean. `neverArrives` is a ratchet, not a repair, and it is
+this format's OWN decision — no copy exists, because no other format reveals against a frame count.
+
+**A new guard rather than a polymorphic row**, following Task 3's own precedent: when the same defect
+is reached by a format's other mechanism, it earns its own row (`plate-geometry-pairing` did), and
+the row it mirrors records why the reading differs. `reveal-completes` is that row.
+
+**What the closing assertion changes.** An `owed` cell used to fail nothing — right while every task
+was paying debt off, wrong the moment the debt hit zero. A guard reaching a new format is now a RED
+naming the format and the guard, one step before someone would have had to remember. `AGENTS.md`
+says so beside the baseline, including the way OUT: carry it, or argue it unreachable in prose the
+next reader can disagree with. Never blank a cell to get to green.
+
+`bun run guards:check` was already in the release baseline (Task 1); what it means changed today, so
+the baseline now says what it means.
 - [ ] **Step 3: Add `bun run guards:check` to the release baseline in `AGENTS.md`**
 - [ ] **Step 4: Commit**
 
