@@ -212,6 +212,14 @@ export function lineWeight(measured, band = DRAWN_LINE_PX) {
 // L (1272.04) also agrees with the rendered `getTotalLength()` (1272.0430908203125) to 0.0031 user
 // units, and `getTotalLength` is in USER space, so the camera's CSS scale cannot stale it.
 //
+// **THE DASH IS GONE SINCE 2026-08-20** and the paragraph above is kept as the account of what was
+// measured, not as a description of the page. The line is now REDRAWN each paint from the samples
+// the river has reached (`drawnSoFar` in `route-drive.mjs`), which is `chart-video`'s mechanism
+// carried back here: a reveal with no pattern in it cannot repeat one, and the `pathLength={1}`
+// discipline that made the dash safe is no longer something a future author has to remember. What
+// this file measures is unchanged — it reads PAINTED PIXELS along the path, never the attribute
+// that drew them, and that is exactly why it survived the mechanism changing underneath it.
+//
 // It is guarded anyway, and this is the reason: **the invariant was not held by anything.** Every
 // guard this beat had was about the reveal's EXTENT (`revealSpan` — does it move forward, does it
 // span the piece) and none about its SHAPE. A repeating dash, a reveal from the wrong end, or a

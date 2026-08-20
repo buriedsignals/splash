@@ -27,9 +27,9 @@
       "fluidity": {
         "intraStepFrames": 112,
         "paintChanged": 112,
-        "geometryChanged": 111,
-        "fractionMoving": 0.991,
-        "alphaOnlyFrames": 1,
+        "geometryChanged": 107,
+        "fractionMoving": 0.955,
+        "alphaOnlyFrames": 5,
         "signalHeldFrames": 10
       },
       "problems": []
@@ -60,9 +60,9 @@
       "fluidity": {
         "intraStepFrames": 112,
         "paintChanged": 112,
-        "geometryChanged": 112,
-        "fractionMoving": 1,
-        "alphaOnlyFrames": 0,
+        "geometryChanged": 107,
+        "fractionMoving": 0.955,
+        "alphaOnlyFrames": 5,
         "signalHeldFrames": 10
       },
       "problems": []
@@ -93,9 +93,9 @@
       "fluidity": {
         "intraStepFrames": 99,
         "paintChanged": 99,
-        "geometryChanged": 98,
-        "fractionMoving": 0.99,
-        "alphaOnlyFrames": 1,
+        "geometryChanged": 94,
+        "fractionMoving": 0.949,
+        "alphaOnlyFrames": 5,
         "signalHeldFrames": 7
       },
       "problems": []
@@ -126,9 +126,9 @@
       "fluidity": {
         "intraStepFrames": 99,
         "paintChanged": 99,
-        "geometryChanged": 98,
-        "fractionMoving": 0.99,
-        "alphaOnlyFrames": 1,
+        "geometryChanged": 93,
+        "fractionMoving": 0.939,
+        "alphaOnlyFrames": 6,
         "signalHeldFrames": 7
       },
       "problems": []
@@ -159,9 +159,9 @@
       "fluidity": {
         "intraStepFrames": 83,
         "paintChanged": 83,
-        "geometryChanged": 83,
-        "fractionMoving": 1,
-        "alphaOnlyFrames": 0,
+        "geometryChanged": 81,
+        "fractionMoving": 0.976,
+        "alphaOnlyFrames": 2,
         "signalHeldFrames": 8
       },
       "problems": []
@@ -192,9 +192,9 @@
       "fluidity": {
         "intraStepFrames": 83,
         "paintChanged": 83,
-        "geometryChanged": 83,
-        "fractionMoving": 1,
-        "alphaOnlyFrames": 0,
+        "geometryChanged": 81,
+        "fractionMoving": 0.976,
+        "alphaOnlyFrames": 2,
         "signalHeldFrames": 8
       },
       "problems": []
@@ -241,21 +241,21 @@
     "widths": [
       {
         "label": "1600x900",
-        "drawnWidthPx": 3.77,
-        "samples": 201,
-        "rejected": 39
+        "drawnWidthPx": 3.7,
+        "samples": 228,
+        "rejected": 12
       },
       {
         "label": "1280x800",
-        "drawnWidthPx": 3.77,
-        "samples": 165,
-        "rejected": 75
+        "drawnWidthPx": 3.73,
+        "samples": 212,
+        "rejected": 28
       },
       {
         "label": "375x812",
-        "drawnWidthPx": 3.98,
-        "samples": 50,
-        "rejected": 190
+        "drawnWidthPx": 3.99,
+        "samples": 137,
+        "rejected": 103
       }
     ]
   },
@@ -269,11 +269,11 @@
         "runs": [
           [
             0,
-            0.36
+            1
           ]
         ],
-        "absent": 0.532,
-        "unobservable": 0.114
+        "absent": 0,
+        "unobservable": 0.035
       },
       {
         "label": "1600x900 step 2",
@@ -282,11 +282,11 @@
         "runs": [
           [
             0,
-            0.725
+            1
           ]
         ],
-        "absent": 0.274,
-        "unobservable": 0.08
+        "absent": 0,
+        "unobservable": 0.129
       },
       {
         "label": "1600x900 step 3",
@@ -295,11 +295,11 @@
         "runs": [
           [
             0,
-            0.725
+            1
           ]
         ],
-        "absent": 0.274,
-        "unobservable": 0.085
+        "absent": 0,
+        "unobservable": 0.114
       },
       {
         "label": "1600x900 step 4",
@@ -321,11 +321,11 @@
         "runs": [
           [
             0,
-            0.36
+            1
           ]
         ],
-        "absent": 0.502,
-        "unobservable": 0.164
+        "absent": 0,
+        "unobservable": 0.1
       },
       {
         "label": "1280x800 step 2",
@@ -334,11 +334,11 @@
         "runs": [
           [
             0,
-            0.725
+            1
           ]
         ],
-        "absent": 0.274,
-        "unobservable": 0.129
+        "absent": 0,
+        "unobservable": 0.209
       },
       {
         "label": "1280x800 step 3",
@@ -347,11 +347,11 @@
         "runs": [
           [
             0,
-            0.725
+            1
           ]
         ],
-        "absent": 0.274,
-        "unobservable": 0.119
+        "absent": 0,
+        "unobservable": 0.174
       },
       {
         "label": "1280x800 step 4",
@@ -373,19 +373,19 @@
         "runs": [
           [
             0,
-            0.41
+            1
           ]
         ],
-        "absent": 0.433,
-        "unobservable": 0.358
+        "absent": 0,
+        "unobservable": 0.408
       },
       {
         "label": "375x812 step 2",
         "step": 2,
         "fragments": 0,
         "runs": [],
-        "absent": 0.025,
-        "unobservable": 0.975
+        "absent": 0,
+        "unobservable": 1
       },
       {
         "label": "375x812 step 3",

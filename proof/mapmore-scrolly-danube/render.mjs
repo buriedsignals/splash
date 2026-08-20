@@ -360,6 +360,11 @@ async function render() {
     stops,
     routeLength,
     cum,
+    // THE SAMPLES THEMSELVES, at the precision `cum` was measured at. The driver needs them because
+    // the line is now redrawn from the points reached rather than hidden by a dash — and the page
+    // does not grow for it: the two `d` attributes used to carry all 911 samples EACH, whatever the
+    // step, and now carry only the part drawn.
+    route: geometry.route.map(([x, y]) => [Number(x.toFixed(1)), Number(y.toFixed(1))]),
     territories: crossingsAll.map((c) => ({ key: c.key, from: c.from, to: c.to, anchor: c.anchor })),
   };
 

@@ -125,14 +125,16 @@ const SNAPSHOT = () => {
   for (const el of root.querySelectorAll("[data-territory]")) put(el, []);
   for (const el of root.querySelectorAll("[data-badge]")) put(el, ["left", "top"]);
   put(root.querySelector("[data-part=leaders]"), ["d"]);
-  // THE GROWING LINE, and it is read off the COMPUTED style rather than with `getAttribute`. The
-  // driver writes `strokeDashoffset` as an inline style, so `getAttribute("stroke-dashoffset")`
-  // returns null and the `?? style[key] ?? ""` chain above would fingerprint an empty string on
-  // every frame — i.e. report a river growing across the continent as frozen. The one measurement
-  // this beat exists to make, taken the one way that can see it.
+  // THE GROWING LINE. It used to be read as `getComputedStyle(el).strokeDashoffset`, because the
+  // driver wrote the offset as an inline style and `getAttribute` would have fingerprinted an empty
+  // string on every frame — a river growing across the continent, reported as frozen. The line is
+  // now REDRAWN each paint instead of unhidden, so the fingerprint is the path's own length: it
+  // changes on every frame the river advances and cannot be spoofed by a style that never took.
+  // `getTotalLength()` and not the `d` string, because the string is 11 KB of samples and what this
+  // is asking is "did the picture move".
   for (const el of root.querySelectorAll("[data-part=route]")) {
     alpha.push(getComputedStyle(el).opacity);
-    moving.push(getComputedStyle(el).strokeDashoffset);
+    moving.push(el.getTotalLength().toFixed(2));
   }
 
   const marked = Array.from(root.querySelectorAll("[data-badge],[data-part=credit]"))
@@ -263,9 +265,10 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   const line = root.querySelector('[data-part=route][data-layer=line]');
   const ctm = line.getScreenCTM();
   const toScreen = (p) => ({ x: (ctm.a * p.x + ctm.c * p.y + ctm.e) * ratio, y: (ctm.b * p.x + ctm.d * p.y + ctm.f) * ratio });
-  const total = line.getTotalLength();
-  const hidden = parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
-  const visible = Math.max(0, total - hidden);
+  // The line IS what has been drawn — there is no hidden part to subtract any more, and no
+  // `stroke-dashoffset` to parse. `getTotalLength()` on the redrawn path is the visible length by
+  // construction, which is one fewer place this probe can disagree with the picture.
+  const visible = line.getTotalLength();
   // Only what is actually ON SCREEN occludes. The scaffold keeps ALL FOUR prose panels in the DOM
   // and fades between them, so an unfiltered `.step-panel` query returns three invisible rectangles
   // as well as the painted one — and on a phone, where the panels are edge to edge, their union
@@ -358,7 +361,7 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   const inside = (o, p) => p.x >= o.left && p.x <= o.right && p.y >= o.top && p.y <= o.bottom;
   const state = [];
   for (let k = 0; k <= REVEAL_N; k++) {
-    const here = toScreen(line.getPointAtLength((total * k) / REVEAL_N));
+    const here = toScreen(line.getPointAtLength((visible * k) / REVEAL_N));
     if (here.x < 0 || here.y < 0 || here.x >= width || here.y >= height) {
       state.push(-1);
       continue;

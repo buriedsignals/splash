@@ -10,15 +10,22 @@
 //   2. ONE PROJECTION. The plate is an `<image>` INSIDE the marks' own SVG, filling the same
 //      viewBox. There is no `object-fit` anywhere in this beat, so a plate that crops under an
 //      overlay that letterboxes is not a state this markup can reach.
-//   3. THE DASH MEASURES IN THE PATH'S OWN UNITS. `pathLength={1}` and a fractional offset, and no
-//      `vector-effect` on it — which computes a dash in screen space, where a pattern one path long
-//      repeats as soon as the camera scales up.
+//   3. THERE IS NO DASH. The line is REDRAWN from the points it has reached (`drawnSoFar`), which is
+//      `chart-video`'s mechanism rather than a scrolly's. A dash reveal draws the whole line and
+//      hides the rest with a pattern one path long; it is correct only while that pattern is
+//      computed in the space the path's length lives in, and a camera scale moves that space. The
+//      `pathLength={1}` discipline that made it safe here is gone with it — nothing to remember.
 //
 // This component renders the OPENING state; `route-drive.mjs` takes it from there, scrubbing the
 // reveal off `data-progress` on every animation frame. A reader with no JavaScript keeps exactly
 // what is SSR'd here.
 
 import { createElement, type ReactNode } from "react";
+// The driver's own module, imported here so the picture a reader without JavaScript keeps and the
+// picture the driver paints are drawn by ONE function. `route-drive.mjs` is also inlined into the
+// delivered page as source text, which is why it holds its own copy of the reveal rather than
+// importing one.
+import { drawnSoFar, routePath } from "./route-drive.mjs";
 
 export const PLATE_ID = "route-access-plate";
 
@@ -63,6 +70,16 @@ export function RouteFrame({
 }): ReactNode {
   const [width, height] = geometry.viewBox;
   const reached = reveal;
+  // WHAT IS DRAWN at this frame's own reveal: the points reached, not the whole line under a dash.
+  // The stops ARE the polyline's vertices and `reachedAt` IS its normalised cumulative length, so
+  // the same two numbers that place a stop also select the samples.
+  const drawn = routePath(
+    drawnSoFar(
+      geometry.stops.map((stop) => [stop.x, stop.y] as [number, number]),
+      geometry.stops.map((stop) => stop.reachedAt),
+      reached,
+    ),
+  );
 
   return createElement(
     "div",
@@ -105,30 +122,27 @@ export function RouteFrame({
           display: "block",
         },
       },
-      // The halo first, then the line, both on the same `d` and the same fractional offset, so the
-      // halo can never lag the line it is haloing.
+      // The halo first, then the line, both on the SAME `d` — the points reached — so the halo can
+      // never lag the line it is haloing. The stops are the polyline's own vertices and their
+      // `reachedAt` is its cumulative length, so the reveal needed no second measurement.
       createElement("path", {
-        d: geometry.d,
+        d: drawn,
         fill: "none",
         stroke: ground,
         strokeWidth: 11,
         strokeLinecap: "round",
         strokeLinejoin: "round",
         opacity: 0.9,
-        pathLength: 1,
         "data-part": "route-halo",
-        style: { strokeDasharray: 1, strokeDashoffset: 1 - reached },
       }),
       createElement("path", {
-        d: geometry.d,
+        d: drawn,
         fill: "none",
         stroke: accent,
         strokeWidth: 5,
         strokeLinecap: "round",
         strokeLinejoin: "round",
-        pathLength: 1,
         "data-part": "route-line",
-        style: { strokeDasharray: 1, strokeDashoffset: 1 - reached },
       }),
       ...geometry.stops.map((stop, i) => {
         const arrived = reached >= stop.reachedAt;

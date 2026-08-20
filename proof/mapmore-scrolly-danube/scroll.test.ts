@@ -237,7 +237,9 @@ import {
   arrivalOpacity,
   avoidStripe,
   containCamera,
+  drawnSoFar,
   lengthFractionAt,
+  routePath,
   progressSourceOf,
   project,
   readProgress,
@@ -1158,21 +1160,57 @@ describe("the drawn river is the whole river", () => {
   const geometry = JSON.parse(
     readFileSync(join(HERE, "plate", "geometry.json"), "utf8"),
   );
-  const d = html.match(/data-part="route"[^>]*?\sd="([^"]+)"/)?.[1] ?? "";
-  const route = {
-    subpaths: (d.match(/M/g) ?? []).length,
-    points: d
+  /** The samples the PAGE carries, out of the config its own boot script is called with.
+   *
+   *  THE SUBJECT MOVED, and the assertions did not. Until 2026-08-20 this read the SSR'd `d`
+   *  attribute, because the dash mechanism drew the whole river always and hid the unreached part:
+   *  what the page COULD draw and what it HAD drawn were the same string. The reveal is now the
+   *  points reached, so the `d` is a prefix by construction and reading it would have made
+   *  "the river reaches the delta" a statement about step 0. The river the page can draw is the
+   *  config's `route`; every assertion below asks of it exactly what it asked before, and the
+   *  prefix relationship is asserted separately. */
+  const config = JSON.parse(
+    html.match(/initRouteScrolly\(root, (\{[\s\S]*?\}), live \? live\.follow : null\)/)?.[1] ??
+      "{}",
+  );
+  const parsePath = (path: string) => ({
+    subpaths: (path.match(/M/g) ?? []).length,
+    points: path
       .slice(1)
       .split("L")
       .map((p) => p.trim().split(/\s+/).map(Number) as [number, number]),
+  });
+  const d = html.match(/data-part="route"[^>]*?\sd="([^"]+)"/)?.[1] ?? "";
+  const route = {
+    subpaths: 1,
+    points: (config.route ?? []) as [number, number][],
   };
   /** The last badge in the beat's own crossing order — badge 9, Ukraine, the delta. */
   const lastAnchor =
     geometry.anchors[geometry.crossings[geometry.crossings.length - 1]];
 
   it("carries the whole route as ONE path, from the Black Forest to the delta", () => {
-    expect(route.subpaths).toBe(1);
+    expect(parsePath(routePath(route.points)).subpaths).toBe(1);
     expect(route.points).toHaveLength(911);
+  });
+
+  it("draws, at the step a reader without JavaScript keeps, exactly the prefix the reveal reaches", () => {
+    // THE REVEAL, RESTATED AS AN INVARIANT ON THE ARTIFACT: what is in the file is the front of the
+    // river and nothing else. It used to be the whole river under a dash, so this could not be
+    // asked; now it is the one thing that says the SSR'd picture and the driven one are the same
+    // drawing at two different fractions.
+    const opening = routePath(
+      drawnSoFar(route.points, config.cum, lengthFractionAt(config.cum, revealAt(config.stops, 0, false))),
+    );
+    expect(d).toBe(opening);
+    const drawn = parsePath(d);
+    expect(drawn.subpaths).toBe(1);
+    expect(drawn.points.length).toBeGreaterThan(300);
+    expect(drawn.points.length).toBeLessThan(route.points.length);
+    // A prefix, sample for sample, up to the head that cuts one segment in half.
+    for (let i = 0; i < drawn.points.length - 1; i++) {
+      expect(drawn.points[i]).toEqual(route.points[i]);
+    }
   });
 
   it("reaches the place its own last badge marks", () => {
@@ -1340,5 +1378,89 @@ describe("shaping a step's own fraction onto its card's reading window", () => {
   it("clamps rather than running past either end", () => {
     expect(shapeForReading(-0.2, 0.4)).toBe(0);
     expect(shapeForReading(1.4, 0.4)).toBe(1);
+  });
+});
+
+/**
+ * THE LINE IS THE POINTS IT HAS REACHED, not a whole line hidden by a dash.
+ *
+ * The dash reveal that shipped here cost six hours and five wrong diagnoses, and the fix it landed
+ * on — `pathLength={1}` and `vector-effect` removed from the two route paths — is a discipline that
+ * has to be REMEMBERED by every future author of a route beat. `chart-video` never needed it: it
+ * reveals a line by re-generating the path from the points reached, and the defect cannot exist
+ * there because there is no pattern to compute in the wrong space.
+ *
+ * Its `drawnSoFar` walks by INDEX, which is right for a chart whose x IS time and wrong here: this
+ * route's 911 samples are not evenly spaced — the longest segment is 23.6x the median — so an index
+ * walk would race the head through the sparse stretches and crawl it through the dense ones. This
+ * one walks by LENGTH, off the same `cum` the dash was measured against, so the picture it draws is
+ * the picture the dash drew.
+ */
+describe("the route is drawn from the points it has reached", () => {
+  // Three segments, deliberately uneven: 1, 8 and 1 long. Half way by length is deep inside the
+  // middle segment, and nowhere near the middle sample.
+  const points: [number, number][] = [
+    [0, 0],
+    [1, 0],
+    [9, 0],
+    [10, 0],
+  ];
+  const cum = [0, 0.1, 0.9, 1];
+
+  it("draws nothing at all before the reveal starts", () => {
+    expect(drawnSoFar(points, cum, 0)).toEqual([]);
+    expect(drawnSoFar(points, cum, -1)).toEqual([]);
+  });
+
+  it("draws the whole route once the reveal is complete", () => {
+    expect(drawnSoFar(points, cum, 1)).toEqual(points);
+    expect(drawnSoFar(points, cum, 2)).toEqual(points);
+  });
+
+  it("cuts the last segment mid-way, so the head moves smoothly instead of jumping sample to sample", () => {
+    // Half the LENGTH is 0.5, which sits 0.4/0.8 = half way along the long middle segment: x = 5.
+    expect(drawnSoFar(points, cum, 0.5)).toEqual([
+      [0, 0],
+      [1, 0],
+      [5, 0],
+    ]);
+  });
+
+  it("lands exactly on a sample when the fraction does", () => {
+    expect(drawnSoFar(points, cum, 0.1)).toEqual([
+      [0, 0],
+      [1, 0],
+    ]);
+  });
+
+  it("is the inverse of the measurement the dash used, at every authored stop", () => {
+    // The property that makes this a port and not a rewrite: the head lands where the dash put it.
+    for (const reveal of [0.25, 1, 1.5, 2.5]) {
+      const fraction = lengthFractionAt(cum, reveal);
+      const drawn = drawnSoFar(points, cum, fraction);
+      const head = drawn[drawn.length - 1];
+      const i = Math.floor(reveal);
+      const t = reveal - i;
+      const expected = [
+        points[i][0] + (points[Math.min(i + 1, points.length - 1)][0] - points[i][0]) * t,
+        points[i][1] + (points[Math.min(i + 1, points.length - 1)][1] - points[i][1]) * t,
+      ];
+      expect(head[0]).toBeCloseTo(expected[0], 9);
+      expect(head[1]).toBeCloseTo(expected[1], 9);
+    }
+  });
+
+  it("survives a zero-length segment rather than dividing by it", () => {
+    const doubled: [number, number][] = [
+      [0, 0],
+      [1, 0],
+      [1, 0],
+      [2, 0],
+    ];
+    expect(drawnSoFar(doubled, [0, 0.5, 0.5, 1], 0.5)).toEqual([
+      [0, 0],
+      [1, 0],
+      [1, 0],
+    ]);
   });
 });

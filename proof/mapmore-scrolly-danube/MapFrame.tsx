@@ -46,7 +46,9 @@ import {
   MAX_SCALE,
   arrivalOpacity,
   containCamera,
+  drawnSoFar,
   lengthFractionAt,
+  routePath,
   project,
   revealAt,
   strokeWidthsFor,
@@ -68,7 +70,7 @@ export type MapFrameProps = {
   frame: { width: number; height: number };
   plate: string;
   crossings: ScrollyCrossing[];
-  /** The WHOLE route, always — the dash is what hides the part not yet reached. */
+  /** The WHOLE route, always. What is DRAWN is the part reached — see `drawnSoFar`. */
   route: [number, number][];
   routeLength: number;
   cum: number[];
@@ -96,13 +98,6 @@ function ringPath(rings: [number, number][][]): string {
         "Z",
     )
     .join("");
-}
-
-function routePath(route: [number, number][]): string {
-  if (route.length < 2) return "";
-  return (
-    "M" + route.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")
-  );
 }
 
 export function MapFrame({
@@ -141,9 +136,10 @@ export function MapFrame({
   // The opening state, SSR'd: the reveal at progress 0, which is the first step's own picture and
   // the one a reader with no JavaScript keeps.
   const reveal0 = revealAt(stops, 0, false);
-  // NORMALISED, not in plate units: see the route paths below for what that cost.
-  const hidden0 = 1 - lengthFractionAt(cum, reveal0);
-  const d = routePath(route);
+  // WHAT IS DRAWN AT THE OPENING STEP — the points the river has reached, not the whole line under
+  // a dash. `lengthFractionAt` is kept: it is the measurement, and it is now what selects the
+  // points instead of what sizes an offset.
+  const d = routePath(drawnSoFar(route, cum, lengthFractionAt(cum, reveal0)));
 
   return (
     <div
@@ -225,32 +221,28 @@ export function MapFrame({
             />
           ))}
 
-          {/* THE ROUTE, DRAWN WHOLE AND HIDDEN BY A DASH. Two paths, one halo and one accent, with
-              the same `d` and therefore the same length — so one offset drives both and the halo
-              can never lag the line it is haloing.
-              `pathLength={1}` NORMALISES the length the dash is measured against, and it is the fix
-              for the defect the owner reported three times before it was named: the dash used to be
-              `routeLength` (1272.04) in plate units, computed in node, while these paths carry
-              `vector-effect: non-scaling-stroke` — which measures the stroke, AND ITS DASH PATTERN,
-              in SCREEN space. The camera scales the plate to the reader's frame, so on any viewport
-              where that scale exceeds 1 the pattern is shorter than the line it is dashing and
-              REPEATS: dash, gap, dash — a head, a hole and a tail, all moving together with the
-              offset, which is exactly what he saw and photographed. It never reproduced in this
-              tree's own headless runs because their scale sat near 1. With `pathLength={1}` the
-              dash is one whole path long whatever the scale, and the offset is a fraction. This
-              beat's own test file already described the repeat as a mutation to be caught
-              (`scroll.test.ts`, "the head, a hole, and the tail"); nothing measured it in a browser
-              at a scale that produced it.
-              AND `vector-effect: non-scaling-stroke` IS GONE FROM THESE TWO PATHS, which is the
-              other half of the same defect. It is kept on the territory outlines, where there is no
-              dash to misplace. Here it took the stroke — and with it the DASH — out of the path's
-              own user units and into screen space, which is the one space `pathLength` cannot
-              normalise: the pattern was then measured against a line 1.68x longer on a 1512px
-              viewport, and repeated. The widths never needed it either: `strokeWidthsFor` already
-              divides the intended SCREEN width back out of the camera's scale, so the two were
-              compensating the same scale twice. This tree's own headless runs sat at a scale near
-              1, where both errors vanish — which is why five rounds of measurement here saw
-              nothing and the owner's screen showed it every time. */}
+          {/* THE ROUTE, DRAWN FROM THE POINTS IT HAS REACHED. Two paths, one halo and one accent,
+              carrying the SAME `d` — so the halo can never lag the line it is haloing — rebuilt on
+              every paint from `drawnSoFar(route, cum, fraction)`.
+
+              THIS USED TO BE A DASH, and the dash is why this comment is long. The whole line was
+              drawn and hidden by a `stroke-dasharray` one path long whose offset ran to zero. It
+              works only while the pattern is measured in the space the path's length lives in, and
+              the camera scales the plate to the reader's frame: with `vector-effect:
+              non-scaling-stroke` on these paths the pattern was computed in SCREEN space, came out
+              shorter than the line, and REPEATED — head, hole and tail, all sliding together. That
+              cost six hours and five wrong diagnoses, and it never reproduced in this tree's own
+              headless runs because their scale sat near 1. The fix was `pathLength={1}` plus
+              `vector-effect` removed from these two paths only — a discipline every future author
+              of a route beat had to remember, in a file where the same attribute is CORRECT one
+              element up, on the territory outlines.
+
+              Re-generating the path cannot have the defect: there is no pattern to compute in the
+              wrong space, no `pathLength` to normalise, and nothing to remember. It is
+              `chart-video`'s own mechanism — eleven beats there reveal a line this way and needed no
+              doctrine — carried back here, which is the direction the traffic had never run.
+              `drawnSoFar` walks by LENGTH rather than by index, because these 911 samples are not
+              evenly spaced; see its own header. */}
           <path
             data-part="route"
             data-layer="halo"
@@ -261,8 +253,6 @@ export function MapFrame({
             strokeLinecap="round"
             strokeLinejoin="round"
             opacity={0.85}
-            pathLength={1}
-            style={{ strokeDasharray: 1, strokeDashoffset: hidden0 }}
           />
           <path
             data-part="route"
@@ -273,8 +263,6 @@ export function MapFrame({
             strokeWidth={strokes.route}
             strokeLinecap="round"
             strokeLinejoin="round"
-            pathLength={1}
-            style={{ strokeDasharray: 1, strokeDashoffset: hidden0 }}
           />
         </svg>
       </div>

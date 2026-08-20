@@ -57,6 +57,65 @@ export function revealFraction(stops, position, reduced = false, shape = (t) => 
   return stops[i] + (stops[i + 1] - stops[i]) * t;
 }
 
+/** One sample, at the 1-decimal precision a route beat writes its `d` attribute at.
+ *
+ *  The cumulative lengths a reveal is measured against are computed from these ROUNDED coordinates,
+ *  so rounding here is not a size optimisation: it is what makes the drawn path and the measurement
+ *  that selects its points one polyline rather than two opinions of one. */
+const at1 = (value) => Number(value.toFixed(1));
+
+/** The `d` attribute for a list of samples. Fewer than two points is nothing drawn, not a dot. */
+export function routePath(route) {
+  if (!Array.isArray(route) || route.length < 2) return "";
+  return "M" + route.map(([x, y]) => `${at1(x)} ${at1(y)}`).join("L");
+}
+
+/**
+ * The route as far as it has been drawn, with the last segment cut mid-way so the head moves
+ * smoothly instead of jumping from sample to sample.
+ *
+ * THE POINTS REACHED, NOT A WHOLE LINE HIDDEN BY A DASH — `chart-video`'s mechanism, carried here.
+ * A dash reveal draws the finished line and hides the part not yet reached with a pattern one path
+ * long; it works, and it cost six hours and five wrong diagnoses to make safe, because the pattern
+ * is measured in whatever space the stroke is computed in and a camera scale moves that space. The
+ * discipline that keeps it safe — `pathLength={1}`, and `vector-effect` kept off the dashed paths —
+ * has to be remembered by every future author. Re-generating the path cannot have the defect at all:
+ * there is no pattern to compute in the wrong space.
+ *
+ * BY LENGTH, and that is the difference from the video's own `drawnSoFar`, which walks by INDEX.
+ * Index is right for a chart whose x IS time. A route's samples are not evenly spaced — on the
+ * Danube, the beat this was ported for, the longest segment is 23.6x the median — so an index walk
+ * would race the head through the sparse stretches and crawl it through the dense ones. `cum` is the
+ * same normalised cumulative length the dash was measured against, computed from the same rounded
+ * coordinates the `d` attribute carries, so the head lands exactly where the dash put it.
+ *
+ * ONE IMPLEMENTATION, COPIED, and held byte-identical by
+ * `splash/test/route-reveal-parity.test.ts`. A scrolly's driver is inlined into the delivered page
+ * as source text — that is what makes the page self-contained — so it cannot import, and a copy is
+ * the only shape available. Nothing in here is beat-specific, so a copy that differs differs by
+ * accident.
+ */
+export function drawnSoFar(route, cum, fraction) {
+  if (!Array.isArray(route) || route.length < 2) return [];
+  if (!(fraction > 0)) return [];
+  const last = route.length - 1;
+  if (fraction >= 1) return route.map(([x, y]) => [x, y]);
+  let i = 0;
+  while (i < last && cum[i + 1] <= fraction) i++;
+  const head = route.slice(0, i + 1).map(([x, y]) => [x, y]);
+  if (i >= last) return head;
+  const span = cum[i + 1] - cum[i];
+  // A zero-length segment has no fraction to be part-way along: the head sits on its own sample.
+  const t = span > 0 ? (fraction - cum[i]) / span : 0;
+  // Landing exactly on a sample emits the head and nothing else: a point interpolated at t = 0 is a
+  // duplicate of the sample before it, and a zero-length segment in the `d` attribute is noise the
+  // renderer has to carry for no picture.
+  if (t === 0) return head;
+  const [ax, ay] = route[i];
+  const [bx, by] = route[i + 1];
+  return [...head, [ax + (bx - ax) * t, ay + (by - ay) * t]];
+}
+
 /** A stop the route has not reached is present but held back — the map only ever gains ground. */
 const DIM = 0.28;
 
@@ -131,7 +190,13 @@ export function initRouteAccess(root, config) {
       const fraction = revealFraction(config.stops, position, reduced.matches, (t) =>
         shapeForReading(t, share),
       );
-      for (const el of routes) el.style.strokeDashoffset = String(1 - fraction);
+      // The line grows by being REDRAWN from the points it has reached — halo and line take the
+      // same `d`, so one can never lag the other. It used to be a dash whose offset ran to zero,
+      // which draws head, hole and tail the moment the pattern is computed in a space the path's
+      // length does not live in. This beat's five stops ARE the polyline's vertices and their
+      // `reachedAt` IS its cumulative length, so nothing new had to be measured.
+      const drawn = routePath(drawnSoFar(config.route, config.cum, fraction));
+      for (const el of routes) el.setAttribute("d", drawn);
       stops.forEach((el, i) => {
         el.style.opacity = String(
           stopOpacity(fraction, config.stops[i], i === 0 ? null : config.stops[i - 1]),

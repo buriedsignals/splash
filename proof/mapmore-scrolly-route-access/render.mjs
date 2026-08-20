@@ -105,7 +105,17 @@ async function render({ outDir = OUT_DIR } = {}) {
     `    var root = document.querySelector('[data-visual="route-access"]');\n` +
     `    if (!root) return;\n` +
     `    initLiveMap(root, ${JSON.stringify(livePlan)});\n` +
-    `    initRouteAccess(root, ${JSON.stringify({ stops: geometry.stops.map((s) => s.reachedAt), accent, muted: furniture.muted })});\n` +
+    `    initRouteAccess(root, ${JSON.stringify({
+      stops: geometry.stops.map((s) => s.reachedAt),
+      // The samples the line is redrawn from, and the cumulative length that selects them. Both are
+      // read off the stops themselves: this route's vertices ARE its stops, and `reachedAt` IS the
+      // normalised length at each one — the same two numbers the badges are placed with, so the
+      // line and the labels cannot hold two opinions of where the route is.
+      route: geometry.stops.map((s) => [s.x, s.y]),
+      cum: geometry.stops.map((s) => s.reachedAt),
+      accent,
+      muted: furniture.muted,
+    })});\n` +
     `  }\n` +
     `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
     `  else boot();\n` +
