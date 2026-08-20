@@ -124,12 +124,12 @@ describe("every copied guard decision is still the same decision", () => {
     const catalogue = JSON.parse(
       readFileSync(join(SKILLS, "doctrine", "references", "guard-catalogue.json"), "utf8"),
     );
-    const shared = catalogue.guards
+    const shared = catalogue.rules
       .filter(
-        (guard: { formats: Record<string, string> }) =>
-          Object.values(guard.formats).filter((state) => state === "carried").length > 1,
+        (rule: { states: Record<string, string> }) =>
+          Object.values(rule.states).filter((state) => state === "carried").length > 1,
       )
-      .map((guard: { decidedBy: string }) => guard.decidedBy)
+      .map((rule: { decidedBy: string }) => rule.decidedBy)
       .sort();
     // A guard carried by two skills and NOT walked here is a decision free to drift. This is the
     // assertion that makes adding the next one to `COPIES` unavoidable rather than remembered.
