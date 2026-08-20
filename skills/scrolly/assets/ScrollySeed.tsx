@@ -485,6 +485,13 @@ export function MapFrame({
       preserveAspectRatio="xMidYMid slice"
       style={{ width: "100%", height: "100%", display: "block" }}
     >
+      {/* The baked plate, inlined as a `data:` URI — the same asset the doc comment above
+          calls out as embedded once, never duplicated. `weightAgainstCeiling`
+          (`scripts/detect-weight-has-a-ceiling.mjs`) is the capability
+          `doctrine/references/guard-catalogue.json` names `weight-has-a-ceiling`, measured
+          against this format's own delivered pages — the heaviest of any format here, since
+          a mixed-media beat can inline an image track, a drawn track and this MAP track's
+          own plate all in one file. */}
       <image
         href={plate}
         x={0}

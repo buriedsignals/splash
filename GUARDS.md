@@ -32,6 +32,7 @@ written out below the tables.
 | reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
 | honours-reduced-motion |  | **R** |  |  |  |  |  |  |
 | degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
+| weight-has-a-ceiling |  | **R** |  |  | **R** | **R** | **R** | **R** |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -160,3 +161,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a reader whose script never ran — blocked, failed to load, an embed's host CSP, a crawler — still gets every mark's own reading, not a mount point that only fills in once a script runs
 
 **Earned by:** same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone — a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for
+
+### weight-has-a-ceiling — `weightAgainstCeiling`
+
+**Offers:** a reader on a slow connection or a metered one never downloads more than this format's own beats have ever actually weighed — the delivered file's own size, measured against a ceiling earned from today's population rather than assumed ahead of it
+
+**Earned by:** image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them

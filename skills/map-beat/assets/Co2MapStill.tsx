@@ -254,6 +254,12 @@ export function Co2MapStill({
 
       {/* ── The map ───────────────────────────────────────────────────────────────────────── */}
       <g transform={`translate(${MAP_X},${PAD})`} clipPath="url(#plate-clip)">
+        {/* The baked plate, inlined as a `data:` URI — the heaviest single asset this
+            format produces (`SKILL.md`, "The rendered still may not carry the same asset
+            twice"), and what makes the delivered still's own weight worth a ceiling.
+            `weightAgainstCeiling` (`scripts/detect-weight-has-a-ceiling.mjs`) is the
+            capability `doctrine/references/guard-catalogue.json` names
+            `weight-has-a-ceiling`, measured against this format's own delivered SVGs. */}
         <image href={plate} x={0} y={0} width={MAP} height={MAP} />
         <g transform={`scale(${scale})`}>
           {geometry.shapes.map((shape) => (

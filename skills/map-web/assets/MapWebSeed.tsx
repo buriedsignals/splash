@@ -238,6 +238,12 @@ export function MapWebSeed({
                 </clipPath>
               </defs>
               <g clipPath="url(#plate-clip)">
+                {/* The baked plate, inlined as a `data:` URI, is the heaviest single asset
+                    this format produces and what makes the delivered page an order of
+                    magnitude heavier than a chart-web one. `weightAgainstCeiling`
+                    (`scripts/detect-weight-has-a-ceiling.mjs`) is the capability
+                    `doctrine/references/guard-catalogue.json` names `weight-has-a-ceiling`,
+                    measured against this format's own 4 delivered pages. */}
                 <image
                   href={plate}
                   x={0}

@@ -148,6 +148,19 @@ const COPIES: Record<string, string[]> = {
     "chart-web/scripts/detect-accessible-table.mjs",
     "map-web/scripts/detect-accessible-table.mjs",
   ],
+  // A capability, not a guard, carried by every format that inlines its own assets: the delivered
+  // file's own weight, measured against a ceiling this format's own beats have already earned by
+  // how much they weigh today. `ceiling` is a parameter here rather than a module constant each
+  // copy's own body would reference by name, precisely so the five different numbers behind it
+  // (chart-web, map-beat, map-web, image-beat, scrolly each measure a different population) live
+  // outside the compared span and cannot make five honest ceilings look like five drifted copies.
+  weightAgainstCeiling: [
+    "chart-web/scripts/detect-weight-has-a-ceiling.mjs",
+    "map-beat/scripts/detect-weight-has-a-ceiling.mjs",
+    "map-web/scripts/detect-weight-has-a-ceiling.mjs",
+    "image-beat/scripts/detect-weight-has-a-ceiling.mjs",
+    "scrolly/scripts/detect-weight-has-a-ceiling.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

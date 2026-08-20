@@ -212,6 +212,22 @@
         "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them — there is no per-reading fact here for either count to be about",
         "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file"
       }
+    },
+    {
+      "id": "weight-has-a-ceiling",
+      "kind": "capability",
+      "requires": ["inlines-its-assets"],
+      "offers": "a reader on a slow connection or a metered one never downloads more than this format's own beats have ever actually weighed — the delivered file's own size, measured against a ceiling earned from today's population rather than assumed ahead of it",
+      "earnedBy": "image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them",
+      "detectedBy": "weightAgainstCeiling",
+      "states": {
+        "chart-web": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

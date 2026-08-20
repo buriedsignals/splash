@@ -214,6 +214,12 @@ export function ImageBeatSeed({
             height={block.boxHeight}
             fill={grid}
           />
+          {/* Every photo here embeds as a `data:` URI, and the group of them is what makes
+              this format's own delivered file heavy. `weightAgainstCeiling`
+              (`scripts/detect-weight-has-a-ceiling.mjs`) is the capability
+              `doctrine/references/guard-catalogue.json` names `weight-has-a-ceiling` — it
+              measures the delivered file itself against this format's own ceiling, a
+              companion to `checkWeight` which only ever measured the raw bytes going in. */}
           <image
             x={block.boxLeft + block.fit.offsetX}
             y={block.boxTop + block.fit.offsetY}
