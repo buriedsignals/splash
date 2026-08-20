@@ -67,7 +67,11 @@ describe("profileTable", () => {
   });
 
   it("should not crash on an entirely empty table", () => {
-    expect(profileTable([])).toEqual({ rowCount: 0, columns: [] });
+    expect(profileTable([])).toEqual({
+      rowCount: 0,
+      columns: [],
+      duplicates: { count: 0, rows: [] },
+    });
   });
 
   it("should not type a hex-looking value as a number", () => {
@@ -124,5 +128,36 @@ describe("profileTable", () => {
     const v = table.columns.find((c) => c.name === "v");
     expect(v.type).toBe("text");
     expect(v.reason).toMatch(/0x1F/);
+  });
+
+  it("should report an exact duplicate row: how many, and which", () => {
+    const table = profileTable([
+      ["country", "price"],
+      ["Spain", "712.0"],
+      ["France", "987.25"],
+      ["Spain", "712.0"],
+    ]);
+    expect(table.duplicates).toEqual({
+      count: 1,
+      rows: [{ values: ["Spain", "712.0"], indices: [0, 2], occurrences: 2 }],
+    });
+  });
+
+  it("should report no duplicates when every row is unique", () => {
+    expect(profileTable(ROWS).duplicates).toEqual({ count: 0, rows: [] });
+  });
+
+  it("should count a duplicate row exactly once in the report even with three copies", () => {
+    const table = profileTable([
+      ["a"],
+      ["x"],
+      ["x"],
+      ["x"],
+      ["y"],
+    ]);
+    expect(table.duplicates).toEqual({
+      count: 1,
+      rows: [{ values: ["x"], indices: [0, 1, 2], occurrences: 3 }],
+    });
   });
 });

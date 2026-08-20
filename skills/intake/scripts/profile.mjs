@@ -55,6 +55,24 @@ function typeOf(values) {
   };
 }
 
+// A row is duplicated when it repeats another row's DATA byte-for-byte —
+// reported, never removed: the journalist decides what a repeated row means.
+function findDuplicateRows(body) {
+  const groups = new Map();
+  body.forEach((row, index) => {
+    const key = JSON.stringify(row);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(index);
+  });
+  const rows = [];
+  for (const indices of groups.values()) {
+    if (indices.length > 1) {
+      rows.push({ values: [...body[indices[0]]], indices, occurrences: indices.length });
+    }
+  }
+  return { count: rows.length, rows };
+}
+
 export function profileTable(rows) {
   const [rawHeader = [], ...body] = rows;
   // A header name is metadata, not data — trim it. A value's own leading or
@@ -83,5 +101,5 @@ export function profileTable(rows) {
       sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
     };
   });
-  return { rowCount: body.length, columns };
+  return { rowCount: body.length, columns, duplicates: findDuplicateRows(body) };
 }
