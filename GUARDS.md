@@ -22,15 +22,14 @@ written out below the tables.
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
-| reveal-completes |  |  | **R** |  | · |  |  |  |
+| reveal-completes |  |  | **R** |  | **R** |  |  |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 3 cells
+## What is still owed — 2 cells
 
 - `scrolly` owes **plate-geometry-pairing**
 - `image-beat` owes **screen-space-dash**
-- `map-beat` owes **reveal-completes**
 
 ## Why a cell is blank, where the blankness was argued — 0 of them
 

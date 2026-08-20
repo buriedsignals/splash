@@ -126,6 +126,21 @@ one it cannot reach rather than permanently owing it.
 their pattern by the camera's scale, which is the correct compensation, and neither declares a
 `vectorEffect` — nothing is being repaired, the guard is a ratchet.
 
+**The rendered still may not carry the same asset twice.** `renderStill` (`render-still.mjs`) writes
+an SVG with the baked plate inlined as a `data:` URI beside the PNG it rasterises from — a
+self-contained delivered file, and the plate is the heaviest single asset this format produces.
+`duplicatedPayload`, the copy `chart-web`, `image-beat`, `map-web` and `scrolly` carry, names any
+asset inlined more than once. Measured 2026-08-19 across the 7 stills this format has rendered to
+disk: **none does.**
+
+**And a video's own reveal must finish before the composition does.** This format ships both static
+and video from one component family — `assets/timing.ts`, six proof beats declaring a `total` frame
+count — and every reveal signals arrival by an opacity ramp over an already-clamped progress, the
+same mechanism `chart-video` earned `neverArrives` for: an input range ending above 1 is driven by a
+value clamped at 1 and never reaches its own end, so the mark it fades in is still fading when the
+reader's video stops. Measured 2026-08-20 across the seed and the 6 proof video components: **22
+ramps, none with a bound the reveal cannot reach.**
+
 ## How it works (the shape)
 
 1. **Freeze the data and the shapes.** A csv and a GeoJSON on disk, not a URL fetched at render.
@@ -204,9 +219,11 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   at 1080x1920 both ways, so the rule is a picture and not a paragraph.
 - `scripts/render-map.mjs` — the render ladder, the join, the claim check, the beat's own words.
 - `scripts/verify-map.mjs` — `plateMatchesGeometry` (this format's own), plus `plateFollowsGround`,
-  `surfaceLuminance` and `revealDashInScreenSpace` carried from `scrolly` as byte-identical copies,
-  walked by `splash/test/guard-copies-parity.test.ts`. Reads the bake's own two files, never a
-  screenshot. `test/verify-map.test.ts` runs it over every plated beat on disk.
+  `surfaceLuminance`, `revealDashInScreenSpace`, `duplicatedPayload` and `neverArrives` carried from
+  `scrolly`, `chart-web`/`map-web` and `chart-video` as byte-identical copies, walked by
+  `splash/test/guard-copies-parity.test.ts`. Reads the bake's own two files and the format's own
+  rendered still and video components, never a screenshot. `test/verify-map.test.ts` runs it over
+  every plated beat, every rendered still, and every video component on disk.
 - `scripts/render-preview.mjs` — renders THIS skill's static seed from THIS skill's sample data.
   Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` mode for verification. Automakes the plate if missing.

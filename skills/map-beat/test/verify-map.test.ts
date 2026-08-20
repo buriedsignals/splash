@@ -37,7 +37,13 @@
  * `map-web` and `scrolly` already carry for exactly that shape. Measured 2026-08-19 across the 7
  * stills this format has rendered to disk: 0 inline any asset twice.
  *
- * Nothing here is being repaired. All four are ratchets.
+ * A FIFTH, from this format's own VIDEO genre. Six proof beats declare a `timing.ts` with a `total`
+ * frame count, the same shape `chart-video` earned `neverArrives` for — a ramp over an
+ * already-clamped progress whose input range ends above 1 never reaches its own end. Measured
+ * 2026-08-20 across the seed and those 6 components: 22 ramps, 0 with a bound the reveal cannot
+ * reach.
+ *
+ * Nothing here is being repaired. All five are ratchets.
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -46,9 +52,11 @@ import {
   duplicatedPayload,
   groundFromPalette,
   marksFromSource,
+  neverArrives,
   plateFollowsGround,
   plateLuminance,
   plateMatchesGeometry,
+  rampsFromSource,
   revealDashInScreenSpace,
   surfaceLuminance,
 } from "../scripts/verify-map.mjs";
@@ -195,6 +203,65 @@ describe("what a rendered still carries", () => {
   });
 });
 
+describe("a ramp that cannot finish", () => {
+  it("refuses one whose input range ends past the progress that drives it", () => {
+    expect(
+      neverArrives([
+        { id: "QuakeSymbolVideo.tsx:12 opacity", ceiling: 1.4, limit: 1 },
+        { id: "QuakeSymbolVideo.tsx:20 opacity", ceiling: 1, limit: 1 },
+      ]),
+    ).toEqual(["QuakeSymbolVideo.tsx:12 opacity"]);
+  });
+
+  it("leaves a sub-range that closes early alone — an early finish is a choice, not a defect", () => {
+    expect(neverArrives([{ id: "a", ceiling: 0.45, limit: 1 }])).toEqual([]);
+  });
+
+  it("says nothing about a ramp whose bounds it could not read", () => {
+    expect(neverArrives([{ id: "a", ceiling: null, limit: 1 }])).toEqual([]);
+  });
+
+  it("measures a frame-driven ramp against the composition's own last frame", () => {
+    expect(
+      neverArrives([
+        { id: "late", ceiling: 260, limit: 239 },
+        { id: "fine", ceiling: 200, limit: 239 },
+      ]),
+    ).toEqual(["late"]);
+  });
+});
+
+describe("reading a map video beat's ramps out of its own component", () => {
+  it("reads a normalised progress against 1, and names the ramp by file and line", () => {
+    const ramps = rampsFromSource(
+      `const o = interpolate(conclusion, [0.45, 1], [0, 1], { extrapolateRight: "clamp" });`,
+      "Beat.tsx",
+      { total: 240 },
+    );
+    expect(ramps).toEqual([
+      { id: "Beat.tsx:1 interpolate(conclusion)", driver: "conclusion", ceiling: 1, limit: 1 },
+    ]);
+  });
+
+  it("reads a frame-driven ramp against the last frame instead", () => {
+    const ramps = rampsFromSource(`interpolate(frame, [0, 260], [0, 1])`, "Beat.tsx", {
+      total: 240,
+    });
+    expect(ramps[0]).toMatchObject({ driver: "frame", ceiling: 260, limit: 239 });
+  });
+
+  it("keeps a ramp whose bounds are computed, with no ceiling to decide on", () => {
+    const ramps = rampsFromSource(`interpolate(reveal, [w.start, w.end], [0, 1])`, "Beat.tsx", {
+      total: 240,
+    });
+    expect(ramps[0]).toMatchObject({ driver: "reveal", ceiling: null });
+  });
+
+  it("ignores an interpolate that is not a ramp over time at all", () => {
+    expect(rampsFromSource(`const x = 3;`, "Beat.tsx", { total: 240 })).toEqual([]);
+  });
+});
+
 /** Every beat on disk that carries a baked plate. */
 function platedBeats(): { name: string; dir: string }[] {
   const found = [];
@@ -288,6 +355,67 @@ describe("every map beat's own still on disk", () => {
             `asset, ${(found.wastedBytes / (1024 * 1024)).toFixed(2)} MB wasted`,
         );
     }
+    expect(offenders).toEqual([]);
+  });
+});
+
+/** Every `*Video.tsx` this format's own video beats carry, the seed included. Scoped by the
+ *  presence of `timing.ts` beside the component rather than by `BRIEF.md` text: that file is
+ *  unique to this format's video beats in this corpus — a chart video keeps its contract in
+ *  `timing-contract.ts` instead — so it names this format's own population without reaching into
+ *  a repository-level script. */
+function mapVideoComponents(): string[] {
+  const found = [join(SKILL, "assets", "Co2MapVideo.tsx")];
+  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (!existsSync(join(PROOF, entry.name, "timing.ts"))) continue;
+    for (const file of readdirSync(join(PROOF, entry.name)))
+      if (/Video\.tsx$/.test(file)) found.push(join(PROOF, entry.name, file));
+  }
+  return found;
+}
+
+/** The composition length a beat's own timing records — the only place the last frame is written
+ *  down. Read from `timing.ts` beside the component, this format's own filename (`totalFrames` in
+ *  `chart-video/test/verify-video.test.ts` also tries `timing-contract.ts` first, for its own
+ *  corpus; this format has no video component that keeps its contract there, so trying `timing.ts`
+ *  alone is enough — and a component whose total cannot be found is REPORTED rather than silently
+ *  skipped, the same discipline that guard's own header names). */
+function totalFrames(component: string): number | null {
+  let source: string;
+  try {
+    source = readFileSync(join(component, "..", "timing.ts"), "utf8");
+  } catch {
+    return null;
+  }
+  const found = /\btotal:\s*(\d+)/.exec(source);
+  return found ? Number(found[1]) : null;
+}
+
+describe("every map video on disk ends with nothing still on its way", () => {
+  it("should find no ramp whose input range outruns the progress driving it", () => {
+    const offenders: string[] = [];
+    const unreadable: string[] = [];
+    let ramps = 0;
+    let undecidable = 0;
+    for (const file of mapVideoComponents()) {
+      const total = totalFrames(file);
+      const where = file.slice(TWIN.length + 1);
+      if (total === null) {
+        unreadable.push(where);
+        continue;
+      }
+      const found = rampsFromSource(readFileSync(file, "utf8"), where, { total });
+      ramps += found.length;
+      undecidable += found.filter((ramp) => ramp.ceiling === null).length;
+      offenders.push(...neverArrives(found));
+    }
+    // Measured 2026-08-20: 7 video components (the seed and the 6 proof beats that declare a
+    // `timing.ts`), 22 ramps, 0 with computed bounds. The floor sits under the measured count and
+    // exists to catch a reader that broke, not to pin the corpus's exact size.
+    expect(ramps).toBeGreaterThanOrEqual(18);
+    expect(undecidable).toBeLessThan(ramps / 4);
+    expect(unreadable).toEqual([]);
     expect(offenders).toEqual([]);
   });
 });

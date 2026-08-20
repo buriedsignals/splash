@@ -98,6 +98,7 @@ const COPIES: Record<string, string[]> = {
     "map-web/scripts/verify-guards.mjs",
     "map-beat/scripts/verify-map.mjs",
   ],
+  neverArrives: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.
@@ -108,6 +109,10 @@ const COPIES: Record<string, string[]> = {
     "chart-web/scripts/verify-guards.mjs",
     "map-web/scripts/verify-guards.mjs",
   ],
+  // Also a READER, not a guard, and the argument for walking it is the same one: neverArrives
+  // decides on the shape this returns, and a copy that read a ramp's bounds differently would
+  // refuse a different set of beats while looking like the same decision.
+  rampsFromSource: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
 };
 
 describe("every copied guard decision is still the same decision", () => {
