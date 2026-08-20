@@ -228,6 +228,18 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "every-photo-says-what-it-shows",
+      "kind": "capability",
+      "requires": ["embeds-reader-photos"],
+      "offers": "a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is — an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists",
+      "earnedBy": "this format's own discipline (references/image-discipline.md, \"Alt text and credit\") already requires both, and imageBeatLayout already refuses to render a photo missing either one — a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same \"a decision nothing calls is a decision that does not run\" standard duplicatedPayload is already held to",
+      "detectedBy": "photosDeclareAltAndCredit",
+      "states": {
+        "image-beat": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

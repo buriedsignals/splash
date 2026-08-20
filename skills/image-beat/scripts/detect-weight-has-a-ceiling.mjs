@@ -23,8 +23,11 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  two `image` beats there are `image / scrolly` and belong to the vehicle, the same fact
  *  `test/verify-image.test.ts` already states for `duplicatedPayload`. The one measurement
  *  available is this skill's own seed, rendered from its own sample photographs exactly as
- *  `test/verify-image.test.ts`'s "the seed's own artifact" describes: 38 424 bytes. Set at that
- *  number rather than invented ahead of it — a real beat's own photographs will very likely weigh
- *  more than three placeholder thumbnails, which is a fact for the day a real beat exists to
- *  re-measure, not one this ceiling should guess at now. */
-export const CEILING_BYTES = 38424;
+ *  `test/verify-image.test.ts`'s "the seed's own artifact" describes: 38 682 bytes — RE-MEASURED
+ *  the same day after `every-photo-says-what-it-shows` added `data-credit` to the seed's own
+ *  markup (38 424 -> 38 682, +258 bytes across 3 photos), which is exactly the re-check this
+ *  number exists to survive rather than go stale silently. Set at that number rather than invented
+ *  ahead of it — a real beat's own photographs will very likely weigh more than three placeholder
+ *  thumbnails, which is a fact for the day a real beat exists to re-measure, not one this ceiling
+ *  should guess at now. */
+export const CEILING_BYTES = 38682;

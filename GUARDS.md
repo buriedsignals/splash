@@ -33,6 +33,7 @@ written out below the tables.
 | honours-reduced-motion |  | **R** |  |  |  |  |  |  |
 | degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
 | weight-has-a-ceiling |  | **R** |  |  | **R** | **R** | **R** | **R** |
+| every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -167,3 +168,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a reader on a slow connection or a metered one never downloads more than this format's own beats have ever actually weighed — the delivered file's own size, measured against a ceiling earned from today's population rather than assumed ahead of it
 
 **Earned by:** image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them
+
+### every-photo-says-what-it-shows — `photosDeclareAltAndCredit`
+
+**Offers:** a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is — an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists
+
+**Earned by:** this format's own discipline (references/image-discipline.md, "Alt text and credit") already requires both, and imageBeatLayout already refuses to render a photo missing either one — a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same "a decision nothing calls is a decision that does not run" standard duplicatedPayload is already held to

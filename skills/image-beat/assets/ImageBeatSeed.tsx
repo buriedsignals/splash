@@ -203,7 +203,16 @@ export function ImageBeatSeed({
         // directly, rather than the rasterised .png) reaches. This is the same
         // `role="img"` + `<desc>` pairing `chart-beat/assets/ChartSeed.tsx` uses at its own
         // root, one level lower because THIS frame holds several images, not one.
-        <g key={i} role="img" aria-label={block.alt}>
+        //
+        // `data-credit` on the SAME group, off the SAME string the visible credit `<text>` below
+        // draws — never a second source of truth for it. `imageBeatLayout` already refuses to lay
+        // out a photo missing either field (see its own throw above), so both are guaranteed
+        // present by the time this renders; `data-credit` is what makes that guarantee mechanically
+        // CHECKABLE against the delivered markup itself, the same way `data-detail` already does
+        // for a mark's own reading elsewhere in this tree. This is the capability
+        // `doctrine/references/guard-catalogue.json` names `every-photo-says-what-it-shows`
+        // (`scripts/detect-every-photo-says-what-it-shows.mjs`'s `photosDeclareAltAndCredit`).
+        <g key={i} role="img" aria-label={block.alt} data-credit={block.credit}>
           <desc>{block.alt}</desc>
           {/* The box itself, filled with `grid` — visible letterbox bars on any photo whose own
               aspect ratio does not fill the box, rather than an unexplained gap of raw ground. */}
