@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderStill, readPalette, framingMeasurement } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -102,6 +102,16 @@ async function main() {
   const delta = last.value - first.value;
   console.log(
     `${first.year}: ${first.value}% -> ${last.year}: ${last.value}% (change ${delta.toFixed(1)} pts)`,
+  );
+
+  // FINDING 8: two numbers, printed, before the geometry is chosen — never a refusal. See
+  // chart-beat/references/static-discipline.md, "framing-serves-the-point".
+  const framing = framingMeasurement(readings.map((r) => r.value));
+  console.log(
+    `framing: the takeaway's own spread is ${(framing.spreadAgainstExtent * 100).toFixed(1)}% of ` +
+      `the plot's own 0-${formatValue(framing.max)} extent; the largest reading is ` +
+      `${framing.largestAgainstMedian.toFixed(2)}x the group's median (${formatValue(framing.median)}) — ` +
+      `see BRIEF.md, "The framing", for the treatment kept and why`,
   );
 
   const title = `The share of vacant homes fell every year from ${first.year} to ${last.year}, from ${formatValue(first.value)} to ${formatValue(last.value)}.`;

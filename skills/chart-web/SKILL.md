@@ -91,7 +91,9 @@ first build's shipped output was that it did not fill its container (see "How it
 ## The one gotcha that will waste your day (read first)
 
 **A static render can be checked with a PNG; an interactive one cannot.** Every rule in
-`static-discipline.md` about looking at the pixels still applies to this format's own furniture, but
+`static-discipline.md` — including its `framing-serves-the-point` discipline, read against the
+values `framingMeasurement` prints before this format's own build runs — about looking at the pixels
+still applies to this format's own furniture, but
 the thing unique to this format — does hovering point X show point X's own value, does Tab actually
 reach it, does the frame genuinely fill a 1600px container without the type growing with it, does
 nothing clip at 375px — is a *behaviour over a range of widths*, not a frame. `test/render-web.test.ts`

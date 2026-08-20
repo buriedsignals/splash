@@ -36,6 +36,7 @@ written out below the tables.
 | degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
 | weight-has-a-ceiling |  |  |  |  | **R** | **R** | **R** | **R** |
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
+| framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |
 
 ## discipline
 
@@ -45,6 +46,7 @@ written out below the tables.
 | motion-grammar |  |  | **R** |  | **R** |  |  |  |
 | static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
+| framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -52,7 +54,7 @@ Disciplines are checked for PRESENCE where an author reads them, and are not mec
 
 Nothing. Every format carries every rule it can reach.
 
-## Why a cell is blank, where the blankness was argued — 10 of them
+## Why a cell is blank, where the blankness was argued — 18 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
@@ -68,6 +70,14 @@ trait already proves it.
 - `dw-beat` cannot reach **honours-reduced-motion** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks and authoring zero motion of its own. motionUnderReduce reports {movedFrames: 0} under both conditions vacuously — whatever the hosted embed itself does lives behind a cross-origin boundary this skill does not own and cannot drive a media-feature emulation into from its own delivered file
 - `scrolly` cannot reach **degrades-without-javascript** — measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them — there is no per-reading fact here for either count to be about
 - `dw-beat` cannot reach **degrades-without-javascript** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file
+- `image-beat` cannot reach **framing-serves-the-point** — a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here
+- `map-beat` cannot reach **framing-serves-the-point** — measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline
+- `map-web` cannot reach **framing-serves-the-point** — same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe
+- `scrolly` cannot reach **framing-serves-the-point** — this skill's own doctrine says so directly — "it does not invent a second drawing engine" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above
+- `image-beat` cannot reach **framing-is-measured** — a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here
+- `map-beat` cannot reach **framing-is-measured** — measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline
+- `map-web` cannot reach **framing-is-measured** — same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe
+- `scrolly` cannot reach **framing-is-measured** — this skill's own doctrine says so directly — "it does not invent a second drawing engine" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above
 
 ## What each skill is
 
@@ -221,3 +231,15 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a craft skill whose own render reads a palette and never says, where an author reads it, where PALETTE.md comes from or what to do when readPalette refuses it — the proposal's own dead end, not the refusal itself
 
 **Earned by:** a stress test hit readPalette's throw with no PALETTE.md anywhere above the beat and no route back to palette's own proposal. The refusal was correct — a render that defaulted to a colour nobody chose would publish a newsroom's identity by accident — and the dead end was not: no craft skill's own SKILL.md said where the file it reads comes from, and palette's own documentation assumes a journalist is sitting there to answer, with nothing named for when nobody is
+
+### framing-serves-the-point — `chart-beat/references/static-discipline.md`
+
+**Refuses:** a beat drawn without asking whether its own framing shows what its own takeaway asserts — a real change compressed to a sliver against a zero baseline, or one value dwarfing the group it is compared inside, shipped because nothing stopped to look before the geometry was chosen
+
+**Earned by:** both stress beats were true and neither fought for its own point: stress-c-vacant-homes put a real 14% fall on a zero baseline where it reads as four nearly level columns, and stress-a-energy-bills let a 44x outlier compress six countries' reported prices to slivers a reader cannot compare. Re-measured across every chart-type beat this toolchain has delivered (57 directories under proof/, 143 numeric series excluding identifier-shaped columns): the outlier shape is common and often legitimate (41 series across 24 beats over 10x the median, several genuine — CO2 per capita 0.69 to 22.2, a 32x spread on a shipped grouped bar, correctly kept), which is exactly why this is a discipline reconsidered before drawing rather than a guard that would redden roughly a third of the corpus for shipping real data; the invisible-spread shape is rare and, in this corpus, never real (3 series flagged, all 3 false positives from the heuristic applied outside its own domain — a lollipop's own year-like column, and a waterfall's per-step component read as if it were a zero-baseline series)
+
+### framing-is-measured — `framingMeasurement`
+
+**Offers:** an author reads, at the terminal, the same two numbers framing-serves-the-point asks them to reconsider a treatment from — the values' own spread against the plot's zero-based extent, and the largest mark against the group's median — without computing either by hand or asking
+
+**Earned by:** the discipline says WHEN to reconsider a treatment; nothing printed the two numbers an author would reconsider it FROM. render.mjs already prints diagnostic reads for a dozen other decisions in these two stress beats alone (the palette chosen, the duplicate row dropped, the period formats seen) — this is the same convention, applied to the one decision the stress test found nothing supporting. A reading, never a refusal: framingMeasurement never throws and never picks a treatment

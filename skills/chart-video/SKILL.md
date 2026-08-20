@@ -188,8 +188,9 @@ being marked carried by a check that reads nothing.
    overshoots is showing a value the data does not contain.
 5. **Render the final frame first** (`--still-only`). If the end state is not a complete, readable
    chart — held to the same `static-discipline` (`chart-beat/references/static-discipline.md`) a
-   still is judged by, since the last frame IS one — the video is wrong and you have spent seconds
-   instead of minutes finding out.
+   still is judged by, since the last frame IS one, including its own `framing-serves-the-point`
+   discipline (does the final frame's own values read against the extent they end on?) — the video
+   is wrong and you have spent seconds instead of minutes finding out.
 6. **Render the mp4, then extract frames** — at minimum mid-reveal, the moment the subject lands, and
    the final hold — and look at all of them. Confirm the accent does not appear before its evidence,
    nothing is clipped, and the final hold matches the still.

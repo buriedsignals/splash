@@ -167,6 +167,16 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/detect-weight-has-a-ceiling.mjs",
     "scrolly/scripts/detect-weight-has-a-ceiling.mjs",
   ],
+  // FINDING 8's own capability, carried by the three chart formats. Declared in
+  // `render-still.mjs` itself (a beat's `render.mjs` calls it directly, on the values it is about
+  // to draw, the same way it already calls `readPalette` there) rather than in a `detect-*.mjs` —
+  // each skill's own `detect-framing-is-measured.mjs` re-exports it for the `GUARDS` declaration
+  // `carriedBy` reads, but the declaration compared here is the one place the decision is written.
+  framingMeasurement: [
+    "chart-beat/scripts/render-still.mjs",
+    "chart-web/scripts/render-still.mjs",
+    "chart-video/scripts/render-still.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

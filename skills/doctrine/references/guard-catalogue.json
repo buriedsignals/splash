@@ -370,6 +370,49 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "framing-serves-the-point",
+      "kind": "discipline",
+      "requires": [
+        "draws-own-geometry"
+      ],
+      "refuses": "a beat drawn without asking whether its own framing shows what its own takeaway asserts — a real change compressed to a sliver against a zero baseline, or one value dwarfing the group it is compared inside, shipped because nothing stopped to look before the geometry was chosen",
+      "earnedBy": "both stress beats were true and neither fought for its own point: stress-c-vacant-homes put a real 14% fall on a zero baseline where it reads as four nearly level columns, and stress-a-energy-bills let a 44x outlier compress six countries' reported prices to slivers a reader cannot compare. Re-measured across every chart-type beat this toolchain has delivered (57 directories under proof/, 143 numeric series excluding identifier-shaped columns): the outlier shape is common and often legitimate (41 series across 24 beats over 10x the median, several genuine — CO2 per capita 0.69 to 22.2, a 32x spread on a shipped grouped bar, correctly kept), which is exactly why this is a discipline reconsidered before drawing rather than a guard that would redden roughly a third of the corpus for shipping real data; the invisible-spread shape is rare and, in this corpus, never real (3 series flagged, all 3 false positives from the heuristic applied outside its own domain — a lollipop's own year-like column, and a waterfall's per-step component read as if it were a zero-baseline series)",
+      "writtenIn": "chart-beat/references/static-discipline.md",
+      "states": {
+        "chart-beat": "carried",
+        "chart-video": "carried",
+        "chart-web": "carried"
+      },
+      "exceptions": {
+        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
+        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
+        "map-web": "same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe",
+        "scrolly": "this skill's own doctrine says so directly — \"it does not invent a second drawing engine\" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
+      }
+    },
+    {
+      "id": "framing-is-measured",
+      "kind": "capability",
+      "requires": [
+        "draws-own-geometry"
+      ],
+      "offers": "an author reads, at the terminal, the same two numbers framing-serves-the-point asks them to reconsider a treatment from — the values' own spread against the plot's zero-based extent, and the largest mark against the group's median — without computing either by hand or asking",
+      "earnedBy": "the discipline says WHEN to reconsider a treatment; nothing printed the two numbers an author would reconsider it FROM. render.mjs already prints diagnostic reads for a dozen other decisions in these two stress beats alone (the palette chosen, the duplicate row dropped, the period formats seen) — this is the same convention, applied to the one decision the stress test found nothing supporting. A reading, never a refusal: framingMeasurement never throws and never picks a treatment",
+      "detectedBy": "framingMeasurement",
+      "walkedBy": "test/framing-measurement.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-video": "carried",
+        "chart-web": "carried"
+      },
+      "exceptions": {
+        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
+        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
+        "map-web": "same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe",
+        "scrolly": "this skill's own doctrine says so directly — \"it does not invent a second drawing engine\" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
+      }
     }
   ]
 }

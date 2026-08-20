@@ -85,6 +85,22 @@ strength of two numbers happening to fall inside a range they belong to regardle
 direction the series runs. This is Finding 1 in the render/report and it reproduces, byte for
 byte, the measurement the task brief described before this beat was written.
 
+## The framing
+
+The takeaway is true and the picture almost does not show it. `render.mjs` now calls
+`framingMeasurement` (`chart-beat/references/static-discipline.md`, `framing-serves-the-point`)
+and prints both numbers before the geometry is chosen: the fall is **14.3%** of the column's own
+0-8.4% extent (`spreadAgainstExtent`), and the largest reading is only **1.07x** the group's
+median (`largestAgainstMedian`) — this is the "spread invisible on a zero baseline" shape, not the
+"one mark dwarfs the rest" shape `stress-a-energy-bills` carries.
+
+**Kept, not corrected.** A zero-baseline column is still the honest treatment for four annual
+readings with nothing to interpolate between them (see "Type choice" below); breaking the axis to
+exaggerate the fall would misstate its size the way a broken axis always does. What the printed
+measurement adds is not a different chart — it is the number an author would otherwise have had to
+compute by hand before deciding that a plain column chart, with every value printed above its own
+bar, is the right call here despite the small on-axis spread.
+
 ## Type choice: column, not line, and the doctrine that said so unprompted
 
 `skills/chart-beat/references/types/line.md`, "When not to reach for it": "A handful of periods

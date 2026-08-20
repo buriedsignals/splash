@@ -47,6 +47,14 @@ bar — not broken, not log-scaled, not dropped.
   bar regardless of how tall it is. A reader can recover Spain's €712.00 from its label even where
   the bar itself is three pixels tall.
 
+**Measured, not eyeballed.** `render.mjs` now calls `framingMeasurement`
+(`chart-beat/references/static-discipline.md`, `framing-serves-the-point`) and prints it before the
+geometry is chosen: Denmark's reported price is **43.7x** the group's own median
+(`largestAgainstMedian`), and the group's own spread already occupies **98.5%** of the plot's own
+extent (`spreadAgainstExtent`) — the opposite shape from `stress-c-vacant-homes`'s invisible fall.
+The measurement did not change the decision above; it is the number the decision was already
+reasoning from, now printed where an author reads it instead of computed by hand.
+
 ## The duplicate Spain row
 
 **Nothing in the toolchain noticed it before this script went looking.** `profile.json` records

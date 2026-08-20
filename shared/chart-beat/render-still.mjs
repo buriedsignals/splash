@@ -648,6 +648,43 @@ export function measureTextBand(text, options) {
 }
 
 /**
+ * FINDING 8, and the doctrine's own `framing-serves-the-point` discipline read against the
+ * marks a beat is about to draw. NOT a guard — it never throws, and it never picks a treatment.
+ * It is the reading an author gets at the terminal, before looking at the picture:
+ *
+ *   - `spreadAgainstExtent`: the values' own spread — max minus min — against the zero-based
+ *     extent they are about to be drawn on. Small means the picture may read as flat even where
+ *     the change is real. `stories/stress-c-vacant-homes` measures 14%: a true 8.4% -> 7.2% fall
+ *     occupies only a seventh of its own column's height.
+ *   - `largestAgainstMedian`: the largest value against the group's own median. Large means one
+ *     mark is about to dwarf the rest. `stories/stress-a-energy-bills` measures ~44x: Denmark's
+ *     reported price against the other six countries' median compresses every other bar to a
+ *     sliver.
+ *
+ * Both numbers are always computed together and printed together — a beat with a real outlier
+ * and a beat with an invisible spread are different defects, and an author reading only one
+ * number would see whichever defect it happened to describe and miss the other. `null` where the
+ * arithmetic is undefined (an empty series, or every value exactly zero) rather than `NaN` or
+ * `Infinity` silently reaching a console.log.
+ */
+export function framingMeasurement(values) {
+  const finite = (values ?? []).filter((v) => typeof v === "number" && Number.isFinite(v));
+  if (finite.length === 0) return null;
+  const max = Math.max(...finite);
+  const min = Math.min(...finite);
+  const sorted = [...finite].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return {
+    max,
+    min,
+    median,
+    spreadAgainstExtent: max > 0 ? (max - min) / max : null,
+    largestAgainstMedian: median > 0 ? max / median : null,
+  };
+}
+
+/**
  * Render one React element to an SVG on disk and a PNG beside it. The PNG is the artifact the
  * checklist is applied to — the SVG is kept because a defect is easier to read in the markup.
  */
