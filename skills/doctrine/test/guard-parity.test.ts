@@ -163,11 +163,89 @@ describe("the generated state says what a reader needs", () => {
   });
 
   it("prints the traits table, so a reader sees WHY a rule reaches a skill", () => {
-    expect(doc).toContain("## What each skill is");
-    for (const skill of PRODUCING_SKILLS) expect(doc).toContain(skill);
+    const heading = "## What each skill is";
+    const start = doc.indexOf(heading);
+    expect(start, "the \"## What each skill is\" section is missing from the document").toBeGreaterThan(-1);
+    const afterHeading = doc.slice(start + heading.length);
+    const nextHeading = afterHeading.indexOf("\n## ");
+    const section = nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading);
+
+    for (const skill of PRODUCING_SKILLS) {
+      const row = section.split("\n").find((line) => line.startsWith(`| ${skill} |`));
+      expect(row, `${skill} has no row in the traits table`).toBeDefined();
+      const cells = (row ?? "").split("|").map((cell) => cell.trim());
+      const named = TRAITS.filter((trait, index) => cells[index + 2] === "\u2713").map(
+        (trait) => trait.id,
+      );
+      expect(named.sort(), `${skill}'s row disagrees with its TRAITS.json`).toEqual(
+        [...traitsOf(skill)].sort(),
+      );
+    }
   });
 
   it("says out loud that a discipline is not mechanically verified", () => {
     expect(doc).toContain("not mechanically verified");
+  });
+});
+
+// FINDING 2 (fix round 1, coordinator review of Task 3): the "one matrix per kind" behaviour above
+// only ever exercised `kind: "guard"`, because that is the only kind the real catalogue carries
+// today — it could not, by construction, prove the multi-kind ordering or the discipline note's
+// placement until Task 5/7 add capability/discipline rules for real. This fixture catalogue is
+// never merged into `guard-catalogue.json`; it exists only to give `renderGuardsDoc` all three
+// kinds at once, on demand, before those tasks land.
+describe("renderGuardsDoc handles every kind at once, on a synthetic catalogue", () => {
+  const fixtureRule = (kind, extra) => ({
+    id: `fixture-${kind}`,
+    kind,
+    requires: ["draws-own-geometry"],
+    earnedBy: "written for this test only, not a real defect or capability",
+    states: {},
+    exceptions: {},
+    ...extra,
+  });
+  const guardRule = fixtureRule("guard", {
+    decidedBy: "fixtureGuardDecided",
+    refuses: "a fixture defect used only to prove the renderer handles three kinds at once",
+  });
+  const capabilityRule = fixtureRule("capability", {
+    detectedBy: "fixtureCapabilityDetected",
+    offers: "a fixture capability used only to prove the renderer handles three kinds at once",
+  });
+  const disciplineRule = fixtureRule("discipline", {
+    writtenIn: "fixtureDisciplineWritten",
+  });
+
+  it("prints three matrices in order guard, capability, discipline, with the discipline note right after", () => {
+    const doc = renderGuardsDoc({ rules: [guardRule, capabilityRule, disciplineRule] });
+    const guardAt = doc.indexOf("## guard");
+    const capabilityAt = doc.indexOf("## capability");
+    const disciplineAt = doc.indexOf("## discipline");
+    const disciplineRowAt = doc.indexOf("| fixture-discipline |");
+    const sentenceAt = doc.indexOf("not mechanically verified");
+    const nextHeadingAt = doc.indexOf("\n## ", disciplineRowAt);
+
+    expect(guardAt, "no ## guard heading").toBeGreaterThan(-1);
+    expect(capabilityAt, "## capability must come after ## guard").toBeGreaterThan(guardAt);
+    expect(disciplineAt, "## discipline must come after ## capability").toBeGreaterThan(
+      capabilityAt,
+    );
+    expect(
+      disciplineRowAt,
+      "the discipline matrix never printed its own rule's row",
+    ).toBeGreaterThan(disciplineAt);
+    expect(
+      sentenceAt,
+      "the disciplines-are-not-mechanically-verified sentence is missing",
+    ).toBeGreaterThan(disciplineRowAt);
+    expect(
+      sentenceAt,
+      "the sentence must sit right after the discipline matrix, before the next section",
+    ).toBeLessThan(nextHeadingAt === -1 ? Infinity : nextHeadingAt);
+  });
+
+  it("prints no discipline heading at all when no discipline rule exists", () => {
+    const doc = renderGuardsDoc({ rules: [guardRule, capabilityRule] });
+    expect(doc).not.toContain("## discipline");
   });
 });
