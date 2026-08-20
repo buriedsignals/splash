@@ -15,18 +15,17 @@ than obvious, the argument is written out below the table.
 | plate-geometry-pairing |  |  |  |  | **R** | **R** |  |  |
 | plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
 | screen-space-dash | **R** | **R** | **R** |  | **R** | **R** |  | **R** |
-| reached-mark-declares |  | · | · |  |  | · |  | **R** |
+| reached-mark-declares |  |  |  |  |  |  |  | **R** |
 | step-redraws |  |  |  |  |  |  |  | **R** |
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
+| reveal-completes |  |  | **R** |  |  |  |  |  |
 
-## What is still owed — 3 cells
+## What is still owed — 0 cells
 
-- `chart-web` owes **reached-mark-declares**
-- `chart-video` owes **reached-mark-declares**
-- `map-web` owes **reached-mark-declares**
+Nothing. Every format carries every guard it can reach.
 
-## Why a cell is blank, where the blankness was argued — 10 of them
+## Why a cell is blank, where the blankness was argued — 13 of them
 
 Only the cells a reader would otherwise re-open: one retired after being measured absent, or one
 belonging to a format that works differently end to end.
@@ -37,10 +36,13 @@ belonging to a format that works differently end to end.
 - `dw-beat` cannot reach **projection-pairing** — there is no raster plate and no overlay drawn on it: the artefact is one exported image, or an iframe to a hosted chart
 - `dw-beat` cannot reach **plate-geometry-pairing** — nothing is baked here. There is no plate.png and no geometry.json recording the frame marks were projected into, because this format projects nothing
 - `dw-beat` cannot reach **screen-space-dash** — this producer authors no marks. A dashed rule is a Datawrapper enum (a range annotation's strokeType) drawn by Datawrapper's own renderer, and the vector-effect that makes the defect possible is not ours to write
-- `dw-beat` cannot reach **reached-mark-declares** — there is no reveal: a delegated chart is one finished picture, and no mark is ever pending
+- `chart-web` cannot reach **reached-mark-declares** — retired after measurement: this guard's precondition is a reveal that ENDS, and nothing in this format reveals. Across its 15 delivered pages there is not one requestAnimationFrame and not one @keyframes; the only animations are 120ms hover transitions on a colour. A web chart is a finished picture with detail on demand, so no mark can be pending when a reveal ends
+- `map-web` cannot reach **reached-mark-declares** — retired on the same measurement: the four animations each of its pages carries are inside maplibre-gl itself — the loading spinner and the user-location pulse — not in the beat. The beat's own picture is finished when the page loads
+- `chart-video` cannot reach **reached-mark-declares** — the defect IS reachable here, and the DECLARATION is not the reading. A video signals arrival with opacity driven by a progress and declares no data-state anywhere; the owner's decision (plan, Task 7, 2026-08-20) was to read the last frame instead, which for this format is arithmetic. See reveal-completes
 - `dw-beat` cannot reach **step-redraws** — there are no steps: nothing here is driven by a reader's gesture or by a frame number
 - `dw-beat` cannot reach **scrub-not-slideshow** — there is nothing to scrub: a delegated chart has one state
 - `dw-beat` cannot reach **model-declared** — it reads which of the two scroll models a beat is built on, off the markup. A delegated chart is built on neither
+- `scrolly` cannot reach **reveal-completes** — a reader drives the reveal here, so there is no last frame to end on: the same defect is caught by reached-mark-declares, which this format has the vocabulary for
 
 ## What each guard refuses, and the defect that earned it
 
@@ -99,3 +101,9 @@ belonging to a format that works differently end to end.
 **Refuses:** nothing on its own: it reads which of the two models a beat is built on, off the markup
 
 **Earned by:** an assembly and a scrub owe different things, and guessing which is which misfires on both — the seed's four media have nothing to scrub between
+
+### reveal-completes — `neverArrives`
+
+**Refuses:** a ramp whose input range outruns the progress driving it, so the mark it reveals is still arriving when the composition ends
+
+**Earned by:** the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down — a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops

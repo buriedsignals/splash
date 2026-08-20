@@ -78,12 +78,29 @@ describe("the guard catalogue", () => {
         );
   });
 
-  // Not an assertion about the debt's SIZE — that is the plan's job — but about it being readable.
-  // A gap nobody can enumerate is a gap nobody will close.
+  // Kept as the shape check for a row, now that there are no rows: it is what a future `owed` cell
+  // will be checked by on the day one is added.
   it("can enumerate what every format still owes", () => {
     for (const row of owedRows(readCatalogue())) {
       expect(PRODUCING_SKILLS).toContain(row.skill);
       expect(row.guard.length).toBeGreaterThan(0);
     }
+  });
+
+  // THE ASSERTION THIS WHOLE PLAN EXISTS FOR, and the last one written on purpose.
+  //
+  // Until now an `owed` cell failed nothing: it was debt, enumerated in `GUARDS.md`, because a
+  // permanently red suite teaches a reader to ignore red. That was the right state while 15 cells
+  // were owed and every task was paying some of them off. It is the wrong state now: with the debt
+  // at zero, "no creation process is weaker than its neighbour" stops being a claim someone has to
+  // re-check by reading and becomes a thing the suite refuses to let go of. A guard reaching a new
+  // format lands as a RED here, naming the format and the guard, on the day the catalogue says it
+  // is reachable — which is exactly one step before someone would have had to remember.
+  //
+  // The way OUT of a red here is never to blank the cell: it is to carry the guard, or to argue in
+  // `unreachable` — in prose the next reader can disagree with — that the defect cannot happen
+  // there, which is a claim with a name attached and a measurement behind it.
+  it("owes nothing: every reachable format carries every guard it can reach", () => {
+    expect(owedRows(readCatalogue())).toEqual([]);
   });
 });

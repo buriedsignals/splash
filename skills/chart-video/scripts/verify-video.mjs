@@ -16,7 +16,7 @@
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["revealDashInScreenSpace"];
+export const GUARDS = ["revealDashInScreenSpace", "neverArrives"];
 
 /** Marks whose dash MEASURES their own path while being computed in screen space — the reveal that
  *  cannot work, and the one this tree shipped for months without seeing.
@@ -119,4 +119,62 @@ export function marksFromSource(source, where) {
     void whole;
   }
   return marks;
+}
+
+
+/** Ramps that cannot finish before the beat does — the reveal ends with something still on its way.
+ *
+ *  THE DEFECT, and why it is read here rather than declared. `scrolly` catches the same thing with a
+ *  vocabulary: a mark the reveal reaches declares `data-state="reached"`, and one that never got
+ *  there is still `pending` when the reveal ends. No video component in this tree declares one —
+ *  measured 2026-08-20, zero `data-state` in 53 of them — and a video signals arrival by opacity
+ *  driven by a progress instead. So the same question is asked of the LAST FRAME, which for this
+ *  format is arithmetic rather than a picture: at the end of the composition, is anything still
+ *  ramping?
+ *
+ *  `checkTiming` already guarantees every NAMED event ends with the composition, so a named window
+ *  cannot be the offender. One level down it can: a ramp over an already-normalised progress is
+ *  driven by a value CLAMPED at 1, so an input range ending above 1 never reaches its own end and
+ *  the mark it fades in is still fading when the reader's video stops. A ramp driven by the raw
+ *  frame is measured against the last frame index instead.
+ *
+ *  An early finish is not a defect: `interpolate(conclusion, [0, 0.45], ...)` deliberately lands
+ *  before its window closes, which is how a beat holds still at the end. Only the ceiling that
+ *  cannot be reached is refused. */
+export function neverArrives(ramps) {
+  return ramps
+    .filter((ramp) => ramp.ceiling != null && ramp.ceiling > ramp.limit)
+    .map((ramp) => ramp.id);
+}
+
+/** Every `interpolate` ramp in `source`, as the shape `neverArrives` reads.
+ *
+ *  READS SOURCE, for the reason this whole file does: a video beat's marks exist as marks only
+ *  inside Remotion's own render. The driver is the first argument — `frame` measured against the
+ *  composition's last frame, anything else taken to be one of this format's normalised progresses
+ *  and measured against 1. That convention is the corpus's, not an assumption: all 178 ramps in the 26
+ *  components this repository ships drive off `progressOf(...)` output or a spring built from one,
+ *  and not one takes a raw frame. The day one does under another name, this reader measures it against 1 and says so
+ *  loudly rather than silently, because a frame index is always greater than 1.
+ *
+ *  A ramp whose bounds are COMPUTED (`[w.start, w.end]` — 18 of the 178) is returned with a `null`
+ *  ceiling and decided on by nothing. It is kept rather than dropped so the walking test can count
+ *  what was read and what was left undecidable: a reader that goes quiet must fail, not pass. */
+export function rampsFromSource(source, where, { total }) {
+  const ramps = [];
+  for (const match of source.matchAll(
+    /interpolate\(\s*([A-Za-z_$][\w.$]*(?:\[[^\]]*\])?)\s*,\s*\[([^\]]*)\]/g,
+  )) {
+    const [, driver, bounds] = match;
+    const parts = bounds.split(",").map((part) => Number(part.trim()));
+    const last = parts[parts.length - 1];
+    const line = source.slice(0, match.index).split("\n").length;
+    ramps.push({
+      id: `${where}:${line} interpolate(${driver})`,
+      driver,
+      ceiling: parts.some((value) => Number.isNaN(value)) ? null : last,
+      limit: driver === "frame" ? total - 1 : 1,
+    });
+  }
+  return ramps;
 }

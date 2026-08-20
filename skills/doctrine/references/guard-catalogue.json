@@ -80,13 +80,12 @@
       "refuses": "a mark still data-state=pending when the reveal has ended",
       "earnedBy": "stop badges kept the fill they were SSR'd with while the line arrived at each of them: the narrative got there and the picture never said so",
       "formats": {
-        "scrolly": "carried",
-        "chart-web": "owed",
-        "chart-video": "owed",
-        "map-web": "owed"
+        "scrolly": "carried"
       },
       "unreachable": {
-        "dw-beat": "there is no reveal: a delegated chart is one finished picture, and no mark is ever pending"
+        "chart-web": "retired after measurement: this guard's precondition is a reveal that ENDS, and nothing in this format reveals. Across its 15 delivered pages there is not one requestAnimationFrame and not one @keyframes; the only animations are 120ms hover transitions on a colour. A web chart is a finished picture with detail on demand, so no mark can be pending when a reveal ends",
+        "map-web": "retired on the same measurement: the four animations each of its pages carries are inside maplibre-gl itself — the loading spinner and the user-location pulse — not in the beat. The beat's own picture is finished when the page loads",
+        "chart-video": "the defect IS reachable here, and the DECLARATION is not the reading. A video signals arrival with opacity driven by a progress and declares no data-state anywhere; the owner's decision (plan, Task 7, 2026-08-20) was to read the last frame instead, which for this format is arithmetic. See reveal-completes"
       }
     },
     {
@@ -123,6 +122,18 @@
       },
       "unreachable": {
         "dw-beat": "it reads which of the two scroll models a beat is built on, off the markup. A delegated chart is built on neither"
+      }
+    },
+    {
+      "id": "reveal-completes",
+      "decidedBy": "neverArrives",
+      "refuses": "a ramp whose input range outruns the progress driving it, so the mark it reveals is still arriving when the composition ends",
+      "earnedBy": "the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down — a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops",
+      "formats": {
+        "chart-video": "carried"
+      },
+      "unreachable": {
+        "scrolly": "a reader drives the reveal here, so there is no last frame to end on: the same defect is caught by reached-mark-declares, which this format has the vocabulary for"
       }
     }
   ]

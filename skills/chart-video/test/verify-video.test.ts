@@ -39,7 +39,12 @@
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { marksFromSource, revealDashInScreenSpace } from "../scripts/verify-video.mjs";
+import {
+  marksFromSource,
+  neverArrives,
+  rampsFromSource,
+  revealDashInScreenSpace,
+} from "../scripts/verify-video.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
@@ -187,6 +192,133 @@ describe("every chart video on disk reveals in a space its own length lives in",
     // both and exist to catch a reader that broke, not to pin the corpus's size.
     expect(files).toBeGreaterThanOrEqual(20);
     expect(marks).toBeGreaterThanOrEqual(15);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * A REVEAL THAT ENDS WITH SOMETHING STILL ON ITS WAY.
+ *
+ * `scrolly` earned `reached-mark-declares` from stop badges that kept their pending fill while the
+ * line arrived at each of them: the narrative got there and the picture never said so. It reads a
+ * declaration — `data-state="pending"` flipped to `reached` — and no video component in this tree
+ * declares one; measured 2026-08-20, 0 `data-state` in any of them. The OWNER's decision
+ * (plan, Task 7) was not to import that vocabulary but to read the LAST FRAME, and this is what the
+ * last frame is decidable from without a browser.
+ *
+ * A video beat signals arrival with opacity driven by a progress. `checkTiming` already guarantees
+ * every NAMED event ends with the composition, so a named window cannot still be running at the end.
+ * One level down it can: every `interpolate` in this corpus drives off an already-normalised
+ * progress (measured: 178 ramps across 26 components — 160 with literal bounds, 18 computed,
+ * 0 taking a raw frame), and a ramp
+ * whose input range ends ABOVE 1 is driven by a value that is clamped at 1 and therefore never
+ * reaches its own end. The mark it fades in is still fading when the reader's video stops.
+ */
+describe("a ramp that cannot finish", () => {
+  it("refuses one whose input range ends past the progress that drives it", () => {
+    expect(
+      neverArrives([
+        { id: "Beat.tsx:12 opacity", ceiling: 1.4, limit: 1 },
+        { id: "Beat.tsx:20 opacity", ceiling: 1, limit: 1 },
+      ]),
+    ).toEqual(["Beat.tsx:12 opacity"]);
+  });
+
+  it("leaves a sub-range that closes early alone — an early finish is a choice, not a defect", () => {
+    expect(neverArrives([{ id: "a", ceiling: 0.45, limit: 1 }])).toEqual([]);
+  });
+
+  it("says nothing about a ramp whose bounds it could not read", () => {
+    expect(neverArrives([{ id: "a", ceiling: null, limit: 1 }])).toEqual([]);
+  });
+
+  it("measures a frame-driven ramp against the composition's own last frame", () => {
+    expect(
+      neverArrives([
+        { id: "late", ceiling: 260, limit: 239 },
+        { id: "fine", ceiling: 200, limit: 239 },
+      ]),
+    ).toEqual(["late"]);
+  });
+});
+
+describe("reading a video beat's ramps out of its own component", () => {
+  it("reads a normalised progress against 1, and names the ramp by file and line", () => {
+    const ramps = rampsFromSource(
+      `const o = interpolate(conclusion, [0.45, 1], [0, 1], { extrapolateRight: "clamp" });`,
+      "Beat.tsx",
+      { total: 240 },
+    );
+    expect(ramps).toEqual([
+      { id: "Beat.tsx:1 interpolate(conclusion)", driver: "conclusion", ceiling: 1, limit: 1 },
+    ]);
+  });
+
+  it("reads a frame-driven ramp against the last frame instead", () => {
+    const ramps = rampsFromSource(`interpolate(frame, [0, 260], [0, 1])`, "Beat.tsx", {
+      total: 240,
+    });
+    expect(ramps[0]).toMatchObject({ driver: "frame", ceiling: 260, limit: 239 });
+  });
+
+  it("keeps a ramp whose bounds are computed, with no ceiling to decide on", () => {
+    const ramps = rampsFromSource(`interpolate(reveal, [w.start, w.end], [0, 1])`, "Beat.tsx", {
+      total: 240,
+    });
+    expect(ramps[0]).toMatchObject({ driver: "reveal", ceiling: null });
+  });
+
+  it("ignores an interpolate that is not a ramp over time at all", () => {
+    expect(rampsFromSource(`const x = 3;`, "Beat.tsx", { total: 240 })).toEqual([]);
+  });
+});
+
+/** The composition length a beat's own timing records — the only place the last frame is written
+ *  down. Two filenames, because the corpus has two: a chart video keeps its contract in
+ *  `timing-contract.ts`, and a map video — whose vocabulary is a COPY of this one — keeps it in
+ *  `timing.ts` beside the component. Both are read, in that order, and a component whose total
+ *  cannot be found anywhere is REPORTED rather than silently skipped: seven of them were, on the
+ *  first run of this sweep, and a sweep that skips a quarter of its subject proves nothing. */
+function totalFrames(component: string): number | null {
+  for (const name of ["timing-contract.ts", "timing.ts"]) {
+    let source: string;
+    try {
+      source = readFileSync(join(component, "..", name), "utf8");
+    } catch {
+      continue;
+    }
+    const found = /\btotal:\s*(\d+)/.exec(source);
+    if (found) return Number(found[1]);
+  }
+  return null;
+}
+
+describe("every chart video on disk ends with nothing still on its way", () => {
+  it("should find no ramp whose input range outruns the progress driving it", () => {
+    const offenders: string[] = [];
+    const unreadable: string[] = [];
+    let ramps = 0;
+    let undecidable = 0;
+    for (const file of videoComponents()) {
+      const total = totalFrames(file);
+      const where = file.slice(TWIN.length + 1);
+      if (total === null) {
+        unreadable.push(where);
+        continue;
+      }
+      const found = rampsFromSource(readFileSync(file, "utf8"), where, { total });
+      ramps += found.length;
+      undecidable += found.filter((ramp) => ramp.ceiling === null).length;
+      offenders.push(...neverArrives(found));
+    }
+    // Measured 2026-08-20 and asserted so a reader that goes quiet fails instead of passing: the
+    // corpus's ramps, of which a handful have computed bounds this reader keeps and decides nothing
+    // about. The floor sits under the measured count; it exists to catch a broken reader, not to pin
+    // the corpus's size.
+    // Measured 2026-08-20: 26 components, 178 ramps, 18 of them with computed bounds.
+    expect(ramps).toBeGreaterThanOrEqual(150);
+    expect(undecidable).toBeLessThan(ramps / 4);
+    expect(unreadable).toEqual([]);
     expect(offenders).toEqual([]);
   });
 });

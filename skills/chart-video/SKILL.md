@@ -133,6 +133,32 @@ reference rule, a drop line, a bracket — and none carries a `strokeDashoffset`
 Nothing is being fixed here. The guard exists so the first person who reaches for
 `strokeDashoffset` in a beat whose plot scales is told at once instead of in six months.
 
+## The reveal has to be over when the video is
+
+**The rule.** Nothing may still be arriving on the last frame. A reader watches the hold and reads a
+finished picture; a mark still fading in at frame 239 is a mark the argument never quite made.
+
+**Why it needs a guard when `checkTiming` exists.** `checkTiming` already refuses a contract whose
+`hold` does not end exactly at `total`, so no NAMED event can be running at the end. The offender is
+one level down: every `interpolate` in this corpus drives off an already-normalised progress —
+measured 2026-08-20, **178 ramps across the 26 components this repository ships, 160 with literal
+bounds, 18 computed, and not one taking a raw frame** — and a progress is CLAMPED at 1. So
+`interpolate(conclusion, [0.5, 1.2], …)` never reaches its own end, whatever the timing says, and the
+mark it fades in is still fading when the reader's video stops.
+
+**What refuses it here.** `neverArrives`, beside the dash guard in `scripts/verify-video.mjs`, with
+`rampsFromSource` reading the ramps out of the component. An early finish is not a defect —
+`interpolate(conclusion, [0, 0.45], …)` is how a beat lands before its window closes — only a
+ceiling that cannot be reached. A ramp with computed bounds (`[w.start, w.end]`) is kept and decided
+on by nothing; the walking test counts those too, so a reader that goes quiet fails instead of
+passing. Measured: **0 offenders.** Nothing is being fixed here either.
+
+**Why this and not `data-state`.** `scrolly` answers the same question with a vocabulary — a mark the
+reveal reaches declares it — and no video component in this tree declares one. The owner's decision
+(2026-08-20) was to read the last frame rather than import the vocabulary into 26 components, and for
+this format the last frame is arithmetic: it needs no browser and no rendered DOM. See
+`GUARDS.md`, `reveal-completes`.
+
 **It reads the component's text, not a rendered DOM, and that is a limit.** A scrolly ships an HTML
 file a browser can be pointed at; a chart video ships an mp4 and PNGs, artifacts with no attributes in
 them. A video beat's marks exist as marks only inside Remotion's own render, and reaching in means
@@ -240,9 +266,11 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
   Imports `deriveFurniture` from this skill's OWN `scripts/render-still.mjs` (a copy, not the
   `chart-beat` original — a skill never imports another skill), in node, and passes the result
   in as props.
-- `scripts/verify-video.mjs` — `revealDashInScreenSpace`, the one guard this format both reaches and
-  carries, plus `marksFromSource` which reads a beat's dashed elements out of its own component. A
-  copy of `scrolly`'s decision, walked by `doctrine/test/guard-parity.test.ts`.
+- `scripts/verify-video.mjs` — the two guards this format reaches and carries.
+  `revealDashInScreenSpace` (a byte copy of `scrolly`'s decision, walked by
+  `splash/test/guard-copies-parity.test.ts`) with `marksFromSource`, which reads a beat's dashed
+  elements out of its own component; and `neverArrives` with `rampsFromSource`, this format's OWN
+  decision — no copy exists, because no other format reveals against a frame count.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data at its
   last frame. Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
   Supports `--check` to verify the preview is up-to-date (exits 1 if stale).
