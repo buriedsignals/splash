@@ -313,7 +313,22 @@ describe("the delivered file carries the live layer", () => {
     expect(boot).toContain("new win.maplibregl.Map");
     // The marks repeat with the world — the thing that keeps a repeated coast from being empty.
     expect(boot).toContain("function syncWorldRepeats(");
-    expect(html.length).toBeGreaterThan(1_400_000);
+    // WHAT THIS FLOOR IS FOR: maplibre-gl really inlined, not a <script src> to a CDN that a
+    // reader offline — or a newsroom CSP — would never load. Measured on this file: the library is
+    // 802,816 of its 1,318,155 characters, so the page WITHOUT it is 515,339 and any floor above
+    // that reddens when it is stripped.
+    //
+    // It used to read 1_400_000 and went red without anything breaking: `656f3d34` ("emit the
+    // basemap plate once, reference it three times") legitimately removed two copies of a 340 KiB
+    // plate, and the floor was never re-derived. A floor that only measures TOTAL weight cannot
+    // tell a page that lost dead weight from a page that lost its library — so the library's own
+    // block is measured here as well, and it is the assertion that carries the meaning.
+    const library = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)]
+      .map((match) => match[1])
+      .filter((body) => body.includes("maplibre"))
+      .reduce((widest, body) => Math.max(widest, body.length), 0);
+    expect(library).toBeGreaterThan(700_000);
+    expect(html.length).toBeGreaterThan(1_200_000);
   });
 
   it("points its style at MapTiler, with the placeholder and never a key", () => {
