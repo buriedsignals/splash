@@ -304,6 +304,18 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "unmatched-value-hides",
+      "kind": "guard",
+      "requires": ["joins-values-to-shapes"],
+      "decidedBy": "unmatchedValues",
+      "refuses": "a source's own value with no shape to receive it, unless the beat declared its source out of scope",
+      "earnedBy": "joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for \"Atlantis\", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong",
+      "states": {
+        "map-beat": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

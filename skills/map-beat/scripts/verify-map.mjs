@@ -31,6 +31,11 @@
 // reached by import — a skill never crosses another skill's boundary at runtime.
 
 import { decodePng } from "./compare-png.mjs";
+// Within-skill only — not a cross-skill import, the same rule that lets `extent-range.mjs` reach
+// `../assets/geo.ts` already. `unmatchedValues` is the actual decision; declaring it here rather
+// than a second copy is what keeps FINDING 6's own defect (two implementations quietly drifting)
+// from being possible for its own guard.
+export { unmatchedValues } from "../assets/geo.ts";
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
@@ -41,6 +46,7 @@ export const GUARDS = [
   "duplicatedPayload",
   "neverArrives",
   "csvSplitByHand",
+  "unmatchedValues",
 ];
 
 /** Below this many base64 characters a repeated inline asset is an icon or a font scrap, not the

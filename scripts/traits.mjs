@@ -144,6 +144,19 @@ export const TRAITS = [
     // `scrolly/scripts/render-scrolly.mjs`, `assets/gauge-data.ts` and `scripts/extent-range.mjs`.
     witness: (skill) => anySource(skill, /\bcsv\b/i, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
+  {
+    id: "joins-values-to-shapes",
+    describes: "it matches a source's per-key readings onto a fixed set of shapes it must fully account for",
+    // Witnessed by the export itself, not a description of it — `joinValues` is the mechanism, and a
+    // skill either has this exact join or it does not. `map-web`'s own `assets/geo-symbol.ts` says so
+    // explicitly in its own header: "a proportional-symbol beat has no polygon and no data JOIN the
+    // way a choropleth does — every point either has a coordinate and a value, or it is not in the
+    // study set at all", so the risk this trait's guard refuses cannot arise there. Excluding
+    // `verify-*`/`detect-*` matches the same convention every other guard-adjacent trait uses, even
+    // though nothing in this skill's verify script currently re-declares the function's own name in
+    // a way that would self-satisfy it — a re-export statement is not a declaration.
+    witness: (skill) => anySource(skill, /export function joinValues\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+  },
 ];
 
 export function traitsOf(skill) {

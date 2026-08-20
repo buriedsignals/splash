@@ -93,6 +93,7 @@ describe("joinValues", () => {
     const joined = joinValues(["CHE", "KOS"], values, {
       alias: CO2_ALIAS,
       expectedNoData: [],
+      expectedExtraValues: "any", // this fixture's values map legitimately outruns a 2-key study
     });
     expect(joined.rows.map((r) => r.key)).toEqual(["CHE", "KOS"]);
     expect(joined.rows[1]?.value).toBeCloseTo(4.8353086, 6);
@@ -109,6 +110,7 @@ describe("joinValues", () => {
     const joined = joinValues(["CHE", "VAT"], values, {
       alias: CO2_ALIAS,
       expectedNoData: ["VAT"],
+      expectedExtraValues: "any", // this fixture's values map legitimately outruns a 2-key study
     });
     expect(joined.noData).toEqual(["VAT"]);
     expect(joined.rows.find((r) => r.key === "VAT")?.value).toBeNull();
@@ -124,9 +126,52 @@ describe("joinValues", () => {
     const joined = joinValues(["CHE", "FRA", "VAT"], values, {
       alias: CO2_ALIAS,
       expectedNoData: ["VAT"],
+      expectedExtraValues: "any", // this fixture's values map legitimately outruns a 3-key study
     });
     expect(joined.matched).toBe(2);
     expect(joined.rows).toHaveLength(3);
+  });
+
+  // FINDING 6 (stress test, 2026-08-20): the mirror of the FAIL-LOUD test above. `joinValues`
+  // already refused a shape with no value; nothing refused a VALUE with no shape — the stress csv
+  // carried a reading for "Atlantis", a country that does not exist, and the join said nothing.
+  it("should FAIL LOUD, naming it, when a value finds no shape and nobody declared the source out of scope", () => {
+    const withAtlantis = new Map(values);
+    withAtlantis.set("ATL", 99);
+    expect(() =>
+      joinValues(["CHE", "FRA", "OWID_KOS", "OWID_EUR"], withAtlantis, {
+        alias: {},
+        expectedNoData: [],
+      }),
+    ).toThrow(/ATL/);
+  });
+
+  // THE LEGITIMATE CASE, not just the bug: a source that covers more ground than the study set
+  // (OWID's global CO2 csv against a European study, say) has this shape by construction and it is
+  // not a defect — `expectedExtraValues: "any"` is the beat's own explicit declaration that it
+  // knows its source is broader, told apart from silence by being visible in the call site, not
+  // inferred from a count. Without it, the same fixture throws (proven by every earlier test in
+  // this describe block, all of which reuse a `values` map wider than their own study set).
+  it("should stay quiet on a source that legitimately covers more ground than the study, once declared", () => {
+    const withAtlantis = new Map(values);
+    withAtlantis.set("ATL", 99);
+    const joined = joinValues(["CHE", "FRA"], withAtlantis, {
+      alias: {},
+      expectedNoData: [],
+      expectedExtraValues: "any",
+    });
+    expect(joined.rows.map((r) => r.key)).toEqual(["CHE", "FRA"]);
+  });
+
+  it("should also accept a SHORT, explicit list of extra value keys — not only the whole-source escape", () => {
+    const withAtlantis = new Map(values);
+    withAtlantis.set("ATL", 99);
+    const joined = joinValues(["CHE", "FRA"], withAtlantis, {
+      alias: {},
+      expectedNoData: [],
+      expectedExtraValues: ["OWID_KOS", "OWID_EUR", "ATL"],
+    });
+    expect(joined.rows.map((r) => r.key)).toEqual(["CHE", "FRA"]);
   });
 });
 

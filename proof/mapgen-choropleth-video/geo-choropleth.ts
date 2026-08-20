@@ -179,6 +179,43 @@ export function valuesFromCsv(csv: string, year: number): Map<string, number> {
 // ── The join ───────────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Every VALUE key the source carries that no shape claims — the mirror of the miss `joinValues`
+ * already refuses, one level down so it can be measured on its own. A stray value renders as
+ * NOTHING AT ALL (no shape to paint it on), which the doctrine's own argument for the loud join
+ * calls worse than a bad join rendering as no-data and looking legitimate: at least a no-data shape
+ * is visible on the map, wrong-coloured; a value with no shape leaves no mark anywhere to be wrong.
+ *
+ * `expectedExtraValues` is how a beat tells this function apart from the case it must NOT refuse: a
+ * source that legitimately covers more ground than the study set — OWID's global CO2 csv joined
+ * against a European study, say — has hundreds of values no European shape will ever claim, and
+ * that is normal, not a defect. There is no COUNT that tells "Atlantis" (one stray key in an
+ * otherwise-matching source) apart from "the rest of the world" (hundreds of stray keys, all real
+ * countries, none of them wrong) — both are just "keys not in the study set" from where this
+ * function sits. So the line is not measured, it is DECLARED: `"any"` is the beat's own explicit,
+ * visible-in-the-call-site statement that its source is known to be broader than its study, checked
+ * against nothing further; a short array is the same declaration for a FEW known extras, checked by
+ * name so a typo in the array itself still leaves the real stray one refused. Neither softens into
+ * a warning — the default, with nothing declared, refuses every stray key it finds, by name.
+ 
+ *  @parity */
+export function unmatchedValues(
+  keys: readonly string[],
+  values: Map<string, number>,
+  {
+    alias = {},
+    expectedExtraValues = [],
+  }: {
+    alias?: Record<string, string>;
+    expectedExtraValues?: readonly string[] | "any";
+  } = {},
+): string[] {
+  if (expectedExtraValues === "any") return [];
+  const reachable = new Set(keys.map((key) => alias[key] ?? key));
+  const declared = new Set(expectedExtraValues);
+  return [...values.keys()].filter((key) => !reachable.has(key) && !declared.has(key));
+}
+
+/**
  * Join every shape key to a value, and FAIL LOUD on both kinds of silence.
  *
  * `geo-discipline.md` rule 5. A country whose key does not match renders as no-data and looks like
@@ -196,9 +233,11 @@ export function joinValues(
   {
     alias = {},
     expectedNoData = [],
+    expectedExtraValues = [],
   }: {
     alias?: Record<string, string>;
     expectedNoData?: readonly string[];
+    expectedExtraValues?: readonly string[] | "any";
   } = {},
 ): { rows: JoinedRow[]; noData: string[]; matched: number } {
   const rows: JoinedRow[] = [];
@@ -227,6 +266,13 @@ export function joinValues(
   if (wronglyDeclared.length > 0)
     throw new Error(
       `declared as no-data but the source reports them: ${wronglyDeclared.join(", ")}. The declaration is stale.`,
+    );
+
+  const stray = unmatchedValues(keys, values, { alias, expectedExtraValues });
+  if (stray.length > 0)
+    throw new Error(
+      `${stray.length} value${stray.length === 1 ? "" : "s"} found no shape and were not declared out of scope: ${stray.join(", ")}. ` +
+        `Either the source really does cover ground the study set does not (pass expectedExtraValues: "any", or name them), or the key is wrong (alias it) — a value with no shape renders as nothing at all, which is worse than looking legitimate.`,
     );
 
   return { rows, noData, matched: rows.length - noData.length };

@@ -60,7 +60,9 @@ import {
   rampsFromSource,
   revealDashInScreenSpace,
   surfaceLuminance,
+  unmatchedValues,
 } from "../scripts/verify-map.mjs";
+import { CO2_ALIAS, CO2_STUDY, valuesFromCsv } from "../assets/geo.ts";
 import { decodePng } from "../scripts/compare-png.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
@@ -443,5 +445,32 @@ describe("the csv this skill reads is not cut on a bare comma", () => {
   it("should find no hand-split field in scripts/extent-range.mjs, this skill's own dev instrument", () => {
     const source = readFileSync(join(SKILL, "scripts", "extent-range.mjs"), "utf8");
     expect(csvSplitByHand(source)).toEqual([]);
+  });
+});
+
+// FINDING 6 (stress test, 2026-08-20): `joinValues` already refused a shape with no value; nothing
+// refused a VALUE with no shape — the stress csv carried a reading for "Atlantis", a country that
+// does not exist, and the join said nothing. `unmatchedValues` is the mirror decision, exercised
+// here against this skill's OWN real study set and a real committed csv, not a fixture invented for
+// the test, so a regression in the real join is what turns this red.
+describe("a value the study set does not claim is named, not silent", () => {
+  it("should refuse a real csv's own value once a stray key is added, naming it", () => {
+    const csv = readFileSync(
+      join(SKILL, "..", "..", "proof", "mapgen-choropleth-web", "co2-per-capita-2023.csv"),
+      "utf8",
+    );
+    const values = valuesFromCsv(csv);
+    values.set("ATL", 99);
+    const stray = unmatchedValues(CO2_STUDY, values, { alias: CO2_ALIAS });
+    expect(stray).toEqual(["ATL"]);
+  });
+
+  it("should stay quiet on the real csv as committed — every value the study set already claims", () => {
+    const csv = readFileSync(
+      join(SKILL, "..", "..", "proof", "mapgen-choropleth-web", "co2-per-capita-2023.csv"),
+      "utf8",
+    );
+    const values = valuesFromCsv(csv);
+    expect(unmatchedValues(CO2_STUDY, values, { alias: CO2_ALIAS })).toEqual([]);
   });
 });

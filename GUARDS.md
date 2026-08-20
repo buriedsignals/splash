@@ -24,6 +24,7 @@ written out below the tables.
 | model-declared |  |  |  |  |  |  |  | **R** |
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
 | csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
+| unmatched-value-hides |  |  |  |  | **R** |  |  |  |
 
 ## capability
 
@@ -73,16 +74,16 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -207,3 +208,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a beat's own reader cutting a csv row on every literal comma instead of a parser that understands a quoted field
 
 **Earned by:** proof/more-line-swiss-life-expectancy/render.mjs — the worked example every craft skill points authors at — cut its rows with row.split(","); against the stress data it would have silently corrupted "1,234.5" into two fields and torn "Netherlands, the" in half. Measured 2026-08-20: 84 files across proof/, stories/ and this project's own skill scripts/assets did the same (several, like map-beat/assets/geo.ts, take already-read csv text and never name the .csv extension at all), while skills/intake/scripts/csv.mjs already shipped a real RFC 4180 reader that none of them used
+
+### unmatched-value-hides — `unmatchedValues`
+
+**Refuses:** a source's own value with no shape to receive it, unless the beat declared its source out of scope
+
+**Earned by:** joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for "Atlantis", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong

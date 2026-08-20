@@ -6,6 +6,7 @@
     "owns-a-surface-it-did-not-choose",
     "timed-build-that-ends",
     "inlines-its-assets",
-    "reads-a-journalists-csv"
+    "reads-a-journalists-csv",
+    "joins-values-to-shapes"
   ]
 }
