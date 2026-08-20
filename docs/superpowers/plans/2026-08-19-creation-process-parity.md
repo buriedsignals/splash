@@ -249,7 +249,10 @@ type, so a typo fails at load.
 
 - [ ] **Step 4: Run the test to watch it pass**
 
-- [ ] **Step 5: Widen the producer, and say what it still refuses**
+- [x] **Step 5: Widen the producer, and say what it still refuses** — the code half shipped in
+  `8f8cb1a2`; the `SKILL.md` half was MISSED and only found during Task 6, which fixed it in
+  `884fd41e`. The page still read "**not** for a map" while every layer below it offered one: the
+  last layer refusing what this task existed to open.
 
 `validate-spec.mjs` accepts the three map types. `SKILL.md`'s "not for a map" becomes what is
 actually true: the delegated path serves an ORDINARY map — a choropleth, a symbol map, a locator —
@@ -913,6 +916,71 @@ unreachable in the catalogue, with the reason in the row, so a later reader does
 - [ ] **Step 1: Write the failing test for the owned-artefact guards**
 - [ ] **Step 2–5: the same cycle**
 - [ ] **Step 6: Mark the unreachable cells in the catalogue with their reason, regenerate, commit**
+
+---
+
+**Done 2026-08-20** — `884fd41e`. One cell carried, ten cells given a reason, and the catalogue grew the
+third state it had been missing.
+
+**The plan said "the PNG's own contrast and the embed's payload"; the measurement said one of those
+two, and not the one that sounded most likely.** The embed cannot carry `duplicated-payload`:
+`iframePage` writes a page whose body is a single `<iframe>` to the hosted chart and inlines no asset
+at all, so none can be inlined twice — unreachable by construction, not owed. And "contrast" is not a
+guard in this catalogue. What IS reachable is `plate-follows-theme`, by a mechanism no other format
+has: **the surface comes back from someone else's renderer.**
+
+```
+dw beats on disk                      0 — no DATAWRAPPER.json anywhere in the tree
+spec fields about a surface           0 — `color` (the accent) is REQUIRED, no ground field exists
+what Datawrapper is told about ground nothing, on any call
+```
+
+So a story whose `PALETTE.md` records `ground: "#16191B"` gets a white rectangle delivered into a
+dark column. Valid PNG, correct chart, house accent, wrong side — the exact shape of every defect
+this catalogue exists to catch, and the one this format can still see because **the artefact is
+owned**. `assertExportedSurface` sits beside `assertExportedSize` in `produce.mjs`, both before the
+file is written, so a refused export leaves nothing behind to be delivered by mistake.
+
+**It can only refuse, and that is said out loud rather than designed around.** The fix is to send a
+background or a Datawrapper theme — and this skill's own discipline (`verify-range-annotation.mjs`
+exists because a key in a schema is not a rule rendering) says that claim has to be CONFIRMED live.
+That needs a real token, so it is a measured follow-up, not a guess. Until then: a loud refusal
+naming both luminances, never a wrong picture.
+
+Coverage said plainly, as for `image-beat` one task earlier: with zero beats on disk the guard has
+nothing to walk, and its value is at production, for the beat that does not exist yet.
+
+**The catalogue's third state.** `carried` and `owed` could not express "this cannot happen here, and
+here is why" — and two cells in this plan were already RETIRED after measurement (`projection-pairing`
+for `map-beat`, then for `map-web`), with the argument living only in this file. A blank cell with no
+reason beside it is indistinguishable from a cell nobody thought about, and the next reader either
+re-measures it or reads it as an oversight and adds debt that was never owed. `unreachable` now
+carries prose per cell, rendered into `GUARDS.md` under the table: **10 rows** — the two retirements
+and the eight of `dw-beat`'s column. The parity test refuses a reason too short to be a reason, and
+refuses a cell that is both a state and unreachable.
+
+**A hole in the walking, found by adding one file to a skill that has no seed.** The eight copies of
+`compare-png.mjs` were walked by `canonSkills()` — the set of skills with all four canon assets —
+which had been the same set as the copy-holders right up until now. `dw-beat` has no seed and no
+preview and still needs the decoder to read a surface, so its copy would have sat unwalked, which is
+the divergence copies are supposed to be paying for. The subject is now DISCOVERED from disk: every
+skill carrying `scripts/compare-png.mjs`, with an assertion that it still covers at least the canon
+set.
+
+**A defect found in this plan's own earlier task.** Task 1b widened the code so an ordinary map
+reaches the delegated producer (`8f8cb1a2`) and **never touched `skills/dw-beat/SKILL.md`**, which
+still read "**not** for a map" — the last layer refusing what every layer below now offers, and the
+exact failure 1b was written to end. Fixed here, stating the boundary rather than the refusal: the
+line is the WORK (bespoke camera, baked plate, reveal, video → `map-beat`), not the medium.
+
+Six mutations, six named reds: `DARK_SIDE` 0.25 → 0.4 in the new copy → the copies test diffs the
+constant line · `tolerance = 6` → `7` in the decoder copy → *"dw-beat should carry a copy
+byte-identical to splash's"* · the call site deleted from `produce.mjs` → the wiring test, not just
+the unit test · the catalogue claiming a guard `dw-beat` does not declare · a cell both `carried` and
+`unreachable` · a reason of four characters.
+
+**`GUARDS.md`: still 3 cells owed** — this task adds a carried cell and no debt. All three remain
+`reached-mark-declares`, and Task 7 is where they are decided.
 
 ---
 
