@@ -23,6 +23,22 @@ function stripThousands(v) {
   return v.replace(/,/g, "");
 }
 
+// A unit riding along with a plain number, either trailing ("12 %") or leading ("$100"). The
+// numeric core is deliberately the SAME shape NUMERIC_RE accepts — this never widens what counts
+// as a number, only what is allowed to sit next to one. "0x1F" is not caught by either: the
+// trailing form leaves "x1F" as the "unit", which contains a digit and so is not `[^\d\s]+`; the
+// leading form requires the value to START with the unit, but "0x1F" starts with a digit.
+const UNIT_SUFFIX_RE = /^([+-]?(?:\d+\.?\d*|\.\d+))\s*([^\d\s]+)$/;
+const UNIT_PREFIX_RE = /^([^\d\s+-]+)\s*([+-]?(?:\d+\.?\d*|\.\d+))$/;
+
+function splitUnit(v) {
+  const suffix = v.match(UNIT_SUFFIX_RE);
+  if (suffix) return { core: suffix[1], unit: suffix[2], raw: v };
+  const prefix = v.match(UNIT_PREFIX_RE);
+  if (prefix) return { core: prefix[2], unit: prefix[1], raw: v };
+  return null;
+}
+
 // Decides a column's type AND, when a numeric-looking column is rejected, WHY —
 // a profiler that rejects a column in silence is the defect this exists to close.
 // It never guesses: "1,234" alone could be one thousand two hundred thirty-four
@@ -34,6 +50,32 @@ function typeOf(values) {
   if (present.length === 0) return { type: "text" };
   if (present.every(isNumeric)) return { type: "number" };
   if (present.every((v) => /^\d{4}(-\d{2}(-\d{2})?)?$/.test(v))) return { type: "date" };
+
+  // A trailing or leading unit is READ — and recorded on the column, so a downstream axis can
+  // label itself — only when EVERY present value carries the exact same unit and its core reads
+  // as a plain number; anything less uniform (a differing unit, or a unit on only some of the
+  // values) is refused as text, but never silently: this is the same class of defect as the
+  // thousands-vs-decimal-comma ambiguity above, one step further out, and it gets the same
+  // discipline — a reason is always recorded when a column looked numeric and was refused.
+  const unitParses = present.map(splitUnit);
+  if (unitParses.some((p) => p !== null)) {
+    const allUnit = unitParses.every((p) => p !== null && isNumeric(p.core));
+    if (allUnit) {
+      const distinctUnits = new Set(unitParses.map((p) => p.unit));
+      if (distinctUnits.size === 1) return { type: "number", unit: unitParses[0].unit };
+      const differing = unitParses.find((p) => p.unit !== unitParses[0].unit);
+      return {
+        type: "text",
+        reason: `looked numeric but the unit is not the same throughout the column ("${unitParses[0].raw}" vs "${differing.raw}") — nothing in the column says which unit is right`,
+      };
+    }
+    const withUnit = unitParses.find((p) => p !== null);
+    const without = present[unitParses.findIndex((p) => p === null)];
+    return {
+      type: "text",
+      reason: `looked numeric but only some values carry a unit ("${withUnit.raw}" has one, "${without}" does not) — nothing settles whether the whole column is in that unit`,
+    };
+  }
 
   const numericLooking = present.filter((v) => isNumeric(v) || isThousandsShaped(v));
   if (numericLooking.length === 0) return { type: "text" };
@@ -81,15 +123,16 @@ export function profileTable(rows) {
   const header = rawHeader.map((name) => name.trim());
   const columns = header.map((name, index) => {
     const values = body.map((row) => (row[index] ?? "").trim());
-    const { type, reason } = typeOf(values);
+    const { type, reason, unit } = typeOf(values);
     const numbers =
       type === "number"
-        ? values.filter((v) => v !== "").map((v) => Number(stripThousands(v)))
+        ? values.filter((v) => v !== "").map((v) => Number(unit ? splitUnit(v).core : stripThousands(v)))
         : [];
     return {
       name,
       type,
       ...(reason ? { reason } : {}),
+      ...(unit ? { unit } : {}),
       missing: values.filter((v) => v === "").length,
       distinct: new Set(values.filter((v) => v !== "")).size,
       min: numbers.length ? Math.min(...numbers) : null,

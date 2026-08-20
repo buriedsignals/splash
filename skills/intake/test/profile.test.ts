@@ -160,4 +160,54 @@ describe("profileTable", () => {
       rows: [{ values: ["x"], indices: [0, 1, 2], occurrences: 3 }],
     });
   });
+
+  it("should read a uniform trailing unit as a number, recording the unit on the column", () => {
+    // The stress-f housing-pressure shape: every cell carries the same trailing "%", so the
+    // column is unambiguous and reading it (rather than refusing) is the legitimate call.
+    const table = profileTable([
+      ["pressure"],
+      ["12 %"],
+      ["9 %"],
+      ["143 %"],
+    ]);
+    const pressure = table.columns.find((c) => c.name === "pressure");
+    expect(pressure.type).toBe("number");
+    expect(pressure.unit).toBe("%");
+    expect(pressure.min).toBe(9);
+    expect(pressure.max).toBe(143);
+    expect(pressure.sum).toBeCloseTo(164);
+    expect(pressure.reason).toBeUndefined();
+  });
+
+  it("should refuse a column whose unit is not the same throughout, with the reason recorded", () => {
+    const table = profileTable([
+      ["mixed"],
+      ["12 %"],
+      ["9 kg"],
+    ]);
+    const mixed = table.columns.find((c) => c.name === "mixed");
+    expect(mixed.type).toBe("text");
+    expect(mixed.min).toBe(null);
+    expect(mixed.reason).toBeTruthy();
+    expect(mixed.reason).toMatch(/unit/);
+  });
+
+  it("should still refuse with a reason when only some values carry a unit", () => {
+    const table = profileTable([
+      ["partial"],
+      ["12 %"],
+      ["9"],
+    ]);
+    const partial = table.columns.find((c) => c.name === "partial");
+    expect(partial.type).toBe("text");
+    expect(partial.reason).toBeTruthy();
+  });
+
+  it("should not read a hex-looking value as a number-with-unit", () => {
+    const table = profileTable([["v"], [" 12 "], ["0x1F"]]);
+    const v = table.columns.find((c) => c.name === "v");
+    expect(v.type).toBe("text");
+    expect(v.unit).toBeUndefined();
+    expect(v.reason).toMatch(/0x1F/);
+  });
 });
