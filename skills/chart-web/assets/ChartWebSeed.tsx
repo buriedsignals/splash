@@ -19,7 +19,11 @@
  *      never inside the `viewBox` to begin with.
  *   2. `tabIndex={0}` and a per-reading `aria-label`, written on every point at build time — not
  *      assembled by the inline script — so the no-JS frame is still keyboard-reachable, reading by
- *      reading, with the script absent entirely.
+ *      reading, with the script absent entirely. This is the capability
+ *      `doctrine/references/guard-catalogue.json` names `reachable-by-keyboard`
+ *      (`scripts/detect-reachable-by-keyboard.mjs`'s `keyboardReachesEveryMark`) — carried here
+ *      since the day this seed was first written, measured against every delivered beat rather than
+ *      assumed from this comment.
  *   3. One invisible `.hit-area` rectangle, shared by mouse and touch: `assets/interaction.mjs`
  *      resolves a pointer or a tap anywhere over the plot to the nearest reading by x, so a phone
  *      reader is never asked to land a tap on a 5px circle.

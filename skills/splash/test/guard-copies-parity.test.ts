@@ -36,10 +36,17 @@ function constantsBehind(source: string, body: string): string {
   return found.sort().join("\n");
 }
 
-/** A function's own doc comment and body, as written, plus the constants it decides with. */
+/** A function's own doc comment and body, as written, plus the constants it decides with.
+ *
+ *  `async` OR NOT — a capability's own detector drives a live page and has to be one; a guard's own
+ *  decision usually reads a string and never needs to be. Both are found by the same declaration,
+ *  so a copy cannot drift from sync to async (or back) without this test's own body-comparison
+ *  catching the changed source text either way. */
 function declaration(file: string, name: string): string {
   const source = readFileSync(file, "utf8");
-  const at = source.indexOf(`export function ${name}(`);
+  const sync = source.indexOf(`export function ${name}(`);
+  const async = source.indexOf(`export async function ${name}(`);
+  const at = sync >= 0 ? sync : async;
   expect(`${file} declares ${name}`).toBe(
     at >= 0 ? `${file} declares ${name}` : `${file} does NOT declare ${name}`,
   );
@@ -117,6 +124,13 @@ const COPIES: Record<string, string[]> = {
   // decides on the shape this returns, and a copy that read a ramp's bounds differently would
   // refuse a different set of beats while looking like the same decision.
   rampsFromSource: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
+  // A capability, not a guard, and the first one this map reaches carried by more than one skill:
+  // chart-web's seed baked `tabIndex`/`aria-label` on every point; map-web's marks are native
+  // `<button>`s with the same `aria-label`/`data-detail` pairing. Same detector, same contract.
+  keyboardReachesEveryMark: [
+    "chart-web/scripts/detect-reachable-by-keyboard.mjs",
+    "map-web/scripts/detect-reachable-by-keyboard.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {
@@ -139,7 +153,10 @@ describe("every copied guard decision is still the same decision", () => {
         (rule: { states: Record<string, string> }) =>
           Object.values(rule.states).filter((state) => state === "carried").length > 1,
       )
-      .map((rule: { decidedBy: string }) => rule.decidedBy)
+      // `decidedBy` names a guard's own decision function; `detectedBy` names a capability's own —
+      // the same fallback `guard-parity.test.ts`'s own assertions use, under whichever name a
+      // rule's `kind` carries it as.
+      .map((rule: { decidedBy?: string; detectedBy?: string }) => rule.decidedBy ?? rule.detectedBy)
       .sort();
     // A guard carried by two skills and NOT walked here is a decision free to drift. This is the
     // assertion that makes adding the next one to `COPIES` unavoidable rather than remembered.

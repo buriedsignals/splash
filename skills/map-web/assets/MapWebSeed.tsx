@@ -358,7 +358,11 @@ export function MapWebSeed({
                 script, so the no-JS page is still keyboard-reachable and its value is still
                 announced with the script absent entirely. `assets/interaction.mjs` (unchanged by a
                 new beat) wires hover, tap and keyboard once `scripts/render-web.mjs` inlines this
-                markup. */}
+                markup. This is the capability `doctrine/references/guard-catalogue.json` names
+                `reachable-by-keyboard` (`scripts/detect-reachable-by-keyboard.mjs`'s
+                `keyboardReachesEveryMark`) — carried here since a `<button>` is natively focusable
+                and needs no `tabIndex`, measured against every delivered beat rather than assumed
+                from this comment. */}
             {drawn.map((point) => {
               const detail = pointDetail(point);
               const xPct = (point.px / frame.width) * 100;

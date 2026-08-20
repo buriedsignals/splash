@@ -29,6 +29,7 @@ written out below the tables.
 | capability | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | same-facts-without-the-picture |  | **R** |  |  |  |  |  |  |
+| reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -36,7 +37,7 @@ Disciplines are checked for PRESENCE where an author reads them, and are not mec
 
 Nothing. Every format carries every rule it can reach.
 
-## Why a cell is blank, where the blankness was argued — 4 of them
+## Why a cell is blank, where the blankness was argued — 6 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
@@ -46,6 +47,8 @@ trait already proves it.
 - `map-web` cannot reach **same-facts-without-the-picture** — measured 2026-08-20 against all 4 delivered map-web pages (mapgen-symbol-web, mapgen-dot-web, mapgen-hexgrid-web, mapgen-locator-web): every one already ships an opt-in accessible table carrying the SAME facts the marks announce, but organised into typed columns (e.g. <th>Where</th><td>Magnitude</td><td>Date</td>) rather than one cell holding the joined data-detail string this detector compares against verbatim, so tableCarriesTheMarks reports 100% missing on every one of them (quake-symbol.html: 17/17; dot-population.html: 42/42; hex-grid.html: 156/156; locator.html: 11/11) even though a screen reader's own table navigation reads the identical facts, arguably more usefully split by column than chart-web's single joined cell. Not carried by this detector's exact string-identity contract, and not debt either: closing it would mean either weakening the check chart-web's own table exists to satisfy, or reshaping a table already in production for four shipped beats — a call for the format's own owner, not one this task makes unilaterally
 - `dw-beat` cannot reach **same-facts-without-the-picture** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file
 - `scrolly` cannot reach **same-facts-without-the-picture** — measured 2026-08-20 across every delivered scrolly beat (8 proof/ directories, including the two whose CHART track draws real data: scrolly-chart-eu-carbon, scrolly-one-chart-swiss-life-expectancy): zero marks, on any of the four tracks, carry data-detail anywhere. ChartFrame in assets/ScrollySeed.tsx draws one continuous line plus two annotated points, never chart-web's per-reading interactive marks, and none of the image/diagram/map tracks use the convention either. tableCarriesTheMarks passes vacuously (marks: 0) on every delivered page: there is no population of per-reading facts here for a table to gather
+- `scrolly` cannot reach **reachable-by-keyboard** — measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so keyboardReachesEveryMark reports {marks: 0} vacuously on every one of them — there is no per-reading fact here for a Tab sequence to reach in the first place
+- `dw-beat` cannot reach **reachable-by-keyboard** — measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. Whatever a keyboard reaches inside the hosted embed lives behind a cross-origin boundary this skill does not own and cannot drive a Tab sequence into from its own delivered file
 
 ## What each skill is
 
@@ -133,3 +136,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a reader who cannot see the graphic gets the same values, in a table carrying the marks' own numbers
 
 **Earned by:** map-web shipped an opt-in accessible table from its first version while chart-web shipped none, on the same trait: a chart is exactly as unreadable to a screen reader as a map, and nothing said so
+
+### reachable-by-keyboard — `keyboardReachesEveryMark`
+
+**Offers:** a reader with no pointer gets to every mark by Tab, in order, and hears or reads its own reading — never merely a `tabIndex` that gets there with nothing to say
+
+**Earned by:** same-facts-without-the-picture proved a screen reader could get the numbers through a table; nothing yet proved a reader who cannot USE a pointer at all — the keyboard-only case a mouse-and-touch verification never drives — could get to a single mark on the picture itself

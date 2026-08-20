@@ -158,6 +158,24 @@
         "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file",
         "scrolly": "measured 2026-08-20 across every delivered scrolly beat (8 proof/ directories, including the two whose CHART track draws real data: scrolly-chart-eu-carbon, scrolly-one-chart-swiss-life-expectancy): zero marks, on any of the four tracks, carry data-detail anywhere. ChartFrame in assets/ScrollySeed.tsx draws one continuous line plus two annotated points, never chart-web's per-reading interactive marks, and none of the image/diagram/map tracks use the convention either. tableCarriesTheMarks passes vacuously (marks: 0) on every delivered page: there is no population of per-reading facts here for a table to gather"
       }
+    },
+    {
+      "id": "reachable-by-keyboard",
+      "kind": "capability",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "a reader with no pointer gets to every mark by Tab, in order, and hears or reads its own reading — never merely a `tabIndex` that gets there with nothing to say",
+      "earnedBy": "same-facts-without-the-picture proved a screen reader could get the numbers through a table; nothing yet proved a reader who cannot USE a pointer at all — the keyboard-only case a mouse-and-touch verification never drives — could get to a single mark on the picture itself",
+      "detectedBy": "keyboardReachesEveryMark",
+      "states": {
+        "chart-web": "carried",
+        "map-web": "carried"
+      },
+      "exceptions": {
+        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so keyboardReachesEveryMark reports {marks: 0} vacuously on every one of them — there is no per-reading fact here for a Tab sequence to reach in the first place",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. Whatever a keyboard reaches inside the hosted embed lives behind a cross-origin boundary this skill does not own and cannot drive a Tab sequence into from its own delivered file"
+      }
     }
   ]
 }
