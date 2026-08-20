@@ -1,0 +1,27 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 2008,
+      "max": 2017,
+      "sum": 16098
+    },
+    {
+      "name": "applications",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 1211,
+      "max": 2310,
+      "sum": 13407
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

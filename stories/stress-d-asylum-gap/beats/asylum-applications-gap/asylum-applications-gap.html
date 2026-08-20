@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Applications fell every year from 2008 to 2011, then the registry went dark for two years — and came back 72.6% higher than where it left off</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #16191B;
+  --accent: #D4A853;
+  --ink: #FFFFFF;
+  --muted: #a6a8a8;
+  --grid: #404244;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#16191B;--accent:#D4A853;--ink:#FFFFFF;--muted:#a6a8a8;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:14px;--label-weight:600;--note-size:12px"><div class="chart-header" style="margin-bottom:22px"><h2 class="chart-title">Applications fell every year from 2008 to 2011, then the registry went dark for two years — and came back 72.6% higher than where it left off</h2><p class="chart-caveat">The office has never explained why the registry published no figures for 2013 or 2014. Every year&#x27;s own count is on hover or Tab — explore it yourself.</p></div><div class="chart-plot" style="--y-gutter:39.51953125px;--x-axis-h:26px;aspect-ratio:939.51953125 / 486"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#a6a8a8">1,200</span><span class="axis-label y" style="top:83.3%;color:#a6a8a8">1,400</span><span class="axis-label y" style="top:66.7%;color:#a6a8a8">1,600</span><span class="axis-label y" style="top:50%;color:#a6a8a8">1,800</span><span class="axis-label y" style="top:33.3%;color:#a6a8a8">2,000</span><span class="axis-label y" style="top:16.7%;color:#a6a8a8">2,200</span><span class="axis-label y" style="top:0%;color:#a6a8a8">2,400</span></div><svg role="group" aria-label="Applications fell every year from 2008 to 2011, then the registry went dark for two years — and came back 72.6% higher than where it left off" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 900 460" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>A line chart of asylum applications by year, 2008 to 2017. Applications fell every year from 2008 (1487) to 2011 (1211), then the registry published nothing for 2013 or 2014 — shown as a shaded, unbridged gap in the line, never a straight connector across it. The line resumes in 2015 at 2100, 72.6% above the 2012 reading of 1217, and rises to 2310 by 2017.</desc><rect x="0" y="0" width="900" height="460" fill="#16191B"></rect><line x1="0" x2="900" y1="460" y2="460" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="383.33333333333337" y2="383.33333333333337" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="306.6666666666667" y2="306.6666666666667" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="230" y2="230" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="153.33333333333334" y2="153.33333333333334" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="76.66666666666664" y2="76.66666666666664" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="900" y1="0" y2="0" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="400.66666666666663" y="0" width="296.0000000000001" height="460" fill="#a6a8a8" opacity="0.12"></rect><line x1="0" x2="900" y1="349.98333333333335" y2="349.98333333333335" stroke="#a6a8a8" stroke-width="1" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></line><path d="M 6.0 350.0 L 104.7 374.5 L 203.3 376.1 L 302.0 455.8 L 400.7 453.5" fill="none" stroke="#D4A853" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path d="M 696.7 115.0 L 795.3 61.3 L 894.0 34.5" fill="none" stroke="#D4A853" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><circle cx="302" cy="455.78333333333336" r="3" fill="#a6a8a8"></circle><circle cx="894" cy="34.49999999999998" r="4" fill="#D4A853"></circle><circle class="pt" cx="6" cy="349.98333333333335" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2008 : 1,487 applications" data-year="2008" data-detail="2008 · 1,487 applications"></circle><circle class="pt" cx="104.66666666666666" cy="374.5166666666667" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2009 : 1,423 applications" data-year="2009" data-detail="2009 · 1,423 applications"></circle><circle class="pt" cx="203.33333333333331" cy="376.05" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2010 : 1,419 applications" data-year="2010" data-detail="2010 · 1,419 applications"></circle><circle class="pt" cx="302" cy="455.78333333333336" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2011 : 1,211 applications" data-year="2011" data-detail="2011 · 1,211 applications"></circle><circle class="pt" cx="400.66666666666663" cy="453.48333333333335" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2012 : 1,217 applications" data-year="2012" data-detail="2012 · 1,217 applications"></circle><circle class="pt" cx="696.6666666666667" cy="115" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2015 : 2,100 applications" data-year="2015" data-detail="2015 · 2,100 applications"></circle><circle class="pt" cx="795.3333333333333" cy="61.33333333333332" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2016 : 2,240 applications" data-year="2016" data-detail="2016 · 2,240 applications"></circle><circle class="pt" cx="894" cy="34.49999999999998" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2017 : 2,310 applications" data-year="2017" data-detail="2017 · 2,310 applications"></circle><rect class="hit-area" x="0" y="0" width="900" height="460" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="note reference-label" style="left:0%;top:76.1%;color:#a6a8a8">2008 level</span><span class="note peak-label above" style="left:33.6%;top:99.1%;color:#a6a8a8">the decade&#x27;s low point</span><span class="end-label" style="left:99.3%;top:7.5%;color:#D4A853">2017 · 2,310</span><span class="note peak-label above" style="left:61%;top:20%;color:#FFFFFF">No data for 2013–2014</span></div><div class="x-axis"><span class="axis-label x" style="left:0.7%;color:#a6a8a8">2008</span><span class="axis-label x" style="left:11.6%;color:#a6a8a8">2009</span><span class="axis-label x" style="left:22.6%;color:#a6a8a8">2010</span><span class="axis-label x" style="left:33.6%;color:#a6a8a8">2011</span><span class="axis-label x" style="left:44.5%;color:#a6a8a8">2012</span><span class="axis-label x" style="left:77.4%;color:#a6a8a8">2015</span><span class="axis-label x" style="left:88.4%;color:#a6a8a8">2016</span><span class="axis-label x" style="left:99.3%;color:#a6a8a8">2017</span></div></div><p class="chart-source">Source: national asylum registry, as reported in the frozen dataset for this story</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>2008 · 1,487 applications</td></tr><tr><td>2009 · 1,423 applications</td></tr><tr><td>2010 · 1,419 applications</td></tr><tr><td>2011 · 1,211 applications</td></tr><tr><td>2012 · 1,217 applications</td></tr><tr><td>2015 · 2,100 applications</td></tr><tr><td>2016 · 2,240 applications</td></tr><tr><td>2017 · 2,310 applications</td></tr></tbody></table></div>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    show(points[nearestIndex(cxs, local.x)], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>
