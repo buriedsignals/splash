@@ -103,12 +103,7 @@ describe("the guard catalogue", () => {
   // `exceptions` — in prose the next reader can disagree with — that the defect cannot happen
   // there, which is a claim with a name attached and a measurement behind it.
   //
-  // TASK 2 (2026-08-20): moving `requires` from hand-typed skill lists to a trait derivation surfaced
-  // four cells nobody had typed — `duplicated-payload`×`map-beat`, `plate-geometry-pairing`×`scrolly`,
-  // `screen-space-dash`×`image-beat`, `reveal-completes`×`map-beat` — each marked `owed`, on purpose,
-  // per Step 6 of that task's plan. That is correct and it is the point: a set nobody derives is a
-  // set nobody notices. Task 4 pays this debt down and un-todos this assertion.
-  it.todo(
+  it(
     "owes nothing: every reachable format carries every guard it can reach",
     () => {
       expect(owedRows(readCatalogue())).toEqual([]);
