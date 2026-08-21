@@ -57,6 +57,10 @@ import {
   revealDashInScreenSpace,
 } from "./verify-guards.mjs";
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
+import {
+  FLOOR_FRACTION,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -226,6 +230,22 @@ async function checkFit(page, vp) {
     m.plot.h >= 100,
     `${vp.label} ${vp.w}x${vp.h}: the plot is still a chart, not a strip`,
     `plot ${Math.round(m.plot.w)}x${Math.round(m.plot.h)}`,
+  );
+  // ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+  // none of them. This is this format's call, and it belongs here rather than in `render-web.mjs`
+  // for the reason the rule's own doc-comment gives: the fraction is `.chart-figure`'s own
+  // `getBoundingClientRect` against the window it was opened in, which only a real browser at a
+  // real width can answer — and this file is the browser, driven, over every width a beat ships at.
+  // Every number above is already measured here; the one nobody was asking is the share of the
+  // reader's window the graphic actually covers.
+  const filled = graphicFillsItsFrame(
+    (m.figure.w * m.figure.h) / (m.innerW * m.innerH),
+    FLOOR_FRACTION,
+  );
+  check(
+    !filled.under,
+    `${vp.label} ${vp.w}x${vp.h}: the graphic fills a real share of the window`,
+    `${(filled.fraction * 100).toFixed(1)}% of the window against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
   );
   return m;
 }

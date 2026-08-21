@@ -416,6 +416,56 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/decollide.mjs",
     "scrolly/scripts/decollide.mjs",
   ],
+  // ROUND-SIX FINDING AC1: whether a guard this skill DECLARES is called by anything the skill
+  // ships. `fills-its-frame` was distributed to all eight producing skills and called by none of
+  // them, four hours after the re-declaration that was reported as the fix — the rule reached them
+  // in the catalogue and not in the code. `guard-wired-to-run` had been the DISCIPLINE against
+  // exactly that since round three and could not observe its own violation, because prose cannot.
+  // Walked across all eight for the reason every entry here is walked, and one sharper: a copy that
+  // started counting an IMPORT, a `export { … } from` shim or a COMMENT as a caller would report
+  // its own format as wired while nothing ran — which is not a drift between two formats but a
+  // mechanism certifying itself. All three of those weakenings were found by mutation while this
+  // was being written, and each is refused in the compared body below.
+  withoutComments: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
+  withoutQuotedNames: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
+  declaredDecisions: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
+  declarationsWithoutACaller: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
   // ROUND-FOUR FINDING 5: a beat drawn from a count with a denominator beside it says which
   // reading it draws. `materialises-a-beat` reaches all eight, and the decision is entirely about
   // a story's own frozen table and a BRIEF.md — nothing in it is skill-specific. Six of the eight

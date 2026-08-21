@@ -19,6 +19,11 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
 import { staggerLacksAnOrder } from "./detect-reveal-order.mjs";
+import {
+  FLOOR_FRACTION,
+  frameFillFraction,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 import { CO2_TIMING } from "../assets/timing.ts";
 
 /**
@@ -169,6 +174,21 @@ const stillSeconds = remotion([
   "--timeout=120000",
 ]);
 console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
+
+// ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+// none of them — the rule landed in the catalogue and not in the code. This is the call, on the
+// bytes that came back, before the run is allowed to go any further. It sits exactly where the
+// comment above already argues a refusal belongs: if the end state is not a complete, readable
+// frame, the video is wrong and nothing below is worth waiting for.
+const filled = graphicFillsItsFrame(frameFillFraction(await readFile(stillPath)).fraction, FLOOR_FRACTION);
+if (filled.under)
+  throw new Error(
+    `the final frame's drawing covers ${(filled.fraction * 100).toFixed(2)}% of its own frame, ` +
+      `under this format's measured ${(FLOOR_FRACTION * 100).toFixed(2)}% floor — a build that ` +
+      `arrives at a picture stranded in a corner of a frame nothing reserved. Widening the floor ` +
+      `is not the fix: scripts/detect-fills-its-frame.mjs names the population it was measured ` +
+      `from, portrait beats included.`,
+  );
 
 if (stillOnly) process.exit(0);
 

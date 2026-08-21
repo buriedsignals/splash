@@ -118,6 +118,17 @@ import { existsSync, readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
+// `FLOOR_FRACTION` is ALIASED because this file already exports one of its own, and the two are
+// genuinely different measurements that would otherwise share a name: `compositionFillsTheFrame`'s
+// floor (below) is INK COVERAGE of the drawing inside the frame, measured at 2.2% on this format's
+// thinnest honest chart track; `fills-its-frame`'s is the fixed graphic's own BOX against the
+// reader's window, measured at 80.7%. A collision between them is exactly the confusion the
+// capability's own doc-comment warns about — "one capability may not mean two things depending
+// which format a reader is looking at" — arriving inside a single file.
+import {
+  FLOOR_FRACTION as WINDOW_FLOOR_FRACTION,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 /**
  * The CLI's own file argument, resolved against the current working directory before it ever
@@ -796,6 +807,28 @@ export async function verifyOne(page, file, { w, h }) {
     );
   if (shape.horizontalOverflow > 1)
     failures.push(`${where}: ${shape.horizontalOverflow}px of horizontal overflow`);
+
+  // ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+  // none of them. This is this vehicle's call, and it is deliberately NOT the same question as
+  // `compositionFillsTheFrame` two checks below: that one measures the DRAWING inside the frame,
+  // this one measures the frame itself against the reader's window. A scrolly's fixed graphic
+  // covers its window by construction, which is exactly why nobody had ever measured it — and a
+  // vehicle whose graphic quietly stopped being full-bleed would break every floor below it while
+  // each individual composition still read as correct against a frame that had shrunk underneath.
+  const filled = graphicFillsItsFrame(
+    (shape.graphicBox[0] * shape.graphicBox[1]) / (w * h),
+    WINDOW_FLOOR_FRACTION,
+  );
+  if (filled.under)
+    failures.push(
+      `${where}: the fixed graphic covers ${(filled.fraction * 100).toFixed(1)}% of the window, ` +
+        `under this format's measured ${(WINDOW_FLOOR_FRACTION * 100).toFixed(1)}% floor ` +
+        `(${shape.graphicBox[0]}x${shape.graphicBox[1]} in a ${w}x${h} window)`,
+    );
+  else
+    notes.push(
+      `graphic fills ${(filled.fraction * 100).toFixed(1)}% of the window (floor ${(WINDOW_FLOOR_FRACTION * 100).toFixed(1)}%)`,
+    );
 
   // B, C — the graphic and the header never move.
   for (const part of ["graphic", "header"]) {

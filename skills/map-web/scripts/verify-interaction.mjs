@@ -54,6 +54,10 @@ import {
   revealDashInScreenSpace,
 } from "./verify-guards.mjs";
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
+import {
+  FLOOR_FRACTION,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 /** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
@@ -306,6 +310,7 @@ try {
       return {
         docHeight: document.documentElement.scrollHeight,
         windowHeight: window.innerHeight,
+        windowWidth: window.innerWidth,
         mapBottom: box.bottom,
         mapWidth: box.width,
         mapHeight: box.height,
@@ -324,6 +329,20 @@ try {
     });
     const overflow = fit.docHeight - fit.windowHeight;
     const tolerance = fit.disclosureHeight + 1;
+    // ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+    // none of them, and the beat that proved the rule works — `stress-ab-emigration-flows`, 16.6%
+    // and 14.8% against this same floor on its first render — had to write its own runner by hand
+    // against this skill's decision because nothing here ever asked it. This is the call. The
+    // box and the window are already measured above; only the question was missing.
+    const filled = graphicFillsItsFrame(
+      (fit.mapWidth * fit.mapHeight) / (fit.windowWidth * fit.windowHeight),
+      FLOOR_FRACTION,
+    );
+    check(
+      `fit ${w}x${h}: the map fills a real share of the window`,
+      !filled.under,
+      `${(filled.fraction * 100).toFixed(1)}% of the window against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
+    );
     check(
       `fit ${w}x${h}: the whole beat is inside the window`,
       overflow <= tolerance && fit.mapBottom <= fit.windowHeight + 1,

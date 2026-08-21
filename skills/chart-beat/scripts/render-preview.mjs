@@ -22,6 +22,11 @@ import {
 import { ChartSeed } from "../assets/ChartSeed.tsx";
 import { sizeFor } from "./sizes.mjs";
 import { comparePngBuffers } from "./compare-png.mjs";
+import {
+  FLOOR_FRACTION,
+  frameFillFraction,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 // The preview is a picture of the MECHANISM, so it is drawn at one size deliberately rather than
 // at whatever a beat happens to choose. Landscape, because that is the size a reader of this
@@ -87,6 +92,23 @@ const png = new Resvg(svg, {
 })
   .render()
   .asPng();
+
+// ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+// none of them — the rule landed in the catalogue and not in the code, and every format stayed
+// exactly as weak as it had been. This is the call. The fraction is read off the bytes that are
+// about to be written, the decision and the floor are this format's own
+// (`detect-fills-its-frame.mjs`), and it runs BEFORE the write for the same reason
+// `assertExportedSize` runs before `dw-beat` writes its export: a refused frame must leave nothing
+// behind that could be delivered by mistake. `--check` pays for it too, because a stale preview and
+// a collapsed one are both things a reader of this skill would otherwise open and believe.
+const filled = graphicFillsItsFrame(frameFillFraction(png).fraction, FLOOR_FRACTION);
+if (filled.under)
+  throw new Error(
+    `the seed's drawing covers ${(filled.fraction * 100).toFixed(2)}% of its own frame, under this ` +
+      `format's measured ${(FLOOR_FRACTION * 100).toFixed(2)}% floor — a drawing stranded in a ` +
+      `corner of a frame nothing reserved. Widening the floor is not the fix: ` +
+      `scripts/detect-fills-its-frame.mjs names the population it was measured from.`,
+  );
 
 if (process.argv.includes("--check")) {
   const committed = await readFile(TARGET);

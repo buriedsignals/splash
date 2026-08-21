@@ -51,6 +51,11 @@ import {
 } from "../assets/geo.ts";
 import { MAP_TIMING } from "../assets/timing.ts";
 import { staggerLacksAnOrder } from "./detect-reveal-order.mjs";
+import {
+  FLOOR_FRACTION,
+  frameFillFraction,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -208,6 +213,26 @@ const shared = {
 
 await mkdir(outDir, { recursive: true });
 
+/** ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+ *  none of them — the rule landed in the catalogue and not in the code, and every format stayed
+ *  exactly as weak as it had been. This is the call, made on each delivered frame this script
+ *  writes, before the run is allowed to go any further.
+ *
+ *  A map's floor is the highest of the eight (60.42%) and the reason is structural rather than
+ *  strict: a baked plate fills the frame it was baked for, so a map that does NOT is a map whose
+ *  camera and whose frame disagree — the defect `stress-f-housing-pressure` shipped. */
+function assertFillsItsFrame(png, what) {
+  const filled = graphicFillsItsFrame(frameFillFraction(png).fraction, FLOOR_FRACTION);
+  if (filled.under)
+    throw new Error(
+      `${what} covers ${(filled.fraction * 100).toFixed(2)}% of its own frame, under this format's ` +
+        `measured ${(FLOOR_FRACTION * 100).toFixed(2)}% floor — a drawing stranded in a corner of a ` +
+        `frame nothing reserved. Widening the floor is not the fix: ` +
+        `scripts/detect-fills-its-frame.mjs names the population it was measured from.`,
+    );
+  return filled;
+}
+
 // ── Rung 1: the still ──────────────────────────────────────────────────────────────────────────
 if (wantStill) {
   const { geometry, plate } = await plateOf(stillPlate);
@@ -228,6 +253,7 @@ if (wantStill) {
     outDir,
     name: "static",
   });
+  assertFillsItsFrame(await readFile(pngPath), "the still's drawing");
   console.log(
     `still → ${pngPath}  (${BEAT.subjectLabel} ${fr(shared.subjectValue, 1)} · ` +
       `${BEAT.comparisonLabel} ${fr(shared.comparisonValue, 1)})\nNow open it and look at it.`,
@@ -258,6 +284,7 @@ if (wantFinalFrame || wantVideo) {
     `--props=${propsPath}`,
     "--timeout=180000",
   ]);
+  assertFillsItsFrame(await readFile(framePath), "the final frame's drawing");
   console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s]`);
 
   if (wantVideo) {

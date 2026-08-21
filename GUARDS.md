@@ -31,6 +31,7 @@ written out below the tables.
 | reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
 | label-fits-inside-the-plate |  |  |  |  | **R** | **R** |  | **R** |
 | reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
+| guard-wired-to-run | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | rtl-runs-carry-their-direction | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | accent-survives-delegation |  |  |  | **R** |  |  |  |  |
@@ -62,7 +63,6 @@ written out below the tables.
 | static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |
-| guard-wired-to-run | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | typeface-is-recorded |  |  |  |  |  | **R** | **R** | **R** |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
@@ -313,11 +313,11 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 
 **Earned by:** the orchestrator (skills/splash) refuses a phase jump and says so in its own SKILL.md; no craft skill's own render/produce entrypoint could even ASK whether one stood above it — renderStill and readPinnedSize never looked. A hard refusal was considered and rejected: the stress-testing methodology that found this very finding depends on rendering a beat directly with no STORYBOARD.md at all (fifteen beats, three rounds), and a refusal with no unattended-satisfiable path would repeat the exact mistake this project's own PALETTE.md history already had to fix. storyboardGateStatus reports instead — found/closed/reason, never a throw — on the one trait every producing skill actually shares (materialises-a-beat), rather than an invented population
 
-### guard-wired-to-run — `doctrine/SKILL.md`
+### guard-wired-to-run — `declarationsWithoutACaller`
 
-**Refuses:** a guard's own decision function declared in a skill's `GUARDS` array and reachable only from its own `*.test.ts` — never from that skill's producer/render script, and never from a real DRIVER (a script that drives a live rendered page, e.g. via Puppeteer, or a CLI that walks real delivered files) that runs as part of the actual pipeline rather than a unit test's synthetic input
+**Refuses:** a guard's own decision function declared in a skill's `GUARDS` array and reachable only from its own `*.test.ts` — never called from any other file that skill ships, so nothing a journalist runs ever asks it. An import that names the function and never calls it, a `export { … } from` shim that only re-declares it, and a comment that mentions it are each refused too: all three are what an author writes INSTEAD of wiring the guard
 
-**Earned by:** surfaced by a concurrent round-three dispatch on finding 7: pageLanguageMatchesStory was declared and unit-tested in chart-web, map-web and scrolly, and called from none of their own render scripts — the white-on-dark mismatch stress-i refused shipped silently on stress-n regardless. Measured across all eight producing skills and every guard-kind decidedBy the catalogue names (never a capability's own detectedBy — a capability's dedicated walkedBy sweep against real proof/ files IS its intended driver, the same contract doctrine/test/guard-parity.test.ts already enforces, not the gap this rule is about): 40 guard-kind declarations total, 14 called from a producer/render script or a real Puppeteer-driving verify file, 26 reachable only from their own test file — pageLanguageMatchesStory's three were not the whole population, only the ones a defect had already been measured against. Too large a population (65%) to close by wiring in this one wave without risking the very producers this rule protects, so it is written down where every author of a new guard reads it rather than mechanically enforced per skill the way a guard's own decision is
+**Earned by:** ROUND THREE surfaced it: `pageLanguageMatchesStory` was declared and unit-tested in chart-web, map-web and scrolly and called from none of their render scripts, so the white-on-dark mismatch stress-i refused shipped silently on stress-n regardless. Measured then across all eight producing skills: 40 guard-kind declarations, 14 called from a producer/render script or a real Puppeteer driver, 26 reachable only from their own test file — too large a population (65%) to close in one wave without risking the very producers the rules protect, so it was written down as a DISCIPLINE where every author of a new guard reads it, rather than mechanically enforced. ROUND SIX proved that was not enough, on a fix four hours old: `fills-its-frame` was re-declared from `ships-standalone-html` to `materialises-a-beat`, its detector was distributed to all eight skills, and the controller measured `graphicFillsItsFrame` at ZERO callers in all eight — the rule reached them in the catalogue and not in the code, and the behaviour of all eight was unchanged. It is not an inert rule: `stress-ab-emigration-flows` measured 16.6% and 14.8% against its 17.9% floor and caught a real defect on a real page, but only because that beat's author wrote a runner BY HAND against a decision the skill would never have run for them. A discipline that cannot observe its own violation is theatre, so the observation is a decision function now: `declarationsWithoutACaller` (each skill's own `scripts/detect-guard-wiring.mjs`), run from each skill's own `scripts/check-guard-wiring.mjs` and ratcheted by `doctrine/test/guard-wiring.test.ts`. The debt it inherits is 105 unwired declarations of 124 across the eight, recorded BY NAME in each copy's own `RECORDED_UNWIRED` — a name may leave that list and a name that turns up unrecorded is a red, which is the property the discipline never had
 
 ### example-runners-are-called — `deadExampleRunners`
 

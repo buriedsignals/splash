@@ -25,6 +25,11 @@ import {
 import { ImageBeatSeed, imageBeatLayout } from "../assets/ImageBeatSeed.tsx";
 import { comparePngBuffers } from "./compare-png.mjs";
 import { duplicatedPayload } from "./verify-image.mjs";
+import {
+  FLOOR_FRACTION,
+  frameFillFraction,
+  graphicFillsItsFrame,
+} from "./detect-fills-its-frame.mjs";
 
 const HERE = import.meta.dirname;
 const SAMPLE_DIR = join(HERE, "..", "assets", "sample-data");
@@ -94,6 +99,23 @@ if (duplicated.length) {
 const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
   .render()
   .asPng();
+
+// ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called by
+// none of them — the rule landed in the catalogue and not in the code, and every format stayed
+// exactly as weak as it had been. This is the call, on the bytes that are about to be written and
+// before the write, the same order `assertExportedSize` runs in for a delegated export.
+//
+// A photograph beat's floor is the second highest of the eight (66.40%) because a letterboxed
+// picture fills nearly all of its frame by construction: the box is the picture, and a reading far
+// under this one means the frame was sized for something the beat is not drawing.
+const filled = graphicFillsItsFrame(frameFillFraction(png).fraction, FLOOR_FRACTION);
+if (filled.under)
+  throw new Error(
+    `the seed's drawing covers ${(filled.fraction * 100).toFixed(2)}% of its own frame, under this ` +
+      `format's measured ${(FLOOR_FRACTION * 100).toFixed(2)}% floor — a picture stranded in a ` +
+      `corner of a frame nothing reserved. Widening the floor is not the fix: ` +
+      `scripts/detect-fills-its-frame.mjs names the population it was measured from.`,
+  );
 
 if (process.argv.includes("--check")) {
   const committed = await readFile(TARGET);

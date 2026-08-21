@@ -14,6 +14,7 @@ import { chartIdForPath, createChart, setChartData, patchChart, publishChart, ex
 import { sizeFor } from "./sizes.mjs";
 import { assertExportedSurface, planExportSurface, pageLanguageMatchesStory } from "./verify-owned.mjs";
 import { accentPaintsTheMarks } from "./detect-accent-reaches-the-marks.mjs";
+import { FLOOR_FRACTION, graphicFillsItsFrame } from "./detect-fills-its-frame.mjs";
 
 export function datawrapperFormatFor(format) {
   if (format === "static") return "static";
@@ -493,6 +494,30 @@ async function produceUnlocked(
             `language ${JSON.stringify(spec.language)}`,
         );
       }
+
+      // ROUND-SIX FINDING AC1: `fills-its-frame` reached all eight producing skills and was called
+      // by none of them. This is this format's call, and it is placed exactly where
+      // `pageLanguageMatchesStory` above is placed, for the same reason: it reads the ARTEFACT this
+      // call is about to write, before it reaches disk.
+      //
+      // WHAT THIS PRODUCER CAN MEASURE WITHOUT A BROWSER, said plainly. Rendering is DELEGATED
+      // here; the one thing this skill owns about how big the graphic is, is the shell it wraps the
+      // embed in, and that shell either carries the three rules that resolve the iframe to the whole
+      // window or it does not. So the fraction is 1 or 0 — the shell's own claim, not a layout — and
+      // this refuses a future `iframePage` that drops them, which is precisely how the 100%
+      // measured through a real browser in `test/frame-fills-window.test.ts` would silently stop
+      // being true. That sweep stays the reading; this is the refusal.
+      const shellFillsTheWindow =
+        /html,\s*body,\s*iframe\s*\{[^}]*\bwidth:\s*100%/.test(artifactHtml) &&
+        /html,\s*body,\s*iframe\s*\{[^}]*\bheight:\s*100%/.test(artifactHtml);
+      const filled = graphicFillsItsFrame(shellFillsTheWindow ? 1 : 0, FLOOR_FRACTION);
+      if (filled.under)
+        throw new Error(
+          `the delivered page's own stylesheet no longer resolves the embed to the whole window ` +
+            `(html, body, iframe { width:100%; height:100% }), so the graphic covers a share of the ` +
+            `reader's window that nobody chose — under this format's ` +
+            `${(FLOOR_FRACTION * 100).toFixed(1)}% floor. Nothing has been written.`,
+        );
 
       await ensureRealDirectory(rendersDir, "Datawrapper renders directory");
       artifactPath = join(rendersDir, `${name}.html`);
