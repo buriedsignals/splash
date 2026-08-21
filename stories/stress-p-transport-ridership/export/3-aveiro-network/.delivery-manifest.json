@@ -1,14 +1,14 @@
 {
   "operationId": "adeef324-f652-4a64-8b66-ac0b97468e5b",
-  "reviewId": "slot-3-aveiro-network-review-1",
+  "reviewId": "3-aveiro-network-review-retaken-2026-08-21",
   "planVersion": 1,
-  "draftDigest": "sha256:45f252e5994e4910722efc6f9f9d56ff0c4d2218f304c951f8b8a8043b0c372d",
+  "draftDigest": "sha256:a9a36296976dff4f8c6f2d79945ff46319b657455b812b89aebd82a2d57aed8f",
   "findingIds": [
     "slot-3-aveiro-network"
   ],
   "form": "owned-file",
   "format": "static",
-  "createdAt": "2026-08-21T08:26:26.394Z",
+  "createdAt": "2026-08-21T12:45:00Z",
   "schemaVersion": 1,
   "outputId": "3-aveiro-network",
   "state": "complete"

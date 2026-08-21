@@ -20,7 +20,7 @@ not a description of a chart.
 
 ## The credit line
 
-> Source: city network figures for 2025, compiled by Buried Signals · as of 21 August 2026
+> Source: not stated · as of 21 August 2026
 
 ## The one thing this does not show
 

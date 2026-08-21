@@ -4,7 +4,7 @@ subject: "Lisboa, the network the article opens on — and, in the last beat, Av
 comparison: "Porto's 96 million, and the 394 million all six networks carry between them"
 limits: "One year only (2025), so no trend and no before/after for the lines that opened this year. The table is six city networks, not all Portuguese public transport. trips_millions counts trips, not people: divided by population it reverses the ranking, and the article does not make that reading. Nothing in the data locates or describes the Aveiro line itself."
 placement: "Beat 1 after the opening paragraph. Beats 2 and 3 after the second paragraph, where the smaller cities are introduced."
-credit: "Source: city network figures for 2025, compiled by Buried Signals"
+credit: "unattributed"
 effectiveDate: "2026-08-21"
 grounding: "supported"
 reference: "ABC News (Australia), \"Conquering Mount Everest\" — a profile whose two dimensions disagree; accepted for slot 2"

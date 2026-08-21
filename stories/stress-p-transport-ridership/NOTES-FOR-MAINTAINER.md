@@ -42,3 +42,17 @@ Preflight and offerForms disagree about hosted embed, in the direction that reac
 ## Found at delivery
 
 whereIs reports done while both halves of the closing offer are still pending. Three beats were delivered, every export carried .another-format and .other-subjects as pending, deliveryClosed reported closed: false for all three, and whereIs still returned phase done with nothing missing. deliver/SKILL.md names this gap in its own parenthesis; this run is a live instance of it, on the first story that ever had more than one beat.
+
+## Found at storyboard (added by round four's stress read, after the run)
+
+This story's `credit:` was filled with `Source: city network figures for 2025, compiled by Buried
+Signals`, and all three beats printed it. The frozen article names no source at all — `grep -in
+"source\|according\|compiled\|buried" source/article.md` returns nothing — and `Buried Signals` is
+`NEWSROOM.md`'s own `name`: the newsroom that would publish the graphic, written onto three
+delivered artefacts as the organisation that compiled the data. `credit` was a required hand scalar
+with no honest empty value, so the run filled it with the nearest plausible string in reach. Closed
+two ways: `credit: unattributed` is now a recorded answer that prints `Source: not stated` where a
+credit goes (`storyboard/scripts/storyboard.mjs`, `proposeCredit`, and the Credit bullet in
+`references/exchange.md`), and `credit-traces-to-the-record` reads the delivered artefact against
+the story's own frozen `source/` — not against `STORYBOARD.md`, which held the invention and would
+have passed it.

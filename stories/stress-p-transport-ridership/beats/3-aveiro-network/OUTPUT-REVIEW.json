@@ -1,30 +1,30 @@
 {
   "schemaVersion": 1,
-  "id": "slot-3-aveiro-network-review-1",
+  "id": "3-aveiro-network-review-retaken-2026-08-21",
   "outputId": "3-aveiro-network",
   "planVersion": 1,
   "draftRef": "renders/",
-  "draftDigest": "sha256:45f252e5994e4910722efc6f9f9d56ff0c4d2218f304c951f8b8a8043b0c372d",
+  "draftDigest": "sha256:a9a36296976dff4f8c6f2d79945ff46319b657455b812b89aebd82a2d57aed8f",
   "findingIds": [
     "slot-3-aveiro-network"
   ],
   "qaRuns": [
     {
       "schemaVersion": 1,
-      "id": "beat-3-render-and-look-2026-08-21",
+      "id": "3-aveiro-network-qa-retaken-2026-08-21-1",
       "outputId": "3-aveiro-network",
       "planVersion": 1,
-      "draftDigest": "sha256:45f252e5994e4910722efc6f9f9d56ff0c4d2218f304c951f8b8a8043b0c372d",
+      "draftDigest": "sha256:a9a36296976dff4f8c6f2d79945ff46319b657455b812b89aebd82a2d57aed8f",
       "findingIds": [
         "slot-3-aveiro-network"
       ],
       "status": "passed",
-      "completedAt": "2026-08-21T12:00:00Z"
+      "completedAt": "2026-08-21T12:45:00Z"
     }
   ],
   "angleEvidenceBrief": "Slot 3 proves that Aveiro's network is 12 km, second shortest of the six, and carries 14 million trips. It is the nearest honest thing to the journalist's request for the Aveiro line itself: the frozen data carries no route, no coordinates, no stops and no opening date, and render.mjs asserts that absence before it draws.",
   "decision": "approve",
   "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
-  "decidedAt": "2026-08-21T12:00:00Z",
-  "notes": "The first render reserved the subject's note beside the LONGEST row rather than the row it is drawn on, so the plot stopped at 58% of the frame; corrected and re-rendered, and the note's real x is now checked against the frame. assertDeliveredSize, assertTypeFloor, assertWithinStage and assertDrawnInActiveTypeface all passed; the PNG was opened and looked at."
+  "decidedAt": "2026-08-21T12:45:00Z",
+  "notes": "The first render reserved the subject's note beside the LONGEST row rather than the row it is drawn on, so the plot stopped at 58% of the frame; corrected and re-rendered, and the note's real x is now checked against the frame. assertDeliveredSize, assertTypeFloor, assertWithinStage and assertDrawnInActiveTypeface all passed; the PNG was opened and looked at. RE-TAKEN 2026-08-21: re-taken against the render that replaced the one it approved: the credit line now reads \"Source: not stated · as of 21 August 2026\". The approved draft printed \"Source: city network figures for 2025, compiled by Buried Signals\" — an attribution the frozen article does not carry. PNG opened and read at 1920x1080; nothing else in the frame changed."
 }

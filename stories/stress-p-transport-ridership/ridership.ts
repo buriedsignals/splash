@@ -102,6 +102,15 @@ export const fmt = {
   share: (v: number) => `${Math.round(v * 100)}%`,
 };
 
-/** The credit line, assembled once from `STORYBOARD.md`'s hand fields. */
-export const SOURCE_LINE =
-  "Source: city network figures for 2025, compiled by Buried Signals · as of 21 August 2026";
+/**
+ * The credit line, assembled once from `STORYBOARD.md`'s hand fields.
+ *
+ * `credit:` records `unattributed`, and this is what that prints. The article this story was frozen
+ * from names no source — `grep -in "source\|according\|compiled\|buried" source/article.md`
+ * returns nothing — so there is nobody to credit, and an earlier version of this line said
+ * "compiled by Buried Signals" anyway: the newsroom that would PUBLISH the graphic, written onto
+ * three delivered artefacts as the organisation that COMPILED the data. `Source: not stated` is the
+ * state, printed where a credit goes, so a desk reading a proof sees the gap rather than a
+ * plausible sentence nobody can check.
+ */
+export const SOURCE_LINE = "Source: not stated · as of 21 August 2026";
