@@ -438,6 +438,14 @@ real delivered files) when the check needs one — never left reachable only fro
 `*.test.ts`. Measured 2026-08-21 across all eight producing skills: 26 of 40 guard-kind decisions
 were declared and unit-tested but never called outside their own test file —
 `pageLanguageMatchesStory` on chart-web/map-web/scrolly (the defect that named this discipline) was
-three of the twenty-six, not all of them. Too large a population to close in one wave, so this is
-written down rather than mechanically enforced per skill; a guard added from here on is wired at
-the moment it is written, not left for the next stress round to find idle.
+three of the twenty-six, not all of them. Too large a population to close in one wave, so it was
+written down rather than mechanically enforced.
+
+ROUND SIX ENDED THAT. `fills-its-frame` was distributed to all eight producing skills and called by
+none of them four hours later, and a discipline that cannot observe its own violation is theatre.
+This is a GUARD now: `declarationsWithoutACaller` (`scripts/detect-guard-wiring.mjs`) reads every
+name this skill declares and finds what calls it; `bun skills/<skill>/scripts/check-guard-wiring.mjs`
+prints the answer, and `doctrine/test/guard-wiring.test.ts` refuses any name that is unwired and not
+recorded. The debt this skill is still carrying is listed BY NAME in that file's `RECORDED_UNWIRED`.
+A name may leave that list; adding one is how the defect would recur. A guard written from here on
+is wired at the moment it is written, not left for the next stress round to find idle.
