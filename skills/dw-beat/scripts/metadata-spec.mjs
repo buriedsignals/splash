@@ -275,9 +275,20 @@ export function buildChartPayload(spec) {
   // genuinely multi-series bar chart would need, and it is left in place because it costs nothing
   // to keep sending. This is not the plan-gated attribution limitation's shape — nothing here is
   // account-tier-gated, it is a field this producer never sent.
-  if (isBarEncoded(spec.chartType)) {
-    visualize["base-color"] = spec.color;
-  } else {
+  //
+  // FINDING Y3 (round-five stress): round three set `base-color` for bar/column types ONLY, on the
+  // reasoning that the fix belonged to the mark it had been measured on. It does not. `base-color`
+  // is the field Datawrapper paints EVERY single-series mark from, and a scatter left to
+  // `custom-colors` fell back to the key round three had itself just measured inert. Measured off
+  // the delivered `stress-y-rural-broadband` PNG: 2014 pixels of Datawrapper's own `#18a1cd`
+  // against 1811 of the house `#5B8A8A`, and every one of those 1811 was rule or label — not one of
+  // the 186 marks was the newsroom's colour. Isolated live the same way round three isolated the
+  // bar case, on chart `cc6eK` (`d3-scatter-plot`, 40 rows, published, PNG exported and counted):
+  // `custom-colors` alone gave 475 px of `#18a1cd` and 0 of the accent; `base-color` gave 475 px of
+  // the accent and 0 of the blue. So the accent is sent unconditionally, and the only thing left
+  // per-family is the y-axis question, which really is one about the MARK (see `isBarEncoded`).
+  visualize["base-color"] = spec.color;
+  if (!isBarEncoded(spec.chartType)) {
     visualize["custom-range-y"] = computeYRange(spec).map(String);
   }
 

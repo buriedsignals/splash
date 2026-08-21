@@ -13,6 +13,7 @@ import { toCsv } from "./csv.mjs";
 import { chartIdForPath, createChart, setChartData, patchChart, publishChart, exportChartPng } from "./dw-client.mjs";
 import { sizeFor } from "./sizes.mjs";
 import { assertExportedSurface, pageLanguageMatchesStory } from "./verify-owned.mjs";
+import { accentPaintsTheMarks } from "./detect-accent-reaches-the-marks.mjs";
 
 export function datawrapperFormatFor(format) {
   if (format === "static") return "static";
@@ -364,6 +365,24 @@ async function produceUnlocked(
   }
 
   const payload = buildChartPayload(spec);
+  // FINDING Y3 (round-five stress) and finding 20 of the same round, together: the accent has been
+  // sent in the wrong metadata field twice, on two different mark families, and both times it was
+  // found by counting pixels in an artefact that had already been delivered. Nothing between the
+  // spec and the provider could see it, because the provider STORES the wrong field and echoes it
+  // back. This is the decision reading the payload it is about to send, before anything exists on
+  // the account — and it is CALLED, which is the other half: five of this skill's declared guards
+  // had no caller outside their own file, and a decision nothing calls is a decision that does not
+  // run.
+  if (!accentPaintsTheMarks(payload, spec.color)) {
+    throw new Error(
+      `the payload this beat would send carries the recorded accent ${JSON.stringify(spec.color)} ` +
+        `in no field the delegated renderer paints marks from: ` +
+        `visualize["base-color"] is ${JSON.stringify(payload.metadata.visualize["base-color"])}. ` +
+        `custom-colors is stored and echoed back and never painted from for a single-series chart ` +
+        `(measured live, chart 1u88u in round three and cc6eK in round five), so the delivered ` +
+        `artefact would be in Datawrapper's own blue and nothing downstream would say so.`,
+    );
+  }
   const provider = { format: datawrapperFormatFor(spec.format) };
   const rendersDir = beatDir ? join(beatDir, "renders") : outDir;
   if (beatDir) {

@@ -224,9 +224,42 @@ describe("buildChartPayload", () => {
     });
   });
 
-  it("should not send base-color for a chart type that is not bar/column-encoded", () => {
-    const payload = buildChartPayload(baseSpec());
-    expect(payload.metadata.visualize["base-color"]).toBeUndefined();
+  // ROUND-FIVE FINDING Y3, and the exact inverse of what this test used to assert. Round three
+  // measured `custom-colors` inert and set `base-color` — for bar/column types ONLY, on the
+  // reasoning that the fix belonged to the mark it was measured on. It does not: `base-color` is
+  // the field Datawrapper paints EVERY single-series mark from. Measured live on chart `cc6eK`
+  // (`d3-scatter-plot`, 40 rows, published, PNG exported at 600px zoom 1, pixels counted):
+  //
+  //   custom-colors only, no base-color : 475 px of #18a1cd, 0 px of #5b8a8a
+  //   base-color: "#5B8A8A"             : 475 px of #5b8a8a, 0 px of #18a1cd
+  //
+  // The same shape the controller measured on the DELIVERED `stress-y-rural-broadband` scatter:
+  // 2014 px of Datawrapper's own blue against 1811 of the house accent, and every one of those
+  // 1811 was rule or label — not one of the 186 marks was the newsroom's colour.
+  it("should colour a scatter's own marks via base-color too — the accent is not a fact about bars", () => {
+    const payload = buildChartPayload(baseSpec({ chartType: "d3-scatter-plot" }));
+    expect(payload.metadata.visualize["base-color"]).toBe("#0B7A75");
+  });
+
+  it("should send base-color for every chart type this producer can be asked for", () => {
+    for (const chartType of [
+      "d3-lines",
+      "d3-area",
+      "d3-scatter-plot",
+      "d3-pies",
+      "d3-donuts",
+      "d3-dot-plot",
+      "d3-range-plot",
+      "d3-arrow-plot",
+      "d3-maps-choropleth",
+      "d3-maps-symbols",
+      "locator-map",
+    ]) {
+      const payload = buildChartPayload(baseSpec({ chartType }));
+      expect(`${chartType}: ${payload.metadata.visualize["base-color"]}`).toBe(
+        `${chartType}: #0B7A75`,
+      );
+    }
   });
 
   it("should always disable forced Datawrapper attribution", () => {

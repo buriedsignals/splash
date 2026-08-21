@@ -11,6 +11,7 @@ import {
   resolveDatawrapperBeatIdentity,
   resolveDatawrapperToken,
 } from "../scripts/produce.mjs";
+import { accentPaintsTheMarks } from "../scripts/detect-accent-reaches-the-marks.mjs";
 
 function baseSpec(overrides = {}) {
   return {
@@ -278,6 +279,43 @@ describe("produce", () => {
     expect(JSON.parse(patchCall.body).metadata.visualize["base-color"]).toBe(
       "#0B7A75",
     );
+  });
+
+  // FINDING Y3 (round-five stress): the round-three fix above stopped at the family it had been
+  // measured on. `base-color` is the field EVERY single-series mark is painted from — measured live
+  // on chart `cc6eK`, a scatter, where `custom-colors` alone gave 475 px of Datawrapper's own blue
+  // and none of the accent, and `base-color` gave 475 px of the accent and none of the blue. Read
+  // off the real PATCH body, not the payload builder, because the wire is what the provider sees.
+  it("should send base-color through to the real PATCH call for a scatter too", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec({ chartType: "d3-scatter-plot" }), {
+      size: "landscape",
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn,
+    });
+    const patchCall = calls.find((c) => c.method === "PATCH");
+    expect(JSON.parse(patchCall.body).metadata.visualize["base-color"]).toBe(
+      "#0B7A75",
+    );
+  });
+
+  // The other half of the same finding, and of finding 20 of the same round: the decision is
+  // CALLED, and called before anything exists on the account. A payload whose accent reaches no
+  // painted field must never become a live chart that someone later has to count pixels in.
+  it("should check the accent reaches a painted field before it creates anything", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec({ chartType: "d3-scatter-plot" }), {
+      size: "landscape",
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn,
+    });
+    const patch = JSON.parse(calls.find((c) => c.method === "PATCH").body);
+    expect(
+      accentPaintsTheMarks({ metadata: patch.metadata }, "#0B7A75"),
+    ).toBe(true);
+    expect(calls[0].method).toBe("POST");
   });
 
   it("should disable forced attribution on every chart it creates", async () => {

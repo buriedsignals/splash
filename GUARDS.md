@@ -32,6 +32,7 @@ written out below the tables.
 | label-fits-inside-the-plate |  |  |  |  | **R** | **R** |  | **R** |
 | reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
 | labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
+| accent-survives-delegation |  |  |  | **R** |  |  |  |  |
 
 ## capability
 
@@ -340,6 +341,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a beat set in a face nobody chose: a renderer holding FONT_FAMILY as a literal no recorded answer can reach, with nothing said where an author reads it about the story's own TYPEFACE.md, who writes one, or what a format that cannot read one owes instead
 
 **Earned by:** round four measured that five render paths REFUSE without TYPEFACE.md while `grep -rn "TYPEFACE.md" skills/ shared/ | grep -i write` returned nothing at all: no writer, no movement in the exchange, no owning skill. Each skill ships its own copy in its own directory, so a seed resolves by walking up and nobody noticed that a STORY has none — twenty of this tree's twenty-one hold none, and the one that does had it written by hand at the end of its run. A real beat says so in its own voice: stories/stress-l-mixed-unit-clinics/beats/mixed-unit-clinics/render-still.mjs documents in a comment that it deliberately skipped readTypeface/useTypeface because no story in the tree had the file and calling for it would have invented a requirement nothing could answer. A mechanism nothing can answer gets designed around, quietly, by the people it was built for
+
+### accent-survives-delegation — `accentPaintsTheMarks`
+
+**Refuses:** a payload that names the journalist's recorded accent in a metadata field the provider stores, echoes back on a GET, and never paints marks from — so the round trip verifies clean and the delivered artefact is in the provider's own default colour
+
+**Earned by:** the same defect, found twice, on two mark families, each time only by counting pixels in an artefact that had already been delivered. ROUND THREE, live against published chart 1u88u: `custom-colors` keyed by the resolved series label was sent and STORED — `GET /v3/charts/1u88u` echoed it back verbatim — and the bars still rendered in Datawrapper's own #18a1cd. It fixed d3-bars and column-chart by setting `base-color` behind an `isBarEncoded` branch, and left every other family on the key it had just proved inert. ROUND FIVE, finding Y3, off the DELIVERED stress-y-rural-broadband scatter: 2014 pixels of #18a1cd against 1811 of the house #5B8A8A, and every one of those 1811 was rule or label — not one of the 186 marks was the newsroom's colour. Isolated live the same way round three isolated the bar case, on chart cc6eK (d3-scatter-plot, 40 rows, published, PNG exported at 600px zoom 1, pixels counted): `custom-colors` alone gave 475 px of #18a1cd and 0 of the accent; `base-color` gave 475 px of the accent and 0 of the blue. So `base-color` is sent unconditionally now, and this rule is the tripwire that keeps it there — every other producing skill draws its own marks, so its accent reaches them by BEING the fill it writes; the one skill that delegates names a field and hopes, and when it names the wrong one nothing anywhere says so. Reachability is the trait, not the skill name: `delegates-rendering` is what makes this defect possible at all, and a second delegating producer would inherit the rule the day it declared the trait. WIRED, not merely exported — `produce.mjs` calls it on the payload it is about to send, before `createChart`, because finding 20 of the same round counted five of this skill's declared guards with no caller outside their own file, and a live chart that someone later has to count pixels in is exactly what a decision nobody calls buys you
 
 ### credit-traces-to-the-record — `creditTracesToRecord`
 
