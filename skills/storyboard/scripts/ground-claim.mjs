@@ -891,8 +891,41 @@ function chooseValueColumn(columns, text) {
       refusal: "this profile carries no numeric column with a range to check that against",
     };
   }
-  if (candidates.length === 1) return { column: candidates[0] };
   const haystack = (text ?? "").toLowerCase();
+  // THE COLUMN A CLAIM NAMES MAY BE ONE THE PROFILER REFUSED, and that possibility has to be
+  // settled BEFORE any surviving measure is picked — otherwise the claim is decided against a
+  // column nobody meant.
+  //
+  // `stress-a-energy-bills` answered "Denmark has the highest price." with `contradicted` —
+  // `"Denmark"'s own value in "households" is 2700000, not the column's maximum` — refuting a claim
+  // about PRICE with a count of HOUSEHOLDS, because ` price_eur ` is typed `text` for a thousands
+  // separator and `households` was the only measure left standing. `contradicted` never closes G1,
+  // so that is a correct takeaway blocked by a verdict about the wrong measure: the same
+  // wrong-column error round four found in the numeral path (finding 1), reaching the one verdict
+  // that stops the journey rather than merely overstating confidence.
+  //
+  // `stress-r-greek-schools` is the same shape with two measures instead of one: "σχολεία" names
+  // BOTH the refused `σχολεία_2026` and the surviving `σχολεία_2020`, so a claim about the 2026
+  // count would be decided against the 2020 one.
+  //
+  // A refused column is recognised by its recorded `reason`, never by being non-numeric: a `reason`
+  // is the profiler saying "this LOOKED numeric and I would not guess", which is exactly the case
+  // where the journalist has one cell to look at. A plainly textual column has no reason and is not
+  // a candidate for anything.
+  const meantButRefused = columns.filter(
+    (c) => c.type !== "number" && typeof c.reason === "string" && c.reason.trim() !== "" &&
+      nameTokensOf(c).some((t) => haystack.includes(t)),
+  );
+  if (meantButRefused.length > 0) {
+    return {
+      column: null,
+      refusal:
+        `this claim names ${meantButRefused.map((c) => `"${c.name}"`).join(", ")}, which the profiler REFUSED to type` +
+        ` (${meantButRefused.map((c) => c.reason).join("; ")}) — so the column the claim is about carries no range to check it against,` +
+        ` and deciding it against ${candidates.map((c) => `"${c.name}"`).join(" or ")} instead would answer a question nobody asked`,
+    };
+  }
+  if (candidates.length === 1) return { column: candidates[0] };
   const named = candidates.filter((c) => nameTokensOf(c).some((t) => haystack.includes(t)));
   if (named.length === 1) return { column: named[0] };
   const names = (list) => list.map((c) => `"${c.name}"`).join(", ");

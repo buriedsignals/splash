@@ -1163,3 +1163,39 @@ describe("a raw-count superlative is not confirmed while a denominator sits besi
     expect(claim.detail).not.toContain("per ");
   });
 });
+
+// ROUND FOUR, found by the controller while verifying Task B: the chooser took the sole surviving
+// measure without asking whether the claim was about a column the profiler had REFUSED. On
+// `stress-a-energy-bills` that answered "Denmark has the highest price." with `contradicted`,
+// refuting a claim about PRICE with a count of HOUSEHOLDS -- and `contradicted` is the one verdict
+// that never closes G1, so a correct takeaway was blocked by a verdict about the wrong measure.
+// Walked here on the frozen story that can reach the branch: `stress-r-greek-schools`, whose
+// `σχολεία_2026` is refused for one corrupt cell in thirteen while `σχολεία_2020` survives.
+const STORIES = `${import.meta.dir}/../../../stories`;
+describe("a claim about a column the profiler refused is not decided against a different one", () => {
+  it("names the refused column and its reason instead of ruling on the survivor", () => {
+    const profile = JSON.parse(
+      readFileSync(`${STORIES}/stress-r-greek-schools/source/profile.json`, "utf8"),
+    );
+    const csv = readFileSync(`${STORIES}/stress-r-greek-schools/source/data.csv`, "utf8");
+    const { claims } = groundTakeaway("Attica has the most σχολεία of any region.", profile, { csv });
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0].verdict).toBe("unverifiable");
+    expect(claims[0].detail).toContain('"σχολεία_2026"');
+    expect(claims[0].detail).toContain("REFUSED to type");
+    expect(claims[0].detail).toContain("term378");
+    // The survivor is named as what it declined to answer with, never as the answer.
+    expect(claims[0].detail).toContain('"σχολεία_2020"');
+    expect(claims[0].verdict).not.toBe("contradicted");
+  });
+
+  it("still decides a claim that names only a surviving measure", () => {
+    const profile = JSON.parse(
+      readFileSync(`${STORIES}/stress-l-mixed-unit-clinics/source/profile.json`, "utf8"),
+    );
+    const csv = readFileSync(`${STORIES}/stress-l-mixed-unit-clinics/source/data.csv`, "utf8");
+    const { claims } = groundTakeaway("Germany has the most.", profile, { csv });
+    expect(claims[0].verdict).toBe("supported");
+  });
+});
