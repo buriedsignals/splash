@@ -34,6 +34,7 @@ import { whereIs } from "../scripts/where.mjs";
 // agree. `where.mjs` never imports `deliver` at runtime and must not start.
 import { requireApprovedOutput } from "../../deliver/scripts/output-review.mjs";
 import { deliveryClosed } from "../../deliver/scripts/another-format.mjs";
+import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 
 const SOURCE_STORY = join(
   import.meta.dirname,
@@ -72,6 +73,19 @@ async function writeReview(record: unknown): Promise<void> {
   );
 }
 
+/**
+ * Close G3 again on the COPY, against whatever this story's renders are today.
+ *
+ * The story on disk is worked on by other people. Its renders were corrected once already since
+ * this test was written, which left its committed review bound to bytes that no longer exist — and
+ * the two gates agreed about that, which is the mechanism working and is asserted below as its own
+ * case. But a positive control has to stay positive, so every case that needs the beat PAST G3
+ * re-binds the review here rather than depending on the tree standing still.
+ */
+async function rebindReview() {
+  await approveCurrentOutput(beatDir);
+}
+
 /** What `deliver` says, in the one word this test compares: does the delivery open, or not? */
 async function deliverOpensDelivery(): Promise<boolean> {
   const record = await review().catch(() => null);
@@ -96,7 +110,16 @@ async function whereIsOpensDelivery(): Promise<boolean> {
 }
 
 describe("gate 3: the bound review is one requirement, read by both gates", () => {
-  it("should agree with deliver on the story exactly as it was run", async () => {
+  it("should agree with deliver on the story exactly as it stands in the tree, whatever that is", async () => {
+    // The drift-proof half: no fixture, no re-binding, the story as committed. Whether its review
+    // is current or stale is not this assertion's business — that the two gates say the SAME thing
+    // about it is, and that is the only property round-four finding 7 is about.
+    expect(await whereIsOpensDelivery()).toBe(await deliverOpensDelivery());
+  });
+
+  it("should open the delivery for both gates once G3 is closed against the current render", async () => {
+    await rebindReview();
+
     expect(await deliverOpensDelivery()).toBe(true);
     expect(await whereIsOpensDelivery()).toBe(true);
   });
@@ -159,6 +182,7 @@ describe("gate 3: the bound review is one requirement, read by both gates", () =
 
   for (const { name, apply } of MUTATIONS) {
     it(`should refuse the delivery, exactly as deliver does, when ${name}`, async () => {
+      await rebindReview();
       await writeReview(apply(await review()));
 
       expect(await deliverOpensDelivery()).toBe(false);
@@ -167,6 +191,7 @@ describe("gate 3: the bound review is one requirement, read by both gates", () =
   }
 
   it("should refuse the delivery, exactly as deliver does, when the render changed after the review", async () => {
+    await rebindReview();
     await writeFile(join(beatDir, "renders", "late-addition.svg"), "<svg/>\n");
 
     expect(await deliverOpensDelivery()).toBe(false);
@@ -175,6 +200,8 @@ describe("gate 3: the bound review is one requirement, read by both gates", () =
 });
 
 describe("gate 4: the closing offer is part of what done means", () => {
+  beforeEach(rebindReview);
+
   it("should reproduce the finding: pending receipts, and both gates asked", async () => {
     // The story as the stress run left it: delivered, handed over, neither half of the closing
     // offer ever put to the journalist.
