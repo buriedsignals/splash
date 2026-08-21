@@ -47,6 +47,20 @@ generic preference such as "more engaging" is not a reason.
   weak underlying chart choice, and every panel must keep the same scale.
 - The subject named by the journalist receives emphasis. The largest value does not become the
   subject by default.
+- **Row count is evidence, and a column's type is not a story.** A comparison, a series, an axis or
+  an order needs more than one observation before any type in this document is a candidate: a time
+  axis with one moment is not an axis, and a series of one point is not a series. An unknown row
+  count is not evidence either. `requirementFinding` (`scripts/propose.mjs`) enforces this for the
+  scored path; state it in words for the editorial one.
+- **A table's own x axis is not one of the things it measures.** A plain (year, value) table
+  carries ONE measure, not two, so it supports no intent that needs two — this was the state of 9
+  of the 21 frozen stories. The skill has one answer to which column is the year and which are the
+  measures, `ground-claim.mjs`'s `findYearColumn` / `measureColumns`, and both modules read it.
+- **A candidate must survive its own type sheet's refusals, not only its purpose sentence.** Read
+  the sheet's "when NOT to reach for it" before proposing it; `references/type-survey.md` carries
+  that sentence verbatim beside the purpose, and where the sheet states a count in rows,
+  `formatCandidates` refuses the candidate rather than rendering it. A slot once closed on a
+  scatter of six rows while the scatter sheet refused exactly that on disk.
 
 ## Intent: rank or compare one value per category
 
