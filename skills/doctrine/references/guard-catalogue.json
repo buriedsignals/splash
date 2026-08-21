@@ -1,13 +1,15 @@
 {
-  "$comment": "The single written list of guards this project has earned. Read by scripts/guards.mjs, enforced by skills/doctrine/test/guard-parity.test.ts, rendered into GUARDS.md. Each rule carries `requires`: the traits (scripts/traits.mjs) a skill must declare for the rule to reach it at all — reachability is DERIVED, never typed. `states` names only skills the derivation reaches: `carried` means the skill's own verification script exports that decision function; `owed` is debt. `exceptions` is the third state, for a skill the derivation reaches but which is nonetheless argued not to carry it — a claim with a reason attached, not a restatement of a missing trait, which the derivation already proves on its own. A skill outside the derived set needs no entry anywhere: that blankness is now structural, not argued.",
+  "$comment": "The single written list of guards this project has earned. Read by scripts/guards.mjs, enforced by skills/doctrine/test/guard-parity.test.ts, rendered into GUARDS.md. Each rule carries `requires`: the traits (scripts/traits.mjs) a skill must declare for the rule to reach it at all \u2014 reachability is DERIVED, never typed. `states` names only skills the derivation reaches: `carried` means the skill's own verification script exports that decision function; `owed` is debt. `exceptions` is the third state, for a skill the derivation reaches but which is nonetheless argued not to carry it \u2014 a claim with a reason attached, not a restatement of a missing trait, which the derivation already proves on its own. A skill outside the derived set needs no entry anywhere: that blankness is now structural, not argued.",
   "rules": [
     {
       "id": "duplicated-payload",
       "kind": "guard",
-      "requires": ["inlines-its-assets"],
+      "requires": [
+        "inlines-its-assets"
+      ],
       "decidedBy": "duplicatedPayload",
       "refuses": "an asset inlined more than once into a self-contained delivered file",
-      "earnedBy": "a delivered route scrolly carried the same 340 KiB basemap plate five times — 1.33 MB of a 1.80 MB page, on a beat a newsroom would open on a phone",
+      "earnedBy": "a delivered route scrolly carried the same 340 KiB basemap plate five times \u2014 1.33 MB of a 1.80 MB page, on a beat a newsroom would open on a phone",
       "states": {
         "scrolly": "carried",
         "map-web": "carried",
@@ -26,7 +28,7 @@
       ],
       "decidedBy": "projectionDisagreements",
       "refuses": "a raster plate and the overlay drawn on it fitting differently: cover pairs with slice, contain with meet, fill with none",
-      "earnedBy": "at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear. `map-beat` and `map-web` do not reach this rule — neither ships an <img> with object-fit at all, so there is no second projection to disagree with the first: a map beat composites its plate as an <image> inside its own marks' SVG, in their coordinate system, and pairs its ratio against the projected frame instead. That is the same defect reached by this format's other mechanism, which is what plate-geometry-pairing was written for",
+      "earnedBy": "at 375x812 a plate cropped under an overlay that letterboxed drew Lisbon over Switzerland, at a scale that made every stop a 4px smear. `map-beat` and `map-web` do not reach this rule \u2014 neither ships an <img> with object-fit at all, so there is no second projection to disagree with the first: a map beat composites its plate as an <image> inside its own marks' SVG, in their coordinate system, and pairs its ratio against the projected frame instead. That is the same defect reached by this format's other mechanism, which is what plate-geometry-pairing was written for",
       "states": {
         "scrolly": "carried"
       },
@@ -35,7 +37,9 @@
     {
       "id": "plate-geometry-pairing",
       "kind": "guard",
-      "requires": ["bakes-a-plate"],
+      "requires": [
+        "bakes-a-plate"
+      ],
       "decidedBy": "plateMatchesGeometry",
       "refuses": "a baked plate whose aspect ratio is not the frame its own marks were projected into, so the default xMidYMid meet letterboxes it under them",
       "earnedBy": "the same defect projection-pairing names, reached by this format's other mechanism: a map beat composites its plate as an <image> inside the marks' own SVG, where there is no object-fit to disagree with a preserveAspectRatio and the disagreement is between the plate's own ratio and its box",
@@ -49,7 +53,9 @@
     {
       "id": "plate-follows-theme",
       "kind": "guard",
-      "requires": ["owns-a-surface-it-did-not-choose"],
+      "requires": [
+        "owns-a-surface-it-did-not-choose"
+      ],
       "decidedBy": "plateFollowsGround",
       "refuses": "a baked plate on the opposite luminance side from the ground its beat declares",
       "earnedBy": "a beat declared ground #16191B and painted white labels on a dark halo over a dataviz-light plate: furniture correct for its theme, and unreadable",
@@ -65,7 +71,9 @@
     {
       "id": "screen-space-dash",
       "kind": "guard",
-      "requires": ["draws-own-geometry"],
+      "requires": [
+        "draws-own-geometry"
+      ],
       "decidedBy": "revealDashInScreenSpace",
       "refuses": "a dash that measures its own path while vector-effect: non-scaling-stroke computes it in screen space, where that length does not live",
       "earnedBy": "a river drawn as head, hole and tail because a pattern one route long was measured against a line the camera had scaled up 1.68x; six hours and five wrong diagnoses",
@@ -78,13 +86,15 @@
         "map-web": "carried"
       },
       "exceptions": {
-        "image-beat": "measured 2026-08-20: the seed's rendered artifact (skills/image-beat/assets/ImageBeatSeed.tsx) is exactly three element kinds — rect, image, text — and none carries a stroke; 0 of 1 components this format has ever drawn (no proof/ beat exists outside the two image/scrolly beats, which draw with the vehicle's own component, never this seed) carry any dash-capable mark. Structural, not incidental: references/image-discipline.md draws the boundary itself — \"a photograph is not a chart: nothing here is computed from the data, because there is no data\" — so this format's vocabulary never grows a stroked path the way a chart's or a map's marks can. Unlike map-web (screen-space-dash, carried at zero dashed marks as a ratchet over a population that legitimately could grow), there is no population here to ratchet over."
+        "image-beat": "measured 2026-08-20: the seed's rendered artifact (skills/image-beat/assets/ImageBeatSeed.tsx) is exactly three element kinds \u2014 rect, image, text \u2014 and none carries a stroke; 0 of 1 components this format has ever drawn (no proof/ beat exists outside the two image/scrolly beats, which draw with the vehicle's own component, never this seed) carry any dash-capable mark. Structural, not incidental: references/image-discipline.md draws the boundary itself \u2014 \"a photograph is not a chart: nothing here is computed from the data, because there is no data\" \u2014 so this format's vocabulary never grows a stroked path the way a chart's or a map's marks can. Unlike map-web (screen-space-dash, carried at zero dashed marks as a ratchet over a population that legitimately could grow), there is no population here to ratchet over."
       }
     },
     {
       "id": "reached-mark-declares",
       "kind": "guard",
-      "requires": ["reader-driven-reveal"],
+      "requires": [
+        "reader-driven-reveal"
+      ],
       "decidedBy": "neverReached",
       "refuses": "a mark still data-state=pending when the reveal has ended",
       "earnedBy": "stop badges kept the fill they were SSR'd with while the line arrived at each of them: the narrative got there and the picture never said so",
@@ -96,7 +106,9 @@
     {
       "id": "step-redraws",
       "kind": "guard",
-      "requires": ["reader-driven-reveal"],
+      "requires": [
+        "reader-driven-reveal"
+      ],
       "decidedBy": "stillSteps",
       "refuses": "two consecutive steps painting the same picture",
       "earnedBy": "a five-stop scrolly repainted 4.4 / 0.0 / 0.0 / 0.0 % of its marks across four transitions: one identical picture, five times",
@@ -108,7 +120,9 @@
     {
       "id": "scrub-not-slideshow",
       "kind": "guard",
-      "requires": ["reader-driven-reveal"],
+      "requires": [
+        "reader-driven-reveal"
+      ],
       "decidedBy": "stalledSteps",
       "refuses": "a step whose picture never moves anywhere inside itself, on a beat built to scrub",
       "earnedBy": "five finished SSR'd pictures passed every other guard and still jumped at each boundary: the line never drew under the reader's gesture",
@@ -120,10 +134,12 @@
     {
       "id": "model-declared",
       "kind": "guard",
-      "requires": ["reader-driven-reveal"],
+      "requires": [
+        "reader-driven-reveal"
+      ],
       "decidedBy": "requiresScrub",
       "refuses": "nothing on its own: it reads which of the two models a beat is built on, off the markup",
-      "earnedBy": "an assembly and a scrub owe different things, and guessing which is which misfires on both — the seed's four media have nothing to scrub between",
+      "earnedBy": "an assembly and a scrub owe different things, and guessing which is which misfires on both \u2014 the seed's four media have nothing to scrub between",
       "states": {
         "scrolly": "carried"
       },
@@ -132,10 +148,12 @@
     {
       "id": "reveal-completes",
       "kind": "guard",
-      "requires": ["timed-build-that-ends"],
+      "requires": [
+        "timed-build-that-ends"
+      ],
       "decidedBy": "neverArrives",
       "refuses": "a ramp whose input range outruns the progress driving it, so the mark it reveals is still arriving when the composition ends",
-      "earnedBy": "the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down — a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops",
+      "earnedBy": "the same defect reached-mark-declares names, reached by this format's own mechanism: a scrolly says a mark arrived by flipping data-state, and a video says it by an opacity ramp. checkTiming already guarantees every NAMED event ends with the composition, so the offender can only be one level down \u2014 a ramp over an already-clamped progress whose range ends above 1 never reaches its own end, and the mark it fades in is still fading when the reader's video stops",
       "states": {
         "chart-video": "carried",
         "map-beat": "carried"
@@ -145,7 +163,9 @@
     {
       "id": "same-facts-without-the-picture",
       "kind": "capability",
-      "requires": ["ships-standalone-html"],
+      "requires": [
+        "ships-standalone-html"
+      ],
       "offers": "a reader who cannot see the graphic gets the same values, in a table carrying the marks' own numbers",
       "earnedBy": "map-web shipped an opt-in accessible table from its first version while chart-web shipped none, on the same trait: a chart is exactly as unreadable to a screen reader as a map, and nothing said so",
       "detectedBy": "tableCarriesTheMarks",
@@ -155,16 +175,18 @@
         "map-web": "carried"
       },
       "exceptions": {
-        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own \u2014 zero data-detail anywhere in the wrapper HTML this skill writes. tableCarriesTheMarks passes vacuously (marks: 0, missing: []) on every one of them, which confirms nothing: whatever accessible fallback the hosted embed itself offers lives behind a cross-origin boundary this skill does not own, cannot inline a table into, and cannot even inspect from its own delivered file",
         "scrolly": "measured 2026-08-20 across every delivered scrolly beat (8 proof/ directories, including the two whose CHART track draws real data: scrolly-chart-eu-carbon, scrolly-one-chart-swiss-life-expectancy): zero marks, on any of the four tracks, carry data-detail anywhere. ChartFrame in assets/ScrollySeed.tsx draws one continuous line plus two annotated points, never chart-web's per-reading interactive marks, and none of the image/diagram/map tracks use the convention either. tableCarriesTheMarks passes vacuously (marks: 0) on every delivered page: there is no population of per-reading facts here for a table to gather"
       }
     },
     {
       "id": "reachable-by-keyboard",
       "kind": "capability",
-      "requires": ["ships-standalone-html"],
-      "offers": "a reader with no pointer gets to every mark by Tab, in order, and hears or reads its own reading — never merely a `tabIndex` that gets there with nothing to say",
-      "earnedBy": "same-facts-without-the-picture proved a screen reader could get the numbers through a table; nothing yet proved a reader who cannot USE a pointer at all — the keyboard-only case a mouse-and-touch verification never drives — could get to a single mark on the picture itself",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "a reader with no pointer gets to every mark by Tab, in order, and hears or reads its own reading \u2014 never merely a `tabIndex` that gets there with nothing to say",
+      "earnedBy": "same-facts-without-the-picture proved a screen reader could get the numbers through a table; nothing yet proved a reader who cannot USE a pointer at all \u2014 the keyboard-only case a mouse-and-touch verification never drives \u2014 could get to a single mark on the picture itself",
       "detectedBy": "keyboardReachesEveryMark",
       "walkedBy": "test/keyboard-reach.test.ts",
       "states": {
@@ -172,33 +194,37 @@
         "map-web": "carried"
       },
       "exceptions": {
-        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so keyboardReachesEveryMark reports {marks: 0} vacuously on every one of them — there is no per-reading fact here for a Tab sequence to reach in the first place",
-        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes. Whatever a keyboard reaches inside the hosted embed lives behind a cross-origin boundary this skill does not own and cannot drive a Tab sequence into from its own delivered file"
+        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so keyboardReachesEveryMark reports {marks: 0} vacuously on every one of them \u2014 there is no per-reading fact here for a Tab sequence to reach in the first place",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own \u2014 zero data-detail anywhere in the wrapper HTML this skill writes. Whatever a keyboard reaches inside the hosted embed lives behind a cross-origin boundary this skill does not own and cannot drive a Tab sequence into from its own delivered file"
       }
     },
     {
       "id": "honours-reduced-motion",
       "kind": "capability",
-      "requires": ["ships-standalone-html"],
-      "offers": "a reader who told their OS they want less motion gets a page that never interpolates an opacity or a scale — the finished graphic, immediately, with no build to sit through and no ramp to be caught mid-flight by",
-      "earnedBy": "chart-web's own entrance (render-web.mjs's entranceCss()) was written CORRECTLY from the start — every keyframe lives inside `@media (prefers-reduced-motion: no-preference)` rather than a `reduce` reset — but nothing had ever driven a real page under `reduce` and measured that the claim holds; this is that measurement, generalised to a detector any format ships",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "a reader who told their OS they want less motion gets a page that never interpolates an opacity or a scale \u2014 the finished graphic, immediately, with no build to sit through and no ramp to be caught mid-flight by",
+      "earnedBy": "chart-web's own entrance (render-web.mjs's entranceCss()) was written CORRECTLY from the start \u2014 every keyframe lives inside `@media (prefers-reduced-motion: no-preference)` rather than a `reduce` reset \u2014 but nothing had ever driven a real page under `reduce` and measured that the claim holds; this is that measurement, generalised to a detector any format ships",
       "detectedBy": "motionUnderReduce",
       "walkedBy": "test/reduced-motion.test.ts",
       "states": {
         "chart-web": "carried"
       },
       "exceptions": {
-        "map-web": "measured 2026-08-20: neither MapWebSeed.tsx nor render-web.mjs declares any entrance/build motion of its own — no data-entrance-motion, no @keyframes this skill wrote. The only `prefers-reduced-motion` reference in a delivered page belongs to the bundled MapLibre GL JS vendor library (a `prefersReducedMotion` getter, plus unconditional vendor CSS like `.maplibregl-marker{transition:opacity .2s}`) which this skill did not write and does not gate. motionUnderReduce reports {movedFrames: 0} under both conditions on all 4 delivered beats — vacuous, and confirms nothing about a mechanism this skill does not have",
-        "scrolly": "measured 2026-08-20: this format's own reveal IS gated correctly (render-scrolly.mjs: `.step-frame{transition:opacity .3s ease}` inside `@media (prefers-reduced-motion: no-preference)`, proven by this format's own dedicated instrument, verify-scrolly.mjs's verifyStates) but it is driven by the reader's OWN scroll over `.scrolly-steps`, an internal element this format owns rather than the page itself — assertion A of verify-scrolly.mjs states THE PAGE DOES NOT SCROLL by design. motionUnderReduce drives page-level scroll (document.scrollingElement) precisely so no format-specific container name has to live inside a function the shared-copy contract requires byte-identical everywhere it is carried; against a page that structurally never scrolls at the document level, it reports {movedFrames: 0} under both conditions on every delivered scrolly beat — vacuous on THIS detector, not evidence of a defect, and not a claim this skill's own verifyStates does not already make correctly by its own, different mechanism",
-        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks and authoring zero motion of its own. motionUnderReduce reports {movedFrames: 0} under both conditions vacuously — whatever the hosted embed itself does lives behind a cross-origin boundary this skill does not own and cannot drive a media-feature emulation into from its own delivered file"
+        "map-web": "measured 2026-08-20: neither MapWebSeed.tsx nor render-web.mjs declares any entrance/build motion of its own \u2014 no data-entrance-motion, no @keyframes this skill wrote. The only `prefers-reduced-motion` reference in a delivered page belongs to the bundled MapLibre GL JS vendor library (a `prefersReducedMotion` getter, plus unconditional vendor CSS like `.maplibregl-marker{transition:opacity .2s}`) which this skill did not write and does not gate. motionUnderReduce reports {movedFrames: 0} under both conditions on all 4 delivered beats \u2014 vacuous, and confirms nothing about a mechanism this skill does not have",
+        "scrolly": "measured 2026-08-20: this format's own reveal IS gated correctly (render-scrolly.mjs: `.step-frame{transition:opacity .3s ease}` inside `@media (prefers-reduced-motion: no-preference)`, proven by this format's own dedicated instrument, verify-scrolly.mjs's verifyStates) but it is driven by the reader's OWN scroll over `.scrolly-steps`, an internal element this format owns rather than the page itself \u2014 assertion A of verify-scrolly.mjs states THE PAGE DOES NOT SCROLL by design. motionUnderReduce drives page-level scroll (document.scrollingElement) precisely so no format-specific container name has to live inside a function the shared-copy contract requires byte-identical everywhere it is carried; against a page that structurally never scrolls at the document level, it reports {movedFrames: 0} under both conditions on every delivered scrolly beat \u2014 vacuous on THIS detector, not evidence of a defect, and not a claim this skill's own verifyStates does not already make correctly by its own, different mechanism",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks and authoring zero motion of its own. motionUnderReduce reports {movedFrames: 0} under both conditions vacuously \u2014 whatever the hosted embed itself does lives behind a cross-origin boundary this skill does not own and cannot drive a media-feature emulation into from its own delivered file"
       }
     },
     {
       "id": "degrades-without-javascript",
       "kind": "capability",
-      "requires": ["ships-standalone-html"],
-      "offers": "a reader whose script never ran — blocked, failed to load, an embed's host CSP, a crawler — still gets every mark's own reading, not a mount point that only fills in once a script runs",
-      "earnedBy": "same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone — a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for",
+      "requires": [
+        "ships-standalone-html"
+      ],
+      "offers": "a reader whose script never ran \u2014 blocked, failed to load, an embed's host CSP, a crawler \u2014 still gets every mark's own reading, not a mount point that only fills in once a script runs",
+      "earnedBy": "same-facts-without-the-picture and reachable-by-keyboard both proved something about the marks a script WIRES for interaction; neither asked whether the marks are there AT ALL once the wiring script is gone \u2014 a page could pass both by hydrating an empty mount point and still show nothing to the reader this capability is for",
       "detectedBy": "staticFrameSurvives",
       "walkedBy": "test/degrades-without-javascript.test.ts",
       "states": {
@@ -206,16 +232,18 @@
         "map-web": "carried"
       },
       "exceptions": {
-        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them — there is no per-reading fact here for either count to be about",
-        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own — zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file"
+        "scrolly": "measured 2026-08-20 across every delivered scrolly beat (the same 8 proof/ directories same-facts-without-the-picture's own scrolly exception measured): zero marks, on any of the four tracks, carry data-detail anywhere, so staticFrameSurvives reports {marksWithJs: 0, marksWithout: 0} vacuously on every one of them \u2014 there is no per-reading fact here for either count to be about",
+        "dw-beat": "measured 2026-08-20: the delivered artifact (iframePage in scripts/produce.mjs) is an <iframe> pointing at a Datawrapper-hosted embed, drawing zero marks of its own \u2014 zero data-detail anywhere in the wrapper HTML this skill writes, with or without scripting. Whatever the hosted embed itself does when its own script fails to run lives behind a cross-origin boundary this skill does not own and cannot measure from its own delivered file"
       }
     },
     {
       "id": "weight-has-a-ceiling",
       "kind": "capability",
-      "requires": ["inlines-its-assets"],
-      "offers": "a reader on a slow connection or a metered one never downloads more than the delivered file's own size, measured against a ceiling grounded in this format's own numbers rather than a round one invented ahead of them. NOT UNIFORMLY \"earned from today's population\": map-beat, map-web and scrolly take their ceiling from today's HEAVIEST DELIVERED file plus a margin measured from the biggest jump already on disk between two of them; image-beat has no delivered artefact yet to measure and takes its ceiling instead from its own EXISTING weight discipline (checkWeight's 20 MB raw-photograph limit, inflated by the base64 ratio image-discipline.md already documents) — a real number, but an assumed one, not a measured one.",
-      "earnedBy": "image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes — a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them. That measurement wants a DELIVERED population to weigh, and image-beat had none yet — so its own cell is the one exception: `checkWeight`'s own limit, not a delivered ceiling, until a real beat exists to measure instead",
+      "requires": [
+        "inlines-its-assets"
+      ],
+      "offers": "a reader on a slow connection or a metered one never downloads more than the delivered file's own size, measured against a ceiling grounded in this format's own numbers rather than a round one invented ahead of them. NOT UNIFORMLY \"earned from today's population\": map-beat, map-web and scrolly take their ceiling from today's HEAVIEST DELIVERED file plus a margin measured from the biggest jump already on disk between two of them; image-beat has no delivered artefact yet to measure and takes its ceiling instead from its own EXISTING weight discipline (checkWeight's 20 MB raw-photograph limit, inflated by the base64 ratio image-discipline.md already documents) \u2014 a real number, but an assumed one, not a measured one.",
+      "earnedBy": "image-beat's own checkWeight (scripts/render-still.mjs) already refuses a beat about to embed more than 20 MB of raw photograph bytes \u2014 a limit on what goes IN. Nothing had ever measured what comes OUT: the delivered file itself, once every plate, photograph or font it inlines is already inside it, against what this format's own beats weigh today rather than a number invented ahead of any of them. That measurement wants a DELIVERED population to weigh, and image-beat had none yet \u2014 so its own cell is the one exception: `checkWeight`'s own limit, not a delivered ceiling, until a real beat exists to measure instead",
       "detectedBy": "weightAgainstCeiling",
       "walkedBy": "test/weight-ceiling.test.ts",
       "states": {
@@ -229,9 +257,11 @@
     {
       "id": "every-photo-says-what-it-shows",
       "kind": "capability",
-      "requires": ["embeds-reader-photos"],
-      "offers": "a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is — an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists",
-      "earnedBy": "this format's own discipline (references/image-discipline.md, \"Alt text and credit\") already requires both, and imageBeatLayout already refuses to render a photo missing either one — a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same \"a decision nothing calls is a decision that does not run\" standard duplicatedPayload is already held to",
+      "requires": [
+        "embeds-reader-photos"
+      ],
+      "offers": "a reader who cannot see a photograph, or whose image failed to load, still gets what it shows and whose it is \u2014 an alt and a credit read mechanically off the delivered file, not merely assumed because a write-time refusal exists",
+      "earnedBy": "this format's own discipline (references/image-discipline.md, \"Alt text and credit\") already requires both, and imageBeatLayout already refuses to render a photo missing either one \u2014 a write-time guarantee this makes mechanical by reading it back off the delivered markup itself, the same \"a decision nothing calls is a decision that does not run\" standard duplicatedPayload is already held to",
       "detectedBy": "photosDeclareAltAndCredit",
       "walkedBy": "test/photo-declares.test.ts",
       "states": {
@@ -242,9 +272,11 @@
     {
       "id": "cartographic-rules",
       "kind": "discipline",
-      "requires": ["bakes-a-plate"],
-      "refuses": "a map beat's own furniture written as if baking a plate were generic instead of governed by twelve named rules — an ungated capture that can hang forever, a moving camera captured live instead of translated inside one fixed plate, tile fragments drawn as a line before they are baked into ordered GeoJSON",
-      "earnedBy": "map-beat's own CO₂ choropleth paid for seven of the twelve rules one at a time, each one bought by a defect that reached a render before it was written down — an ungated capture that hung forever the first time a tile never resolved, a shimmering moving camera, a fill that would not close because its fragments were never ordered — so the next format that bakes a plate reads the twelve rather than re-earning them",
+      "requires": [
+        "bakes-a-plate"
+      ],
+      "refuses": "a map beat's own furniture written as if baking a plate were generic instead of governed by twelve named rules \u2014 an ungated capture that can hang forever, a moving camera captured live instead of translated inside one fixed plate, tile fragments drawn as a line before they are baked into ordered GeoJSON",
+      "earnedBy": "map-beat's own CO\u2082 choropleth paid for seven of the twelve rules one at a time, each one bought by a defect that reached a render before it was written down \u2014 an ungated capture that hung forever the first time a tile never resolved, a shimmering moving camera, a fill that would not close because its fragments were never ordered \u2014 so the next format that bakes a plate reads the twelve rather than re-earning them",
       "writtenIn": "doctrine/references/geo-discipline.md",
       "states": {
         "map-beat": "carried",
@@ -256,9 +288,11 @@
     {
       "id": "motion-grammar",
       "kind": "discipline",
-      "requires": ["timed-build-that-ends"],
-      "refuses": "a timed build that reinvents its own reveal order and furniture from nothing — dense ticks on a frame the reader cannot pause on, an end-label pinned to its final position before the mark carrying it has arrived, the conclusion treated as furniture instead of the one event a video's own stack has to end on",
-      "earnedBy": "the same end-label mistake — gated on a signal describing the whole composition and pinned to a mark's eventual position, instead of gated on that mark's own local progress — shipped independently in both a scroll-driven build and a timed one before the grammar named which two rules are format-scoped and why applying either outside its own format produces exactly that defect",
+      "requires": [
+        "timed-build-that-ends"
+      ],
+      "refuses": "a timed build that reinvents its own reveal order and furniture from nothing \u2014 dense ticks on a frame the reader cannot pause on, an end-label pinned to its final position before the mark carrying it has arrived, the conclusion treated as furniture instead of the one event a video's own stack has to end on",
+      "earnedBy": "the same end-label mistake \u2014 gated on a signal describing the whole composition and pinned to a mark's eventual position, instead of gated on that mark's own local progress \u2014 shipped independently in both a scroll-driven build and a timed one before the grammar named which two rules are format-scoped and why applying either outside its own format produces exactly that defect",
       "writtenIn": "doctrine/references/motion-grammar.md",
       "states": {
         "chart-video": "carried",
@@ -269,9 +303,11 @@
     {
       "id": "static-discipline",
       "kind": "discipline",
-      "requires": ["draws-own-geometry"],
-      "refuses": "a beat's own component reinventing composition from nothing — an accent carrying more than one meaning, furniture that does not derive from the ground, a scale that hides zero on a bar, a gap in the data quietly bridged into a claim of continuity the data does not support",
-      "earnedBy": "written against the first static beat and re-earned by every format that draws its own marks since, on the same rule for the same reason: a beat is not finished because its tests are green — its pixels still have to be looked at, whether they sit still, animate to a last frame, scroll under a reader's own gesture, or bake behind a live map",
+      "requires": [
+        "draws-own-geometry"
+      ],
+      "refuses": "a beat's own component reinventing composition from nothing \u2014 an accent carrying more than one meaning, furniture that does not derive from the ground, a scale that hides zero on a bar, a gap in the data quietly bridged into a claim of continuity the data does not support",
+      "earnedBy": "written against the first static beat and re-earned by every format that draws its own marks since, on the same rule for the same reason: a beat is not finished because its tests are green \u2014 its pixels still have to be looked at, whether they sit still, animate to a last frame, scroll under a reader's own gesture, or bake behind a live map",
       "writtenIn": "chart-beat/references/static-discipline.md",
       "states": {
         "chart-beat": "carried",
@@ -287,10 +323,12 @@
     {
       "id": "csv-split-by-hand",
       "kind": "guard",
-      "requires": ["reads-a-journalists-csv"],
+      "requires": [
+        "reads-a-journalists-csv"
+      ],
       "decidedBy": "csvSplitByHand",
       "refuses": "a beat's own reader cutting a csv row on every literal comma instead of a parser that understands a quoted field",
-      "earnedBy": "proof/more-line-swiss-life-expectancy/render.mjs — the worked example every craft skill points authors at — cut its rows with row.split(\",\"); against the stress data it would have silently corrupted \"1,234.5\" into two fields and torn \"Netherlands, the\" in half. Measured 2026-08-20: 84 files across proof/, stories/ and this project's own skill scripts/assets did the same (several, like map-beat/assets/geo.ts, take already-read csv text and never name the .csv extension at all), while skills/intake/scripts/csv.mjs already shipped a real RFC 4180 reader that none of them used",
+      "earnedBy": "proof/more-line-swiss-life-expectancy/render.mjs \u2014 the worked example every craft skill points authors at \u2014 cut its rows with row.split(\",\"); against the stress data it would have silently corrupted \"1,234.5\" into two fields and torn \"Netherlands, the\" in half. Measured 2026-08-20: 84 files across proof/, stories/ and this project's own skill scripts/assets did the same (several, like map-beat/assets/geo.ts, take already-read csv text and never name the .csv extension at all), while skills/intake/scripts/csv.mjs already shipped a real RFC 4180 reader that none of them used",
       "states": {
         "chart-video": "carried",
         "dw-beat": "carried",
@@ -302,10 +340,12 @@
     {
       "id": "unmatched-value-hides",
       "kind": "guard",
-      "requires": ["joins-values-to-shapes"],
+      "requires": [
+        "joins-values-to-shapes"
+      ],
       "decidedBy": "unmatchedValues",
       "refuses": "a source's own value with no shape to receive it, unless the beat declared its source out of scope",
-      "earnedBy": "joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for \"Atlantis\", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong",
+      "earnedBy": "joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it \u2014 the mirror case rendered nothing at all instead: the stress csv carried a reading for \"Atlantis\", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong",
       "states": {
         "map-beat": "carried"
       },
@@ -314,10 +354,12 @@
     {
       "id": "value-labels-collide-or-clip",
       "kind": "guard",
-      "requires": ["joins-values-to-shapes"],
+      "requires": [
+        "joins-values-to-shapes"
+      ],
       "decidedBy": "labelPlacementIssues",
       "refuses": "a choropleth's own value label overlapping another label, or spilling outside the shape it names",
-      "earnedBy": "stress-l-mixed-unit-clinics's own ClinicsMapStill.tsx hand-nudged three of its eight labels in the BEAT's own component — Belgium and the Netherlands collided at this plate's own scale, and Germany's own centroid clipped against its accent outline — because the mechanism to place them without a person nudging by eye did not exist. Measured across every delivered choropleth (every proof/ and stories/ file drawing with pathFromRings, 2026-08-21): forest-loss's own still/video draw a ranked list beside the map rather than a label per shape, both ChoroplethWeb beats (mapgen-choropleth-web, stress-f-housing-pressure) read every value from HTML on hover, and mapscrolly-one-map-europe-carbon drives its labels through a leader-line system — mixed-unit-clinics is the only delivered choropleth that bakes a static value label per shape at once, and the only one that collided. One beat today, not the placement's population — but the fix lives in the placement (assets/geo.ts's labelPlacementIssues/placeValueLabels) precisely so the next multi-label beat inherits it instead of re-earning it by hand",
+      "earnedBy": "stress-l-mixed-unit-clinics's own ClinicsMapStill.tsx hand-nudged three of its eight labels in the BEAT's own component \u2014 Belgium and the Netherlands collided at this plate's own scale, and Germany's own centroid clipped against its accent outline \u2014 because the mechanism to place them without a person nudging by eye did not exist. Measured across every delivered choropleth (every proof/ and stories/ file drawing with pathFromRings, 2026-08-21): forest-loss's own still/video draw a ranked list beside the map rather than a label per shape, both ChoroplethWeb beats (mapgen-choropleth-web, stress-f-housing-pressure) read every value from HTML on hover, and mapscrolly-one-map-europe-carbon drives its labels through a leader-line system \u2014 mixed-unit-clinics is the only delivered choropleth that bakes a static value label per shape at once, and the only one that collided. One beat today, not the placement's population \u2014 but the fix lives in the placement (assets/geo.ts's labelPlacementIssues/placeValueLabels) precisely so the next multi-label beat inherits it instead of re-earning it by hand",
       "states": {
         "map-beat": "carried"
       },
@@ -326,9 +368,11 @@
     {
       "id": "palette-names-its-source",
       "kind": "discipline",
-      "requires": ["reads-a-palette"],
-      "refuses": "a craft skill whose own render reads a palette and never says, where an author reads it, where PALETTE.md comes from or what to do when readPalette refuses it — the proposal's own dead end, not the refusal itself",
-      "earnedBy": "a stress test hit readPalette's throw with no PALETTE.md anywhere above the beat and no route back to palette's own proposal. The refusal was correct — a render that defaulted to a colour nobody chose would publish a newsroom's identity by accident — and the dead end was not: no craft skill's own SKILL.md said where the file it reads comes from, and palette's own documentation assumes a journalist is sitting there to answer, with nothing named for when nobody is",
+      "requires": [
+        "reads-a-palette"
+      ],
+      "refuses": "a craft skill whose own render reads a palette and never says, where an author reads it, where PALETTE.md comes from or what to do when readPalette refuses it \u2014 the proposal's own dead end, not the refusal itself",
+      "earnedBy": "a stress test hit readPalette's throw with no PALETTE.md anywhere above the beat and no route back to palette's own proposal. The refusal was correct \u2014 a render that defaulted to a colour nobody chose would publish a newsroom's identity by accident \u2014 and the dead end was not: no craft skill's own SKILL.md said where the file it reads comes from, and palette's own documentation assumes a journalist is sitting there to answer, with nothing named for when nobody is",
       "writtenIn": "palette/SKILL.md",
       "states": {
         "chart-beat": "carried",
@@ -344,9 +388,11 @@
     {
       "id": "framing-serves-the-point",
       "kind": "discipline",
-      "requires": ["draws-own-geometry"],
-      "refuses": "a beat drawn without asking whether its own framing shows what its own takeaway asserts — a real change compressed to a sliver against a zero baseline, or one value dwarfing the group it is compared inside, shipped because nothing stopped to look before the geometry was chosen",
-      "earnedBy": "both stress beats were true and neither fought for its own point: stress-c-vacant-homes put a real 14% fall on a zero baseline where it reads as four nearly level columns, and stress-a-energy-bills let a 44x outlier compress six countries' reported prices to slivers a reader cannot compare. Re-measured across every chart-type beat this toolchain has delivered (57 directories under proof/, 143 numeric series excluding identifier-shaped columns): the outlier shape is common and often legitimate (41 series across 24 beats over 10x the median, several genuine — CO2 per capita 0.69 to 22.2, a 32x spread on a shipped grouped bar, correctly kept), which is exactly why this is a discipline reconsidered before drawing rather than a guard that would redden roughly a third of the corpus for shipping real data; the invisible-spread shape is rare and, in this corpus, never real (3 series flagged, all 3 false positives from the heuristic applied outside its own domain — a lollipop's own year-like column, and a waterfall's per-step component read as if it were a zero-baseline series)",
+      "requires": [
+        "draws-own-geometry"
+      ],
+      "refuses": "a beat drawn without asking whether its own framing shows what its own takeaway asserts \u2014 a real change compressed to a sliver against a zero baseline, or one value dwarfing the group it is compared inside, shipped because nothing stopped to look before the geometry was chosen",
+      "earnedBy": "both stress beats were true and neither fought for its own point: stress-c-vacant-homes put a real 14% fall on a zero baseline where it reads as four nearly level columns, and stress-a-energy-bills let a 44x outlier compress six countries' reported prices to slivers a reader cannot compare. Re-measured across every chart-type beat this toolchain has delivered (57 directories under proof/, 143 numeric series excluding identifier-shaped columns): the outlier shape is common and often legitimate (41 series across 24 beats over 10x the median, several genuine \u2014 CO2 per capita 0.69 to 22.2, a 32x spread on a shipped grouped bar, correctly kept), which is exactly why this is a discipline reconsidered before drawing rather than a guard that would redden roughly a third of the corpus for shipping real data; the invisible-spread shape is rare and, in this corpus, never real (3 series flagged, all 3 false positives from the heuristic applied outside its own domain \u2014 a lollipop's own year-like column, and a waterfall's per-step component read as if it were a zero-baseline series)",
       "writtenIn": "chart-beat/references/static-discipline.md",
       "states": {
         "chart-beat": "carried",
@@ -354,18 +400,20 @@
         "chart-web": "carried"
       },
       "exceptions": {
-        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
-        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
+        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) \u2014 there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
+        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect \u2014 binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
         "map-web": "same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe",
-        "scrolly": "this skill's own doctrine says so directly — \"it does not invent a second drawing engine\" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
+        "scrolly": "this skill's own doctrine says so directly \u2014 \"it does not invent a second drawing engine\" (SKILL.md) \u2014 its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
       }
     },
     {
       "id": "framing-is-measured",
       "kind": "capability",
-      "requires": ["draws-own-geometry"],
-      "offers": "an author reads, at the terminal, the same two numbers framing-serves-the-point asks them to reconsider a treatment from — the values' own spread against the plot's zero-based extent, and the largest mark against the group's median — without computing either by hand or asking",
-      "earnedBy": "the discipline says WHEN to reconsider a treatment; nothing printed the two numbers an author would reconsider it FROM. render.mjs already prints diagnostic reads for a dozen other decisions in these two stress beats alone (the palette chosen, the duplicate row dropped, the period formats seen) — this is the same convention, applied to the one decision the stress test found nothing supporting. A reading, never a refusal: framingMeasurement never throws and never picks a treatment",
+      "requires": [
+        "draws-own-geometry"
+      ],
+      "offers": "an author reads, at the terminal, the same two numbers framing-serves-the-point asks them to reconsider a treatment from \u2014 the values' own spread against the plot's zero-based extent, and the largest mark against the group's median \u2014 without computing either by hand or asking",
+      "earnedBy": "the discipline says WHEN to reconsider a treatment; nothing printed the two numbers an author would reconsider it FROM. render.mjs already prints diagnostic reads for a dozen other decisions in these two stress beats alone (the palette chosen, the duplicate row dropped, the period formats seen) \u2014 this is the same convention, applied to the one decision the stress test found nothing supporting. A reading, never a refusal: framingMeasurement never throws and never picks a treatment",
       "detectedBy": "framingMeasurement",
       "walkedBy": "test/framing-measurement.test.ts",
       "states": {
@@ -374,19 +422,21 @@
         "chart-web": "carried"
       },
       "exceptions": {
-        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) — there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
-        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
+        "image-beat": "a photograph is not a chart: nothing here is computed from the data, because there is no data (references/image-discipline.md) \u2014 there is no plotted extent and no group of marks for either number to describe, the same reasoning screen-space-dash was already excepted on here",
+        "map-beat": "measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect \u2014 binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline",
         "map-web": "same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe",
-        "scrolly": "this skill's own doctrine says so directly — \"it does not invent a second drawing engine\" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
+        "scrolly": "this skill's own doctrine says so directly \u2014 \"it does not invent a second drawing engine\" (SKILL.md) \u2014 its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above"
       }
     },
     {
       "id": "page-declares-story-language",
       "kind": "guard",
-      "requires": ["ships-standalone-html"],
+      "requires": [
+        "ships-standalone-html"
+      ],
       "decidedBy": "pageLanguageMatchesStory",
       "refuses": "a delivered page's <html lang> disagreeing with the language recorded for its story",
-      "earnedBy": "renderWeb's own HTML shell hard-coded <html lang=\"fr\">, baked in for its first caller, a French CO₂ beat; every English beat rendered through it misdeclared its language to a screen reader and to a translation engine, and a stress beat had to patch the shipped file in its own runner rather than have the skill fix it — the same shape, uncaught, in every proof/web* fixture that carries the identical patch",
+      "earnedBy": "renderWeb's own HTML shell hard-coded <html lang=\"fr\">, baked in for its first caller, a French CO\u2082 beat; every English beat rendered through it misdeclared its language to a screen reader and to a translation engine, and a stress beat had to patch the shipped file in its own runner rather than have the skill fix it \u2014 the same shape, uncaught, in every proof/web* fixture that carries the identical patch",
       "states": {
         "chart-web": "carried",
         "dw-beat": "carried",
@@ -398,10 +448,12 @@
     {
       "id": "credential-alias-reconciled",
       "kind": "guard",
-      "requires": ["reads-a-provider-credential"],
+      "requires": [
+        "reads-a-provider-credential"
+      ],
       "decidedBy": "credentialReadsWithoutAlias",
       "refuses": "a provider credential read by its canonical env name with no declared alias list for the names the root's own .env holds it under",
-      "earnedBy": "root .env names the Datawrapper credential DATAWRAPPER_API_TOKEN and MapTiler's key MAPTILER_API_KEY/REMOTION_MAPTILER_KEY/VITE_MAPTILER_KEY — the engine's own names — while dw-beat's CLI entry and sealed-produce.mjs read a bare process.env.DATAWRAPPER_TOKEN and splash/scripts/run-operation.mjs read a bare process.env.MAPTILER_KEY, so preflight reported the capability open on a real, present token and production refused \"no token\" one phase later; map-beat/map-web/scrolly's own bake-plate.mjs had already reconciled the MapTiler side with a declared alias list before this was named",
+      "earnedBy": "root .env names the Datawrapper credential DATAWRAPPER_API_TOKEN and MapTiler's key MAPTILER_API_KEY/REMOTION_MAPTILER_KEY/VITE_MAPTILER_KEY \u2014 the engine's own names \u2014 while dw-beat's CLI entry and sealed-produce.mjs read a bare process.env.DATAWRAPPER_TOKEN and splash/scripts/run-operation.mjs read a bare process.env.MAPTILER_KEY, so preflight reported the capability open on a real, present token and production refused \"no token\" one phase later; map-beat/map-web/scrolly's own bake-plate.mjs had already reconciled the MapTiler side with a declared alias list before this was named",
       "states": {
         "dw-beat": "carried",
         "map-beat": "carried",
@@ -413,9 +465,11 @@
     {
       "id": "fills-its-frame",
       "kind": "capability",
-      "requires": ["ships-standalone-html"],
+      "requires": [
+        "ships-standalone-html"
+      ],
       "offers": "the graphic occupies a real, measured share of the window it is opened in, at every tested width, never a fraction of it stranded beside empty ground",
-      "earnedBy": "stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width",
+      "earnedBy": "stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground \u2014 map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width",
       "detectedBy": "graphicFillsItsFrame",
       "walkedBy": "test/frame-fills-window.test.ts",
       "states": {
@@ -429,11 +483,35 @@
     {
       "id": "reveal-fills-the-frame",
       "kind": "guard",
-      "requires": ["reader-driven-reveal"],
+      "requires": [
+        "reader-driven-reveal"
+      ],
       "decidedBy": "compositionFillsTheFrame",
       "refuses": "a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not",
-      "earnedBy": "skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal",
+      "earnedBy": "skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier \u2014 the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal",
       "states": {
+        "scrolly": "carried"
+      },
+      "exceptions": {}
+    },
+    {
+      "id": "storyboard-gate-is-visible",
+      "kind": "capability",
+      "requires": [
+        "materialises-a-beat"
+      ],
+      "offers": "a beat's own render/produce script can read whether a closed STORYBOARD.md stands above it \u2014 found at all, and whether its own front matter carries a confirmed takeaway \u2014 without the check ever refusing the render, so the gate the orchestrator already refuses to jump is at least visible to the one place that could otherwise jump it silently",
+      "earnedBy": "the orchestrator (skills/splash) refuses a phase jump and says so in its own SKILL.md; no craft skill's own render/produce entrypoint could even ASK whether one stood above it \u2014 renderStill and readPinnedSize never looked. A hard refusal was considered and rejected: the stress-testing methodology that found this very finding depends on rendering a beat directly with no STORYBOARD.md at all (fifteen beats, three rounds), and a refusal with no unattended-satisfiable path would repeat the exact mistake this project's own PALETTE.md history already had to fix. storyboardGateStatus reports instead \u2014 found/closed/reason, never a throw \u2014 on the one trait every producing skill actually shares (materialises-a-beat), rather than an invented population",
+      "detectedBy": "storyboardGateStatus",
+      "walkedBy": "test/storyboard-gate.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-web": "carried",
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
         "scrolly": "carried"
       },
       "exceptions": {}

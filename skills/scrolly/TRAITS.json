@@ -9,6 +9,7 @@
     "inlines-its-assets",
     "reads-a-journalists-csv",
     "reads-a-palette",
-    "reads-a-provider-credential"
+    "reads-a-provider-credential",
+    "materialises-a-beat"
   ]
 }

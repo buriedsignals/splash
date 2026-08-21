@@ -9,6 +9,7 @@
     "reads-a-journalists-csv",
     "joins-values-to-shapes",
     "reads-a-palette",
-    "reads-a-provider-credential"
+    "reads-a-provider-credential",
+    "materialises-a-beat"
   ]
 }

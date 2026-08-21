@@ -5,6 +5,7 @@
     "owns-a-surface-it-did-not-choose",
     "ships-standalone-html",
     "reads-a-journalists-csv",
-    "reads-a-provider-credential"
+    "reads-a-provider-credential",
+    "materialises-a-beat"
   ]
 }

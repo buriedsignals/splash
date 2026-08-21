@@ -3,6 +3,7 @@
   "traits": [
     "draws-own-geometry",
     "ships-standalone-html",
-    "reads-a-palette"
+    "reads-a-palette",
+    "materialises-a-beat"
   ]
 }

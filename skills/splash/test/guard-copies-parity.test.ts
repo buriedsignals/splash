@@ -53,13 +53,15 @@ function declaration(file: string, name: string): string {
   const comment = source.lastIndexOf("/**", at);
   // The doc comment has to be the thing immediately above it — nothing but whitespace between.
   const between = source.slice(source.indexOf("*/", comment) + 2, at);
-  expect(`${name} in ${file}: ${between.trim() === "" ? "commented" : "detached comment"}`).toBe(
-    `${name} in ${file}: commented`,
-  );
+  expect(
+    `${name} in ${file}: ${between.trim() === "" ? "commented" : "detached comment"}`,
+  ).toBe(`${name} in ${file}: commented`);
   const end = source.indexOf("\n}\n", at);
   const body = source.slice(comment, end + 2);
   const constants = constantsBehind(source, body);
-  return constants ? `${body}\n// constants it decides with:\n${constants}` : body;
+  return constants
+    ? `${body}\n// constants it decides with:\n${constants}`
+    : body;
 }
 
 const COPIES: Record<string, string[]> = {
@@ -68,7 +70,10 @@ const COPIES: Record<string, string[]> = {
   // to this one decision — a thousands-grouped integer settles itself only with its own trailing
   // decimal tail, everything else ambiguous stays a named refusal, never a guess and never two
   // fragments out of one token.
-  readNumericToken: ["storyboard/scripts/ground-claim.mjs", "intake/scripts/profile.mjs"],
+  readNumericToken: [
+    "storyboard/scripts/ground-claim.mjs",
+    "intake/scripts/profile.mjs",
+  ],
   // decided by → the verification scripts that carry it
   plateFollowsGround: [
     "scrolly/scripts/verify-scrolly.mjs",
@@ -115,7 +120,10 @@ const COPIES: Record<string, string[]> = {
     "map-web/scripts/verify-guards.mjs",
     "map-beat/scripts/verify-map.mjs",
   ],
-  neverArrives: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
+  neverArrives: [
+    "chart-video/scripts/verify-video.mjs",
+    "map-beat/scripts/verify-map.mjs",
+  ],
   csvSplitByHand: [
     "chart-video/scripts/verify-video.mjs",
     "dw-beat/scripts/verify-owned.mjs",
@@ -160,7 +168,10 @@ const COPIES: Record<string, string[]> = {
   // Also a READER, not a guard, and the argument for walking it is the same one: neverArrives
   // decides on the shape this returns, and a copy that read a ramp's bounds differently would
   // refuse a different set of beats while looking like the same decision.
-  rampsFromSource: ["chart-video/scripts/verify-video.mjs", "map-beat/scripts/verify-map.mjs"],
+  rampsFromSource: [
+    "chart-video/scripts/verify-video.mjs",
+    "map-beat/scripts/verify-map.mjs",
+  ],
   // A capability, not a guard, and the first one this map reaches carried by more than one skill:
   // chart-web's seed baked `tabIndex`/`aria-label` on every point; map-web's marks are native
   // `<button>`s with the same `aria-label`/`data-detail` pairing. Same detector, same contract.
@@ -218,6 +229,19 @@ const COPIES: Record<string, string[]> = {
     "chart-web/scripts/render-still.mjs",
     "chart-video/scripts/render-still.mjs",
   ],
+  // FINDING 9 (round-three stress): the capability every producing skill carries once it declares
+  // it has one — `materialises-a-beat` reaches all eight, so this is the first decision walked
+  // here that all eight skills share a copy of.
+  storyboardGateStatus: [
+    "chart-beat/scripts/storyboard-gate.mjs",
+    "chart-web/scripts/storyboard-gate.mjs",
+    "chart-video/scripts/storyboard-gate.mjs",
+    "dw-beat/scripts/storyboard-gate.mjs",
+    "map-beat/scripts/storyboard-gate.mjs",
+    "map-web/scripts/storyboard-gate.mjs",
+    "image-beat/scripts/storyboard-gate.mjs",
+    "scrolly/scripts/storyboard-gate.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {
@@ -227,13 +251,18 @@ describe("every copied guard decision is still the same decision", () => {
       const canonical = declaration(first, name);
       expect(canonical.length).toBeGreaterThan(200);
       for (const file of rest)
-        expect(`${file}\n${declaration(file, name)}`).toBe(`${file}\n${canonical}`);
+        expect(`${file}\n${declaration(file, name)}`).toBe(
+          `${file}\n${canonical}`,
+        );
     });
   }
 
   it("should name every decision the catalogue says more than one skill carries", () => {
     const catalogue = JSON.parse(
-      readFileSync(join(SKILLS, "doctrine", "references", "guard-catalogue.json"), "utf8"),
+      readFileSync(
+        join(SKILLS, "doctrine", "references", "guard-catalogue.json"),
+        "utf8",
+      ),
     );
     const shared = catalogue.rules
       .filter(
@@ -244,12 +273,16 @@ describe("every copied guard decision is still the same decision", () => {
           // byte-identical would be requiring every skill to say the same thing about a doctrine it
           // reads for its own reasons, which is not what this test exists to catch.
           rule.kind !== "discipline" &&
-          Object.values(rule.states).filter((state) => state === "carried").length > 1,
+          Object.values(rule.states).filter((state) => state === "carried")
+            .length > 1,
       )
       // `decidedBy` names a guard's own decision function; `detectedBy` names a capability's own —
       // the same fallback `guard-parity.test.ts`'s own assertions use, under whichever name a
       // rule's `kind` carries it as.
-      .map((rule: { decidedBy?: string; detectedBy?: string }) => rule.decidedBy ?? rule.detectedBy)
+      .map(
+        (rule: { decidedBy?: string; detectedBy?: string }) =>
+          rule.decidedBy ?? rule.detectedBy,
+      )
       .sort();
     // A guard carried by two skills and NOT walked here is a decision free to drift. This is the
     // assertion that makes adding the next one to `COPIES` unavoidable rather than remembered.

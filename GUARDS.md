@@ -42,6 +42,7 @@ written out below the tables.
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 | framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |
 | fills-its-frame |  | **R** |  | **R** |  | **R** |  | **R** |
+| storyboard-gate-is-visible | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 
 ## discipline
 
@@ -90,16 +91,16 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ | ✓ |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential | materialises-a-beat |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  | ✓ |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ | ✓ |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ | ✓ | ✓ |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -278,3 +279,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not
 
 **Earned by:** skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal
+
+### storyboard-gate-is-visible — `storyboardGateStatus`
+
+**Offers:** a beat's own render/produce script can read whether a closed STORYBOARD.md stands above it — found at all, and whether its own front matter carries a confirmed takeaway — without the check ever refusing the render, so the gate the orchestrator already refuses to jump is at least visible to the one place that could otherwise jump it silently
+
+**Earned by:** the orchestrator (skills/splash) refuses a phase jump and says so in its own SKILL.md; no craft skill's own render/produce entrypoint could even ASK whether one stood above it — renderStill and readPinnedSize never looked. A hard refusal was considered and rejected: the stress-testing methodology that found this very finding depends on rendering a beat directly with no STORYBOARD.md at all (fifteen beats, three rounds), and a refusal with no unattended-satisfiable path would repeat the exact mistake this project's own PALETTE.md history already had to fix. storyboardGateStatus reports instead — found/closed/reason, never a throw — on the one trait every producing skill actually shares (materialises-a-beat), rather than an invented population

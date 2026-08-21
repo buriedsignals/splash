@@ -4,6 +4,7 @@
     "draws-own-geometry",
     "timed-build-that-ends",
     "reads-a-journalists-csv",
-    "reads-a-palette"
+    "reads-a-palette",
+    "materialises-a-beat"
   ]
 }

@@ -199,6 +199,34 @@ export const TRAITS = [
         { exclude: /^(verify|detect)-.*\.mjs$/ },
       ),
   },
+  {
+    id: "materialises-a-beat",
+    describes:
+      "the skill carries the one entrypoint that turns a story's beat directory into its delivered artefact — a render/produce script, not a preview or a verify script",
+    // FINDING 9 (stress round three): no existing trait is shared by all eight producing skills —
+    // `draws-own-geometry` excludes `dw-beat` (it delegates rendering), `reads-a-palette` excludes
+    // `dw-beat` too, and every other trait is narrower still. The STORYBOARD-closed gate a craft
+    // skill should be able to see is a concern every producing skill shares regardless of genre or
+    // substrate, so it needs a trait every one of them actually has — this is the real mechanism
+    // that was missing a name, not an invented one to make a population come out even.
+    //
+    // Witnessed by the skill's own canonical MATERIALISING entrypoint, never `render-preview.mjs`
+    // (a look-at-it preview, not the delivered artefact) and never a `verify-*`/`detect-*` file (the
+    // check AFTER the fact, not the production itself). Measured: exactly these six filenames,
+    // across exactly the eight producing skills and no other skill directory in this tree —
+    // `render-still.mjs` (chart-beat, chart-web, chart-video, map-beat, image-beat, scrolly),
+    // `render-web.mjs` (chart-web, map-web), `render-video.mjs` (chart-video),
+    // `render-map.mjs` (map-beat), `render-scrolly.mjs` (scrolly), `produce.mjs` (dw-beat).
+    witness: (skill) =>
+      [
+        "render-still.mjs",
+        "render-web.mjs",
+        "render-video.mjs",
+        "render-map.mjs",
+        "render-scrolly.mjs",
+        "produce.mjs",
+      ].some((name) => has(skill, `scripts/${name}`)),
+  },
 ];
 
 export function traitsOf(skill) {
