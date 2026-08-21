@@ -557,6 +557,50 @@
         "chart-video": "measured 2026-08-21: same mechanism, and the format with the least slack for prose — a build rasterises every frame in the face in force, so a silent fallback is baked three hundred times over with no reader-side reflow to reveal it. Its own scripts/render-still.mjs carries readTypeface/useTypeface/assertDrawnInActiveTypeface",
         "map-beat": "measured 2026-08-21: same mechanism, reached from three of its own scripts rather than one — render-map.mjs, render-still.mjs and render-preview.mjs each call readTypeface and useTypeface, so a map beat's labels and legend are set in the recorded face or the run refuses"
       }
+    },
+    {
+      "id": "credit-traces-to-the-record",
+      "kind": "capability",
+      "requires": [
+        "materialises-a-beat"
+      ],
+      "offers": "the credit a DELIVERED artefact prints names only organisations the story's own frozen source/ actually mentions \u2014 and `credit` has an honest value, `unattributed`, for a journalist who named none, which the artefact carries visibly as `Source: not stated` rather than filling the gap with something plausible",
+      "earnedBy": "finding 11 of stress round four: all three of stress-p-transport-ridership's delivered beats print \"Source: city network figures for 2025, compiled by Buried Signals\". The frozen article names no source whatever \u2014 `grep -in \"source\\|according\\|compiled\\|buried\" stories/stress-p-transport-ridership/source/article.md` returns nothing \u2014 and `Buried Signals` is this tree's own NEWSROOM.md `name`: the newsroom that would PUBLISH the graphic, promoted on three delivered artefacts to the organisation that COMPILED the data. `credit` was a REQUIRED hand scalar with no honest empty value, so an unattended run filled it with the nearest plausible string in reach; round two's finding 9 recurring, with a real named third party carrying the consequence. THE RECORD IT TRACES TO IS `source/`, NOT `STORYBOARD.md`, and that is the whole design: the invention was IN the storyboard, `credit:` held it, the render read it and the hand-over printed it, and every hop was faithful \u2014 a rule that traced to the recorded scalar would have gone green on the exact defect that earned it. The only record a credit can honestly trace to is the material nothing in this toolchain may write. TWO NARROWINGS, both measured rather than chosen: an attribution is a run of two or more consecutive capitalised words, because a lone capital after a colon is sentence case and the `August` in every credit's own `\u00b7 as of 21 August 2026` would otherwise be a false positive on every delivery in the tree; and a name is unattested only when NOT ONE of its words appears in the frozen source, because the strict every-word form \u2014 written first, and measured to agree with this one on all eight committed deliveries \u2014 parts company with it only on inflection, refusing \"Greek Ministry of Education\" for an article that says \"in Greece\". A credit that names nobody at all (\"municipal safety incident report and district population estimates\") passes, correctly: this rule has no opinion about a missing name, only about an invented one. The honest empty answer is `storyboard`'s own \u2014 UNATTRIBUTED_CREDIT/creditLine, copied byte for byte into deliver's format-handover.mjs and walked by splash/test/guard-copies-parity.test.ts, on the model palette/scripts/typeface.mjs used this same round for the same class of defect: propose, record who chose, say so out loud, never substitute silently",
+      "detectedBy": "creditTracesToRecord",
+      "walkedBy": "test/delivered-text.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-web": "carried",
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
+    },
+    {
+      "id": "double-hyphen-reaches-a-reader",
+      "kind": "capability",
+      "requires": [
+        "materialises-a-beat"
+      ],
+      "offers": "the reader-visible text of a DELIVERED artefact \u2014 the words drawn in the picture, the <desc> a screen reader speaks, and the alt text and credit line a newsroom pastes out of HANDOVER.md by hand \u2014 carries no dash typed as two hyphen-minus characters",
+      "earnedBy": "finding 15 of stress round four: stress-q-safety-incidents' render.mjs:68 wrote `--` where an em dash belongs, and it reached three reader surfaces at once \u2014 the visible footnote (\"Centro recorded the most incidents in raw terms (412) -- but not the highest rate.\"), the <desc> a screen reader speaks, and the alt text in the delivered HANDOVER.md that a newsroom pastes into its CMS. Found again, unreported until this rule read the files, on stress-r-greek-schools' delivered SVG and hand-over. Measured across the tree on the day this landed: 22 files contain \" -- \" and 21 of them only inside code comments, which is why the decision reads READER-VISIBLE text \u2014 HTML comments, <script> and <style> stripped first, markdown fences and inline code spans dropped \u2014 rather than running a grep over files, and why the CSS comments in stress-p's own delivered page are correctly silent. DELIBERATELY NOT A PROSE STYLE CHECKER: it knows one thing, that a dash typed as two hyphen-minus characters is a dash that did not survive being typed, and it has no opinion about sentence length, quotation marks, spacing, or which dash a clause wanted. A leading `--flag` is not matched, because a delivered page may legitimately show one. A rule that started having opinions about prose is a rule a journalist argues with, and then deletes",
+      "detectedBy": "doubleHyphenInDeliveredText",
+      "walkedBy": "test/delivered-text.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-web": "carried",
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

@@ -366,6 +366,14 @@ const COPIES: Record<string, string[]> = {
     "map-web/scripts/detect-denominator-reading.mjs",
     "image-beat/scripts/detect-denominator-reading.mjs",
     "scrolly/scripts/detect-denominator-reading.mjs",
+    "chart-beat/scripts/detect-delivered-text.mjs",
+    "chart-web/scripts/detect-delivered-text.mjs",
+    "chart-video/scripts/detect-delivered-text.mjs",
+    "dw-beat/scripts/detect-delivered-text.mjs",
+    "map-beat/scripts/detect-delivered-text.mjs",
+    "map-web/scripts/detect-delivered-text.mjs",
+    "image-beat/scripts/detect-delivered-text.mjs",
+    "scrolly/scripts/detect-delivered-text.mjs",
   ],
   // ROUND-FOUR FINDING 11: the value `credit` takes when the journalist named no source, and the
   // line a delivered artefact prints for it. `storyboard` records the answer; `deliver` renders it.
@@ -379,6 +387,46 @@ const COPIES: Record<string, string[]> = {
   creditLine: [
     "storyboard/scripts/storyboard.mjs",
     "deliver/scripts/format-handover.mjs",
+  ],
+  // ROUND-FOUR FINDINGS 11 AND 15: what a DELIVERED artefact is allowed to say. Both decisions read
+  // the files under `stories/<story>/export/<outputId>/` — the hand-over a newsroom pastes from and
+  // the vector or page it ships — and nothing in either is skill-specific; the skill is a parameter.
+  // `materialises-a-beat` reaches all eight. A copy that narrowed what counts as an attribution, or
+  // what counts as reader-visible, would go green on a delivery its neighbour refuses — and what it
+  // would be passing is a real named organisation credited with data it never touched.
+  creditTracesToRecord: [
+    "chart-beat/scripts/detect-delivered-text.mjs",
+    "chart-web/scripts/detect-delivered-text.mjs",
+    "chart-video/scripts/detect-delivered-text.mjs",
+    "dw-beat/scripts/detect-delivered-text.mjs",
+    "map-beat/scripts/detect-delivered-text.mjs",
+    "map-web/scripts/detect-delivered-text.mjs",
+    "image-beat/scripts/detect-delivered-text.mjs",
+    "scrolly/scripts/detect-delivered-text.mjs",
+  ],
+  doubleHyphenInDeliveredText: [
+    "chart-beat/scripts/detect-delivered-text.mjs",
+    "chart-web/scripts/detect-delivered-text.mjs",
+    "chart-video/scripts/detect-delivered-text.mjs",
+    "dw-beat/scripts/detect-delivered-text.mjs",
+    "map-beat/scripts/detect-delivered-text.mjs",
+    "map-web/scripts/detect-delivered-text.mjs",
+    "image-beat/scripts/detect-delivered-text.mjs",
+    "scrolly/scripts/detect-delivered-text.mjs",
+  ],
+  // The READER both decisions stand on, walked for the same reason `marksFromSource` is: a copy that
+  // stopped stripping `<style>` would report 21 code comments as defects, and a copy that stopped
+  // reading `alt`/`aria-label` would report a page as clean while a screen reader speaks the defect
+  // aloud. Either way the two formats would disagree about what a reader receives.
+  readerVisibleText: [
+    "chart-beat/scripts/detect-delivered-text.mjs",
+    "chart-web/scripts/detect-delivered-text.mjs",
+    "chart-video/scripts/detect-delivered-text.mjs",
+    "dw-beat/scripts/detect-delivered-text.mjs",
+    "map-beat/scripts/detect-delivered-text.mjs",
+    "map-web/scripts/detect-delivered-text.mjs",
+    "image-beat/scripts/detect-delivered-text.mjs",
+    "scrolly/scripts/detect-delivered-text.mjs",
   ],
 };
 
