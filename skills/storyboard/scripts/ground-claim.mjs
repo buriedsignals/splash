@@ -1441,6 +1441,41 @@ const DENOMINATOR_NAME_TOKENS = new Set([
   "eleves",
   "\u00e9l\u00e8ve",
   "\u00e9l\u00e8ves",
+  // ROUND FIVE, finding C3 — the same shape as every other name-based lexicon in this toolchain.
+  // `stress-x-tunisian-water` carries `\u0627\u0644\u0633\u0643\u0627\u0646` (population) one column from a consumption
+  // column and no denominator candidate was reported: this list held English and French words with
+  // two Greek ones added, so round four's fix was Latin-script only. It now declares the same four
+  // languages every other lexicon in this tree declares — English, French, Greek, Arabic. The Greek
+  // and Arabic entries beyond `\u03bc\u03b1\u03b8\u03b7\u03c4\u03ad\u03c2` and `\u0627\u0644\u0633\u0643\u0627\u0646` are AHEAD of the corpus and are said to
+  // be: no frozen table names a Greek population column or an Arabic household one. Missing a word
+  // here is SILENT — a count is drawn raw with its denominator one column away and nothing says so —
+  // and widening the reader is not.
+  "\u03c0\u03bb\u03b7\u03b8\u03c5\u03c3\u03bc\u03cc\u03c2",
+  "\u03c0\u03bb\u03b7\u03b8\u03c5\u03c3\u03bc\u03bf\u03cd",
+  "\u03c0\u03bb\u03b7\u03b8\u03c5\u03c3\u03bc\u03bf\u03af",
+  "\u03ba\u03ac\u03c4\u03bf\u03b9\u03ba\u03bf\u03c2",
+  "\u03ba\u03ac\u03c4\u03bf\u03b9\u03ba\u03bf\u03b9",
+  "\u03ba\u03b1\u03c4\u03bf\u03af\u03ba\u03c9\u03bd",
+  "\u03bd\u03bf\u03b9\u03ba\u03bf\u03ba\u03c5\u03c1\u03b9\u03cc",
+  "\u03bd\u03bf\u03b9\u03ba\u03bf\u03ba\u03c5\u03c1\u03b9\u03ac",
+  "\u03c6\u03bf\u03b9\u03c4\u03b7\u03c4\u03ae\u03c2",
+  "\u03c6\u03bf\u03b9\u03c4\u03b7\u03c4\u03ad\u03c2",
+  "\u03bc\u03b1\u03b8\u03b7\u03c4\u03ce\u03bd",
+  "\u0627\u0644\u0633\u0643\u0627\u0646",
+  "\u0633\u0643\u0627\u0646",
+  "\u0633\u0627\u0643\u0646",
+  "\u0646\u0633\u0645\u0629",
+  "\u0646\u0633\u0645\u0627\u062a",
+  "\u0627\u0644\u0623\u0633\u0631",
+  "\u0623\u0633\u0631\u0629",
+  "\u0623\u0633\u0631",
+  "\u062a\u0644\u0645\u064a\u0630",
+  "\u062a\u0644\u0627\u0645\u064a\u0630",
+  "\u0637\u0627\u0644\u0628",
+  "\u0637\u0644\u0627\u0628",
+  "\u0627\u0644\u0637\u0644\u0627\u0628",
+  "\u0645\u0642\u064a\u0645",
+  "\u0645\u0642\u064a\u0645\u0648\u0646",
 ]);
 
 function namesADenominator(name) {

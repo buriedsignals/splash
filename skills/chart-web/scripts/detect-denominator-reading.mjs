@@ -65,6 +65,41 @@ const DENOMINATOR_NAME_TOKENS = new Set([
   "eleves",
   "élève",
   "élèves",
+  // ROUND FIVE, finding C3 — the same shape as every other name-based lexicon in this toolchain.
+  // `stress-x-tunisian-water` carries `السكان` (population) one column from a consumption
+  // column and no denominator candidate was reported: this list held English and French words with
+  // two Greek ones added, so round four's fix was Latin-script only. It now declares the same four
+  // languages every other lexicon in this tree declares — English, French, Greek, Arabic. The Greek
+  // and Arabic entries beyond `μαθητές` and `السكان` are AHEAD of the corpus and are said to
+  // be: no frozen table names a Greek population column or an Arabic household one. Missing a word
+  // here is SILENT — a count is drawn raw with its denominator one column away and nothing says so —
+  // and widening the reader is not.
+  "πληθυσμός",
+  "πληθυσμού",
+  "πληθυσμοί",
+  "κάτοικος",
+  "κάτοικοι",
+  "κατοίκων",
+  "νοικοκυριό",
+  "νοικοκυριά",
+  "φοιτητής",
+  "φοιτητές",
+  "μαθητών",
+  "السكان",
+  "سكان",
+  "ساكن",
+  "نسمة",
+  "نسمات",
+  "الأسر",
+  "أسرة",
+  "أسر",
+  "تلميذ",
+  "تلاميذ",
+  "طالب",
+  "طلاب",
+  "الطلاب",
+  "مقيم",
+  "مقيمون",
 ]);
 
 const NAME_TOKEN_SPLIT_RE = /[^\p{L}\p{N}]+/u;
