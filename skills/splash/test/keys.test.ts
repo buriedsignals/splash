@@ -318,3 +318,53 @@ describe("recordKey — one key, into the root .env, and nowhere else", () => {
     expect(await recordKey({ root, name: "MAPTILER_KEY", value: "abc123" })).toBeUndefined();
   });
 });
+
+// FINDING 20 (stress round four): a capability was reported CLOSED for a reason that was not about
+// the capability. `runPreflight` declared `fetchFn` as a required argument and defaulted nothing,
+// so calling it the obvious way — `runPreflight({ root, env })` — made `fetchFn(url, init)` throw
+// inside `probe`, which caught it and folded the message into the capability's own reason:
+//
+//   MapTiler threw: fetchFn is not a function. (In 'fetchFn(url, init)', 'fetchFn' is undefined)
+//
+// A journalist reads that as "MapTiler is down". With a real `fetch` passed in, on the same
+// machine, at the same moment: map 200, datawrapper 200, hostedEmbed 403. Every capability the
+// toolchain has, reported shut, by an argument the caller forgot.
+//
+// Two answers, and both are needed. The probe DEFAULTS to the platform's own `fetch`, because
+// there is a correct one and refusing to use it helps nobody. And a caller who passes something
+// that is not a function is REFUSED by name rather than having it disguised as a dead provider —
+// a mistake in the call is not evidence about MapTiler.
+describe("a probe never reports a capability closed for a reason that is not about the capability", () => {
+  it("should use the platform's own fetch when no fetchFn is passed", async () => {
+    const seen = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      seen.push(String(url));
+      return { ok: true, status: 200 };
+    };
+    try {
+      const result = await probeMapTiler("a-key");
+      expect(result.ok).toBe(true);
+      expect(result.detail).toBe("MapTiler answered 200");
+      expect(seen.length).toBe(1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("should refuse a fetchFn that is not callable, by name, rather than blaming the provider", async () => {
+    const result = await probeMapTiler("a-key", "not a function").catch((error) => error);
+    expect(result instanceof Error).toBe(true);
+    expect(result.message).toMatch(/fetchFn/);
+    expect(result.message).not.toMatch(/MapTiler answered|MapTiler threw/);
+  });
+
+  it("should say the same for Datawrapper and Cloudflare, which share the probe", async () => {
+    const dw = await probeDatawrapper("a-token", 42).catch((error) => error);
+    expect(dw instanceof Error).toBe(true);
+    expect(dw.message).toMatch(/fetchFn/);
+    const cf = await probeCloudflare("account", "token", 42).catch((error) => error);
+    expect(cf instanceof Error).toBe(true);
+    expect(cf.message).toMatch(/fetchFn/);
+  });
+});

@@ -119,9 +119,40 @@ const MAPTILER_PROBE = (key) =>
   `https://api.maptiler.com/maps/dataviz/style.json?key=${encodeURIComponent(key)}`;
 const DATAWRAPPER_PROBE = "https://api.datawrapper.de/v3/me";
 
+/**
+ * FINDING 20 (stress round four): A CAPABILITY IS NEVER REPORTED CLOSED FOR A REASON THAT IS NOT
+ * ABOUT THE CAPABILITY.
+ *
+ * `fetchFn` used to be a required argument with no default, and every caller of `runPreflight` that
+ * forgot it got `fetchFn is not a function` thrown INSIDE the try below, caught as a network
+ * failure, and printed as the capability's own reason: "MapTiler threw: fetchFn is not a
+ * function". A journalist reads that as "MapTiler is down". Measured on the same machine at the
+ * same moment, with a real `fetch` passed: map 200, datawrapper 200, hostedEmbed 403 — every
+ * capability the toolchain has, reported shut, by an argument the caller forgot.
+ *
+ * So: the platform's own `fetch` is the default, because there is a correct one and refusing to
+ * use it helps nobody; and a caller who hands in something that is not callable is REFUSED by name,
+ * before the try, so a mistake in the call can never be dressed up as evidence about a provider.
+ */
+function resolveFetch(fetchFn) {
+  if (fetchFn === undefined || fetchFn === null) {
+    if (typeof globalThis.fetch !== "function")
+      throw new Error(
+        "no fetchFn was passed and this runtime has no global fetch — pass one explicitly; a probe will not report a capability closed over its own missing transport",
+      );
+    return globalThis.fetch.bind(globalThis);
+  }
+  if (typeof fetchFn !== "function")
+    throw new Error(
+      `fetchFn must be a function, got ${typeof fetchFn} — a probe will not report a capability closed for a reason that is not about the capability`,
+    );
+  return fetchFn;
+}
+
 async function probe(url, init, fetchFn, label) {
+  const request = resolveFetch(fetchFn);
   try {
-    const response = await fetchFn(url, init);
+    const response = await request(url, init);
     return response.ok
       ? { ok: true, status: response.status, detail: `${label} answered ${response.status}` }
       : { ok: false, status: response.status, detail: `${label} answered ${response.status}` };
