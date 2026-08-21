@@ -25,6 +25,8 @@ CLOSED 2026-08-21: every skill that draws its own geometry now carries scripts/d
 
 claimViolations only knows one claim shape — the subject is BELOW a comparison and below its neighbours — with no way to ask the opposite. A takeaway whose subject is a maximum has to write its own check.
 
+CLOSED 2026-08-21: `claimViolations` takes a `direction` (`"below"`, the default and the seed's claim unchanged, or `"above"`). A two-ended claim is two calls, one per end. This beat's producer now makes both instead of carrying `extremesViolations`.
+
 ## Found at production
 
 plateFollowsGround returns true for a NaN plate luminance: its only escape is plate == null, and NaN is not null. A plate that was never actually decoded therefore passes the guard whose own header says a value that was not read must not travel as a value that was.

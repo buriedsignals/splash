@@ -1282,9 +1282,19 @@ export function studyExtentOf(
  * and false when the data is refreshed.
  *
  * `quorum` names which claim the title is actually making about its neighbours: `"all"` (the
- * default — a superlative, and every neighbour below the subject is its own named violation) or
- * `"most"` — a strict majority, checked as one verdict rather than neighbour by neighbour, because
- * "most" is not falsified by a single exception the way "all" is.
+ * default — a superlative, and every neighbour on the wrong side of the subject is its own named
+ * violation) or `"most"` — a strict majority, checked as one verdict rather than neighbour by
+ * neighbour, because "most" is not falsified by a single exception the way "all" is.
+ *
+ * `direction` is which way the takeaway points, and it exists because ROUND FIVE found this
+ * function knew exactly one claim — the CO2 seed's, "the subject is BELOW a comparison and below
+ * its neighbours" — with no way to ask the opposite. `stress-t-europe-recycling`'s takeaway is a
+ * MAXIMUM ("Germany recycles more of its waste than any country that reported") and its author had
+ * to write the check again, by hand, in their own producer, against the same frozen values. A
+ * mechanism that covers half the claims a journalist writes is a mechanism half of them re-implement.
+ * `"below"` is the default and is the seed's claim unchanged; `"above"` is its mirror, and a
+ * two-ended claim (a maximum AND a minimum, which is what a distribution beat usually says) is two
+ * calls, one per end, each naming its own subject.
  *
  * It throws rather than passing when a code it was asked about is absent: a claim that cannot be
  * evaluated has not been checked, and silently returning "no violations" is the worse answer.
@@ -1295,12 +1305,14 @@ export function claimViolations({
   comparison,
   neighbours,
   quorum = "all",
+  direction = "below",
 }: {
   values: Map<string, number>;
   subject: string;
   comparison: string;
   neighbours: readonly string[];
   quorum?: "all" | "most";
+  direction?: "below" | "above";
 }): string[] {
   const need = [subject, comparison, ...neighbours];
   const absent = need.filter((code) => !values.has(code));
@@ -1309,23 +1321,32 @@ export function claimViolations({
       `cannot check the claim: no value for ${absent.join(", ")}`,
     );
 
+  // The two words the refusal is written in, and the two comparisons behind them. Naming them once
+  // is what keeps the mirror claim from being a second copy of this function with `<` for `>`.
+  const here = direction === "below" ? "below" : "above";
+  const there = direction === "below" ? "above" : "below";
+  const wrongSide = (a: number, b: number) => (direction === "below" ? a >= b : a <= b);
+
   const value = values.get(subject)!;
   const violations: string[] = [];
-  if (value >= values.get(comparison)!)
+  if (wrongSide(value, values.get(comparison)!))
     violations.push(
-      `${subject} (${value}) is not below ${comparison} (${values.get(comparison)})`,
+      `${subject} (${value}) is not ${here} ${comparison} (${values.get(comparison)})`,
     );
 
-  const notAbove = neighbours.filter((n) => values.get(n)! <= value);
+  // Read it as "the neighbour is NOT on the side the title says": with the subject's own value as
+  // the first argument, `wrongSide` answers that for both directions and a TIE counts as a
+  // violation in both, which is what `>=`/`<=` already say.
+  const notBeyond = neighbours.filter((n) => wrongSide(value, values.get(n)!));
   if (quorum === "all") {
-    for (const neighbour of notAbove)
+    for (const neighbour of notBeyond)
       violations.push(
-        `${neighbour} (${values.get(neighbour)}) is not above ${subject} (${value}) — the title says all of its neighbours`,
+        `${neighbour} (${values.get(neighbour)}) is not ${there} ${subject} (${value}) — the title says all of its neighbours`,
       );
-  } else if (neighbours.length > 0 && notAbove.length * 2 >= neighbours.length)
+  } else if (neighbours.length > 0 && notBeyond.length * 2 >= neighbours.length)
     violations.push(
-      `only ${neighbours.length - notAbove.length} of ${neighbours.length} neighbours are above ${subject} (${value}), not a strict majority — the title says most of its neighbours. ` +
-        `Not above: ${notAbove.map((n) => `${n} (${values.get(n)})`).join(", ")}`,
+      `only ${neighbours.length - notBeyond.length} of ${neighbours.length} neighbours are ${there} ${subject} (${value}), not a strict majority — the title says most of its neighbours. ` +
+        `Not ${there}: ${notBeyond.map((n) => `${n} (${values.get(n)})`).join(", ")}`,
     );
   return violations;
 }

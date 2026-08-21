@@ -36,6 +36,7 @@ import {
   RECYCLING_EXPECTED_NO_DATA,
   assertRampReads,
   dataRampEnd,
+  claimViolations,
   joinValues,
   ratesFromCsv,
   sequentialRamp,
@@ -95,35 +96,42 @@ console.log(
 
 // ── The claim ──────────────────────────────────────────────────────────────────────────────────
 //
-// NOT `claimViolations` from geo-recycling.ts, and the reason is a finding rather than a
-// preference: that function only knows ONE claim — "the subject is BELOW a comparison and below
-// its neighbours" — which is the CO2 seed's own sentence, with no way to ask the opposite. This
-// beat's takeaway is a maximum and a minimum, so the check is written here, against the same
-// frozen values, and named as this beat's own.
-function extremesViolations(all, { subject, comparison }) {
-  const entries = [...all.entries()];
-  const problems = [];
-  const top = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const bottom = entries.reduce((a, b) => (b[1] < a[1] ? b : a));
-  if (top[0] !== subject)
-    problems.push(`the title says ${subject} is the highest, but ${top[0]} reports ${top[1]}`);
-  if (bottom[0] !== comparison)
-    problems.push(`the title says ${comparison} is the lowest, but ${bottom[0]} reports ${bottom[1]}`);
-  return problems;
-}
-
+// `claimViolations`, both ends of it. Until round five this function knew exactly one claim — the
+// CO2 seed's, "the subject is BELOW a comparison and below its neighbours" — so this beat, whose
+// takeaway is a MAXIMUM, carried its own `extremesViolations` written by hand against the same
+// frozen values. It now takes a `direction`, and a two-ended claim is two calls: Germany above every
+// other reporter, Macedonia below every other reporter. That IS "the highest and the lowest of the
+// eleven that reported", stated as arithmetic the source can refute.
 const SUBJECT_KEY = RECYCLING_ALIAS.DEU;
 const COMPARISON_KEY = RECYCLING_ALIAS.MKD;
-const violations = extremesViolations(values, { subject: SUBJECT_KEY, comparison: COMPARISON_KEY });
+const reported = [...values.keys()];
+const everyoneExcept = (...keys) => reported.filter((key) => !keys.includes(key));
+const violations = [
+  ...claimViolations({
+    values,
+    subject: SUBJECT_KEY,
+    comparison: COMPARISON_KEY,
+    neighbours: everyoneExcept(SUBJECT_KEY, COMPARISON_KEY),
+    direction: "above",
+  }),
+  ...claimViolations({
+    values,
+    subject: COMPARISON_KEY,
+    comparison: SUBJECT_KEY,
+    neighbours: everyoneExcept(SUBJECT_KEY, COMPARISON_KEY),
+    direction: "below",
+  }),
+];
 if (violations.length === 0)
-  console.log("claim: supported by the source — Germany is the maximum and Macedonia the minimum of the eleven reported rates.");
+  console.log(
+    "claim: supported by the source — Germany is the maximum and Macedonia the minimum of the eleven reported rates.",
+  );
 else
   console.log(
     `claim: NOT SUPPORTED by the source, in ${violations.length} way(s):\n  ${violations.join("\n  ")}\n` +
       "  The title is the journalist's confirmed wording and is rendered as given; this is the check " +
       "that tells them it no longer matches the data.",
   );
-
 const subjectValue = values.get(SUBJECT_KEY);
 const comparisonValue = values.get(COMPARISON_KEY);
 const gap = Math.round((subjectValue - comparisonValue) * 10) / 10;

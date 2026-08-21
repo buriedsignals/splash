@@ -488,6 +488,78 @@ describe("claimViolations", () => {
     expect(violations).toHaveLength(1);
     expect(violations[0]).toContain("LIE");
   });
+
+  // ROUND FIVE: this function knew exactly one claim — the seed's own "below" — and
+  // stress-t-europe-recycling, whose takeaway is a MAXIMUM, had to write the check again by hand in
+  // its own producer. `direction` is the mirror, and these run on that beat's own frozen rates.
+  describe("direction: 'above' — the claim the seed could not make", () => {
+    // The eleven rates stress-t is drawn from, keyed the way its own join keys them (by the raw
+    // source string, misspellings included) and read off its frozen `recycling.csv` — Sweden's
+    // duplicate row counted once, which is what that beat's producer does.
+    const rates = new Map<string, number>([
+      ["Germany", 67.8],
+      ["Czech Republic", 42.1],
+      ["Holland", 56.9],
+      ["Belgiumm", 54.2],
+      ["Austria", 58.0],
+      ["Macedonia", 18.4],
+      ["France", 44.3],
+      ["Italy", 51.4],
+      ["Spain", 36.9],
+      ["Poland", 39.5],
+      ["Sweden", 48.7],
+    ]);
+    const others = (...keys: string[]) => [...rates.keys()].filter((k) => !keys.includes(k));
+
+    it("supports a maximum the source really holds", () => {
+      expect(
+        claimViolations({
+          values: rates,
+          subject: "Germany",
+          comparison: "Macedonia",
+          neighbours: others("Germany", "Macedonia"),
+          direction: "above",
+        }),
+      ).toEqual([]);
+    });
+
+    it("refutes a maximum the source does not hold, naming every country above it", () => {
+      const violations = claimViolations({
+        values: rates,
+        subject: "France",
+        comparison: "Macedonia",
+        neighbours: others("France", "Macedonia"),
+        direction: "above",
+      });
+      expect(violations).toHaveLength(6);
+      expect(violations.join(" ")).toContain("Germany (67.8) is not below France (44.3)");
+    });
+
+    it("supports the minimum at the other end, which is the same call pointed the other way", () => {
+      expect(
+        claimViolations({
+          values: rates,
+          subject: "Macedonia",
+          comparison: "Germany",
+          neighbours: others("Germany", "Macedonia"),
+          direction: "below",
+        }),
+      ).toEqual([]);
+    });
+
+    it("counts a tie as a violation in both directions", () => {
+      const tied = new Map([...rates, ["Austria", 67.8]]);
+      expect(
+        claimViolations({
+          values: tied,
+          subject: "Germany",
+          comparison: "Macedonia",
+          neighbours: ["Austria"],
+          direction: "above",
+        }),
+      ).toHaveLength(1);
+    });
+  });
 });
 
 describe("fr", () => {
