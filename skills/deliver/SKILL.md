@@ -456,7 +456,11 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
   hand fields 4 and 5, the caveat is `limits`, the alt is in the component, the `language` is the
-  storyboard's own field. `LIVE_TILES` is the four-state vocabulary that says which MapTiler key
+  storyboard's own field. `creditLine` and `isUnattributedCredit` are byte-identical copies of
+  `storyboard`'s own pair (walked by `splash/test/guard-copies-parity.test.ts`): a story whose
+  journalist named no source records `credit: unattributed`, and the hand-over prints
+  `Source: not stated` for it — never the raw token, which would be a maintainer's word reaching a
+  newsroom, and never a blank, which would read as a rendering fault. `LIVE_TILES` is the four-state vocabulary that says which MapTiler key
   the delivered page carries and what it costs — an enum, never a sentence a caller writes — held
   per language, like every other sentence in the document.
 - `scripts/journalist-language.mjs` — `resolveScaffoldLanguage`, `untranslatedNotice` and
