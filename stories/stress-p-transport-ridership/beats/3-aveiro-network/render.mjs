@@ -30,6 +30,36 @@ import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { readCities, fmt, SOURCE_LINE } from "../../ridership.ts";
 import { NetworkLollipop, TYPE } from "./NetworkLollipop.tsx";
 
+/** RFC 4180 rows, tokenised once. Never `.split(",")`: a quoted cell may legally hold a comma or a
+ *  newline, and a hand split cuts it in half without ever saying so. The project walks for that
+ *  pair of shapes (`skills/splash/test/csv-hand-split.test.ts`, catalogue guard `csv-split-by-hand`)
+ *  because the pattern beat shipped it once. Inlined, not imported: a story workspace is not a
+ *  skill, and this file has to stay readable on its own. */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STORY = join(HERE, "..", "..");
 const SUBJECT = "Aveiro";
@@ -49,9 +79,7 @@ async function run() {
   // The refusal this beat exists inside, asserted rather than assumed: if a later freeze ever adds
   // route geometry, this throw is what tells the next session the map is now possible.
   const GEO_COLUMNS = ["lat", "lon", "latitude", "longitude", "geometry", "route", "wkt", "stops"];
-  const header = (await readFile(join(STORY, "source", "data.csv"), "utf8"))
-    .split(/\r?\n/)[0]
-    .split(",")
+  const header = (parseCsvRows((await readFile(join(STORY, "source", "data.csv"), "utf8")).trim())[0] ?? [])
     .map((c) => c.trim().toLowerCase());
   const geo = header.filter((c) => GEO_COLUMNS.includes(c));
   if (geo.length > 0)
