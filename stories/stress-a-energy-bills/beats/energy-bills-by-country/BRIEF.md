@@ -5,6 +5,11 @@ type: bar
 
 # Beat — Denmark's reported energy price dwarfs every other country in this snapshot
 
+**Reading**: raw — `households` sits beside `price_eur` in the frozen table, and this beat draws
+`price_eur` RAW on purpose: a household energy bill is ALREADY a per-household figure, so
+dividing it again would be nonsense. The column beside it is a count of households, not a
+denominator this measure is missing.
+
 **Type:** bar. **Medium/format:** chart / static. **Size:** landscape (1920 x 1080).
 
 ## The takeaway (decision, not a default)

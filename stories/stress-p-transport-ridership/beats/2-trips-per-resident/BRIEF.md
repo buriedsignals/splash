@@ -4,6 +4,9 @@ type: slope
 
 # Beat 2 — Per resident, Porto carries the most trips, not Lisboa
 
+**Reading**: per population — the same six networks ranked twice, and the second ranking is the
+rate. `tripsPerResident` in `ridership.ts` computes it in exactly one place for the whole story.
+
 **Type:** slope (slopegraph, on a rank axis). **Medium/format:** chart / web.
 **Channel:** article web, one self-contained `renders/trips-per-resident.html`.
 Slot 2 of `STORYBOARD.md`. **No size front matter, deliberately:** a web beat is asked nothing at

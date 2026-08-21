@@ -5,6 +5,10 @@ type: lollipop
 
 # Beat 3 — Aveiro's line is 12 km, the second shortest of the six
 
+**Reading**: raw — `population` sits beside `network_km` in the frozen table, but a network
+LENGTH is not a count of anything against a population: kilometres per resident would be a
+number nobody claimed. This beat draws `network_km` raw.
+
 **Type:** lollipop (ranking, horizontal rows). **Medium/format:** chart / static.
 **Channel:** article web — **size: landscape (1920 x 1080)**. Slot 3 of `STORYBOARD.md`.
 

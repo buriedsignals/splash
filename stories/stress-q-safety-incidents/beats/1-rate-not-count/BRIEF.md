@@ -1,5 +1,9 @@
 # Beat 1 -- rate, not raw count
 
+**Reading**: per residents — `residents` sits beside `incidents` in the frozen table, and the two
+readings disagree at the top (Centro leads on the raw count, Sul per resident). This beat draws
+the rate, which is the whole reason it exists.
+
 **Proves**: that the incident rate per resident, not the raw count, decides which district has the
 worst safety record.
 

@@ -5,6 +5,11 @@ type: slope
 
 # Beat -- Attica's decline in school count is far smaller than the rest, 2020-2026
 
+**Reading**: raw — `μαθητές_2026` (pupils) sits beside the school counts in the frozen table.
+This beat draws the raw school counts for 2020 and 2026: the finding is the SIZE OF THE DECLINE
+in schools, and pupils are only recorded for one of the two moments, so a schools-per-pupil
+reading could not be drawn for both ends of the slope even if it were the claim.
+
 **Type:** Slope (slopegraph). **Medium/format:** chart / static. **Size:** landscape (1920x1080).
 
 ## Evidence hierarchy

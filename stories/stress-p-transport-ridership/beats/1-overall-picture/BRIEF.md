@@ -5,6 +5,10 @@ type: column
 
 # Beat 1 — Lisboa carries more trips than the other five networks put together
 
+**Reading**: raw — `population` sits beside `trips_millions` in the frozen table and the ranking
+inverts at the top when it is used. This beat draws the RAW trip counts, which is what the
+article claims; the rate that reverses the ranking is beat 2's job and is stated there.
+
 **Type:** bar and column (ranking, vertical columns). **Medium/format:** chart / static.
 **Channel:** article web — **size: landscape (1920 x 1080)**. Slot 1 of `STORYBOARD.md`.
 
