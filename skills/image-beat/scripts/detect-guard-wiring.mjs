@@ -122,15 +122,43 @@ export function declaredDecisions(skillDir) {
           .filter((other) => other !== name && bodyOf(calling.get(found), other).includes(name))
       : [];
     const reaches = new RegExp(`\\b(${[name, ...proxies].join("|")})\\b`);
-    return {
-      name,
-      home: found ? shown.get(found) : null,
-      proxies,
-      callers: files
-        .filter((path) => path !== found && reaches.test(calling.get(path)))
-        .map((path) => shown.get(path)),
-    };
+    const callers = files
+      .filter((path) => path !== found && reaches.test(calling.get(path)))
+      .map((path) => shown.get(path));
+    // A FILE THAT IS ITSELF A COMMAND is the one case where a caller inside the home file counts,
+    // and leaving it out made this decision lie about the biggest population in the tree.
+    // `scrolly/scripts/verify-scrolly.mjs` DECLARES thirteen decisions and DRIVES them: it carries
+    // an `import.meta.main` block, a journalist runs it against a delivered page, and eight of the
+    // thirteen are asked on every run. Read as "called only from its own file", all thirteen would
+    // have been recorded as unwired debt — a rule reporting a guard that runs as a guard that does
+    // not is the same failure it exists to refuse, pointing the other way.
+    //
+    // So: when the home file can be RUN, a mention anywhere in it outside the decision's own body
+    // counts. `bun <that file>` reaches it. The five of thirteen that the run never asks stay
+    // unwired here, which is exactly the number round six measured by hand. What this still cannot
+    // see is whether the command asks the decision on every run or only down a branch — it reads
+    // one edge, and says so.
+    const runnable = found ? /\bimport\.meta\.main\b/.test(calling.get(found)) : false;
+    // The decision's OWN declaration — signature included, not only its body. Taking the body alone
+    // left `export function csvSplitByHand(` behind, so every unwired decision in a runnable file
+    // read as reached by a mention of itself. Measured on `verify-scrolly.mjs`: all thirteen came
+    // back wired, where five of them have no call site anywhere in the file.
+    const elsewhereInHome = found
+      ? calling.get(found).split(declarationOf(calling.get(found), name)).join(" ")
+      : "";
+    if (runnable && new RegExp(`\\b${name}\\b`).test(elsewhereInHome))
+      callers.push(`${shown.get(found)} (its own command)`);
+    return { name, home: found ? shown.get(found) : null, proxies, callers };
   });
+}
+
+/** One top-level function's whole declaration — `export function NAME(…) { … }`, signature and all.
+ *  What a mention of the name OUTSIDE this span is: somebody reaching for the decision. */
+function declarationOf(source, name) {
+  const at = new RegExp(`export (?:async )?function ${name}\\s*\\(`).exec(source);
+  const body = bodyOf(source, name);
+  if (!at || body === "") return `export function ${name}(`;
+  return source.slice(at.index, source.indexOf(body, at.index) + body.length);
 }
 
 /** One top-level function's body, by BALANCING THE ARGUMENT PARENTHESES FIRST and then the braces.
@@ -217,8 +245,6 @@ export const RECORDED_UNWIRED = [
   "denominatorReadingStated",
   "doubleHyphenInDeliveredText",
   "mislabelledRows",
-  "photosDeclareAltAndCredit",
   "rtlRunsAreIsolated",
   "storyboardGateStatus",
-  "weightAgainstCeiling",
 ];

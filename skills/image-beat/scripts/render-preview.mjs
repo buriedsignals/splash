@@ -30,6 +30,8 @@ import {
   frameFillFraction,
   graphicFillsItsFrame,
 } from "./detect-fills-its-frame.mjs";
+import { photosDeclareAltAndCredit } from "./detect-every-photo-says-what-it-shows.mjs";
+import { CEILING_BYTES, weightAgainstCeiling } from "./detect-weight-has-a-ceiling.mjs";
 
 const HERE = import.meta.dirname;
 const SAMPLE_DIR = join(HERE, "..", "assets", "sample-data");
@@ -96,6 +98,28 @@ if (duplicated.length) {
   );
 }
 
+// ROUND SIX: this format's two OWN guards — the one that says a photograph must say what it shows
+// and who took it, and the one that puts a ceiling on what a reader downloads — were declared,
+// unit-tested against synthetic markup, and called by nothing that draws. A photograph beat's whole
+// discipline is "required alt and credit, and a weight ceiling", and neither was ever asked of a
+// render. They are asked here, of the SVG this run just laid out, before anything is rasterised.
+const said = photosDeclareAltAndCredit(svg);
+if (said.photos === 0)
+  throw new Error(
+    "the seed drew no `<g role=\"img\">` at all — a photograph beat with no photograph in it would " +
+      "pass every alt-and-credit check vacuously, which is how this guard would stop meaning anything",
+  );
+if (said.missingAlt || said.missingCredit)
+  throw new Error(
+    `${said.missingAlt} of ${said.photos} photograph(s) say nothing about what they show, and ` +
+      `${said.missingCredit} name no source` +
+      (said.creditRecordedAbsent
+        ? ` (${said.creditRecordedAbsent} of those record an ABSENT source, which is an answer and not a credit)`
+        : "") +
+      ". A photograph a reader cannot hear described, or trace to whoever took it, is not deliverable " +
+      "— references/image-discipline.md.",
+  );
+
 const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
   .render()
   .asPng();
@@ -108,6 +132,14 @@ const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
 // A photograph beat's floor is the second highest of the eight (66.40%) because a letterboxed
 // picture fills nearly all of its frame by construction: the box is the picture, and a reading far
 // under this one means the frame was sized for something the beat is not drawing.
+const heavy = weightAgainstCeiling(Buffer.byteLength(svg, "utf8"), CEILING_BYTES);
+if (heavy.over)
+  throw new Error(
+    `the delivered file is ${heavy.bytes} bytes against this format's ${heavy.ceiling}-byte ceiling ` +
+      `— a photograph inlined at a weight a reader on a phone pays for. Re-encode the photograph, ` +
+      `do not raise the ceiling: scripts/detect-weight-has-a-ceiling.mjs names what it was measured from.`,
+  );
+
 const filled = graphicFillsItsFrame(frameFillFraction(png).fraction, FLOOR_FRACTION);
 if (filled.under)
   throw new Error(

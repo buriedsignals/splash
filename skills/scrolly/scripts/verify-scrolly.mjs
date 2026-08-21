@@ -114,10 +114,11 @@
 // Usage: bun skills/scrolly/scripts/verify-scrolly.mjs <file.html> [more.html...] [--width=W]
 
 import puppeteer from "puppeteer-core";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { decodePng } from "./compare-png.mjs";
 // `FLOOR_FRACTION` is ALIASED because this file already exports one of its own, and the two are
 // genuinely different measurements that would otherwise share a name: `compositionFillsTheFrame`'s
 // floor (below) is INK COVERAGE of the drawing inside the frame, measured at 2.2% on this format's
@@ -1165,6 +1166,105 @@ export async function verifyOne(page, file, { w, h }) {
   return { where, failures, notes, frames: rec.length, arrival: [...arrival.entries()] };
 }
 
+
+/** THE FOUR QUESTIONS THIS FILE COULD ALREADY ANSWER OFF DISK AND NEVER ASKED.
+ *
+ *  ROUND SIX measured it: of the thirteen decisions `verify-scrolly.mjs` declares, its own driving
+ *  run calls eight. `plateMatchesGeometry`, `csvSplitByHand`, `pageLanguageMatchesStory` and
+ *  `credentialReadsWithoutAlias` had no call site anywhere in the file — declared, unit-tested
+ *  against synthetic input, and never asked of a page a journalist had actually produced. Not one of
+ *  them needs a browser, which is why they were easy to leave out and why leaving them out cost
+ *  nothing visible: a beat could ship a letterboxed plate, hand-cut csv rows, a page declaring the
+ *  wrong language, and every check in this file would still print green.
+ *
+ *  It reads the BEAT the delivered page sits in — its plate directories, its own sources, its
+ *  story's `STORYBOARD.md` — because that is where the substrate for all four lives. A page with no
+ *  story above it (every worked example under `proof/`) is NOTED, never failed: the same reasoning
+ *  `groundForBeat` states one file over, a value that was not read must not travel as a value that
+ *  was.
+ *
+ *  `compositionFillsTheFrame`, the fifth uncalled one, is NOT here: it needs a screenshot decoded
+ *  per step, which this pass does not take, and `test/composition-fills-frame.test.ts` walks it over
+ *  a population derived from every committed runner — twelve delivered scrollys as of this round,
+ *  up from a hard-coded four. It stays named in `detect-guard-wiring.mjs`'s `RECORDED_UNWIRED`. */
+export function verifyBeatFiles(file) {
+  const failures = [];
+  const notes = [];
+  const beatDir = dirname(dirname(resolve(file)));
+  const where = file.split("/").slice(-2).join("/");
+  if (!existsSync(beatDir)) return { failures, notes };
+
+  for (const name of readdirSync(beatDir)) {
+    const plateDir = join(beatDir, name);
+    if (!/^plate/.test(name) || !statSync(plateDir).isDirectory()) continue;
+    if (!existsSync(join(plateDir, "geometry.json")) || !existsSync(join(plateDir, "plate.png"))) continue;
+    const geometry = JSON.parse(readFileSync(join(plateDir, "geometry.json"), "utf8"));
+    const image = decodePng(readFileSync(join(plateDir, "plate.png")));
+    const fit = plateMatchesGeometry({ plate: image, frame: geometry.frame });
+    if (!fit.ok)
+      failures.push(
+        `${where}: the plate in ${name}/ has a ${fit.plateRatio.toFixed(4)} aspect and its frame a ` +
+          `${fit.frameRatio.toFixed(4)} one, ${(fit.drift * 100).toFixed(2)}% apart — the basemap is ` +
+          `letterboxed inside the box it is drawn in and every projected mark lands somewhere it ` +
+          `never claimed`,
+      );
+    else notes.push(`${where}: ${name}/ plate ${image.width}x${image.height} matches its frame at ${fit.scale}x`);
+  }
+
+  for (const name of readdirSync(beatDir)) {
+    const path = join(beatDir, name);
+    if (statSync(path).isDirectory() || !/\.(mjs|ts|tsx)$/.test(name)) continue;
+    const cut = csvSplitByHand(readFileSync(path, "utf8"));
+    if (cut.length)
+      failures.push(
+        `${where}: ${name} cuts its own csv rows on a bare comma — ${cut.join(", ")}. A quoted ` +
+          `thousands separator or a place name carrying its own comma tears in two, silently, and ` +
+          `every column after it is one off`,
+      );
+  }
+
+  let storyDir = beatDir;
+  let recorded = null;
+  for (;;) {
+    const board = join(storyDir, "STORYBOARD.md");
+    if (existsSync(board)) {
+      recorded = /^language:\s*"?([A-Za-z][A-Za-z0-9-]*)"?\s*$/m.exec(readFileSync(board, "utf8"))?.[1] ?? null;
+      break;
+    }
+    const parent = dirname(storyDir);
+    if (parent === storyDir) break;
+    storyDir = parent;
+  }
+  if (recorded === null)
+    notes.push(`${where}: no STORYBOARD.md above this beat records a language, so the delivered page's own lang was not checked against one`);
+  else if (!pageLanguageMatchesStory(readFileSync(resolve(file), "utf8"), recorded))
+    failures.push(
+      `${where}: the delivered page's own <html lang> does not match the language this story ` +
+        `recorded (${recorded}). A page that announces the wrong language is read aloud in it`,
+    );
+  else notes.push(`${where}: <html lang> matches the story's recorded ${recorded}`);
+
+  return { failures, notes };
+}
+
+/** The credential question, which is about THIS SKILL and not about any one beat: a canonical name
+ *  read with no alias list declared beside it is the gap that made a real, present token under the
+ *  root's own name read back as "not set".
+ *
+ *  COMMENTS ARE STRIPPED FIRST. Measured on `map-beat`'s equivalent scan, which reported that skill
+ *  as reading a Datawrapper token it has never touched — the match was `process.env.DATAWRAPPER_TOKEN`
+ *  inside `credentialReadsWithoutAlias`'s OWN doc comment. A credential named in prose is not a
+ *  credential read. */
+export function credentialsWithoutAliases(scriptsDir) {
+  const source = readdirSync(scriptsDir)
+    .filter((name) => name.endsWith(".mjs"))
+    .map((name) => readFileSync(join(scriptsDir, name), "utf8"))
+    .join("\n")
+    .replace(/^[ \t]*\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+  return credentialReadsWithoutAlias(source);
+}
+
 /** Reduced motion is an instant cut, and JavaScript off still shows one frame and every word. */
 export async function verifyStates(browser, file) {
   const out = { failures: [], notes: [] };
@@ -1637,6 +1737,12 @@ export async function verifyAll(files, widths = WIDTHS) {
       const s = await verifyStates(browser, file);
       failures.push(...s.failures);
       notes.push(...s.notes);
+      // The four questions answerable off disk, asked once per FILE rather than once per width —
+      // a plate's aspect, a hand-cut csv row and a page's declared language do not change with the
+      // reader's window.
+      const b = verifyBeatFiles(file);
+      failures.push(...b.failures);
+      notes.push(...b.notes);
     }
     await page.close();
   } finally {
@@ -1655,6 +1761,12 @@ if (import.meta.main) {
     argv.filter((a) => !a.startsWith("--")),
     widths,
   );
+  const bare = credentialsWithoutAliases(import.meta.dirname);
+  if (bare.length)
+    failures.push(
+      `this skill's own scripts read ${bare.join(", ")} with no <NAME>_ALIASES list declared ` +
+        `anywhere in them — a real, present token under another name reads back as "not set"`,
+    );
   for (const n of notes) console.log(`note   ${n}`);
   for (const f of failures) console.log(`FAIL   ${f}`);
   console.log(`${failures.length} failures, ${notes.length} notes`);
