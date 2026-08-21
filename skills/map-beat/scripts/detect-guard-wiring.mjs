@@ -212,19 +212,13 @@ export function declarationsWithoutACaller(skillDir) {
  *  format has actually paid off. A name may be REMOVED from this list, never added — adding one is
  *  how the defect that earned this rule would recur. */
 export const RECORDED_UNWIRED = [
-  "credentialReadsWithoutAlias",
   "creditTracesToRecord",
-  "csvSplitByHand",
   "deadExampleRunners",
   "denominatorReadingStated",
   "doubleHyphenInDeliveredText",
-  "duplicatedPayload",
   "labelPlacementIssues",
   "mislabelledRows",
   "neverArrives",
-  "plateFollowsGround",
-  "plateMatchesGeometry",
-  "revealDashInScreenSpace",
   "rtlRunsAreIsolated",
   "storyboardGateStatus",
   "unmatchedValues",

@@ -30,6 +30,8 @@
 // it fades in is still fading when the reader's video stops. Copied from `chart-video`, not
 // reached by import — a skill never crosses another skill's boundary at runtime.
 
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { decodePng } from "./compare-png.mjs";
 // Within-skill only — not a cross-skill import, the same rule that lets `extent-range.mjs` reach
 // `../assets/geo.ts` already. `unmatchedValues` is the actual decision; declaring it here rather
@@ -105,48 +107,6 @@ export function duplicatedPayload(html) {
       wastedBytes: (b.copies - 1) * b.bytes,
     }))
     .sort((a, b) => b.wastedBytes - a.wastedBytes);
-}
-
-/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
- *
- *  THE `null` IS THE POINT. This guard failed three correct beats by reading
- *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
- *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
- *  it has been missed. Returning a number there is how a broken instrument reports confidently.
- *
- *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
- *  reading available without compositing the whole stack. */
-export function surfaceLuminance(css) {
-  if (typeof css !== "string") return null;
-  const value = css.trim();
-  if (!value || value === "transparent" || value === "none") return null;
-  let channels = null;
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
-  if (hex) {
-    const digits =
-      hex[1].length === 3
-        ? hex[1]
-            .split("")
-            .map((d) => d + d)
-            .join("")
-        : hex[1];
-    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
-  } else if (/^rgba?\(/i.test(value)) {
-    const parts = value.match(/[\d.]+/g);
-    if (!parts || parts.length < 3) return null;
-    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
-    channels = parts.slice(0, 3).map(Number);
-  }
-  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
-  const channel = (v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return (
-    0.2126 * channel(channels[0]) +
-    0.7152 * channel(channels[1]) +
-    0.0722 * channel(channels[2])
-  );
 }
 
 /** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
@@ -459,4 +419,166 @@ export function csvSplitByHand(source) {
     /\.split\(\s*(\/\\r\?\\n\/|["'`]\\r\\n["'`]|["'`]\\n["'`])\s*\)/.test(source);
   if (!rowSplitByHand) return [];
   return [...source.matchAll(/\.split\(\s*(["'`]),\1\s*\)/g)].map((m) => m[0]);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// THE COMMAND. Round six, and the finding is one sentence: "not one guard in `verify-map.mjs` is
+// reachable from a command."
+//
+// Every decision above was declared, unit-tested against synthetic input, and called by nothing —
+// no render script, no driver, no CLI. This format bakes a plate beside a geometry file and draws
+// its marks into that frame, so most of what this file decides is answerable from files on disk
+// with no browser and no rasteriser; there was simply never an entry point that opened them.
+//
+// THE POPULATION IS DERIVED, NEVER LISTED. A map beat is a directory holding a baked plate — the
+// `plate*/plate.png` + `plate*/geometry.json` pair `bake-plate.mjs` writes — so the beats are found
+// by looking for that pair under `proof/` and `stories/`. A beat baked tomorrow is checked with
+// nobody remembering to add it, which is the property `reveal-fills-the-frame`'s own hard-coded
+// list of four did not have.
+//
+// WHAT IT STILL DOES NOT REACH, named rather than left to be discovered again: `unmatchedValues`
+// and `labelPlacementIssues` need a study set and a laid-out label stack, which only the beat that
+// drew them holds; `neverArrives` needs each composition's own `total` frame count. All three stay
+// in `detect-guard-wiring.mjs`'s `RECORDED_UNWIRED` for this skill, by name, until a beat hands
+// them their substrate.
+//
+// Usage:
+//   bun skills/map-beat/scripts/verify-map.mjs             # every baked map beat in the tree
+//   bun skills/map-beat/scripts/verify-map.mjs <beatDir>   # one beat
+//
+// Exit code is 0 only when every check passed.
+
+/** A beat's own directory, found by the pair a bake writes — never a list. */
+export function bakedBeatsUnder(root) {
+  const found = new Set();
+  const walk = (dir, depth) => {
+    if (!existsSync(dir) || depth > 5) return;
+    for (const name of readdirSync(dir)) {
+      if (name.startsWith(".") || name === "node_modules") continue;
+      const path = join(dir, name);
+      if (!statSync(path).isDirectory()) continue;
+      if (/^plate/.test(name) && existsSync(join(path, "geometry.json")) && existsSync(join(path, "plate.png")))
+        found.add(dir);
+      else walk(path, depth + 1);
+    }
+  };
+  for (const area of ["proof", "stories"]) walk(join(root, area), 0);
+  return [...found].sort();
+}
+
+/** Every plate directory a beat holds — its own `geometry.json` and `plate.png` beside it. A beat baked at two sizes
+ *  has two, and both are checked: a plate that letterboxes at one size and not the other is exactly
+ *  the shape this format's own aspect guard exists for. */
+function platesOf(beatDir) {
+  return readdirSync(beatDir)
+    .filter((name) => /^plate/.test(name) && statSync(join(beatDir, name)).isDirectory())
+    .filter((name) => existsSync(join(beatDir, name, "geometry.json")) && existsSync(join(beatDir, name, "plate.png")))
+    .map((name) => join(beatDir, name))
+    .sort();
+}
+
+/** The ground a beat's own story declared, walking up for `PALETTE.md` — `null` when there is none,
+ *  never a default, the same reasoning `groundFromPalette` states. */
+function groundForBeat(beatDir, stopAt) {
+  let current = resolve(beatDir);
+  for (;;) {
+    const candidate = join(current, "PALETTE.md");
+    if (existsSync(candidate)) return groundFromPalette(readFileSync(candidate, "utf8"));
+    if (current === stopAt) return null;
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+/** Every file under a beat, one level of subdirectory deep, for the source and artefact scans. */
+function filesOf(beatDir) {
+  const out = [];
+  for (const name of readdirSync(beatDir)) {
+    if (name.startsWith(".") || name === "node_modules") continue;
+    const path = join(beatDir, name);
+    if (statSync(path).isDirectory()) {
+      if (/^(plate|source|export|node_modules)/.test(name)) continue;
+      for (const inner of readdirSync(path))
+        if (!statSync(join(path, inner)).isDirectory()) out.push(join(path, inner));
+    } else out.push(path);
+  }
+  return out.sort();
+}
+
+/** One beat, every decision this file carries that its substrate can answer. */
+export function verifyBeat(beatDir, root) {
+  const failures = [];
+  const readings = [];
+  const shown = beatDir.replace(`${root}/`, "");
+  const ground = groundForBeat(beatDir, root);
+
+  for (const plateDir of platesOf(beatDir)) {
+    const geometry = JSON.parse(readFileSync(join(plateDir, "geometry.json"), "utf8"));
+    const image = decodePng(readFileSync(join(plateDir, "plate.png")));
+    const fit = plateMatchesGeometry({ plate: image, frame: geometry.frame });
+    const label = `${shown}/${basename(plateDir)}`;
+    if (!fit.ok)
+      failures.push(
+        `${label}: the plate's ${fit.plateRatio.toFixed(4)} aspect and its frame's ` +
+          `${fit.frameRatio.toFixed(4)} differ by ${(fit.drift * 100).toFixed(2)}% — the basemap is ` +
+          `letterboxed and every projected mark lands where it never claimed`,
+      );
+    else readings.push(`${label}: plate ${image.width}x${image.height} matches its frame at ${fit.scale}x`);
+    if (ground !== null) {
+      const one = surfaceLuminance(ground);
+      const two = plateLuminance(image);
+      if (!plateFollowsGround({ ground: one, plate: two }))
+        failures.push(
+          `${label}: the plate (luminance ${two.toFixed(3)}) is on the opposite side from the ground ` +
+            `this beat declared (${ground}, ${one.toFixed(3)}) — correct furniture over the wrong ground`,
+        );
+      else readings.push(`${label}: plate luminance ${two.toFixed(3)} agrees with ground ${ground}`);
+    } else readings.push(`${label}: no PALETTE.md above this beat, so no ground to compare with`);
+  }
+
+  for (const file of filesOf(beatDir)) {
+    const where = file.replace(`${root}/`, "");
+    if (/\.(tsx|jsx)$/.test(file)) {
+      const source = readFileSync(file, "utf8");
+      const marks = marksFromSource(source, where);
+      const offenders = revealDashInScreenSpace(marks);
+      if (offenders.length) failures.push(`${where}: a dash that MEASURES is computed in screen space — ${offenders.join(", ")}`);
+      else if (marks.length) readings.push(`${where}: ${marks.length} dashed mark(s), all in their own path's units`);
+    }
+    if (/\.(mjs|ts|tsx)$/.test(file)) {
+      const cut = csvSplitByHand(readFileSync(file, "utf8"));
+      if (cut.length) failures.push(`${where}: cuts its own csv rows on a bare comma — ${cut.join(", ")}`);
+    }
+    if (/\.(html|svg)$/.test(file)) {
+      const doubled = duplicatedPayload(readFileSync(file, "utf8"));
+      if (doubled.length)
+        failures.push(
+          `${where}: ${doubled.map((d) => `${d.copies} copies of one ${d.bytes}-byte asset`).join("; ")} — embed it once and reference it`,
+        );
+    }
+  }
+  return { failures, readings };
+}
+
+/** The credential question, which is about THIS SKILL and not about a beat: `bake-plate.mjs` is
+ *  what reads `MAPTILER_KEY`, and a canonical name read with no alias list declared beside it is
+ *  the gap that made a real, present token under the root's own name read back as "not set".
+ *
+ *  COMMENTS ARE STRIPPED FIRST, and the first run of the command that calls this is why:
+ *  `credentialNamesRead` matched `process.env.DATAWRAPPER_TOKEN` inside
+ *  `credentialReadsWithoutAlias`'s OWN doc comment, three lines above the function, and reported
+ *  this skill as reading a Datawrapper token it has never touched. A credential named in prose is
+ *  not a credential read. Whole-line `//` and block comments only — `render-still-parity.test.ts`
+ *  argues that same normalisation, and a trailing `//` cannot be cut safely out of a file this full
+ *  of regex literals. */
+export function credentialsWithoutAliases(scriptsDir) {
+  const source = readdirSync(scriptsDir)
+    .filter((name) => name.endsWith(".mjs"))
+    .map((name) => readFileSync(join(scriptsDir, name), "utf8"))
+    .join("\n")
+    .replace(/^[ \t]*\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+  return credentialReadsWithoutAlias(source);
 }
