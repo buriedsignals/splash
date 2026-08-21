@@ -217,7 +217,33 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    AT ALL, so the one thing that beat asserts was never put to the frozen table and nothing said so.
    Gaining languages can never be finished, so the half that CAN be: a takeaway written in a script
    none of the four uses is reported in `coverage.unreadable`, by name, and `resolveGrounding` says
-   it out loud. **A silent miss is the defect; a stated one is not.** The ENTITY a claim is about is
+   it out loud. **A silent miss is the defect; a stated one is not.**
+
+   **AND A LANGUAGE IT CANNOT READ MAY NOT RAISE THE VERDICT** (round six, findings C1 and AD1).
+   The script net above is one level too coarse to catch what it was built for. Polish is written
+   in the Latin script, so `scriptsNotRead` returns `[]` for `ludność`, `coverage.unreadable` comes
+   back EMPTY, and the checker reports a confident *"I read this sentence and there was nothing to
+   check"* — measured on `stress-ad-polish-hospital-beds`, whose takeaway carries the superlative
+   `najwięcej`. Worse, one level down: the controller ran ONE table and ONE sentence with only the
+   denominator column's name changing language, and got `population` → `unverifiable` (round four's
+   raw-count downgrade) against `ludność` → **`supported`**, the one word that closes G1. The gap
+   did not withhold a prompt; it raised the verdict past the one an unreadable claim gets.
+
+   No fifth language was added. **The check knows its own coverage instead, one level finer than
+   script**: the four declared languages are written with a repertoire that can be written down —
+   ASCII, French's own diacritics, Greek, Arabic — and `lettersNotRead` names a letter outside it
+   (`ń`, `ř`, `ğ`, `ơ`, `ñ`, `ß`), which says "this is a fifth language" without being taught one.
+   It reports in `coverage.unreadableLetters`, `resolveGrounding` says it out loud, `isShareColumn`'s
+   refusal names the letters as well as the script, and a numeric column whose NAME the denominator
+   lexicon could not read withholds `supported` exactly as a denominator it CAN name does. **A check
+   that cannot classify a numeric column may not come back more confident than one that can.**
+
+   **The limit that remains is stated where a journalist reads it, not where a maintainer would.**
+   An undeclared language that spells itself in plain ASCII — Dutch `bevolking`, Italian
+   `popolazione`, Indonesian `penduduk` — passes both nets, and no character test will ever see it.
+   So a raw-count superlative that comes back `supported` with other measure columns beside it
+   carries, in its own detail, the sentence that no column NAMES a denominator, that the answer was
+   given in those four languages and no others, and which sibling columns were read to give it. The ENTITY a claim is about is
    read the same way twice over — a capitalised phrase where there is case, and a row key of the
    frozen table itself where there is none, because Arabic, Hebrew and CJK have no capitals and a
    refusal about the script must never read as a refusal about the claim.
@@ -241,6 +267,10 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    `intake`'s profiler reads it) sits in the same table, and every verdict gains a detail naming
    **both rankings** — who leads by the raw column, who leads per denominator, each with its own
    figure. A `contradicted` claim stays contradicted: the data really did refute the raw reading.
+   Round six adds the two answers that arise when the lexicon is out of its depth rather than out
+   of candidates: a numeric column whose own NAME it could not read withholds `supported` for the
+   same reason a named denominator does — it is not in a position to say no — and where every
+   sibling name WAS read, the negative stands with its reach stated in the detail.
 
    **It never divides into a verdict.** The quotient appears only as a number in a sentence the
    journalist reads, as a bare ratio (`205 / 88000 = 0.00233`) rather than "per 100,000", because
@@ -353,6 +383,7 @@ if (errors.length > 0) {
 | How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative) or half a unit of the numeral's **own last written digit** ("34" → 0.5, "0.61" → 0.005), whichever is wider — and never more than the smaller of the two numbers being compared | `scripts/ground-claim.mjs` |
 | Which languages a numeral's stated multiplier is read in | `4` — English, French, Greek, Arabic (`MULTIPLIER_WORDS`); outside them the scale word is not read and the numeral is checked as written | `scripts/ground-claim.mjs` |
 | Which languages EVERY name-based lexicon in the grounding check is read in | `4` — English, French, Greek, Arabic (`LEXICON_LANGUAGES`); a script outside them is NAMED in `coverage.unreadable` rather than answered in silence | `scripts/ground-claim.mjs` |
+| What a LETTER outside those four's own repertoire does | NAMED in `coverage.unreadableLetters` (`lettersNotRead`), and a numeric column whose name carries one WITHHOLDS `supported` from a raw-count superlative — an undeclared language may not raise the verdict | `scripts/ground-claim.mjs` |
 | Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |
 
 ## Files

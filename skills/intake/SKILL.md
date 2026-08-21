@@ -24,14 +24,14 @@ Turns the article and CSV a journalist brought into a **frozen, immutable record
 | Layer | File | Role |
 | --- | --- | --- |
 | Reader | `scripts/csv.mjs` | `parseCsv(text)` — a real RFC 4180 reader: quoted fields, embedded commas/newlines, doubled quotes, CRLF **and** lone-CR line endings |
-| Profiler | `scripts/profile.mjs` | `profileTable(rows)` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `percentAboveHundred` |
+| Profiler | `scripts/profile.mjs` | `profileTable(rows)` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `denominatorUnread`, `percentAboveHundred` |
 | Orchestrator | `scripts/freeze.mjs` | `freezeSource({storyDir, articlePath, dataPath})` — reads both source files once, profiles the data, writes the three frozen artifacts, refuses a second call |
 
 ## How it works (the shape)
 
 1. **Parse** the CSV with a real state machine (quoted/unquoted, not a `.split(",")`) — `parseCsv` in `csv.mjs`.
 2. **Profile** the parsed rows: each column gets a strict-numeric-literal type check, a missing count (blank cells counted, never dropped), a distinct count, and — for numeric columns only — a `min`, a `max` and a `sum`, in `profileTable` in `profile.mjs`. The `sum` is there for one named downstream reader: `storyboard`'s grounding check, which cannot otherwise place a part-to-whole total, because a total is by construction outside the range of the column it sums.
-2b. **Report what only the journalist can settle.** A column carries `reason` when it looked numeric and was refused, `gaps` when a sequence's own grain skips a step, `mixedUnits` when a sibling `unit` column says the range is not one measure, `denominator` when a population-shaped column sits in the same table, and `percentAboveHundred` when a column whose own values carry `%` holds a share above 100 — see below. None of the five repairs anything.
+2b. **Report what only the journalist can settle.** A column carries `reason` when it looked numeric and was refused, `gaps` when a sequence's own grain skips a step, `mixedUnits` when a sibling `unit` column says the range is not one measure, `denominator` when a population-shaped column sits in the same table, `denominatorUnread` when a sibling numeric column is NAMED IN A LANGUAGE THIS PROFILER DOES NOT READ, and `percentAboveHundred` when a column whose own values carry `%` holds a share above 100 — see below. None of the six repairs anything.
 3. **Freeze**: `freezeSource` checks `source/article.md` doesn't already exist (refuses with `"already frozen"` if it does), then reads the article and CSV, runs the profiler, and writes all three files into `source/`. A read failure (missing file, permission denied, no `source/` directory to write into) surfaces its real error — it is never mislabelled as "already frozen" and never swallowed.
 
 ## A count is not a rate, and this profiler never divides
@@ -61,6 +61,36 @@ A candidate is found by a column's own NAME (`DENOMINATOR_NAME_TOKENS`), never b
 shapes — the same identity test `UNIT_COLUMN_NAME_RE` and `isSequenceColumn` already use, and for
 the same reason: "the bigger number is the denominator" would name `network_km` against
 `trips_millions`. Where several candidates sit in one table, every one of them is named.
+
+### A denominator this profiler cannot NAME is reported too
+
+Round six, finding C2. That token list reads four languages, and until this round a NO from it was
+reported as nothing at all — the same empty answer a table with no denominator in it gets.
+`stress-ad-polish-hospital-beds` carries `ludność` (population) one column from `łóżka_szpitalne`;
+the article's own second paragraph raises the per-capita reading, and this profile said nothing.
+
+Adding Polish would close that table and leave the next one exactly as silent, so what is closed is
+the SHAPE: **a lexicon's negative is reported with its own reach when the names it rejected were
+names it could not read.** The four declared languages (`LEXICON_LANGUAGES`, copied byte for byte
+from `storyboard/scripts/ground-claim.mjs` along with both coverage nets) are written with a known
+repertoire of scripts and letters, so a column name using anything outside it — Polish `ś`, Czech
+`ř`, Turkish `ğ` — is a name this profiler cannot read:
+
+```js
+{ name: "łóżka_szpitalne", type: "number", min: 7900, max: 21400, sum: 100800,
+  denominatorUnread: { reads: "English, French, Greek and Arabic",
+                       columns: ["ludność"], charactersNotRead: ["ś", "ć"] } }
+```
+
+It is a second field, not a wider `denominator`, and the distinction is the same one this whole
+section is about: `denominator` names a column this profiler READ and recognised, `denominatorUnread`
+names one it could not read at all. A reader that cannot tell them apart has been handed a guess.
+Identity, never shape, is unchanged — nothing here claims an unread column IS a denominator.
+
+**The limit that remains, said out loud:** an undeclared language spelling itself in plain ASCII —
+Dutch `bevolking`, Italian `popolazione` — passes both nets and no character test will ever see it.
+`storyboard`'s grounding check is where that limit is stated to the journalist, on the verdict it
+would otherwise inflate.
 
 ## A unit is a mark, not a word glued to an identifier
 
