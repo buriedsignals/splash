@@ -74,6 +74,20 @@ const COPIES: Record<string, string[]> = {
     "storyboard/scripts/ground-claim.mjs",
     "intake/scripts/profile.mjs",
   ],
+  // ROUND SIX, findings C1 and C2: the two coverage nets a name-based lexicon owes when it meets a
+  // language it was never taught. `storyboard`'s grounding check and `intake`'s profiler are bound
+  // to the SAME four declared languages and to the same denominator token list, so a gap either of
+  // them can see the other must see identically — a Polish column name that made one withhold
+  // `supported` while the other reported nothing would be the round-four defect re-opened at the
+  // seam between two skills instead of inside one.
+  scriptsNotRead: [
+    "storyboard/scripts/ground-claim.mjs",
+    "intake/scripts/profile.mjs",
+  ],
+  lettersNotRead: [
+    "storyboard/scripts/ground-claim.mjs",
+    "intake/scripts/profile.mjs",
+  ],
   // decided by → the verification scripts that carry it
   plateFollowsGround: [
     "scrolly/scripts/verify-scrolly.mjs",

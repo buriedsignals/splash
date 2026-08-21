@@ -169,6 +169,126 @@ function typeOf(values) {
 // "unité"/"unités" (French) is trusted to make that claim.
 const UNIT_COLUMN_NAME_RE = /^unit(e|é)?s?$/i;
 
+// ────────────────────────────────────────────────────────────────────────────────────────────
+// THE LEXICON DECLARATION, COPIED FROM `storyboard/scripts/ground-claim.mjs` BYTE FOR BYTE.
+//
+// This tree allows no cross-skill runtime import, so a decision that reaches a second skill is
+// written out again where its reader can see it and held identical by
+// `splash/test/guard-copies-parity.test.ts` — the same arrangement `readNumericToken` and the
+// denominator tokens below already have. What follows is that file's own lexicon policy and its
+// two coverage nets; this profiler's denominator detector is bound to the same four languages and
+// so owes the same answer when it meets a fifth.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// WHAT LANGUAGES THIS FILE'S NAME-BASED LEXICONS READ, AND WHAT THEY DO WHEN THEY MEET ANOTHER.
+//
+// ROUND FIVE, finding X1 — the round's structural theme. Every lexicon in this toolchain that
+// decides something by matching WORDS was written against the language its first story happened to
+// be in. `stress-x-tunisian-water`'s takeaway asserts `أكثر من غيرها` — "more than any other" — and
+// the superlative vocabulary below produced NO CLAIM AT ALL for it: the one thing that beat asserts
+// was never checked, and nothing anywhere said so. That is worse than a wrong verdict, because a
+// wrong verdict is arguable and silence reads as a clean bill.
+//
+// ONE POLICY, applied to every name-based lexicon in this toolchain (`palette`'s
+// `SUBJECT_CONVENTIONS`, `intake`'s denominator tokens, `isShareColumn` below, the superlative and
+// comparison vocabularies below, `storyboard`'s `ATTRIBUTION_CUES`):
+//
+//   1. DECLARE the languages. `LEXICON_LANGUAGES` is that declaration, in code, where a reader of
+//      the file meets it before the tables — the shape `MULTIPLIER_WORDS` above already took.
+//   2. CARRY every language this tree has frozen a story in. English, French, Greek, Arabic.
+//   3. When the text handed over is written in a script NONE of those languages uses, do not return
+//      a silent negative. NAME the script that could not be read.
+//
+// The third rule is the one that matters, because the second can never be finished: a lexicon that
+// has been taught four languages still meets a fifth. `scriptsNotRead` is how this file obeys it,
+// and `groundTakeaway`'s `coverage.unreadable` is where the answer surfaces.
+export const LEXICON_LANGUAGES = ["English", "French", "Greek", "Arabic"];
+
+/** The languages, written the way a sentence handed to a journalist says them. */
+export const LEXICON_LANGUAGES_SAID = "English, French, Greek and Arabic";
+
+// The scripts those four languages are written in. A takeaway using only these is a takeaway this
+// file's vocabularies are entitled to answer "no claim here" about.
+const SCRIPTS_READ = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Arabic}]/u;
+
+// THE LETTERS THOSE FOUR LANGUAGES ARE ACTUALLY WRITTEN WITH — the same declaration one level
+// finer than `SCRIPTS_READ`, because that is the level round six's defect lived on. English is
+// ASCII; French adds its own diacritics and nothing else; Greek and Arabic are whole scripts, and
+// no other language in this tree is written in either. Anything else in the Latin script is a
+// letter none of the four uses, which is the only thing a character test can honestly say.
+const LETTERS_READ = /[a-z\u00e0\u00e2\u00e4\u00e6\u00e7\u00e8\u00e9\u00ea\u00eb\u00ee\u00ef\u00f4\u00f6\u0153\u00f9\u00fb\u00fc\u00ff\p{Script=Greek}\p{Script=Arabic}]/iu;
+
+// Named, not enumerated by Unicode block: a reader of a refusal needs the script's NAME, and a
+// bare "some characters were unreadable" is the silence this whole mechanism exists to remove.
+// The list is the writing systems a newsroom in this tree's own reach could plausibly file in;
+// anything outside it lands on the catch-all below, which still names the codepoint.
+const NAMED_SCRIPTS = [
+  ["Cyrillic", /\p{Script=Cyrillic}/u],
+  ["Hebrew", /\p{Script=Hebrew}/u],
+  ["Han", /\p{Script=Han}/u],
+  ["Hiragana", /\p{Script=Hiragana}/u],
+  ["Katakana", /\p{Script=Katakana}/u],
+  ["Hangul", /\p{Script=Hangul}/u],
+  ["Devanagari", /\p{Script=Devanagari}/u],
+  ["Thai", /\p{Script=Thai}/u],
+  ["Armenian", /\p{Script=Armenian}/u],
+  ["Georgian", /\p{Script=Georgian}/u],
+  ["Ethiopic", /\p{Script=Ethiopic}/u],
+];
+
+/**
+ * EVERY SCRIPT IN THIS TEXT THAT NONE OF `LEXICON_LANGUAGES` IS WRITTEN IN.
+ *
+ * Empty is the ordinary answer and means "this file's vocabularies were in a position to read this".
+ * A non-empty answer is what turns "no claim found" from a verdict into a stated limit.
+ */
+export function scriptsNotRead(text) {
+  const value = String(text ?? "");
+  const found = NAMED_SCRIPTS.filter(([, re]) => re.test(value)).map(([name]) => name);
+  if (found.length > 0) return found;
+  // A letter this file can neither read nor name. Reported by its own codepoint rather than
+  // swallowed — the point is never to answer in silence.
+  const stray = [...value].find((ch) => /\p{L}/u.test(ch) && !SCRIPTS_READ.test(ch));
+  return stray ? [`U+${stray.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`] : [];
+}
+
+/**
+ * EVERY LETTER IN THIS TEXT THAT NONE OF `LEXICON_LANGUAGES` IS WRITTEN WITH.
+ *
+ * ROUND SIX, findings C1 and AD1 — `scriptsNotRead` one level finer, and the level the defect
+ * actually lived on. Polish is written in the Latin script, so the script net returns `[]` for
+ * `ludno\u015b\u0107` and every name-based lexicon here then gave a confident negative about a word it had
+ * never been taught. Measured by the controller on one table and one sentence, with only the
+ * denominator column's NAME changing language: `population` came back `unverifiable` (round four's
+ * raw-count downgrade) and `ludno\u015b\u0107` came back `supported`. The missing word did not withhold a
+ * prompt, it RAISED the verdict above the one an unreadable claim gets, which is the sharpest form
+ * a silent lexicon gap can take.
+ *
+ * The four declared languages are written with a repertoire that can be written down, and
+ * `LETTERS_READ` is it. A letter outside that repertoire is a letter none of the four is written
+ * with — Polish `\u0144`, Czech `\u0159`, Turkish `\u011f`, Vietnamese `\u01a1`, Spanish `\u00f1`, German `\u00df` — and naming
+ * it is how a check says "this is a fifth language" without being taught a fifth language. Letters
+ * in a script `scriptsNotRead` already names are left to it, so the two nets report a gap once
+ * between them and never twice.
+ *
+ * THE LIMIT, stated because it is real: an undeclared language written in plain ASCII — Dutch
+ * `bevolking`, Italian `popolazione`, Indonesian `penduduk` — passes both nets, and no character
+ * test can ever see it. So the callers of this function do not pretend otherwise: where a NEGATIVE
+ * answer carries weight they name the four languages the negative was given in, in the detail the
+ * journalist reads, rather than leaving that limit where only a maintainer would find it.
+ */
+export function lettersNotRead(text) {
+  const value = String(text ?? "");
+  const strange = [];
+  for (const character of value) {
+    if (!/\p{L}/u.test(character)) continue;
+    if (!SCRIPTS_READ.test(character)) continue;
+    if (LETTERS_READ.test(character)) continue;
+    if (!strange.includes(character)) strange.push(character);
+  }
+  return strange;
+}
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
 // A DENOMINATOR, read off a column's own NAME (finding 5, stress round four). A count is not a
 // rate: `stress-q-safety-incidents` ranks five districts by `incidents` while `residents` sits in
 // the next column, and the article's headline ("Centro has the worst safety record") is true on the
@@ -261,6 +381,31 @@ function namesADenominator(name) {
   return name
     .split(NAME_TOKEN_SPLIT_RE)
     .some((token) => DENOMINATOR_NAME_TOKENS.has(token.toLowerCase()));
+}
+
+// WHAT THIS PROFILER COULD NOT READ IN A COLUMN'S OWN NAME — the script net and the letter net
+// asked together, so a gap is named once by whichever of the two can see it and never twice.
+function namesNotRead(name) {
+  return [...scriptsNotRead(name), ...lettersNotRead(name)];
+}
+
+// A DENOMINATOR THIS PROFILER CANNOT NAME (round six, finding C2).
+//
+// `namesADenominator` answers by matching name tokens against a list written in four languages,
+// and until this round a NO from that list was reported as nothing at all — the same empty answer
+// a table with no denominator in it gets. `stress-ad-polish-hospital-beds` carries `ludność`
+// (population) one column from `łóżka_szpitalne`; the article's own second paragraph raises the
+// per-capita reading, and this profile said nothing. Adding Polish would close that table and
+// leave the next one exactly as silent, so what is closed here is the SHAPE: a lexicon's negative
+// is reported with its own reach when the names it rejected were names it could not read.
+//
+// It still never claims an unread column IS a denominator — identity, never shape, unchanged, and
+// `denominator` above stays the only field that names one. This names the columns whose language
+// this profiler does not read, so the journalist can put the question this profiler could not.
+function unreadSiblingsOf(column, columns) {
+  return columns
+    .filter((c) => c !== column && c.type === "number" && namesNotRead(c.name).length > 0)
+    .map((c) => ({ name: c.name, notRead: namesNotRead(c.name) }));
 }
 
 // A column reports its gaps only when it plausibly IS a sequence, where skipping a step is
@@ -400,6 +545,18 @@ export function profileTable(rows) {
       // A sequence column (`gaps` is the record that this profiler already decided it is one — a
       // calendar year, above all) is an x axis, not a count: dividing 2025 by a population says
       // nothing, so the question is not put there at all.
+      // The same question the named-denominator branch below puts, for a sibling whose name this
+      // profiler cannot read at all — see `unreadSiblingsOf`. Reported beside `denominator` rather
+      // than folded into it: one is a column this profiler NAMED, the other is a column it could
+      // not read, and a reader that cannot tell them apart has been handed a guess.
+      const unread = unreadSiblingsOf(column, columns);
+      if (unread.length > 0 && column.gaps === null) {
+        column.denominatorUnread = {
+          reads: LEXICON_LANGUAGES_SAID,
+          columns: unread.map((u) => u.name),
+          charactersNotRead: [...new Set(unread.flatMap((u) => u.notRead))],
+        };
+      }
       const others = denominators.filter((c) => c !== column);
       if (others.length > 0 && column.gaps === null && !namesADenominator(column.name)) {
         // Several candidates are all named rather than the first one silently winning — a second

@@ -143,6 +143,16 @@ export function resolveGrounding(takeaway, profile, options = {}) {
     (coverage.unreadable ?? []).length > 0
       ? `; and this check's claim vocabulary reads ${LEXICON_LANGUAGES_SAID} — ${coverage.unreadable.join(", ")} is a script it has no vocabulary for, so anything it asserts was read by nobody here`
       : ""
+  }${
+    // ROUND SIX, finding C1. The script clause above returns EMPTY for every Latin-script language
+    // outside the four — Polish, Spanish, Czech, Turkish, Vietnamese — and the checker then reports
+    // a clean "nothing here to check" on a sentence whose superlative it never saw. A letter none
+    // of the four is written with is the same statement one level finer, and it belongs in the same
+    // sentence: this is where the journalist finds out the answer came from a lexicon that was
+    // never in a position to read their takeaway.
+    (coverage.unreadableLetters ?? []).length > 0
+      ? `; and this check's claim vocabulary reads ${LEXICON_LANGUAGES_SAID} — ${coverage.unreadableLetters.map((l) => `"${l}"`).join(", ")} ${coverage.unreadableLetters.length === 1 ? "is a letter" : "are letters"} none of those four is written with, so this takeaway is in a fifth language and a claim it makes may have been read by nobody here`
+      : ""
   })`;
 
   return {

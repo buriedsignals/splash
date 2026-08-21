@@ -364,6 +364,13 @@ export const LEXICON_LANGUAGES_SAID = "English, French, Greek and Arabic";
 // file's vocabularies are entitled to answer "no claim here" about.
 const SCRIPTS_READ = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Arabic}]/u;
 
+// THE LETTERS THOSE FOUR LANGUAGES ARE ACTUALLY WRITTEN WITH — the same declaration one level
+// finer than `SCRIPTS_READ`, because that is the level round six's defect lived on. English is
+// ASCII; French adds its own diacritics and nothing else; Greek and Arabic are whole scripts, and
+// no other language in this tree is written in either. Anything else in the Latin script is a
+// letter none of the four uses, which is the only thing a character test can honestly say.
+const LETTERS_READ = /[a-z\u00e0\u00e2\u00e4\u00e6\u00e7\u00e8\u00e9\u00ea\u00eb\u00ee\u00ef\u00f4\u00f6\u0153\u00f9\u00fb\u00fc\u00ff\p{Script=Greek}\p{Script=Arabic}]/iu;
+
 // Named, not enumerated by Unicode block: a reader of a refusal needs the script's NAME, and a
 // bare "some characters were unreadable" is the silence this whole mechanism exists to remove.
 // The list is the writing systems a newsroom in this tree's own reach could plausibly file in;
@@ -396,6 +403,43 @@ export function scriptsNotRead(text) {
   // swallowed — the point is never to answer in silence.
   const stray = [...value].find((ch) => /\p{L}/u.test(ch) && !SCRIPTS_READ.test(ch));
   return stray ? [`U+${stray.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`] : [];
+}
+
+/**
+ * EVERY LETTER IN THIS TEXT THAT NONE OF `LEXICON_LANGUAGES` IS WRITTEN WITH.
+ *
+ * ROUND SIX, findings C1 and AD1 — `scriptsNotRead` one level finer, and the level the defect
+ * actually lived on. Polish is written in the Latin script, so the script net returns `[]` for
+ * `ludno\u015b\u0107` and every name-based lexicon here then gave a confident negative about a word it had
+ * never been taught. Measured by the controller on one table and one sentence, with only the
+ * denominator column's NAME changing language: `population` came back `unverifiable` (round four's
+ * raw-count downgrade) and `ludno\u015b\u0107` came back `supported`. The missing word did not withhold a
+ * prompt, it RAISED the verdict above the one an unreadable claim gets, which is the sharpest form
+ * a silent lexicon gap can take.
+ *
+ * The four declared languages are written with a repertoire that can be written down, and
+ * `LETTERS_READ` is it. A letter outside that repertoire is a letter none of the four is written
+ * with — Polish `\u0144`, Czech `\u0159`, Turkish `\u011f`, Vietnamese `\u01a1`, Spanish `\u00f1`, German `\u00df` — and naming
+ * it is how a check says "this is a fifth language" without being taught a fifth language. Letters
+ * in a script `scriptsNotRead` already names are left to it, so the two nets report a gap once
+ * between them and never twice.
+ *
+ * THE LIMIT, stated because it is real: an undeclared language written in plain ASCII — Dutch
+ * `bevolking`, Italian `popolazione`, Indonesian `penduduk` — passes both nets, and no character
+ * test can ever see it. So the callers of this function do not pretend otherwise: where a NEGATIVE
+ * answer carries weight they name the four languages the negative was given in, in the detail the
+ * journalist reads, rather than leaving that limit where only a maintainer would find it.
+ */
+export function lettersNotRead(text) {
+  const value = String(text ?? "");
+  const strange = [];
+  for (const character of value) {
+    if (!/\p{L}/u.test(character)) continue;
+    if (!SCRIPTS_READ.test(character)) continue;
+    if (LETTERS_READ.test(character)) continue;
+    if (!strange.includes(character)) strange.push(character);
+  }
+  return strange;
 }
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -1554,6 +1598,60 @@ function bothRankingsNote(columns, rows, valueColumn, extreme) {
   return `${opening}. By "${valueColumn.name}" alone the ${end} is "${rawName}" (${raw.value}); per "${denominator.name}" it is "${rateName}" (${rateFigure}). ${agreement}`;
 }
 
+// WHAT THIS FILE COULD NOT READ IN A COLUMN'S OWN NAME — the script net and the letter net asked
+// together, so a gap is named once by whichever of the two can see it and never twice.
+function namesNotRead(name) {
+  return [...scriptsNotRead(name), ...lettersNotRead(name)];
+}
+
+/**
+ * A DENOMINATOR THIS CHECK CANNOT READ THE NAME OF (round six, findings C1 and AD1).
+ *
+ * `findDenominatorColumn` above answers by matching a column's name tokens against a list written
+ * in `LEXICON_LANGUAGES`. When the answer is NO, that no is only as good as the list: the
+ * controller reproduced the whole defect on one table and one sentence, changing nothing but the
+ * denominator column's name from `population` to `ludno\u015b\u0107`, and watched round four's raw-count
+ * downgrade switch OFF. English came back `unverifiable`, Polish came back `supported` — the one
+ * verdict that closes G1 — so the missing word did not withhold a prompt, it RAISED the verdict
+ * above the one an unreadable claim gets.
+ *
+ * So a negative from a lexicon is only allowed to stand where the lexicon was in a position to
+ * read the names it rejected. Where it was not, this says so and the caller withholds `supported`
+ * exactly as it would for a denominator it COULD name: a check that cannot classify a numeric
+ * column may not be more confident than one that can. It still never claims the unread column IS a
+ * denominator — identity, never shape, unchanged — only that the question could not be put.
+ */
+function unreadDenominatorNote(columns, valueColumn) {
+  const yearColumn = findYearColumn(columns);
+  const unread = measureColumns(columns, yearColumn)
+    .filter((c) => c !== valueColumn)
+    .map((c) => ({ name: c.name, notRead: namesNotRead(c.name) }))
+    .filter((c) => c.notRead.length > 0);
+  if (unread.length === 0) return "";
+  const named = unread
+    .map((u) => `"${u.name}" (written with ${u.notRead.map((n) => `"${n}"`).join(", ")})`)
+    .join("; ");
+  return ` — and note that this table carries a numeric column whose own NAME this check cannot read: ${named}. Its denominator lexicon reads ${LEXICON_LANGUAGES_SAID} and nothing else, so it cannot say whether that column is a population, a household count or another denominator this claim would be a RAW count against. "supported" is WITHHELD rather than granted by default: a check that cannot classify a numeric column may not come back more confident than one that can`;
+}
+
+/**
+ * THE LIMIT OF THE SAME LEXICON, STATED WHERE THE JOURNALIST READS IT (round six, finding C1).
+ *
+ * The letter net above catches a fifth language that spells itself differently. It cannot catch
+ * one that does not: Dutch `bevolking`, Italian `popolazione` and Indonesian `penduduk` are plain
+ * ASCII, and no character test will ever see them. That limit is real, so it is said out loud on
+ * the verdict where it does damage — a raw-count superlative coming back `supported` — rather than
+ * left in a comment only a maintainer of this file would ever meet. Nothing is downgraded here:
+ * the columns really were read, and a negative given in four languages is still an answer. It is
+ * an answer with a stated reach, which is the difference this whole mechanism is about.
+ */
+function denominatorLexiconLimitNote(columns, valueColumn) {
+  const yearColumn = findYearColumn(columns);
+  const siblings = measureColumns(columns, yearColumn).filter((c) => c !== valueColumn);
+  if (siblings.length === 0) return "";
+  return ` — and note that no column in this table NAMES a denominator, an answer given in ${LEXICON_LANGUAGES_SAID} and in no other language: beside "${valueColumn.name}" it read ${siblings.map((c) => `"${c.name}"`).join(", ")} and found no population word among them. A denominator named in a fifth language that spells itself in plain ASCII reads to this check exactly like no denominator at all, so this is confirmed as a RAW "${valueColumn.name}" figure and the per-capita reading, if this table carries one, is the journalist's to raise`;
+}
+
 /**
  * The wrapper shapes 8 and 9 come back through. It never re-decides anything and never divides
  * into a verdict: a `supported` raw-count superlative is DOWNGRADED to `unverifiable` while a
@@ -1568,12 +1666,24 @@ function askAboutTheDenominator(result, item, profile, columns, sentence) {
   if (!chosen.column) return result;
   const rows = Array.isArray(profile.rows) ? profile.rows : null;
   const note = bothRankingsNote(columns, rows, chosen.column, item.extreme ?? "max");
-  if (note === "") return result;
-  if (result.verdict !== "supported") return { ...result, detail: `${result.detail}${note}` };
+  // ROUND SIX. Three answers, not one: a denominator this check READ (the round-four downgrade,
+  // unchanged), a numeric column whose name it could not read (the same withholding, for the same
+  // reason — it is not in a position to say no), and neither, where the negative stands and the
+  // reach of the lexicon that gave it is stated on the one verdict that closes G1.
+  const unread = note === "" ? unreadDenominatorNote(columns, chosen.column) : "";
+  const limit =
+    note === "" && unread === "" && result.verdict === "supported"
+      ? denominatorLexiconLimitNote(columns, chosen.column)
+      : "";
+  const appended = `${note}${unread}${limit}`;
+  if (appended === "") return result;
+  if (result.verdict !== "supported" || (note === "" && unread === "")) {
+    return { ...result, detail: `${result.detail}${appended}` };
+  }
   return {
     ...result,
     verdict: "unverifiable",
-    detail: `${result.detail}${note}`,
+    detail: `${result.detail}${appended}`,
   };
 }
 
@@ -1633,7 +1743,7 @@ function resolveComparison(item, profile, text) {
         verdict: "unverifiable",
         detail:
           shareColumns.length === 0
-            ? `no share/percentage column in the profile to check this total against — this decision reads a column's own name in ${LEXICON_LANGUAGES_SAID}, or its recorded unit "%", and read ${columns.length === 0 ? "no columns at all" : columns.map((c) => `"${c.name}"`).join(", ")}${scriptsNotRead(columns.map((c) => c.name).join(" ")).length > 0 ? `; ${scriptsNotRead(columns.map((c) => c.name).join(" ")).join(", ")} is a script it has no share vocabulary for` : ""}`
+            ? `no share/percentage column in the profile to check this total against — this decision reads a column's own name in ${LEXICON_LANGUAGES_SAID}, or its recorded unit "%", and read ${columns.length === 0 ? "no columns at all" : columns.map((c) => `"${c.name}"`).join(", ")}${scriptsNotRead(columns.map((c) => c.name).join(" ")).length > 0 ? `; ${scriptsNotRead(columns.map((c) => c.name).join(" ")).join(", ")} is a script it has no share vocabulary for` : ""}${lettersNotRead(columns.map((c) => c.name).join(" ")).length > 0 ? `; and ${lettersNotRead(columns.map((c) => c.name).join(" ")).map((l) => `"${l}"`).join(", ")} ${lettersNotRead(columns.map((c) => c.name).join(" ")).length === 1 ? "is a letter" : "are letters"} none of those four is written with, so at least one of these names is in a fifth language and this decision has no share vocabulary for it` : ""}`
             : "more than one share/percentage column in the profile — cannot tell which this total claims to be the whole of",
       };
     }
@@ -2179,6 +2289,13 @@ function computeCoverage(text, claims) {
     // to read them at all. Empty is the ordinary answer and is itself information: it means a
     // sentence that produced no claim produced none for a reason other than its script.
     unreadable: scriptsNotRead(text),
+    // ROUND SIX, finding C1 — the same miss one level finer, and the level it was actually hiding
+    // on. `stress-ad-polish-hospital-beds` asserts a superlative (`najwi\u0119cej`) in Polish, which is
+    // written in the Latin script, so `unreadable` above came back EMPTY and this function reported
+    // a confident "I read this sentence and there was nothing to check". A letter none of the four
+    // declared languages is written with says the sentence is in a fifth language without this file
+    // being taught one.
+    unreadableLetters: lettersNotRead(text),
   };
 }
 
@@ -2188,7 +2305,10 @@ function computeCoverage(text, claims) {
 // array itself only has to learn the one extra level.
 export function groundTakeaway(takeaway, profile, options = {}) {
   if (!takeaway || typeof takeaway !== "string") {
-    return { claims: [], coverage: { sentences: 0, evaluated: 0, decided: 0, unevaluated: [], unreadable: [] } };
+    return {
+      claims: [],
+      coverage: { sentences: 0, evaluated: 0, decided: 0, unevaluated: [], unreadable: [], unreadableLetters: [] },
+    };
   }
   const base = profile ?? {};
   const columns = Array.isArray(base.columns) ? base.columns : [];
