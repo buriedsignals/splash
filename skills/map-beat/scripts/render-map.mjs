@@ -49,6 +49,8 @@ import {
   sequentialRamp,
   valuesFromCsv,
 } from "../assets/geo.ts";
+import { MAP_TIMING } from "../assets/timing.ts";
+import { staggerLacksAnOrder } from "./detect-reveal-order.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -121,6 +123,32 @@ const joined = joinValues(CO2_STUDY, values, {
 console.log(
   `join: ${joined.matched} of ${CO2_STUDY.length} shapes carry a ${BEAT.year} value; ` +
     `${joined.noData.length} declared no-data (${joined.noData.join(", ")})`,
+);
+
+// ── The reveal's own order, decided before a frame is drawn ────────────────────────────────────
+//
+// `motion-grammar.md` lets a stagger follow the data's own order and nothing else, and this build
+// gives every value-bearing shape ONE window. That is asserted here rather than assumed: the marks
+// are handed with the frame their arrival begins — `MAP_TIMING.reveal.start`, the same number for
+// all of them — and the position each reading holds on the axis the reveal traverses, which for a
+// single-year choropleth is the one year every reading is from. Sort them into per-shape windows
+// again and this reddens, naming the population and the reason.
+//
+// What it CANNOT see is the component quietly re-deriving windows of its own from an index: the
+// starts read here are the producer's, not the composition's. `test/timing.test.ts` reads the
+// shipped `Co2MapVideo.tsx` for exactly that, which is the other half of this check.
+const revealMarks = joined.rows
+  .filter((row) => row.value !== null)
+  .map((row) => ({ key: row.key, start: MAP_TIMING.reveal.start, at: BEAT.year }));
+const revealReading = staggerLacksAnOrder(revealMarks);
+if (revealReading.arbitrary)
+  throw new Error(
+    `the reveal claims an order the data does not carry: ${revealReading.why}. ` +
+      `${revealReading.marks} marks, ${revealReading.starts} start(s), ${revealReading.positions} position(s). ` +
+      "A snapshot's shapes arrive together — geo-discipline.md rule 10, motion-grammar.md.",
+  );
+console.log(
+  `reveal: ${revealReading.why} (${revealReading.marks} marks, ${revealReading.starts} start(s)).`,
 );
 
 const violations = claimViolations({

@@ -6,7 +6,17 @@ import {
   type BeatTiming,
 } from "../../chart-video/assets/timing";
 import { MAP_TIMING } from "../assets/timing";
-import { arrivalProgress } from "../assets/Co2MapVideo";
+import { staggerLacksAnOrder } from "../scripts/detect-reveal-order.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/** The seed's own frozen regions — the population the reveal actually covers, read off disk rather
+ *  than a count typed here. Every one of them is a 2023 reading, which is the whole point: one
+ *  period, so no order exists across them. */
+const REGIONS: { key: string }[] = JSON.parse(
+  readFileSync(join(import.meta.dirname, "..", "assets", "sample-data", "regions.json"), "utf8"),
+);
+const SURVEY_PERIOD = "2023";
 
 /**
  * The structural half of the motion grammar, for a map beat. The drawing itself is verified by
@@ -74,30 +84,46 @@ describe("checkTiming, on a timing mutated to break one rule", () => {
   });
 });
 
-describe("arrivalProgress — the reveal's own order", () => {
-  const count = 10;
+describe("the reveal claims no order it cannot show", () => {
+  // The seed used to export `arrivalProgress(index, count, reveal)` and hand each region its own
+  // slice of the reveal window, sorted lowest value first. These regions were all measured in the
+  // same year, so that order was the producer's and not the data's — `motion-grammar.md`, "the
+  // order is chronological, or it is argumentative". The build now gives every value-bearing shape
+  // ONE window, which is what these two assertions hold it to.
+  const source = readFileSync(
+    join(import.meta.dirname, "..", "assets", "Co2MapVideo.tsx"),
+    "utf8",
+  );
 
-  it("should hand the first region its window before the last one", () => {
-    expect(arrivalProgress(0, count, 0.5)).toBeGreaterThan(
-      arrivalProgress(9, count, 0.5),
+  it("should hand every mark one start rather than a rank", () => {
+    expect(
+      staggerLacksAnOrder(
+        REGIONS.map((region) => ({
+          key: region.key,
+          start: MAP_TIMING.reveal.start,
+          at: SURVEY_PERIOD,
+        })),
+      ).arbitrary,
+    ).toBe(false);
+  });
+
+  it("should be refused the moment those same marks are staggered again", () => {
+    const found = staggerLacksAnOrder(
+      REGIONS.map((region, i) => ({
+        key: region.key,
+        start: MAP_TIMING.reveal.start + i,
+        at: SURVEY_PERIOD,
+      })),
+    );
+    expect(`${found.arbitrary}: ${found.why}`).toBe(
+      `true: ${REGIONS.length} marks hold 1 position(s) between them, so the order across them is the producer's and not the data's`,
     );
   });
 
-  it("should show nothing at all before the reveal starts", () => {
-    for (let i = 0; i < count; i++)
-      expect(arrivalProgress(i, count, 0)).toBe(0);
-  });
-
-  it("should have every region fully arrived by the end of the reveal", () => {
-    for (let i = 0; i < count; i++)
-      expect(arrivalProgress(i, count, 1)).toBe(1);
-  });
-
-  it("should never run outside 0..1, so nothing keeps fading during the hold", () => {
-    for (const p of [-1, 0.3, 0.77, 2])
-      for (let i = 0; i < count; i++) {
-        expect(arrivalProgress(i, count, p)).toBeGreaterThanOrEqual(0);
-        expect(arrivalProgress(i, count, p)).toBeLessThanOrEqual(1);
-      }
+  it("should carry neither a per-region window nor the placeholder one needed", () => {
+    expect([
+      source.includes("arrivalProgress"),
+      source.includes('id="pending"'),
+    ]).toEqual([false, false]);
   });
 });

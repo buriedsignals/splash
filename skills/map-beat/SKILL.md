@@ -61,7 +61,7 @@ and record which fired.
 | Bake | `scripts/bake-plate.mjs` | One camera: plate PNG + `geometry.json` (pixel rings + projected anchors), culled and thinned |
 | Pure core | `assets/geo.ts` | The study set, the alias table, the join, the classes, the ramp, `scalePosition`, ring arithmetic, the claim check. No browser, no rasteriser — which is why BOTH formats can import it |
 | Static | `assets/Co2MapStill.tsx` | One beat, 900 × 560, text column beside a square plate |
-| Video | `assets/Co2MapVideo.tsx` | The same beat with an order. Exports `arrivalProgress`, the reveal's stagger, testable without a browser |
+| Video | `assets/Co2MapVideo.tsx` | The same beat with an order — the ARGUMENT'S order, not a queue through its shapes: hatch and furniture, then every measured value at once, then the subject |
 | Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **not** re-implemented here |
 | Vocabulary | `assets/timing-contract.ts` | A **copy** of `chart-video/assets/timing.ts`, never an import — a skill does not reach across another skill's boundary at runtime. Held byte-identical to its source by `splash/test/root-template-shared.test.ts`, so it cannot drift in silence |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The Remotion composition; `durationInFrames` IS `MAP_TIMING.total` |
@@ -203,10 +203,9 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 | How dark the ramp gets | `FROM` `0.1` / `TO` `0.78` of the way from ground to ink | `sequentialRamp`, `geo.ts` |
 | How long the whole beat runs | `total` `240` (8 s × `fps` `30`) | `MAP_TIMING`, `timing.ts` |
 | **How long the reader gets to read the average** — the pause, which is the gap, not an event | `reveal.start` `70` minus `reference` end `52` = `18` | `MAP_TIMING` |
-| How fast the field fills | `reveal.duration` `86` | `MAP_TIMING` |
-| How much the regions' arrivals overlap | `WINDOW` `0.16` of the reveal | `arrivalProgress`, `Co2MapVideo.tsx` |
-| How separate the subject's arrival feels | `subject.start` `158` (never below `reveal` end) | `MAP_TIMING` |
-| How long the finished map is held | `hold.duration` `38` | `MAP_TIMING` |
+| How fast the field fills — every measured shape on ONE window, never a queue | `reveal.duration` `34` | `MAP_TIMING` |
+| How separate the subject's arrival feels | `subject.start` `116` (never below `reveal` end) | `MAP_TIMING` |
+| How long the finished map is held | `hold.duration` `76` | `MAP_TIMING` |
 | How hard the subject's outline lands | `damping` `200` against `stiffness` `120` — critically damped | `Co2MapVideo.tsx` |
 | The still's frame, and the plate inside it | `900` × `560`, `MAP` = `496` | `Co2MapStill.tsx` |
 | The video's frame, and the plate inside it | `1080` × `1080`, `MAP` = `620` | `Co2MapVideo.tsx` / `Root.tsx` |
@@ -247,7 +246,9 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   own height, and the plate does not move. When the stack then stops fitting, the fix is to LOWER
   `MAP_Y` — the header gave back the row the source used to occupy — and the beat's own fit guard
   is what says by how much.
-- `assets/Co2MapVideo.tsx` — the video beat. **Replace per story.** Exports `arrivalProgress`.
+- `assets/Co2MapVideo.tsx` — the video beat. **Replace per story.** Its reveal gives every measured
+  shape one window: a snapshot has no order across its shapes (`geo-discipline.md` rule 10), and
+  `scripts/detect-reveal-order.mjs`'s `staggerLacksAnOrder` is what refuses one that claims otherwise.
 - `assets/timing.ts` — `MAP_TIMING`, and a re-export of the shared vocabulary.
 - `assets/Root.tsx`, `assets/index.ts` — the Remotion composition and entry point.
 - `assets/sample-data/regions.json` — 43 European regions with numeric values demonstrating the

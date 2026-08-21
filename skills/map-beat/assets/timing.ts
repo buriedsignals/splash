@@ -18,22 +18,27 @@ export { checkTiming, endOf, progressOf } from "./timing-contract";
 export type { BeatTiming, TimingEvent } from "./timing-contract";
 
 /**
- * The edit, in words: the frame comes up — title, source, basemap, the empty scale (0.87s) — the
- * European average is marked on that scale (0.67s) and then left alone for 0.6s so it can be read,
- * the countries fill in from the lowest emitter to the highest (2.87s), Switzerland is outlined and
- * named on its own (0.67s), its value takes its place on the scale beside the average (0.73s), and
- * the finished map is held for 1.27s.
+ * The edit, in words: the frame comes up — title, source, basemap, the empty scale, and the hatch
+ * over every country the source is silent about (0.87s) — the European average is marked on that
+ * scale (0.67s) and then left alone for 0.6s so it can be read, every measured country fills in AT
+ * ONCE (1.13s), Switzerland is outlined and named on its own (0.67s), its value takes its place on
+ * the scale beside the average (0.73s), and the finished map is held for 2.53s.
  *
- * The two things the reader must compare are therefore the FIRST and the LAST marks to arrive, on
- * one scale, with the whole distribution built between them.
+ * The two things the reader must compare are the average already on the scale and the subject that
+ * lands beside it; the distribution appears between them as one event, not as a queue.
+ *
+ * The reveal used to run 2.87s because it was staggering forty-odd countries one after another. A
+ * snapshot has no order across its shapes (`geo-discipline.md` rule 10, rewritten), so the values
+ * arrive together and the window is now only as long as a crossfade needs to be. The frames that
+ * freed go to the hold, which is the frame a reader actually reads.
  */
 export const MAP_TIMING: BeatTiming = {
   fps: 30,
   total: 240,
   establish: { start: 0, duration: 26 },
   reference: { start: 32, duration: 20 },
-  reveal: { start: 70, duration: 86 },
-  subject: { start: 158, duration: 20 },
-  conclusion: { start: 180, duration: 22 },
-  hold: { start: 202, duration: 38 },
+  reveal: { start: 70, duration: 34 },
+  subject: { start: 116, duration: 20 },
+  conclusion: { start: 142, duration: 22 },
+  hold: { start: 164, duration: 76 },
 };

@@ -174,16 +174,32 @@ This is also how a map stays **discreet** when the brief demands it: an unlabell
 visible in the shading and not called out, which is impossible if the basemap has already printed
 its name.
 
-## 10. A choropleth's reveal order is the value order
+## 10. A snapshot's shapes arrive together; only a real order earns a stagger
 
-`motion-grammar.md` requires a reveal to follow the data's own order or the argument's. A map has no
-time axis, so it takes the second: regions arrive **in the order of the value being encoded**,
-lightest to darkest, and the field visibly darkens. That is the distribution building itself, and it
-is an argument.
+`motion-grammar.md` requires a reveal to follow the data's own order or the argument's, and forbids
+"an arbitrary order chosen for visual interest". A choropleth of ONE SNAPSHOT has neither order
+available: shapes measured in the same period carry no chronology between them, and ranking them by
+the very quantity the reader is about to be shown is a sequence the producer chose, not one the data
+holds. So the values **arrive together, as one event** — the field appears; then the subject is
+accented as its own event; then the conclusion.
 
-It is not the "uniform cascade" anti-pattern, which is a stagger by *index* — an order the data does
-not contain. And the subject still arrives afterwards as its own event: it is marked, not merely
-last.
+**This rule used to say the opposite** — regions arriving lowest-value-first, "the field visibly
+darkening", called an argument — and it shipped a seed and three beats before the owner ruled on it.
+The tell was in the frame the whole time: a staggered fill needs somewhere to put the shapes that
+have not had their turn, so every one of those beats invented a "pending" stipple, a mark that
+encodes nothing but the wait. A pattern invented to service a build is `anti-patterns.md`'s
+"decoration that encodes nothing" wearing a clock.
+
+**What still earns a stagger** is an axis the reveal traverses that the reader can also see: a time
+series drawing oldest to newest, one mark per year, each mark at its own position. A map beat that
+animates a YEAR is that case and keeps its order. `staggerLacksAnOrder`
+(`map-beat/scripts/detect-reveal-order.mjs`) is the distinction as arithmetic — every mark must
+carry a position on the axis, no two may share one, and they must ascend in the order they arrive.
+A snapshot fails all three; marks arriving together always pass.
+
+The no-data hatch is untouched by this: "did not report" encodes a fact, and it is laid down before
+the values as the reference the argument is measured against — together, like them, and then left
+alone long enough to be read.
 
 ## 11. Cull rings by their projected box, and distrust one wider than the frame
 

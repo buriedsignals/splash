@@ -379,9 +379,14 @@ export function scalePosition(value: number, breaks: number[]): number {
 }
 
 /**
- * The order the field builds in: no-data first (absence is not a value), then the values themselves
- * from lowest to highest. `geo-discipline.md` rule 10 — a map has no time axis, so its reveal takes
- * the argument's order, and the distribution darkening IS the argument. Not a stagger by index.
+ * Shapes sorted no-data first (absence is not a value), then the values from lowest to highest.
+ *
+ * NOT A REVEAL ORDER ANY MORE, whatever the name says. `geo-discipline.md` rule 10 used to hand this
+ * list to a video build so the field could fill in one country at a time; it was rewritten when the
+ * owner ruled on it, because a snapshot's shapes carry no order between them and a stagger over them
+ * is `motion-grammar.md`'s "arbitrary order chosen for visual interest". What remains is an ordering
+ * of ROWS — for a legend, a table, a ranked list beside the map — which is a reading order and not a
+ * clock. The seed's own video no longer calls it.
  
  *  @parity */
 export function revealOrder(rows: JoinedRow[]): string[] {

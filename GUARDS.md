@@ -29,6 +29,7 @@ written out below the tables.
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
 | reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
+| reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
 | labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 
 ## capability
@@ -290,6 +291,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not
 
 **Earned by:** skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal
+
+### reveal-order-is-earned — `staggerLacksAnOrder`
+
+**Refuses:** a reveal that hands its marks different start times when the marks carry no order to follow — a snapshot's categories staggered for visual interest, and the placeholder mark ('pending' dots, a ghosted shape) a stagger has to invent to hold the marks still waiting their turn
+
+**Earned by:** the owner ruled on stress-t-europe-recycling's map video, which stippled every reporting country with 'pending' dots and filled them one at a time: the dots existed only to hold the shapes waiting their turn, and eleven countries measured in March 2025 carry no chronology between them and no argument that ranks them, so the order was invented. It was never one beat's mistake — geo-discipline.md rule 10 MANDATED it ('regions arrive in the order of the value being encoded, lightest to darkest'), map-beat's own Co2MapVideo seed taught it, and proof/mapgen-choropleth-video and stress-m-forest-loss inherited it. WHAT THE DECISION MEASURES, stated so a legitimate stagger survives it: the marks the reveal covers, handed in the order the build gives them their windows, each carrying the frame its own arrival begins and the position its reading holds on the axis the reveal traverses (a year, a date, a distance; null when the reading holds none). The build is staggered when those starts are not all one number. A stagger is EARNED when every mark carries a position, no two share one, and the positions ascend in arrival order — chart-video's own line reveal over proof/co2-suisse's frozen series is 75 marks at 75 distinct years and passes. It is ARBITRARY when a mark carries no position, when marks share one (a snapshot: every reading from one moment, so the order across them is the producer's), or when arrival runs against position (a line drawing backwards); the same call on stress-t's eleven readings reads '11 marks hold 1 position(s) between them'. Marks arriving TOGETHER always pass, and that is the build this rule points at
 
 ### storyboard-gate-is-visible — `storyboardGateStatus`
 

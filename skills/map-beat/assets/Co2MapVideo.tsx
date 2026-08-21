@@ -13,7 +13,6 @@
  * passes ink/muted/grid in as props. One implementation of the colour rule, two formats.
  */
 
-import { Fragment } from "react";
 import {
   AbsoluteFill,
   Easing,
@@ -27,7 +26,6 @@ import {
   binIndexLowerInclusive,
   fr,
   pathFromRings,
-  revealOrder,
   scalePosition,
   type BakedShape,
   type JoinedRow,
@@ -90,24 +88,6 @@ export type Co2MapVideoProps = {
   comparisonValue: number;
   timing?: BeatTiming;
 };
-
-/**
- * How far region `index` of `count` has arrived, given the reveal's own progress.
- *
- * The regions are handed their windows in the order the caller sorted them — lowest value first
- * (`geo-discipline.md` rule 10) — and the windows overlap, so the field darkens continuously
- * rather than blinking one country at a time. Clamped at both ends: an unclamped window keeps
- * moving after its event, and the hold would not be still.
- */
-export function arrivalProgress(
-  index: number,
-  count: number,
-  reveal: number,
-): number {
-  const WINDOW = 0.16;
-  const start = count <= 1 ? 0 : (index / (count - 1)) * (1 - WINDOW);
-  return Math.max(0, Math.min(1, (reveal - start) / WINDOW));
-}
 
 let measuringContext: CanvasRenderingContext2D | null | undefined;
 export function measureText(
@@ -181,8 +161,6 @@ export function Co2MapVideo({
   const titleTop = PAD + TITLE.fontSize;
 
   const value = new Map(rows.map((row) => [row.key, row.value]));
-  const order = revealOrder(rows);
-  const rank = new Map(order.map((key, index) => [key, index]));
   const anyNoData = rows.some((row) => row.value === null);
 
   const barBottom = LEGEND.top + LEGEND.barHeight;
@@ -228,6 +206,17 @@ export function Co2MapVideo({
   });
 
   const referenceOpacity = interpolate(reference, [0, 1], [0, 1], {
+    easing: Easing.out(Easing.cubic),
+  });
+  // THE VALUES ARRIVE TOGETHER, as one event, because a snapshot has no order across its shapes.
+  // This used to be a per-region stagger sorted lowest value first, which `geo-discipline.md` rule
+  // 10 then blessed as "the distribution building itself". It is not: these regions were all
+  // measured in the same year, so ranking them by the quantity the reader is about to be shown is
+  // an order the producer chose, not one the data holds — `motion-grammar.md`, "the order is
+  // chronological, or it is argumentative". The stagger needed somewhere to hold the shapes waiting
+  // their turn, which is where the "pending" stipple came from; with the stagger gone the stipple
+  // has nothing to encode, and both are gone together.
+  const valuesArrived = interpolate(reveal, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
   const conclusionOpacity = interpolate(conclusion, [0, 1], [0, 1], {
@@ -296,37 +285,16 @@ export function Co2MapVideo({
               strokeWidth={2.4}
             />
           </pattern>
-          {/* A country that has not yet reached its own window in the reveal must not read as a
-              value — an opacity fade from nothing let the near-white basemap show through, which
-              reads LIGHTER than the lightest filled class: for several seconds the map stated the
-              opposite of the data. This is a SEPARATE mark from "no-data" (dots, not a diagonal
-              hatch) because it means a different thing: "not drawn yet", not "the source is silent
-              about this shape" — reusing the no-data hatch here would say the wrong thing on every
-              frame before a country's turn arrives. */}
-          <pattern
-            id="pending"
-            width={10}
-            height={10}
-            patternUnits="userSpaceOnUse"
-          >
-            <rect width={10} height={10} fill={ground} />
-            <circle cx={5} cy={5} r={1.3} fill={muted} />
-          </pattern>
           <clipPath id="plate-clip">
             <rect x={PAD} y={MAP_Y} width={MAP} height={MAP} />
           </clipPath>
         </defs>
 
-        {/* ── The field, arriving lowest value first ─────────────────────────────────────────── */}
+        {/* ── The field, arriving as one event ──────────────────────────────────────────────── */}
         <g clipPath="url(#plate-clip)">
           <g transform={`translate(${PAD},${MAP_Y}) scale(${scale})`}>
             {geometry.shapes.map((shape) => {
               const v = value.get(shape.key);
-              const arrived = arrivalProgress(
-                rank.get(shape.key) ?? 0,
-                order.length,
-                reveal,
-              );
               const d = pathFromRings(shape.rings);
               const stroke = {
                 stroke: ground,
@@ -335,10 +303,11 @@ export function Co2MapVideo({
               };
 
               if (v === null || v === undefined) {
-                // No-data: unchanged. It arrives first in the order (rule 10) and its own hatch
-                // already reads as "outside the scale", so a pre-arrival fade to nothing never
-                // masquerades as a value the way a value-bearing shape's did.
-                if (arrived <= 0) return null;
+                // ABSENCE IS FURNITURE HERE, not evidence: the hatch says the source is silent
+                // about this shape, and it comes up with the basemap and the empty scale rather
+                // than arriving as an event of its own. Nothing about it is staggered either — the
+                // shapes a source never measured have no order between them at all.
+                if (furniture <= 0) return null;
                 return (
                   <path
                     key={shape.key}
@@ -346,36 +315,27 @@ export function Co2MapVideo({
                     fill="url(#no-data)"
                     fillRule="evenodd"
                     {...stroke}
-                    opacity={arrived}
+                    opacity={furniture}
                   />
                 );
               }
 
-              // A value-bearing shape is opaque from its first frame: it holds the "pending" dots
-              // — visibly not a shade the ramp could have produced — until its own window opens,
-              // then crossfades to its true colour. Never translucent against the basemap, so it
-              // never reads lighter than the lightest filled class.
+              // Every value-bearing shape crossfades on ONE window, so at any frame they all sit at
+              // the same opacity. That is what keeps a mid-fade shape from reading as a class it is
+              // not: the ramp's comparisons are between shapes, and shapes at equal opacity over one
+              // plate keep their order. The old defect this replaces was a shape lingering unfilled
+              // while its neighbours were filled, which reads as a value, not as a wait.
               const trueFill = ramp[binIndexLowerInclusive(v, breaks)];
+              if (valuesArrived <= 0) return null;
               return (
-                <Fragment key={shape.key}>
-                  {arrived < 1 && (
-                    <path
-                      d={d}
-                      fill="url(#pending)"
-                      fillRule="evenodd"
-                      {...stroke}
-                    />
-                  )}
-                  {arrived > 0 && (
-                    <path
-                      d={d}
-                      fill={trueFill}
-                      fillRule="evenodd"
-                      {...stroke}
-                      opacity={arrived}
-                    />
-                  )}
-                </Fragment>
+                <path
+                  key={shape.key}
+                  d={d}
+                  fill={trueFill}
+                  fillRule="evenodd"
+                  {...stroke}
+                  opacity={valuesArrived}
+                />
               );
             })}
 

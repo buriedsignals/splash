@@ -219,6 +219,16 @@ const COPIES: Record<string, string[]> = {
     "scrolly/scripts/detect-fills-its-frame.mjs",
     "dw-beat/scripts/detect-fills-its-frame.mjs",
   ],
+  // ROUND-FIVE, the owner's ruling on the staggered reveal: whether a build's stagger follows an
+  // order the data actually carries. Both video formats decide it, and they decide OPPOSITE cases —
+  // chart-video's line earns its stagger (one mark per year, distinct and ascending), map-beat's
+  // choropleth cannot (one snapshot, no order across its shapes). That is precisely why the two
+  // copies have to be one decision: a copy that softened the tie rule, or stopped requiring a
+  // position at all, would let the format it lives in ship the exact build the other refuses.
+  staggerLacksAnOrder: [
+    "chart-video/scripts/detect-reveal-order.mjs",
+    "map-beat/scripts/detect-reveal-order.mjs",
+  ],
   // FINDING 8's own capability, carried by the three chart formats. Declared in
   // `render-still.mjs` itself (a beat's `render.mjs` calls it directly, on the values it is about
   // to draw, the same way it already calls `readPalette` there) rather than in a `detect-*.mjs` —

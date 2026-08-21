@@ -28,6 +28,24 @@ argument's order (baseline, then evidence, then subject). It never follows an ar
 chosen for visual interest — bars bouncing in by index, categories popping in at random, a line
 drawing backwards because the end is prettier.
 
+**A snapshot has no order across its marks, so its marks arrive together.** Eleven countries
+measured in the same month carry no chronology between them, and ranking them by the very quantity
+the reader is about to be shown is a sequence the producer chose, not one the data holds. Staggering
+them is the arbitrary order this section bans, and the tell is always in the frame: a staggered fill
+needs somewhere to put the marks that have not had their turn, so it invents a placeholder — a
+"pending" stipple, a hollow bar, a ghosted shape — a mark that encodes nothing except the wait. The
+build a snapshot actually has is: the values arrive **together**, then the subject is accented as
+its own event, then the conclusion appears.
+
+`staggerLacksAnOrder` (`chart-video/scripts/detect-reveal-order.mjs`,
+`map-beat/scripts/detect-reveal-order.mjs`) is that distinction as arithmetic, so it is decided
+rather than reviewed. It reads the marks in the order the build gives them their windows, each with
+the frame its arrival begins and the position its reading holds on the axis the reveal traverses. A
+stagger is EARNED only when every mark carries a position, no two share one, and the positions
+ascend in arrival order — a time series drawing one mark per year. It is ARBITRARY when a mark has
+no position, when marks share one (the snapshot), or when arrival runs against position. Marks
+arriving together always pass, because they claim no order at all.
+
 **When the x axis is time, the reveal is linear.** Easing the draw of a time axis makes 1994 and
 1995 occupy different amounts of screen time, which is a lie about the pace of the data. Easing is
 for things that arrive (a dot, a label, an opacity), never for the traversal of a measured axis.

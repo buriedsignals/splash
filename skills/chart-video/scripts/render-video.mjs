@@ -18,6 +18,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
+import { staggerLacksAnOrder } from "./detect-reveal-order.mjs";
+import { CO2_TIMING } from "../assets/timing.ts";
 
 /**
  * RFC 4180 row tokeniser, inlined here rather than imported — no cross-skill runtime import, and
@@ -119,6 +121,35 @@ await mkdir(outDir, { recursive: true });
 
 const data = readingsFromCsv(await readFile(dataPath, "utf8"), BEAT.firstYear);
 if (data.length < 2) throw new Error(`need at least two readings, got ${data.length}`);
+
+// ── The reveal's own order, decided before a frame is drawn ────────────────────────────────────
+//
+// This format's reveal DOES earn its stagger, and this is where that is measured rather than
+// assumed. `drawnSoFar` walks the line's points linearly across `reveal`, so each point's arrival
+// begins at its own share of that window, and each carries its own year — the position it holds on
+// the axis the reveal traverses. Distinct, ascending, one per mark: the shared decision says so.
+// The same call on a snapshot's categories reddens, which is the whole point of it being shared —
+// `map-beat/scripts/render-map.mjs` makes it on a choropleth, and `motion-grammar.md` states the
+// distinction the function decides.
+const revealMarks = data.map((reading, i) => ({
+  key: String(reading.year),
+  start:
+    data.length <= 1
+      ? CO2_TIMING.reveal.start
+      : CO2_TIMING.reveal.start +
+        Math.round((i / (data.length - 1)) * CO2_TIMING.reveal.duration),
+  at: reading.year,
+}));
+const revealReading = staggerLacksAnOrder(revealMarks);
+if (revealReading.arbitrary)
+  throw new Error(
+    `the reveal claims an order the data does not carry: ${revealReading.why}. ` +
+      `${revealReading.marks} marks, ${revealReading.starts} start(s), ${revealReading.positions} position(s). ` +
+      "A stagger follows the data's own order or it does not happen — motion-grammar.md.",
+  );
+console.log(
+  `reveal: ${revealReading.why} (${revealReading.marks} marks, ${revealReading.starts} start(s)).`,
+);
 
 const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
 delete props.firstYear;
