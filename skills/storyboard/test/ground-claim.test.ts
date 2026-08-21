@@ -860,16 +860,25 @@ describe("a superlative that DECIDES, on real story material (finding 2)", () =>
 describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => {
   // The exact reproduction in the round-four raw findings: "3 of 3 claim(s) confirmed" on
   // per-100k rates matched against a raw-count column by coincidence — 100 included.
-  it("should call stress-q's per-100k rates consistent, and confirm none of them", () => {
+  // ROUND FIVE amended the verdict here, and the amendment is the same finding one step
+  // further: these three numerals are per-100,000 RATES, and the sentence names BOTH of the
+  // measures they could be about ("incidents", "residents"). Round four stopped calling them
+  // `supported`; round five stops calling them `placed` in a column nothing chose. They are
+  // reported unplaced, naming both candidates and the range they would have fallen into — and
+  // the original point of this case is unchanged and still asserted: nothing here is confirmed.
+  it("should not confirm — or silently place — stress-q's per-100k rates", () => {
     const { claims } = grounded(
       "stress-q-safety-incidents",
       "Sul records 233 incidents per 100k residents, against Centro's 205.",
     );
     for (const numeral of ["233", "100", "205"]) {
       const claim = claims.find((c) => c.claim === numeral);
-      expect(claim.verdict).toBe("consistent");
+      expect(claim.verdict).toBe("unverifiable");
+      expect(claim.detail).toContain('"incidents"');
+      expect(claim.detail).toContain('"residents"');
     }
     expect(claims.some((c) => c.verdict === "supported")).toBe(false);
+    expect(claims.some((c) => c.verdict === "consistent")).toBe(false);
   });
 
   // stress-s's `year` column is min 2026, max 2026 — a range test that cannot fail.
@@ -1302,5 +1311,65 @@ describe("a column is named by a WORD, not by a fragment of another (round five,
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("survey_date");
     expect(claim.detail).toContain("REFUSED to type");
+  });
+});
+
+describe("a numeral is placed against the column its own SENTENCE names (round five, T13)", () => {
+  // `stress-y-rural-broadband`'s own frozen takeaway. `2025` is the month the survey was taken;
+  // `households` runs [240, 47933]; the numeral fell inside it and came back `consistent` —
+  // "placed", in a column of household counts, on the strength of nothing.
+  const BROADBAND =
+    "Broadband coverage does not follow a municipality's size: across the 186 municipalities " +
+    "surveyed in June 2025, the smallest towns are no worse served than the largest, and " +
+    "coverage runs the full width of the range at every scale.";
+
+  it("should stop placing a survey year inside a count of households", () => {
+    const { claims } = grounded("stress-y-rural-broadband", BROADBAND);
+    const claim = claims.find((c) => c.claim === "2025");
+    expect(claim).toBeTruthy();
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("calendar year");
+    // It still SAYS where the numeral would have landed — refusing is not going quiet.
+    expect(claim.detail).toContain("households");
+  });
+
+  // T13: two clauses of one takeaway decided against different evidence. The superlative was
+  // refused for want of a column the sentence names, while the numeral in the same sentence was
+  // quietly placed in `collected_kt` — a different column, chosen by nothing but arithmetic.
+  it("should not decide two claims of one sentence against two different columns", () => {
+    const { claims } = grounded(
+      "stress-t-europe-recycling",
+      "Germany recycles the highest share of its waste of any country surveyed in March 2025.",
+    );
+    const numeral = claims.find((c) => c.claim === "2025");
+    expect(numeral.verdict).toBe("unverifiable");
+    expect(numeral.detail).not.toContain("within the range of column");
+    expect(claims.every((c) => c.verdict === "unverifiable")).toBe(true);
+  });
+
+  // And the placement itself survives where the sentence really does name its own measure: the
+  // frozen `stress-u` takeaway names the AREA, and both of its figures are area figures.
+  it("should still place a numeral in the measure the sentence itself names", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The Rhone glacier's area in 2025 is the lowest since 1990 — 0.61 square kilometres against 1.82, a loss of two thirds.",
+    );
+    for (const numeral of ["0.61", "1.82"]) {
+      const claim = claims.find((c) => c.claim === numeral);
+      expect(claim.verdict).toBe("consistent");
+      expect(claim.detail).toContain("area_km2");
+    }
+  });
+
+  // A bare year in a table that HAS a period column is still placed against that period column,
+  // never against a measure that happens to span it.
+  it("should place a bare year against the profile's own period column", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The glacier was surveyed again in 2015 for the eighth time.",
+    );
+    const claim = claims.find((c) => c.claim === "2015");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("year");
   });
 });

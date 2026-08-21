@@ -515,18 +515,31 @@ const MORE_THAN_COMBINED_RE = /\bmore\b[\s\S]{0,40}?\bthan\s+(?:the\s+other|all(
 // it the second half of that exact sentence resolves to "Germany" again, the wrong entity, one
 // clause too early. Returns `null` when the clause has no leading capital at all (a sentence
 // starting lowercase, or a marker sitting at position 0).
-const CLAUSE_BOUNDARY_CHARS = [".", "!", "?", "\n", ";"];
-const SENTENCE_BOUNDARY_CHARS = [".", "!", "?", "\n"];
+// A FULL STOP IS ONLY A FULL STOP WHEN SOMETHING FOLLOWS IT. Round five: both boundary scans
+// below used `lastIndexOf(".")`, so the "." inside "0.61" ended a sentence and the "." inside
+// "1.82" started one — on `stress-u-rhone-glacier`'s own takeaway that cut "area" out of the very
+// sentence that names it, and the numeral could then be placed against no column at all. This is
+// the same rule `splitIntoSentences` at the bottom of this file already applies (a boundary needs
+// whitespace after it); the two scans just never shared it.
+const SENTENCE_END_CHARS = [".", "!", "?"];
+
+function isSentenceEnd(text, i) {
+  const ch = text[i];
+  if (ch === "\n") return true;
+  if (!SENTENCE_END_CHARS.includes(ch)) return false;
+  const next = text[i + 1];
+  return next === undefined || /\s/.test(next);
+}
+
+function isClauseEnd(text, i) {
+  return text[i] === ";" || isSentenceEnd(text, i);
+}
 const LEADING_CAPITAL_RE = /^\s*([A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*)/u;
 const CAPITALISED_PHRASE_RE = /[A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*/gu;
 
 function clauseStart(text, markerStart) {
-  let boundary = -1;
-  for (const ch of CLAUSE_BOUNDARY_CHARS) {
-    const idx = text.lastIndexOf(ch, markerStart - 1);
-    if (idx > boundary) boundary = idx;
-  }
-  return boundary + 1;
+  for (let i = markerStart - 1; i >= 0; i -= 1) if (isClauseEnd(text, i)) return i + 1;
+  return 0;
 }
 
 // The SENTENCE a marker sits in — wider than its clause, because the measure a claim is about is
@@ -535,15 +548,17 @@ function clauseStart(text, markerStart) {
 // `chooseValueColumn`), never which entity.
 function sentenceAround(text, markerStart, markerEnd) {
   let from = -1;
-  for (const ch of SENTENCE_BOUNDARY_CHARS) {
-    const idx = text.lastIndexOf(ch, markerStart - 1);
-    if (idx > from) from = idx;
-  }
+  for (let i = markerStart - 1; i >= 0; i -= 1)
+    if (isSentenceEnd(text, i)) {
+      from = i;
+      break;
+    }
   let to = text.length;
-  for (const ch of SENTENCE_BOUNDARY_CHARS) {
-    const idx = text.indexOf(ch, markerEnd);
-    if (idx !== -1 && idx < to) to = idx;
-  }
+  for (let i = markerEnd; i < text.length; i += 1)
+    if (isSentenceEnd(text, i)) {
+      to = i;
+      break;
+    }
   return text.slice(from + 1, to);
 }
 
@@ -628,11 +643,17 @@ function findCoverageColumn(columns) {
   return columns.find((c) => COVERAGE_COLUMN_NAME_RE.test(c.name)) ?? null;
 }
 
+// A bare four-digit token in the calendar range — "2025", never "2025.0" and never "14205". The
+// one place this file is willing to read a numeral as a PERIOD rather than a measurement, shared
+// by shape 6's date-range guard and by the numeral check's own placement rule below.
+function looksLikeCalendarYear(raw) {
+  return /^\d{4}$/.test(String(raw).trim()) && Number(raw) >= 1500 && Number(raw) <= 2100;
+}
+
 // A "from A to B" pair where both sides are a plausible four-digit calendar year is a date range
 // ("from 2019 to 2022"), not a measured value pair — see the header's first bullet under shape 6.
 function looksLikeYearSpan(rawA, rawB) {
-  const isYear = (raw) => /^\d{4}$/.test(raw) && Number(raw) >= 1500 && Number(raw) <= 2100;
-  return isYear(rawA) && isYear(rawB);
+  return looksLikeCalendarYear(rawA) && looksLikeCalendarYear(rawB);
 }
 
 function distanceBetween(spanA, spanB) {
@@ -952,6 +973,7 @@ function chooseValueColumn(columns, text) {
   if (candidates.length === 0) {
     return {
       column: null,
+      named: false,
       refusal: "this profile carries no numeric column with a range to check that against",
     };
   }
@@ -983,18 +1005,24 @@ function chooseValueColumn(columns, text) {
   if (meantButRefused.length > 0) {
     return {
       column: null,
+      named: false,
       refusal:
         `this claim names ${meantButRefused.map((c) => `"${c.name}"`).join(", ")}, which the profiler REFUSED to type` +
         ` (${meantButRefused.map((c) => c.reason).join("; ")}) — so the column the claim is about carries no range to check it against,` +
         ` and deciding it against ${candidates.map((c) => `"${c.name}"`).join(" or ")} instead would answer a question nobody asked`,
     };
   }
-  if (candidates.length === 1) return { column: candidates[0] };
+  // `named` is computed before the single-candidate shortcut because a caller needs to know
+  // WHETHER the sentence named the column it got, not only which column that was: a table with
+  // one measure hands its measure back whatever the sentence says, and "the sentence pointed at
+  // this column" is a different fact from "there was nothing else to hand back".
   const named = candidates.filter((c) => columnIsNamedIn(c, haystack));
-  if (named.length === 1) return { column: named[0] };
+  if (candidates.length === 1) return { column: candidates[0], named: named.length === 1 };
+  if (named.length === 1) return { column: named[0], named: true };
   const names = (list) => list.map((c) => `"${c.name}"`).join(", ");
   return {
     column: null,
+    named: false,
     refusal:
       named.length === 0
         ? `this profile carries ${candidates.length} measures (${names(candidates)}) and the claim names none of them, so nothing says which one it is about`
@@ -1562,8 +1590,60 @@ function checkNumericRanges(text, columns, consumedSpans) {
       continue;
     }
 
-    const inRange = numericColumns.filter((c) => value >= c.min && value <= c.max);
-    if (inRange.length > 0) {
+    // WHICH COLUMN THIS NUMERAL IS EVEN ALLOWED TO BE PLACED IN (round five, finding T13 and the
+    // "consistent" question). A range hit used to be taken from `numericColumns` in profile
+    // order, with nothing asked about whether that column was plausibly the sentence's subject —
+    // so on `stress-y-rural-broadband` the survey year `2025` was "placed" inside
+    // `households [240, 47933]` and reported `consistent`, and on `stress-t-europe-recycling` a
+    // sentence whose superlative was refused for want of a named column had its own numeral
+    // placed in `collected_kt` anyway: two clauses of one sentence decided against two different
+    // columns. So the numeral is now put to the SAME question every other shape in this file
+    // asks — `chooseValueColumn` on its own sentence — and a numeral the sentence gives no
+    // column for is reported unplaced, naming where it would have landed, rather than placed by
+    // arithmetic alone.
+    const sentence = sentenceAround(text, start, end);
+    const chosen = chooseValueColumn(columns, sentence);
+    const wouldLandIn = numericColumns.filter((c) => value >= c.min && value <= c.max);
+    const rangeOf = (list) => list.map((c) => `"${c.name}" [${c.min}, ${c.max}]`).join(", ");
+    let target = chosen.column;
+
+    // A BARE CALENDAR YEAR IS A PERIOD, not a measurement. It belongs to the profile's own period
+    // column and to nothing else — unless the sentence explicitly names a measure, in which case
+    // a four-digit figure really can be that measure's own value ("1,800 households").
+    if (looksLikeCalendarYear(raw)) {
+      const periodColumn =
+        yearColumn && yearColumn.type === "number" && Number.isFinite(yearColumn.min) && Number.isFinite(yearColumn.max)
+          ? yearColumn
+          : null;
+      if (periodColumn) target = periodColumn;
+      else if (!chosen.named) {
+        claims.push({
+          claim: raw,
+          verdict: "unverifiable",
+          detail:
+            `"${raw}" reads as a calendar year and this profile carries no period column to place it against` +
+            (wouldLandIn.length > 0
+              ? `; it falls inside ${rangeOf(wouldLandIn)}, which measures something else, and nothing in the sentence names that column — placing it there would be a coincidence`
+              : ", and it falls inside no column's range either") +
+            refusedColumnNote(columns),
+        });
+        continue;
+      }
+    }
+
+    if (!target) {
+      claims.push({
+        claim: raw,
+        verdict: "unverifiable",
+        detail:
+          `"${raw}" was not placed: ${chosen.refusal}` +
+          (wouldLandIn.length > 0 ? ` (it would fall inside ${rangeOf(wouldLandIn)})` : "") +
+          refusedColumnNote(columns),
+      });
+      continue;
+    }
+
+    if (value >= target.min && value <= target.max) {
       // Partial periods, narrowly (finding 2). A bare numeral landing inside the YEAR column's
       // range reads as "this period is comparable to the others" — a coverage-marking column says
       // the profile itself carries at least one period that is not, and this check has no row
@@ -1571,7 +1651,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // than guess: the exact stress-j-partial-year-permits shape ("Building permits collapse in
       // 2026" — "2026" alone, trivially inside `year`'s range, used to come back "supported" with
       // `months_covered` recording that row at 3 of 12 months).
-      if (coverageColumn && yearColumn && inRange.includes(yearColumn)) {
+      if (coverageColumn && target === yearColumn) {
         claims.push({
           claim: raw,
           verdict: "unverifiable",
@@ -1586,26 +1666,27 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // inside `incidents [96, 412]` and `100` — the "k" of "100k" — does too, and neither is
       // evidence for the sentence they sit in. "consistent" is therefore its own verdict, and
       // `propose.mjs`'s `groundingScalar` cannot close G1 on it (see `resolveGrounding`).
-      const placed = inRange[0];
-      const degenerate = placed.min === placed.max;
+      const degenerate = target.min === target.max;
       claims.push({
         claim: raw,
         verdict: "consistent",
         detail: degenerate
-          ? `"${raw}" equals the only value column "${placed.name}" holds (${placed.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
-          : `within the range of column "${placed.name}" [${placed.min}, ${placed.max}] — that places the numeral, it does not confirm the claim it sits in`,
+          ? `"${raw}" equals the only value column "${target.name}" holds (${target.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
+          : `within the range of column "${target.name}" [${target.min}, ${target.max}] — that places the numeral, it does not confirm the claim it sits in`,
       });
       continue;
     }
 
-    // Neither a member of a range nor a column total. That is this function failing to place the
-    // number, which is not the same fact as the data refuting it — see the header.
+    // Neither a member of the column this sentence is about nor a column total. That is this
+    // function failing to place the number, which is not the same fact as the data refuting it —
+    // see the header.
     claims.push({
       claim: raw,
       verdict: "unverifiable",
-      detail: `could not be placed in any numeric column's range or total (${numericColumns
-        .map((c) => `"${c.name}" [${c.min}, ${c.max}]${c.sum === null || c.sum === undefined ? "" : `, sum ${c.sum}`}`)
-        .join(", ")}) — this check has no way to confirm or refute it${refusedColumnNote(columns)}`,
+      detail:
+        `could not be placed in the column this sentence names, "${target.name}" [${target.min}, ${target.max}]${target.sum === null || target.sum === undefined ? "" : `, sum ${target.sum}`}, nor read as any column's total` +
+        (wouldLandIn.length > 0 ? ` (it does fall inside ${rangeOf(wouldLandIn)}, which this sentence does not name)` : "") +
+        ` — this check has no way to confirm or refute it${refusedColumnNote(columns)}`,
     });
   }
   return claims;
