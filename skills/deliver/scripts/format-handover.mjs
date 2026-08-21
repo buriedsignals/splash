@@ -29,6 +29,24 @@ import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-langua
 
 // `language` is deliberately not in this list: it has its own refusal, in `resolveScaffoldLanguage`,
 // which says where it is recorded and why it is never guessed. One check, in the place that owns it.
+//
+// THAT REASONING SURVIVED ROUND-FOUR FINDING 9, and the finding is worth recording beside it,
+// because half of what the sentence above was taken to mean did not survive.
+//
+// What survives: `resolveScaffoldLanguage` is still the one place that decides what a recorded tag
+// MEANS — whether this toolchain can write in it, and what to say at the top of the document when
+// it cannot. That decision must not be copied into a gate. A gate that started making it would
+// refuse a language the journalist correctly chose over a translation gap that is ours, which is
+// the refusal this project already reversed once (R10.2, the MapTiler key wall).
+//
+// What did not: the inference that because ONE module resolves the value, NO earlier gate should
+// ASK for it. `grep -n "language"` over both Gate-2 readings returned nothing, so the question was
+// asked nowhere until this function ran — after the storyboard, the palette, the component, the
+// render and the approval. Ruling R4 exists because a hand-over came out in English on a French
+// story for want of the field; `stories/milan-cortina-la-glace-des-sponsors` sat in this tree as
+// that same story, gate-2 verdict `[]` and this refusal waiting at the end of it. Presence and
+// resolution are two questions about one field: G2 now asks the first (a code was recorded, and it
+// has the shape of a code), and this file still owns the second.
 const REQUIRED = ["format", "placement", "alt", "credit"];
 
 // WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,

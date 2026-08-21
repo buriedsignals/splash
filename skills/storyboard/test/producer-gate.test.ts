@@ -65,6 +65,7 @@ credit: "Splash Test Desk"
 effectiveDate: "2026-07-15"
 grounding: supported
 reference: "none — no matching reference"
+language: en
 slots:
   - id: 1
     proves: "Every country increased while the gap remained wide."

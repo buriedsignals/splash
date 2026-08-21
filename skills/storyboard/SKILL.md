@@ -125,6 +125,16 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    the journalist reads: `deliver` writes `HANDOVER.md` and makes the closing offer in it, by
    READING this field. A hand-over came out in English on a French story for want of it.
 
+   **And Gate 2 now REQUIRES it** (round-four finding 9). This paragraph was here, and the field was
+   required by `deliver` and checked by neither gate — `grep -n "language"` over both gate files
+   returned nothing — so a story could pass every gate and meet the question at the delivery call,
+   after the storyboard, the palette, the component, the render and the approval were all done.
+   `stories/milan-cortina-la-glace-des-sponsors` is that story in this tree: French throughout,
+   gate-2 verdict `[]`, hand-over refused. The gate checks that a code was recorded and that it has
+   the shape of one; what a code MEANS — whether a delivery can be written in it, and what to say
+   when it cannot — stays in `deliver`'s `resolveScaffoldLanguage`, which is the only place that has
+   ever decided it. It is the cheapest field on the list to answer, and it is asked here.
+
    **`size` is asked at G2c only where the format has one** (ruling R2). A `static` or `video` beat
    ships at `landscape` (YouTube, article web), `square` (social posts) or `portrait` (stories), and
    the slot records which. A `web` beat is asked NOTHING at G2c and must carry no `size` — web is
@@ -140,7 +150,8 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    fragment a candidate name that happens to contain one).
 4. **`checkStoryboard(meta)`** names every reason the gate has not closed: a missing or unconfirmed
    takeaway, any missing hand-of-the-journalist field, a missing or unresolved `grounding` verdict,
-   a missing `reference`, zero slots (nothing would be produced), a slot missing its `medium`,
+   a missing `reference`, a missing `language` or one recorded as a language's NAME rather than its
+   code, zero slots (nothing would be produced), a slot missing its `medium`,
    `format` or `size` (Gate 2's three sub-gates), a slot whose `reachable` is not `yes`, a slot with
    nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify it against
    (malformed — a real choice can only be confirmed from a list that was actually shown), or a slot

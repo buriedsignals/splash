@@ -42,6 +42,7 @@ const SCALARS: Record<string, string> = {
   effectiveDate: '"2026-08-01"',
   grounding: "supported",
   reference: '"The Pudding, redraft — mid-table deviation"',
+  language: '"fr"',
 };
 
 // `id` first: it is the line the slot list item opens on.
@@ -625,6 +626,9 @@ const SLOT_FIELDS = [
 const OUT_OF_VOCABULARY: Record<string, string> = {
   takeaway: "~",
   grounding: "contradicted",
+  // The language's NAME rather than its code — the mistake the field invites, refused by both
+  // gates and, one phase later, by `resolveScaffoldLanguage` in the same words.
+  language: '"Français"',
   reference: '""',
   medium: "hologram",
   format: "print",

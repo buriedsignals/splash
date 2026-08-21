@@ -84,7 +84,14 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 //
 // The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
 // loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
+//
+// `language` is the fifth, added at round-four finding 9 and the cheapest of them all to answer: it
+// was required by `deliver` and asked by neither gate, so a story reached the delivery call — past
+// the storyboard, the palette, the component, the render and the approval — before anybody was
+// asked which language their own hand-over should be written in. The gate checks that a code was
+// recorded and that it looks like one; what a code MEANS is `deliver`'s `resolveScaffoldLanguage`,
+// and stays there.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
 export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
 
 // Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
@@ -142,11 +149,23 @@ const SCALAR_GAP = {
   takeaway: "a confirmed takeaway",
   grounding: "the G1 grounding verdict",
   reference: "the reference loop's answer",
+  language: "the language this story's own delivery is written in",
 };
 
-const SCALAR_VOCABULARY = { grounding: isResolvedGrounding };
+// The shape of a language tag — `fr`, `de-CH`, `en-GB`. Spelled here independently of storyboard's
+// own copy, exactly as the grounding vocabulary above is, and cross-checked by the same generated
+// fixtures. SHAPE only: whether a delivery can be WRITTEN in a given tag, and what to say when it
+// cannot, belongs to `deliver`'s `resolveScaffoldLanguage` and must not migrate into a gate.
+const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
+
+function isLanguageTag(value) {
+  return typeof value === "string" && LANGUAGE_TAG.test(value.trim());
+}
+
+const SCALAR_VOCABULARY = { grounding: isResolvedGrounding, language: isLanguageTag };
 const SCALAR_VOCABULARY_GAP = {
   grounding: (value) => `a resolved grounding verdict (found ${JSON.stringify(value)})`,
+  language: (value) => `a language code such as fr or de-CH, not a language's name (found ${JSON.stringify(value)})`,
 };
 
 const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };

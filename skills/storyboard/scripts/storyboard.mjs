@@ -37,7 +37,15 @@ const HAND = [
 // independently — the deliberate duplicate, cross-checked by `splash/test/where.test.ts`,
 // which GENERATES its fixtures from the union of both copies so a field added to either side
 // produces its own fixture the moment it lands.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
+//
+// `language` joined the list at round-four finding 9, and it is the cheapest field on it: the
+// journalist answers it in one word, at the moment their own article is in front of everybody.
+// It used to be required by `deliver` alone and asked by nobody, so a story could pass every gate
+// and meet the question at the delivery call — after the storyboard, the palette, the component,
+// the render and the approval. `exchange.md`'s ruling R4 exists because a hand-over came out in
+// English on a French story for want of it, and `stories/milan-cortina-la-glace-des-sponsors` sat
+// in this tree as a French story whose gate-2 verdict was `[]` and whose hand-over threw.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
 
 // Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
 // EXPORT_SIZES / SIZED_FORMATS below — but it stays in this list because the list is what the parity
@@ -110,13 +118,30 @@ const SCALAR_GAP = {
   grounding: "grounding is missing — the takeaway was never grounded at G1",
   reference:
     "reference is missing — the reference loop never closed into a field",
+  language:
+    "language is missing — nobody confirmed which language this story's own delivery is written in (a code, `fr` or `de-CH`, chosen among NEWSROOM.md's `languages` against the article itself)",
 };
 
+// The shape of a language tag — `fr`, `de-CH`, `en-GB`. Spelled here and again in `where.mjs`, for
+// the same reason `isResolvedGrounding` is: two readings of one rule, cross-checked by a test that
+// generates its fixtures from both lists, never unified by an import across a skill boundary.
+// It checks the SHAPE only. What a tag MEANS — whether a delivery can be written in it, and what to
+// say when it cannot — stays where it has always been, in `deliver`'s own `resolveScaffoldLanguage`.
+// A gate that started deciding that would be a gate refusing a language the journalist correctly
+// chose, over a translation gap that is ours.
+const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
+
+function isLanguageTag(value) {
+  return typeof value === "string" && LANGUAGE_TAG.test(value.trim());
+}
+
 // The scalars whose VALUE is checked, not merely their presence.
-const SCALAR_VOCABULARY = { grounding: isResolvedGrounding };
+const SCALAR_VOCABULARY = { grounding: isResolvedGrounding, language: isLanguageTag };
 const SCALAR_VOCABULARY_GAP = {
   grounding: (value) =>
     `grounding ${JSON.stringify(value)} is not a resolved verdict — expected supported, unverifiable, or overridden — "<reason>"`,
+  language: (value) =>
+    `language ${JSON.stringify(value)} is not a language code (fr, de-CH, en) — STORYBOARD.md records the code, not the language's name`,
 };
 
 // Gate 2's three sub-gates, each recorded as it closes: the KIND (2a), then the format within that

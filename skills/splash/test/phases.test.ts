@@ -47,8 +47,9 @@ afterEach(async () => {
 
 // Gate-2-complete, matching what where.mjs's missingForGate2 actually requires: a confirmed
 // takeaway, all six hand-of-the-journalist fields, the two recorded verdicts (`grounding` from G1,
-// `reference` from the reference loop), and a slot carrying its medium, format, size, recorded
-// reachability, and a chosen candidate drawn from its own listed candidates.
+// `reference` from the reference loop), the `language` the delivery will be written in, and a slot
+// carrying its medium, format, size, recorded reachability, and a chosen candidate drawn from its
+// own listed candidates.
 const confirmedStoryboard = `---
 takeaway: "Rainfall fell by a third in ten years."
 subject: "Rainfall trends in the Rhône basin"
@@ -59,6 +60,7 @@ credit: "Data: MeteoSwiss"
 effectiveDate: "2026-08-01"
 grounding: supported
 reference: "The Pudding, redraft — mid-table deviation"
+language: "fr"
 slots:
   - id: 1
     proves: "Rainfall fell by a third in ten years."
