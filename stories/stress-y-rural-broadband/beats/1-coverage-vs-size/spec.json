@@ -1,0 +1,775 @@
+{
+  "takeaway": "Broadband coverage does not follow a municipality's size: the smallest towns are no worse served than the largest",
+  "limits": "All 186 municipalities surveyed in June 2025, one dot each. 6 returned no figure and are plotted as gaps. Commune-063 returned 104.2 per cent, which no percentage can be; the agency has not explained it, and the reading is shown rather than removed.",
+  "credit": "not stated",
+  "effectiveDate": "2025-06-30",
+  "language": "en",
+  "color": "#5B8A8A",
+  "chartType": "d3-scatter-plot",
+  "format": "static",
+  "seriesLabel": "Broadband coverage (%)",
+  "rangeAnnotations": [
+    {
+      "value": 100,
+      "label": "100% — every household covered",
+      "axis": "y",
+      "strokeType": "dashed",
+      "strokeWidth": 2
+    }
+  ],
+  "textAnnotations": [
+    {
+      "x": 9105,
+      "y": 104.2,
+      "text": "Commune-063: 104.2% — above the ceiling, unexplained",
+      "align": "mr",
+      "dx": -8
+    }
+  ],
+  "data": [
+    {
+      "households": 36895,
+      "Broadband coverage (%)": 62.3
+    },
+    {
+      "households": 30726,
+      "Broadband coverage (%)": 89.8
+    },
+    {
+      "households": 38704,
+      "Broadband coverage (%)": 62.2
+    },
+    {
+      "households": 33758,
+      "Broadband coverage (%)": 44.4
+    },
+    {
+      "households": 40446,
+      "Broadband coverage (%)": 63.8
+    },
+    {
+      "households": 6378,
+      "Broadband coverage (%)": 85.5
+    },
+    {
+      "households": 9502,
+      "Broadband coverage (%)": 61.9
+    },
+    {
+      "households": 45655,
+      "Broadband coverage (%)": 37.6
+    },
+    {
+      "households": 39232,
+      "Broadband coverage (%)": 74.7
+    },
+    {
+      "households": 29897,
+      "Broadband coverage (%)": 98.4
+    },
+    {
+      "households": 40551,
+      "Broadband coverage (%)": 76
+    },
+    {
+      "households": 41047,
+      "Broadband coverage (%)": 75.7
+    },
+    {
+      "households": 34837,
+      "Broadband coverage (%)": 32.4
+    },
+    {
+      "households": 2546,
+      "Broadband coverage (%)": 35.7
+    },
+    {
+      "households": 16065,
+      "Broadband coverage (%)": 44.4
+    },
+    {
+      "households": 30614,
+      "Broadband coverage (%)": 72.3
+    },
+    {
+      "households": 38939,
+      "Broadband coverage (%)": 53.7
+    },
+    {
+      "households": 34231,
+      "Broadband coverage (%)": 88.9
+    },
+    {
+      "households": 19487,
+      "Broadband coverage (%)": 47.3
+    },
+    {
+      "households": 43624,
+      "Broadband coverage (%)": 65.5
+    },
+    {
+      "households": 43123,
+      "Broadband coverage (%)": 37.2
+    },
+    {
+      "households": 36337,
+      "Broadband coverage (%)": 50.4
+    },
+    {
+      "households": 5662,
+      "Broadband coverage (%)": 99.3
+    },
+    {
+      "households": 20872,
+      "Broadband coverage (%)": 79.7
+    },
+    {
+      "households": 33822,
+      "Broadband coverage (%)": 83.1
+    },
+    {
+      "households": 4812,
+      "Broadband coverage (%)": 51.1
+    },
+    {
+      "households": 7283,
+      "Broadband coverage (%)": 69.8
+    },
+    {
+      "households": 19274,
+      "Broadband coverage (%)": 58.7
+    },
+    {
+      "households": 1316,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 245,
+      "Broadband coverage (%)": 89.2
+    },
+    {
+      "households": 3639,
+      "Broadband coverage (%)": 46
+    },
+    {
+      "households": 46668,
+      "Broadband coverage (%)": 63.5
+    },
+    {
+      "households": 4996,
+      "Broadband coverage (%)": 58.5
+    },
+    {
+      "households": 13218,
+      "Broadband coverage (%)": 70
+    },
+    {
+      "households": 17890,
+      "Broadband coverage (%)": 84.5
+    },
+    {
+      "households": 20605,
+      "Broadband coverage (%)": 54.4
+    },
+    {
+      "households": 27083,
+      "Broadband coverage (%)": 54.1
+    },
+    {
+      "households": 7942,
+      "Broadband coverage (%)": 83.1
+    },
+    {
+      "households": 46545,
+      "Broadband coverage (%)": 40.6
+    },
+    {
+      "households": 4135,
+      "Broadband coverage (%)": 38.3
+    },
+    {
+      "households": 32114,
+      "Broadband coverage (%)": 63.1
+    },
+    {
+      "households": 36863,
+      "Broadband coverage (%)": 43.5
+    },
+    {
+      "households": 33559,
+      "Broadband coverage (%)": 44.2
+    },
+    {
+      "households": 8793,
+      "Broadband coverage (%)": 44.4
+    },
+    {
+      "households": 25359,
+      "Broadband coverage (%)": 60
+    },
+    {
+      "households": 27784,
+      "Broadband coverage (%)": 39.3
+    },
+    {
+      "households": 240,
+      "Broadband coverage (%)": 98.9
+    },
+    {
+      "households": 39055,
+      "Broadband coverage (%)": 49.8
+    },
+    {
+      "households": 1496,
+      "Broadband coverage (%)": 52.1
+    },
+    {
+      "households": 26049,
+      "Broadband coverage (%)": 45.8
+    },
+    {
+      "households": 39663,
+      "Broadband coverage (%)": 99.3
+    },
+    {
+      "households": 6785,
+      "Broadband coverage (%)": 75.2
+    },
+    {
+      "households": 9801,
+      "Broadband coverage (%)": 34.3
+    },
+    {
+      "households": 17136,
+      "Broadband coverage (%)": 45.9
+    },
+    {
+      "households": 40208,
+      "Broadband coverage (%)": 32.1
+    },
+    {
+      "households": 19629,
+      "Broadband coverage (%)": 53.8
+    },
+    {
+      "households": 5078,
+      "Broadband coverage (%)": 57.7
+    },
+    {
+      "households": 38400,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 1226,
+      "Broadband coverage (%)": 74.8
+    },
+    {
+      "households": 24569,
+      "Broadband coverage (%)": 72.4
+    },
+    {
+      "households": 8547,
+      "Broadband coverage (%)": 73.8
+    },
+    {
+      "households": 31911,
+      "Broadband coverage (%)": 96.8
+    },
+    {
+      "households": 9105,
+      "Broadband coverage (%)": 104.2
+    },
+    {
+      "households": 12191,
+      "Broadband coverage (%)": 90.5
+    },
+    {
+      "households": 20579,
+      "Broadband coverage (%)": 74.2
+    },
+    {
+      "households": 40216,
+      "Broadband coverage (%)": 93.4
+    },
+    {
+      "households": 12648,
+      "Broadband coverage (%)": 48.4
+    },
+    {
+      "households": 41430,
+      "Broadband coverage (%)": 42.2
+    },
+    {
+      "households": 13093,
+      "Broadband coverage (%)": 95.5
+    },
+    {
+      "households": 25651,
+      "Broadband coverage (%)": 78.3
+    },
+    {
+      "households": 39763,
+      "Broadband coverage (%)": 91.6
+    },
+    {
+      "households": 3316,
+      "Broadband coverage (%)": 36.8
+    },
+    {
+      "households": 2746,
+      "Broadband coverage (%)": 38.5
+    },
+    {
+      "households": 16933,
+      "Broadband coverage (%)": 66.3
+    },
+    {
+      "households": 46385,
+      "Broadband coverage (%)": 47.7
+    },
+    {
+      "households": 27788,
+      "Broadband coverage (%)": 58.1
+    },
+    {
+      "households": 39300,
+      "Broadband coverage (%)": 87.6
+    },
+    {
+      "households": 34293,
+      "Broadband coverage (%)": 64.9
+    },
+    {
+      "households": 47419,
+      "Broadband coverage (%)": 43.4
+    },
+    {
+      "households": 8493,
+      "Broadband coverage (%)": 98
+    },
+    {
+      "households": 36868,
+      "Broadband coverage (%)": 47
+    },
+    {
+      "households": 40571,
+      "Broadband coverage (%)": 76
+    },
+    {
+      "households": 18574,
+      "Broadband coverage (%)": 73.3
+    },
+    {
+      "households": 13577,
+      "Broadband coverage (%)": 45.9
+    },
+    {
+      "households": 4742,
+      "Broadband coverage (%)": 82.5
+    },
+    {
+      "households": 29419,
+      "Broadband coverage (%)": 49.8
+    },
+    {
+      "households": 3263,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 24378,
+      "Broadband coverage (%)": 43.4
+    },
+    {
+      "households": 8833,
+      "Broadband coverage (%)": 67.6
+    },
+    {
+      "households": 9280,
+      "Broadband coverage (%)": 37.7
+    },
+    {
+      "households": 21900,
+      "Broadband coverage (%)": 92.2
+    },
+    {
+      "households": 45509,
+      "Broadband coverage (%)": 76.2
+    },
+    {
+      "households": 9407,
+      "Broadband coverage (%)": 67
+    },
+    {
+      "households": 1382,
+      "Broadband coverage (%)": 71.6
+    },
+    {
+      "households": 23637,
+      "Broadband coverage (%)": 63.8
+    },
+    {
+      "households": 2408,
+      "Broadband coverage (%)": 79.2
+    },
+    {
+      "households": 41902,
+      "Broadband coverage (%)": 32.8
+    },
+    {
+      "households": 4618,
+      "Broadband coverage (%)": 36.5
+    },
+    {
+      "households": 21109,
+      "Broadband coverage (%)": 81.2
+    },
+    {
+      "households": 4956,
+      "Broadband coverage (%)": 40.7
+    },
+    {
+      "households": 35998,
+      "Broadband coverage (%)": 36.5
+    },
+    {
+      "households": 3124,
+      "Broadband coverage (%)": 56.5
+    },
+    {
+      "households": 46327,
+      "Broadband coverage (%)": 92.8
+    },
+    {
+      "households": 22598,
+      "Broadband coverage (%)": 40.2
+    },
+    {
+      "households": 45111,
+      "Broadband coverage (%)": 55.4
+    },
+    {
+      "households": 5300,
+      "Broadband coverage (%)": 63.7
+    },
+    {
+      "households": 27548,
+      "Broadband coverage (%)": 90.8
+    },
+    {
+      "households": 2193,
+      "Broadband coverage (%)": 95.8
+    },
+    {
+      "households": 37749,
+      "Broadband coverage (%)": 90.3
+    },
+    {
+      "households": 43612,
+      "Broadband coverage (%)": 32.4
+    },
+    {
+      "households": 38396,
+      "Broadband coverage (%)": 57.5
+    },
+    {
+      "households": 4944,
+      "Broadband coverage (%)": 32.2
+    },
+    {
+      "households": 42114,
+      "Broadband coverage (%)": 36.9
+    },
+    {
+      "households": 17066,
+      "Broadband coverage (%)": 39.3
+    },
+    {
+      "households": 47933,
+      "Broadband coverage (%)": 91.4
+    },
+    {
+      "households": 45702,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 29080,
+      "Broadband coverage (%)": 71
+    },
+    {
+      "households": 35681,
+      "Broadband coverage (%)": 63
+    },
+    {
+      "households": 33930,
+      "Broadband coverage (%)": 37.1
+    },
+    {
+      "households": 39615,
+      "Broadband coverage (%)": 33.4
+    },
+    {
+      "households": 1670,
+      "Broadband coverage (%)": 37.4
+    },
+    {
+      "households": 45976,
+      "Broadband coverage (%)": 47.1
+    },
+    {
+      "households": 40482,
+      "Broadband coverage (%)": 39.1
+    },
+    {
+      "households": 32079,
+      "Broadband coverage (%)": 76.4
+    },
+    {
+      "households": 951,
+      "Broadband coverage (%)": 48.8
+    },
+    {
+      "households": 9596,
+      "Broadband coverage (%)": 56.5
+    },
+    {
+      "households": 13485,
+      "Broadband coverage (%)": 77.6
+    },
+    {
+      "households": 22657,
+      "Broadband coverage (%)": 66.8
+    },
+    {
+      "households": 29172,
+      "Broadband coverage (%)": 76.4
+    },
+    {
+      "households": 16035,
+      "Broadband coverage (%)": 65.4
+    },
+    {
+      "households": 43850,
+      "Broadband coverage (%)": 53.7
+    },
+    {
+      "households": 41771,
+      "Broadband coverage (%)": 48.5
+    },
+    {
+      "households": 13336,
+      "Broadband coverage (%)": 60.8
+    },
+    {
+      "households": 25403,
+      "Broadband coverage (%)": 91.4
+    },
+    {
+      "households": 20951,
+      "Broadband coverage (%)": 46.4
+    },
+    {
+      "households": 9028,
+      "Broadband coverage (%)": 45.7
+    },
+    {
+      "households": 2868,
+      "Broadband coverage (%)": 65.3
+    },
+    {
+      "households": 18350,
+      "Broadband coverage (%)": 79.9
+    },
+    {
+      "households": 7604,
+      "Broadband coverage (%)": 87.5
+    },
+    {
+      "households": 18243,
+      "Broadband coverage (%)": 62.1
+    },
+    {
+      "households": 27340,
+      "Broadband coverage (%)": 94.5
+    },
+    {
+      "households": 34287,
+      "Broadband coverage (%)": 57.5
+    },
+    {
+      "households": 20878,
+      "Broadband coverage (%)": 65.1
+    },
+    {
+      "households": 41155,
+      "Broadband coverage (%)": 80.3
+    },
+    {
+      "households": 5104,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 18437,
+      "Broadband coverage (%)": 87.9
+    },
+    {
+      "households": 2928,
+      "Broadband coverage (%)": 90.9
+    },
+    {
+      "households": 18630,
+      "Broadband coverage (%)": 77.7
+    },
+    {
+      "households": 20462,
+      "Broadband coverage (%)": 70.3
+    },
+    {
+      "households": 37174,
+      "Broadband coverage (%)": 75.7
+    },
+    {
+      "households": 9115,
+      "Broadband coverage (%)": 32.7
+    },
+    {
+      "households": 12656,
+      "Broadband coverage (%)": 59
+    },
+    {
+      "households": 17669,
+      "Broadband coverage (%)": 33.1
+    },
+    {
+      "households": 9442,
+      "Broadband coverage (%)": 47.6
+    },
+    {
+      "households": 41443,
+      "Broadband coverage (%)": 85.7
+    },
+    {
+      "households": 7354,
+      "Broadband coverage (%)": 39.3
+    },
+    {
+      "households": 43138,
+      "Broadband coverage (%)": 74.4
+    },
+    {
+      "households": 24372,
+      "Broadband coverage (%)": 75
+    },
+    {
+      "households": 45068,
+      "Broadband coverage (%)": 96.8
+    },
+    {
+      "households": 31348,
+      "Broadband coverage (%)": 44.9
+    },
+    {
+      "households": 47017,
+      "Broadband coverage (%)": 48.9
+    },
+    {
+      "households": 31156,
+      "Broadband coverage (%)": 32.1
+    },
+    {
+      "households": 2580,
+      "Broadband coverage (%)": 67.9
+    },
+    {
+      "households": 18059,
+      "Broadband coverage (%)": 43.6
+    },
+    {
+      "households": 35579,
+      "Broadband coverage (%)": 84.5
+    },
+    {
+      "households": 34316,
+      "Broadband coverage (%)": 79
+    },
+    {
+      "households": 10642,
+      "Broadband coverage (%)": 65.5
+    },
+    {
+      "households": 46071,
+      "Broadband coverage (%)": 58.2
+    },
+    {
+      "households": 5925,
+      "Broadband coverage (%)": 93.2
+    },
+    {
+      "households": 47551,
+      "Broadband coverage (%)": 59.4
+    },
+    {
+      "households": 29734,
+      "Broadband coverage (%)": 57.9
+    },
+    {
+      "households": 41205,
+      "Broadband coverage (%)": 62.3
+    },
+    {
+      "households": 650,
+      "Broadband coverage (%)": 91.9
+    },
+    {
+      "households": 37487,
+      "Broadband coverage (%)": null
+    },
+    {
+      "households": 33151,
+      "Broadband coverage (%)": 75.9
+    },
+    {
+      "households": 22695,
+      "Broadband coverage (%)": 85.7
+    },
+    {
+      "households": 42895,
+      "Broadband coverage (%)": 63
+    },
+    {
+      "households": 6695,
+      "Broadband coverage (%)": 98.4
+    },
+    {
+      "households": 42258,
+      "Broadband coverage (%)": 80.6
+    },
+    {
+      "households": 8302,
+      "Broadband coverage (%)": 94.4
+    },
+    {
+      "households": 25783,
+      "Broadband coverage (%)": 45.9
+    },
+    {
+      "households": 20516,
+      "Broadband coverage (%)": 98.3
+    },
+    {
+      "households": 21207,
+      "Broadband coverage (%)": 68
+    },
+    {
+      "households": 47282,
+      "Broadband coverage (%)": 49.3
+    },
+    {
+      "households": 23049,
+      "Broadband coverage (%)": 89.8
+    },
+    {
+      "households": 2643,
+      "Broadband coverage (%)": 65.8
+    }
+  ]
+}

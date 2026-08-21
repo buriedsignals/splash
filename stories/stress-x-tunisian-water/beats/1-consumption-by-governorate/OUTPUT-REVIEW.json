@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "1-consumption-by-governorate-review-2026-08-21",
+  "outputId": "1-consumption-by-governorate",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:9244bb92dbbe87735ef96babff2b10d1feb2d96d09922455dc964558a54b1085",
+  "findingIds": [
+    "slot-1-consumption-by-governorate"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "1-consumption-by-governorate-qa-2026-08-21-1",
+      "outputId": "1-consumption-by-governorate",
+      "planVersion": 1,
+      "draftDigest": "sha256:9244bb92dbbe87735ef96babff2b10d1feb2d96d09922455dc964558a54b1085",
+      "findingIds": [
+        "slot-1-consumption-by-governorate"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T15:40:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Slot 1 proves that Tunis consumes more water than any other governorate in the frozen table, and names the one cell the table did not hand over as a number. Every figure in the title, standfirst, bar labels and alt text is computed by render.mjs from source/data.csv and printed before the render; nothing is typed. The PNG was opened and read at 1920x1080 on the newsroom's dark ground and again on white.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
+  "decidedAt": "2026-08-21T15:40:00Z",
+  "notes": "assertDeliveredSize, assertTypeFloor, assertWithinStage and assertDrawnInActiveTypeface all passed against the delivered PNG and SVG. inspectSvg was run by hand — nothing calls it from any render path — and it caught a real defect the markup could not show: the subject's own value label was set in the accent, which clears the 3:1 non-text floor at 3.34:1 and is under the 4.5:1 floor a word has to clear. The label moved to ink and the whole frame now passes at 22 of 22 painted runs, on the dark ground and on white. Arabic was read at 6x zoom at both ends of every wrapped line: joined, in order, punctuation on the correct side, no tofu."
+}

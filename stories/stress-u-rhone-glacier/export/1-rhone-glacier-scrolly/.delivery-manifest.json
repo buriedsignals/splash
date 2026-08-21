@@ -1,0 +1,19 @@
+{
+  "operationId": "f511607b-7e3b-4c5f-8549-2f01687233cc",
+  "reviewId": "review-u-1-rhone-glacier-scrolly-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:7d64524b89f05471bead9e1c325d2c21b36c62e0ca504bd86a082b0df2356c2c",
+  "findingIds": [
+    "U-1-scrub-drives-on-data-progress",
+    "U-2-every-step-redraws",
+    "U-3-marks-declare-reached",
+    "U-4-card-travels-and-is-opaque",
+    "U-5-composition-fills-the-frame"
+  ],
+  "form": "owned-file",
+  "format": "scrolly",
+  "createdAt": "2026-08-21T13:25:10.740Z",
+  "schemaVersion": 1,
+  "outputId": "1-rhone-glacier-scrolly",
+  "state": "complete"
+}

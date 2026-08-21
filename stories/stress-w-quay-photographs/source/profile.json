@@ -1,0 +1,52 @@
+{
+  "rowCount": 3,
+  "columns": [
+    {
+      "name": "photograph",
+      "type": "text",
+      "missing": 0,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 3,
+      "min": 1994,
+      "max": 2025,
+      "sum": 6029,
+      "gaps": [
+        2009,
+        2024
+      ]
+    },
+    {
+      "name": "alt",
+      "type": "text",
+      "missing": 1,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "credit",
+      "type": "text",
+      "missing": 2,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

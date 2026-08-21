@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "provider": "datawrapper",
+  "state": "local-complete",
+  "outputId": "1-coverage-vs-size",
+  "chartId": "yNwL8",
+  "chartType": "d3-scatter-plot",
+  "format": "static",
+  "attemptId": "ad1b091d-fcee-4550-aece-c5aa2d8d59c2",
+  "specDigest": "sha256:db9faed37792af5521283c36a7251607558b550446a52d05baeae80c20d75ba9",
+  "publicUrl": "https://datawrapper.dwcdn.net/yNwL8/7/",
+  "editableSpec": "spec.json",
+  "renderedArtifact": "renders/chart.png",
+  "createdAt": "2026-08-21T13:12:40.401Z",
+  "updatedAt": "2026-08-21T13:19:40.145Z"
+}

@@ -1,0 +1,15 @@
+{
+  "operationId": "2aaca806-2eb8-4258-b105-f69260f58134",
+  "reviewId": "review-europe-recycling-map-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:f94f7b0a38c1964deec4ec68863f009613a89fa58b6f251b28884439ca805963",
+  "findingIds": [
+    "takeaway-1"
+  ],
+  "form": "owned-file",
+  "format": "video",
+  "createdAt": "2026-08-21T13:29:06.575Z",
+  "schemaVersion": 1,
+  "outputId": "europe-recycling-map",
+  "state": "complete"
+}

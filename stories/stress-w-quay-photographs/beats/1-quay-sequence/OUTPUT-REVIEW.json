@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "review-stress-w-1",
+  "outputId": "1-quay-sequence",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:ac4385ae8eb57979814c7f67dddb7dce09213a7b6c3c684f12846d5e6e0f9f1f",
+  "findingIds": [
+    "W-letterbox-bar-contrast",
+    "W-panorama-box-share",
+    "W-typeface-not-read"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-stress-w-1",
+      "outputId": "1-quay-sequence",
+      "planVersion": 1,
+      "draftDigest": "sha256:ac4385ae8eb57979814c7f67dddb7dce09213a7b6c3c684f12846d5e6e0f9f1f",
+      "findingIds": [
+        "W-letterbox-bar-contrast",
+        "W-panorama-box-share",
+        "W-typeface-not-read"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T13:21:05.224Z"
+    }
+  ],
+  "angleEvidenceBrief": "The same stretch of quay in 1994, 2010 and 2025: boats moored three deep at the start, empty berths and no crane at the end. The evidence is the three photographs themselves; nothing is computed, and G1 grounded the takeaway as unverifiable because the frozen table is a photograph manifest carrying no quantity. Two of the three photographs have no photographer and print \"Source: not stated\"; the 2010 frame has no surviving caption and carries the desk own sentence about that absence instead of an invented description.",
+  "decision": "approve",
+  "reviewer": "desk (stress round five, journalist decision taken by the producer)",
+  "decidedAt": "2026-08-21T13:21:05.224Z",
+  "notes": "Looked at renders/still.png at 1920x1080. Letterbox geometry exact on all three aspect ratios; the bars themselves measure 1.75:1 against the ground and a dark photograph disappears into them. Recorded, not fixed. The portrait probe is deliberately outside renders/ so the owned-file delivery does not ship it."
+}

@@ -1,0 +1,17 @@
+{
+  "operationId": "7d9e37fa-25ae-4db4-9af9-1d418534b081",
+  "reviewId": "review-stress-w-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:ac4385ae8eb57979814c7f67dddb7dce09213a7b6c3c684f12846d5e6e0f9f1f",
+  "findingIds": [
+    "W-letterbox-bar-contrast",
+    "W-panorama-box-share",
+    "W-typeface-not-read"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T13:21:22.822Z",
+  "schemaVersion": 1,
+  "outputId": "1-quay-sequence",
+  "state": "complete"
+}

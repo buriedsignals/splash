@@ -1,0 +1,16 @@
+{
+  "operationId": "176b9544-a81c-4f17-90e2-695ed7f74afa",
+  "reviewId": "1-coverage-vs-size-review-2026-08-21",
+  "planVersion": 1,
+  "draftDigest": "sha256:8c3d2fb01944374d66db3b76afece016f4aa73633d5e851dd3b073e42cf2fa62",
+  "findingIds": [
+    "coverage-does-not-follow-size",
+    "one-reading-above-the-ceiling"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T13:17:38.961Z",
+  "schemaVersion": 1,
+  "outputId": "1-coverage-vs-size",
+  "state": "complete"
+}

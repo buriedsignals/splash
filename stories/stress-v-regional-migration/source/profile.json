@@ -1,0 +1,42 @@
+{
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "region",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "net_migration_2025",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": -21800,
+      "max": 15600,
+      "sum": -9380,
+      "gaps": null,
+      "denominator": {
+        "column": "population"
+      }
+    },
+    {
+      "name": "population",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 310000,
+      "max": 3410000,
+      "sum": 11600000,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

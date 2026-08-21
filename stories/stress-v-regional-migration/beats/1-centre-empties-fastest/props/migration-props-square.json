@@ -1,0 +1,45 @@
+{
+  "data": [
+    {
+      "region": "Ouest",
+      "net": 15600
+    },
+    {
+      "region": "Sud",
+      "net": 8900
+    },
+    {
+      "region": "Littoral",
+      "net": 4200
+    },
+    {
+      "region": "Montagne",
+      "net": -780
+    },
+    {
+      "region": "Est",
+      "net": -3100
+    },
+    {
+      "region": "Nord",
+      "net": -12400
+    },
+    {
+      "region": "Centre",
+      "net": -21800
+    }
+  ],
+  "size": "square",
+  "title": "Four regions emptied in 2025 — and one of them did most of it",
+  "source": "Source: not stated · as of 21 August 2026",
+  "caveat": "Net balance only: births and deaths are not in this table. Per 1000 residents Sud, not Ouest, gained most.",
+  "axisTitle": "Net migration, 2025, people",
+  "subjectRegion": "Centre",
+  "conclusion": "Across all seven regions the balance is a net loss of 9 380 people.",
+  "fontFamily": "Helvetica, Arial, sans-serif",
+  "ground": "#16191B",
+  "accent": "#D4A853",
+  "ink": "#FFFFFF",
+  "muted": "#a6a8a8",
+  "grid": "#404244"
+}

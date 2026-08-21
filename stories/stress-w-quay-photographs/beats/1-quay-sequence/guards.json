@@ -1,0 +1,23 @@
+{
+  "photosDeclareAltAndCredit": {
+    "photos": 3,
+    "missingAlt": 0,
+    "missingCredit": 0
+  },
+  "deliveredSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pinnedSize": "landscape",
+  "duplicatedPayload": [],
+  "weightAgainstCeiling": {
+    "bytes": 35791,
+    "ceiling": 27962027,
+    "over": false
+  },
+  "typeTokens": [
+    28,
+    34,
+    48
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "operationId": "a020ff0b-3e03-4f16-954c-0b558d0eeaef",
+  "reviewId": "1-centre-empties-fastest-review-2026-08-21",
+  "planVersion": 1,
+  "draftDigest": "sha256:29177174787110a85d4be3ea9371cdd02c627df6b0f75e79234fff07c55f3347",
+  "findingIds": [
+    "every-bar-stays-on-one-scale",
+    "zero-line-precedes-the-bars",
+    "portrait-block-inside-the-safe-band",
+    "denominator-disagreement-is-printed"
+  ],
+  "form": "owned-file",
+  "format": "video",
+  "createdAt": "2026-08-21T13:30:17.023Z",
+  "schemaVersion": 1,
+  "outputId": "1-centre-empties-fastest",
+  "state": "complete"
+}

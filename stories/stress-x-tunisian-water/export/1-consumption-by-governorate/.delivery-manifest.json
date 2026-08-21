@@ -1,0 +1,15 @@
+{
+  "operationId": "cc63fa49-3c0b-4330-ac0f-f15c5721e02a",
+  "reviewId": "1-consumption-by-governorate-review-2026-08-21",
+  "planVersion": 1,
+  "draftDigest": "sha256:9244bb92dbbe87735ef96babff2b10d1feb2d96d09922455dc964558a54b1085",
+  "findingIds": [
+    "slot-1-consumption-by-governorate"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T13:34:19.407Z",
+  "schemaVersion": 1,
+  "outputId": "1-consumption-by-governorate",
+  "state": "complete"
+}

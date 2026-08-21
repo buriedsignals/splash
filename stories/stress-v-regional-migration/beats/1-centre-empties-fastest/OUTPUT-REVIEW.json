@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "1-centre-empties-fastest-review-2026-08-21",
+  "outputId": "1-centre-empties-fastest",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:29177174787110a85d4be3ea9371cdd02c627df6b0f75e79234fff07c55f3347",
+  "findingIds": [
+    "every-bar-stays-on-one-scale",
+    "zero-line-precedes-the-bars",
+    "portrait-block-inside-the-safe-band",
+    "denominator-disagreement-is-printed"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "1-centre-empties-fastest-qa-2026-08-21-1",
+      "outputId": "1-centre-empties-fastest",
+      "planVersion": 1,
+      "draftDigest": "sha256:29177174787110a85d4be3ea9371cdd02c627df6b0f75e79234fff07c55f3347",
+      "findingIds": [
+        "every-bar-stays-on-one-scale",
+        "zero-line-precedes-the-bars",
+        "portrait-block-inside-the-safe-band",
+        "denominator-disagreement-is-printed"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T14:30:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Portrait (1080x1920) opened at real size and six frames extracted from the portrait mp4 and opened (20, 50, 130, 200, 250, 329), plus the square second form at 1080x1080 and two of its own frames. Four of the seven regions are negative and three positive, computed from the frozen CSV and asserted by the render script, which stops if either count changes or if Centre is not the largest loss. Every bar is drawn on one shared scale: Montagne -780 is 3.6% of Centre -21800, a thirteen-pixel sliver whose number sits outside the bar rather than inside it. The zero line is drawn before any bar and on top of all of them. The accent reaches Centre only at frame 200, after the last bar has landed; at frame 130 all seven rows are still white and the value labels state the length currently drawn (+3 784, -178), never the value they are heading for. The whole block lands between baselines 323 and 1242, inside the 269-1248 safe band the platform publishes, and both mp4 files were measured back from their own streams at 1080x1920 and 1080x1080. Contrast measured against each run own real local background, including the accent number on the accent wash at 5.97:1. The rendered draft holds only the four files a newsroom should receive - two mp4 and two poster frames; build input, alt text and the extracted verification frames live beside it, because the owned-file form copies this directory whole.",
+  "decision": "approve",
+  "reviewer": "journalist (stress test, unattended run)",
+  "decidedAt": "2026-08-21T14:30:00Z",
+  "notes": "Approved with three limitations recorded in APPROVED.md rather than waved through: the tick axis is removed at this size and every bar carries its own number instead, so a reader cannot interpolate an unlabelled value; the per-resident reading that reverses the order of the three gainers is stated in the caveat and not drawn; and framingMeasurement returned a null outlier reading for this signed series, so the 3.6% ratio that decided the treatment was computed by hand in render.mjs and recorded in BRIEF.md."
+}

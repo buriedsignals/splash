@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "1-coverage-vs-size-review-2026-08-21",
+  "outputId": "1-coverage-vs-size",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:8c3d2fb01944374d66db3b76afece016f4aa73633d5e851dd3b073e42cf2fa62",
+  "findingIds": [
+    "coverage-does-not-follow-size",
+    "one-reading-above-the-ceiling"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "1-coverage-vs-size-qa-2026-08-21-1",
+      "outputId": "1-coverage-vs-size",
+      "planVersion": 1,
+      "draftDigest": "sha256:8c3d2fb01944374d66db3b76afece016f4aa73633d5e851dd3b073e42cf2fa62",
+      "findingIds": [
+        "coverage-does-not-follow-size",
+        "one-reading-above-the-ceiling"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T13:20:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "All 186 municipalities were sent and all 186 came back: GET /v3/charts/yNwL8/data returns 187 lines, 186 rows, the 6 unanswered municipalities still blank and the maximum still 104.2. Nothing was truncated or sampled. The delivered PNG was opened at 1920x1080 and again at 1080x1920: the cloud is flat across the whole household range (Pearson r = -0.07 over the 180 municipalities that answered), the dashed rule at 100 per cent renders with its paired label, and Commune-063 sits visibly above it with its own annotation. The takeaway the chart carries is the one the data can settle; the article own regional claim is not, and the storyboard says why.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see the report for this stress round)",
+  "decidedAt": "2026-08-21T13:20:00Z",
+  "notes": "Approved with two limitations recorded rather than waved through. (1) THE HOUSE ACCENT DID NOT REACH THE MARKS. spec.color is #5B8A8A; the 186 dots in the delivered PNG are #18a1cd, Datawrapper own default blue, read straight off the bytes (2014 pixels of #18a1cd against 1811 of #5B8A8A, and the #5B8A8A pixels are all rule and label). buildChartPayload only sets visualize[base-color] when isBarEncoded(chartType) matches /bars|column/, so a scatter is left with custom-colors alone - the exact key round three measured as inert. (2) THE X AXIS RUNS TO -4,000 HOUSEHOLDS at landscape. computeYRange fits the y axis and there is no x equivalent, so the household axis keeps Datawrapper own padded default and states a quantity that cannot exist. At portrait the same chart draws 0-50,000 and the defect disappears, which is how it was isolated. Neither is a data error and both ship visible."
+}

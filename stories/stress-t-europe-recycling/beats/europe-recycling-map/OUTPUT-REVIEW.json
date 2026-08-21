@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "review-europe-recycling-map-1",
+  "outputId": "europe-recycling-map",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:f94f7b0a38c1964deec4ec68863f009613a89fa58b6f251b28884439ca805963",
+  "findingIds": [
+    "takeaway-1"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-europe-recycling-map-1",
+      "outputId": "europe-recycling-map",
+      "planVersion": 1,
+      "draftDigest": "sha256:f94f7b0a38c1964deec4ec68863f009613a89fa58b6f251b28884439ca805963",
+      "findingIds": [
+        "takeaway-1"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T13:27:48.027Z"
+    }
+  ],
+  "angleEvidenceBrief": "The mp4 and its four extracted frames were opened and looked at. The reference (31 countries under the no-data hatch) is laid down and held before any value arrives; the ten other reporting countries fill lowest rate first; Germany lands on its own, outlined and named in the accent; the closing sentence appears only after both ends of the gap are on screen; the last second is still.",
+  "decision": "approve",
+  "reviewer": "stress-round-five (standing in for the journalist at G3)",
+  "decidedAt": "2026-08-21T13:27:48.027Z",
+  "notes": "Macedonia's own fill is the lowest class and is barely distinguishable at this plate's scale; it carries an ink outline and a label so the low end of the takeaway is locatable. Recorded rather than hidden."
+}
