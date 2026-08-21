@@ -41,9 +41,10 @@ no fifth**:
    render itself. Production of any pixel, embed or video belongs entirely to the craft skill
    matching the chosen candidate's medium and format: `chart-beat` (`chart`, `static`),
    `chart-web` (`chart`, `web`), `chart-video` (`chart`, `video`), `map-beat`
-   (`map`, `static` or `video`) — plus `dw-beat`, the delegated Datawrapper path a chart
-   slot's persisted `producer: datawrapper` and `datawrapperType` can name instead of a bespoke
-   component.
+   (`map`, `static` or `video`), `map-web` (`map`, `web`), `image-beat` (`image`, `static`),
+   `scrolly` (`chart`/`map`/`image`, `scrolly`) — plus `dw-beat`, the delegated Datawrapper path a
+   chart slot's persisted `producer: datawrapper` and `datawrapperType` can name instead of a
+   bespoke component. The full pairing is step 5's dispatch table, below.
 
 This skill **produces nothing at runtime** — no artifact of its own, ever. Its entire value is the
 sequencing discipline above and the test (`test/phases.test.ts`) that keeps this document and

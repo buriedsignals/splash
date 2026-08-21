@@ -102,13 +102,17 @@ about what "muted" means on the same newsroom ground.
 | Render | `scripts/render-video.mjs` | The seed beat's render ladder second rung: reads frozen CSV, derives furniture in node, renders final-frame still, then mp4. Other scripts now live in proof workspaces: `proof/life-expectancy/render.mjs` and `proof/migration/render.mjs` |
 | Test | `test/timing.test.ts`, `canon.test.ts` | `timing.test.ts` pins the seed beat's contract. `canon.test.ts` asserts this skill's `assets/` no longer carries the migrated stories. Other contract tests are now in proof workspaces: `proof/life-expectancy/timing.test.ts` and `proof/migration/timing.test.ts` |
 
-**Where Remotion lives.** `remotion` and `@remotion/cli` are `devDependencies` of `twin/package.json`
-— this repository's own dependencies, alongside `puppeteer` and the d3 packages. They are **not** in
-`splash/assets/root-template/package.json`, so an installed Splash root cannot yet render a
-video beat. That is a real, named gap and it is deliberate for this exploratory pass: adding them to
-the root template is a change to a different skill, and it drags a ~93 MB Chrome Headless Shell
-download into every journalist's install, which is a distribution decision, not a code decision.
-Whoever ships the video format for real makes that call and moves the two packages.
+**Where Remotion lives.** `remotion` and `@remotion/cli` are `dependencies` of this repository's
+own `package.json`, at the repo root — alongside `@resvg/resvg-js` and the d3 packages; `puppeteer`
+is a `devDependency` there instead (this repo's former `twin/` subdirectory was folded into the
+root, so there is no separate `twin/package.json` to look in any more). Both packages are ALSO
+declared in `splash/assets/root-template/package.json`'s own `dependencies`, so an installed Splash
+root CAN render a video beat: `splash/test/root-template-tells-the-truth.test.ts` walks the tree and
+reddens if either package, or the `node_modules/.bin/remotion` binary `@remotion/cli` provides (what
+`render-video.mjs` actually spawns), went missing from the template. Shipping the format meant
+accepting the cost this paragraph used to defer: Remotion's own dependency on a ~93 MB Chrome
+Headless Shell download, paid once per journalist install rather than left for whoever shipped the
+format "for real."
 
 ## Reveal a line by re-drawing it, never by sliding a dash
 

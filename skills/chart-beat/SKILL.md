@@ -1,6 +1,6 @@
 ---
 name: chart-beat
-description: Use to produce a chart beat — one visual with one thing to prove — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (pure geometry, furniture derived from the ground, direct annotation, one accent), the static discipline, and the render ladder's first rung. SP1 covers the static format only.
+description: Use to produce a chart beat — one visual with one thing to prove — by WRITING a bespoke component under doctrine, then rendering a still and looking at it. Carries the seed that teaches the anatomy (pure geometry, furniture derived from the ground, direct annotation, one accent), the static discipline, and the render ladder's first rung. This skill covers the static format; `chart-web` and `chart-video` are the sibling craft skills for the web and video formats.
 ---
 
 # chart-beat — write the chart, render the still, look at it
@@ -18,8 +18,10 @@ The PNG exists to be looked at. That is the point of the whole skill: the checkl
 Rendering the seed on a light ground and a dark ground is what caught this file's own first
 defect — a gap note that shouted louder than its subject.
 
-**SP1 scope: the static format only.** Interactive and video chart beats are later sub-projects.
-`renderStill` is the first rung of the render ladder; the rungs above it do not exist yet.
+**This skill covers the static format.** `chart-web` and `chart-video` are the sibling craft
+skills for the web and video formats — both exist and both ship beats; `splash/SKILL.md`'s phase
+table dispatches to them by name. `renderStill` is the first rung of the render ladder; `chart-web`
+is the third rung and `chart-video` is the second.
 
 ## When to use
 
