@@ -135,3 +135,67 @@ describe("the proposal a journalist answers", () => {
     expect(none?.prints).toBe(UNATTRIBUTED_CREDIT_LINE);
   });
 });
+
+// ROUND-FIVE, THE TASK-F BULLET: `proposeCredit` recommended `unattributed` on an article that
+// names its source. Measured over all 27 frozen stories, the cue list matched 2 of them; five
+// sentences in five other stories attribute in a form it had never been taught, all of them the
+// same one — a data noun, then "come(s)/came from":
+//
+//   stress-x-tunisian-water   "The figures come from the national water utility …"
+//   stress-t-europe-recycling "The figures come from the national environment agencies …"
+//   stress-b-piped-water      "The figures below come from a national-statistics compilation …"
+//   stress-f-housing-pressure "Malta's figure comes from a different survey …"
+//   stress-w-quay-photographs "The middle photograph came from the archive without a caption …"
+//
+// The last is the reason the form is BOUND to a data noun rather than matched bare: a photograph
+// that came from an archive with no caption is the story's own statement that nobody can be
+// credited, and reading it as an attribution would recommend a rambling sentence over the honest
+// `none` on the one story in the tree that most needs `none`.
+describe("the attributing sentences a corpus actually contains", () => {
+  const namesItsSource = (article: string) =>
+    proposeCredit({ newsroom: { name: "Buried Signals" }, article }).recommended;
+
+  it("reads a data noun followed by come/comes/came from as an attribution", () => {
+    expect(
+      namesItsSource("The figures come from the national water utility and cover 2025."),
+    ).toBe("article-1");
+    expect(
+      namesItsSource("The figures below come from a national-statistics compilation."),
+    ).toBe("article-1");
+    expect(namesItsSource("Malta's figure comes from a different survey.")).toBe("article-1");
+  });
+
+  it("does not read a photograph that came from an archive as a source being named", () => {
+    expect(
+      namesItsSource(
+        "The middle photograph came from the archive without a caption or a photographer's name, and nobody at the paper can now say who took it.",
+      ),
+    ).toBe("none");
+  });
+
+  it("reads the same shape in French, the tree's other article language", () => {
+    expect(
+      namesItsSource("Les chiffres proviennent de l'office fédéral de la statistique."),
+    ).toBe("article-1");
+  });
+
+  // FIXTURES, NOT FROZEN MATERIAL, and said out loud because this repository holds no article that
+  // exercises them: `stories/stress-x-tunisian-water` is the tree's one Arabic story and its own
+  // attributing sentence is written in the English paragraph beside the Arabic one. The corpus that
+  // would reach these is an article whose attribution is in its own script — which is exactly the
+  // article this round said the tree has started receiving. A cue this list misses costs the
+  // journalist one correction; the reason to widen it before the corpus demands it is that the cost
+  // of missing is silent (`none` recommended over the journalist's own words) and the cost of
+  // widening is not.
+  it("reads a Greek attribution", () => {
+    expect(
+      namesItsSource("Ο αριθμός των σχολείων μειώθηκε, σύμφωνα με το υπουργείο Παιδείας."),
+    ).toBe("article-1");
+  });
+
+  it("reads an Arabic attribution", () => {
+    expect(namesItsSource("تستهلك محافظة تونس 142 مليون متر مكعب، وفقاً للشركة الوطنية للمياه.")).toBe(
+      "article-1",
+    );
+  });
+});

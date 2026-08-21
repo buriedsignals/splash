@@ -102,12 +102,42 @@ export function creditLine(credit) {
   return `${UNATTRIBUTED_CREDIT_LINE}${text.slice(UNATTRIBUTED_CREDIT.length)}`;
 }
 
-// The cues a sentence uses when it says where a figure came from, English and French, as the two
-// languages this tree's own stories are written in. Deliberately a short, literal list: this is a
-// PROPOSAL step, and a cue it misses costs the journalist one correction, while a cue it invents
-// would be this defect again one level up.
+// The cues a sentence uses when it says where a figure came from. Deliberately a short, literal
+// list: this is a PROPOSAL step, and a cue it misses costs the journalist one correction, while a
+// cue it invents would be this defect again one level up.
+//
+// ROUND FIVE widened it twice, for two different reasons.
+//
+// FIRST, THE MEASURED GAP. Run over all 27 frozen stories, this list matched 2. Five sentences in
+// five other stories attribute in a form it had never been taught, and all five are the same one:
+//
+//   stress-x-tunisian-water   "The figures come from the national water utility …"
+//   stress-t-europe-recycling "The figures come from the national environment agencies …"
+//   stress-b-piped-water      "The figures below come from a national-statistics compilation …"
+//   stress-f-housing-pressure "Malta's figure comes from a different survey …"
+//   stress-w-quay-photographs "The middle photograph came from the archive without a caption …"
+//
+// So `DATA_CAME_FROM` below, and it is BOUND to a data noun rather than matching "came from" bare,
+// because of that last line. A photograph that came from an archive with no caption is the story's
+// own statement that nobody can be credited; reading it as an attribution would recommend a
+// rambling sentence over the honest `none`, on the one story in this tree that most needs `none`.
+//
+// SECOND, THE SCRIPT. This list was English and French because those were the two languages this
+// tree's stories happened to be written in. It has since received a Greek story and an Arabic one,
+// and a name-based lexicon written against the language of its first story is the shape round five
+// found in four different skills. The Greek and Arabic cues here are NOT exercised by any frozen
+// article — `stress-x-tunisian-water`'s own attributing sentence sits in the English paragraph
+// beside the Arabic one — and `test/credit-vocabulary.test.ts` says so where it drives them. They
+// are added ahead of the corpus on purpose: missing a cue is SILENT (the journalist is recommended
+// `unattributed` over their own words), and widening the reader is not.
 const ATTRIBUTION_CUES =
-  /\b(according to|as reported by|released by|released to|obtained from|provided by|published by|supplied by|figures from|data from|source[s]?\s*:|selon|d'après|publi[ée]s? par|fourni[es]? par|transmis(?:es)? par)\b/iu;
+  /\b(according to|as reported by|released by|released to|obtained from|provided by|published by|supplied by|figures from|data from|source[s]?\s*:|selon|d'après|publi[ée]s? par|fourni[es]? par|transmis(?:es)? par)\b|(?:σύμφωνα με|κατά το|πηγή\s*:|στοιχεία (?:του|της|από))|(?:وفقاً? ل|وفقا ل|بحسب|حسب|صادر(?:ة)? عن|بيانات من|المصدر\s*:)/iu;
+
+// A data noun, then a form of "come from" — the attributing shape the corpus above showed and the
+// cue list did not hold. The gap between the two is capped so the pairing has to be one clause, not
+// a noun in one sentence and a verb three lines later, and it never crosses a sentence end.
+const DATA_CAME_FROM =
+  /\b(figures?|data|numbers?|table|series|dataset|statistics|chiffres|données|tableau|statistiques)\b[^.!?]{0,40}?\b(?:comes? from|came from|proviennent de|provient de|issus? de|issues? de)\b/iu;
 
 /**
  * The article's OWN attributing sentences, verbatim.
@@ -121,7 +151,12 @@ export function attributionsIn(article) {
   return String(article ?? "")
     .split(/(?<=[.!?])\s+(?=[^\s])|\n{2,}/u)
     .map((sentence) => sentence.trim())
-    .filter((sentence) => sentence && !sentence.startsWith("#") && ATTRIBUTION_CUES.test(sentence));
+    .filter(
+      (sentence) =>
+        sentence &&
+        !sentence.startsWith("#") &&
+        (ATTRIBUTION_CUES.test(sentence) || DATA_CAME_FROM.test(sentence)),
+    );
 }
 
 /**
