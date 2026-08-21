@@ -24,13 +24,23 @@ request before reading a credential, and injects only that operation's broker re
 `scripts/sealed-operation.mjs`. Do not source a repository `.env` or pass a key in chat, argv, or a
 story file.
 
-**Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
-every format offers both. `embed` (the journalist-facing **Deploy and receive embed code** form)
+**Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps.
+`embed` (the journalist-facing **Deploy and receive embed code** form)
 and `cms-insertion` (a prepared
 insertion payload for We.Publish or Livingdocs) are NOT owned files — the newsroom gets a URL or a
 document, never a copy of the hosted page. `embed` is wired to the two formats that ship a single
-self-contained HTML page, "web" and "scrolly"; `cms-insertion` is available for every format, with
-the appropriate rendered file selected for its payload. **`embed` is implemented and covered by
+self-contained HTML page, "web" and "scrolly"; `cms-insertion` is listed for every format, with
+the appropriate rendered file selected for its payload.
+
+**A LISTED FORM IS NOT AN AVAILABLE ONE. The format says which forms exist; THE BEAT says which of
+them it can honour**, and two beats in the same format differ. A delegated chart returns one PNG and
+no component; a bespoke one writes an SVG and its own `.tsx`. So `offerForms` reads the beat and
+disables — visibly, with a reason, exactly as it does for a missing Cloudflare credential — any form
+the beat cannot carry: `cms-insertion` where the file to insert is not markup (`insertionMarkupVerdict`
+measures the bytes; a PNG read as an article body is 30,131 replacement characters, which is what
+this rule exists to stop reaching a CMS), and `source-bundle` where the beat has no component for the
+`build.ts` it ships to build. `materialise` refuses the same two, with the same sentence, before it
+stages anything — a caller that skipped the menu does not get a broken delivery instead of an error. **`embed` is implemented and covered by
 deterministic provider-contract tests, but the current release still requires a credential-gated
 two-revision Cloudflare smoke test** (see "How it works" below). **`cms-insertion`
 is NOT proven against a live CMS** — no We.Publish or Livingdocs endpoint exists anywhere in this
@@ -109,7 +119,8 @@ the ID-based API. It never restores a caller-selected deletion target.
 | Legacy compatibility | `scripts/delivery-compat-v1.mjs` — `offerFormsLegacyV1`, `materialiseLegacyV1`, `LEGACY_DELIVERY_ADAPTER_VERSION` | Preserves the observed path-shaped v1 call contract while validating and discarding its paths before delegating to the canonical ID API |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_FORMAT`, `offerForms` | The forms one format allows, and what each honestly gives; validates the bound output review (Gate 3 before Gate 4) and keeps `embed` visible but disabled with a setup reason when no Cloudflare credential is present. The form is labelled **Deploy and receive embed code**; Cloudflare is its automatic mechanism, never a separate journalist question |
 | Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
-| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, derives the per-output export from the trusted identity, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per format, including static beats with both PNG and SVG |
+| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, re-runs the two beat-derived form checks the menu ran, derives the per-output export from the trusted identity, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per format, including static beats with both PNG and SVG |
+| Can this beat carry this form | `scripts/deliver.mjs` — `insertionMarkupVerdict`, `ownedFileForInsertionSync` | Read by the menu AND by the materialiser, so a disabled row and a refusal cannot say two different things. `insertionMarkupVerdict` decides on the BYTES — not on the extension, which would be one more typed population: a file is insertable if it decodes as UTF-8 under a decoder that refuses rather than substitutes, and carries an element |
 | Replacement | `scripts/delivery-replacement.mjs` — `withDeliveryLock`, `publishStagedDelivery`, `reconcileDeliveryReplacement` | Serializes same-output delivery, journals both publication renames, records the complete new export, and reconciles an interrupted replacement before another begins |
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-output export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each stable output ID delivers into `export/<outputId>/`; the destination is derived rather than accepted from the caller |
@@ -155,7 +166,11 @@ remain untouched on disk.
    `offerForms` stays synchronous and cheap to call on every turn; a present-but-wrong token leaves
    the form enabled and fails loudly at `materialise` instead. A journalist with no Cloudflare
    account still sees every other form their format allows; the journey never crashes over a
-   missing credential or hides what would open hosted delivery.
+   missing credential or hides what would open hosted delivery. `cms-insertion` and `source-bundle`
+   are narrowed the same way and for the same reason, from the BEAT rather than from the
+   environment: the first when the render this format would insert is not markup, the second when
+   the beat wrote no component. Both stay visible, both carry the reason and the form to choose
+   instead.
 2. **The conversation presents the list and waits.** For web/scrolly, say **Deploy and receive
    embed code**. Do not ask whether to use Cloudflare: choosing this form already means Splash will
    use Cloudflare automatically. This skill's code stops here; the doctrine

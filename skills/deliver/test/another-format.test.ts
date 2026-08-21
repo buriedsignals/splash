@@ -309,6 +309,10 @@ beforeEach(async () => {
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), "png-bytes");
   await writeFile(join(beatDir, "renders", "still.svg"), "<svg/>");
+  // The component `source-bundle` bundles. Without it this fixture is a beat with no runnable
+  // source, which the delivery now refuses — rightly, and for reasons that have nothing to do with
+  // the closing offer these cases are about.
+  await writeFile(join(beatDir, "Rainfall.tsx"), "export const Rainfall = () => null;");
   await approveCurrentOutput(beatDir);
 });
 afterEach(async () => {

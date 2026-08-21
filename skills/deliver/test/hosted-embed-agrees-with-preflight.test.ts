@@ -73,6 +73,10 @@ beforeEach(async () => {
   const beatDir = join(tempRoot, "story", "beats", "1-rainfall");
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "still.html"), "<!doctype html>");
+  // A beat that wrote its own component, so `source-bundle` is honestly available for it: this
+  // case asserts that shutting the Cloudflare credential narrows ONE row, and a fixture that
+  // could not honour a second row would make that assertion pass for the wrong reason.
+  await writeFile(join(beatDir, "Rainfall.tsx"), "export const Rainfall = () => null;");
   await approveCurrentOutput(beatDir);
   identity = {
     storiesRoot: dirname(dirname(dirname(beatDir))),

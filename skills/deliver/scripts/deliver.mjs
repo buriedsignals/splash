@@ -5,6 +5,7 @@
 // is always on the {form, format} pair, never on the form id alone.
 
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { closeSync, openSync, readdirSync, readSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -226,9 +227,23 @@ export function offerForms(options) {
     : hostedEmbed && hostedEmbed.available === false
       ? `Cloudflare hosted delivery is configured, and the check Splash ran against it was refused: ${hostedEmbed.reason}. The credentials are present, so this is the account or the token's permissions rather than a missing setting.`
       : null;
+  // THE OFFER IS DERIVED FROM THE BEAT, NOT FROM THE FORMAT ALONE — round-five findings Y4 and
+  // Y17. `FORMS_BY_FORMAT` says which forms a format CAN have; it cannot say which ones THIS beat
+  // can honour, because that depends on what its producer actually rendered and wrote. Two static
+  // beats in the same tree differ: one holds an SVG and its own component, the other holds a
+  // delegated PNG and nothing else, and both were offered all three forms. A row is kept VISIBLE
+  // and disabled with its concrete reason, exactly as `embed` is above — the journalist is told
+  // why a form they can see is not for this beat, rather than watching it disappear.
+  const insertion = forms["cms-insertion"] ? insertionOffer(identity.beatDir, format) : null;
+  const bundle = forms["source-bundle"] ? sourceBundleOffer(identity.beatDir) : null;
+  const gaps = {
+    embed: hostedEmbedGap,
+    "cms-insertion": insertion && !insertion.available ? insertion.reason : null,
+    "source-bundle": bundle && !bundle.available ? bundle.reason : null,
+  };
   return Object.keys(forms).map((id) =>
-    id === "embed" && hostedEmbedGap
-      ? { id, ...forms[id], available: false, reason: hostedEmbedGap }
+    gaps[id]
+      ? { id, ...forms[id], available: false, reason: gaps[id] }
       : { id, ...forms[id], available: true },
   );
 }
@@ -374,12 +389,20 @@ function costliestState(states) {
 // pipeline that made the owned PNG/SVG — that pipeline belongs to the chart-beat skill, and
 // duplicating it here would be exactly the shared-utility coupling this codebase avoids. It
 // bundles the component source it was actually given, which is a claim this file can back.
+//
+// `COMPONENT_EXTENSION` is hoisted out of the script's own text so the OFFER and the BUILD cannot
+// disagree about what a component is. They did: `source-bundle` was offered on every static beat,
+// and a delegated Datawrapper still has no component at all, so the journalist received a folder
+// whose `bun run build` throws on its first line. The offer now runs the build script's own
+// predicate over the same files the bundle would carry.
+const COMPONENT_EXTENSION = ".tsx";
+
 const BUILD_SCRIPT = `// Bundles this beat's own component source with Bun's native bundler.
 // This reproduces the runnable source, not the raster pipeline that made the owned PNG/SVG.
 import { readdir } from "node:fs/promises";
 
-const entrypoints = (await readdir(".")).filter((file) => file.endsWith(".tsx"));
-if (entrypoints.length === 0) throw new Error("no .tsx component found to build");
+const entrypoints = (await readdir(".")).filter((file) => file.endsWith("${COMPONENT_EXTENSION}"));
+if (entrypoints.length === 0) throw new Error("no ${COMPONENT_EXTENSION} component found to build");
 
 const result = await Bun.build({ entrypoints, outdir: "./dist" });
 if (!result.success) {
@@ -420,14 +443,14 @@ const INSERTION_PREFERENCE = {
   video: [".mp4"],
 };
 
-export async function ownedFileForInsertion(beatDir, format) {
+export function ownedFileForInsertionSync(beatDir, format) {
   const preference = INSERTION_PREFERENCE[format];
   if (!preference) {
     throw new Error(
       `no insertion preference for format ${JSON.stringify(format)} — known: ${Object.keys(INSERTION_PREFERENCE).join(", ")}`,
     );
   }
-  const names = (await readdir(join(beatDir, "renders"), { withFileTypes: true }))
+  const names = readdirSync(join(beatDir, "renders"), { withFileTypes: true })
     .filter((e) => e.isFile())
     .map((e) => e.name);
 
@@ -443,6 +466,134 @@ export async function ownedFileForInsertion(beatDir, format) {
   throw new Error(
     `nothing in ${join(beatDir, "renders")} matches what a ${format} beat inserts (${preference.join(" then ")}) — found ${names.length ? names.join(", ") : "nothing"}`,
   );
+}
+
+// The async face this file's own callers already had. `offerForms` is synchronous and must stay so
+// (see its own note), and the menu now has to read the beat, which is why the decision above is
+// the synchronous one and this is the wrapper — not the other way round.
+export async function ownedFileForInsertion(beatDir, format) {
+  return ownedFileForInsertionSync(beatDir, format);
+}
+
+// HOW MUCH OF A FILE HAS TO BE READ TO KNOW WHETHER IT IS MARKUP. A window, not the whole file:
+// `offerForms` runs on every turn of the delivery exchange and a "video" beat's insertable render
+// is an mp4, which can be hundreds of megabytes. Every markup this toolchain delivers declares
+// itself in its first bytes — `<?xml`, `<svg`, `<!doctype`, `<html` — so the first window either
+// carries an element or the file has none to carry.
+const INSERTION_WINDOW_BYTES = 4096;
+
+// A tag opener: `<` followed by a name, a closing slash, a declaration or a processing instruction.
+const TAG_OPENER = /<[A-Za-z!?/]/;
+
+/**
+ * IS THIS FILE SOMETHING A CMS CAN BE HANDED?
+ *
+ * ROUND-FIVE FINDING Y4, measured by the controller on `stories/stress-y-rural-broadband`, whose
+ * only render is a delegated Datawrapper PNG:
+ *
+ *     ownedFileForInsertion(beatDir, "static")  -> chart.png
+ *     readFile(..., "utf8")                     -> length 73479, U+FFFD 30131
+ *
+ * `buildInsertion` splices its `insertionHtml` into an article BODY — markup, in a string. Reading
+ * a PNG as UTF-8 does not fail; it succeeds, and yields 30,131 Unicode replacement characters, and
+ * the delivery then wrote them into a document headed "the mutation this beat's own HTML would
+ * send". Nothing anywhere noticed. `offerForms` had listed the form `available: true`.
+ *
+ * MEASURED ON THE BYTES, NOT INFERRED FROM THE NAME. An extension list would be one more typed
+ * population, and it would be wrong in both directions: a `.png` holding text is still not markup,
+ * and a producer that one day writes an insertable file under some other extension would be refused
+ * for its name rather than for what it is. Two questions, both answered from the file itself:
+ *
+ *   1. Does it decode as UTF-8 at all? A raster or a video does not — a PNG's second byte is 0x89,
+ *      which cannot start a UTF-8 sequence. This is the read that produced the 30,131 above, done
+ *      with a decoder that refuses instead of substituting.
+ *   2. Having decoded, does it carry an element? Text is not markup. A body with nothing to splice
+ *      into it is not an insertion.
+ *
+ * Returns `{markup, reason}` — never throws, because the menu must not crash the journey, and
+ * `reason` is a clause the callers below finish into a sentence naming the file.
+ */
+export function insertionMarkupVerdict(bytes) {
+  let text;
+  try {
+    // `stream: true` so a window that ends mid-codepoint is not itself the refusal.
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes, { stream: true });
+  } catch {
+    return {
+      markup: false,
+      reason:
+        "not text: its bytes are not valid UTF-8, so reading it as an article body yields replacement characters rather than markup",
+    };
+  }
+  if (text.includes("\u0000")) {
+    return {
+      markup: false,
+      reason: "not text: it carries NUL bytes, which no article body can hold",
+    };
+  }
+  if (!TAG_OPENER.test(text)) {
+    return {
+      markup: false,
+      reason: "not markup: it decodes as text but carries no element a CMS body could contain",
+    };
+  }
+  return { markup: true, reason: null };
+}
+
+function leadingBytes(path, max = INSERTION_WINDOW_BYTES) {
+  const fd = openSync(path, "r");
+  try {
+    const buffer = Buffer.alloc(max);
+    const read = readSync(fd, buffer, 0, max, 0);
+    return buffer.subarray(0, read);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+// The one sentence both the menu and `materialiseInto` use, so a form disabled with a reason and a
+// form refused on the way in cannot say two different things about the same beat.
+function insertionOffer(beatDir, format) {
+  const ownedFile = FORMS_BY_FORMAT[format]?.["owned-file"]?.label;
+  const instead = ownedFile
+    ? ` Choose "${ownedFile}" instead and place it through the CMS's own upload field.`
+    : "";
+  let fileName;
+  try {
+    fileName = ownedFileForInsertionSync(beatDir, format);
+  } catch (error) {
+    return { available: false, reason: `${error.message}.${instead}` };
+  }
+  const verdict = insertionMarkupVerdict(leadingBytes(join(beatDir, "renders", fileName)));
+  if (verdict.markup) return { available: true, fileName };
+  return {
+    available: false,
+    fileName,
+    reason:
+      `A CMS insertion splices markup into the article's own body, and the only render this beat ` +
+      `has to insert is ${fileName}, which is ${verdict.reason}.${instead}`,
+  };
+}
+
+// The same shape, one form over: `source-bundle` promises a folder whose `bun run build` executes,
+// and a beat whose picture was produced elsewhere — a delegated chart — has no component for it to
+// build. The predicate is the BUILD SCRIPT'S OWN, over the same top-level files the bundle carries
+// (`build.ts` runs `readdir(".")`, so a component nested in a subdirectory is not one it would
+// find either).
+function sourceBundleOffer(beatDir) {
+  const components = readdirSync(beatDir, { withFileTypes: true }).filter(
+    (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(COMPONENT_EXTENSION),
+  );
+  if (components.length > 0) return { available: true };
+  const ownedFile = FORMS_BY_FORMAT.static["owned-file"].label;
+  return {
+    available: false,
+    reason:
+      `This beat has no component to bundle — nothing in its own directory ends in ` +
+      `${COMPONENT_EXTENSION}, so the build.ts this form ships would find nothing to build. A beat ` +
+      `whose picture was rendered somewhere else has no runnable source of its own. Choose ` +
+      `"${ownedFile}" instead.`,
+  };
 }
 
 // A STORY HAS MORE THAN ONE BEAT, AND EACH DELIVERS SEPARATELY.
@@ -886,6 +1037,20 @@ export async function materialise(options) {
   let paths = resolveDeliveryIdentity(options);
   requireApprovedOutput({ beatDir: paths.beatDir, planVersion, findingIds });
   validateHandover(handover, format);
+  // A FORM THIS BEAT CANNOT HONOUR IS REFUSED BEFORE ANYTHING IS STAGED, with the same sentence
+  // `offerForms` would have shown for it — one function builds both, so a disabled row and a
+  // refusal cannot say two different things about the same beat. Reaching this means a caller
+  // invoked `materialise` directly rather than offer-then-wait, exactly as the `embed` credential
+  // check above assumes. It matters more here than there: an insertion built from a picture does
+  // not fail, it succeeds, and writes 30,131 replacement characters into a document a newsroom
+  // would paste into its CMS.
+  const beatOffer =
+    form === "cms-insertion"
+      ? insertionOffer(paths.beatDir, format)
+      : form === "source-bundle"
+        ? sourceBundleOffer(paths.beatDir)
+        : null;
+  if (beatOffer && !beatOffer.available) throw new Error(beatOffer.reason);
 
   await mkdir(paths.exportRoot, { recursive: true });
   // The root may not have existed during the first check. Canonicalize it after creation and
