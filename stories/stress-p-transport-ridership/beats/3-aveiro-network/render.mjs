@@ -60,6 +60,14 @@ function parseCsvRows(text) {
   return rows;
 }
 
+/** The frozen table's own column names, lowercased -- read through the tokeniser above rather than
+ *  off a hand-cut first line, and NAMED rather than inlined so the project's reader walk
+ *  (`skills/splash/test/csv-readers-parse-their-fixtures.test.ts`) can call it against this beat's
+ *  own csv instead of reporting a shape it cannot run. */
+function headerColumns(text) {
+  return (parseCsvRows(text.trim())[0] ?? []).map((c) => c.trim().toLowerCase());
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STORY = join(HERE, "..", "..");
 const SUBJECT = "Aveiro";
@@ -79,8 +87,7 @@ async function run() {
   // The refusal this beat exists inside, asserted rather than assumed: if a later freeze ever adds
   // route geometry, this throw is what tells the next session the map is now possible.
   const GEO_COLUMNS = ["lat", "lon", "latitude", "longitude", "geometry", "route", "wkt", "stops"];
-  const header = (parseCsvRows((await readFile(join(STORY, "source", "data.csv"), "utf8")).trim())[0] ?? [])
-    .map((c) => c.trim().toLowerCase());
+  const header = headerColumns(await readFile(join(STORY, "source", "data.csv"), "utf8"));
   const geo = header.filter((c) => GEO_COLUMNS.includes(c));
   if (geo.length > 0)
     throw new Error(
