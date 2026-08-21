@@ -56,7 +56,8 @@ function optionBlock(option, index, recommended) {
  * colours themselves do not measure up.
  */
 export function formatProposal(proposal) {
-  const { options, recommended, subject, escape, noConventionReason } = proposal;
+  const { options, recommended, subject, escape, noConventionReason, surfaceLimit, newsroomLookup } =
+    proposal;
 
   const head = [
     "# Colours for this beat",
@@ -68,6 +69,11 @@ export function formatProposal(proposal) {
   // Said out loud, because a one-option proposal with no explanation reads as a tool with nothing
   // to say rather than as a subject with no convention. The run produced exactly that.
   if (noConventionReason) head.push("", noConventionReason);
+  // THE SURFACE, in the document the journalist reads rather than in a field only a caller sees —
+  // the same rule `formatTypefaceProposal` follows for `sampleLimit`, and for the same reason: a
+  // limit nobody is shown is a limit nobody can act on. Every ratio below is a measurement against
+  // ONE ground, and which ground that is is the thing beat AD's print delivery got wrong.
+  if (surfaceLimit) head.push("", `**Where this lands, and what that grounds.** ${surfaceLimit}`);
 
   if (options.length === 0) {
     return [
@@ -75,14 +81,19 @@ export function formatProposal(proposal) {
       "",
       "## Nothing to propose",
       "",
-      "There is no `NEWSROOM.md` with a brand colour and a ground to offer, and the subject carries",
-      "no convention a reader could be expected to already hold. That leaves nothing this skill can",
-      "propose with a reason attached — and a colour proposed without a reason is a colour invented.",
+      // WHAT WAS ACTUALLY OBSERVED about NEWSROOM.md, never a claim about a file nothing opened.
+      // This sentence used to read "There is no `NEWSROOM.md` with a brand colour and a ground to
+      // offer" on a tree whose root NEWSROOM.md is complete and valid — round six, beat AC.
+      newsroomLookup.says,
+      "",
+      "The subject carries no convention a reader could be expected to already hold either. That",
+      "leaves nothing this skill can propose with a reason attached — and a colour proposed without",
+      "a reason is a colour invented.",
       "",
       "Two ways forward:",
       "",
-      "- Run `newsroom-charter` against the newsroom's own site to draft a `NEWSROOM.md`, then",
-      "  come back here.",
+      "- Read or draft the newsroom's profile: `newsroom-charter` measures one off the newsroom's",
+      "  own site when there is none.",
       `- ${escape}`,
     ].join("\n");
   }

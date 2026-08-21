@@ -203,7 +203,9 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Colour maths | `scripts/palette.mjs` | `contrast` — a verbatim copy of the block in `render-still.mjs`, guarded against drift by `helper-parity.test.ts` |
 | Conventions | `scripts/palette.mjs` | `SUBJECT_CONVENTIONS`, `matchConvention`, `CONVENTION_LANGUAGES`, `scriptsWithNoConvention` — a deliberately short table, one entry per association a reader already holds, read in English, French, Greek and Arabic |
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
-| Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject, about})` — the options, each with provenance, reasoning and measured contrast. `about` is what the story SAYS IT IS ABOUT (its takeaway): a subject line names the entity, and a convention is about the subject matter |
+| Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject, about, surface, from, stopAt})` — the options, each with provenance, reasoning and measured contrast. `about` is what the story SAYS IT IS ABOUT (its takeaway): a subject line names the entity, and a convention is about the subject matter |
+| Surface | `scripts/palette.mjs` | `SURFACES`, `PAPER_GROUND`, `groundForSurface(newsroom, surface)` — where the beat LANDS, and the ground that follows from it. `print` measures on the sheet whatever ground `NEWSROOM.md` records for the screen; an unstated surface is NAMED in `surfaceLimit`, never read as an answer |
+| What was seen of the profile | `scripts/palette.mjs` | `lookUpNewsroom({newsroom, from, stopAt})` — reports whether a profile was passed, found unread, or genuinely absent from every directory it looked in. It never claims a file is missing without having looked |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
 | Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
@@ -224,11 +226,18 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    `NEWSROOM.md` with both `brandColor` and `ground` produces it. A malformed hex in either field
    throws — a newsroom charter is validated input, and quietly ignoring a broken value there would
    put a default into a published chart.
-3. **Both options are scored.** Contrast is measured accent-against-ground and compared to
+3. **The ground comes from the SURFACE, not only from `NEWSROOM.md`.** `surface` is `"screen"`,
+   `"print"`, or unstated. Screen is the newsroom's own recorded ground; print is the sheet
+   (`PAPER_GROUND`, `#FFFFFF`), whatever a masthead's CSS says. Unstated is not silently screen:
+   `surfaceLimit` says which ground was measured and what a print delivery would move, and
+   `formatProposal` prints it where the journalist reads it — the same rule `sampleLimit` follows
+   for the typeface. A surface this table holds no measurement for is refused rather than treated
+   as a screen.
+4. **Both options are scored.** Contrast is measured accent-against-ground and compared to
    `NON_TEXT_CONTRAST_MIN`. A failing option keeps its place in the list, marked failing, with
    `adjustToContrast`'s nearest passing variant attached as a `remedy` — or `null`, honestly, when
    the ground leaves no room on either side.
-4. **The SUBJECT option is recommended when it exists and passes; the house option second.** An
+5. **The SUBJECT option is recommended when it exists and passes; the house option second.** An
    earlier draft did the reverse, on the reasoning that a convention is a reason to *depart* from
    the newsroom's identity; the owner's ruling inverts it. Neither is ever applied over the
    journalist's head, and the recommendation never falls to a failing option.
@@ -236,13 +245,13 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    sentence and `formatProposal` prints it — because four conventions ship, so "none applies" is
    the common case, and a one-option proposal with no explanation reads as a tool with nothing to
    say rather than as a subject with no convention.
-5. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
+6. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
    escape branch — including when there is exactly one option, and including when every option
    fails. A proposal that cannot be refused is not a proposal, and the case where refusing matters
    most is the case where the house colours themselves do not measure up.
-6. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
+7. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
    with `origin:` naming who chose — `newsroom`, `subject` or `journalist`.
-7. **A render that reads it never defaults, and the reach is measured, not claimed.**
+8. **A render that reads it never defaults, and the reach is measured, not claimed.**
    `readPalette` walks from the beat's own directory up to `stopAt`, and a search that finds
    nothing **throws, naming every directory it looked in**. A render that fell back to
    black-on-white would publish in a colour nobody chose, and it would look deliberate.

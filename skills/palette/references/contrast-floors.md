@@ -69,3 +69,38 @@ white at 3.95:1 over black at 5.32:1. The band punishes reasoning and rewards me
 - **The rendered chart.** This measures the two colours that were proposed. Whether the delivered
   PNG actually carries them is the render's business, and the reason `readPalette` throws instead of
   defaulting: a chart drawn in colours nobody chose would pass every check in this file.
+
+## The floor is measured against a GROUND, and the ground is a property of the SURFACE
+
+Every ratio in this file is a ratio *against something*. Until round six, the something was always
+the one ground `NEWSROOM.md` records — and a newsroom records the ground of its own **screen**.
+
+**Beat AD, measured.** `stress-ad-polish-hospital-beds` delivered a static frame **to print**: the
+article's own last line asked for one (*"Potrzebujemy jednego wykresu statycznego, po polsku, do
+druku."*) and gate 2b recorded it. `proposePalette` offered the house colours on `#16191B` and
+recommended the primary `#D4A853` at **8.01:1**. On the sheet that beat was going onto:
+
+    #D4A853 on #FFFFFF   2.20:1   BELOW the 3:1 non-text floor
+    #5B8A8A on #FFFFFF   3.86:1   clears it
+    #B28D46 on #FFFFFF   3.09:1   adjustToContrast("#D4A853", "#FFFFFF", 3)
+
+Nothing anywhere objected. The recommended ground was a full-bleed flood of near-black ink across a
+printed page, and the recommended accent was invisible on paper. The journalist re-measured all
+three by hand and answered through the escape, which is why that story records `origin: journalist`
+for a pair of the newsroom's own colours.
+
+**What changed.** `proposePalette` takes a `surface`. `SURFACES.print.groundIs` returns
+`PAPER_GROUND` (`#FFFFFF`) whatever `NEWSROOM.md` records, so every accent is scored where it will
+actually be read; run against the real profile with `surface: "print"`, the proposal now produces
+exactly the three numbers above on its own and recommends `house-2` — the accent that story had to
+find by hand — with `#b28d46` offered beside the failing primary as its remedy.
+
+`#FFFFFF` is unprinted white, which is the **brightest** a sheet gets. That makes it the worst case
+for a light accent and the most forgiving one for a dark accent: an accent that misses the floor on
+this ground misses it on every stock, and one that clears it here may still be tight on newsprint.
+Stated as a limit rather than hidden, because it is the direction a reader would guess wrong.
+
+**An unstated surface is not a screen.** It is a measurement that was never made, and it is named
+in `surfaceLimit` and printed by `formatProposal`, the same policy `proposeTypeface`'s `sampleLimit`
+follows. The surface is settled at gate 2b — the format question — before a single colour is
+recorded, so this is never information the journalist does not already have.

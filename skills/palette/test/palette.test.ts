@@ -11,6 +11,9 @@ import {
   proposePalette,
   readPalette,
   parsePalette,
+  PAPER_GROUND,
+  SURFACES,
+  groundForSurface,
 } from "../scripts/palette.mjs";
 
 const HEIDI = { name: "Heidi.news", brandColor: "#0B7A75", ground: "#FFFFFF" };
@@ -555,6 +558,131 @@ describe("readPalette", () => {
       }
       expect(message).toContain("null recommendation");
       expect(message).toContain("end the turn");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// THE SURFACE THE BEAT WILL ACTUALLY LAND ON.
+//
+// Round six, beat AD: `stress-ad-polish-hospital-beds` delivered a static frame TO PRINT. The
+// proposal was built against the one ground `NEWSROOM.md` records — `#16191B`, a near-black screen
+// ground — and recommended the house primary `#D4A853` at 8.01:1 against it. On the paper the beat
+// was actually going onto, that same accent measures **2.20:1**, under the 3:1 non-text floor, and
+// the recommended ground was a full-bleed flood of ink. Nothing anywhere objected: the journalist
+// re-measured all three colours by hand and answered through the escape.
+//
+// A palette is only a palette against a surface, and the surface is known at gate 2b — the format
+// question — before any colour is recorded.
+describe("proposePalette against the surface the beat lands on", () => {
+  const HOUSE = {
+    name: "Buried Signals",
+    brandColor: "#D4A853",
+    accents: "#5B8A8A",
+    ground: "#16191B",
+  };
+
+  it("should score the house accents on the PAPER when the delivery is print, not on the newsroom's screen ground", () => {
+    const p = proposePalette({ newsroom: HOUSE, subject: "łóżka szpitalne", surface: "print" });
+    const house = p.options.find((o) => o.id === "house")!;
+    expect(house.ground).toBe(PAPER_GROUND);
+    expect(house.contrast.ratio).toBe(2.2);
+    expect(house.contrast.passes).toBe(false);
+    expect(house.remedy).not.toBeNull();
+  });
+
+  it("should recommend the further house accent that survives the ground change, never the primary that does not", () => {
+    const p = proposePalette({ newsroom: HOUSE, subject: "łóżka szpitalne", surface: "print" });
+    expect(p.recommended).toBe("house-2");
+    expect(p.options.find((o) => o.id === "house-2")!.contrast.ratio).toBe(3.86);
+  });
+
+  it("should keep the newsroom's own ground for a screen delivery, which is what it was measured for", () => {
+    const p = proposePalette({ newsroom: HOUSE, subject: "łóżka szpitalne", surface: "screen" });
+    expect(p.options.find((o) => o.id === "house")!.ground).toBe("#16191B");
+    expect(p.options.find((o) => o.id === "house")!.contrast.ratio).toBe(8.01);
+    expect(p.recommended).toBe("house");
+  });
+
+  it("should say in the option's own provenance that the ground is the paper and where the newsroom's own ground went", () => {
+    const p = proposePalette({ newsroom: HOUSE, surface: "print" });
+    const house = p.options.find((o) => o.id === "house")!;
+    expect(house.provenance).toContain("#16191B");
+    expect(house.provenance).toMatch(/paper|print/i);
+  });
+
+  // The same policy `proposeTypeface`'s `sampleLimit` follows: a measurement that could not be
+  // made is NAMED, never implied. An unstated surface is the case the run actually hit, so it is
+  // the case that must not read as an answer.
+  it("should NAME the unstated surface rather than silently assuming the newsroom's ground is the destination", () => {
+    const p = proposePalette({ newsroom: HOUSE });
+    expect(p.surface).toBeNull();
+    expect(p.surfaceLimit).toMatch(/not stated|no surface/i);
+    expect(p.surfaceLimit).toContain("#16191B");
+  });
+
+  it("should state, for a print delivery, what moved and why", () => {
+    const p = proposePalette({ newsroom: HOUSE, surface: "print" });
+    expect(p.surface).toBe("print");
+    expect(p.surfaceLimit).toMatch(/paper/i);
+  });
+
+  it("should refuse a surface it has never measured anything about, rather than treat it as screen", () => {
+    expect(() => proposePalette({ newsroom: HOUSE, surface: "billboard" })).toThrow(/surface/);
+    expect(() => proposePalette({ newsroom: HOUSE, surface: "billboard" })).toThrow(/print/);
+  });
+
+  it("should expose the surface grounds as a table a caller can read, not as a literal inside the proposal", () => {
+    expect(Object.keys(SURFACES).sort()).toEqual(["print", "screen"]);
+    expect(groundForSurface(HOUSE, "print")).toBe(PAPER_GROUND);
+    expect(groundForSurface(HOUSE, "screen")).toBe("#16191B");
+    expect(groundForSurface(HOUSE, null)).toBe("#16191B");
+  });
+});
+
+// "THERE IS NO NEWSROOM.md" IS A CLAIM ABOUT THE FILESYSTEM, and nothing in the proposal had ever
+// looked at one. Round six, beat AC: the proposal answered "there is no NEWSROOM.md with a brand
+// colour and a ground to offer" about a tree whose root `NEWSROOM.md` is complete and valid — the
+// caller simply had not read it. The absence a tool reports has to be an absence it measured.
+describe("proposePalette on what it can actually see of NEWSROOM.md", () => {
+  it("should report that no profile was PASSED, never that no file exists, when it was given nowhere to look", () => {
+    const p = proposePalette({ subject: "le prix du logement" });
+    expect(p.options).toEqual([]);
+    expect(p.newsroomLookup.searched).toEqual([]);
+    expect(p.newsroomLookup.found).toBeNull();
+    expect(p.newsroomLookup.says).toMatch(/was not passed|no newsroom profile/i);
+    expect(p.newsroomLookup.says).not.toMatch(/there is no `?NEWSROOM\.md`?/i);
+  });
+
+  it("should FIND the complete NEWSROOM.md the caller failed to read, when told where to look", () => {
+    const root = mkdtempSync(join(tmpdir(), "palette-newsroom-"));
+    try {
+      writeFileSync(
+        join(root, "NEWSROOM.md"),
+        '---\nname: Buried Signals\nbrandColor: "#D4A853"\nground: "#16191B"\n---\n',
+      );
+      const beat = join(root, "beats", "1-beds");
+      mkdirSync(beat, { recursive: true });
+      const p = proposePalette({ subject: "hospital beds", from: beat, stopAt: root });
+      expect(p.newsroomLookup.found).toBe(join(root, "NEWSROOM.md"));
+      expect(p.newsroomLookup.says).toMatch(/was not read|exists/i);
+      expect(p.newsroomLookup.says).toContain(join(root, "NEWSROOM.md"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should name every directory it looked in when the file genuinely is not there", () => {
+    const root = mkdtempSync(join(tmpdir(), "palette-newsroom-"));
+    try {
+      const beat = join(root, "beats", "1-beds");
+      mkdirSync(beat, { recursive: true });
+      const p = proposePalette({ subject: "hospital beds", from: beat, stopAt: root });
+      expect(p.newsroomLookup.found).toBeNull();
+      expect(p.newsroomLookup.searched).toContain(join(beat, "NEWSROOM.md"));
+      expect(p.newsroomLookup.searched).toContain(join(root, "NEWSROOM.md"));
+      expect(p.newsroomLookup.says).toMatch(/looked in|searched/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

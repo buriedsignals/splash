@@ -95,6 +95,73 @@ export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
 }
 
 /**
+ * THE SURFACE A BEAT ACTUALLY LANDS ON, and the ground each one puts under the marks.
+ *
+ * ROUND SIX, BEAT AD. `stress-ad-polish-hospital-beds` delivered a static frame TO PRINT — the
+ * article's own last line asked for it, and gate 2b recorded `Static … because the destination is
+ * a printed page`. The proposal was built against the one ground `NEWSROOM.md` records, `#16191B`,
+ * and recommended the house primary `#D4A853` at 8.01:1 against it. On the sheet that beat was
+ * actually going onto, that accent measures **2.20:1** — under the 3:1 non-text floor — and the
+ * recommended ground was a full-bleed flood of ink across a printed page. Nothing anywhere
+ * objected. The journalist re-measured all three colours by hand and answered through the escape,
+ * which is why that story's `PALETTE.md` records `origin: journalist` for a pair of house colours.
+ *
+ * A palette is only a palette against a surface. The surface is not new information at this point
+ * either: the FORMAT is settled at gate 2b, before a single colour is recorded, so the one fact
+ * this measurement turns on is already in the journalist's hand when they are asked.
+ *
+ * `groundIs` is a function of the newsroom's own profile rather than a constant, because only one
+ * of the two surfaces has a ground of its own — paper is paper whatever a masthead's CSS says,
+ * and a screen is the newsroom's own recorded ground.
+ */
+export const PAPER_GROUND = "#FFFFFF";
+
+export const SURFACES = {
+  screen: {
+    id: "screen",
+    describes: "a reader's own display — a page, an embed, an app, a video",
+    groundIs: (newsroom) => (newsroom && newsroom.ground) || PAPER_GROUND,
+    says: (ground) =>
+      `Measured against ${ground}, the ground NEWSROOM.md records. A screen delivery lands on the ` +
+      `newsroom's own ground, which is the ground those accents were chosen for.`,
+  },
+  print: {
+    id: "print",
+    describes: "paper — a printed page, a poster, a PDF someone will run off",
+    groundIs: () => PAPER_GROUND,
+    says: (ground, newsroom) =>
+      `Measured against the SHEET, ${ground} — not against ${
+        (newsroom && newsroom.ground) || "the newsroom's own ground"
+      }. A ground is a screen's; paper has its own and a near-black one laid onto it is a ` +
+      `full-bleed flood of ink, not an identity. ${PAPER_GROUND} is unprinted white, which is the ` +
+      `BRIGHTEST a sheet gets: it is the worst case for a light accent and the most forgiving one ` +
+      `for a dark accent, so an accent that misses the floor here misses it on every stock.`,
+  },
+};
+
+/**
+ * The ground to measure against, from the newsroom's profile and the surface the beat lands on.
+ *
+ * `null` — the surface was not stated — deliberately returns the SAME ground the old unqualified
+ * behaviour did, and is not silently equivalent to `"screen"`: `proposePalette` names the
+ * unstated case in `surfaceLimit` rather than letting it read as an answer, the same policy
+ * `proposeTypeface`'s `sampleLimit` follows for a measurement it could not make.
+ */
+export function groundForSurface(newsroom, surface) {
+  if (surface === null || surface === undefined) return (newsroom && newsroom.ground) || PAPER_GROUND;
+  const known = SURFACES[surface];
+  if (!known) {
+    throw new Error(
+      `surface must be one of ${Object.keys(SURFACES).join(", ")} — got ${JSON.stringify(surface)}. ` +
+        `It is where the beat LANDS, and it decides the ground every accent is measured against: ` +
+        `print puts the marks on paper whatever ground NEWSROOM.md records for the screen. A ` +
+        `surface this table holds no measurement for is refused rather than treated as a screen.`,
+    );
+  }
+  return known.groundIs(newsroom);
+}
+
+/**
  * Grounded subject conventions. Each entry is a convention a reader can be expected to already
  * hold, not a colour that felt right — see `references/subject-conventions.md` for the evidence
  * behind each one and for why the list is short.
@@ -260,6 +327,76 @@ function scoreOption(option) {
 }
 
 /**
+ * WHAT THIS PROPOSAL CAN ACTUALLY SEE OF `NEWSROOM.md`.
+ *
+ * ROUND SIX, BEAT AC: with no `newsroom` argument, the printed proposal said *"There is no
+ * `NEWSROOM.md` with a brand colour and a ground to offer"* — about a tree whose root
+ * `NEWSROOM.md` is complete, valid and four fields longer than it needs to be. Nothing in this
+ * module had ever opened a file to check. The caller had simply not read the profile, and the tool
+ * turned that into a statement about the filesystem.
+ *
+ * An absence a tool reports has to be an absence it MEASURED. So there are three answers, not one:
+ * the profile was passed; it was not passed and this proposal was given nowhere to look; or it was
+ * not passed, a directory WAS given, and the walk found a file (name it, it is the one to read) or
+ * did not (name every directory it looked in, the way `readPalette`'s own refusal already does).
+ *
+ * It reports and never reads: parsing `NEWSROOM.md` belongs to `splash/scripts/newsroom.mjs`, and
+ * a second parser vendored here would be a copy nothing guards. The caller reads it and passes it
+ * back in — this only refuses to lie about whether there is one.
+ */
+export function lookUpNewsroom({ newsroom, from, stopAt } = {}) {
+  if (newsroom) {
+    return {
+      searched: [],
+      found: null,
+      says: "A newsroom profile was passed to this proposal, so its own recorded values are what was measured.",
+    };
+  }
+  if (!from) {
+    return {
+      searched: [],
+      found: null,
+      says:
+        "No newsroom profile was passed to this proposal, and it was given nowhere to look for " +
+        "one — `proposePalette` opens no file unless `from` names a directory to walk up from. " +
+        "That is a fact about this CALL, not about the tree: pass `from` to have the file looked " +
+        "for, or read NEWSROOM.md with parseNewsroom (splash/scripts/newsroom.mjs) and pass the " +
+        "profile as `newsroom`.",
+    };
+  }
+  const start = resolve(from);
+  const limit = stopAt ? resolve(stopAt) : null;
+  const searched = [];
+  let current = start;
+  for (;;) {
+    const candidate = join(current, "NEWSROOM.md");
+    searched.push(candidate);
+    if (existsSync(candidate)) {
+      return {
+        searched,
+        found: candidate,
+        says:
+          `A NEWSROOM.md exists at ${candidate} and was not read — no profile was passed to this ` +
+          `proposal, so none of its colours could be offered. Read it with parseNewsroom ` +
+          `(splash/scripts/newsroom.mjs) and pass it as \`newsroom\`; nothing here is missing but ` +
+          `the reading.`,
+      };
+    }
+    if (limit && current === limit) break;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return {
+    searched,
+    found: null,
+    says:
+      `No newsroom profile was passed, and no NEWSROOM.md was found. Looked in:\n  ` +
+      `${searched.join("\n  ")}\nRun newsroom-charter against the newsroom's own site to draft one.`,
+  };
+}
+
+/**
  * The proposal. Two possible options, each carrying WHERE its values came from and WHY, plus the
  * measured contrast of each — and always the third branch, "something else".
  *
@@ -268,7 +405,10 @@ function scoreOption(option) {
  * here has a write path, not a commented-out one, not a flag that turns it on — the same rule
  * `newsroom-charter` holds.
  */
-export function proposePalette({ newsroom, subject, about } = {}) {
+export function proposePalette({ newsroom, subject, about, surface = null, from, stopAt } = {}) {
+  // THE SURFACE FIRST, because it decides the ground every ratio below is measured against — and
+  // an unmeasured surface is refused here rather than quietly read as a screen. See `SURFACES`.
+  const ground = groundForSurface(newsroom, surface);
   const options = [];
 
   // SUBJECT FIRST. A convention the reader already holds — blue for water, green for renewables —
@@ -287,7 +427,6 @@ export function proposePalette({ newsroom, subject, about } = {}) {
   const convention = matchConvention(subject) ?? matchConvention(about);
   const conventionReadIn = matchConvention(subject) ? "the subject" : "the takeaway";
   if (convention) {
-    const ground = (newsroom && newsroom.ground) || "#FFFFFF";
     options.push(
       scoreOption({
         id: "subject",
@@ -296,8 +435,12 @@ export function proposePalette({ newsroom, subject, about } = {}) {
         accent: convention.accent,
         label: `the ${convention.label} convention`,
         reasoning: convention.reasoning,
-        provenance: `references/subject-conventions.md — ${convention.id}, read in ${conventionReadIn}; ground kept from ${
-          newsroom && newsroom.ground ? "NEWSROOM.md" : "the default white, because no NEWSROOM.md ground was given"
+        provenance: `references/subject-conventions.md — ${convention.id}, read in ${conventionReadIn}; ground ${
+          surface === "print"
+            ? `is the SHEET this beat is printed on, ${PAPER_GROUND}`
+            : newsroom && newsroom.ground
+              ? "kept from NEWSROOM.md"
+              : "kept as the default white, because no newsroom profile with a ground was passed"
         }`,
       }),
     );
@@ -322,7 +465,7 @@ export function proposePalette({ newsroom, subject, about } = {}) {
         scoreOption({
           id: primary ? "house" : `house-${index + 1}`,
           origin: "newsroom",
-          ground: newsroom.ground,
+          ground,
           accent,
           label: primary
             ? `${newsroom.name || "the newsroom"}'s house colours`
@@ -330,9 +473,15 @@ export function proposePalette({ newsroom, subject, about } = {}) {
           reasoning: primary
             ? "The chart reads as this newsroom's, beside everything else it publishes. This is what leads whenever the subject carries no convention of its own."
             : "Also this newsroom's own, recorded beside the primary accent. It reads as the house without repeating the colour every other beat already uses.",
-          provenance: primary
-            ? `NEWSROOM.md — brandColor: ${accent}, ground: ${newsroom.ground}`
-            : `NEWSROOM.md — accents: ${accent}, ground: ${newsroom.ground}`,
+          provenance:
+            (primary
+              ? `NEWSROOM.md — brandColor: ${accent}, ground: ${newsroom.ground}`
+              : `NEWSROOM.md — accents: ${accent}, ground: ${newsroom.ground}`) +
+            (ground === newsroom.ground
+              ? ""
+              : ` — but this beat lands on ${SURFACES[surface].describes}, so the accent is ` +
+                `measured against ${ground} and the newsroom's own ground ${newsroom.ground} ` +
+                `stays where it was chosen for`),
         }),
       );
     });
@@ -346,6 +495,23 @@ export function proposePalette({ newsroom, subject, about } = {}) {
 
   return {
     subject: subject || null,
+    // WHERE THIS BEAT LANDS, and the ground that follows from it. `null` is the honest word for a
+    // surface nobody stated; `surfaceLimit` below is what stops it reading as an answer.
+    surface,
+    ground,
+    surfaceLimit: surface
+      ? SURFACES[surface].says(ground, newsroom)
+      : `The surface this beat lands on was NOT STATED, so every ratio above was measured against ` +
+        `${ground} — the ground ${
+          newsroom && newsroom.ground ? "NEWSROOM.md records" : "this skill falls back to when no profile is passed"
+        }, which is a SCREEN ground. That is a measurement of one destination, not of this beat's. ` +
+        `Pass surface: "print" when the delivery is paper — the ground moves to the sheet, and a ` +
+        `house accent chosen to sit on a near-black screen ground can lose the 3:1 floor entirely ` +
+        `on white (measured: #D4A853 on #16191B is 8.01:1 and on #FFFFFF is 2.20:1). The format is ` +
+        `settled at gate 2b, before any colour is recorded, so this is never information the ` +
+        `journalist does not have yet.`,
+    // WHAT COULD BE SEEN OF `NEWSROOM.md`, measured rather than assumed — see `lookUpNewsroom`.
+    newsroomLookup: lookUpNewsroom({ newsroom, from, stopAt }),
     options,
     // SAID, not silently absent. `SUBJECT_CONVENTIONS` holds four entries, so "no convention
     // applies" is the common case, not the exception — and in the run that meant exactly one
