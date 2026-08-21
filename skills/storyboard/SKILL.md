@@ -197,6 +197,24 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    resolve to a single value column, and phrasing shapes this function does not parse, comes back
    `unverifiable` with a reason, never silently `supported`.
 
+   **A raw-count superlative is not confirmed while a denominator sits beside it** (round four,
+   finding 5). `stress-q-safety-incidents` used to come back `supported` on "more than any other
+   district" — true about raw counts, and standing in for a headline ("Centro has the worst safety
+   record") that is FALSE per resident, with `residents` one column away: Centro is 205 incidents
+   per 100,000 residents, Sul is 233. `stress-p-transport-ridership` inverts at the very top, Porto
+   carrying 416 trips per resident against Lisboa's 393. So shapes 8 and 9 both come back through
+   `askAboutTheDenominator`: a `supported` verdict is downgraded to `unverifiable` while a
+   denominator-shaped column (`findDenominatorColumn`, read off the column's own NAME exactly as
+   `intake`'s profiler reads it) sits in the same table, and every verdict gains a detail naming
+   **both rankings** — who leads by the raw column, who leads per denominator, each with its own
+   figure. A `contradicted` claim stays contradicted: the data really did refute the raw reading.
+
+   **It never divides into a verdict.** The quotient appears only as a number in a sentence the
+   journalist reads, as a bare ratio (`205 / 88000 = 0.00233`) rather than "per 100,000", because
+   scaling it would choose a unit the data never states. `stress-a-energy-bills` carries
+   `households` beside `price_eur` and its shipped beat draws `price_eur` RAW, correctly — a
+   household energy bill is already a per-household figure. Reporting and asking, never repair.
+
 6. **`propose.mjs` is the seam that consults all of the above**, and until it existed there was
    none: `grep -rn "formatGap(\|capabilityGap(\|groundTakeaway(" skills/` returned four lines and
    all four were the definitions. `grounding:` and `reachable:` were recorded scalars both gates

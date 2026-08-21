@@ -919,6 +919,146 @@ function refusedColumnNote(columns) {
   return ` — and note that the profiler REFUSED to type ${named}, so any number this claim makes about that column could not be attempted at all`;
 }
 
+// A DENOMINATOR SITTING BESIDE A COUNT (round-four finding 5). Nothing in this toolchain reasoned
+// about a count against its denominator until this round. `stress-q-safety-incidents` came back
+// `supported` on "more than any other district" — a TRUE statement about raw counts standing in for
+// a headline ("Centro has the worst safety record") that is FALSE per resident, with `residents`
+// one column away: Centro is 205 incidents per 100,000 residents, Sul is 233.
+// `stress-p-transport-ridership` inverts at the very top, Porto carrying 416 trips per resident
+// against Lisboa's 393. Four of the twenty-one frozen stories carry an explicit denominator.
+//
+// Read off the column's own NAME, exactly as `intake/scripts/profile.mjs` reads it — the same
+// token list, kept as its own copy here for the same reason `findYearColumn` is a second reading
+// of `isSequenceColumn`'s heuristic rather than an import: this tree allows no cross-skill runtime
+// import, and a shared decision that reaches a second skill is written out again where its reader
+// can see it. Identity, never shape: "the bigger number is the denominator" would name
+// `network_km` against `trips_millions`.
+const DENOMINATOR_NAME_TOKENS = new Set([
+  "resident",
+  "residents",
+  "population",
+  "populations",
+  "inhabitant",
+  "inhabitants",
+  "habitant",
+  "habitants",
+  "household",
+  "households",
+  "menage",
+  "menages",
+  "m\u00e9nage",
+  "m\u00e9nages",
+  "pupil",
+  "pupils",
+  "student",
+  "students",
+  "\u03bc\u03b1\u03b8\u03b7\u03c4\u03ae\u03c2",
+  "\u03bc\u03b1\u03b8\u03b7\u03c4\u03ad\u03c2",
+  "eleve",
+  "eleves",
+  "\u00e9l\u00e8ve",
+  "\u00e9l\u00e8ves",
+]);
+
+function namesADenominator(name) {
+  return name
+    .split(NAME_TOKEN_SPLIT_RE)
+    .some((token) => DENOMINATOR_NAME_TOKENS.has(token.toLowerCase()));
+}
+
+/** The numeric column a count in this table could be read against, or `null`. The year column is
+ *  never one — a calendar year is an x axis, not a population. */
+function findDenominatorColumn(columns) {
+  const yearColumn = findYearColumn(columns);
+  return (
+    measureColumns(columns, yearColumn).find((c) => namesADenominator(c.name)) ?? null
+  );
+}
+
+/** The column a row is NAMED by — the first text-typed column, which is where every frozen table
+ *  in this tree puts its entity name. Only used to say WHO leads each ranking; a table with no
+ *  text column simply gets a ranking with no names, never a wrong one. */
+function labelColumnOf(columns) {
+  return columns.find((c) => c.type === "text") ?? null;
+}
+
+/** The row that leads a ranking, and its own figure — by the raw column, and by the same column
+ *  divided by the denominator. NEVER stored, never returned as a verdict, never written back into
+ *  the profile: this is arithmetic done once to put two numbers in a sentence a journalist reads.
+ *  A row whose value or denominator is not a number, or whose denominator is zero, is left out of
+ *  the rate ranking rather than coerced into it. */
+function leadersFor(rows, valueName, denominatorName, extreme) {
+  const better = (a, b) => (extreme === "min" ? a < b : a > b);
+  let raw = null;
+  let rate = null;
+  for (const row of rows) {
+    const value = Number(row[valueName]);
+    if (!Number.isFinite(value)) continue;
+    if (raw === null || better(value, raw.value)) raw = { row, value };
+    const denominator = Number(row[denominatorName]);
+    if (!Number.isFinite(denominator) || denominator === 0) continue;
+    const quotient = value / denominator;
+    if (rate === null || better(quotient, rate.quotient)) rate = { row, value, denominator, quotient };
+  }
+  return { raw, rate };
+}
+
+const nameOf = (row, labelColumn) => (labelColumn ? String(row[labelColumn.name]) : "that row");
+
+/** BOTH RANKINGS, IN WORDS, so the journalist chooses with the numbers in front of them.
+ *
+ *  Returns "" when the question does not arise: no denominator-shaped column in the table, or the
+ *  claim is about the denominator itself. Otherwise it names the leader by the raw column and the
+ *  leader per denominator, each with its own figure, and says out loud that the choice between
+ *  them is not this check's to make.
+ *
+ *  The quotient is given as a bare ratio (`205 / 88000 = 0.00233`) rather than "per 100,000":
+ *  scaling it would be choosing a unit the data never states, which is the same invention the
+ *  profiler refuses one level up. */
+function bothRankingsNote(columns, rows, valueColumn, extreme) {
+  const denominator = findDenominatorColumn(columns);
+  if (!denominator || denominator === valueColumn) return "";
+  const opening = ` — and note that "${denominator.name}" sits beside "${valueColumn.name}" in the same table, so this claim reads one way as a raw "${valueColumn.name}" figure and another per "${denominator.name}"`;
+  if (!rows || rows.length === 0) {
+    return `${opening}; no rows were available here, so neither ranking could be computed — pass the story's own source/data.csv as \`{ csv }\` and both are named`;
+  }
+  const labelColumn = labelColumnOf(columns);
+  const { raw, rate } = leadersFor(rows, valueColumn.name, denominator.name, extreme);
+  if (!raw || !rate) return `${opening}; the frozen rows carry no usable pair of figures to rank either way`;
+  const end = extreme === "min" ? "lowest" : "highest";
+  const rawName = nameOf(raw.row, labelColumn);
+  const rateName = nameOf(rate.row, labelColumn);
+  const rateFigure = `${rate.value} / ${rate.denominator} = ${Number(rate.quotient.toPrecision(3))}`;
+  const agreement =
+    rawName === rateName
+      ? `The two readings agree on "${rawName}" here, but the claim still does not say which of them it is making`
+      : `The two readings do NOT agree, and which one this claim is about is the journalist's to settle, not this check's`;
+  return `${opening}. By "${valueColumn.name}" alone the ${end} is "${rawName}" (${raw.value}); per "${denominator.name}" it is "${rateName}" (${rateFigure}). ${agreement}`;
+}
+
+/**
+ * The wrapper shapes 8 and 9 come back through. It never re-decides anything and never divides
+ * into a verdict: a `supported` raw-count superlative is DOWNGRADED to `unverifiable` while a
+ * denominator candidate exists — that is the refusal to confirm — and every other verdict keeps
+ * its own answer and gains the note. A `contradicted` claim stays contradicted: the data really
+ * did refute the raw reading, and hiding that behind a question would be the same silence this
+ * whole file exists to stop.
+ */
+function askAboutTheDenominator(result, item, profile, columns, sentence) {
+  if (!result) return result;
+  const chosen = chooseValueColumn(columns, sentence);
+  if (!chosen.column) return result;
+  const rows = Array.isArray(profile.rows) ? profile.rows : null;
+  const note = bothRankingsNote(columns, rows, chosen.column, item.extreme ?? "max");
+  if (note === "") return result;
+  if (result.verdict !== "supported") return { ...result, detail: `${result.detail}${note}` };
+  return {
+    ...result,
+    verdict: "unverifiable",
+    detail: `${result.detail}${note}`,
+  };
+}
+
 function rowValue(rows, yearField, valueField, year) {
   const row = rows.find((r) => Number(r[yearField]) === year);
   if (!row) return undefined;
@@ -990,8 +1130,25 @@ function resolveComparison(item, profile, text) {
     };
   }
 
-  if (item.kind === "superlative") return resolveSuperlative(item, profile, claim, columns, sentence);
-  if (item.kind === "combined") return resolveCombined(item, profile, claim, columns, sentence);
+  // Shapes 8 and 9 both rank one entity against a column. A count read against a denominator can
+  // rank the other way round entirely (round-four finding 5), so both come back through
+  // `askAboutTheDenominator` before a verdict leaves this function.
+  if (item.kind === "superlative")
+    return askAboutTheDenominator(
+      resolveSuperlative(item, profile, claim, columns, sentence),
+      item,
+      profile,
+      columns,
+      sentence,
+    );
+  if (item.kind === "combined")
+    return askAboutTheDenominator(
+      resolveCombined(item, profile, claim, columns, sentence),
+      item,
+      profile,
+      columns,
+      sentence,
+    );
 
   if (!item.direction) {
     return { claim, verdict: "unverifiable", detail: "comparison direction word not recognised" };

@@ -987,8 +987,14 @@ describe("a claim names its own measure (the two-measure dead zone)", () => {
       "Centro records more incidents than any other district.",
     );
     const claim = claims.find((c) => c.claim.includes("than any other"));
-    expect(claim.verdict).toBe("supported");
+    // The column IS chosen and the entity IS resolved against it — that is what this block is
+    // about, and the detail below is the proof. The verdict is `unverifiable` rather than
+    // `supported` only because round four's finding 5 landed afterwards: `residents` sits beside
+    // `incidents`, so the raw-count reading is not confirmed on its own. See the finding-5 block
+    // at the end of this file.
+    expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("incidents");
+    expect(claim.detail).toContain("is the column's maximum (412)");
   });
 
   it("should decide a 'more than the others combined' claim on the column the sentence names", () => {
@@ -997,8 +1003,11 @@ describe("a claim names its own measure (the two-measure dead zone)", () => {
       "Lisboa carries more trips than all the other cities combined.",
     );
     const claim = claims.find((c) => c.claim.toLowerCase().includes("combined"));
-    expect(claim.verdict).toBe("supported");
+    // Same as above: the column is chosen and the arithmetic decided, and finding 5's denominator
+    // question is what holds the confirmation back — `population` sits beside `trips_millions`.
+    expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("trips_millions");
+    expect(claim.detail).toContain("exceeds the sum of the rest");
   });
 
   it("should refuse, naming every candidate, when the sentence names none of the measures", () => {
@@ -1055,6 +1064,102 @@ describe("coverage counts what the data DECIDED, not only what was touched (find
     );
     expect(coverage.sentences).toBe(2);
     expect(coverage.evaluated).toBe(2);
+    // Both sentences were LOOKED AT and neither is settled. It was `decided: 1` until round four's
+    // finding 5: the second sentence used to be `supported` on the raw count while `residents` sat
+    // in the next column, which is exactly the confirmation that headline should never have got.
+    expect(coverage.decided).toBe(0);
+  });
+
+  // The distinction finding 4 exists to draw, kept proven on a story where nothing withholds the
+  // verdict: `stress-l-mixed-unit-clinics` carries no denominator column at all, so its own
+  // superlative still DECIDES and the second sentence still does not.
+  it("should still count a decided sentence where the data really does settle one", () => {
+    const { coverage } = grounded(
+      "stress-l-mixed-unit-clinics",
+      "Germany has the most. Nobody knows why.",
+    );
+    expect(coverage.sentences).toBe(2);
+    expect(coverage.evaluated).toBe(1);
     expect(coverage.decided).toBe(1);
+  });
+});
+
+// =============================================================================================
+// FINDING 5 (stress round four): A COUNT CAN HAVE A DENOMINATOR, AND NOBODY EVER ASKED.
+//
+// `stress-q-safety-incidents` came back `supported` on "more than any other district" — a true
+// statement about raw counts standing in for a headline ("Centro has the worst safety record")
+// that is FALSE per resident, with `residents` one column away. `stress-p-transport-ridership`
+// inverts at the top: Porto carries 416 trips per resident against Lisboa's 393.
+//
+// This check does not divide and does not decide. It refuses to CONFIRM a raw-count superlative
+// or comparison while a denominator candidate sits in the same table, and it names BOTH rankings
+// so the journalist chooses with the numbers in front of them.
+// =============================================================================================
+
+describe("a raw-count superlative is not confirmed while a denominator sits beside it (finding 5)", () => {
+  const CENTRO = "Centro recorded 412 incidents last year, more than any other district.";
+
+  it("should refuse to confirm the frozen article's own raw-count superlative", () => {
+    const { claims } = grounded("stress-q-safety-incidents", CENTRO);
+    const claim = claims.find((c) => c.claim.includes("more than any other"));
+    // It WAS "supported" — a true sentence about raw counts, confirming a false headline.
+    expect(claim.verdict).toBe("unverifiable");
+  });
+
+  it("should name BOTH rankings, with the numbers, so the journalist can choose", () => {
+    const { claims } = grounded("stress-q-safety-incidents", CENTRO);
+    const detail = claims.find((c) => c.claim.includes("more than any other")).detail;
+    expect(detail).toContain('"residents"');
+    expect(detail).toContain('"incidents"');
+    // The raw leader and the per-resident leader, both named, both with their own figure.
+    expect(detail).toContain("Centro");
+    expect(detail).toContain("412");
+    expect(detail).toContain("Sul");
+    expect(detail).toContain("205");
+  });
+
+  it("should stop the sentence counting as DECIDED, so a caller cannot close a gate on it", () => {
+    const { coverage } = grounded("stress-q-safety-incidents", CENTRO);
+    expect(coverage.evaluated).toBe(1);
+    expect(coverage.decided).toBe(0);
+  });
+
+  it("should name the inversion at the top of stress-p, where the ranking actually reverses", () => {
+    const { claims } = grounded(
+      "stress-p-transport-ridership",
+      "Lisbon carries by far the most trips — 214 million against Porto's 96 million.",
+    );
+    const claim = claims.find((c) => c.claim.includes("the most"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain('"population"');
+    // Lisboa leads on trips; Porto leads per resident. Both named, so the reversal is visible.
+    expect(claim.detail).toContain("Lisboa");
+    expect(claim.detail).toContain("Porto");
+  });
+
+  it("should never divide the journalist's data into a verdict of its own", () => {
+    const { claims } = grounded("stress-q-safety-incidents", CENTRO);
+    const claim = claims.find((c) => c.claim.includes("more than any other"));
+    // Reporting, never repair: no verdict is ever RE-DECIDED on the rate. The rate appears only
+    // as a number in the detail the journalist reads.
+    expect(claim.verdict).not.toBe("supported");
+    expect(claim.verdict).not.toBe("contradicted");
+  });
+
+  it("should not fire on stress-a, whose measure must NOT be divided by the column beside it", () => {
+    // `households` sits beside `price_eur`, and a household energy bill is ALREADY a
+    // per-household figure. The article makes no superlative claim at all, so nothing here
+    // is refused, nothing is flagged, and nothing invents a question the sentence never asked.
+    const { claims } = grounded("stress-a-energy-bills", "Denmark stands out.");
+    expect(claims).toEqual([]);
+  });
+
+  it("should leave a table with no denominator column exactly as it was", () => {
+    // stress-l-mixed-unit-clinics: `code`, `country`, `value`, `unit` — no population anywhere.
+    const { claims } = grounded("stress-l-mixed-unit-clinics", "Germany has the most.");
+    const claim = claims.find((c) => c.claim.includes("the most"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).not.toContain("per ");
   });
 });
