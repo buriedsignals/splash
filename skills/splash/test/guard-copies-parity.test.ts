@@ -288,6 +288,7 @@ const COPIES: Record<string, string[]> = {
     "chart-video/scripts/detect-reveal-order.mjs",
     "map-beat/scripts/detect-reveal-order.mjs",
     "../shared/chart-video/detect-reveal-order.mjs",
+    "splash/assets/root-template/shared/chart-video/detect-reveal-order.mjs",
   ],
   // The BUILDER the decision now lives inside, walked for the same reason `marksFromSource` is: it
   // decides where every mark's window starts, and a copy that spread them differently would hand
@@ -295,6 +296,7 @@ const COPIES: Record<string, string[]> = {
   staggeredReveal: [
     "chart-video/scripts/detect-reveal-order.mjs",
     "../shared/chart-video/detect-reveal-order.mjs",
+    "splash/assets/root-template/shared/chart-video/detect-reveal-order.mjs",
   ],
   // FINDING 8's own capability, carried by the three chart formats. Declared in
   // `render-still.mjs` itself (a beat's `render.mjs` calls it directly, on the values it is about
