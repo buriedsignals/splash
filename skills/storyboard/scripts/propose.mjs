@@ -26,7 +26,7 @@
 // order already-reachable rows as revision-bound advice, but it remains read-only and discloses
 // unresolved requirements and ties.
 
-import { groundTakeaway, findYearColumn, measureColumns } from "./ground-claim.mjs";
+import { groundTakeaway, findYearColumn, measureColumns, LEXICON_LANGUAGES_SAID } from "./ground-claim.mjs";
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
@@ -134,6 +134,14 @@ export function resolveGrounding(takeaway, profile, options = {}) {
   const coverageNote = ` (${coverage.decided} of ${coverage.sentences} sentence(s) carry a claim the frozen data could decide; ${coverage.evaluated} produced a claim of any kind${
     coverage.unevaluated.length > 0
       ? `; ${coverage.unevaluated.length} produced none: ${coverage.unevaluated.map((s) => `"${s}"`).join("; ")}`
+      : ""
+  }${
+    // THE STATED MISS (round five, finding X1). A takeaway written in a script this check's own
+    // vocabularies were never taught reads, from `claims` alone, exactly like a takeaway with
+    // nothing checkable in it. Naming the script is the difference between "there was no claim
+    // here" and "there may have been one and this check could not see it".
+    (coverage.unreadable ?? []).length > 0
+      ? `; and this check's claim vocabulary reads ${LEXICON_LANGUAGES_SAID} — ${coverage.unreadable.join(", ")} is a script it has no vocabulary for, so anything it asserts was read by nobody here`
       : ""
   })`;
 

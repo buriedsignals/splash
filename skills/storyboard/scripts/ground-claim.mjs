@@ -332,6 +332,73 @@ export function readFrozenRows(csvText) {
 // an ambiguity to refuse — never two numbers out of one token.
 const NUMBER_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+[.,]\d+|-?\d+/g;
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// WHAT LANGUAGES THIS FILE'S NAME-BASED LEXICONS READ, AND WHAT THEY DO WHEN THEY MEET ANOTHER.
+//
+// ROUND FIVE, finding X1 — the round's structural theme. Every lexicon in this toolchain that
+// decides something by matching WORDS was written against the language its first story happened to
+// be in. `stress-x-tunisian-water`'s takeaway asserts `أكثر من غيرها` — "more than any other" — and
+// the superlative vocabulary below produced NO CLAIM AT ALL for it: the one thing that beat asserts
+// was never checked, and nothing anywhere said so. That is worse than a wrong verdict, because a
+// wrong verdict is arguable and silence reads as a clean bill.
+//
+// ONE POLICY, applied to every name-based lexicon in this toolchain (`palette`'s
+// `SUBJECT_CONVENTIONS`, `intake`'s denominator tokens, `isShareColumn` below, the superlative and
+// comparison vocabularies below, `storyboard`'s `ATTRIBUTION_CUES`):
+//
+//   1. DECLARE the languages. `LEXICON_LANGUAGES` is that declaration, in code, where a reader of
+//      the file meets it before the tables — the shape `MULTIPLIER_WORDS` above already took.
+//   2. CARRY every language this tree has frozen a story in. English, French, Greek, Arabic.
+//   3. When the text handed over is written in a script NONE of those languages uses, do not return
+//      a silent negative. NAME the script that could not be read.
+//
+// The third rule is the one that matters, because the second can never be finished: a lexicon that
+// has been taught four languages still meets a fifth. `scriptsNotRead` is how this file obeys it,
+// and `groundTakeaway`'s `coverage.unreadable` is where the answer surfaces.
+export const LEXICON_LANGUAGES = ["English", "French", "Greek", "Arabic"];
+
+/** The languages, written the way a sentence handed to a journalist says them. */
+export const LEXICON_LANGUAGES_SAID = "English, French, Greek and Arabic";
+
+// The scripts those four languages are written in. A takeaway using only these is a takeaway this
+// file's vocabularies are entitled to answer "no claim here" about.
+const SCRIPTS_READ = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Arabic}]/u;
+
+// Named, not enumerated by Unicode block: a reader of a refusal needs the script's NAME, and a
+// bare "some characters were unreadable" is the silence this whole mechanism exists to remove.
+// The list is the writing systems a newsroom in this tree's own reach could plausibly file in;
+// anything outside it lands on the catch-all below, which still names the codepoint.
+const NAMED_SCRIPTS = [
+  ["Cyrillic", /\p{Script=Cyrillic}/u],
+  ["Hebrew", /\p{Script=Hebrew}/u],
+  ["Han", /\p{Script=Han}/u],
+  ["Hiragana", /\p{Script=Hiragana}/u],
+  ["Katakana", /\p{Script=Katakana}/u],
+  ["Hangul", /\p{Script=Hangul}/u],
+  ["Devanagari", /\p{Script=Devanagari}/u],
+  ["Thai", /\p{Script=Thai}/u],
+  ["Armenian", /\p{Script=Armenian}/u],
+  ["Georgian", /\p{Script=Georgian}/u],
+  ["Ethiopic", /\p{Script=Ethiopic}/u],
+];
+
+/**
+ * EVERY SCRIPT IN THIS TEXT THAT NONE OF `LEXICON_LANGUAGES` IS WRITTEN IN.
+ *
+ * Empty is the ordinary answer and means "this file's vocabularies were in a position to read this".
+ * A non-empty answer is what turns "no claim found" from a verdict into a stated limit.
+ */
+export function scriptsNotRead(text) {
+  const value = String(text ?? "");
+  const found = NAMED_SCRIPTS.filter(([, re]) => re.test(value)).map(([name]) => name);
+  if (found.length > 0) return found;
+  // A letter this file can neither read nor name. Reported by its own codepoint rather than
+  // swallowed — the point is never to answer in silence.
+  const stray = [...value].find((ch) => /\p{L}/u.test(ch) && !SCRIPTS_READ.test(ch));
+  return stray ? [`U+${stray.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`] : [];
+}
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
 // The relative slack a rounded total is allowed against the exact sum of its column, so a takeaway
 // writing "34" against a column summing to 33.8 still resolves.
 const AGGREGATE_TOLERANCE = 0.01;
@@ -498,8 +565,40 @@ const TOTALITY_PATTERNS = [TOTALITY_WHOLE_RE, TOTALITY_ALL_RE, TOTALITY_TOGETHER
 // guessed onto an arbitrary numeric column just because a takeaway happens to use the word "whole".
 const SHARE_COLUMN_NAME_RE = /pct|percent|proportion|share/i;
 
+// THE SAME NAMES IN THE OTHER THREE LANGUAGES `LEXICON_LANGUAGES` DECLARES (round five, finding X1).
+// Kept as whole-name STEMS matched against the column's own name tokens rather than folded into the
+// substring regex above, and deliberately: `part` and `taux` are three- and four-letter French words
+// that appear inside a dozen ordinary column names ("department", "taux" inside nothing, but "part"
+// inside "partial", "departure", "participants"), and a fragment match on the refused-column path is
+// the exact defect round five's finding T12 closed one function over. A stem is matched against a
+// whole token, with `wordAppearsIn`'s own unicode boundaries, never as a substring of a longer word.
+const SHARE_COLUMN_NAME_TOKENS = [
+  "part",
+  "parts",
+  "pourcentage",
+  "pourcentages",
+  "taux",
+  "proportion",
+  "proportions",
+  "\u03c0\u03bf\u03c3\u03bf\u03c3\u03c4\u03cc",
+  "\u03c0\u03bf\u03c3\u03bf\u03c3\u03c4\u03ac",
+  "\u03bc\u03b5\u03c1\u03af\u03b4\u03b9\u03bf",
+  "\u0646\u0633\u0628\u0629",
+  "\u0627\u0644\u0646\u0633\u0628\u0629",
+  "\u0646\u0633\u0628",
+  "\u0627\u0644\u0645\u0626\u0648\u064a\u0629",
+  "\u0645\u0626\u0648\u064a\u0629",
+  "\u062d\u0635\u0629",
+  "\u0627\u0644\u062d\u0635\u0629",
+];
+
 function isShareColumn(column) {
-  return column.unit === "%" || SHARE_COLUMN_NAME_RE.test(column.name);
+  if (column.unit === "%" || SHARE_COLUMN_NAME_RE.test(column.name)) return true;
+  const tokens = String(column.name)
+    .split(NAME_TOKEN_SPLIT_RE)
+    .map((t) => t.toLowerCase())
+    .filter(Boolean);
+  return tokens.some((token) => SHARE_COLUMN_NAME_TOKENS.includes(token));
 }
 
 // What "the whole" means for a share/percentage column, and how much rounding slack a takeaway
@@ -568,6 +667,95 @@ const TOPS_RE = /\btops\b/gi;
 // The French form of the same claim — `stress-n-chomage-cantons`'s own article says
 // "Neuchâtel et Genève sont en tête", and this file already reads French comparisons (PAIR_FR_RE).
 const LEADS_FR_RE = /\ben\s+t[êe]te\b/gi;
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE SAME SHAPE, IN THE OTHER THREE LANGUAGES THIS FILE DECLARES (round five, finding X1).
+//
+// Everything above this line is English, with `LEADS_FR_RE` the single French exception, and that is
+// the whole defect: `stress-x-tunisian-water`'s takeaway — `تستهلك محافظة تونس أكثر من غيرها من
+// المياه` — produced no claim of any kind, so the one assertion that beat makes was never put to the
+// frozen table. The vocabularies below are the same three questions the English ones ask (does the
+// named entity hold this column's MAXIMUM, its MINIMUM, or an end the data does not know is bad?),
+// written in the other three languages `LEXICON_LANGUAGES` declares.
+//
+// `\b` IS NOT USED ANYWHERE HERE. It is ASCII-only, so it would misread every Greek and Arabic word
+// in this block — the same reason `wordAppearsIn` below uses unicode property escapes. The boundary
+// is `(?<![\p{L}\p{N}])` / `(?![\p{L}\p{N}])`, which is script-blind.
+//
+// The RANK qualifier is captured in each language for the same reason the English pattern captures
+// it: "the second highest" is not the question this shape decides, and reading it as the extreme
+// would produce a confident false contradiction.
+const RANK_FR = "deuxi[èe]me|troisi[èe]me|quatri[èe]me|cinqui[èe]me|sixi[èe]me|septi[èe]me|huiti[èe]me|neuvi[èe]me|dixi[èe]me";
+const RANK_EL = "δεύτερ|τρίτ|τέταρτ|πέμπτ|έκτ|έβδομ|όγδο";
+const RANK_AR = "الثاني|الثالث|الرابع|الخامس|السادس";
+
+// FRENCH. A superlative here is the article plus "plus"/"moins" plus an adjective — the construction
+// itself carries the direction, so no adjective list is needed and none is invented. "le pire" and
+// "le meilleur" are POLAR for exactly the reason their English equivalents are: nothing in a profile
+// says which end of a column is the bad one.
+const SUPERLATIVE_FR_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])l(?:e|a|es|')\\s+(?:(${RANK_FR})\\s+)?(plus|moins)\\s+(\\p{L}+)(?![\\p{L}\\p{N}])`,
+  "giu",
+);
+const SUPERLATIVE_FR_POLAR_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])l(?:e|a|es|')\\s+(?:(${RANK_FR})\\s+)?(pires?|meilleures?|meilleurs?|meilleure|plus\\s+mauvais)(?![\\p{L}\\p{N}])`,
+  "giu",
+);
+
+// GREEK. The superlative is carried by the adjective's own stem (-τερος / -τατος), so the stems are
+// listed and the ending is left open — an article is optional because Greek routinely drops it in a
+// headline ("Περισσότερα σχολεία από κάθε άλλη περιφέρεια").
+const SUPERLATIVE_EL_MAX = "υψηλότερ|μεγαλύτερ|περισσότερ|μακρύτερ|ισχυρότερ";
+const SUPERLATIVE_EL_MIN = "χαμηλότερ|μικρότερ|λιγότερ|συντομότερ|ασθενέστερ";
+const SUPERLATIVE_EL_POLAR = "χειρότερ|καλύτερ|ασφαλέστερ|φτωχότερ|πλουσιότερ|καθαρότερ";
+const SUPERLATIVE_EL_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:(${RANK_EL})\\p{L}*\\s+)?(${SUPERLATIVE_EL_MAX}|${SUPERLATIVE_EL_MIN}|${SUPERLATIVE_EL_POLAR})\\p{L}*(?![\\p{L}\\p{N}])`,
+  "giu",
+);
+
+// ARABIC. The elative takes the definite article when it is a superlative (`الأعلى` — "the highest")
+// and stands bare when it is a comparative (`أعلى من` — "higher than"), so only the DEFINITE forms
+// are read as shape 8. The bare forms are read by `MORE_THAN_ANY_OTHER_AR_RE` below, which is the
+// construction `stress-x`'s own takeaway uses and the reason this block exists.
+const SUPERLATIVE_AR_MAX = "الأكثر|الأعلى|الأكبر|الأطول|الأقوى|الأوفر";
+const SUPERLATIVE_AR_MIN = "الأقل|الأدنى|الأصغر|الأقصر|الأضعف";
+const SUPERLATIVE_AR_POLAR = "الأسوأ|الأفضل|الأنظف|الأفقر|الأغنى|الأسلم";
+const SUPERLATIVE_AR_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:(${RANK_AR})\\s+)?(${SUPERLATIVE_AR_MAX}|${SUPERLATIVE_AR_MIN}|${SUPERLATIVE_AR_POLAR})(?![\\p{L}\\p{N}])`,
+  "gu",
+);
+
+/** Which end of a column a non-English superlative points at, decided from the stem that matched. */
+function foreignExtremeOf(word) {
+  const w = String(word).toLowerCase();
+  const inList = (list) => list.split("|").some((stem) => w.startsWith(stem.toLowerCase()));
+  if (inList(SUPERLATIVE_EL_MAX) || inList(SUPERLATIVE_AR_MAX)) return "max";
+  if (inList(SUPERLATIVE_EL_MIN) || inList(SUPERLATIVE_AR_MIN)) return "min";
+  return null;
+}
+
+/** Whether a non-English superlative is POLAR — a judgement whose direction the data does not carry. */
+function foreignPolarOf(word) {
+  const w = String(word).toLowerCase();
+  const inList = (list) => list.split("|").some((stem) => w.startsWith(stem.toLowerCase()));
+  return inList(SUPERLATIVE_EL_POLAR) || inList(SUPERLATIVE_AR_POLAR) ? w : null;
+}
+
+// "more than any other", in the other three. `stress-x`'s own `أكثر من غيرها` is the Arabic form and
+// is the acceptance case for this whole block; `غيرها` is "the others", `أي` is "any".
+const MORE_THAN_ANY_OTHER_FR_RE =
+  /(?<![\p{L}\p{N}])plus\s+(?:\p{L}+\s+){0,4}?que\s+(?:tout|toute|toutes|tous|n['’]importe\s+quel(?:le)?)(?![\p{L}\p{N}])/giu;
+const MORE_THAN_ANY_OTHER_EL_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:${SUPERLATIVE_EL_MAX})\\p{L}*\\s+(?:\\p{L}+\\s+){0,3}?από\\s+(?:κάθε|οποιαδήποτε|οποιοδήποτε)(?![\\p{L}\\p{N}])`,
+  "giu",
+);
+const MORE_THAN_ANY_OTHER_AR_RE =
+  /(?<![\p{L}\p{N}])(?:أكثر|أعلى|أكبر|أطول|أقوى|أوفر)\s+من\s+(?:غيره\p{L}?|أي(?:\s+\p{L}+)?|سائر|بقية|كل)(?![\p{L}\p{N}])/gu;
+
+// "leads" / "tops", in the other three — the same claim as a bare superlative, phrased as a verb.
+const LEADS_EL_RE = /(?<![\p{L}\p{N}])(?:προηγείται|κορυφής)(?![\p{L}\p{N}])/giu;
+const LEADS_AR_RE = /(?<![\p{L}\p{N}])(?:تتصدر|يتصدر|المقدمة|الصدارة)(?![\p{L}\p{N}])/gu;
+// ─────────────────────────────────────────────────────────────────────────────────────────────
 
 function superlativeExtremeOf(word) {
   const w = word.toLowerCase();
@@ -714,7 +902,45 @@ function resolveClaimEntity(item, rows) {
     if (hits.length === 1) return { name: candidate, row: hits[0] };
     if (hits.length > 1 && !ambiguous) ambiguous = { name: candidate, count: hits.length };
   }
+  if (!ambiguous && candidates.length === 0) return resolveEntityWithoutCase(item, rows);
   return ambiguous ? { ambiguous } : {};
+}
+
+/**
+ * THE ENTITY OF A CLAIM WRITTEN IN A SCRIPT WITH NO CASE (round five, finding X1).
+ *
+ * `entityCandidatesFor` reads a capitalised phrase, which is the whole of how this file has ever
+ * identified who a claim is about. Arabic, Hebrew, Chinese, Japanese and Korean have no case, so on
+ * every one of them it returns nothing and a superlative stops at "could not identify which entity
+ * this claim is about" — a refusal about the script, reported as a refusal about the claim.
+ *
+ * So where there is no capitalisation to read, the FROZEN TABLE is read instead: a row key that
+ * appears in the claim's own clause, as a word, is the entity that clause is about. Exactly one such
+ * row resolves; several is an ambiguity reported by name, the same answer the cased path gives. This
+ * runs ONLY when the cased path found no candidate at all, so nothing about a Latin or Greek
+ * takeaway changes — measured across all 27 frozen stories, not one of them has an empty candidate
+ * list in a cased script.
+ *
+ * Its own limit, stated: a table whose key column repeats a common word ("Total", "Other") would
+ * resolve that row for any clause containing the word. The longest match wins for that reason, and
+ * the ambiguity branch reports the rest.
+ */
+function resolveEntityWithoutCase(item, rows) {
+  const clause = String(item.clause ?? "");
+  if (!clause.trim() || !rows || rows.length === 0) return {};
+  const named = new Map();
+  for (const row of rows) {
+    for (const value of Object.values(row)) {
+      if (typeof value !== "string") continue;
+      const key = value.trim();
+      if (key.length < 2 || !wordAppearsIn(key, clause)) continue;
+      if (!named.has(key)) named.set(key, []);
+      named.get(key).push(row);
+    }
+  }
+  const keys = [...named.keys()].sort((a, b) => b.length - a.length);
+  for (const key of keys) if (named.get(key).length === 1) return { name: key, row: named.get(key)[0] };
+  return keys.length > 0 ? { ambiguous: { name: keys[0], count: named.get(keys[0]).length } } : {};
 }
 
 // A column this shape refuses to treat a period as fully comparable within, when it marks a row's
@@ -909,6 +1135,11 @@ function extractComparisons(text) {
       kind: "superlative",
       entity: entityCandidates[0] ?? null,
       entityCandidates,
+      // The clause itself, carried so an entity written in a CASELESS script can still be resolved —
+      // see `resolveClaimEntity`. `entityCandidates` is built from capitalisation, which Arabic,
+      // Hebrew and CJK do not have, so on those scripts it is always empty and the claim used to
+      // stop at "could not identify which entity this claim is about".
+      clause: text.slice(clauseStart(text, span.start), span.start),
       raw: text.slice(span.start, span.end),
       ...fields,
       ...span,
@@ -955,12 +1186,52 @@ function extractComparisons(text) {
       kind: "combined",
       entity: entityCandidates[0] ?? null,
       entityCandidates,
+      clause: text.slice(clauseStart(text, span.start), span.start),
       raw: m[0],
       ...span,
     });
   }
   for (const m of text.matchAll(MORE_THAN_ANY_OTHER_RE)) {
     pushSuperlative({ start: m.index, end: m.index + m[0].length }, { extreme: "max" });
+  }
+
+  // THE OTHER THREE LANGUAGES (round five, finding X1). Tried AFTER every English pattern and after
+  // the English "more than any other", so a mixed-language takeaway still reads its English clause
+  // the way it always did, and the overlap check keeps one phrase to one claim as everywhere else.
+  //
+  // ORDER INSIDE THIS BLOCK IS LOAD-BEARING: the "more than any other" forms come first, because
+  // the Arabic elative they are built on (`أكثر`) is bare — `أكثر من غيرها` must be claimed as the
+  // whole comparison before anything shorter can take part of it. `stress-x-tunisian-water` is that
+  // exact sentence.
+  for (const re of [MORE_THAN_ANY_OTHER_AR_RE, MORE_THAN_ANY_OTHER_FR_RE, MORE_THAN_ANY_OTHER_EL_RE]) {
+    for (const m of text.matchAll(re)) {
+      pushSuperlative({ start: m.index, end: m.index + m[0].length }, { extreme: "max" });
+    }
+  }
+  for (const re of [LEADS_AR_RE, LEADS_EL_RE]) {
+    for (const m of text.matchAll(re)) {
+      pushSuperlative({ start: m.index, end: m.index + m[0].length }, { extreme: "max" });
+    }
+  }
+  for (const m of text.matchAll(SUPERLATIVE_FR_RE)) {
+    pushSuperlative(
+      { start: m.index, end: m.index + m[0].length },
+      { extreme: m[2].toLowerCase() === "moins" ? "min" : "max", polarWord: null, rank: m[1] ? m[1].toLowerCase() : null },
+    );
+  }
+  for (const m of text.matchAll(SUPERLATIVE_FR_POLAR_RE)) {
+    pushSuperlative(
+      { start: m.index, end: m.index + m[0].length },
+      { extreme: null, polarWord: m[2].toLowerCase(), rank: m[1] ? m[1].toLowerCase() : null },
+    );
+  }
+  for (const re of [SUPERLATIVE_EL_RE, SUPERLATIVE_AR_RE]) {
+    for (const m of text.matchAll(re)) {
+      pushSuperlative(
+        { start: m.index, end: m.index + m[0].length },
+        { extreme: foreignExtremeOf(m[2]), polarWord: foreignPolarOf(m[2]), rank: m[1] ? m[1].toLowerCase() : null },
+      );
+    }
   }
 
   return found;
@@ -1327,7 +1598,7 @@ function resolveComparison(item, profile, text) {
         verdict: "unverifiable",
         detail:
           shareColumns.length === 0
-            ? "no share/percentage column in the profile to check this total against"
+            ? `no share/percentage column in the profile to check this total against — this decision reads a column's own name in ${LEXICON_LANGUAGES_SAID}, or its recorded unit "%", and read ${columns.length === 0 ? "no columns at all" : columns.map((c) => `"${c.name}"`).join(", ")}${scriptsNotRead(columns.map((c) => c.name).join(" ")).length > 0 ? `; ${scriptsNotRead(columns.map((c) => c.name).join(" ")).join(", ")} is a script it has no share vocabulary for` : ""}`
             : "more than one share/percentage column in the profile — cannot tell which this total claims to be the whole of",
       };
     }
@@ -1497,7 +1768,7 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
     return { claim, verdict: "unverifiable", detail: `${chosen.refusal}${refused}` };
   }
 
-  if (!item.entity) {
+  if (!item.entity && !String(item.clause ?? "").trim()) {
     return { claim, verdict: "unverifiable", detail: "could not identify which entity this claim is about" };
   }
 
@@ -1868,6 +2139,11 @@ function computeCoverage(text, claims) {
     evaluated: sentences.length - unevaluated.length,
     decided: decided.length,
     unevaluated,
+    // THE STATED MISS (round five, finding X1). `unevaluated` says WHICH sentences produced nothing;
+    // this says whether the reason might be that this file's vocabularies were never in a position
+    // to read them at all. Empty is the ordinary answer and is itself information: it means a
+    // sentence that produced no claim produced none for a reason other than its script.
+    unreadable: scriptsNotRead(text),
   };
 }
 
@@ -1877,7 +2153,7 @@ function computeCoverage(text, claims) {
 // array itself only has to learn the one extra level.
 export function groundTakeaway(takeaway, profile, options = {}) {
   if (!takeaway || typeof takeaway !== "string") {
-    return { claims: [], coverage: { sentences: 0, evaluated: 0, decided: 0, unevaluated: [] } };
+    return { claims: [], coverage: { sentences: 0, evaluated: 0, decided: 0, unevaluated: [], unreadable: [] } };
   }
   const base = profile ?? {};
   const columns = Array.isArray(base.columns) ? base.columns : [];
