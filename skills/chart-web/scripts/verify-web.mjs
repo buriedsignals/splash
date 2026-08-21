@@ -250,17 +250,87 @@ async function checkHover(page, vp) {
   // attribute `assets/interaction.mjs` reads to fill the tooltip, and the one thing every beat must
   // bake server-side — so it is what this script probes. Keying on `.pt` made this verifier
   // unusable on eight beats out of thirteen.
+  //
+  // AND THE PIXEL AIMED AT IS ON THE MARK, NOT AT THE CENTRE OF ITS BOX. Finding 19 of stress round
+  // four: this probe used `r.left + r.width / 2, r.top + r.height / 2` for every mark, which is the
+  // right pixel for a circle, a bar or a cell and the WRONG one for a diagonal. A slopegraph's mark
+  // is a straight line from one axis to the other, so its bounding box is the whole plot and its
+  // box centre is the line's own midpoint — and two lines that cross share that pixel exactly.
+  // Measured on this format's own committed slopegraph (`proof/web-co2-decline-slope`): 11 checks
+  // failed, 26 of 30 marks answered, and every single failure was the CHECKER being wrong about a
+  // sound beat — the tooltip named the country the reader was pointing at, while
+  // `document.elementFromPoint` at the same ambiguous pixel named the country crossing it. No
+  // slopegraph could pass. The same run with real pointer events at 15% and 85% along each line
+  // answers 12 of 12.
+  //
+  // So a mark that has GEOMETRY is sampled along that geometry — `getPointAtLength` at 15% and 85%
+  // of its own length, the two positions far enough from a mid-plot crossing to be unambiguous and
+  // far enough from an endpoint to stay inside a rounded cap — and the first sample the compositor
+  // agrees belongs to THIS mark is the pixel the probe uses. The box centre stays as the last
+  // candidate and as the fallback, which keeps every non-diagonal beat probing exactly where it
+  // did before, and keeps a genuinely occluded mark reporting the failure it should rather than
+  // being quietly re-aimed until it passes.
   const all = await page.evaluate(() => {
     const plot = document.querySelector(".chart-plot")?.getBoundingClientRect();
     return Array.prototype.map
       .call(document.querySelectorAll("[data-detail]"), (p) => {
         const r = p.getBoundingClientRect();
+        const candidates = [];
+        // ONLY A STROKED, OPEN MARK IS SAMPLED ALONG ITS OWN LENGTH. `getTotalLength` exists on
+        // every SVG geometry element, and on a closed one it returns the PERIMETER — so
+        // `getPointAtLength` on a heatmap's `<rect>` walks its BORDER, and the probe lands on the
+        // edge it shares with the cell above it. Measured while writing this: sampling every
+        // geometry element reddened `more-heatmap-co2-per-capita-decades` and
+        // `webx-world-population` with twelve "tooltip never appeared" each, at the exact y of a
+        // row boundary. A filled shape IS its interior, and its box centre is already the right
+        // pixel; a stroked open path IS its stroke, and its box centre may not be on it at all.
+        const shape = p.tagName.toLowerCase();
+        const strokedOpenMark =
+          shape === "line" ||
+          shape === "polyline" ||
+          (shape === "path" && getComputedStyle(p).fill === "none");
+        if (strokedOpenMark && typeof p.getTotalLength === "function" && typeof p.getPointAtLength === "function") {
+          let length = 0;
+          try {
+            length = p.getTotalLength();
+          } catch (error) {
+            length = 0;
+          }
+          const ctm = p.getScreenCTM();
+          if (length > 0 && ctm)
+            for (const along of [0.15, 0.85]) {
+              const local = p.getPointAtLength(length * along);
+              candidates.push({
+                x: ctm.a * local.x + ctm.c * local.y + ctm.e,
+                y: ctm.b * local.x + ctm.d * local.y + ctm.f,
+              });
+            }
+        }
+        candidates.push({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+        // BY THE READING, NOT BY THE ELEMENT. A beat may carry the same `data-detail` on both the
+        // visible mark and the fat transparent hit path drawn over it (measured: the committed
+        // slopegraph does), so an identity test rejects the mark's own pixel as somebody else's.
+        // And the whole STACK is read, not the topmost element: two marks whose hit areas overlap
+        // both cover the pixel, which is the fact the old probe could not represent.
+        const mine = p.getAttribute("data-detail");
+        let own = null;
+        for (const candidate of candidates) {
+          const covers = document.elementsFromPoint(candidate.x, candidate.y).some((el) => {
+            const mark = el.closest("[data-detail]");
+            return mark !== null && mark.getAttribute("data-detail") === mine;
+          });
+          if (covers) {
+            own = candidate;
+            break;
+          }
+        }
+        const aim = own ?? candidates[candidates.length - 1];
         return {
           name: p.getAttribute("data-year") ?? p.getAttribute("data-detail"),
           detail: p.getAttribute("data-detail"),
           isPoint: p.classList.contains("pt"),
-          cx: r.left + r.width / 2,
-          cy: r.top + r.height / 2,
+          cx: aim.x,
+          cy: aim.y,
           w: r.width,
           h: r.height,
           midY: plot ? plot.top + plot.height / 2 : null,
@@ -357,16 +427,38 @@ async function checkHover(page, vp) {
    */
   async function expectedAt(at) {
     const under = await page.evaluate((p) => {
-      const el = document.elementFromPoint(p.x, p.y);
+      const stack = document.elementsFromPoint(p.x, p.y);
+      const el = stack[0];
       if (!el) return { kind: "nothing" };
-      const mark = el.closest("[data-detail]");
-      if (mark) return { kind: "mark", detail: mark.getAttribute("data-detail") };
+      // EVERY MARK COVERING THIS PIXEL, not only the topmost one. Finding 19 of stress round four:
+      // asking for the topmost made a pixel two overlapping marks BOTH answer for into a single
+      // right answer and a wrong one, and the format's own committed slopegraph — twelve lines with
+      // 24px hit strokes, several of them within a few pixels of each other over their whole
+      // length — could not pass. Every one of its eleven failures was the checker inventing a
+      // truth: the tooltip named the line the reader was pointing at, and this function named the
+      // line crossing it. Where marks do not overlap the stack holds exactly one and this is
+      // exactly as strict as it was; where they do, a tooltip naming any of the marks under the
+      // pointer is a correct answer and naming one that is NOT under it still fails.
+      const details = [];
+      for (const node of stack) {
+        const mark = node.closest("[data-detail]");
+        if (!mark) continue;
+        const detail = mark.getAttribute("data-detail");
+        if (!details.includes(detail)) details.push(detail);
+      }
+      if (details.length > 0) return { kind: "mark", details };
       if (el.closest(".hit-area") || el.classList.contains("hit-area"))
         return { kind: "hit-area" };
       return { kind: "other", what: `${el.tagName.toLowerCase()}.${el.getAttribute("class") ?? ""}` };
     }, at);
     if (under.kind === "mark")
-      return { details: [under.detail], why: "the mark under the pointer" };
+      return {
+        details: under.details,
+        why:
+          under.details.length === 1
+            ? "the mark under the pointer"
+            : `one of the ${under.details.length} marks whose own hit areas cover this pixel`,
+      };
     if (under.kind === "hit-area")
       // A SHARED HIT AREA MEANS THE BEAT PICKS THE READING, AND WHICH RULE IT PICKS BY IS ITS OWN
       // BUSINESS. The seed resolves by nearest x, which is right for a line; a SCATTER resolves by
