@@ -32,7 +32,7 @@
  * `helper-parity.test.ts`'s own kind of guard is the one that would have to notice — this file
  * only promises the copy IT holds still parses the fixture cleanly.
  *
- * SIX FILES ARE NAMED IN `SKIPPED`, BELOW, RATHER THAN SILENTLY DROPPED — five carry no fixture
+ * SEVEN FILES ARE NAMED IN `SKIPPED`, BELOW, RATHER THAN SILENTLY DROPPED — six carry no fixture
  * of their own: a skill's own generic reader is exercised through the beats that call it with a
  * real csv (`map-beat/assets/geo.ts`'s `valuesFromCsv` through every `proof/*​/geo-choropleth.ts`
  * copy this walk DOES run), a probe utility takes an arbitrary `--data` path
@@ -85,6 +85,11 @@ const SKIPPED = new Set([
   // shells out). The same lookup is `entityOf` in the sibling `life-data.ts`, in the same
   // directory, over the same fixture — extracted and run below.
   "proof/scrolly-one-chart-swiss-life-expectancy/render.mjs",
+  // A test helper, the same reasoning `camera-holds-the-study-set.test.ts` is skipped for: its two
+  // readers are run inside its own suite, against `proof/co2-suisse/data.csv` and
+  // `stories/stress-t-europe-recycling/.../recycling.csv` — real frozen fixtures, just not ones
+  // sitting under `skills/chart-video/`, which is where this walk looks for a beat's own csv.
+  "skills/chart-video/test/reveal-order.test.ts",
 ]);
 
 // ── Extracting a reader out of its own file, verbatim ─────────────────────────────────────────

@@ -49,6 +49,32 @@ function parseCsvRows(text) {
 }
 
 
+/** The years `proof/co2-suisse`'s frozen series carries, ascending — the marks this format's own
+ *  line reveal traverses, one per year. A named reader over the tokeniser above rather than a split
+ *  written inline, which is the convention `splash/test/csv-readers-parse-their-fixtures.test.ts`
+ *  walks every file in this tree for. */
+function yearsFromCsv(csv: string): number[] {
+  const rows = parseCsvRows(csv.trim());
+  const yearAt = rows[0]!.indexOf("Year");
+  if (yearAt < 0) throw new Error(`no "Year" column, got: ${rows[0]!.join(", ")}`);
+  return rows
+    .slice(1)
+    .map((cells) => Number(cells[yearAt]))
+    .filter((year) => Number.isFinite(year) && year >= 1950)
+    .sort((a, b) => a - b);
+}
+
+/** The country of every reading in `stress-t`'s frozen survey, in source order — keyed by the raw
+ *  string, misspellings included, exactly as that beat's own join keys them. */
+function countriesFromCsv(csv: string): string[] {
+  const rows = parseCsvRows(csv.trim());
+  const countryAt = rows[0]!.indexOf("country");
+  const dateAt = rows[0]!.indexOf("survey_date");
+  if (countryAt < 0 || dateAt < 0)
+    throw new Error(`no "country"/"survey_date" column, got: ${rows[0]!.join(", ")}`);
+  return rows.slice(1).map((cells) => cells[countryAt]!);
+}
+
 /** The windows a linear traversal hands its marks — the same arithmetic `drawnSoFar` walks the
  *  line's own points with, expressed as a start frame per mark so the decision can read it. */
 function linearWindows(positions: (number | null)[], event: { start: number; duration: number }) {
@@ -116,14 +142,7 @@ describe("staggerLacksAnOrder", () => {
   // Not a fixture built to pass: the frozen series this skill's own seed renders, read off disk and
   // walked with this format's own timing contract.
   it("should earn its stagger on proof/co2-suisse's own frozen series", () => {
-    const rows = parseCsvRows(readFileSync(join(TWIN, "proof/co2-suisse/data.csv"), "utf8").trim());
-    const yearAt = rows[0]!.indexOf("Year");
-    expect(yearAt).toBeGreaterThan(-1);
-    const years = rows
-      .slice(1)
-      .map((cells) => Number(cells[yearAt]))
-      .filter((year) => Number.isFinite(year) && year >= 1950)
-      .sort((a, b) => a - b);
+    const years = yearsFromCsv(readFileSync(join(TWIN, "proof/co2-suisse/data.csv"), "utf8"));
     expect(years.length).toBeGreaterThan(50);
     const found = staggerLacksAnOrder(linearWindows(years, CO2_TIMING.reveal));
     expect(`${found.marks} marks, ${found.positions} positions → ${found.why}`).toBe(
@@ -132,23 +151,15 @@ describe("staggerLacksAnOrder", () => {
   });
 
   it("should refuse the same stagger over stress-t's eleven one-month readings", () => {
-    const rows = parseCsvRows(
+    // Every reading is March 2025, written three different ways in the frozen source. The period,
+    // not the spelling, is the position — so they are read as the one month they all are.
+    const marks = countriesFromCsv(
       readFileSync(
         join(TWIN, "stories/stress-t-europe-recycling/beats/europe-recycling-map/recycling.csv"),
         "utf8",
-      ).trim(),
-    );
-    const dateAt = rows[0]!.indexOf("survey_date");
-    const countryAt = rows[0]!.indexOf("country");
-    expect(dateAt).toBeGreaterThan(-1);
-    expect(countryAt).toBeGreaterThan(-1);
-    // Every reading is March 2025, written three different ways in the frozen source. The period,
-    // not the spelling, is the position — so they are read as the one month they all are.
-    const marks = rows.slice(1).map((cells, i) => ({
-      key: cells[countryAt]!,
-      start: 112 + i * 8,
-      at: "2025-03",
-    }));
+      ),
+    ).map((key, i) => ({ key, start: 112 + i * 8, at: "2025-03" }));
+    expect(marks.length).toBeGreaterThan(5);
     const found = staggerLacksAnOrder(marks);
     expect(`${found.arbitrary}: ${found.why}`).toBe(
       `true: ${marks.length} marks hold 1 position(s) between them, so the order across them is the producer's and not the data's`,
