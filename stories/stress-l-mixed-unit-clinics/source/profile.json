@@ -29,7 +29,14 @@
       "min": 17.2,
       "max": 1880,
       "sum": 5212.299999999999,
-      "gaps": null
+      "gaps": null,
+      "mixedUnits": {
+        "column": "unit",
+        "groups": [
+          "clinics",
+          "per 100k"
+        ]
+      }
     },
     {
       "name": "unit",

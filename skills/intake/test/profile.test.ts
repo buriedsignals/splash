@@ -270,4 +270,62 @@ describe("profileTable", () => {
     // multiple-of-5 slot between 2010 and 2020 that never shows up.
     expect(year.gaps).toEqual([2015]);
   });
+
+  it("should flag a numeric column partitioned by a sibling unit column into groups with different units", () => {
+    // stress-l-mixed-unit-clinics's own shape: a COUNT (910-1880) for four countries and a RATE
+    // per 100,000 (17.2-21.9) for four others, with a sibling `unit` column saying which. Ranging
+    // the whole column as one measure — the frozen defect — says nothing true about the world.
+    const table = profileTable([
+      ["country", "value", "unit"],
+      ["France", "1240", "clinics"],
+      ["Germany", "1880", "clinics"],
+      ["Spain", "910", "clinics"],
+      ["Poland", "18.4", "per 100k"],
+      ["Sweden", "21.9", "per 100k"],
+      ["Netherlands", "17.2", "per 100k"],
+    ]);
+    const value = table.columns.find((c) => c.name === "value");
+    // Reporting, never repair: the column keeps its type and its own min/max/sum exactly as
+    // before — nothing here corrects or splits the range, it only says the range is not one
+    // measure and names what says so.
+    expect(value.type).toBe("number");
+    expect(value.min).toBe(17.2);
+    expect(value.max).toBe(1880);
+    expect(value.mixedUnits).toEqual({ column: "unit", groups: ["clinics", "per 100k"] });
+  });
+
+  it("should not flag a numeric column beside a unit column that names only one unit throughout", () => {
+    // stress-f-housing-pressure's own shape: every `unit` cell says "%", so the column really is
+    // one measure and there is nothing to partition it into.
+    const table = profileTable([
+      ["country", "pressure", "unit"],
+      ["France", "12", "%"],
+      ["Germany", "9", "%"],
+      ["Spain", "143", "%"],
+    ]);
+    const pressure = table.columns.find((c) => c.name === "pressure");
+    expect(pressure.mixedUnits).toBeUndefined();
+  });
+
+  it("should not read a category column as a unit column merely for sitting beside a number", () => {
+    // proof/map-quake-density's own shape: `mag` is numeric and `type` names the earthquake kind
+    // ("earthquake", "quarry blast") — a real category column that happens to carry more than one
+    // value, and not a claim about what UNIT `mag` is measured in. Only a column whose own NAME
+    // reads as "unit" is trusted to say so — the same identity-based test isSequenceColumn already
+    // uses for a year column, never a guess from two columns' shapes alone.
+    const table = profileTable([
+      ["place", "mag", "type"],
+      ["A", "4.5", "earthquake"],
+      ["B", "2.1", "quarry blast"],
+      ["C", "3.9", "earthquake"],
+    ]);
+    const mag = table.columns.find((c) => c.name === "mag");
+    expect(mag.mixedUnits).toBeUndefined();
+  });
+
+  it("should not flag a numeric column when no sibling column is named as a unit column", () => {
+    const table = profileTable(ROWS);
+    const rainfall = table.columns.find((c) => c.name === "rainfall");
+    expect(rainfall.mixedUnits).toBeUndefined();
+  });
 });
