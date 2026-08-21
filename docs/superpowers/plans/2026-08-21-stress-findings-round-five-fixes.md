@@ -238,3 +238,39 @@ versus extend) and D's size decision (give two skills a table versus stop the ga
 
 **The acceptance test is the six frozen round-five stories**, plus every corpus measurement the raw
 findings file records, which each task must leave true or improve.
+
+---
+
+## Rulings
+
+**The CMS payload gets no catalogue rule, and that is the correct answer, not a shortcut.**
+
+The agent that fixed it proposed `insertion-payload-is-markup`, a guard requiring a new trait
+`delivers-to-a-cms`. Measured:
+
+    PRODUCING_SKILLS: chart-beat, chart-web, chart-video, dw-beat, map-beat, map-web, image-beat, scrolly
+    deliver among them? false
+
+The traits derivation exists to spread a decision across the skills that DRAW, and `deliver` is not
+one of them — it is the single phase every beat passes through afterwards. A rule declared against a
+trait no producing skill can carry would derive an empty population, which is the "stray row" the
+parity test refuses by design. Inventing a trait to make one rule fit would be typing the population
+by hand in a costume.
+
+So this is local to `deliver`, the way round three's Task A was local to `storyboard`, and it is
+guarded where it lives: `skills/deliver/test/honest-forms.test.ts`, 14 new assertions.
+
+Verified after the fix, and it discriminates rather than blanket-disabling:
+
+    stress-y (delegated, PNG only)   owned-file offered · cms-insertion DISABLED · source-bundle DISABLED
+    stress-w (image beat, SVG + tsx) all three offered
+
+**The decision inside the fix was the right one too.** The brief allowed either "offer the form only
+where markup exists" or "build a payload a CMS can accept". The agent chose the first and said why:
+an `<img>` tag would point at an asset nothing in this toolchain uploads, and a base64 data URI
+would be a claim about We.Publish and Livingdocs that this tree cannot back. `owned-file` already
+delivers `stress-y` correctly, and the disabled row names it.
+
+**And the mutation check earned its place.** Dropping `{fatal: true}` from the decoder left the test
+GREEN — a real PNG is refused twice over, as invalid UTF-8 and as full of NUL bytes, so the case
+proved nothing about the decode it was written to test. A Latin-1 SVG was added to isolate it.
