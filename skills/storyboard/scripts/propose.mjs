@@ -57,8 +57,16 @@ import visualCatalog from "../references/visual-catalog.json" with { type: "json
 // claim is information, not a refusal, and the file this reads from holds the same rule
 // (`ground-claim.mjs`'s header). Say the detail out loud at G1 — what the check could and could not
 // see is the honest half of the answer.
+//
+// THIS IS THE CALLER `ground-claim.mjs`'s own `coverage` field is for. `groundTakeaway` now
+// returns `{ claims, coverage }`, and `coverage.unevaluated` names the sentences that produced NOT
+// ONE claim of any verdict — the difference between a takeaway this check actually read and one it
+// never had a shape for at all. Folding it into `detail` here is what keeps that difference from
+// dying at this seam: a caller reading only `claims` and dropping `coverage` on the floor is
+// exactly the defect `ground-claim.mjs`'s own header warns about, one layer further from where it
+// was found.
 export function resolveGrounding(takeaway, profile) {
-  const claims = groundTakeaway(takeaway, profile);
+  const { claims, coverage } = groundTakeaway(takeaway, profile);
   const contradicted = claims.filter((c) => c.verdict === "contradicted");
   const supported = claims.filter((c) => c.verdict === "supported");
   const unplaceable = claims.filter((c) => c.verdict === "unverifiable");
@@ -74,7 +82,12 @@ export function resolveGrounding(takeaway, profile) {
           ? "no mechanically checkable claim in this takeaway — nothing was confirmed and nothing was refuted"
           : `none of ${claims.length} claim(s) could be placed in the frozen data — nothing was confirmed and nothing was refuted`;
 
-  return { verdict, detail, claims, contradicted, supported, unplaceable };
+  const coverageNote =
+    coverage.unevaluated.length > 0
+      ? ` (${coverage.evaluated} of ${coverage.sentences} sentence(s) produced a checkable claim; ${coverage.unevaluated.length} produced none: ${coverage.unevaluated.map((s) => `"${s}"`).join("; ")})`
+      : "";
+
+  return { verdict, detail: `${detail}${coverageNote}`, claims, contradicted, supported, unplaceable, coverage };
 }
 
 // The exact string `STORYBOARD.md`'s `grounding:` takes. `contradicted` is NOT a closing value, so

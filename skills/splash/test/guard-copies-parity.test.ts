@@ -63,6 +63,12 @@ function declaration(file: string, name: string): string {
 }
 
 const COPIES: Record<string, string[]> = {
+  // Task A (round-three stress redesign): the shared number reader. `ground-claim.mjs`'s free-text
+  // numeral scanner and `profile.mjs`'s column-level numeric parsing both hand an isolated token
+  // to this one decision — a thousands-grouped integer settles itself only with its own trailing
+  // decimal tail, everything else ambiguous stays a named refusal, never a guess and never two
+  // fragments out of one token.
+  readNumericToken: ["storyboard/scripts/ground-claim.mjs", "intake/scripts/profile.mjs"],
   // decided by → the verification scripts that carry it
   plateFollowsGround: [
     "scrolly/scripts/verify-scrolly.mjs",

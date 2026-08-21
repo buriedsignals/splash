@@ -141,6 +141,19 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
     expect(resolved.verdict).toBe("contradicted");
     expect(resolved.detail).toContain("the data refutes");
   });
+
+  // `groundTakeaway` now returns `{ claims, coverage }` (round-three stress redesign); this is the
+  // ONE caller `coverage.unevaluated` is written for (see `ground-claim.mjs`'s own header). A
+  // sentence that produced no claim at all is named in `detail`, not silently dropped alongside
+  // the sentence that WAS checked.
+  it("should fold coverage.unevaluated into the detail, naming the untouched sentence", () => {
+    const resolved = resolveGrounding(
+      "En 2024, 34 Mt de glace ont fondu. Renewables overtook coal as the main source.",
+      meltProfile,
+    );
+    expect(resolved.coverage.unevaluated).toEqual(["Renewables overtook coal as the main source."]);
+    expect(resolved.detail).toContain("Renewables overtook coal as the main source");
+  });
 });
 
 describe("groundingScalar — contradicted never closes G1", () => {

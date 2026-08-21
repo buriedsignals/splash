@@ -1,19 +1,30 @@
 // twin/skills/storyboard/scripts/ground-claim.mjs
 //
-// groundTakeaway checks a confirmed takeaway against the frozen data it describes, for exactly
-// one class of failure: a number or a direction the frozen data itself contradicts. It is the
-// narrow guard that would have caught the trial's Norway beat (twin/TRIAL-THREE-BEATS.md): a
-// takeaway claiming "2024 was below every year since 1993" while the fetched series gives
-// 2024 = 37.18 against 1993 = 35.95 — stated in a title above a chart that visibly shows the
-// opposite, and caught by nothing in the toolkit before this.
+// groundTakeaway checks a confirmed takeaway against the frozen data it describes. Three rounds
+// of stress testing each taught it one more SHAPE (a range, a direction, a totality) and each time
+// a later round walked straight past the shape it had not been taught. Round three did it four
+// ways in one pass (2026-08-20/21): a false comparative nothing caught (a human added six numbers
+// by hand), a misleading headline confirmed on a bare year number, a superlative with no numeral
+// in it at all ("Germany has the most.") returning `[]` — invisible, not refused — and a number
+// reader naive enough to split "14,205" into two range-tested fragments. A checker that only
+// recognises shapes will always be one shape behind, so THIS round changes the CONTRACT instead of
+// adding a fourth shape:
+//   - every numeral this file reads is read by the same rule `intake/scripts/profile.mjs` reads
+//     one by (`readNumericToken`, copied, not imported — see shape 0 below);
+//   - a superlative or comparative claim is COMPUTED against the column's own values wherever that
+//     is decidable, and named as unresolved otherwise, never dropped (shapes 8-9);
+//   - the return value now carries COVERAGE beside the claims, so a takeaway nothing could be
+//     placed in reads differently from one nothing was ever attempted on (see `computeCoverage`);
+//   - a comparison over a period the frozen data itself marks incomplete refuses to confirm,
+//     narrowly, by column name only (see `findCoverageColumn`).
 //
 // This is NOT a fact-checker (it knows nothing outside `profile`) and NOT a conformance engine
 // (it never looks at a rendered chart or a spec). Everything it cannot actually check comes back
 // "unverifiable" with a reason — it never returns "supported" for something it did not verify,
-// because silence and confirmation must not look alike (a rule this branch has had to learn three
-// times already; the third time was the stress test of 2026-08-20 — see shape 6 below, where a
-// direction word paired with an ordered number pair used to fall through to two independent
-// range checks and come back "supported" twice on a sentence the data flatly contradicted).
+// because silence and confirmation must not look alike (a rule this branch has had to learn FOUR
+// times now: shape 6's direction-word/pair agreement check, shape 7's totality check, and this
+// round's coverage field, added specifically because "no claim shape fired" and "every claim fired
+// and passed" used to be the same return value, `[]`).
 //
 // profile shape expected here:
 //   {
@@ -21,14 +32,32 @@
 //                                                  // (`sum` is the total of a numeric column, and
 //                                                  // is what makes a part-to-whole takeaway
 //                                                  // checkable at all — see shape 1b below)
-//     rows: [{ [columnName]: value, ... }, ...],  // optional row-level data. Without it, any
-//                                                  // claim that needs a specific year's value
-//                                                  // comes back "unverifiable", never "supported"
-//                                                  // or "contradicted".
+//     rows: [{ [columnName]: value, ... }, ...],  // optional row-level data. Every frozen profile
+//                                                  // this file has been run against so far omits
+//                                                  // it entirely (`profileTable` never writes it —
+//                                                  // see `intake/scripts/freeze.mjs`), so treat
+//                                                  // "no `rows`" as the COMMON case, not the edge
+//                                                  // one. Without it, any claim that needs a
+//                                                  // specific row's value — a year's own figure
+//                                                  // (shapes 2-4), or the entity an entity-named
+//                                                  // superlative names (shape 8) — comes back
+//                                                  // "unverifiable", naming what it could not
+//                                                  // resolve, never "supported" or "contradicted".
+//                                                  // Shape 9 is the one exception: a "more than
+//                                                  // the others combined" claim can be REFUTED
+//                                                  // from a column's own max and sum alone, with
+//                                                  // no row needed — see shape 9 below.
 //   }
 //
 // Claim shapes checked (see the module's test file and the SKILL.md for the full list this does
 // NOT cover):
+//   0. Every numeral token in this file — inside shapes 1a/1b and every other shape below that
+//      reads a raw digit run out of the takeaway — is resolved through `readNumericToken`, COPIED
+//      verbatim from `intake/scripts/profile.mjs` (registered in
+//      `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`, this tree's rule against a
+//      cross-skill import for a shared decision). A thousands-grouped integer ("14,205") or a
+//      French decimal ("1,7") is ONE claim or none, never two independent fragments each tested
+//      against a column's range by coincidence — the 2026-08-20/21 stress test's finding 4.
 //   1a. A numeric token in the takeaway that falls INSIDE the range of some numeric column.
 //   1b. A numeric token that equals a numeric column's `sum` within AGGREGATE_TOLERANCE — a
 //       part-to-whole total, "34 = 14 + 11 + 9". A number this function can place in NEITHER way is
@@ -83,13 +112,102 @@
 //      guessed at (2026-08-20 stress test, stress-e-electricity-mix: share_pct summed to 95.2
 //      while the article said the six shares "make up the whole of national supply", and nothing
 //      before this shape ever read `sum` against that claim at all).
+//   8. A SUPERLATIVE naming one entity — "<X> has the most", "<X> has/reports the highest/lowest",
+//      "<X> leads", "<X> tops", "<X> ... more than any other". Decidable ONLY by resolving <X> to
+//      its own row and reading its value against the column's own max (or min, for "lowest") — see
+//      `resolveSuperlative`. Where `rows` is absent (the common case — see the profile-shape note
+//      above) or <X> cannot be matched to any row, this is "unverifiable", NAMING <X> in the
+//      detail — never `[]` (2026-08-20/21 stress test, finding 3: "Germany has the most." and
+//      "Brazil leads the annual figures again." both returned `[]` before this round, indistinguish-
+//      able from a takeaway with nothing checkable in it at all).
+//   9. A COMPARISON naming one entity against the rest of a column combined — "<X> ... more than
+//      the other N <plural> combined", "<X> ... more than all the others combined". Unlike shape
+//      8, this is decidable in the REFUTING direction from the column's own MAX and SUM alone, no
+//      `rows` required at all: for ANY row to exceed the sum of every other row, the row holding
+//      the column's own maximum must in particular — so if even the max does not exceed the rest,
+//      no entity, named or not, could make the claim true, and it is "contradicted" outright (see
+//      `resolveCombined`). This is the exact arithmetic of the 2026-08-20/21 stress test's finding
+//      1: "Brazil lost more forest than the other six countries combined" is false because
+//      `loss_ha`'s own max (1,120,000) does not exceed its own sum minus that max (1,582,000) —
+//      provable without ever knowing which row is Brazil's. The confirming direction (max DOES
+//      exceed the rest) still needs `rows`, to confirm the NAMED entity is the one holding it.
+//
+// PARTIAL PERIODS, narrowly (finding 2). Shapes 2-4, 8 and 9 all read a period (usually a year) as
+// directly comparable to another. `findCoverageColumn` detects, BY NAME ONLY — `months_covered` or
+// `complete`/`coverage`, the two shapes the round-three stress stories actually carry
+// (stress-j-partial-year-permits, stress-o-museum-visits) — a column marking some row's period
+// incomplete, and every one of those shapes refuses to confirm anything while it is present, naming
+// the column rather than guessing which row it affects. This is deliberately NOT a general
+// incompleteness detector: it never reads a coverage column's VALUES, only whether the column
+// exists at all, which is what keeps it narrow rather than a second natural-language parser guessing
+// at what "incomplete" means. This is also why "Building permits collapse in 2026" — the bare
+// numeral "2026", shape 1a, trivially inside the year column's range — no longer comes back
+// "supported": `checkNumericRanges` carries the same guard for a bare year match.
+//
+// COVERAGE, so silence stops looking like confirmation (finding 3's other half). `groundTakeaway`
+// now returns `{ claims, coverage }`; see `computeCoverage`'s own doc comment for the shape and,
+// explicitly, who is expected to read it.
 //
 // Only a value that contradicts a fact this function DID establish comes back "contradicted": the
-// year comparisons, the superlatives, the trend-word/pair agreement check and the totality check,
-// which read real rows, a real number pair, or a real column total. Everything the function merely
-// failed to place is information for the journalist, not a refusal.
+// year comparisons, the superlatives, the entity-vs-combined check, the trend-word/pair agreement
+// check and the totality check, which read real rows, a real number pair, or a real column total.
+// Everything the function merely failed to place is information for the journalist, not a refusal.
 
-const NUMBER_RE = /-?\d+(?:\.\d+)?/g;
+// A plain decimal literal — copied verbatim from `intake/scripts/profile.mjs` so both skills'
+// own numeral-shaped tokens are read by the exact same rule (see `readNumericToken`, below).
+const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
+// A number a human wrote with US/UK thousands grouping — copied verbatim from
+// `intake/scripts/profile.mjs`, the other half of this decision (registered in
+// `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`).
+const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
+
+/**
+ * Reads ONE already-isolated numeral token the way this project always reads a number: a
+ * thousands-grouped integer ("14,205") is fine, a plain decimal ("1.7") is fine, but a comma this
+ * function cannot place is refused with a recorded reason rather than guessed at — the same
+ * refusal `profile.mjs`'s own column-level `typeOf` already gives a whole column, scaled down to
+ * one token with no sibling values to settle it against. The only evidence a lone token can offer
+ * for itself is its own trailing decimal tail ("14,205.5" settles itself as thousands-grouped,
+ * because nobody writes a decimal comma followed by a thousands-grouped period); without one, a
+ * comma-grouped token stays ambiguous.
+ *
+ * Returns `{ value }` for an unambiguous read, `{ ambiguous: true, reason }` for a numeral this
+ * function can see but cannot resolve to one value, and `null` for a string that is not a numeral
+ * at all. Never two numbers out of one token — the defect this exists to close, where a naive
+ * digit-only regex split "14,205" into 14 and 205, and the French "1,7" into 1 and 7, and both
+ * fragments then matched a column's range by coincidence.
+ */
+export function readNumericToken(raw) {
+  const value = raw.trim();
+  if (NUMERIC_RE.test(value) && Number.isFinite(Number(value))) return { value: Number(value) };
+  if (THOUSANDS_RE.test(value)) {
+    if (value.includes(".")) return { value: Number(value.replace(/,/g, "")) };
+    return {
+      ambiguous: true,
+      reason: `"${value}" is ambiguous — could be a thousands-grouped number or a decimal comma, and nothing settles it`,
+    };
+  }
+  if (value.includes(",")) {
+    return {
+      ambiguous: true,
+      reason: `"${value}" carries a comma that is neither a thousands grouping nor a settled decimal — could be a French decimal comma or a malformed grouping, and nothing settles it`,
+    };
+  }
+  return null;
+}
+
+// A numeral as written in free text: a thousands-grouped integer with an optional decimal tail
+// ("14,205" or "14,205.5"), OR a run of digits with exactly one separator — period or comma —
+// ("1.7", "1,7"), OR a plain run of digits ("42"). Tried in that order so a grouped thousand is
+// captured WHOLE rather than falling through to the loose single-separator alternative one
+// character at a time. This is what closes finding 4 (2026-08-20 stress test): the old
+// `-?\d+(?:\.\d+)?` regex never matched a comma at all, so "14,205" was two independent matches
+// ("14" and "205") and the French "1,7" was two more ("1" and "7") — each fragment then tested
+// against a column's range ON ITS OWN, and could land inside one by coincidence. Every match this
+// regex produces is now handed to `readNumericToken`, which decides whether it is one number or
+// an ambiguity to refuse — never two numbers out of one token.
+const NUMBER_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+[.,]\d+|-?\d+/g;
 
 // The relative slack a rounded total is allowed against the exact sum of its column, so a takeaway
 // writing "34" against a column summing to 33.8 still resolves. Absolute floor of 0.5 so a small
@@ -181,6 +299,74 @@ function isShareColumn(column) {
 // not invented fresh for this shape.
 const TOTALITY_WHOLE_VALUE = 100;
 const TOTALITY_TOLERANCE = 1;
+
+// Shape 8 — a SUPERLATIVE naming one entity: "the most", "the highest"/"the lowest" (bare, no
+// "since" or "ever" — SUPERLATIVE_SINCE_RE and SUPERLATIVE_EVER_RE above already own those two),
+// "leads", "tops". Every one of these reduces to the same question — does the named entity's own
+// row hold the column's max (or min, for "lowest")? — decidable only once that row is resolved
+// (see resolveSuperlative for what happens when the profile carries no `rows` to resolve it
+// against, which is every frozen profile this branch has seen so far).
+const SUPERLATIVE_MOST_RE = /\bhas\s+the\s+most\b/gi;
+const SUPERLATIVE_HL_RE = /\bthe\s+(highest|lowest)\b/gi;
+const LEADS_RE = /\bleads\b/gi;
+const TOPS_RE = /\btops\b/gi;
+
+// Shape 9 — "<entity> ... more than any other <noun>" (same question as shape 8, phrased as a
+// comparison) and "<entity> ... more than the other(s) ... combined" / "... more than all the
+// others combined" — the one shape in this file decidable from a column's own MAX and SUM alone,
+// with no row resolution required, in the REFUTING direction: see resolveCombined for the
+// argument (2026-08-20 round-three stress test, stress-m-forest-loss, finding 1 — "Brazil lost
+// more forest than the other six countries combined" is false, and provably so from
+// `loss_ha`'s own max (1,120,000) and sum (2,702,000) alone, without ever knowing which row is
+// Brazil's).
+const MORE_THAN_ANY_OTHER_RE = /\bmore\b[\s\S]{0,40}?\bthan\s+any\s+other\b/gi;
+const MORE_THAN_COMBINED_RE = /\bmore\b[\s\S]{0,40}?\bthan\s+(?:the\s+other|all(?:\s+the)?)\b[\s\S]{0,40}?\bcombined\b/gi;
+
+// The leading capitalised phrase of the CLAUSE a shape-8/9 marker sits in — the entity the claim
+// is about, on the (measured, not invented) assumption that a short editorial sentence puts its
+// subject first: "Brazil lost more forest than the other six countries combined" names Brazil
+// before the verb, and "Germany reports the highest count; Sweden the lowest" names each entity
+// at the start of its own clause, which is why ";", not just ". ! ?", ends a clause here — without
+// it the second half of that exact sentence resolves to "Germany" again, the wrong entity, one
+// clause too early. Returns `null` when the clause has no leading capital at all (a sentence
+// starting lowercase, or a marker sitting at position 0).
+function entitySubjectFor(text, markerStart) {
+  let boundary = -1;
+  for (const ch of [".", "!", "?", "\n", ";"]) {
+    const idx = text.lastIndexOf(ch, markerStart - 1);
+    if (idx > boundary) boundary = idx;
+  }
+  const prefix = text.slice(boundary + 1, markerStart);
+  const m = /^\s*([A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*)/u.exec(prefix);
+  return m ? m[1].trim() : null;
+}
+
+// A row is resolved for an entity name by matching it, case-insensitively, against ANY text-typed
+// value in that row — the profile's own header (`rows: [{ [columnName]: value, ... }]`) names no
+// fixed "entity column", and none of shapes 8/9's fixtures (a country code column beside a country
+// name column, e.g.) agree on one either.
+function resolveEntityRow(rows, entityName) {
+  if (!rows || rows.length === 0) return null;
+  const target = entityName.trim().toLowerCase();
+  return (
+    rows.find((row) =>
+      Object.values(row).some((v) => typeof v === "string" && v.trim().toLowerCase() === target),
+    ) ?? null
+  );
+}
+
+// A column this shape refuses to treat a period as fully comparable within, when it marks a row's
+// own period incomplete — a coverage count (`months_covered`) or a completeness flag (`complete`),
+// the two shapes the round-three stress stories actually carry (stress-j-partial-year-permits,
+// stress-o-museum-visits). Detected by the column's own NAME only, deliberately: this never reads
+// a row's VALUE to guess at incompleteness in general (a `complete` column could as easily read
+// "partial" or "no" — the point is the column exists at all, not what it says), which is what
+// keeps this "narrow" rather than a general incompleteness detector no fixture asked for.
+const COVERAGE_COLUMN_NAME_RE = /^months?_covered$|^coverage$|^complete(ness)?$/i;
+
+function findCoverageColumn(columns) {
+  return columns.find((c) => COVERAGE_COLUMN_NAME_RE.test(c.name)) ?? null;
+}
 
 // A "from A to B" pair where both sides are a plausible four-digit calendar year is a date range
 // ("from 2019 to 2022"), not a measured value pair — see the header's first bullet under shape 6.
@@ -343,6 +529,45 @@ function extractComparisons(text) {
     }
   }
 
+  // Shape 8 — bare superlatives naming one entity. Each marker regex is tried in turn; a match
+  // that overlaps a span an earlier, more specific pattern already claimed is skipped, the same
+  // rule every other extraction in this function follows (this is what keeps SUPERLATIVE_HL_RE
+  // from re-claiming the "highest"/"lowest" a SINCE_EN_RE or SUPERLATIVE_EVER_RE match already
+  // owns).
+  const SUPERLATIVE_MARKERS = [
+    { re: SUPERLATIVE_MOST_RE, extreme: "max" },
+    { re: LEADS_RE, extreme: "max" },
+    { re: TOPS_RE, extreme: "max" },
+  ];
+  for (const { re, extreme } of SUPERLATIVE_MARKERS) {
+    for (const m of text.matchAll(re)) {
+      const span = { start: m.index, end: m.index + m[0].length };
+      if (found.some((f) => overlaps(f, span))) continue;
+      found.push({ kind: "superlative", extreme, entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+    }
+  }
+  for (const m of text.matchAll(SUPERLATIVE_HL_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    const extreme = m[1].toLowerCase() === "lowest" ? "min" : "max";
+    found.push({ kind: "superlative", extreme, entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+  }
+
+  // Shape 9 — "more than any other" (same question as shape 8) and "more than ... combined" (the
+  // one shape decidable, in the refuting direction, from a column's own max and sum alone — see
+  // resolveCombined). MORE_THAN_COMBINED_RE is tried first so a "more than the other N combined"
+  // span is not first swallowed by MORE_THAN_ANY_OTHER_RE's own overlap check on a shared "more".
+  for (const m of text.matchAll(MORE_THAN_COMBINED_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    found.push({ kind: "combined", entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+  }
+  for (const m of text.matchAll(MORE_THAN_ANY_OTHER_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    found.push({ kind: "superlative", extreme: "max", entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+  }
+
   return found;
 }
 
@@ -371,6 +596,7 @@ function rowValue(rows, yearField, valueField, year) {
 
 function resolveComparison(item, profile) {
   const claim = item.raw.trim();
+  const columns = Array.isArray(profile.columns) ? profile.columns : [];
 
   if (item.kind === "trend") {
     const wordDirection = trendDirectionOf(item.directionWord);
@@ -404,7 +630,6 @@ function resolveComparison(item, profile) {
   }
 
   if (item.kind === "totality") {
-    const columns = Array.isArray(profile.columns) ? profile.columns : [];
     const shareColumns = columns.filter(
       (c) => c.type === "number" && c.sum !== null && c.sum !== undefined && isShareColumn(c),
     );
@@ -429,11 +654,27 @@ function resolveComparison(item, profile) {
     };
   }
 
+  if (item.kind === "superlative") return resolveSuperlative(item, profile, claim, columns);
+  if (item.kind === "combined") return resolveCombined(item, profile, claim, columns);
+
   if (!item.direction) {
     return { claim, verdict: "unverifiable", detail: "comparison direction word not recognised" };
   }
 
-  const columns = Array.isArray(profile.columns) ? profile.columns : [];
+  // Partial periods, narrowly (finding 2). A "since"/"pair"/"ever" comparison reads two or more
+  // YEARS as directly comparable; a coverage-marking column says at least one row in this profile
+  // is not a full period, and this shape has no way to know whether the years THIS claim names are
+  // among the affected ones without resolving rows this profile does not carry either — so it
+  // refuses rather than guess, naming the column rather than the row.
+  const coverageColumn = findCoverageColumn(columns);
+  if (coverageColumn) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `profile carries a "${coverageColumn.name}" column marking a row's period incomplete — a comparison over this data cannot be confirmed without knowing which rows it affects`,
+    };
+  }
+
   const yearColumn = findYearColumn(columns);
   const valueColumn = findValueColumn(columns, yearColumn);
   if (!yearColumn || !valueColumn) {
@@ -507,28 +748,182 @@ function resolveComparison(item, profile) {
   };
 }
 
+// Shape 8 — a bare superlative naming one entity ("has the most", "the highest"/"the lowest",
+// "leads", "tops", "more than any other"). Decidable only by resolving `item.entity` to its own
+// row and reading its value against the column's extreme — there is no aggregate-only shortcut
+// for this shape the way there is for shape 9's "combined" claim (see resolveCombined): knowing
+// the column's max says nothing about whether the NAMED entity is the one holding it.
+function resolveSuperlative(item, profile, claim, columns) {
+  const coverageColumn = findCoverageColumn(columns);
+  if (coverageColumn) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `profile carries a "${coverageColumn.name}" column marking a row's period incomplete — a superlative over this data cannot be confirmed without knowing which rows it affects`,
+    };
+  }
+
+  const yearColumn = findYearColumn(columns);
+  const valueColumn = findValueColumn(columns, yearColumn);
+  if (!valueColumn || valueColumn.min === null || valueColumn.min === undefined || valueColumn.max === null || valueColumn.max === undefined) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: "cannot identify a single numeric value column with a range in this profile to check this superlative against",
+    };
+  }
+
+  if (!item.entity) {
+    return { claim, verdict: "unverifiable", detail: "could not identify which entity this claim is about" };
+  }
+
+  const extreme = item.extreme === "min" ? valueColumn.min : valueColumn.max;
+  const extremeName = item.extreme === "min" ? "minimum" : "maximum";
+  const rows = Array.isArray(profile.rows) ? profile.rows : null;
+  if (!rows || rows.length === 0) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `could not resolve "${item.entity}" to a row — profile has no row-level data`,
+    };
+  }
+
+  const row = resolveEntityRow(rows, item.entity);
+  if (!row) {
+    return { claim, verdict: "unverifiable", detail: `could not resolve "${item.entity}" to a row in the frozen data` };
+  }
+
+  const value = Number(row[valueColumn.name]);
+  if (Number.isNaN(value)) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `row for "${item.entity}" has no numeric value in column "${valueColumn.name}"`,
+    };
+  }
+
+  const holds = value === extreme;
+  return {
+    claim,
+    verdict: holds ? "supported" : "contradicted",
+    detail: holds
+      ? `"${item.entity}"'s own value in "${valueColumn.name}" (${value}) is the column's ${extremeName} (${extreme})`
+      : `"${item.entity}"'s own value in "${valueColumn.name}" is ${value}, not the column's ${extremeName} (${extreme})`,
+  };
+}
+
+// Shape 9 — "<entity> ... more than the other(s)/all the others ... combined". Unlike shape 8,
+// this one is decidable in the REFUTING direction from the column's own MAX and SUM alone, with
+// no row resolution needed at all: for ANY row to exceed the sum of every other row, in
+// particular the row holding the column's own maximum must — so if even the maximum does not
+// exceed the sum of the rest, no entity, named or not, could make this claim true, and it is
+// "contradicted" regardless of which row the takeaway actually names (2026-08-20 round-three
+// stress test, stress-m-forest-loss, finding 1). The positive direction (max DOES exceed the
+// rest) still needs the row resolved, to confirm the NAMED entity is the one holding that max —
+// a country whose own value is not the max cannot be "more than everyone else combined" even if
+// some other row in the column could be.
+function resolveCombined(item, profile, claim, columns) {
+  const coverageColumn = findCoverageColumn(columns);
+  if (coverageColumn) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `profile carries a "${coverageColumn.name}" column marking a row's period incomplete — this comparison cannot be confirmed without knowing which rows it affects`,
+    };
+  }
+
+  const yearColumn = findYearColumn(columns);
+  const valueColumn = findValueColumn(columns, yearColumn);
+  if (!valueColumn || valueColumn.max === null || valueColumn.max === undefined || valueColumn.sum === null || valueColumn.sum === undefined) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: "cannot identify a single numeric value column with a maximum and a sum in this profile to check this comparison against",
+    };
+  }
+
+  const restSum = valueColumn.sum - valueColumn.max;
+  if (valueColumn.max <= restSum) {
+    return {
+      claim,
+      verdict: "contradicted",
+      detail: `even the largest single value in "${valueColumn.name}" (${valueColumn.max}) does not exceed the sum of the rest (${restSum}) — no row in this column could make this claim true`,
+    };
+  }
+
+  const rows = Array.isArray(profile.rows) ? profile.rows : null;
+  const arithmeticNote = `the largest value in "${valueColumn.name}" (${valueColumn.max}) does exceed the rest (${restSum})`;
+  if (!item.entity) {
+    return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but no entity could be identified to confirm which row that is` };
+  }
+  if (!rows || rows.length === 0) {
+    return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" cannot be resolved to a row — profile has no row-level data` };
+  }
+  const row = resolveEntityRow(rows, item.entity);
+  if (!row) {
+    return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" could not be resolved to a row` };
+  }
+  const value = Number(row[valueColumn.name]);
+  const holds = !Number.isNaN(value) && value === valueColumn.max;
+  return {
+    claim,
+    verdict: holds ? "supported" : "contradicted",
+    detail: holds
+      ? `"${item.entity}"'s own value in "${valueColumn.name}" (${value}) exceeds the sum of the rest (${restSum})`
+      : `"${item.entity}"'s own value in "${valueColumn.name}" is ${Number.isNaN(value) ? "not numeric" : value}, not the column's maximum (${valueColumn.max}) needed for this comparison`,
+  };
+}
+
 function checkNumericRanges(text, columns, consumedSpans) {
   const claims = [];
   const seen = new Set();
   const numericColumns = columns.filter((c) => c.type === "number" && c.min !== null && c.min !== undefined && c.max !== null && c.max !== undefined);
+  const yearColumn = findYearColumn(columns);
+  const coverageColumn = findCoverageColumn(columns);
 
   for (const m of text.matchAll(NUMBER_RE)) {
+    const raw = m[0];
     const start = m.index;
-    const end = start + m[0].length;
+    const end = start + raw.length;
     if (consumedSpans.some(([s, e]) => start < e && end > s)) continue;
-    if (seen.has(m[0])) continue;
-    seen.add(m[0]);
+    if (seen.has(raw)) continue;
+    seen.add(raw);
 
-    if (numericColumns.length === 0) {
-      claims.push({ claim: m[0], verdict: "unverifiable", detail: "profile has no numeric column with a range to check against" });
+    // One number reader, shared with `intake/scripts/profile.mjs` (finding 4) — a token this
+    // regex matched but `readNumericToken` cannot resolve to one value is ONE unverifiable claim,
+    // never two independent fragments silently re-tested against a column's range.
+    const read = readNumericToken(raw);
+    if (!read) continue;
+    if (read.ambiguous) {
+      claims.push({ claim: raw, verdict: "unverifiable", detail: read.reason });
       continue;
     }
 
-    const value = Number(m[0]);
+    if (numericColumns.length === 0) {
+      claims.push({ claim: raw, verdict: "unverifiable", detail: "profile has no numeric column with a range to check against" });
+      continue;
+    }
+
+    const value = read.value;
     const inRange = numericColumns.filter((c) => value >= c.min && value <= c.max);
     if (inRange.length > 0) {
+      // Partial periods, narrowly (finding 2). A bare numeral landing inside the YEAR column's
+      // range reads as "this period is comparable to the others" — a coverage-marking column says
+      // the profile itself carries at least one period that is not, and this check has no row
+      // data to know whether THIS numeral is the affected one, so it refuses to confirm rather
+      // than guess: the exact stress-j-partial-year-permits shape ("Building permits collapse in
+      // 2026" — "2026" alone, trivially inside `year`'s range, used to come back "supported" with
+      // `months_covered` recording that row at 3 of 12 months).
+      if (coverageColumn && yearColumn && inRange.includes(yearColumn)) {
+        claims.push({
+          claim: raw,
+          verdict: "unverifiable",
+          detail: `"${raw}" falls inside "${yearColumn.name}"'s range, but the profile carries a "${coverageColumn.name}" column marking some period incomplete — a bare year cannot be confirmed comparable without knowing which row that is`,
+        });
+        continue;
+      }
       claims.push({
-        claim: m[0],
+        claim: raw,
         verdict: "supported",
         detail: `within the range of column "${inRange[0].name}" [${inRange[0].min}, ${inRange[0].max}]`,
       });
@@ -541,7 +936,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
     const summed = numericColumns.find((c) => matchesAggregate(value, c.sum));
     if (summed) {
       claims.push({
-        claim: m[0],
+        claim: raw,
         verdict: "supported",
         detail: `equals the sum of column "${summed.name}" (${summed.sum})`,
       });
@@ -551,7 +946,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
     // Neither a member of a range nor a column total. That is this function failing to place the
     // number, which is not the same fact as the data refuting it — see the header.
     claims.push({
-      claim: m[0],
+      claim: raw,
       verdict: "unverifiable",
       detail: `could not be placed in any numeric column's range or total (${numericColumns
         .map((c) => `"${c.name}" [${c.min}, ${c.max}]${c.sum === null || c.sum === undefined ? "" : `, sum ${c.sum}`}`)
@@ -561,8 +956,51 @@ function checkNumericRanges(text, columns, consumedSpans) {
   return claims;
 }
 
+// A takeaway split into sentences the crude way — on ". ! ?" followed by whitespace — for
+// `computeCoverage` below. Not a natural-language sentence splitter (it does not know an
+// abbreviation from a full stop); it only has to be good enough to tell one editorial claim apart
+// from the next in the short, single-topic takeaways this function is ever handed.
+function splitIntoSentences(text) {
+  return text
+    .split(/(?<=[.!?])\s+(?=\S)/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+// COVERAGE, so silence stops looking like confirmation (finding 3, and the theme of this whole
+// redesign). A sentence is "evaluated" once it produced AT LEAST ONE claim of ANY verdict,
+// including "unverifiable" — the distinction this exists to draw is not verdict-by-verdict, it is
+// "this function looked at this sentence and had something, however inconclusive, to say about
+// it" versus "this sentence produced nothing at all," which is exactly the difference between
+// "Germany has the most." after this redesign (one unverifiable claim, naming "Germany" as
+// unresolved) and before it (`[]`, indistinguishable from a takeaway with nothing checkable in it
+// at all). `unevaluated` names those UNTOUCHED sentences verbatim, so a takeaway that is entirely
+// unverifiable-but-checked reads differently, in this field, from one this function never had any
+// shape for.
+//
+// THE CALLER THIS IS FOR: `propose.mjs`'s `resolveGrounding`, which folds `coverage` into the G1
+// detail string it hands the journalist. A caller that reads `claims` and ignores `coverage` is
+// exactly the next version of this defect — silence dressed as confirmation one layer up instead
+// of one layer down — which is why `resolveGrounding` is where this is actually read, not left as
+// a field nothing consults.
+function computeCoverage(text, claims) {
+  const sentences = splitIntoSentences(text);
+  const unevaluated = sentences.filter((sentence) => !claims.some((c) => sentence.includes(c.claim)));
+  return {
+    sentences: sentences.length,
+    evaluated: sentences.length - unevaluated.length,
+    unevaluated,
+  };
+}
+
+// Returns `{ claims, coverage }` — see `computeCoverage` above for what `coverage` reports and
+// who reads it. `claims` keeps its own established shape (one `{ claim, verdict, detail }` entry
+// per recognised claim); this wraps it rather than changing it, so every existing reader of the
+// array itself only has to learn the one extra level.
 export function groundTakeaway(takeaway, profile) {
-  if (!takeaway || typeof takeaway !== "string") return [];
+  if (!takeaway || typeof takeaway !== "string") {
+    return { claims: [], coverage: { sentences: 0, evaluated: 0, unevaluated: [] } };
+  }
   const p = profile ?? {};
   const columns = Array.isArray(p.columns) ? p.columns : [];
 
@@ -572,5 +1010,5 @@ export function groundTakeaway(takeaway, profile) {
   const consumedSpans = comparisons.map((c) => [c.start, c.end]);
   claims.push(...checkNumericRanges(takeaway, columns, consumedSpans));
 
-  return claims;
+  return { claims, coverage: computeCoverage(takeaway, claims) };
 }
