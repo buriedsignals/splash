@@ -114,10 +114,22 @@ describe("the type survey has not drifted from the type sheets", () => {
       .map((line) => line.split("|").map((c) => c.trim()))
       .filter((cells) => cells[4] !== "—")
       .map((cells) => `${cells[1].replace(/\*\*/g, "")}: ${cells[4]}`);
+    // Round six, AA1. Three of these are new, and six were found by reading the OTHER phrasing
+    // English states a ceiling in: `beeswarm.md` says "past roughly a hundred and fifty points",
+    // `line.md` "past four or five series", `streamgraph.md` "past about seven series". A beeswarm
+    // was offered on 234 salaries with that sentence sitting on disk, unread by anything.
+    // `rows` is the only unit `formatCandidates` enforces, and a beeswarm's point IS a row of the
+    // frozen table, which is why its ceiling is declared in rows and the rest travel by hand.
     expect(declared).toEqual([
+      "Bar and column: periods > 8",
+      "Beeswarm: rows > 150",
       "Diverging stacked bar (Likert): levels > 5",
+      "Grouped bar: series > 3",
+      "Line: series > 5",
       "Pie and donut: slices > 5",
       "Scatter (and bubble): rows < 8",
+      "Stacked bar: series > 5",
+      "Streamgraph: series > 7",
     ]);
   });
 });

@@ -574,6 +574,96 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     });
     expect(text).toContain("not a many-to-many flow");
     expect(text).toContain("OD flow diagram");
+    // And the refusal names a type this toolchain does not hold, so it says that too rather than
+    // sending the journalist after a producer that does not exist.
+    expect(text).toContain("NO SHEET AND NO PRODUCER FOR AN OD FLOW DIAGRAM");
+    expect(text).toContain("proportional-symbol map");
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX (2026-08-22), AA1 and the fourth of Z's "rest, as reported" — A CEILING STATED IN
+  // PROSE NEVER REACHES THE MACHINE, AND A TYPE NAME NOTHING RESOLVES DISABLES THE ONE LIMIT THAT
+  // DOES.
+  //
+  // A beeswarm was offered on `stress-aa-salary-spread`'s 234 salaries. `beeswarm.md` refuses that
+  // on disk — "Past roughly a hundred and fifty points the collision-avoidance layout stops
+  // helping" — and the scored path cannot read prose. Same shape as round four's scatter-on-six-
+  // rows, one type over. And the limit that IS enforced is enforced only for a candidate whose
+  // name finds its sheet: a name that resolves to nothing rendered a bare line, with no purpose,
+  // no refusal and no row limit, and said nothing about any of the three.
+  // -------------------------------------------------------------------------------------------
+  it("should refuse a beeswarm of 240 rows on the frozen story it was offered for", () => {
+    const profile = frozenProfile("stress-aa-salary-spread");
+    expect(profile.rowCount).toBe(240);
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile,
+        candidates: [
+          { type: "Beeswarm", format: "static", why: "every salary as its own mark" },
+          { type: "Histogram", format: "static", why: "the shape of the spread" },
+        ],
+      }),
+    ).toThrow(/refuses 240 row\(s\)/);
+  });
+
+  it("should still allow the same beeswarm under its own stated ceiling", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 90, columns: [] },
+      candidates: [
+        { type: "Beeswarm", format: "static", why: "every reading as its own mark" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).toContain("**Beeswarm**");
+  });
+
+  it("should refuse a candidate whose type name resolves to no sheet at all", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: { rowCount: 6, columns: [] },
+        candidates: [
+          { type: "Pie chart", format: "static", why: "the shares of one whole" },
+          { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+        ],
+      }),
+    ).toThrow(/Pie chart/);
+  });
+
+  it("should resolve every catalogued treatment name to a sheet, for every medium that has sheets", () => {
+    const catalogue = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "references", "visual-catalog.json"),
+        "utf8",
+      ),
+    );
+    const survey = typeSurvey();
+    const mediumsWithSheets = new Set(survey.map((row) => row.medium));
+    expect([...mediumsWithSheets].sort()).toEqual(["chart", "map"]);
+    const unresolved = catalogue.treatments
+      .filter((treatment: any) => mediumsWithSheets.has(treatment.medium))
+      .filter(
+        (treatment: any) =>
+          !survey.some(
+            (row) =>
+              row.medium === treatment.medium &&
+              row.type.toLowerCase() === treatment.label.trim().toLowerCase(),
+          ),
+      )
+      .map((treatment: any) => `${treatment.id} ("${treatment.label}")`);
+    // A catalogued name the survey cannot resolve is a candidate whose refusal and whose row limit
+    // both silently vanish at the menu.
+    expect(unresolved).toEqual([]);
+    // And the one medium that holds no sheets is named rather than assumed: an image beat's
+    // candidate says out loud that no sheet can state what it refuses.
+    const photographs = formatCandidates({
+      medium: "image",
+      profile: { rowCount: 0, columns: [] },
+      candidates: [{ type: "Photograph sequence", why: "the quay before and after" }],
+    });
+    expect(photographs).toMatch(/no type sheet/i);
   });
 
   it("should refuse two labels for one idea, because the sheet says they are one idea", () => {

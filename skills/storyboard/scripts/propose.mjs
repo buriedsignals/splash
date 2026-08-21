@@ -900,6 +900,18 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
     if (!why || !why.trim()) throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
     if (format) confirmFormatReachable({ medium, format, capabilities });
     const row = survey.find((r) => r.medium === medium && r.type.toLowerCase() === type.trim().toLowerCase());
+    // A NAME NOTHING RESOLVES TAKES THE SHEET'S REFUSAL AND ITS ROW LIMIT WITH IT, SILENTLY
+    // (round six). A candidate whose type matched no survey row used to render as a bare line —
+    // no purpose, no refusal, no stated limit — and said nothing about any of the three, which
+    // disables the only mechanically enforced limit this menu has for exactly the candidates
+    // nobody has checked the spelling of. Where the medium HOLDS sheets, an unresolved name is a
+    // mistake and it is refused by name.
+    const sheetsForMedium = survey.filter((r) => r.medium === medium);
+    if (!row && sheetsForMedium.length > 0) {
+      throw new Error(
+        `"${type}" is not a type this toolchain holds a sheet for under medium "${medium}", so nothing here can state what it is for, what it refuses, or the counts it refuses at. Name one of the ${sheetsForMedium.length} types in \`references/type-survey.md\`, or write the sheet before offering the type.`,
+      );
+    }
     const purpose = row ? ` — ${row.purpose}` : "";
     const reach = format ? ` (${format})` : "";
     const rowLimits = (row?.limits ?? []).filter((limit) => limit.unit === "rows");
@@ -911,7 +923,12 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
         `"${type}" refuses ${rowCount} row(s): its own sheet (\`${row.sheet}\`) says it wants ${limit.op === "<" ? `at least ${limit.value}` : `at most ${limit.value}`} — "${row.refusal}" Offer a type this data can carry, or say to the journalist why this one still earns its place.`,
       );
     }
-    const notFor = row ? `\n  Not for: ${row.refusal}` : "";
+    // And where the medium holds NO sheets at all — `image` today, whose two scrolly-only types
+    // exist in `MATRIX.md` and in no sheet anywhere — the absence is stated rather than left as a
+    // blank the reader takes for "nothing to watch out for".
+    const notFor = row
+      ? `\n  Not for: ${row.refusal}`
+      : `\n  Not for: this toolchain holds no type sheet for the ${medium} medium, so nothing here states what "${type}" refuses or the counts it refuses at. Read the producing skill's own reference set before offering it.`;
     const byHand = (row?.limits ?? [])
       .filter((limit) => limit.unit !== "rows")
       .map((limit) => `${limit.unit} ${limit.op} ${limit.value}`);

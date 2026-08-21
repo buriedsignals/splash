@@ -19,7 +19,12 @@ between many origin-destination pairs on this type produces a tangle of
 overlapping accent-coloured lines that stops reading as an ordered journey
 the moment there's more than one of them competing for the same visual
 channel; that's a different chart entirely (an OD flow diagram, not a route
-map), with its own legend logic for volume and direction.
+map), with its own legend logic for volume and direction. THIS TOOLCHAIN HOLDS NO SHEET AND NO
+PRODUCER FOR AN OD FLOW DIAGRAM, so naming one here is naming a type nobody can build: an
+origin-destination table is carried instead by a proportional-symbol map of the total leaving each
+origin (or arriving at each destination), by a matrix heatmap of origin against destination where
+the pairs themselves are the claim, or by a chart of the largest corridors — and the map's
+geography is then a locator, not a bundle of routes.
 
 ## The one thing that goes wrong
 

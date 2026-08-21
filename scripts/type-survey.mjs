@@ -164,8 +164,19 @@ function refusalParagraph(text, file) {
 // answer about what a column profile can and cannot decide.
 // The number word is a closed list on purpose: "more than ONE series" is a shape statement, not a
 // stated ceiling, and a bare `[a-z]+` here made `area.md` fail the generator for saying it.
-const STATED_COUNT_RE =
-  /\b(?:fewer|more) than (?:about |roughly )?(?:two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|fifty|\d+)(?:[- ]?(?:or|to) (?:two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|twenty-five|thirty|fifty|\d+))? (?:points|rows|observations|categories|slices|series|bins|levels|periods)\b/i;
+//
+// ROUND SIX (2026-08-22), AA1. The pattern read one phrasing — "fewer/more than N <things>" — and
+// SIX of the forty sheets state their ceiling the other way English says it: "past roughly a
+// hundred and fifty points" (`beeswarm.md`), "past four or five series" (`line.md`), "past about
+// seven series" (`streamgraph.md`), and so on. A beeswarm was offered on 234 salaries with that
+// sentence sitting on disk unread. Both phrasings are read now, and all six sheets declare their
+// ceiling beside it.
+const NUMBER_WORD = "(?:a hundred and fifty|a hundred|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|twenty-five|thirty|fifty|\\d+)";
+const COUNTED_THING = "(?:points|rows|observations|categories|slices|series|bins|levels|periods)";
+const STATED_COUNT_RE = new RegExp(
+  `\\b(?:(?:fewer|more) than|past|beyond|above|over) (?:about |roughly )?${NUMBER_WORD}(?:[- ]?(?:or|to) ${NUMBER_WORD})? ${COUNTED_THING}\\b`,
+  "i",
+);
 const LIMIT_RE = /<!--\s*limit:\s*([a-z]+)\s*([<>])\s*(\d+)\s*-->/g;
 
 function limitsFor(text, refusal, file) {
