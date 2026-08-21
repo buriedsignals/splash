@@ -95,7 +95,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
-| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
+| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile, { csv })` checks the confirmed takeaway's own numbers, comparisons and superlatives against the frozen data profile — and against the frozen `source/data.csv` itself, which is where ROW-level facts come from, since no `profile.json` in this tree carries rows. A number equal to a column's `sum` (a part-to-whole total) is `supported`; a number merely inside a column's range is **`consistent`** — placed, not confirmed; a number it can place neither way is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
 | Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
 | Producer catalogue and gate | `references/datawrapper-chart-types.json`; `scripts/producer-gate.mjs` | Complete upstream `VisualizationType` inventory at its recorded source revision, conservative mappings from Splash treatments, the conditional custom-or-Datawrapper question, and validation of persisted `producer`/`datawrapperType` fields |
@@ -168,10 +168,12 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 5. **`groundTakeaway`** checks the takeaway text against `profile` for exactly one class of
    failure: a number or a direction the frozen data itself contradicts. It is not a fact-checker
    (it knows nothing outside `profile`) and not a conformance engine (it never looks at a rendered
-   chart). It recognises: a numeric token that falls inside some numeric column's range; a numeric
+   chart). It recognises: a numeric token that falls inside some numeric column's range — which is
+   **`consistent`, not `supported`**: `233` really is inside `incidents [96, 412]`, and so is the
+   `100` of "100k", and neither confirms the sentence it sits in; a numeric
    token that equals a numeric column's `sum` within `AGGREGATE_TOLERANCE` — **a part-to-whole
-   total**, which is by construction ≥ the max of the column it sums and so can never be found in
-   a range; a two-year comparison ("X in 2024 was lower than in 1993") where both years are present
+   total**, the one numeric reading here that can genuinely fail, and so the one that stays
+   `supported`; a two-year comparison ("X in 2024 was lower than in 1993") where both years are present
    in `profile.rows`; a windowed superlative ("lower... than in any year since 1993", "the lowest
    since 1993") checked against every row in the claimed range, not just its boundary year; and
    "highest/lowest ever" checked against the whole profile.
@@ -190,14 +192,17 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    checked and no code produced — not trusted verdicts, unwritten ones. Each phase now calls the
    verdict it owns:
 
-   - **G1** — `resolveGrounding(takeaway, profile)`, then `groundingScalar(resolved)` for the field.
+   - **G1** — `resolveGrounding(takeaway, profile, { csv })` — hand it the story's own frozen
+     `source/data.csv` text, or every superlative comes back unverifiable for want of rows — then
+     `groundingScalar(resolved)` for the field.
      `groundTakeaway` returns one verdict PER CLAIM and `grounding:` is a single word, so the
      collapse is stated rather than left to the model: **any refuted claim → `contradicted`**
      (which never closes G1 — correct it, or record the journalist's override with their reason);
-     **at least one confirmed and none refuted → `supported`**; **nothing placeable → `unverifiable`**.
-     `supported` therefore means "every claim this check could resolve, it resolved in favour", not
-     "every number was verified" — the detail names how many could not be placed, and that half is
-     said out loud, because an unverifiable claim is information, not a refusal.
+     **at least one CONFIRMED claim, none refuted, and every sentence of the takeaway read →
+     `supported`**; **anything less → `unverifiable`**. A numeral merely placed inside a range is
+     `consistent` and can never make the verdict `supported` on its own, and neither can a
+     takeaway one of whose sentences produced no claim at all — the detail names both, and that
+     half is said out loud, because an unverifiable claim is information, not a refusal.
    - **④ ⑤** — `typeSurvey()` reads the generated survey back. The exchange reads
      `references/chart-choice.md`, removes types whose hard data requirements fail, and ranks the
      survivors by the confirmed intent before reachability is considered. The ranking is advisory:
@@ -246,7 +251,8 @@ import {
 // The verdict is written into STORYBOARD.md as `grounding:`; a claim the data actually refutes is
 // corrected here, or the journalist records `overridden — "<reason>"` and says why.
 const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
-const claims = groundTakeaway(confirmedTakeaway, profile);
+const csv = await readFile("stories/annemasse-rain/source/data.csv", "utf8");
+const claims = groundTakeaway(confirmedTakeaway, profile, { csv });
 
 // At G2b, once a medium and a format have been offered and picked. The verdict is written into the
 // slot as `reachable:`; a pair nothing can produce or deliver is refused HERE, at the gate, not
@@ -306,7 +312,7 @@ if (errors.length > 0) {
 - `scripts/propose.mjs` — `resolveGrounding`, `groundingScalar`, `typeSurvey`, `readTypeSurvey`,
   `proposeMediums`, `proposeFormats`, `proposeSizes`, `confirmFormatReachable`, `assertDistinctWays`,
   `formatCandidates`. The one file that CALLS `groundTakeaway`, `formatGap` and `capabilityGap`.
-- `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard the **G1 phase** calls
+- `scripts/ground-claim.mjs` — `groundTakeaway` and `readFrozenRows`, the claim-grounding guard the **G1 phase** calls
   through `propose.mjs`'s `resolveGrounding`. `checkStoryboard` does NOT call it and takes no
   profile: it reads the recorded `grounding:` scalar, which is what stops the two gates diverging.
 - `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard the **G2b phase**

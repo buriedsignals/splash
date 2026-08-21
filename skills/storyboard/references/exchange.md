@@ -24,8 +24,11 @@ One non-skippable question: *if the reader keeps one sentence from this visual, 
 Confirmed **verbatim** and written into `STORYBOARD.md`'s `takeaway:` field. It is the only anchor
 that later makes a drifting title detectable — the twin's predecessor's most recurrent failure.
 
-**Then ground it, here, before anything is picked.** Run `resolveGrounding(takeaway, profile)`
-(`scripts/propose.mjs`) against the frozen profile and record `groundingScalar(resolved)` as
+**Then ground it, here, before anything is picked.** Run
+`resolveGrounding(takeaway, profile, { csv })` (`scripts/propose.mjs`) against the frozen profile —
+and hand it the text of the story's own frozen `source/data.csv`, which is where the ROW-level
+facts a superlative needs come from, since no `profile.json` carries rows — then record
+`groundingScalar(resolved)` as
 `grounding:`. Three values close this gate: `supported`, `unverifiable`, or
 `overridden — "<reason>"`. **`contradicted` is not a closing value**: a claim the data refutes is
 either corrected with the journalist, or overridden by them with a reason THEY give —
@@ -35,11 +38,14 @@ choice they had already made.
 
 **How the many become the one.** `groundTakeaway` returns a verdict PER CLAIM and `grounding:` is a
 single word, so the collapse is written down rather than left to whoever is running the exchange:
-**any refuted claim → `contradicted`** · **at least one confirmed and none refuted → `supported`** ·
-**nothing placeable at all → `unverifiable`**. So `supported` means "every claim this check could
-resolve, it resolved in favour", NOT "every number was verified" — a takeaway carrying five numbers
-typically resolves one and cannot place four, because every bare integer is range-tested, years and
-counts included.
+**any refuted claim → `contradicted`** · **at least one CONFIRMED claim, none refuted, and every
+sentence of the takeaway read → `supported`** · **anything less → `unverifiable`**.
+
+Two things deliberately do NOT make a takeaway `supported`, both because a check that cannot fail is
+not support. A numeral that merely falls inside a column's range comes back `consistent` — placed,
+not confirmed (`233` sits inside `incidents [96, 412]`, and so does the `100` of "100k"). And a
+takeaway one of whose sentences produced no claim at all is one this check did not read the whole
+of, so it withholds `supported` and names the sentence it never saw.
 
 Whichever verdict lands, say what the check could and could not see — `resolved.detail` carries
 both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as

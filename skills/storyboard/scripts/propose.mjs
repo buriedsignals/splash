@@ -65,13 +65,47 @@ import visualCatalog from "../references/visual-catalog.json" with { type: "json
 // dying at this seam: a caller reading only `claims` and dropping `coverage` on the floor is
 // exactly the defect `ground-claim.mjs`'s own header warns about, one layer further from where it
 // was found.
-export function resolveGrounding(takeaway, profile) {
-  const { claims, coverage } = groundTakeaway(takeaway, profile);
+//
+// ROUND FOUR (2026-08-21), findings 1 and 4 — TWO WAYS THIS SCALAR REPORTED CONFIDENCE IT DID NOT
+// HAVE, both measured on frozen stories, both closed here rather than by teaching the checker
+// another sentence shape.
+//
+//   1. A numeral inside a column's range is not a confirmed claim. `ground-claim.mjs` now returns
+//      those under their own verdict, `consistent`, and this function keeps them in their own
+//      bucket: they are REPORTED in the detail, and they can never make the verdict `supported`.
+//      Measured on `stress-q-safety-incidents`, whose headline its own data refutes: the check
+//      used to report "3 of 3 claim(s) confirmed" for the per-100k rates `233`, `205` and `100` —
+//      the "k" of "100k" — each of which really does fall inside `incidents [96, 412]`, and none
+//      of which is evidence for the sentence it sits in.
+//
+//   2. A takeaway this check did not read the whole of cannot be called supported. `coverage`
+//      already named the sentences that produced NO claim at all; the scalar threw it away.
+//      Measured on `stress-s-unspent-fund`: G1 closed `supported` on the incidental `2026`
+//      matching `year [2026, 2026]` — min === max, a check that cannot fail — while `4.1` and
+//      `0`, the two numbers the sentence actually asserts, both came back unverifiable. So
+//      `supported` now requires BOTH a genuinely confirmed claim AND that every sentence of the
+//      takeaway produced something; anything less is `unverifiable`, saying which sentence was
+//      never read. `contradicted` is unaffected: one refuted claim refutes the takeaway whether
+//      or not the rest of it was legible.
+//
+// The `grounding:` VOCABULARY is unchanged — `supported`, `unverifiable`, `overridden — "<why>"`
+// — because it is mirrored byte-identically in `skills/splash/scripts/where.mjs`'s own Gate-2
+// reading, and a fourth word would have to be added in both or the gates would disagree. What
+// changed is which of the three this function is allowed to reach, not how many there are.
+export function resolveGrounding(takeaway, profile, options = {}) {
+  const { claims, coverage } = groundTakeaway(takeaway, profile, options);
   const contradicted = claims.filter((c) => c.verdict === "contradicted");
   const supported = claims.filter((c) => c.verdict === "supported");
+  const consistent = claims.filter((c) => c.verdict === "consistent");
   const unplaceable = claims.filter((c) => c.verdict === "unverifiable");
 
-  const verdict = contradicted.length > 0 ? "contradicted" : supported.length > 0 ? "supported" : "unverifiable";
+  const wholeTakeawayRead = coverage.unevaluated.length === 0;
+  const verdict =
+    contradicted.length > 0
+      ? "contradicted"
+      : supported.length > 0 && wholeTakeawayRead
+        ? "supported"
+        : "unverifiable";
 
   const detail =
     contradicted.length > 0
@@ -80,14 +114,34 @@ export function resolveGrounding(takeaway, profile) {
         ? `${supported.length} of ${claims.length} claim(s) confirmed against the frozen data (${supported.map((c) => `${c.claim}: ${c.detail}`).join("; ")})${unplaceable.length > 0 ? `; ${unplaceable.length} could not be placed either way` : ""}`
         : claims.length === 0
           ? "no mechanically checkable claim in this takeaway — nothing was confirmed and nothing was refuted"
-          : `none of ${claims.length} claim(s) could be placed in the frozen data — nothing was confirmed and nothing was refuted`;
+          : `none of ${claims.length} claim(s) came back confirmed or refuted — nothing was confirmed and nothing was refuted`;
 
-  const coverageNote =
-    coverage.unevaluated.length > 0
-      ? ` (${coverage.evaluated} of ${coverage.sentences} sentence(s) produced a checkable claim; ${coverage.unevaluated.length} produced none: ${coverage.unevaluated.map((s) => `"${s}"`).join("; ")})`
+  const placedNote =
+    consistent.length > 0
+      ? ` ${consistent.length} numeral(s) were placed but not confirmed — a value inside a column's range is not a claim the data confirms (${consistent.map((c) => `${c.claim}: ${c.detail}`).join("; ")}).`
       : "";
 
-  return { verdict, detail: `${detail}${coverageNote}`, claims, contradicted, supported, unplaceable, coverage };
+  const withheldNote =
+    supported.length > 0 && !wholeTakeawayRead
+      ? ` "supported" is WITHHELD: ${coverage.unevaluated.length} sentence(s) of this takeaway produced no claim at all, so the check did not read the whole of it.`
+      : "";
+
+  const coverageNote = ` (${coverage.decided} of ${coverage.sentences} sentence(s) carry a claim the frozen data could decide; ${coverage.evaluated} produced a claim of any kind${
+    coverage.unevaluated.length > 0
+      ? `; ${coverage.unevaluated.length} produced none: ${coverage.unevaluated.map((s) => `"${s}"`).join("; ")}`
+      : ""
+  })`;
+
+  return {
+    verdict,
+    detail: `${detail}${placedNote}${withheldNote}${coverageNote}`,
+    claims,
+    contradicted,
+    supported,
+    consistent,
+    unplaceable,
+    coverage,
+  };
 }
 
 // The exact string `STORYBOARD.md`'s `grounding:` takes. `contradicted` is NOT a closing value, so

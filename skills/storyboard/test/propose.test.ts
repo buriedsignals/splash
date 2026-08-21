@@ -156,6 +156,67 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
   });
 });
 
+// =============================================================================================
+// ROUND FOUR (2026-08-21), finding 4 — the scalar stops discarding its own coverage.
+//
+// `stress-s-unspent-fund` closed G1 `supported` on ONE match: the incidental `2026`, inside a
+// `year` column whose min and max are both 2026 — a check that cannot fail. The two numbers the
+// sentence actually asserts, 4.1 and 0, both came back unverifiable. One incidental numeral
+// outvoted the two load-bearing ones and closed the editorial gate.
+//
+// Run against the story's OWN frozen profile and CSV, not a fixture built to fail.
+const storyFile = (relative) =>
+  readFileSync(new URL(`../../../stories/${relative}`, import.meta.url), "utf8");
+const storyProfile = (story) => JSON.parse(storyFile(`${story}/source/profile.json`));
+const storyCsv = (story) => storyFile(`${story}/source/data.csv`);
+
+describe("resolveGrounding — a scalar that reflects what the data actually decided", () => {
+  const STRESS_S_TAKEAWAY =
+    "Of the €4.1 billion allocated to the regional resilience fund, €0 had been disbursed by the end of June 2026.";
+
+  it("should refuse to close G1 supported on a tautological match, on the real frozen story", () => {
+    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
+      csv: storyCsv("stress-s-unspent-fund"),
+    });
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(groundingScalar(resolved)).toBe("unverifiable");
+    expect(resolved.supported.length).toBe(0);
+    expect(resolved.consistent.length).toBe(1);
+    expect(resolved.detail).toContain("placed but not confirmed");
+    expect(resolved.detail).toContain("CANNOT FAIL");
+  });
+
+  it("should report the decided fraction of the takeaway in every detail it writes", () => {
+    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
+      csv: storyCsv("stress-s-unspent-fund"),
+    });
+    expect(resolved.coverage.decided).toBe(0);
+    expect(resolved.detail).toContain("0 of 1 sentence(s)");
+  });
+
+  it("should close supported on a real story whose superlative the frozen table confirms", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.verdict).toBe("supported");
+    expect(groundingScalar(resolved)).toBe("supported");
+    expect(resolved.coverage.decided).toBe(1);
+  });
+
+  it("should refuse to close supported while a sentence of the takeaway produced no claim at all", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most. Renewables overtook coal as the main source.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.supported.length).toBe(1);
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(resolved.detail).toContain("did not read the whole");
+  });
+});
+
 describe("groundingScalar — contradicted never closes G1", () => {
   const refuted = {
     verdict: "contradicted",
