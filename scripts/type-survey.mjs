@@ -66,6 +66,22 @@ function aliasesFor(file, title) {
 
 const ABBREVIATION = /\b(?:e\.g|i\.e|vs|etc|approx|no|fig)\.$/i;
 
+/** The first sentence of a paragraph, by the same reading both generated columns use. */
+function firstSentence(paragraph) {
+  for (let i = 0; i < paragraph.length; i++) {
+    if (paragraph[i] !== ".") continue;
+    const before = paragraph.slice(0, i + 1);
+    if (ABBREVIATION.test(before)) continue;
+    const after = paragraph.slice(i + 1);
+    if (after === "" || /^\s+["“(]?[A-Z0-9]/.test(after)) return before;
+  }
+  return paragraph;
+}
+
+function flatten(text) {
+  return text.replace(/\s+/g, " ").replace(/\*\*/g, "").trim();
+}
+
 /**
  * The sheet's own opening sentence under "What it is for", VERBATIM — the type's purpose in the
  * words somebody already wrote and reviewed, never a paraphrase generated here. Line breaks inside
@@ -77,22 +93,105 @@ function purposeSentence(text, file) {
   // written as flat prose with no `##` headings at all — as the first paragraph under the title.
   // All three are read. A sheet in a fourth shape fails loudly rather than being skipped, because
   // a type silently missing from the survey is the defect this file exists to end.
+  return firstSentence(purposeParagraph(text, file));
+}
+
+function purposeParagraph(text, file) {
   const section =
     /##\s*What it(?: is|'s) for\s*\r?\n+([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##)/.exec(text) ??
     /^#[^\n]*\r?\n\s*\r?\n([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##|$)/.exec(text);
   if (!section) throw new Error(`${file}: could not find the paragraph saying what this type is for`);
-  const paragraph = section[1]
-    .replace(/\s+/g, " ")
-    .replace(/\*\*/g, "")
-    .trim();
-  for (let i = 0; i < paragraph.length; i++) {
-    if (paragraph[i] !== ".") continue;
-    const before = paragraph.slice(0, i + 1);
-    if (ABBREVIATION.test(before)) continue;
-    const after = paragraph.slice(i + 1);
-    if (after === "" || /^\s+["“(]?[A-Z0-9]/.test(after)) return before;
+  return flatten(section[1]);
+}
+
+// ---------------------------------------------------------------------------------------------
+// WHEN NOT TO REACH FOR IT — the other half of every sheet, which the exchange had never read.
+//
+// ROUND FOUR (2026-08-21), finding 24. The survey carried each sheet's *What it is for* sentence
+// and nothing else, so `formatCandidates` could render a menu offering a SCATTER of six rows
+// although `types/scatter.md` refuses that outright — "If there are fewer than about eight or ten
+// points, a scatter is an expensive way to draw what a labelled dot-strip or a small table would
+// show just as well — a cloud needs enough members to have a shape." The sentence was on disk the
+// whole time; nothing carried it to the person choosing. Both halves are generated now.
+// ---------------------------------------------------------------------------------------------
+
+// Measured across the 40 sheets, the refusal sits in two shapes: under a heading spelled some
+// variant of "When NOT to use it" / "When not to reach for it" (34), and — in the six sheets
+// written as flat prose with no `##` headings — as the paragraph opening "Do not reach for it" or
+// "Do not use it". Both are read; a sheet in a third shape fails loudly, because a type whose
+// refusal quietly vanishes from the survey is the defect this section exists to end.
+const REFUSAL_SECTION_RE = /##\s*When (?:NOT|not) to [^\n]*\r?\n+([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##)/;
+const REFUSAL_FLAT_RE = /^((?:Do not|Don't) (?:reach for it|use it)[\s\S]*?)(?:\r?\n\s*\r?\n|$)/m;
+
+function refusalParagraph(text, file) {
+  const section = REFUSAL_SECTION_RE.exec(text) ?? REFUSAL_FLAT_RE.exec(text);
+  if (!section) throw new Error(`${file}: could not find the paragraph saying when NOT to reach for this type`);
+  return flatten(section[1]);
+}
+
+// A REFUSAL THAT IS ONE CLAUSE IS NOT A REFUSAL SOMEBODY CAN ACT ON. Two sheets open theirs with a
+// fragment — `slope.md` with "Two points only." and `histogram.md` with "Do not use it to compare
+// categories." — and lifted alone neither says what to do instead, which is half of what the
+// heading promises. Where the opening sentence is that short the NEXT one comes with it; the
+// threshold is measured against those two sheets and nothing else in the corpus reaches it.
+const SHORT_REFUSAL = 40;
+
+function refusalSentence(paragraph) {
+  const first = firstSentence(paragraph);
+  if (first.length > SHORT_REFUSAL || first === paragraph) return first;
+  const rest = paragraph.slice(first.length).trim();
+  return rest ? `${first} ${firstSentence(rest)}` : first;
+}
+
+// A COUNT STATED IN PROSE THAT NO MACHINE CAN SEE IS THE SAME DEFECT ONE LAYER DOWN. A sheet whose
+// refusal names a number of things it refuses below or above must ALSO declare it in the one
+// machine-readable form this file reads, or the generator throws naming the sheet. The declaration
+// sits beside the sentence it encodes, in the sheet itself, so the two cannot drift apart:
+//
+//     <!-- limit: rows < 8 -->
+//
+// Read as "this type refuses when <unit> <op> <n>". Only `rows` is a fact the frozen profile
+// carries, so only `rows` is ENFORCED (in `formatCandidates`); every other unit — slices, bins,
+// series, levels — travels to the journalist as a limit to check by hand, which is the honest
+// answer about what a column profile can and cannot decide.
+// The number word is a closed list on purpose: "more than ONE series" is a shape statement, not a
+// stated ceiling, and a bare `[a-z]+` here made `area.md` fail the generator for saying it.
+const STATED_COUNT_RE =
+  /\b(?:fewer|more) than (?:about |roughly )?(?:two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|fifty|\d+)(?:[- ]?(?:or|to) (?:two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|twenty-five|thirty|fifty|\d+))? (?:points|rows|observations|categories|slices|series|bins|levels|periods)\b/i;
+const LIMIT_RE = /<!--\s*limit:\s*([a-z]+)\s*([<>])\s*(\d+)\s*-->/g;
+
+function limitsFor(text, refusal, file) {
+  const limits = [...text.matchAll(LIMIT_RE)].map((m) => ({ unit: m[1], op: m[2], value: Number(m[3]) }));
+  if (limits.length === 0 && STATED_COUNT_RE.test(refusal)) {
+    throw new Error(
+      `${file}: its refusal states a count in prose ("${STATED_COUNT_RE.exec(refusal)[0]}") and declares no machine-readable limit beside it. Add one, e.g. <!-- limit: rows < 8 -->`,
+    );
   }
-  return paragraph;
+  return limits;
+}
+
+// TWO LABELS FOR ONE IDEA (finding 24, second half). `assertDistinctWays` compared NAMES, so it
+// accepted ["Bar and column", "Lollipop", "Treemap"] as three ways of seeing one table — although
+// `types/lollipop.md` opens by calling itself "a bar chart's thin sibling: same job ... Treat it
+// as 'a bar, minus the fill' rather than as a different chart type with its own rules — because
+// that's exactly what it is." A sheet that says so in prose declares it machine-readably too:
+//
+//     <!-- same idea as: Bar and column -->
+//
+// and a sheet whose purpose paragraph declares kinship without the marker fails here rather than
+// letting the exchange offer one idea twice.
+const KINSHIP_PROSE_RE = /\bthin sibling\b|\bsame job\b|rather than as a different chart type/i;
+const SAME_IDEA_RE = /<!--\s*same idea as:\s*([^\n]+?)\s*-->/;
+
+function sameIdeaFor(text, purpose, file) {
+  const declared = SAME_IDEA_RE.exec(text);
+  if (declared) return declared[1];
+  if (KINSHIP_PROSE_RE.test(purpose)) {
+    throw new Error(
+      `${file}: its own opening paragraph says this type is another type's idea wearing a second label, and nothing says WHICH type machine-readably. Add <!-- same idea as: <the other type's title> --> beside that sentence.`,
+    );
+  }
+  return null;
 }
 
 export function readTypeSheets() {
@@ -103,12 +202,17 @@ export function readTypeSheets() {
       const file = join(dir, name);
       const text = readFileSync(file, "utf8");
       const title = text.split(/\r?\n/)[0].replace(/^#\s*/, "").trim();
+      const purpose = purposeParagraph(text, file);
+      const refusal = refusalParagraph(text, file);
       sheets.push({
         medium,
         title,
         sheet: `${medium === "chart" ? "chart-beat" : "map-beat"}/references/types/${name}`,
         aliases: aliasesFor(file, title),
-        purpose: purposeSentence(text, file),
+        purpose: firstSentence(purpose),
+        refusal: refusalSentence(refusal),
+        limits: limitsFor(text, refusal, file),
+        sameIdeaAs: sameIdeaFor(text, purpose, file),
       });
     }
   }
@@ -152,8 +256,21 @@ function render(sheets, beats) {
     "type with no proven format is one nobody has rendered here yet, which is worth saying out loud",
     "rather than quietly omitting.",
     "",
-    "The purpose column is each sheet's OWN opening sentence, verbatim. Read the sheet itself before",
-    "writing the beat — the sheet is where the trap that type falls into is written down.",
+    "The purpose column is each sheet's OWN opening sentence, verbatim, and the refusal column is",
+    "the opening sentence of that same sheet's \"when NOT to reach for it\", also verbatim. BOTH",
+    "halves travel to the candidate menu: round four closed a storyboard slot on a scatter of six",
+    "rows although `types/scatter.md` refuses that outright, because only the first half had ever",
+    "been carried anywhere. Read the sheet itself before writing the beat — the sheet is where the",
+    "trap that type falls into is written down.",
+    "",
+    "**`refuses when`** is the machine-readable form of a count a sheet states in prose, declared in",
+    "the sheet beside the sentence it encodes. Only `rows` is a fact `source/profile.json` carries,",
+    "so only `rows` is enforced (`formatCandidates` throws); a limit in any other unit — slices,",
+    "levels — is carried to the journalist as something to check by hand.",
+    "",
+    "**`same idea as`** names the type this one IS, where a sheet says so itself: a lollipop is",
+    "\"a bar, minus the fill\", in its own words. `assertDistinctWays` counts ideas, not labels, so a",
+    "menu offering a bar and a lollipop as two ways of seeing one table is refused.",
     "",
   ];
 
@@ -163,13 +280,14 @@ function render(sheets, beats) {
     lines.push(
       `## ${medium === "chart" ? "Chart" : "Map"} types — ${set.length} sheets, ${reachable.length} with at least one format proven on disk`,
       "",
-      "| type | what it is for | proven formats | sheet |",
-      "|---|---|---|---|",
+      "| type | what it is for | when NOT to reach for it | refuses when | same idea as | proven formats | sheet |",
+      "|---|---|---|---|---|---|---|",
     );
     for (const sheet of set) {
       const proven = provenFormats(sheet, beats);
+      const limits = sheet.limits.map((l) => `${l.unit} ${l.op} ${l.value}`).join("; ");
       lines.push(
-        `| **${sheet.title}** | ${sheet.purpose} | ${proven.length ? proven.join(", ") : "— none rendered here yet"} | \`${sheet.sheet}\` |`,
+        `| **${sheet.title}** | ${sheet.purpose} | ${sheet.refusal} | ${limits || "—"} | ${sheet.sameIdeaAs ?? "—"} | ${proven.length ? proven.join(", ") : "— none rendered here yet"} | \`${sheet.sheet}\` |`,
       );
     }
     lines.push("");

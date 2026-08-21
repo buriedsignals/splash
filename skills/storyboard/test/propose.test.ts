@@ -272,14 +272,30 @@ describe("the survey — what could be made of this data", () => {
     const rows = readTypeSurvey(
       [
         "## Chart types",
-        "| type | what it is for | proven formats | sheet |",
-        "|---|---|---|---|",
-        "| **Beeswarm** | Every raw observation on one axis. | — none rendered here yet | `chart-beat/references/types/beeswarm.md` |",
-        "| **Bar and column** | One value per category. | static, web | `chart-beat/references/types/bar-and-column.md` |",
+        "| type | what it is for | when NOT to reach for it | refuses when | same idea as | proven formats | sheet |",
+        "|---|---|---|---|---|---|---|",
+        "| **Beeswarm** | Every raw observation on one axis. | Not past a few hundred points. | — | — | — none rendered here yet | `chart-beat/references/types/beeswarm.md` |",
+        "| **Bar and column** | One value per category. | Not for a real time series. | — | — | static, web | `chart-beat/references/types/bar-and-column.md` |",
       ].join("\n"),
     );
     expect(rows[0].provenFormats).toEqual([]);
     expect(rows[1].provenFormats).toEqual(["static", "web"]);
+  });
+
+  // Round four, finding 24. Both halves of every sheet reach the exchange now: the survey used to
+  // carry the purpose sentence alone, so nothing anywhere could say a type refuses this table.
+  it("should carry every sheet's own refusal sentence and its stated limits", () => {
+    const rows = typeSurvey();
+    for (const row of rows) {
+      expect(row.refusal.length).toBeGreaterThan(20);
+    }
+    const scatter = rows.find((r) => r.type === "Scatter (and bubble)")!;
+    expect(scatter.refusal).toContain("fewer than about eight or ten points");
+    expect(scatter.limits).toEqual([{ unit: "rows", op: "<", value: 8 }]);
+    const lollipop = rows.find((r) => r.type === "Lollipop")!;
+    expect(lollipop.sameIdeaAs).toBe("Bar and column");
+    const pie = rows.find((r) => r.type === "Pie and donut")!;
+    expect(pie.limits).toEqual([{ unit: "slices", op: ">", value: 5 }]);
   });
 });
 
@@ -454,6 +470,102 @@ describe("the candidates are genuinely different ways of seeing it", () => {
         ],
       }),
     ).toThrow(/not one this toolchain can produce or deliver yet/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND FOUR (2026-08-21), finding 24 — A TREATMENT WAS NEVER CHECKED AGAINST ITS OWN SHEET.
+//
+// `stress-p-transport-ridership`'s slot 2 first closed on a SCATTER of six rows.
+// `types/scatter.md` refuses that outright, in the sheet's own words, and had done all along:
+// "If there are fewer than about eight or ten points, a scatter is an expensive way to draw what
+// a labelled dot-strip or a small table would show just as well — a cloud needs enough members to
+// have a shape." `checkStoryboard` returned `[]` and `whereIs` said `production`, because
+// `formatCandidates` lifted each sheet's *What it is for* sentence and never read its *When NOT to
+// use it*. Its neighbour: `assertDistinctWays` compared NAMES, so it accepted a bar and a lollipop
+// as two ways of seeing one table, though `types/lollipop.md` calls itself "a bar, minus the fill".
+// ---------------------------------------------------------------------------------------------
+
+describe("a candidate is checked against its own sheet's refusal", () => {
+  const sixRows = { rowCount: 6, columns: [] };
+
+  it("should refuse a six-row scatter, in the sheet's own words", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: sixRows,
+        candidates: [
+          { type: "Scatter (and bubble)", format: "static", why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/fewer than about eight or ten points/);
+  });
+
+  // The same six rows, measured off the frozen story the slot actually closed on.
+  it("should refuse that scatter on the frozen story it was proposed for", () => {
+    const profile = frozenProfile("stress-p-transport-ridership");
+    expect(profile.rowCount).toBe(6);
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile,
+        candidates: [
+          { type: "Scatter (and bubble)", format: "static", why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/refuses 6 row\(s\)/);
+  });
+
+  it("should render every candidate with the sheet's own refusal beside its purpose", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 13, columns: [] },
+      candidates: [
+        { type: "Bar and column", format: "static", why: "schools per region, ranked" },
+        { type: "Dot strip", format: "static", why: "the spread of the same thirteen" },
+      ],
+    });
+    const sheet = typeSurvey().find(
+      (r) => r.medium === "chart" && r.type === "Bar and column",
+    )!;
+    expect(text).toContain(sheet.refusal);
+  });
+
+  // A limit the frozen profile cannot answer is CARRIED, not silently enforced against a number
+  // that does not mean what the sheet means: a profile counts rows, never slices.
+  it("should hand a limit it cannot check to the journalist rather than guessing", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 13, columns: [] },
+      candidates: [
+        { type: "Pie and donut", format: "static", why: "the shares of one whole" },
+        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+      ],
+    });
+    expect(text).toContain("slices > 5");
+    expect(text).toMatch(/check.*by hand/i);
+  });
+
+  it("should refuse two labels for one idea, because the sheet says they are one idea", () => {
+    expect(() =>
+      assertDistinctWays([
+        { type: "Bar and column" },
+        { type: "Lollipop" },
+        { type: "Treemap" },
+      ]),
+    ).toThrow(/Lollipop/);
+  });
+
+  it("should still accept three types that are genuinely three ideas", () => {
+    expect(
+      assertDistinctWays([
+        { type: "Bar and column" },
+        { type: "Dot strip" },
+        { type: "Treemap" },
+      ]),
+    ).toBe(true);
   });
 });
 

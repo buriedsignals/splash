@@ -91,7 +91,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the formats proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
+| Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim, the same sheet's own "when NOT to reach for it" sentence verbatim, any count that refusal states in a machine-readable form, the type it says it already IS, and the formats proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
@@ -217,11 +217,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      `"yes"`, or throws the refusal the journalist hears.
    - **⑦** — `proposeSizes(format)`: the three export sizes for a static or a video, none for a page
      that fills its container.
-   - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates all name the same type
-     (the run offered three and all three were bars of the same three numbers), and
-     `formatCandidates` renders the menu from the computed options — every candidate carrying the
-     type sheet's own purpose sentence verbatim and the caller's reason why THIS story is worth
-     seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all.
+   - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates are not one IDEA each
+     (the run offered three and all three were bars of the same three numbers; a bar and a lollipop
+     are one idea, in the lollipop sheet's own words), and
+     `formatCandidates({medium, candidates, profile})` renders the menu from the computed options —
+     every candidate carrying the type sheet's own purpose sentence verbatim, the same sheet's own
+     "when NOT to reach for it" sentence, and the caller's reason why THIS story is worth
+     seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all, and
+     where a sheet states a limit in ROWS the menu throws rather than offering a type that sheet
+     refuses at this size.
      The graphical variant passes those same currently reachable choices to
      `recommendVisualChoice({model, profile})`. Its scored facts come only from confirmed
      `STORYBOARD.md` fields and `source/profile.json`; unknown data-shape requirements remain named
@@ -285,7 +289,7 @@ if (errors.length > 0) {
 | How many numeric columns a comparison claim may resolve to before it is ambiguous | `1` (`findValueColumn`'s `candidates.length === 1` — more or fewer and the comparison comes back `unverifiable`, never guessed) | `scripts/ground-claim.mjs` |
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
 | How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative, with an absolute floor of 0.5) | `scripts/ground-claim.mjs` |
-| Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer) | `scripts/propose.mjs` |
+| Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |
 
 ## Files
 

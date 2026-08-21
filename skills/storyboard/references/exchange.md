@@ -144,10 +144,16 @@ after editorial fit, so an unproven type is reported as unproven rather than qui
 weaker form. Do not ask the journalist to operate or override the ranking.
 
 Genuinely different ways of seeing the same numbers, not three treatments of one. `assertDistinctWays`
-refuses a candidate set whose candidates all name the same type — the run offered three and all
+refuses a candidate set whose candidates are not one idea each — the run offered three and all
 three were stacked-or-grouped bars of the same three numbers. If the honest answer is that this data
 supports two ways of seeing and no more, say two: what is refused is not "fewer than three", it is
 several labels over one idea.
+
+It counts IDEAS, not labels. A type resolves to whatever type its own sheet says it already is —
+`types/lollipop.md` opens by calling itself "a bar chart's thin sibling: same job … 'a bar, minus
+the fill'", so a menu offering a bar and a lollipop is one idea twice and is refused. The kinship is
+declared in the sheet (`<!-- same idea as: … -->`) and generated into `references/type-survey.md`;
+a sheet that declares kinship in prose without declaring it machine-readably fails the generator.
 
 ## ⑤ The medium — G2a
 
@@ -237,10 +243,17 @@ Lands in `PALETTE.md`.
 
 Slots and candidates, presented **as readable narrative, not a table of specs**: what each proves,
 its medium, its format, its size, and one line of why. `formatCandidates({medium, candidates,
-capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate carries
-the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that way,
-which is required, because a candidate with no reason is a name in a list. A candidate whose pair the
-catalog refuses cannot be rendered at all. When a candidate departs from the chooser's first
+profile, capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate
+carries the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that
+way, which is required, because a candidate with no reason is a name in a list. A candidate whose
+pair the catalog refuses cannot be rendered at all.
+
+**AND EACH CARRIES THE OTHER HALF OF ITS OWN SHEET.** Every candidate line names when NOT to reach
+for that type, in the sheet's own words, because a slot once closed on a Scatter of six rows while
+`types/scatter.md` refused exactly that on disk. Pass the frozen `profile`: where a sheet states a
+limit in ROWS — the one unit `source/profile.json` carries — this THROWS rather than renders. A
+limit in any other unit (slices, levels) is handed to the journalist to check by hand rather than
+silently measured against a row count, which is not what the sheet means. When a candidate departs from the chooser's first
 surviving type, its reason also says why. The journalist drops, reorders, adds, vetoes.
 Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly this gate,
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate

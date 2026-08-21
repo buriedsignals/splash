@@ -68,13 +68,56 @@ describe("the type survey has not drifted from the type sheets", () => {
     expect(rows.length).toBe(sheetTitles().length);
     for (const row of rows) {
       const cells = row.split("|").map((c) => c.trim());
-      // type | what it is for | proven formats | sheet
-      expect(cells[3].length).toBeGreaterThan(0);
+      // type | what it is for | when NOT to reach for it | refuses when | same idea as |
+      // proven formats | sheet
+      expect(cells[6].length).toBeGreaterThan(0);
       expect(
         /^(static|web|video|scrolly)(, (static|web|video|scrolly))*$/.test(
-          cells[3],
-        ) || cells[3] === "— none rendered here yet",
+          cells[6],
+        ) || cells[6] === "— none rendered here yet",
       ).toBe(true);
     }
+  });
+
+  // Round four, finding 24. The survey carried each sheet's *What it is for* sentence and nothing
+  // else, so a scatter of six rows could close a slot although `types/scatter.md` refuses it in
+  // words that were on disk the whole time. Both halves are generated now, and this is the drift
+  // check for the second one: every refusal in the survey is a string the sheet itself contains.
+  it("should carry every sheet's own refusal, in the sheet's own words", () => {
+    const survey = readFileSync(SURVEY, "utf8");
+    const rows = survey.split(/\r?\n/).filter((line) => /^\| \*\*/.test(line));
+    let checked = 0;
+    for (const row of rows) {
+      const cells = row.split("|").map((c) => c.trim());
+      const refusal = cells[3];
+      const sheet = cells[7].replace(/`/g, "");
+      const text = readFileSync(join(SKILLS, sheet), "utf8").replace(/\s+/g, " ");
+      expect(refusal.length).toBeGreaterThan(40);
+      // The generated cell joins wrapped lines with single spaces, which is the only edit made to
+      // it; every sentence in it is otherwise the sheet's own.
+      for (const sentence of refusal.split(". ")) {
+        expect(text).toContain(sentence.replace(/\.$/, ""));
+      }
+      checked += 1;
+    }
+    expect(checked).toBe(rows.length);
+    expect(checked).toBeGreaterThan(30);
+  });
+
+  // A count a sheet states in prose that no machine can see is the same defect one layer down, so
+  // the generator refuses a sheet that states one and declares no machine-readable limit beside it.
+  it("should declare, machine-readably, every count a sheet's refusal states in prose", () => {
+    const survey = readFileSync(SURVEY, "utf8");
+    const declared = survey
+      .split(/\r?\n/)
+      .filter((line) => /^\| \*\*/.test(line))
+      .map((line) => line.split("|").map((c) => c.trim()))
+      .filter((cells) => cells[4] !== "—")
+      .map((cells) => `${cells[1].replace(/\*\*/g, "")}: ${cells[4]}`);
+    expect(declared).toEqual([
+      "Diverging stacked bar (Likert): levels > 5",
+      "Pie and donut: slices > 5",
+      "Scatter (and bubble): rows < 8",
+    ]);
   });
 });

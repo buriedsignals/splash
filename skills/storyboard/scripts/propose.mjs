@@ -163,7 +163,9 @@ export function groundingScalar(resolved, { override } = {}) {
 // ④ the survey — what could be made of this data
 // ---------------------------------------------------------------------------------------------
 
-const SURVEY_ROW_RE = /^\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*`(.+?)`\s*\|$/;
+const SURVEY_ROW_RE =
+  /^\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*`(.+?)`\s*\|$/;
+const LIMIT_CELL_RE = /^([a-z]+) ([<>]) (\d+)$/;
 const SURVEY_SECTION_RE = /^##\s+(Chart|Map)\s+types/i;
 
 /**
@@ -191,8 +193,17 @@ export function readTypeSurvey(text) {
       medium,
       type: row[1],
       purpose: row[2],
-      provenFormats: /none rendered/.test(row[3]) ? [] : row[3].split(",").map((g) => g.trim()),
-      sheet: row[4],
+      // BOTH HALVES OF THE SHEET, not just the flattering one (round four, finding 24). `refusal`
+      // is the sheet's own "when NOT to reach for it" sentence, `limits` the machine-readable form
+      // of any count it states, `sameIdeaAs` the type it says it already is.
+      refusal: row[3],
+      limits: row[4] === "—" ? [] : row[4].split(";").flatMap((cell) => {
+        const limit = LIMIT_CELL_RE.exec(cell.trim());
+        return limit ? [{ unit: limit[1], op: limit[2], value: Number(limit[3]) }] : [];
+      }),
+      sameIdeaAs: row[5] === "—" ? null : row[5],
+      provenFormats: /none rendered/.test(row[6]) ? [] : row[6].split(",").map((g) => g.trim()),
+      sheet: row[7],
     });
   }
   return rows;
@@ -688,17 +699,52 @@ export function confirmFormatReachable({ medium, format, capabilities = {} }) {
  * `min` is 2 rather than 3 on purpose, and `exchange.md` says the same thing in words: if the
  * honest answer is that this data supports two ways of seeing and no more, two is the answer. What
  * is refused is not "fewer than three", it is "several labels over one idea".
+ *
+ * ROUND FOUR (2026-08-21), finding 24. IT COMPARED NAMES, so it accepted
+ * `["Bar and column", "Lollipop", "Treemap"]` as three ways of seeing one table — although
+ * `types/lollipop.md` opens by calling itself "a bar chart's thin sibling: same job ... Treat it
+ * as 'a bar, minus the fill' rather than as a different chart type with its own rules". Two labels
+ * for one idea is precisely what this function exists to refuse, and the sheet had said so all
+ * along. It now counts IDEAS: a type resolves to whatever type its own sheet says it already is
+ * (`sameIdeaAs`, generated into the survey from the sheet), and only then are they counted.
  */
-export function assertDistinctWays(candidates, { min = 2 } = {}) {
+export function assertDistinctWays(candidates, { min = 2, survey = typeSurvey() } = {}) {
   const types = candidates.map((c) => (typeof c === "string" ? c : c.type));
   if (types.some((t) => !t)) throw new Error("every candidate must name the type it would be");
-  const distinct = new Set(types.map((t) => t.trim().toLowerCase()));
-  if (candidates.length >= min && distinct.size < min) {
+  const ideas = new Map();
+  for (const type of types) ideas.set(type, ideaOf(type, survey));
+  const distinct = new Set(ideas.values());
+  // EVERY candidate has to be its own idea, not merely `min` of them. The old test was
+  // `distinct.size < min`, which let a three-candidate menu carry two ideas — exactly the shape
+  // finding 24 caught: a bar, a lollipop (the same bar) and a treemap, offered as three choices.
+  if (candidates.length >= min && distinct.size < candidates.length) {
+    const collapsed = [...ideas.entries()]
+      .filter(([type, idea]) => idea !== type.trim().toLowerCase())
+      .map(([type, idea]) => `"${type}" is the same idea as "${idea}" in its own sheet's words`);
     throw new Error(
-      `these ${candidates.length} candidates are ${distinct.size} way(s) of seeing this data, not ${candidates.length} — ${[...distinct].join(", ")}. Offer genuinely different types, or offer fewer and say why.`,
+      `these ${candidates.length} candidates are ${distinct.size} way(s) of seeing this data, not ${candidates.length} — ${[...distinct].join(", ")}.${collapsed.length ? ` ${collapsed.join("; ")}.` : ""} Offer genuinely different types, or offer fewer and say why.`,
     );
   }
   return true;
+}
+
+/**
+ * The IDEA a named type is, which is the type's own name unless its sheet says it is already
+ * another type wearing a second label. Followed to the end of the chain so a sheet declaring
+ * kinship to a type that itself declares kinship still lands on one idea, and guarded against a
+ * cycle rather than hanging on one.
+ */
+function ideaOf(type, survey) {
+  const seen = new Set();
+  let name = type.trim();
+  for (;;) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) return key;
+    seen.add(key);
+    const row = survey.find((r) => r.type.toLowerCase() === key);
+    if (!row?.sameIdeaAs) return key;
+    name = row.sameIdeaAs;
+  }
 }
 
 /**
@@ -710,9 +756,23 @@ export function assertDistinctWays(candidates, { min = 2 } = {}) {
  * `why` per candidate is the caller's own editorial reason — why THIS story is worth seeing that
  * way — and it is required: "each with why it would be interesting" is the ask, and a candidate
  * with no reason is a name in a list.
+ *
+ * ROUND FOUR (2026-08-21), finding 24. IT LIFTED ONLY THE FLATTERING HALF OF THE SHEET.
+ * `stress-p-transport-ridership`'s slot 2 first closed on a Scatter of six rows, and
+ * `types/scatter.md` refuses that outright — "If there are fewer than about eight or ten points, a
+ * scatter is an expensive way to draw what a labelled dot-strip or a small table would show just
+ * as well — a cloud needs enough members to have a shape." `checkStoryboard` returned `[]` and
+ * `whereIs` said `production`. Both halves of the sheet travel now, and where the sheet states a
+ * count in ROWS — the one unit `source/profile.json` carries — this THROWS rather than renders.
+ *
+ * A limit in any other unit (slices, levels) is NOT silently checked against the row count, which
+ * is not what the sheet means: it is handed to the journalist to check by hand, named and
+ * quantified. `profile` is optional only so a caller with no frozen profile still gets the
+ * refusals in front of it; a caller that has one gets the row limit enforced.
  */
-export function formatCandidates({ medium, candidates, capabilities = {}, survey = typeSurvey() }) {
-  assertDistinctWays(candidates);
+export function formatCandidates({ medium, candidates, profile = null, capabilities = {}, survey = typeSurvey() }) {
+  assertDistinctWays(candidates, { survey });
+  const rowCount = Number.isSafeInteger(profile?.rowCount) ? profile.rowCount : null;
   const lines = candidates.map((candidate) => {
     const { type, why, format } = candidate;
     if (!why || !why.trim()) throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
@@ -720,7 +780,23 @@ export function formatCandidates({ medium, candidates, capabilities = {}, survey
     const row = survey.find((r) => r.medium === medium && r.type.toLowerCase() === type.trim().toLowerCase());
     const purpose = row ? ` — ${row.purpose}` : "";
     const reach = format ? ` (${format})` : "";
-    return `- **${type}**${reach}${purpose}\n  Why here: ${why.trim()}`;
+    const rowLimits = (row?.limits ?? []).filter((limit) => limit.unit === "rows");
+    for (const limit of rowLimits) {
+      if (rowCount === null) continue;
+      const refused = limit.op === "<" ? rowCount < limit.value : rowCount > limit.value;
+      if (!refused) continue;
+      throw new Error(
+        `"${type}" refuses ${rowCount} row(s): its own sheet (\`${row.sheet}\`) says it wants ${limit.op === "<" ? `at least ${limit.value}` : `at most ${limit.value}`} — "${row.refusal}" Offer a type this data can carry, or say to the journalist why this one still earns its place.`,
+      );
+    }
+    const notFor = row ? `\n  Not for: ${row.refusal}` : "";
+    const byHand = (row?.limits ?? [])
+      .filter((limit) => limit.unit !== "rows")
+      .map((limit) => `${limit.unit} ${limit.op} ${limit.value}`);
+    const handNote = byHand.length
+      ? `\n  Check by hand — this sheet refuses ${byHand.join(", ")}, and a column profile counts rows, never ${byHand.map((l) => l.split(" ")[0]).join(" or ")}.`
+      : "";
+    return `- **${type}**${reach}${purpose}${notFor}${handNote}\n  Why here: ${why.trim()}`;
   });
   return lines.join("\n");
 }
