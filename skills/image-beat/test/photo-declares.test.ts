@@ -29,6 +29,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 1,
       missingAlt: 0,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -38,6 +39,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 1,
       missingAlt: 1,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -47,6 +49,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 1,
       missingAlt: 1,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -56,6 +59,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 1,
       missingAlt: 0,
       missingCredit: 1,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -65,6 +69,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 1,
       missingAlt: 0,
       missingCredit: 1,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -74,6 +79,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 0,
       missingAlt: 0,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -86,6 +92,7 @@ describe("photosDeclareAltAndCredit", () => {
       photos: 3,
       missingAlt: 1,
       missingCredit: 1,
+      creditRecordedAbsent: 0,
     });
   });
 });
@@ -134,6 +141,7 @@ describe("photosDeclareAltAndCredit reads a placeholder as absence, not as an an
       photos: 1,
       missingAlt: 1,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -143,6 +151,7 @@ describe("photosDeclareAltAndCredit reads a placeholder as absence, not as an an
       photos: 1,
       missingAlt: 0,
       missingCredit: 1,
+      creditRecordedAbsent: 0,
     });
   });
 
@@ -152,6 +161,7 @@ describe("photosDeclareAltAndCredit reads a placeholder as absence, not as an an
       photos: 1,
       missingAlt: 0,
       missingCredit: 0,
+      creditRecordedAbsent: 0,
     });
   });
 });
@@ -174,5 +184,87 @@ describe("the delivered stress-h beat — the failure mode made reachable", () =
     expect(found.photos).toBe(3);
     expect(found.missingAlt).toBe(1);
     expect(found.missingCredit).toBe(1);
+  });
+});
+
+// ROUND-FIVE FINDING W1 — TWO OF THIS TREE'S OWN FIXES COLLIDING.
+//
+// Round two taught this detector that a bracket-wrapped field is an absence, not an answer. Round
+// four then gave `credit` an honest, UNBRACKETED value for a journalist who genuinely cannot
+// attribute a picture — `unattributed`, printed as `Source: not stated` — and told nobody here. The
+// delivered `stress-w-quay-photographs` beat prints that exact sentence under two of its three
+// photographs and the capability answered `{"photos":3,"missingAlt":0,"missingCredit":0}`, verified
+// by the controller against the delivered SVG. The agent's own passes show the whole mechanism:
+//
+//     PASS 2 (bracketed): {"photos":3,"missingAlt":1,"missingCredit":2}
+//     PASS 3 (prose)    : {"photos":3,"missingAlt":0,"missingCredit":0}
+//
+// Between those two passes nothing changed about the beat except the WORDING of the two absences.
+//
+// The vocabulary is IMPORTED here, never retyped: `storyboard` owns what "the journalist named no
+// source" is called and what a delivered artefact prints for it, and this test fails the day either
+// value changes without the detector being told — which is the drift that produced this finding.
+import {
+  UNATTRIBUTED_CREDIT,
+  UNATTRIBUTED_CREDIT_LINE,
+} from "../../storyboard/scripts/storyboard.mjs";
+
+describe("photosDeclareAltAndCredit tells a RECORDED absence from a credit", () => {
+  it("reads the line a delivered artefact prints for an unattributed photo as an absence", () => {
+    const html = `<g role="img" aria-label="A glacier front" data-credit="${UNATTRIBUTED_CREDIT_LINE}"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 0,
+      missingCredit: 1,
+      creditRecordedAbsent: 1,
+    });
+  });
+
+  it("reads the RECORDED sentinel itself as an absence, for a component that never resolved it", () => {
+    const html = `<g role="img" aria-label="A glacier front" data-credit="${UNATTRIBUTED_CREDIT}"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 0,
+      missingCredit: 1,
+      creditRecordedAbsent: 1,
+    });
+  });
+
+  it("keeps a recorded absence apart from a photo whose credit was never stated at all", () => {
+    const html =
+      `<g role="img" aria-label="First" data-credit="${UNATTRIBUTED_CREDIT_LINE}"></g>` +
+      `<g role="img" aria-label="Second"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 2,
+      missingAlt: 0,
+      missingCredit: 2,
+      creditRecordedAbsent: 1,
+    });
+  });
+
+  it("does not read a real credit that merely contains the word as an absence", () => {
+    const html = `<g role="img" aria-label="A glacier front" data-credit="Source: unattributed figures released by the ministry"></g>`;
+    expect(photosDeclareAltAndCredit(html)).toEqual({
+      photos: 1,
+      missingAlt: 0,
+      missingCredit: 0,
+      creditRecordedAbsent: 0,
+    });
+  });
+});
+
+describe("the delivered stress-w beat — the wording of the absence, measured", () => {
+  it("reports the two photographs that name no source, not clean", () => {
+    const STORIES = resolve(SKILL, "..", "..", "stories");
+    const svg = readFileSync(
+      join(STORIES, "stress-w-quay-photographs", "export", "1-quay-sequence", "still.svg"),
+      "utf8",
+    );
+    expect(photosDeclareAltAndCredit(svg)).toEqual({
+      photos: 3,
+      missingAlt: 0,
+      missingCredit: 2,
+      creditRecordedAbsent: 2,
+    });
   });
 });
