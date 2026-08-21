@@ -1,0 +1,66 @@
+{
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 1980,
+      "max": 2026,
+      "sum": 12026,
+      "gaps": [
+        1986,
+        1992,
+        1998,
+        2004,
+        2016,
+        2022
+      ]
+    },
+    {
+      "name": "kilns_active",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 1,
+      "max": 42,
+      "sum": 105,
+      "gaps": null
+    },
+    {
+      "name": "workers",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 18,
+      "max": 1860,
+      "sum": 4042,
+      "gaps": null
+    },
+    {
+      "name": "site_lat",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 39.74,
+      "max": 39.74,
+      "sum": 238.44000000000003,
+      "gaps": null
+    },
+    {
+      "name": "site_lon",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": -8.81,
+      "max": -8.81,
+      "sum": -52.86000000000001,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

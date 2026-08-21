@@ -1,0 +1,15 @@
+{
+  "operationId": "fb9e99a6-96d8-4d2c-8992-42e9da11c100",
+  "reviewId": "1-beds-per-resident-review-2026-08-21",
+  "planVersion": 1,
+  "draftDigest": "sha256:598e5e6635b3b71243d7ba8d36915ccc8004f393b6c57c89358dadc8a4edb13d",
+  "findingIds": [
+    "slot-1-beds-per-resident"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T19:11:38.873Z",
+  "schemaVersion": 1,
+  "outputId": "1-beds-per-resident",
+  "state": "complete"
+}

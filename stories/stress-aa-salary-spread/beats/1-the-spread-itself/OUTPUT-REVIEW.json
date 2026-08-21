@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "1-the-spread-itself-review-2026-08-21",
+  "outputId": "1-the-spread-itself",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:41543319eace061dae03d977507aca01bdf7ad9b1611c28d6c719b24021319d0",
+  "findingIds": [
+    "slot-1-the-spread-itself"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "1-the-spread-itself-qa-2026-08-21-1",
+      "outputId": "1-the-spread-itself",
+      "planVersion": 1,
+      "draftDigest": "sha256:41543319eace061dae03d977507aca01bdf7ad9b1611c28d6c719b24021319d0",
+      "findingIds": [
+        "slot-1-the-spread-itself"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T18:20:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Slot 1 proves that the mass of this payroll sits well to the left of its own average: median 31,420 EUR against a mean of 36,516 EUR, with 151 of the 234 answered returns below the mean and a thin right tail running to 238,530 EUR. Every figure in the title, the standfirst, the two rules, the tail note and the alt text is computed by render.mjs from source/data.csv and printed before the render; nothing is typed. The six blank returns are dropped from the geometry, counted in the standfirst, and cross-checked against source/profile.json. The PNG was opened and read at 1920x1080 on the newsroom own dark ground.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
+  "decidedAt": "2026-08-21T18:20:00Z",
+  "notes": "inspectSvg reports 0 failing and 0 unresolved painted runs against the real ground. frameFillFraction on the delivered PNG is 0.777 against a 0.3515 floor. revealDashInScreenSpace returns [] over the two dashed rules. assertDeliveredSize, assertTypeFloor, assertWithinStage and assertDrawnInActiveTypeface all pass. Two defects found by looking rather than by a counter: the first render collided the axis floor label with the first derived tick, and framingMeasurement returns null for largestAgainstMedian on this treatment marks because the median bin count of a right-skewed distribution is 0."
+}

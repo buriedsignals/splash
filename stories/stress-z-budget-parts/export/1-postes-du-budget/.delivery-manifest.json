@@ -1,0 +1,15 @@
+{
+  "operationId": "8b75dbf0-ee45-41d4-91a1-98cb2f8149d9",
+  "reviewId": "review-postes-du-budget-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:9652725748900febe1c44a8520fc474838309f72edf2b34b44ed183f13cbd767",
+  "findingIds": [
+    "takeaway-1"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-21T19:08:47.787Z",
+  "schemaVersion": 1,
+  "outputId": "1-postes-du-budget",
+  "state": "complete"
+}

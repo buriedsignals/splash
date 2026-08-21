@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "review-ae-1-passengers-up-punctuality-down-1",
+  "outputId": "1-passengers-up-punctuality-down",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:090fd147988703e82c708cf78ac3ccde6fa47adf82a41585abb6c485a11df8f7",
+  "findingIds": [
+    "AE-1-reveal-order-is-earned",
+    "AE-2-two-panels-not-two-axes",
+    "AE-3-break-year-lands-in-both-panels",
+    "AE-4-every-asserted-value-is-printed",
+    "AE-5-last-frame-is-a-complete-chart"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-chart-video-guards-and-five-frames",
+      "outputId": "1-passengers-up-punctuality-down",
+      "planVersion": 1,
+      "draftDigest": "sha256:090fd147988703e82c708cf78ac3ccde6fa47adf82a41585abb6c485a11df8f7",
+      "findingIds": [
+        "AE-1-reveal-order-is-earned",
+        "AE-2-two-panels-not-two-axes",
+        "AE-3-break-year-lands-in-both-panels",
+        "AE-4-every-asserted-value-is-printed",
+        "AE-5-last-frame-is-a-complete-chart"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T19:07:58.052Z"
+    }
+  ],
+  "angleEvidenceBrief": "The takeaway is that the railway s own two readings moved in opposite directions from 2014 to 2025 - passengers 58.2 to 74.6 million, punctuality 91.4 to 81.6 per cent - and that 2020 breaks both, being the minimum of one column and the maximum of the other. The evidence is the story s own frozen source/data.csv, twelve annual rows; every figure the frame prints, and the subject year itself, is computed from that file in render.mjs and never typed. The picture is two stacked panels sharing one time axis, each fitted to its own readings - a dual axis is refused in the line type sheet s own words. The build draws both lines in lock-step chronologically, lands 2020 in both panels tied together, then states the two 2025 values at the points they belong to. Grounding at G1 came back unverifiable and is recorded as such: the check reads sentences, not clauses, so a takeaway naming two measures in one sentence has every one of its five numerals refused as unplaced.",
+  "decision": "approve",
+  "reviewer": "journalist (stood in for, at the Gate 3 human gate)",
+  "decidedAt": "2026-08-21T19:07:58.052Z",
+  "notes": "Approved after rendering the final frame first, looking at it, then rendering the mp4 and looking at five extracted frames (kept in verification/, deliberately outside renders/). Three corrections landed before the approval, all found by looking: the reference labels were sitting on the evidence, the two 2020 value labels were sitting on the tie that joins them, and the panel names were crowding their own top gridline. staggerLacksAnOrder passes the reveal at 12 marks over 12 years; the same reveal counted per series per year is refused, and that disagreement is recorded in NOTES-FOR-MAINTAINER.md rather than argued around."
+}

@@ -1,0 +1,15 @@
+{
+  "operationId": "39af583c-f601-49a7-b16d-430473551b33",
+  "reviewId": "review-ac-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:47fd7c3af713e48d519f2e8c1a0f8dd26fbf3628a3952d1c0b719f8b6b8a2f79",
+  "findingIds": [
+    "AC-1-mixed-scrolly-three-media"
+  ],
+  "form": "owned-file",
+  "format": "scrolly",
+  "createdAt": "2026-08-21T19:14:17.848Z",
+  "schemaVersion": 1,
+  "outputId": "1-one-kiln-left",
+  "state": "complete"
+}

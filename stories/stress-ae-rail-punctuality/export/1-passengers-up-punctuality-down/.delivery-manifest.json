@@ -1,0 +1,19 @@
+{
+  "operationId": "0e2e20b1-5f56-4701-bdb2-37cd7b7beef4",
+  "reviewId": "review-ae-1-passengers-up-punctuality-down-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:090fd147988703e82c708cf78ac3ccde6fa47adf82a41585abb6c485a11df8f7",
+  "findingIds": [
+    "AE-1-reveal-order-is-earned",
+    "AE-2-two-panels-not-two-axes",
+    "AE-3-break-year-lands-in-both-panels",
+    "AE-4-every-asserted-value-is-printed",
+    "AE-5-last-frame-is-a-complete-chart"
+  ],
+  "form": "owned-file",
+  "format": "video",
+  "createdAt": "2026-08-21T19:08:07.223Z",
+  "schemaVersion": 1,
+  "outputId": "1-passengers-up-punctuality-down",
+  "state": "complete"
+}

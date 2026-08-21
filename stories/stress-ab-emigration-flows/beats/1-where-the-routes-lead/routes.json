@@ -1,0 +1,114 @@
+[
+  {
+    "key": "lisboa--london",
+    "origin": "Lisboa",
+    "destination": "London",
+    "value": 18400,
+    "from": {
+      "lon": -9.14,
+      "lat": 38.72
+    },
+    "to": {
+      "lon": -0.13,
+      "lat": 51.51
+    }
+  },
+  {
+    "key": "lisboa--paris",
+    "origin": "Lisboa",
+    "destination": "Paris",
+    "value": 12100,
+    "from": {
+      "lon": -9.14,
+      "lat": 38.72
+    },
+    "to": {
+      "lon": 2.35,
+      "lat": 48.86
+    }
+  },
+  {
+    "key": "porto--paris",
+    "origin": "Porto",
+    "destination": "Paris",
+    "value": 9600,
+    "from": {
+      "lon": -8.61,
+      "lat": 41.15
+    },
+    "to": {
+      "lon": 2.35,
+      "lat": 48.86
+    }
+  },
+  {
+    "key": "porto--zurich",
+    "origin": "Porto",
+    "destination": "Zurich",
+    "value": 4200,
+    "from": {
+      "lon": -8.61,
+      "lat": 41.15
+    },
+    "to": {
+      "lon": 8.54,
+      "lat": 47.38
+    }
+  },
+  {
+    "key": "braga--luxembourg",
+    "origin": "Braga",
+    "destination": "Luxembourg",
+    "value": 3100,
+    "from": {
+      "lon": -8.43,
+      "lat": 41.55
+    },
+    "to": {
+      "lon": 6.13,
+      "lat": 49.61
+    }
+  },
+  {
+    "key": "faro--london",
+    "origin": "Faro",
+    "destination": "London",
+    "value": 2800,
+    "from": {
+      "lon": -7.93,
+      "lat": 37.02
+    },
+    "to": {
+      "lon": -0.13,
+      "lat": 51.51
+    }
+  },
+  {
+    "key": "coimbra--brussels",
+    "origin": "Coimbra",
+    "destination": "Brussels",
+    "value": 2400,
+    "from": {
+      "lon": -8.43,
+      "lat": 40.21
+    },
+    "to": {
+      "lon": 4.35,
+      "lat": 50.85
+    }
+  },
+  {
+    "key": "aveiro--paris",
+    "origin": "Aveiro",
+    "destination": "Paris",
+    "value": 1900,
+    "from": {
+      "lon": -8.65,
+      "lat": 40.64
+    },
+    "to": {
+      "lon": 2.35,
+      "lat": 48.86
+    }
+  }
+]

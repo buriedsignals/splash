@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "review-postes-du-budget-1",
+  "outputId": "1-postes-du-budget",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:9652725748900febe1c44a8520fc474838309f72edf2b34b44ed183f13cbd767",
+  "findingIds": [
+    "takeaway-1"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-postes-du-budget-1",
+      "outputId": "1-postes-du-budget",
+      "planVersion": 1,
+      "draftDigest": "sha256:9652725748900febe1c44a8520fc474838309f72edf2b34b44ed183f13cbd767",
+      "findingIds": [
+        "takeaway-1"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T19:08:06.791Z"
+    }
+  ],
+  "angleEvidenceBrief": "The delivered HTML was opened in a real browser and driven: 54 checks passed, 0 failed, at seven viewport widths from 3440x900 down to 375x812, with real pointer events over all seven marks at two of them and every argument-bearing word checked with scripting on and with JavaScript disabled. The frames at 1600x800, 375x812 and on hover were looked at. Seven bars on one shared zero drawn from [-104.6, 412.5]; the accent spent once, on the single line that runs the other way; the six expenditure lines in the furniture own muted; the 109.7 per cent stated in the caveat rather than drawn, because it is not the sum of what the reader sees.",
+  "decision": "approve",
+  "reviewer": "stress-round-six (standing in for the journalist at G3)",
+  "decidedAt": "2026-08-21T19:08:06.791Z",
+  "notes": "Two defects found by looking and corrected inside the beat: at 375px the three measured, fixed-pixel gutter tracks left the 1fr plot column five pixels wide and the format own fit check passed it, because that check reads .chart-plot box HEIGHT against a 100px floor and never the plot column width; and the write-back value label then collided with its own wrapped name, so it is now anchored right of the zero line on its own tinted row and the reserved left track is gone. Recorded rather than hidden: the frozen part_pct column sums to exactly 100 and the chart deliberately does not say so, because it does that only by cancelling 9.7 points of overshoot against a negative member."
+}

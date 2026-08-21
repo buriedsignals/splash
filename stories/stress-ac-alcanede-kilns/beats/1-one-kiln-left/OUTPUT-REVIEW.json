@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "review-ac-1",
+  "outputId": "1-one-kiln-left",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:47fd7c3af713e48d519f2e8c1a0f8dd26fbf3628a3952d1c0b719f8b6b8a2f79",
+  "findingIds": [
+    "AC-1-mixed-scrolly-three-media"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-ac-1-verify-scrolly",
+      "outputId": "1-one-kiln-left",
+      "planVersion": 1,
+      "draftDigest": "sha256:47fd7c3af713e48d519f2e8c1a0f8dd26fbf3628a3952d1c0b719f8b6b8a2f79",
+      "findingIds": [
+        "AC-1-mixed-scrolly-three-media"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T19:13:25.116Z"
+    }
+  ],
+  "angleEvidenceBrief": "One site, three media, one scroll: a bar chart of the workforce with each row annotated by its own kiln count, the two supplied site photographs fitted and dated, and a baked locator. Every figure recomputed from source/data.csv; the article s own steepening claim is refused in absolute terms and stated proportionally.",
+  "decision": "approve",
+  "reviewer": "producer (stress round six) acting for the journalist at G3",
+  "decidedAt": "2026-08-21T19:13:25.116Z",
+  "notes": "verify-scrolly.mjs: 0 failures at 1600x900, 1280x800 and 375x812. Redraw per step 91.4 / 25.0 / 63.6 percent against a 1 percent floor; data-progress 0.00-3.00; worst step/progress drift 0.57 against a 0.65 ceiling; panel contrast 17.66:1; no label sliced at any width. Four defects found by looking at the render and fixed before this approval; see BRIEF.md."
+}

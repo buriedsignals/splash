@@ -1,0 +1,77 @@
+{
+  "ground": "#16191B",
+  "accent": "#D4A853",
+  "secondAccent": "#5B8A8A",
+  "source": "Source: not stated",
+  "referenceYear": 2014,
+  "subjectYear": 2020,
+  "title": "Since 2014 rail passengers are up 28 per cent and punctuality is down 9.8 points. 2020 broke both.",
+  "data": [
+    {
+      "year": 2014,
+      "passengers": 58.2,
+      "punctuality": 91.4
+    },
+    {
+      "year": 2015,
+      "passengers": 60.1,
+      "punctuality": 90.8
+    },
+    {
+      "year": 2016,
+      "passengers": 62.7,
+      "punctuality": 89.2
+    },
+    {
+      "year": 2017,
+      "passengers": 64,
+      "punctuality": 88.1
+    },
+    {
+      "year": 2018,
+      "passengers": 66.9,
+      "punctuality": 86.7
+    },
+    {
+      "year": 2019,
+      "passengers": 69.4,
+      "punctuality": 85.3
+    },
+    {
+      "year": 2020,
+      "passengers": 28.1,
+      "punctuality": 94.6
+    },
+    {
+      "year": 2021,
+      "passengers": 41.5,
+      "punctuality": 92
+    },
+    {
+      "year": 2022,
+      "passengers": 58.8,
+      "punctuality": 87.4
+    },
+    {
+      "year": 2023,
+      "passengers": 66.2,
+      "punctuality": 84.9
+    },
+    {
+      "year": 2024,
+      "passengers": 71,
+      "punctuality": 83.1
+    },
+    {
+      "year": 2025,
+      "passengers": 74.6,
+      "punctuality": 81.6
+    }
+  ],
+  "size": "landscape",
+  "width": 1920,
+  "height": 1080,
+  "ink": "#FFFFFF",
+  "muted": "#a6a8a8",
+  "grid": "#404244"
+}

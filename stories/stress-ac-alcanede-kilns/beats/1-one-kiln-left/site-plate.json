@@ -1,0 +1,24 @@
+{
+  "frame": {
+    "width": 1000,
+    "height": 640
+  },
+  "style": "dataviz-dark",
+  "zoom": 9,
+  "frameCorners": {
+    "west": -9.496645507814492,
+    "north": 39.91928555264633,
+    "east": -8.123354492189094,
+    "south": 39.241896243064645
+  },
+  "worldWidthPx": 262144,
+  "degreesPerPixel": 0.00137329,
+  "metresPerPixel": 117.824,
+  "gatedBy": "idle",
+  "site": {
+    "lat": 39.74,
+    "lon": -8.81,
+    "px": 500,
+    "py": 170
+  }
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "key": "lisboa",
+    "name": "Lisboa",
+    "lon": -9.14,
+    "lat": 38.72,
+    "role": "origin",
+    "value": 30500
+  },
+  {
+    "key": "london",
+    "name": "London",
+    "lon": -0.13,
+    "lat": 51.51,
+    "role": "destination",
+    "value": 21200
+  },
+  {
+    "key": "paris",
+    "name": "Paris",
+    "lon": 2.35,
+    "lat": 48.86,
+    "role": "destination",
+    "value": 23600
+  },
+  {
+    "key": "porto",
+    "name": "Porto",
+    "lon": -8.61,
+    "lat": 41.15,
+    "role": "origin",
+    "value": 13800
+  },
+  {
+    "key": "zurich",
+    "name": "Zurich",
+    "lon": 8.54,
+    "lat": 47.38,
+    "role": "destination",
+    "value": 4200
+  },
+  {
+    "key": "braga",
+    "name": "Braga",
+    "lon": -8.43,
+    "lat": 41.55,
+    "role": "origin",
+    "value": 3100
+  },
+  {
+    "key": "luxembourg",
+    "name": "Luxembourg",
+    "lon": 6.13,
+    "lat": 49.61,
+    "role": "destination",
+    "value": 3100
+  },
+  {
+    "key": "faro",
+    "name": "Faro",
+    "lon": -7.93,
+    "lat": 37.02,
+    "role": "origin",
+    "value": 2800
+  },
+  {
+    "key": "coimbra",
+    "name": "Coimbra",
+    "lon": -8.43,
+    "lat": 40.21,
+    "role": "origin",
+    "value": 2400
+  },
+  {
+    "key": "brussels",
+    "name": "Brussels",
+    "lon": 4.35,
+    "lat": 50.85,
+    "role": "destination",
+    "value": 2400
+  },
+  {
+    "key": "aveiro",
+    "name": "Aveiro",
+    "lon": -8.65,
+    "lat": 40.64,
+    "role": "origin",
+    "value": 1900
+  }
+]

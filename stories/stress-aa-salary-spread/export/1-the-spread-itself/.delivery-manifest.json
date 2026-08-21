@@ -1,0 +1,15 @@
+{
+  "operationId": "717c2598-7800-4b31-876e-d45b9e7b83b7",
+  "reviewId": "1-the-spread-itself-review-2026-08-21",
+  "planVersion": 1,
+  "draftDigest": "sha256:41543319eace061dae03d977507aca01bdf7ad9b1611c28d6c719b24021319d0",
+  "findingIds": [
+    "slot-1-the-spread-itself"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T19:07:17.639Z",
+  "schemaVersion": 1,
+  "outputId": "1-the-spread-itself",
+  "state": "complete"
+}

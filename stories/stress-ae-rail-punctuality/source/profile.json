@@ -1,0 +1,39 @@
+{
+  "rowCount": 12,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 12,
+      "min": 2014,
+      "max": 2025,
+      "sum": 24234,
+      "gaps": []
+    },
+    {
+      "name": "passengers_millions",
+      "type": "number",
+      "missing": 0,
+      "distinct": 12,
+      "min": 28.1,
+      "max": 74.6,
+      "sum": 721.5,
+      "gaps": null
+    },
+    {
+      "name": "punctuality_pct",
+      "type": "number",
+      "missing": 0,
+      "distinct": 12,
+      "min": 81.6,
+      "max": 94.6,
+      "sum": 1055.1,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

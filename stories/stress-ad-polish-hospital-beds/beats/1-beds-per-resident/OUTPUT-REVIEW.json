@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "1-beds-per-resident-review-2026-08-21",
+  "outputId": "1-beds-per-resident",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:598e5e6635b3b71243d7ba8d36915ccc8004f393b6c57c89358dadc8a4edb13d",
+  "findingIds": [
+    "slot-1-beds-per-resident"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "1-beds-per-resident-qa-2026-08-21-1",
+      "outputId": "1-beds-per-resident",
+      "planVersion": 1,
+      "draftDigest": "sha256:598e5e6635b3b71243d7ba8d36915ccc8004f393b6c57c89358dadc8a4edb13d",
+      "findingIds": [
+        "slot-1-beds-per-resident"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T18:20:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Slot 1 proves that the largest stock of hospital beds is not the best-supplied region: Mazowieckie leads the raw count at 21 400 and is third of eight per 10 000 inhabitants, behind Śląskie (40,5) and Łódzkie (40,2). Every figure in the title, standfirst, row labels, annotation and alt text is computed by render.mjs from source/data.csv and printed before the render; nothing is typed, and the render refuses outright if the two rankings ever agree at the top, because the standfirst would then be false. The PNG was opened at 1920x1080 and read again at 4x on the label column, the header and the credit line.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
+  "decidedAt": "2026-08-21T18:20:00Z",
+  "notes": "The first render placed each row's value at its own bar tip and the average rule was drawn through five of the eight values; the values moved to one right-aligned column past the longest bar and the second render was opened again. The field ink was settled by rendering both candidates (probe/): the furniture grid is 1.53:1 on this ground and below SC 1.4.11 for a data mark, muted is 6.19:1 but darker than the accent and inverts the emphasis, and no grey exists that is both above the floor and readApart from #5B8A8A. Every non-subject value is printed as a number on its own row, so no reading depends on seeing the pale bars. Polish diacritics were verified as glyphs at 4x rather than trusted to familyResolves, which probes a Latin string and is not called at all for a default-origin stack."
+}

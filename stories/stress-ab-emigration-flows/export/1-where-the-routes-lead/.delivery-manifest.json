@@ -1,0 +1,16 @@
+{
+  "operationId": "d1532a39-cd9e-4676-afda-f869e27bbd22",
+  "reviewId": "review-1-where-the-routes-lead-2",
+  "planVersion": 1,
+  "draftDigest": "sha256:08cbf15bb8f5f8117f271c7e9e33d57d9130987acda466051859a13b9ec09548",
+  "findingIds": [
+    "ab-1-routes-fan-out-of-portugal",
+    "ab-2-paris-outdraws-london"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-21T19:26:30.507Z",
+  "schemaVersion": 1,
+  "outputId": "1-where-the-routes-lead",
+  "state": "complete"
+}

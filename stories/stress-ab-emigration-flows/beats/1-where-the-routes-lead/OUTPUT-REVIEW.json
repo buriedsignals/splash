@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "review-1-where-the-routes-lead-2",
+  "outputId": "1-where-the-routes-lead",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:08cbf15bb8f5f8117f271c7e9e33d57d9130987acda466051859a13b9ec09548",
+  "findingIds": [
+    "ab-1-routes-fan-out-of-portugal",
+    "ab-2-paris-outdraws-london"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "qa-1-where-the-routes-lead-2",
+      "outputId": "1-where-the-routes-lead",
+      "planVersion": 1,
+      "draftDigest": "sha256:08cbf15bb8f5f8117f271c7e9e33d57d9130987acda466051859a13b9ec09548",
+      "findingIds": [
+        "ab-1-routes-fan-out-of-portugal",
+        "ab-2-paris-outdraws-london"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T19:26:11.394Z"
+    }
+  ],
+  "angleEvidenceBrief": "The page draws the eight recorded routes as ribbons whose width is their volume, so Lisboa-London is visibly the widest, and states the arriving total per destination on the map and in a table that is visible without any interaction, so Paris at 23,600 against London at 21,200 is readable at rest. Both are the storyboard slot own proves.",
+  "decision": "approve",
+  "reviewer": "journalist (decision taken in this run, recorded in APPROVED.md)",
+  "decidedAt": "2026-08-21T19:26:11.394Z",
+  "notes": "Second review, bound to the render that carries the live map. The first render declared its live container as id mw-live-map; live-map.mjs looks for mw-map and returns null without a word, so that build shipped with zero network requests and the fallback plate forever. Verified by driving a keyed copy in a real browser: 13 requests to api.maptiler.com, canvas present, fallback hidden, eight ribbons and eight arrowheads painted on the live layer.",
+  "replacesReviewId": "review-1-where-the-routes-lead-1"
+}
