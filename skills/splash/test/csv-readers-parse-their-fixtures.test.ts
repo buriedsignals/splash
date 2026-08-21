@@ -365,6 +365,24 @@ function closureFor(
 /** The three module-scope readers (see the file's own doc comment): copied here verbatim, wrapped
  *  in a function this walk can call the same way it calls every extracted one. */
 const MODULE_SCOPE_READERS: Record<string, Reader> = {
+  // stress-q's beat tokenises at module scope and builds its records in one inline
+  // `Object.fromEntries` map rather than inside a named reader — a shape this walk had no name
+  // for, so it reported the file as an unknown rather than silently claiming to have checked it.
+  // The verbatim module-scope reading code, lifted so the walk can run it on the beat's own
+  // frozen csv (2026-08-21 round-four stress test).
+  "stories/stress-q-safety-incidents/beats/1-rate-not-count/render.mjs": {
+    name: "_readDistricts",
+    params: ["text"],
+    block: `function _readDistricts(text) {
+      const [header, ...rows] = parseCsvRows(text.trim());
+      const records = rows.map((r) => Object.fromEntries(r.map((v, i) => [header[i], v])));
+      return records.map((r) => ({
+        name: r.district,
+        incidents: Number(r.incidents),
+        residents: Number(r.residents),
+      }));
+    }`,
+  },
   "proof/mapgen-choropleth-video/build-data.mjs": {
     name: "_readKeptRows",
     params: ["text"],
