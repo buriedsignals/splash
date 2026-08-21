@@ -1134,7 +1134,14 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: `could not resolve "${item.entity}" to a row — neither the profile nor any frozen table handed to this check carries row-level data`,
+      // NOT the same answer as "the frozen table has no such row" below, and the difference is the
+      // whole point: this branch means the CALLER never handed over a table, so the check was
+      // never in a position to decide. Round four found the previous version of this shape
+      // returning `unverifiable` for every superlative in every story and reading, to anyone
+      // downstream, exactly like an honest "the data cannot settle this". A refusal that does not
+      // name what would lift it is that defect wearing a longer sentence, so this one names the
+      // argument. `storyboard/SKILL.md` and `references/exchange.md` both spell the call with it.
+      detail: `could not resolve "${item.entity}" to a row: no frozen table was handed to this check, and no profile in this tree carries rows — pass the story's own source/data.csv as \`{ csv }\` and this claim becomes decidable`,
     };
   }
 
