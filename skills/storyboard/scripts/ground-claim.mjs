@@ -340,11 +340,63 @@ function roundingWindowOf(raw) {
  *     rule stated plainly: the tolerance may not exceed the value it is comparing. Without it,
  *     "0" still "equals" a column summing to 0.4.
  */
-function matchesAggregate(value, sum, raw) {
+function matchesAggregate(value, sum, roundingWindow) {
   if (sum === null || sum === undefined || !Number.isFinite(sum)) return false;
-  const window = Math.max(roundingWindowOf(raw ?? value), Math.abs(sum) * AGGREGATE_TOLERANCE);
+  const window = Math.max(roundingWindow ?? 0.5, Math.abs(sum) * AGGREGATE_TOLERANCE);
   const cannotExceed = Math.min(Math.abs(value), Math.abs(sum));
   return Math.abs(value - sum) <= Math.min(window, cannotExceed);
+}
+
+// A SCALE WORD STANDING BESIDE A NUMERAL. Round five, finding X7: journalists write "142 million
+// cubic metres" and frozen tables store 142000000, so the one numeric reading this file can make
+// was unavailable for the commonest way a number appears in a takeaway — "142" came back
+// "could not be placed" for a reason that had nothing to do with the data.
+//
+// It is read as an ALTERNATIVE reading, never as a replacement, and that is the whole design.
+// The Milan Cortina run's own takeaway says "34 millions de tonnes" against `glace_fondue_mt`,
+// a column already IN megatonnes whose sum is exactly 34: multiplying there would destroy a
+// reading that is correct. So both the numeral as written and the numeral times its stated scale
+// are tried, and the detail says which one placed it. Where two readings would place it two
+// different ways, neither is chosen — that is an ambiguity for the journalist, not a verdict.
+//
+// THE LANGUAGES THIS TABLE DECLARES: English, French, Greek and Arabic — the four this tree has
+// frozen a story in. A scale word outside them is NOT read, and the numeral is then checked as
+// written, which is exactly what this file did for every language before this round. That limit
+// is stated in SKILL.md rather than left to be discovered. `billion` carries BOTH factors,
+// because it is 10^9 in English and 10^12 in French and nothing in a takeaway settles which.
+const MULTIPLIER_WORDS = new Map([
+  ["thousand", [1e3]],
+  ["thousands", [1e3]],
+  ["million", [1e6]],
+  ["millions", [1e6]],
+  ["billion", [1e9, 1e12]],
+  ["billions", [1e9, 1e12]],
+  ["trillion", [1e12]],
+  ["trillions", [1e12]],
+  ["mille", [1e3]],
+  ["milliard", [1e9]],
+  ["milliards", [1e9]],
+  ["\u03c7\u03b9\u03bb\u03b9\u03ac\u03b4\u03b5\u03c2", [1e3]],
+  ["\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03bf", [1e6]],
+  ["\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1", [1e6]],
+  ["\u03b4\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1", [1e9]],
+  ["\u0623\u0644\u0641", [1e3]],
+  ["\u0645\u0644\u064a\u0648\u0646", [1e6]],
+  ["\u0645\u0644\u0627\u064a\u064a\u0646", [1e6]],
+  ["\u0645\u0644\u064a\u0627\u0631", [1e9]],
+  ["\u0645\u0644\u064a\u0627\u0631\u0627\u062a", [1e9]],
+]);
+
+// The scale word immediately after a numeral, if this table declares it. Only ONE word, and only
+// across spaces — "142 million" and never "142 cubic metres of the million".
+const MULTIPLIER_AFTER_RE = /^[ \u00a0]*([\p{L}]+)/u;
+
+function multiplierAfter(text, end) {
+  const m = MULTIPLIER_AFTER_RE.exec(text.slice(end));
+  if (!m) return null;
+  const factors = MULTIPLIER_WORDS.get(m[1].toLowerCase());
+  if (!factors) return null;
+  return { word: m[1], factors, end: end + m[0].length };
 }
 
 const LESS_RE = /^(less|fewer|lower|below|smaller|moins)$/i;
@@ -1545,24 +1597,52 @@ function checkNumericRanges(text, columns, consumedSpans) {
     const start = m.index;
     const end = start + raw.length;
     if (consumedSpans.some(([s, e]) => start < e && end > s)) continue;
-    if (seen.has(raw)) continue;
-    seen.add(raw);
+
+    // A RUN OF DIGITS GLUED TO A WORD IS NOT A NUMBER THE SENTENCE STATES. Round five, finding
+    // X7's second half: `consumption_m3` produced a claim "3", and `Commune-063` — a real
+    // identifier out of `stress-y-rural-broadband`'s own STORYBOARD.md — produced "-063", the
+    // hyphen read as a minus sign. Both were then reported as unplaceable numbers, which is
+    // noise a journalist has to read past, and the second is the same shape the profiler's own
+    // `Commune-001` -> -1 defect wears one module over. Only the LEFT side is decisive: a letter
+    // AFTER a numeral is usually its unit ("104.2%", "5km"), while a letter BEFORE it is an
+    // identifier.
+    if (start > 0 && /[\p{L}_]/u.test(text[start - 1])) continue;
 
     // One number reader, shared with `intake/scripts/profile.mjs` (finding 4) — a token this
     // regex matched but `readNumericToken` cannot resolve to one value is ONE unverifiable claim,
     // never two independent fragments silently re-tested against a column's range.
     const read = readNumericToken(raw);
     if (!read) continue;
+
+    // The numeral AND the scale word beside it are one claim: "1.12 million" is what the
+    // sentence says, and quoting back "1.12" alone would hide the reading that placed it.
+    const multiplier = read.ambiguous ? null : multiplierAfter(text, end);
+    const claimText = multiplier ? text.slice(start, multiplier.end) : raw;
+    if (seen.has(claimText)) continue;
+    seen.add(claimText);
+
     if (read.ambiguous) {
-      claims.push({ claim: raw, verdict: "unverifiable", detail: read.reason });
+      claims.push({ claim: claimText, verdict: "unverifiable", detail: read.reason });
       continue;
     }
 
     if (numericColumns.length === 0) {
-      claims.push({ claim: raw, verdict: "unverifiable", detail: "profile has no numeric column with a range to check against" });
+      claims.push({ claim: claimText, verdict: "unverifiable", detail: "profile has no numeric column with a range to check against" });
       continue;
     }
 
+    // EVERY READING THIS NUMERAL HAS, best-known first — as written, then once for each factor
+    // its stated scale word could carry. The rounding window travels with the reading: "2.7
+    // million" is rounded to the hundred thousand, not to the tenth.
+    const window = roundingWindowOf(raw);
+    const readings = [{ value: read.value, window, note: "" }];
+    for (const factor of multiplier ? multiplier.factors : []) {
+      readings.push({
+        value: read.value * factor,
+        window: window * factor,
+        note: ` (reading the stated "${multiplier.word}" as a multiplier: ${read.value * factor})`,
+      });
+    }
     const value = read.value;
 
     // A part-to-whole TOTAL is tried FIRST, because it is the one numeric reading here that can
@@ -1572,20 +1652,27 @@ function checkNumericRanges(text, columns, consumedSpans) {
     // 12150), and neither is a column whose sum equals its own min or max — `stress-s`'s one-row
     // `year` sums to exactly 2026, so without this the very numeral finding 4 is about would come
     // back "equals the sum of column year", a worse tautology than the one it replaced.
-    const summed = numericColumns.find(
+    const totalCandidates = numericColumns.filter(
       (c) =>
         c !== yearColumn &&
         c.sum !== null &&
         c.sum !== undefined &&
         c.sum !== c.min &&
-        c.sum !== c.max &&
-        matchesAggregate(value, c.sum, raw),
+        c.sum !== c.max,
     );
+    let summed = null;
+    for (const reading of readings) {
+      const hit = totalCandidates.find((c) => matchesAggregate(reading.value, c.sum, reading.window));
+      if (hit) {
+        summed = { column: hit, reading };
+        break;
+      }
+    }
     if (summed) {
       claims.push({
-        claim: raw,
+        claim: claimText,
         verdict: "supported",
-        detail: `equals the sum of column "${summed.name}" (${summed.sum})`,
+        detail: `equals the sum of column "${summed.column.name}" (${summed.column.sum})${summed.reading.note}`,
       });
       continue;
     }
@@ -1603,14 +1690,18 @@ function checkNumericRanges(text, columns, consumedSpans) {
     // arithmetic alone.
     const sentence = sentenceAround(text, start, end);
     const chosen = chooseValueColumn(columns, sentence);
-    const wouldLandIn = numericColumns.filter((c) => value >= c.min && value <= c.max);
+    const wouldLandIn = [
+      ...new Set(readings.flatMap((r) => numericColumns.filter((c) => r.value >= c.min && r.value <= c.max))),
+    ];
     const rangeOf = (list) => list.map((c) => `"${c.name}" [${c.min}, ${c.max}]`).join(", ");
+    const readingsTried =
+      readings.length > 1 ? ` (read both as written and as ${readings[readings.length - 1].value})` : "";
     let target = chosen.column;
 
     // A BARE CALENDAR YEAR IS A PERIOD, not a measurement. It belongs to the profile's own period
     // column and to nothing else — unless the sentence explicitly names a measure, in which case
     // a four-digit figure really can be that measure's own value ("1,800 households").
-    if (looksLikeCalendarYear(raw)) {
+    if (looksLikeCalendarYear(raw) && !multiplier) {
       const periodColumn =
         yearColumn && yearColumn.type === "number" && Number.isFinite(yearColumn.min) && Number.isFinite(yearColumn.max)
           ? yearColumn
@@ -1618,7 +1709,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
       if (periodColumn) target = periodColumn;
       else if (!chosen.named) {
         claims.push({
-          claim: raw,
+          claim: claimText,
           verdict: "unverifiable",
           detail:
             `"${raw}" reads as a calendar year and this profile carries no period column to place it against` +
@@ -1633,17 +1724,18 @@ function checkNumericRanges(text, columns, consumedSpans) {
 
     if (!target) {
       claims.push({
-        claim: raw,
+        claim: claimText,
         verdict: "unverifiable",
         detail:
-          `"${raw}" was not placed: ${chosen.refusal}` +
+          `"${claimText}" was not placed: ${chosen.refusal}` +
           (wouldLandIn.length > 0 ? ` (it would fall inside ${rangeOf(wouldLandIn)})` : "") +
           refusedColumnNote(columns),
       });
       continue;
     }
 
-    if (value >= target.min && value <= target.max) {
+    const placed = readings.find((r) => r.value >= target.min && r.value <= target.max);
+    if (placed) {
       // Partial periods, narrowly (finding 2). A bare numeral landing inside the YEAR column's
       // range reads as "this period is comparable to the others" — a coverage-marking column says
       // the profile itself carries at least one period that is not, and this check has no row
@@ -1653,7 +1745,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // `months_covered` recording that row at 3 of 12 months).
       if (coverageColumn && target === yearColumn) {
         claims.push({
-          claim: raw,
+          claim: claimText,
           verdict: "unverifiable",
           detail: `"${raw}" falls inside "${yearColumn.name}"'s range, but the profile carries a "${coverageColumn.name}" column marking some period incomplete — a bare year cannot be confirmed comparable without knowing which row that is`,
         });
@@ -1668,11 +1760,13 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // `propose.mjs`'s `groundingScalar` cannot close G1 on it (see `resolveGrounding`).
       const degenerate = target.min === target.max;
       claims.push({
-        claim: raw,
+        claim: claimText,
         verdict: "consistent",
-        detail: degenerate
-          ? `"${raw}" equals the only value column "${target.name}" holds (${target.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
-          : `within the range of column "${target.name}" [${target.min}, ${target.max}] — that places the numeral, it does not confirm the claim it sits in`,
+        detail:
+          (degenerate
+            ? `"${claimText}" equals the only value column "${target.name}" holds (${target.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
+            : `within the range of column "${target.name}" [${target.min}, ${target.max}] — that places the numeral, it does not confirm the claim it sits in`) +
+          placed.note,
       });
       continue;
     }
@@ -1681,10 +1775,10 @@ function checkNumericRanges(text, columns, consumedSpans) {
     // function failing to place the number, which is not the same fact as the data refuting it —
     // see the header.
     claims.push({
-      claim: raw,
+      claim: claimText,
       verdict: "unverifiable",
       detail:
-        `could not be placed in the column this sentence names, "${target.name}" [${target.min}, ${target.max}]${target.sum === null || target.sum === undefined ? "" : `, sum ${target.sum}`}, nor read as any column's total` +
+        `could not be placed in the column this sentence names, "${target.name}" [${target.min}, ${target.max}]${target.sum === null || target.sum === undefined ? "" : `, sum ${target.sum}`}, nor read as any column's total${readingsTried}` +
         (wouldLandIn.length > 0 ? ` (it does fall inside ${rangeOf(wouldLandIn)}, which this sentence does not name)` : "") +
         ` — this check has no way to confirm or refute it${refusedColumnNote(columns)}`,
     });

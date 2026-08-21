@@ -119,7 +119,10 @@ describe("groundTakeaway — part-to-whole totals (the takeaway this check wrong
       "le total atteint 34 millions de tonnes",
       OLYMPICS_PROFILE,
     );
-    const claim = claims.find((c) => c.claim === "34");
+    // The claim is quoted back as the sentence writes it — the numeral AND its scale word — so
+    // a journalist can see which phrase was checked. See the multiplier block at the foot of this
+    // file for why "34 millions" is one claim.
+    const claim = claims.find((c) => c.claim.startsWith("34"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("glace_fondue_mt");
   });
@@ -136,7 +139,7 @@ describe("groundTakeaway — part-to-whole totals (the takeaway this check wrong
   it("should return no contradicted verdict at all for the run's own verbatim takeaway", () => {
     const { claims } = groundTakeaway(OLYMPICS_TAKEAWAY, OLYMPICS_PROFILE);
     expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
-    expect(claims.find((c) => c.claim === "34").verdict).toBe("supported");
+    expect(claims.find((c) => c.claim.startsWith("34")).verdict).toBe("supported");
   });
 
   it("should not stretch the aggregate match to a value well off the sum", () => {
@@ -146,7 +149,7 @@ describe("groundTakeaway — part-to-whole totals (the takeaway this check wrong
       "le total atteint 44 millions de tonnes",
       OLYMPICS_PROFILE,
     );
-    const claim = claims.find((c) => c.claim === "44");
+    const claim = claims.find((c) => c.claim.startsWith("44"));
     expect(claim.verdict).toBe("unverifiable");
   });
 });
@@ -311,7 +314,7 @@ describe("the real profileTable output, fed to the real grounding check", () => 
 
   it("should confirm the run's own total against the column profileTable actually produces", () => {
     const { claims } = groundTakeaway(OLYMPICS_TAKEAWAY, profileTable(ROWS));
-    const total = claims.find((c) => c.claim === "34");
+    const total = claims.find((c) => c.claim.startsWith("34"));
     expect(total!.verdict).toBe("supported");
     expect(total!.detail).toContain("glace_fondue_mt");
   });
@@ -892,7 +895,7 @@ describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => 
     expect(year.detail).toContain("CANNOT FAIL");
     // The two numbers the sentence actually asserts remain unplaced, and nothing else is
     // confirmed — so this takeaway has NOTHING for a scalar to close G1 on.
-    expect(claims.find((c) => c.claim === "4.1").verdict).toBe("unverifiable");
+    expect(claims.find((c) => c.claim.startsWith("4.1")).verdict).toBe("unverifiable");
     expect(claims.find((c) => c.claim === "0").verdict).toBe("unverifiable");
     expect(claims.some((c) => c.verdict === "supported")).toBe(false);
   });
@@ -1371,5 +1374,53 @@ describe("a numeral is placed against the column its own SENTENCE names (round f
     const claim = claims.find((c) => c.claim === "2015");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("year");
+  });
+});
+
+describe("a stated multiplier is read, and a digit glued to a word is not a number (round five, X7)", () => {
+  // Journalists write "1.12 million hectares"; frozen tables store 1120000. Before this, the one
+  // numeric reading this check can make was unavailable for the commonest way a number appears in
+  // a takeaway, and every such story landed on `unverifiable` for a reason that had nothing to do
+  // with the data.
+  it("should place a figure written with its multiplier against a column in base units", () => {
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "Brazil lost 1.12 million hectares of forest last year.",
+    );
+    const claim = claims.find((c) => c.claim.includes("1.12"));
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("million");
+    expect(claim.detail).toContain("loss_ha");
+  });
+
+  it("should confirm a rounded total written with its multiplier, at the precision it was written to", () => {
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "The seven countries lost 2.7 million hectares between them.",
+    );
+    const claim = claims.find((c) => c.claim.includes("2.7"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("2702000");
+  });
+
+  // The multiplier is an ALTERNATIVE reading, never a replacement: the column's own unit may
+  // already carry the scale. The Milan Cortina run's own takeaway says "34 millions de tonnes"
+  // against `glace_fondue_mt`, which sums to exactly 34.
+  it("should not lose a total whose column already carries the scale in its unit", () => {
+    const { claims } = groundTakeaway("le total atteint 34 millions de tonnes", OLYMPICS_PROFILE);
+    const claim = claims.find((c) => c.claim.includes("34"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("glace_fondue_mt");
+  });
+
+  // stories/stress-y-rural-broadband/STORYBOARD.md, `limits:`, verbatim. The identifier's own
+  // digits were read as a negative number and reported as a claim of its own.
+  it("should not read the digits of an identifier as a number the sentence states", () => {
+    const { claims } = grounded(
+      "stress-y-rural-broadband",
+      "Commune-063 returned 104.2 per cent, which no percentage can be.",
+    );
+    expect(claims.some((c) => c.claim.includes("063"))).toBe(false);
+    expect(claims.some((c) => c.claim === "104.2")).toBe(true);
   });
 });
