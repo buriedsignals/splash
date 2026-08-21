@@ -279,9 +279,22 @@ const COPIES: Record<string, string[]> = {
   // choropleth cannot (one snapshot, no order across its shapes). That is precisely why the two
   // copies have to be one decision: a copy that softened the tie rule, or stopped requiring a
   // position at all, would let the format it lives in ship the exact build the other refuses.
+  // ROUND SIX added the THIRD copy, and it is the one a story beat can actually reach. The decision
+  // was imported by exactly one file in the tree — `chart-video/scripts/render-video.mjs`, which
+  // renders that skill's own seed — and `shared/chart-video/` carried `sizes.mjs` and `timing.ts`
+  // and nothing else, so no beat in an installed root could reach it at all. The vendored copy is
+  // the route; holding it to the same decision is what keeps the route from becoming a softer one.
   staggerLacksAnOrder: [
     "chart-video/scripts/detect-reveal-order.mjs",
     "map-beat/scripts/detect-reveal-order.mjs",
+    "../shared/chart-video/detect-reveal-order.mjs",
+  ],
+  // The BUILDER the decision now lives inside, walked for the same reason `marksFromSource` is: it
+  // decides where every mark's window starts, and a copy that spread them differently would hand
+  // `staggerLacksAnOrder` a different set of starts while the decision itself still looked identical.
+  staggeredReveal: [
+    "chart-video/scripts/detect-reveal-order.mjs",
+    "../shared/chart-video/detect-reveal-order.mjs",
   ],
   // FINDING 8's own capability, carried by the three chart formats. Declared in
   // `render-still.mjs` itself (a beat's `render.mjs` calls it directly, on the values it is about

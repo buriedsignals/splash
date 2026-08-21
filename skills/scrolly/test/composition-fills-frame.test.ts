@@ -11,14 +11,15 @@
 import { describe, expect, it } from "bun:test";
 import puppeteer from "puppeteer-core";
 import { PNG } from "pngjs";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   compositionFillsTheFrame,
   FLOOR_FRACTION,
 } from "../scripts/verify-scrolly.mjs";
+import { exampleRunnersFor } from "../scripts/example-runners.mjs";
 
 const TWIN = resolve(import.meta.dirname, "..", "..", "..");
 
@@ -142,26 +143,65 @@ describe("stress-g-eight-checkpoints — the beat this guard was earned by", () 
   });
 });
 
-describe("every delivered scrolly under proof/ — was stress-g the outlier, or the seed", () => {
-  const POPULATION = [
-    "scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html",
-    "scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html",
-    "scrolly-image-grinnell-glacier/render/grinnell-glacier.html",
-    "scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html",
-  ];
+/** EVERY DELIVERED SCROLLY THIS FORMAT HAS PRODUCED, derived rather than typed.
+ *
+ *  ROUND SIX: this walked a hard-coded list of four `proof/` beats. Four rounds of new scrollys
+ *  landed beside it and not one of them was ever measured by the guard their own format earned —
+ *  `stress-ac-alcanede-kilns`'s own maintainer note says so in as many words: "no beat produced
+ *  from here on is in that population". Extending the list is not a fix; a list is the defect.
+ *
+ *  Derived the way `frame-fills-window.test.ts` derives its own: `exampleRunnersFor` finds every
+ *  committed runner in the tree whose source names this skill's `scripts/` directory, and the
+ *  delivered pages are the `.html` files those runners write beside themselves. A scrolly committed
+ *  tomorrow is measured with nobody remembering to add it, which is the whole property.
+ *
+ *  `export/` is excluded: a hand-over folder holds a COPY of the page the beat already delivered,
+ *  so counting it measures the same drawing twice and doubles the browser time for nothing. */
+const DELIVERED_HTML = /\.html$/;
+const NOT_A_DELIVERY = /^(export|source|node_modules)$/;
+
+function deliveredPagesUnder(dir: string, out: string[] = [], depth = 0): string[] {
+  if (!existsSync(dir) || depth > 2) return out;
+  for (const name of readdirSync(dir)) {
+    if (name.startsWith(".")) continue;
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) {
+      if (!NOT_A_DELIVERY.test(name)) deliveredPagesUnder(path, out, depth + 1);
+    } else if (DELIVERED_HTML.test(name)) out.push(path);
+  }
+  return out;
+}
+
+let discovered: string[] | null = null;
+function deliveredPages(): string[] {
+  if (discovered) return discovered;
+  const found = new Set<string>();
+  const { called } = exampleRunnersFor(TWIN, "scrolly");
+  for (const runner of called)
+    for (const page of deliveredPagesUnder(dirname(join(TWIN, runner)))) found.add(page);
+  discovered = [...found].filter((file) => existsSync(file)).sort();
+  return discovered;
+}
+
+describe("every delivered scrolly in the tree — was stress-g the outlier, or the seed", () => {
+  it("finds them by derivation rather than by a list, and finds more than the list named", async () => {
+    // The list this replaced named four. A derivation that found four or fewer would be a
+    // derivation that had quietly become the list again.
+    expect(deliveredPages().length).toBeGreaterThan(4);
+  });
 
   it("names, for the whole population, what nothing had ever measured before", async () => {
     const readings: string[] = [];
-    for (const rel of POPULATION) {
-      const file = join(TWIN, "proof", rel);
+    for (const file of deliveredPages()) {
       const fraction = await firstStepInkFraction(file);
-      readings.push(`${rel}: ${(fraction * 100).toFixed(1)}%`);
+      readings.push(`${file.replace(`${TWIN}/`, "")}: ${(fraction * 100).toFixed(1)}%`);
       // Reported, not asserted against a floor here — these are the format's OWN pre-existing
       // beats, several already below stress-g's own measured reading, which is exactly the
       // "stress-g was not the outlier" finding this file exists to prove with numbers rather than
       // assert as debt against beats this stress round did not produce.
-      expect(fraction).toBeGreaterThan(0);
+      expect(`${file}: ${fraction > 0 ? "ink" : "blank"}`).toBe(`${file}: ink`);
     }
-    expect(readings.length).toBe(POPULATION.length);
-  });
+    console.log(readings.join("\n"));
+    expect(readings.length).toBe(deliveredPages().length);
+  }, 600000);
 });

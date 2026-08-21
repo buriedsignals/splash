@@ -105,14 +105,65 @@ export function declaredDecisions(skillDir) {
   return [...names].sort().map((name) => {
     const home = new RegExp(`export (?:async )?function ${name}\\b`);
     const found = files.find((path) => home.test(declaring.get(path)));
+    // A DECISION MAY BE REACHED THROUGH ONE WRAPPER IN ITS OWN FILE, and it has to be, or this
+    // refuses the very shape it asks for. `chart-video`'s `staggeredReveal` BUILDS a reveal's
+    // windows and refuses one the data cannot order; it lives beside `staggerLacksAnOrder` on
+    // purpose, so that a beat calling it gets the guard without having to remember the guard. Read
+    // literally, that made the decision "called only from its own home" — a red for the one wiring
+    // in this round that a story beat can actually reach.
+    //
+    // ONE level, and only inside the home file: an exported sibling that names the decision in its
+    // own body stands in for it. A wrapper somewhere else is not a wrapper, it is a caller, and is
+    // already counted. This cannot see a two-hop chain, which is a limit and not a hole — a
+    // decision buried two wrappers deep in its own file is worth reporting as unreachable.
+    const proxies = found
+      ? [...calling.get(found).matchAll(/export (?:async )?function ([A-Za-z0-9_$]+)\s*\(/g)]
+          .map((match) => match[1])
+          .filter((other) => other !== name && bodyOf(calling.get(found), other).includes(name))
+      : [];
+    const reaches = new RegExp(`\\b(${[name, ...proxies].join("|")})\\b`);
     return {
       name,
       home: found ? shown.get(found) : null,
+      proxies,
       callers: files
-        .filter((path) => !home.test(declaring.get(path)) && new RegExp(`\\b${name}\\b`).test(calling.get(path)))
+        .filter((path) => path !== found && reaches.test(calling.get(path)))
         .map((path) => shown.get(path)),
     };
   });
+}
+
+/** One top-level function's body, by BALANCING THE ARGUMENT PARENTHESES FIRST and then the braces.
+ *
+ *  The paren balance is not tidiness. Taking the next `{` after the name is the obvious version and
+ *  it is quietly broken, exactly as `render-still-parity.test.ts` records for its own walker: in
+ *  `staggeredReveal(readings, event, { keyOf, positionOf })` the next `{` is the DESTRUCTURED
+ *  ARGUMENT's, so the "body" comes back as the parameter object and the wrapper is not recognised.
+ *  Found here by watching this decision report the one wiring in round six that a story beat can
+ *  actually reach as unwired debt. */
+function bodyOf(source, name) {
+  const at = new RegExp(`export (?:async )?function ${name}\\s*\\(`).exec(source);
+  if (!at) return "";
+  let paren = 0;
+  let cursor = source.indexOf("(", at.index);
+  for (; cursor < source.length; cursor++) {
+    if (source[cursor] === "(") paren++;
+    else if (source[cursor] === ")") {
+      paren--;
+      if (paren === 0) break;
+    }
+  }
+  const open = source.indexOf("{", cursor);
+  if (open === -1) return "";
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}") {
+      depth--;
+      if (depth === 0) return source.slice(open, i + 1);
+    }
+  }
+  return "";
 }
 
 /** THE DECISION: every guard this skill declares that no OTHER script in the skill calls.
@@ -168,6 +219,5 @@ export const RECORDED_UNWIRED = [
   "deadExampleRunners",
   "denominatorReadingStated",
   "doubleHyphenInDeliveredText",
-  "plateFollowsGround",
   "storyboardGateStatus",
 ];

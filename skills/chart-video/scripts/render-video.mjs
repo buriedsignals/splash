@@ -18,7 +18,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
-import { staggerLacksAnOrder } from "./detect-reveal-order.mjs";
+import { staggeredReveal } from "./detect-reveal-order.mjs";
 import {
   FLOOR_FRACTION,
   frameFillFraction,
@@ -136,22 +136,17 @@ if (data.length < 2) throw new Error(`need at least two readings, got ${data.len
 // The same call on a snapshot's categories reddens, which is the whole point of it being shared —
 // `map-beat/scripts/render-map.mjs` makes it on a choropleth, and `motion-grammar.md` states the
 // distinction the function decides.
-const revealMarks = data.map((reading, i) => ({
-  key: String(reading.year),
-  start:
-    data.length <= 1
-      ? CO2_TIMING.reveal.start
-      : CO2_TIMING.reveal.start +
-        Math.round((i / (data.length - 1)) * CO2_TIMING.reveal.duration),
-  at: reading.year,
-}));
-const revealReading = staggerLacksAnOrder(revealMarks);
-if (revealReading.arbitrary)
-  throw new Error(
-    `the reveal claims an order the data does not carry: ${revealReading.why}. ` +
-      `${revealReading.marks} marks, ${revealReading.starts} start(s), ${revealReading.positions} position(s). ` +
-      "A stagger follows the data's own order or it does not happen — motion-grammar.md.",
-  );
+//
+// ROUND SIX: this used to build the windows inline and call the decision on them, which meant the
+// only file in the tree that ran the guard was this one — the SKILL's own seed renderer. The build
+// and the refusal now live together in `staggeredReveal`, vendored to
+// `#shared/chart-video/detect-reveal-order.mjs`, so a story beat takes the same route the seed does
+// instead of having no route at all.
+const { marks: revealMarks, reading: revealReading } = staggeredReveal(
+  data,
+  CO2_TIMING.reveal,
+  { keyOf: (reading) => reading.year, positionOf: (reading) => reading.year, where: "the reveal" },
+);
 console.log(
   `reveal: ${revealReading.why} (${revealReading.marks} marks, ${revealReading.starts} start(s)).`,
 );
