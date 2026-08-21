@@ -91,6 +91,16 @@ the bar/column family (`isBarEncoded` — a bar's mark *does* need zero in view,
 length, not position). Confirmed live: `["7", "49"]` on a 10-46 data series visibly removed both the
 zero baseline and its bold axis line.
 
+Fourth, measured live against published chart `1u88u`: **`custom-colors` does nothing for a
+single-series bar/column chart — Datawrapper paints those bars from `visualize["base-color"]`.**
+`custom-colors` was sent and stored (`GET /v3/charts/1u88u` echoed it back verbatim) and the
+published embed's bars still rendered in Datawrapper's own default blue. Isolated live by PATCHing
+`base-color` and `custom-colors` to two different hex values on the same chart and reading the
+exported PNG's own pixels back: `base-color` wins, every time. `buildChartPayload` now sets
+`visualize["base-color"]` for every `isBarEncoded` chart type, alongside `custom-colors` (harmless,
+and what a genuinely multi-series bar chart would need). This is not the plan-gated attribution
+limitation below — nothing here is account-tier-gated, it was a field this producer never sent.
+
 The one thing still true and unresolved: **on a free/personal Datawrapper token, "Créé avec
 Datawrapper" cannot be removed from an exported PNG.** `metadata.publish["force-attribution"]` is a
 real API field (`chartTypes.ts`) and this skill sets it `false` on every chart — but re-rendering
@@ -108,26 +118,43 @@ established it.
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
 | API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchChart`/`patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — thin real HTTP calls with hard request and response-body deadlines; `fetchFn` is injectable for deterministic contract tests and the credential-gated checks use the real network |
 | Orchestrator | `scripts/produce.mjs` | `produce(spec, {storiesRoot, storyId, outputId, name, size, token, fetchFn})` — resolve the canonical beat, serialize same-beat revisions, validate → write `spec.json` → create or reuse the chart ID in `DATAWRAPPER.json` (persisting `state: prepared` before follow-up calls) → set data → patch title/type/language/metadata → publish → write `renders/<name>.html` for web or export and verify `renders/<name>.png` for static → advance the receipt to `state: local-complete`. `{outDir}` remains only as the legacy one-shot compatibility shape |
-| Owned-artefact guard | `scripts/verify-owned.mjs` | `assertExportedSurface(bytes, beatDir)` — the one guard in `GUARDS.md` this format can reach, called by `produce.mjs` before the PNG is written |
+| Owned-artefact guard | `scripts/verify-owned.mjs` | `assertExportedSurface(bytes, beatDir)` — called by `produce.mjs` on both branches, before the artefact is delivered; `pageLanguageMatchesStory(html, recorded)` — called by `produce.mjs` before the web branch's iframe page is written |
 | Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that confirms the candidate range-annotation shape by rendering it — run for real, live-confirmed (`references/range-annotation-shape.md` §2) |
 | Proof | `scripts/prove-co2.mjs` | The real case: Swiss territorial CO₂, 1950-2024, a range annotation at the 1967 level |
 
-## The one guard a delegated producer still carries
+## The guards a delegated producer still carries
 
-**Everything you can check here, you have to read off the bytes that came back.** Two things are
-read, both before the file is written, so a refused export leaves nothing behind to deliver by
-mistake:
+**Everything you can check here, you have to read off the bytes or the markup that came back.**
+Three things are read, all before the artefact is delivered, so a refusal leaves nothing behind to
+deliver by mistake:
 
-- `assertExportedSize` — the export is the size that was asked for. A wrong SHAPE is loud.
+- `assertExportedSize` — the static export is the size that was asked for. A wrong SHAPE is loud.
 - `assertExportedSurface` — the export is on the same luminance side as the ground the story
   declared in its `PALETTE.md`. A wrong SIDE is silent: the PNG is valid, the chart is correct, the
   accent is the house one, and it lands in the article as a white rectangle in a dark column.
+- `pageLanguageMatchesStory` — the web branch's delivered iframe page's own `<html lang>` matches
+  `spec.language`, the story's own recorded answer.
+
+**`assertExportedSurface` runs on BOTH branches, not just `format: "static"`** (FINDING 5,
+round-three stress: it used to return before the check even existed for `format: "interactive"`,
+and the white-on-dark mismatch refused on `stress-i-median-wages` shipped silently the very next day
+on `stress-n-chomage-cantons`, recorded `state: "local-complete"`). The web branch owns no bytes of
+its own — it delivers a published embed, not an owned PNG — so it measures a throwaway PNG exported
+through the same `exportChartPng` call the static branch already makes; that export is never written
+to disk, only the iframe page is.
 
 The decision is `plateFollowsGround`, copied byte for byte from `scrolly`, `map-beat` and `map-web`
 and walked by `splash/test/guard-copies-parity.test.ts`. Only the measurement is this skill's own:
 the surface is an exported PNG rather than a baked plate, and the decision cannot tell them apart.
 No ground declared anywhere above the beat means nothing to compare, so nothing is decoded and
 nothing is refused — `null`, never a default.
+
+**`pageLanguageMatchesStory` is now called too** (FINDING 7, round-three stress: it was exported and
+unit-tested and nothing in this producer ever called it, so the delivered page's own `<html lang>`
+was only ever checked by hand). It reads the ARTEFACT `produce.mjs` is about to write, never
+re-derives it, which is what lets it catch a future `iframePage` that stops honouring
+`spec.language` — the exact shape of the historical bug that hard-coded `lang="fr"` regardless of
+what a beat actually said.
 
 **Why it can only refuse, and what would let it do better.** `ChartSpec` REQUIRES an accent
 (`color`) and has no field for a ground: Datawrapper paints on whatever surface its own theme
@@ -153,23 +180,28 @@ reveal to arrive anywhere, nothing baked. Each of those cells carries its reason
    the raw data column), `spec.chartType` → `type` unchanged. `spec.rangeAnnotations` and
    `spec.textAnnotations` become `visualize["range-annotations"]` / `visualize["text-annotations"]`,
    always run through the same two functions no matter what `chartType` is. Every chart also gets
-   `metadata.publish["force-attribution"]: false`, and — unless `isBarEncoded(spec.chartType)` — a
-   `visualize["custom-range-y"]` fitted to the data instead of the zero-anchored default.
+   `metadata.publish["force-attribution"]: false`, and — when `isBarEncoded(spec.chartType)` —
+   `visualize["base-color"]` too (`custom-colors` alone does nothing for a single-series bar/column
+   chart, measured live — see the gotcha above), or otherwise a `visualize["custom-range-y"]` fitted
+   to the data instead of the zero-anchored default.
 3. **One real chart, then the same chart on revision.** The first run calls
    `POST /v3/charts` (create) → `PUT .../data` (the CSV) →
    `PATCH /v3/charts/{id}` (the mapped metadata) → `POST .../publish` (always — `format:
    "web"` needs the URL this returns, and `format: "static"`'s export needs a published
-   chart too) → for `format: "static"` only, `GET .../export/png`. With `beatDir`, the run writes
-   `spec.json`, `DATAWRAPPER.json`, and `renders/<name>.*`. A later run in that same directory reads
-   the receipt, skips chart creation, updates and republishes the same chart ID, and refreshes the
-   render. Editor feedback therefore changes the existing published visual instead of creating an
-   orphaned replacement. The receipt is written in `state: prepared` immediately after a successful
-   create response, before data upload or publication, so a later failure can reuse that ID. A
-   timeout or connection loss on the initial create response remains provider-ambiguous because no
-   chart ID is available locally; do not claim that case has been reconciled.
-4. **One format, never both.** `format: "web"` returns the published `publicUrl` and never
-   calls export; `format: "static"` writes the PNG and never returns a bare embed. This mirrors the
-   rest of this project's single-format-per-element rule (`STORYBOARD.md`'s `chosen` slot), not a
+   chart too) → `GET .../export/png` on BOTH branches (the delivered PNG for `format: "static"`; a
+   throwaway measurement PNG for `format: "web"`, read by `assertExportedSurface` and never written
+   to disk). With `beatDir`, the run writes `spec.json`, `DATAWRAPPER.json`, and `renders/<name>.*`.
+   A later run in that same directory reads the receipt, skips chart creation, updates and
+   republishes the same chart ID, and refreshes the render. Editor feedback therefore changes the
+   existing published visual instead of creating an orphaned replacement. The receipt is written in
+   `state: prepared` immediately after a successful create response, before data upload or
+   publication, so a later failure can reuse that ID. A timeout or connection loss on the initial
+   create response remains provider-ambiguous because no chart ID is available locally; do not claim
+   that case has been reconciled.
+4. **One format, never both.** `format: "web"` returns the published `publicUrl` and never writes a
+   PNG to disk; `format: "static"` writes the PNG and never returns a bare embed. Both now export a
+   PNG through the same API call — only one of them keeps the bytes. This mirrors the rest of this
+   project's single-format-per-element rule (`STORYBOARD.md`'s `chosen` slot), not a
    Datawrapper-specific idea.
 5. **No token, no run.** The managed path receives the token only from Engine's credential broker.
    The underlying `produce` API still throws before making a single network call if its internally
@@ -192,7 +224,7 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many real API calls one `produce` run makes | First run: `4` for web or `5` for static; a resumed beat makes one fewer because it reuses `DATAWRAPPER.json`'s chart ID instead of creating another chart | `produce.mjs` |
+| How many real API calls one `produce` run makes | First run: `5` for either format (both now export a measurement or delivered PNG); a resumed beat makes one fewer because it reuses `DATAWRAPPER.json`'s chart ID instead of creating another chart | `produce.mjs` |
 | Default reference-line weight | `2` px (`strokeWidth`) | `buildRangeAnnotation`, `metadata-spec.mjs` |
 | Default reference-line style | `"solid"` (`strokeType`) | `buildRangeAnnotation` |
 | Opacity for a drawn line vs a shaded band | `100` / `20` | `buildRangeAnnotation` |
@@ -228,8 +260,9 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
   `scripts/sealed-produce.mjs` and Engine's `datawrapper-produce` operation instead.
 - `scripts/verify-owned.mjs` — `assertExportedSurface` and the guard behind it, `plateFollowsGround`,
   copied byte for byte from the three skills that bake a plate and walked by
-  `splash/test/guard-copies-parity.test.ts`. `produce.mjs` calls it; a decision nothing calls is a
-  decision that does not run.
+  `splash/test/guard-copies-parity.test.ts`; `pageLanguageMatchesStory`, also copied byte for byte.
+  `produce.mjs` calls both, on the web branch as well as the static one — a decision nothing calls is
+  a decision that does not run.
 - `scripts/compare-png.mjs` — the tree's own PNG decoder, carried (not imported) like every other
   copy of it, so the surface an export came back on can be read without a browser.
 - `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed
