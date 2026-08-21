@@ -269,8 +269,12 @@ remain untouched on disk.
    a beat is delivered, `recordFormatAnswer` replaces it with `declined` or `taken <format>`, and
    `deliveryClosed(exportDir)` reports `{closed, missing}` — so "the run never made the offer" is a
    state that can be SEEN, in the same shape `whereIs` reports a phase, rather than a habit that can
-   be forgotten. (The story-level gate does not consult it yet; that wiring belongs to `where.mjs`,
-   which another chantier owns.)
+   be forgotten. **And the story-level gate now consults it.** For as long as it did not, "SEEN" was
+   an overstatement: round four found a three-beat story sitting at `done` with all three
+   `.another-format` and all three `.other-subjects` receipts still `pending` — the state was on
+   disk, in the shape the phase reader speaks, and no reader read it. `whereIs` carries
+   `deliveryClosed` byte for byte (`splash/test/guard-copies-parity.test.ts` walks the pair) and
+   holds the story in `delivery`, naming the beat and the half, until both have an answer.
 
 7. **`otherSubjectsFor({storyDir, capabilities})` — the other half of the same closing offer.** The
    owner, after the format offer: *"Ou même le relancer sur des sous-sujets de son article qui

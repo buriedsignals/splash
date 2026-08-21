@@ -39,7 +39,6 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-language.mjs";
-import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 
 // Every format a medium can actually be walked to — a producer that renders it AND a delivery form
 // for it. Mirrors `FORMAT_CATALOG`'s pairs. `image` reaching only static and scrolly is the point of
@@ -293,58 +292,50 @@ export async function recordFormatAnswer(options) {
   await rm(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), { force: true });
 }
 
-async function receiptIn(exportDir, receipt) {
-  const text = await readFile(join(exportDir, receipt), "utf8").catch((error) => {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  });
-  return text === null ? { exists: false, value: null } : { exists: true, value: text.trim() };
-}
-
-async function formatAnswerIn(exportDir) {
-  const canonical = await receiptIn(exportDir, FORMAT_OFFER_RECEIPT);
-  const legacy = await receiptIn(exportDir, LEGACY_FORMAT_OFFER_RECEIPT);
-  if (canonical.exists && legacy.exists && canonical.value !== legacy.value) {
-    throw new Error(
-      `conflicting another-format receipts: ${FORMAT_OFFER_RECEIPT} is ${JSON.stringify(canonical.value)} but legacy ${LEGACY_FORMAT_OFFER_RECEIPT} is ${JSON.stringify(legacy.value)}`,
-    );
-  }
-  const value = canonical.exists ? canonical.value : legacy.value;
-  return !value || value === PENDING ? null : value;
-}
-
-async function answerIn(exportDir, receipt) {
-  const { value } = await receiptIn(exportDir, receipt);
-  return !value || value === PENDING ? null : value;
-}
-
 /**
  * Has this delivery closed? A delivered beat is not finished until BOTH halves of the closing offer
  * have been made and answered:
  *
- *   - the same beat in another format (`.another-format`);
+ *   - the same beat in another format (`.another-format`, or the older `.another-genre`);
  *   - the other subjects in the same article (`.other-subjects`), for which "the article carried
  *     nothing else" is itself an answer (`none`).
  *
  * Both are separate facts — a journalist can want this beat as a video and want nothing else from
  * the article, or the reverse — so both are recorded, and `missing` names whichever never happened.
+ * `pending` is what a delivery writes the moment it lands, so an offer nobody ever made is a state
+ * on disk rather than an absence that reads like a decision.
  *
- * Returns `{closed, missing}` in the same shape `whereIs` reports a phase, so the story-level gate
- * can consult it without learning a second vocabulary.
+ * Returns `{closed, missing}` in the same shape `whereIs` reports a phase, because both read it.
+ * This decision is carried, byte for byte, in `deliver/scripts/another-format.mjs` and in
+ * `splash/scripts/where.mjs`, and `splash/test/guard-copies-parity.test.ts` walks the pair.
+ * It is self-contained — the receipt names and the `pending` sentinel are spelled inside it — for
+ * exactly that reason: a copy that had to carry four imported constants with it is a copy the next
+ * author gets wrong. The story-level gate did not consult this at all until round-four finding 8,
+ * and reported a three-beat story `done` with all three closing offers still `pending`.
  */
 export async function deliveryClosed(exportDir) {
-  const format = await formatAnswerIn(exportDir);
-  const subjects = await answerIn(exportDir, SUBJECT_OFFER_RECEIPT);
+  const receipt = async (name) => {
+    const text = await readFile(join(exportDir, name), "utf8").catch((error) => {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    });
+    return text === null ? null : text.trim();
+  };
+  const canonical = await receipt(".another-format");
+  const legacy = await receipt(".another-genre");
+  if (canonical !== null && legacy !== null && canonical !== legacy) {
+    throw new Error(
+      `conflicting another-format receipts: .another-format is ${JSON.stringify(canonical)} but legacy .another-genre is ${JSON.stringify(legacy)}`,
+    );
+  }
+  const answered = (value) => (!value || value === "pending" ? null : value);
+  const format = answered(canonical === null ? legacy : canonical);
+  const subjects = answered(await receipt(".other-subjects"));
 
   const missing = [];
   if (format === null) missing.push("this beat was delivered and never offered in another format");
   if (subjects === null)
     missing.push("this beat was delivered and the article's other subjects were never offered");
 
-  return {
-    closed: missing.length === 0,
-    missing,
-    answer: format,
-    subjects,
-  };
+  return { closed: missing.length === 0, missing, answer: format, subjects };
 }

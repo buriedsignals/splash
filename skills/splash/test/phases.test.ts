@@ -13,6 +13,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { whereIs } from "../scripts/where.mjs";
+// A test-only cross-skill import, permitted for the one purpose `test/` is excluded from
+// `no-cross-skill-imports.test.ts` for. G3 closes into TWO files and G4 into three, and this drive
+// has to close them the way a real run does or it never reaches the phases past `production`.
+import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 
 const PHASES = [
   "intake",
@@ -100,7 +104,13 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
     join(storyDir, "beats", "1-rainfall", "APPROVED.md"),
     "the journalist looked at it and said yes",
   );
-  observed.add((await whereIs(storyDir)).phase); // delivery: approved, nothing exported
+  observed.add((await whereIs(storyDir)).phase); // still production: nothing binds that yes
+
+  // G3's second file, and `deliver` has always demanded it: OUTPUT-REVIEW.json binds the approval
+  // to the exact render, plan version, finding IDs and a passing QA run. Round-four finding 7 is
+  // this gate reporting `delivery` without it, on a beat `materialise` refused outright.
+  await approveCurrentOutput(join(storyDir, "beats", "1-rainfall"));
+  observed.add((await whereIs(storyDir)).phase); // delivery: approved and bound, nothing exported
 
   // Delivery is per beat, into `export/<beat>/` — the shape `deliver`'s `exportDirFor` writes,
   // and the shape `whereIs` reads. A story is done when every approved beat has one.
@@ -113,7 +123,14 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
     join(storyDir, "export", "1-rainfall", "HANDOVER.md"),
     "# What you have, and where it goes",
   );
-  observed.add((await whereIs(storyDir)).phase); // done: the beat has been handed over
+  observed.add((await whereIs(storyDir)).phase); // still delivery: the closing offer is unasked
+
+  // The delivery turn ends by putting both halves of the closing offer to the journalist —
+  // the same beat in another format, and the article's other subjects — and recording what they
+  // said. `materialise` writes both receipts as `pending` so an offer nobody made is visible.
+  await writeFile(join(storyDir, "export", "1-rainfall", ".another-format"), "declined\n");
+  await writeFile(join(storyDir, "export", "1-rainfall", ".other-subjects"), "declined\n");
+  observed.add((await whereIs(storyDir)).phase); // done: handed over, and both questions answered
 
   return observed;
 }

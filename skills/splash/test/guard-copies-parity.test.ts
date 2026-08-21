@@ -287,6 +287,15 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/example-runners.mjs",
     "scrolly/scripts/example-runners.mjs",
   ],
+  // ROUND-FOUR FINDING 8: not a guard on the pixels but a decision about a STORY's state, and the
+  // first entry here shared by a craft-less pair. `deliver` writes both closing-offer receipts as
+  // `pending` and reads them back; `whereIs` had to learn the same reading before it could stop
+  // calling a story `done` with the offer unasked. Two readings of "pending is not an answer" would
+  // be two definitions of finished, one per caller, which is what this whole file exists to prevent.
+  deliveryClosed: [
+    "deliver/scripts/another-format.mjs",
+    "splash/scripts/where.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

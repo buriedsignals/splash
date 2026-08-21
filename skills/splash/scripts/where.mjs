@@ -649,6 +649,59 @@ function validateRevisionManifest(manifest, beat, path) {
   return { findingIds };
 }
 
+// G3 CLOSES INTO TWO FILES, and until round-four finding 7 this gate only knew about one of them.
+//
+// `APPROVED.md` is the journalist saying yes. `OUTPUT-REVIEW.json` is what BINDS that yes to the
+// exact bytes they were shown: the output it belongs to, the render-tree digest, the plan version,
+// the finding IDs, and a passing QA run carrying the same tuple. `deliver` refuses every delivery
+// without it — `requireApprovedOutput` is the first thing both `offerForms` and `materialise` call.
+//
+// This file read that record in exactly ONE place, inside `feedbackRevisionState`, behind a
+// `FEEDBACK.md` that cannot exist before a first delivery ever happened. So on a FIRST delivery the
+// record was never looked at, and `whereIs` answered `{"phase":"delivery","missing":[]}` on a beat
+// whose delivery threw "this output has no bound review" — two gates disagreeing about one
+// requirement, which is the exact class SKILL.md's own gotcha records as closed for G2. Two
+// independent stress runs found it the same way, by tracing a throw back to its source.
+//
+// What is checked here is everything `approvalAgainstCurrent` checks EXCEPT the two values only the
+// caller holds — the current plan version and finding IDs. That pair is genuinely outside a
+// directory reader's reach; everything else is on disk, so everything else is read.
+async function beatsAwaitingBoundReview(storyDir, beats) {
+  const waiting = [];
+  for (const beat of beats) {
+    const beatDir = join(storyDir, "beats", beat);
+    const reviewPath = join(beatDir, "OUTPUT-REVIEW.json");
+    let reason = null;
+    try {
+      if (!(await regularFileStat(reviewPath))) {
+        waiting.push(
+          `beat ${beat}: approved, but no OUTPUT-REVIEW.json binds that approval to the render it was given for — delivery refuses to start without one`,
+        );
+        continue;
+      }
+      const review = await json(reviewPath);
+      const binding = validateRevisionReview(review, beat, reviewPath);
+      const renderDigest = await currentRenderDigest(beatDir);
+      const feedbackDigest = await currentFeedbackDigest(beatDir);
+      if (review.decision !== "approve") {
+        reason = `its decision is ${JSON.stringify(review.decision)}, not "approve"`;
+      } else if (review.draftDigest !== renderDigest) {
+        reason = "the rendered draft changed after it was written";
+      } else if ((review.feedbackDigest ?? null) !== feedbackDigest) {
+        reason = "it is not bound to the current FEEDBACK.md";
+      } else if (!binding.passingBoundQa) {
+        reason = "no passing QA run is bound to the same output, render, plan version and findings";
+      }
+    } catch (error) {
+      // A phase reader is called on every turn and reports rather than explodes; the same record
+      // read by `deliver` throws there, which is where a delivery is actually attempted.
+      reason = error.message;
+    }
+    if (reason) waiting.push(`beat ${beat}: its OUTPUT-REVIEW.json does not open delivery — ${reason}`);
+  }
+  return waiting;
+}
+
 // A durable editor-feedback trigger. FEEDBACK.md remains as the editorial record; its content
 // digest opens a revision until a valid current OutputReview binds that exact request. The delivery
 // manifest then proves that review, render, findings, and feedback digest were rematerialised.
@@ -692,6 +745,54 @@ async function feedbackRevisionState(storyDir, beats) {
     }
   }
   return { production, delivery };
+}
+
+/**
+ * Has this delivery closed? A delivered beat is not finished until BOTH halves of the closing offer
+ * have been made and answered:
+ *
+ *   - the same beat in another format (`.another-format`, or the older `.another-genre`);
+ *   - the other subjects in the same article (`.other-subjects`), for which "the article carried
+ *     nothing else" is itself an answer (`none`).
+ *
+ * Both are separate facts — a journalist can want this beat as a video and want nothing else from
+ * the article, or the reverse — so both are recorded, and `missing` names whichever never happened.
+ * `pending` is what a delivery writes the moment it lands, so an offer nobody ever made is a state
+ * on disk rather than an absence that reads like a decision.
+ *
+ * Returns `{closed, missing}` in the same shape `whereIs` reports a phase, because both read it.
+ * This decision is carried, byte for byte, in `deliver/scripts/another-format.mjs` and in
+ * `splash/scripts/where.mjs`, and `splash/test/guard-copies-parity.test.ts` walks the pair.
+ * It is self-contained — the receipt names and the `pending` sentinel are spelled inside it — for
+ * exactly that reason: a copy that had to carry four imported constants with it is a copy the next
+ * author gets wrong. The story-level gate did not consult this at all until round-four finding 8,
+ * and reported a three-beat story `done` with all three closing offers still `pending`.
+ */
+export async function deliveryClosed(exportDir) {
+  const receipt = async (name) => {
+    const text = await readFile(join(exportDir, name), "utf8").catch((error) => {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    });
+    return text === null ? null : text.trim();
+  };
+  const canonical = await receipt(".another-format");
+  const legacy = await receipt(".another-genre");
+  if (canonical !== null && legacy !== null && canonical !== legacy) {
+    throw new Error(
+      `conflicting another-format receipts: .another-format is ${JSON.stringify(canonical)} but legacy .another-genre is ${JSON.stringify(legacy)}`,
+    );
+  }
+  const answered = (value) => (!value || value === "pending" ? null : value);
+  const format = answered(canonical === null ? legacy : canonical);
+  const subjects = answered(await receipt(".other-subjects"));
+
+  const missing = [];
+  if (format === null) missing.push("this beat was delivered and never offered in another format");
+  if (subjects === null)
+    missing.push("this beat was delivered and the article's other subjects were never offered");
+
+  return { closed: missing.length === 0, missing, answer: format, subjects };
 }
 
 export async function whereIs(storyDir) {
@@ -761,11 +862,29 @@ export async function whereIs(storyDir) {
     };
   }
 
+  const awaitingReview = await beatsAwaitingBoundReview(storyDir, rendered);
+  if (awaitingReview.length > 0) {
+    return { phase: "production", ...legacyState, missing: awaitingReview };
+  }
+
   // Every rendered beat has been approved. The story is done only when every one of them has also
   // been DELIVERED — per beat, into its own `export/<beat>/`. `missing` stays empty because
   // `delivery` is a phase with work left to dispatch, not a blocked state to report and stop on.
   const undelivered = await beatsAwaitingDelivery(storyDir, rendered);
   if (undelivered.length > 0) return { phase: "delivery", ...legacyState, missing: [] };
+
+  // AND THE CLOSING OFFER IS PART OF WHAT DELIVERED MEANS — round-four finding 8. A hand-over is
+  // G4's file, not G4's whole question: `materialise` writes both receipts as `pending` the moment
+  // a beat lands, precisely so that "nobody was ever asked" is a state on disk. Nothing read them,
+  // and a three-beat story reported `done` with all six halves still pending. Unlike an undelivered
+  // beat, this one NAMES what is missing: there is no producer left to dispatch, only a question to
+  // put to the journalist, and a phase with an empty `missing` reads as "carry on" rather than "ask".
+  const openOffers = [];
+  for (const beat of rendered) {
+    const offer = await deliveryClosed(join(storyDir, "export", beat));
+    for (const line of offer.missing) openOffers.push(`beat ${beat}: ${line}`);
+  }
+  if (openOffers.length > 0) return { phase: "delivery", ...legacyState, missing: openOffers };
 
   return { phase: "done", ...legacyState, missing: [] };
 }

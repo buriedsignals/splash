@@ -95,6 +95,23 @@ async function deliver(storyDir: string, beat: string, fileName: string) {
     join(storyDir, "export", beat, "HANDOVER.md"),
     "# What you have, and where it goes",
   );
+  // A REAL delivery does not stop at the hand-over. `materialise` writes both closing-offer
+  // receipts as `pending` the moment the files land, and the delivery turn ends by putting both
+  // questions to the journalist and recording what they said. This helper stands for a delivery
+  // that ran to the end, so it records both answers — round-four finding 8 is the story that
+  // stopped at the hand-over and was called `done` with neither question ever asked.
+  await writeFile(join(storyDir, "export", beat, ".another-format"), "declined\n");
+  await writeFile(join(storyDir, "export", beat, ".other-subjects"), "declined\n");
+}
+
+// G3 closes into TWO files: `APPROVED.md` (the journalist said yes) and `OUTPUT-REVIEW.json` (what
+// binds that yes to the exact render they were shown). `deliver` has always refused a delivery
+// without the second; `whereIs` only learned to require it after round-four finding 7, so every
+// fixture that expects a beat to LEAVE production writes both, the way a real G3 close does.
+async function approve(storyDir: string, beat: string) {
+  const beatDir = join(storyDir, "beats", beat);
+  await writeFile(join(beatDir, "APPROVED.md"), "seen");
+  await approveCurrentOutput(beatDir);
 }
 
 describe("whereIs", () => {
@@ -381,10 +398,7 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
-    await writeFile(
-      join(dir, "beats", "1-rainfall", "APPROVED.md"),
-      "seen and approved",
-    );
+    await approve(dir, "1-rainfall");
     expect((await whereIs(dir)).phase).toBe("delivery");
   });
 
@@ -416,7 +430,7 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    await approve(dir, "1-rainfall");
     await deliver(dir, "1-rainfall", "rainfall.png");
     expect((await whereIs(dir)).phase).toBe("done");
   });
@@ -530,7 +544,7 @@ describe("whereIs", () => {
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
-      await writeFile(join(dir, "beats", beat, "APPROVED.md"), "seen");
+      await approve(dir, beat);
     }
     await deliver(dir, "1-rainfall", "rainfall.png");
 
@@ -555,17 +569,14 @@ describe("whereIs", () => {
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
     await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    await approve(dir, "1-rainfall");
 
     await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
     await writeFile(join(dir, "export", "1-rainfall", "still.png"), "x");
     await writeFile(join(dir, "export", "1-rainfall", "still.svg"), "<svg/>");
     expect((await whereIs(dir)).phase).toBe("delivery");
 
-    await writeFile(
-      join(dir, "export", "1-rainfall", "HANDOVER.md"),
-      "# What you have, and where it goes",
-    );
+    await deliver(dir, "1-rainfall", "still.png");
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
