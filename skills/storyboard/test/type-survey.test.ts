@@ -121,3 +121,50 @@ describe("the type survey has not drifted from the type sheets", () => {
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// ROUND SIX (2026-08-22), AB2 — ROUND FOUR'S FINDING 24, RECURRING ONE LEVEL DOWN.
+//
+// The refusals ARE read now, and only the first sentence of each reached the survey. Measured on
+// the beat with the highest defect count of six rounds, `stress-ab-emigration-flows`: `flow-map.md`
+// refuses many-to-many origin-destination data in its SECOND sentence, so the one sentence that
+// would have stopped that beat was the one the generator dropped. And `REFUSAL_FLAT_RE` truncated
+// a flat-form refusal at its first LINE BREAK, which cost `boxplot.md` 127 of its 146 words.
+//
+// A refusal travels whole now: the sheet's entire "when NOT to reach for it" paragraph, verbatim.
+// ---------------------------------------------------------------------------------------------
+describe("a refusal travels whole", () => {
+  function refusalCell(type: string): string {
+    const row = readFileSync(SURVEY, "utf8")
+      .split(/\r?\n/)
+      .find((line) => line.startsWith(`| **${type}** |`));
+    expect(row).toBeDefined();
+    return row!.split("|").map((cell) => cell.trim())[3];
+  }
+
+  it("should carry flow-map's many-to-many refusal, which is its second sentence", () => {
+    const refusal = refusalCell("Flow map (route)");
+    expect(refusal).toContain("not a many-to-many flow");
+    expect(refusal).toContain("OD flow diagram");
+  });
+
+  it("should not truncate a flat-form sheet's refusal at its first line break", () => {
+    const refusal = refusalCell("Box plot");
+    expect(refusal).toContain("five points wearing a distribution's costume");
+    expect(refusal).toContain("multimodal");
+  });
+
+  it("should carry more than the opening sentence of every sheet's refusal", () => {
+    const rows = readFileSync(SURVEY, "utf8")
+      .split(/\r?\n/)
+      .filter((line) => /^\| \*\*/.test(line));
+    expect(rows.length).toBeGreaterThan(30);
+    const oneSentenceOnly = rows
+      .map((row) => row.split("|").map((cell) => cell.trim()))
+      .filter((cells) => cells[3].split(". ").length < 2)
+      .map((cells) => cells[1].replace(/\*\*/g, ""));
+    // Every one of the 40 sheets writes a refusal paragraph of a hundred words or more; a cell
+    // holding a single sentence is one the generator cut, not one the sheet wrote short.
+    expect(oneSentenceOnly).toEqual([]);
+  });
+});

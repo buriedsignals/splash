@@ -548,6 +548,34 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     expect(text).toMatch(/check.*by hand/i);
   });
 
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX (2026-08-22), AB2 — THE SENTENCE THAT WOULD HAVE STOPPED THE WORST BEAT OF SIX
+  // ROUNDS WAS THE ONE THE SURVEY DROPPED.
+  //
+  // `stress-ab-emigration-flows` is eight rows of origin -> destination pairs: six origins, five
+  // destinations, many-to-many. It was built as a flow map on the web and came back with 29
+  // defects, the highest count of any beat in six rounds. `flow-map.md` refuses exactly that
+  // table — in its SECOND sentence, and the survey lifted only the first.
+  // -------------------------------------------------------------------------------------------
+  it("should carry flow-map's many-to-many refusal to the menu, on the frozen story it was chosen for", () => {
+    const profile = frozenProfile("stress-ab-emigration-flows");
+    const origins = profile.columns.find((c: any) => c.name === "origin");
+    const destinations = profile.columns.find((c: any) => c.name === "destination");
+    // Not a fixture: six origins and five destinations over eight rows is many-to-many.
+    expect(origins.distinct).toBeGreaterThan(1);
+    expect(destinations.distinct).toBeGreaterThan(1);
+    const text = formatCandidates({
+      medium: "map",
+      profile,
+      candidates: [
+        { type: "Flow map (route)", format: "web", why: "where the people who left went" },
+        { type: "Proportional symbol (symbol / bubble map)", format: "web", why: "how many left each district" },
+      ],
+    });
+    expect(text).toContain("not a many-to-many flow");
+    expect(text).toContain("OD flow diagram");
+  });
+
   it("should refuse two labels for one idea, because the sheet says they are one idea", () => {
     expect(() =>
       assertDistinctWays([

@@ -121,7 +121,11 @@ function purposeParagraph(text, file) {
 // "Do not use it". Both are read; a sheet in a third shape fails loudly, because a type whose
 // refusal quietly vanishes from the survey is the defect this section exists to end.
 const REFUSAL_SECTION_RE = /##\s*When (?:NOT|not) to [^\n]*\r?\n+([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##)/;
-const REFUSAL_FLAT_RE = /^((?:Do not|Don't) (?:reach for it|use it)[\s\S]*?)(?:\r?\n\s*\r?\n|$)/m;
+// ROUND SIX (2026-08-22), AB2. The `m` flag makes `$` match at every LINE end, so the lazy body
+// stopped at the sheet's first wrapped line: `boxplot.md`'s refusal reached the survey as 19 of its
+// 146 words. The anchor still needs `m` — the paragraph starts a line — so the terminator is the
+// one that cannot mean "end of line": a blank line, or the end of the file and nothing after it.
+const REFUSAL_FLAT_RE = /^((?:Do not|Don't) (?:reach for it|use it)[\s\S]*?)(?:\r?\n[ \t]*\r?\n|$(?![\s\S]))/m;
 
 function refusalParagraph(text, file) {
   const section = REFUSAL_SECTION_RE.exec(text) ?? REFUSAL_FLAT_RE.exec(text);
@@ -129,19 +133,23 @@ function refusalParagraph(text, file) {
   return flatten(section[1]);
 }
 
-// A REFUSAL THAT IS ONE CLAUSE IS NOT A REFUSAL SOMEBODY CAN ACT ON. Two sheets open theirs with a
-// fragment — `slope.md` with "Two points only." and `histogram.md` with "Do not use it to compare
-// categories." — and lifted alone neither says what to do instead, which is half of what the
-// heading promises. Where the opening sentence is that short the NEXT one comes with it; the
-// threshold is measured against those two sheets and nothing else in the corpus reaches it.
-const SHORT_REFUSAL = 40;
-
-function refusalSentence(paragraph) {
-  const first = firstSentence(paragraph);
-  if (first.length > SHORT_REFUSAL || first === paragraph) return first;
-  const rest = paragraph.slice(first.length).trim();
-  return rest ? `${first} ${firstSentence(rest)}` : first;
-}
+// A REFUSAL IS THE WHOLE PARAGRAPH, NOT ITS OPENING SENTENCE (round six, AB2).
+//
+// The first version lifted one sentence and grew a special case for the two sheets that open with
+// a fragment — `slope.md` with "Two points only." and `histogram.md` with "Do not use it to compare
+// categories." That special case was the symptom. Measured across the corpus, the opening sentence
+// is the whole refusal in NONE of the forty sheets: every one of them writes a hundred words or
+// more, and what the opening sentence names is rarely the trap that stops the beat in front of you.
+//
+// `flow-map.md` is the case that paid for this. Its first sentence refuses a route drawn between
+// two places with no journey between them; its SECOND refuses many-to-many origin-destination data
+// — "a route is a SINGLE path with the territories it crosses, not a many-to-many flow" — which is
+// the sentence, and the only sentence, that would have stopped `stress-ab-emigration-flows`, the
+// beat with the highest defect count in six rounds. It was on disk the whole time. The generator
+// dropped it.
+//
+// So nothing is selected here any more. The paragraph the sheet wrote is the paragraph that
+// travels, flattened onto one line and otherwise untouched.
 
 // A COUNT STATED IN PROSE THAT NO MACHINE CAN SEE IS THE SAME DEFECT ONE LAYER DOWN. A sheet whose
 // refusal names a number of things it refuses below or above must ALSO declare it in the one
@@ -210,7 +218,7 @@ export function readTypeSheets() {
         sheet: `${medium === "chart" ? "chart-beat" : "map-beat"}/references/types/${name}`,
         aliases: aliasesFor(file, title),
         purpose: firstSentence(purpose),
-        refusal: refusalSentence(refusal),
+        refusal,
         limits: limitsFor(text, refusal, file),
         sameIdeaAs: sameIdeaFor(text, purpose, file),
       });
@@ -257,11 +265,13 @@ function render(sheets, beats) {
     "rather than quietly omitting.",
     "",
     "The purpose column is each sheet's OWN opening sentence, verbatim, and the refusal column is",
-    "the opening sentence of that same sheet's \"when NOT to reach for it\", also verbatim. BOTH",
-    "halves travel to the candidate menu: round four closed a storyboard slot on a scatter of six",
-    "rows although `types/scatter.md` refuses that outright, because only the first half had ever",
-    "been carried anywhere. Read the sheet itself before writing the beat — the sheet is where the",
-    "trap that type falls into is written down.",
+    "that same sheet's WHOLE \"when NOT to reach for it\" paragraph, also verbatim. BOTH halves",
+    "travel to the candidate menu: round four closed a storyboard slot on a scatter of six rows",
+    "although `types/scatter.md` refuses that outright, because only the first half had ever been",
+    "carried anywhere. Round six found the same defect one level down — only the opening SENTENCE",
+    "of each refusal was carried, and `flow-map.md` refuses many-to-many origin-destination data in",
+    "its second — so the paragraph now travels whole. Read the sheet itself before writing the beat",
+    "— the sheet is where the trap that type falls into is written down.",
     "",
     "**`refuses when`** is the machine-readable form of a count a sheet states in prose, declared in",
     "the sheet beside the sentence it encodes. Only `rows` is a fact `source/profile.json` carries,",
