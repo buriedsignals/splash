@@ -117,7 +117,20 @@ import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
+
+/**
+ * The CLI's own file argument, resolved against the current working directory before it ever
+ * reaches Chrome. Given a relative path, this file used to build `file://${file}` straight off
+ * `process.argv`, and Chrome refused it as `net::ERR_INVALID_URL at file://stories/...` — a
+ * message that names "an invalid URL" when the real problem is "this was never resolved against a
+ * directory". `path.resolve` already leaves an absolute path untouched, so calling this on every
+ * caller of `verifyAll` (a test's own already-absolute path included) changes nothing for the
+ * paths that were already correct and fixes the one that was not.
+ */
+export function resolveFileArg(file) {
+  return resolve(file);
+}
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
  *  `map-web/test/standalone.test.ts`'s own copy for why these are duplicated rather than
@@ -1577,7 +1590,7 @@ export async function verifyAll(files, widths = WIDTHS) {
   const notes = [];
   try {
     const page = await browser.newPage();
-    for (const file of files) {
+    for (const file of files.map(resolveFileArg)) {
       for (const size of widths) {
         const r = await verifyOne(page, file, size);
         failures.push(...r.failures);
