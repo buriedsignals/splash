@@ -70,13 +70,21 @@ export type Row = {
 };
 
 let measuringContext: CanvasRenderingContext2D | null | undefined;
+// The recorded typeface, held as a `let` the render reassigns from this story's own TYPEFACE.md.
+// That is the shape the formats which draw their own marks already use, and it is why `measureText`
+// and `wrap` below can stay byte-identical to their canonical copies in
+// `chart-video/assets/EmissionsVideo.tsx` instead of each growing a `fontFamily` parameter that
+// only this beat would ever pass -- the drift `splash/test/video-helper-parity.test.ts` refuses.
+export let FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+export function useTypeface(family: string) {
+  FONT_FAMILY = family;
+  measuringContext = undefined;
+}
+
 export function measureText(
   text: string,
-  {
-    fontSize,
-    fontWeight = 400,
-    fontFamily,
-  }: { fontSize: number; fontWeight?: number; fontFamily: string },
+  { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
 ): number {
   if (!text) return 0;
   if (measuringContext === undefined)
@@ -85,7 +93,7 @@ export function measureText(
         ? null
         : document.createElement("canvas").getContext("2d");
   if (!measuringContext) return text.length * fontSize * 0.5;
-  measuringContext.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  measuringContext.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
   return measuringContext.measureText(text).width;
 }
 
@@ -93,13 +101,12 @@ export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
-  fontFamily: string,
 ): string[] {
   const lines: string[] = [];
   let current = "";
   for (const word of text.split(/\s+/)) {
     const trial = current ? `${current} ${word}` : word;
-    if (current && measureText(trial, { ...font, fontFamily }) > maxWidth) {
+    if (current && measureText(trial, font) > maxWidth) {
       lines.push(current);
       current = word;
     } else current = trial;
@@ -195,6 +202,10 @@ export function layoutFor({
   conclusion: string;
   fontFamily: string;
 }) {
+  // The recorded face reaches the MEASUREMENT, not just the drawing. `measureText` reads the
+  // module-level `FONT_FAMILY`, so a layout computed before this call would be measured in the
+  // fallback face and drawn in another -- every wrap and every gutter off by the difference.
+  useTypeface(fontFamily);
   const { width, height } = sizeFor(size);
   const PAD = frameInsetFor(size);
 
@@ -206,16 +217,16 @@ export function layoutFor({
   const bandBottom = Math.min(stage.bottom, height - PAD);
   const column = width - PAD * 2;
 
-  const titleLines = wrap(title, column, TITLE, fontFamily);
+  const titleLines = wrap(title, column, TITLE);
   const titleBaseline = bandTop + TITLE.fontSize;
-  const caveatLines = wrap(caveat, column, CAVEAT, fontFamily);
+  const caveatLines = wrap(caveat, column, CAVEAT);
   const caveatBaseline = titleBaseline + (titleLines.length - 1) * TITLE.lead + 62;
   const axisTitleBaseline = caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 56;
 
-  const sourceLines = wrap(source, column, SOURCE, fontFamily);
+  const sourceLines = wrap(source, column, SOURCE);
   const sourceLead = SOURCE.fontSize * 1.35;
   const sourceBaseline = bandBottom - (sourceLines.length - 1) * sourceLead - 6;
-  const conclusionLines = wrap(conclusion, column, CONCLUSION, fontFamily);
+  const conclusionLines = wrap(conclusion, column, CONCLUSION);
   const conclusionGap = 46;
   const conclusionBaseline =
     sourceBaseline -
@@ -229,7 +240,7 @@ export function layoutFor({
   // not model: this size table records a stage as `{top, bottom}` only, so nothing measures the
   // sides. Found by looking at the portrait render, not by a guard.
   const valueGutter =
-    Math.max(...data.map((r) => measureText(people(r.net), { ...VALUE_LABEL, fontFamily }))) +
+    Math.max(...data.map((r) => measureText(people(r.net), VALUE_LABEL))) +
     18 +
     RING_R +
     18;

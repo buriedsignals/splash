@@ -140,7 +140,62 @@ function topLevelParams(paramText: string): string[] {
 // would otherwise miss is real — `render()` in `scrolly-one-chart-swiss-life-expectancy/render.mjs`
 // calls `parseCsvRows(csv.trim())[1][0]` once, deep inside the whole render pipeline (spawns a
 // browser, writes files) that this walk must never execute.
-const FN_HEADER = /(export\s+)?(async\s+)?function\s+(\w+)\s*\(([^)]*)\)[^{]*\{/g;
+const FN_HEADER = /(export\s+)?(async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g;
+
+/**
+ * WHERE A FUNCTION'S BODY ACTUALLY STARTS, given the index just past its parameter list.
+ *
+ * The pattern above used to end in `[^{]*\{` and take that brace as the body's. In TypeScript a
+ * return type can itself be an object literal, and then the first brace after the parameters is
+ * the TYPE's:
+ *
+ *     export function ratesFromCsv(csv: string): {        <- this brace is the return type
+ *       rates: Map<string, number>;
+ *     } {                                                 <- this one is the body
+ *
+ * Round five found the consequence on real material: `stress-t`'s `geo-recycling.ts` has a named
+ * reader calling the tokeniser, and this walk reported "inlines the tokeniser but no reader was
+ * found calling it" — because it had extracted the return type and found no call in it. The walk
+ * refusing to claim coverage it does not have is the behaviour working; not being able to read an
+ * ordinary signature is not.
+ *
+ * So: if a return-type annotation follows, consume balanced brace groups until the next brace at
+ * depth zero is the body's.
+ */
+function bodyBraceFrom(src: string, afterParams: number): number {
+  let i = afterParams;
+  while (i < src.length && /\s/.test(src[i]!)) i += 1;
+  if (src[i] !== ":") return src.indexOf("{", i);
+  i += 1;
+  while (i < src.length) {
+    if (/\s/.test(src[i]!)) { i += 1; continue; }
+    if (src[i] === "{") {
+      // A brace here opens either the return TYPE or the body, and what FOLLOWS its matching close
+      // is what tells them apart. A type group is followed by the body's own `{`, or by `|`/`&`
+      // continuing a union. Anything else means this group was the body.
+      const close = matchingBrace(src, i);
+      let j = close + 1;
+      while (j < src.length && /\s/.test(src[j]!)) j += 1;
+      if (src[j] === "{") return j;                       // that was the type; this is the body
+      if (src[j] === "|" || src[j] === "&") { i = j + 1; continue; }  // union continues
+      return i;                                            // no type object at all — this is it
+    }
+    i += 1;
+  }
+  return -1;
+}
+
+function matchingBrace(src: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < src.length; i += 1) {
+    if (src[i] === "{") depth += 1;
+    else if (src[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return src.length - 1;
+}
 
 /** The tokeniser itself, plus every OTHER function in the file whose body calls it — a file can
  *  hold more than one reader over more than one fixture (`ice-data.ts`'s photographs and its
@@ -159,7 +214,8 @@ function extractCsvReaders(src: string): {
     const paramText = m[4]!;
     // Skip past a leading `export ` — `new Function` bodies cannot contain module syntax.
     const sigStart = m.index + (m[1] ? m[1].length : 0);
-    const braceStart = m.index + m[0].length - 1;
+    const braceStart = bodyBraceFrom(src, m.index + m[0].length);
+    if (braceStart < 0) continue;
     const block = blockFrom(src, sigStart, braceStart);
     if (name === "parseCsvRows") {
       tokeniser = block;

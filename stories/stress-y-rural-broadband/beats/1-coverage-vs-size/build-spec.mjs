@@ -23,13 +23,41 @@ const storyDir = join(beatDir, "..", "..");
 const SERIES_LABEL = "Broadband coverage (%)";
 const CEILING = 100;
 
+/** RFC 4180 rows, tokenised once. Never `.split(",")`: a quoted cell may legally hold a comma or a
+ *  newline, and a hand split cuts it in half without ever saying so. The project walks for that
+ *  pair of shapes (`skills/splash/test/csv-hand-split.test.ts`, catalogue guard `csv-split-by-hand`)
+ *  because the pattern beat shipped it once. Inlined, not imported: a story workspace is not a
+ *  skill, and this file has to stay readable on its own. */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 function parseCsv(text) {
-  const lines = text.trim().split("\n");
-  const headers = lines[0].split(",");
-  return lines.slice(1).map((line) => {
-    const cells = line.split(",");
-    return Object.fromEntries(headers.map((header, index) => [header, cells[index]]));
-  });
+  const [headers, ...rows] = parseCsvRows(text.trim());
+  return rows
+    .filter((cells) => cells.some((c) => c.trim() !== ""))
+    .map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""])));
 }
 
 /** A percentage the profiler refused to type: "53.7 %" and "62.3" are the same reading, "" is a gap. */
