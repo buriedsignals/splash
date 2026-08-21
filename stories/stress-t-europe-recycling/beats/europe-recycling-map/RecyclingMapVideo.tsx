@@ -1,5 +1,5 @@
 /**
- * "Recycling rates across Europe" — video, 1080 x 1920 (PORTRAIT), `RECYCLING_TIMING` (11s at 30fps).
+ * "Recycling rates across Europe" — video, 1080 x 1920 (PORTRAIT), `RECYCLING_TIMING` (9.3s at 30fps).
  *
  * The article asks for a video for social, so the size gate (G2c) pinned `portrait`. That pin is
  * the whole reason this file does not look like `map-beat`'s own square seed:
@@ -15,7 +15,9 @@
  *   - The legend sits INSIDE the plate, over the Atlantic, which is the only part of this camera
  *     carrying no shape. That is the 120px the bar and its ticks would otherwise have cost the map.
  *
- * The order, not the drawing, is what this format adds. Every window derives from `timing.ts`;
+ * The order, not the drawing, is what this format adds — and the order this beat has is the
+ * ARGUMENT'S, not a queue through its shapes: the continent that did not report, then every rate
+ * that did, together, then the subject, then the conclusion. Every window derives from `timing.ts`;
  * there is no frame literal below.
  */
 
@@ -104,24 +106,6 @@ export type RecyclingMapVideoProps = {
   comparisonValue: number;
   timing?: BeatTiming;
 };
-
-/**
- * How far region `index` of `count` has arrived, given its own event's progress.
- *
- * The regions are handed their windows in the order the caller sorted them — lowest value first
- * (`geo-discipline.md` rule 10) — and the windows overlap, so the field fills continuously rather
- * than blinking one country at a time. Clamped at both ends: an unclamped window keeps moving after
- * its event, and the hold would not be still. @parity
- */
-export function arrivalProgress(
-  index: number,
-  count: number,
-  reveal: number,
-): number {
-  const WINDOW = 0.16;
-  const start = count <= 1 ? 0 : (index / (count - 1)) * (1 - WINDOW);
-  return Math.max(0, Math.min(1, (reveal - start) / WINDOW));
-}
 
 let measuringContext: CanvasRenderingContext2D | null | undefined;
 /** @parity */
@@ -295,16 +279,19 @@ export function RecyclingMapVideo({
       throw new Error(`the bake projected no ${anchor} anchor`);
 
   const value = new Map(rows.map((row) => [row.key, row.value]));
-  // Three orders, not one: the shapes with no value are the REFERENCE (most of this continent did
-  // not report, and that is what the argument is measured against); the shapes with a value except
-  // the subject are the REVEAL, lowest rate first; the subject is its own event.
-  const noDataOrder = rows.filter((r) => r.value === null).map((r) => r.key);
-  const revealOrderKeys = rows
-    .filter((r) => r.value !== null && r.key !== subject)
-    .sort((a, b) => a.value! - b.value!)
-    .map((r) => r.key);
-  const noDataRank = new Map(noDataOrder.map((key, i) => [key, i]));
-  const revealRank = new Map(revealOrderKeys.map((key, i) => [key, i]));
+  // THREE EVENTS, AND NO ORDER INSIDE ANY OF THEM. The shapes with no value are the REFERENCE —
+  // most of this continent did not report, and that is what the argument is measured against — and
+  // they arrive together. The shapes with a value are the EVIDENCE, and they arrive together too.
+  // The subject is its own event after both.
+  //
+  // The first cut of this file staggered each group: the thirty-one no-data shapes by index, then
+  // the eleven values from lowest rate to highest, each country crossfading out of a "pending"
+  // stipple invented to hold it until its turn came. Every reading here is from March 2025, so
+  // there is no chronology across these shapes and no argument that ranks them: the order was the
+  // producer's, which `motion-grammar.md` names as "an arbitrary order chosen for visual interest"
+  // and `geo-discipline.md` rule 10 now refuses outright. With the stagger gone the stipple encodes
+  // nothing and is gone with it. The no-data HATCH stays — "did not report" is a fact about the
+  // source, not a wait.
 
   // ── The edit. Six windows, every one read off the contract.
   const establish = progressOf(frame, timing.establish);
@@ -318,6 +305,17 @@ export function RecyclingMapVideo({
   const conclusionOpacity = interpolate(conclusionProgress, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
+  // The reference and the evidence, each as one crossfade. Every shape in a group sits at the same
+  // opacity at every frame, which is what keeps a mid-fade shape from reading as a class it is not:
+  // the ramp's comparisons are between shapes, and shapes at equal opacity over one plate keep
+  // their order. A shape left unfilled while its neighbours are filled does not — that was the
+  // defect the stipple was invented to paper over.
+  const referenceOpacity = interpolate(reference, [0, 1], [0, 1], {
+    easing: Easing.out(Easing.cubic),
+  });
+  const valuesArrived = interpolate(reveal, [0, 1], [0, 1], {
+    easing: Easing.out(Easing.cubic),
+  });
 
   // The subject lands as its own event, after its own fill is already on screen. Critically damped:
   // a ring that overshoots is, for those frames, drawn around more country than exists.
@@ -327,13 +325,11 @@ export function RecyclingMapVideo({
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
 
-  // The comparison's outline and label gate on the comparison's OWN arrival, never on the master
-  // clock — a mark driven by the composition's progress names a shape that has not been drawn yet.
-  const comparisonArrival = arrivalProgress(
-    revealRank.get(comparison) ?? 0,
-    revealOrderKeys.length,
-    reveal,
-  );
+  // The comparison's outline and label still gate on the comparison's OWN arrival rather than on
+  // the master clock — the rule has not changed, only the answer has: the mark's own arrival IS the
+  // one window every value now shares, so `valuesArrived` is that fraction and not a substitute for
+  // it. A label gated on the composition's overall progress would still be wrong here.
+  const comparisonArrival = valuesArrived;
 
   const barTop = mapY + 108;
   const barBottom = barTop + LEGEND.barHeight;
@@ -451,13 +447,6 @@ export function RecyclingMapVideo({
             <rect width={9} height={9} fill={ground} />
             <line x1={0} y1={0} x2={0} y2={9} stroke={muted} strokeWidth={2.4} />
           </pattern>
-          {/* A country that has not yet reached its own window must not read as a value. This is a
-              SEPARATE mark from "no-data" (dots, not a diagonal hatch) because it means a different
-              thing: "not drawn yet", not "the source is silent about this shape". */}
-          <pattern id="pending" width={10} height={10} patternUnits="userSpaceOnUse">
-            <rect width={10} height={10} fill={ground} />
-            <circle cx={5} cy={5} r={1.3} fill={muted} />
-          </pattern>
           <clipPath id="plate-clip">
             <rect x={MAP_X} y={mapY} width={MAP} height={MAP} />
           </clipPath>
@@ -475,14 +464,10 @@ export function RecyclingMapVideo({
               };
 
               if (v === null || v === undefined) {
-                // The reference: thirty-one countries that did not report, arriving under the hatch
-                // before any value does, and then left alone to be read.
-                const arrived = arrivalProgress(
-                  noDataRank.get(shape.key) ?? 0,
-                  noDataOrder.length,
-                  reference,
-                );
-                if (arrived <= 0) return null;
+                // The reference: thirty-one countries that did not report, laid down together under
+                // the hatch before any value arrives, and then left alone to be read. They have no
+                // order between them either — a source's silence is not a quantity.
+                if (referenceOpacity <= 0) return null;
                 return (
                   <path
                     key={shape.key}
@@ -490,34 +475,25 @@ export function RecyclingMapVideo({
                     fill="url(#no-data)"
                     fillRule="evenodd"
                     {...stroke}
-                    opacity={arrived}
+                    opacity={referenceOpacity}
                   />
                 );
               }
 
-              // A value-bearing shape is opaque from its first frame: it holds the "pending" dots
-              // until its own window opens, then crossfades to its true colour. Never translucent
-              // against the basemap, so it never reads as a class it is not.
-              const arrived =
-                shape.key === subject
-                  ? subjectSpring
-                  : arrivalProgress(
-                      revealRank.get(shape.key) ?? 0,
-                      revealOrderKeys.length,
-                      reveal,
-                    );
+              // The evidence: every reported rate on ONE window, the subject included. The subject
+              // is not accented here — its ring and its label are its own event, below — so the
+              // eleven values appear as one fact and the argument is made afterwards.
               const trueFill = ramp[binIndexLowerInclusive(v, breaks)];
-              const shown = interpolate(furniture, [0, 1], [0, 1]);
-              if (shown <= 0) return null;
+              if (valuesArrived <= 0) return null;
               return (
-                <Fragment key={shape.key}>
-                  {arrived < 1 && (
-                    <path d={d} fill="url(#pending)" fillRule="evenodd" {...stroke} opacity={shown} />
-                  )}
-                  {arrived > 0 && (
-                    <path d={d} fill={trueFill} fillRule="evenodd" {...stroke} opacity={arrived} />
-                  )}
-                </Fragment>
+                <path
+                  key={shape.key}
+                  d={d}
+                  fill={trueFill}
+                  fillRule="evenodd"
+                  {...stroke}
+                  opacity={valuesArrived}
+                />
               );
             })}
 
