@@ -849,6 +849,163 @@ describe("row count is evidence, and a column type is not a story", () => {
   });
 });
 
+// ---------------------------------------------------------------------------------------------
+// ROUND SIX (2026-08-22), Z1 — A REQUIREMENT THAT CANNOT FIRE IS WORSE THAN A MISSING ONE,
+// BECAUSE IT READS AS COVERED.
+//
+//     "part-to-whole": [measures.length >= 2 && nonnegative, "two or more non-negative measures"]
+//
+// Two or more numeric COLUMNS. A part-to-whole table is long-form by nature — one category column,
+// one value column — so the canonical shape carries ONE measure and the requirement failed by
+// construction. Five treatments depend on it (Diverging stacked bar, Marimekko, Pie and donut,
+// Stacked bar, Treemap) and in six rounds and twenty-seven stories not one of them was ever
+// chosen. That absence read as taste. It was arithmetic.
+//
+// The second half is the half that must survive the widening: `stress-z-budget-parts` carries a
+// NEGATIVE part (-9.7, a provision write-back the French nomenclature allows) and so does
+// `stress-e-electricity-mix` (-4.1, net imports). A pie cannot draw either, and the refusal has to
+// SAY so — "part-to-whole" printed in a list of unmet requirement names is a name, not a reason.
+// ---------------------------------------------------------------------------------------------
+describe("a part-to-whole table can reach a part-to-whole treatment", () => {
+  const partToWholeTreatments = [
+    "chart.diverging-stacked-bar",
+    "chart.marimekko",
+    "chart.pie-and-donut",
+    "chart.stacked-bar",
+    "chart.treemap",
+  ];
+
+  function rowFor(result: any, optionId: string) {
+    return result.ranking.find((row: any) => row.optionId === optionId)!;
+  }
+
+  it("should satisfy part-to-whole on the long form the shape is actually written in", () => {
+    // Seven countries, one non-negative measure, hectares of forest lost. The canonical long-form
+    // part-to-whole, and until now the shape that could never satisfy the requirement named after it.
+    const profile = frozenProfile("stress-m-forest-loss");
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const pie = rowFor(result, "chart.pie-and-donut");
+    expect(pie.unresolvedRequirements).not.toContain("part-to-whole");
+    expect(JSON.stringify(pie.matchedEvidence)).toContain("part to whole");
+  });
+
+  it("should refuse a table with a negative part, and say that is why", () => {
+    for (const story of ["stress-z-budget-parts", "stress-e-electricity-mix"]) {
+      const profile = frozenProfile(story);
+      const negative = profile.columns.filter(
+        (column: any) => column.type === "number" && column.min < 0,
+      );
+      expect(negative.length).toBeGreaterThan(0);
+      const result = recommendVisualChoice({ model: everyTreatment(), profile });
+      for (const id of partToWholeTreatments) {
+        const row = rowFor(result, id);
+        expect(row.unresolvedRequirements).toContain("part-to-whole");
+        // The reason, in words, not the requirement's name: which column, which value, and what a
+        // slice cannot do with it.
+        const why = row.unresolvedReasons.join(" ");
+        expect(why).toContain(negative[0].name);
+        expect(why).toContain(String(negative[0].min));
+        expect(why).toMatch(/negative/i);
+      }
+    }
+  });
+
+  it("should not read a table of repeated observations as a table of parts", () => {
+    // Ten countries over five years: 50 rows, and "country" names each of them five times. A
+    // category that repeats is a table of observations, not of parts, and a share drawn from it
+    // would be a share of one country counted five times.
+    const profile = frozenProfile("heat-pump-adoption-across-europe");
+    expect(profile.rowCount).toBe(50);
+    expect(profile.columns.find((c: any) => c.name === "country").distinct).toBe(10);
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const pie = rowFor(result, "chart.pie-and-donut");
+    expect(pie.unresolvedRequirements).toContain("part-to-whole");
+    expect(pie.unresolvedReasons.join(" ")).toMatch(/names each row exactly once|one row per part/);
+  });
+
+  it("should stop reporting zero part-to-whole tables across the whole corpus", () => {
+    const stories = readdirSync(STORIES).filter((name) =>
+      existsSync(join(STORIES, name, "source", "profile.json")),
+    );
+    expect(stories.length).toBeGreaterThan(27);
+    const reaching = stories.filter((story) => {
+      const result = recommendVisualChoice({
+        model: everyTreatment(),
+        profile: frozenProfile(story),
+      });
+      return partToWholeTreatments.some(
+        (id) => !rowFor(result, id).unresolvedRequirements.includes("part-to-whole"),
+      );
+    });
+    // Measured before this fix: zero. A requirement no table in the corpus can satisfy is a
+    // requirement nobody can see failing.
+    expect(reaching.length).toBeGreaterThan(0);
+    expect(reaching).toContain("stress-m-forest-loss");
+    // And the two tables with a negative part are NOT among them.
+    expect(reaching).not.toContain("stress-z-budget-parts");
+    expect(reaching).not.toContain("stress-e-electricity-mix");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND SIX (2026-08-22), AA2 — THE ONLY TWO REQUIREMENTS THAT CONSULT A COUNT READ THE WRONG ONE,
+// AT A FLOOR OF FIVE.
+//
+// `stress-aa-salary-spread` is the first table in six rounds with a real distribution in it: 240
+// rows, 234 salaries, 6 blank. `raw-observations` and `distribution` both read `rowCount` — 240,
+// including the six rows that carry no salary at all — and both were satisfied at five. Five
+// readings are not a distribution; `boxplot.md` says so on disk, in the sentence about "five points
+// wearing a distribution's costume".
+// ---------------------------------------------------------------------------------------------
+describe("a distribution is a count of observations, and five of them is not one", () => {
+  it("should let the first real distribution in the corpus reach a distribution type", () => {
+    const profile = frozenProfile("stress-aa-salary-spread");
+    const salary = profile.columns.find((c: any) => c.name === "annual_salary_eur");
+    expect(profile.rowCount).toBe(240);
+    expect(salary.missing).toBe(6);
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    expect(histogram.unresolvedRequirements).toEqual([]);
+    // The count it reports is the observations, not the rows: 234, not 240.
+    expect(JSON.stringify(histogram.matchedEvidence)).toContain("234");
+  });
+
+  it("should refuse to call five readings a distribution", () => {
+    const fiveReadings = {
+      rowCount: 5,
+      columns: [
+        { name: "district", type: "text", distinct: 5, missing: 0 },
+        { name: "rent_eur", type: "number", distinct: 5, missing: 0, min: 700, max: 1900 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: fiveReadings,
+    });
+    const boxplot = result.ranking.find((row: any) => row.optionId === "chart.boxplot")!;
+    expect(boxplot.unresolvedRequirements).toContain("distribution");
+    expect(boxplot.unresolvedReasons.join(" ")).toMatch(/5 observation/);
+  });
+
+  it("should count a measure's blanks out of its observations", () => {
+    const mostlyBlank = {
+      rowCount: 240,
+      columns: [
+        { name: "employee", type: "text", distinct: 240, missing: 0 },
+        { name: "salary_eur", type: "number", distinct: 7, missing: 233, min: 20000, max: 90000 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: mostlyBlank,
+    });
+    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    // 240 rows, 7 readings. The rows are not the evidence; the readings are.
+    expect(histogram.unresolvedRequirements).toContain("distribution");
+    expect(histogram.unresolvedReasons.join(" ")).toMatch(/7 observation/);
+  });
+});
+
 // ROUND FIVE. `detail` counted the claims the check could not place and never said WHY it could
 // not place them, so every refusal reached the journalist as one number. The reasons carry the
 // column names, the ranges and the profiler's own refusals now, which is the half of the answer

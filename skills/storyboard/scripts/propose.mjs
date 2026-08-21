@@ -380,6 +380,9 @@ function profileFacts(profile) {
           normalizedName: column.name.toLowerCase(),
           type: column.type,
           distinct: Number.isSafeInteger(column.distinct) ? column.distinct : null,
+          // ROUND SIX, AA2. A blank cell is not an observation. `stress-aa-salary-spread` is 240
+          // rows and 234 salaries; the six that carry none are rows, not readings.
+          missing: Number.isSafeInteger(column.missing) && column.missing >= 0 ? column.missing : 0,
           min: typeof column.min === "number" && Number.isFinite(column.min) ? column.min : null,
           max: typeof column.max === "number" && Number.isFinite(column.max) ? column.max : null,
         }];
@@ -454,8 +457,78 @@ function requirementFinding(requirement, facts) {
     column.distinct === null ? atLeast(2) : column.distinct >= 2,
   );
   const momentNote = `a temporal column carries at least two distinct moments across ${rowNote}`;
-  const raw = numeric && atLeast(5);
   const nonnegative = numeric && measures.every((column) => column.min !== null && column.min >= 0);
+
+  // ROUND SIX (2026-08-22), AA2 — THE ONLY TWO REQUIREMENTS THAT CONSULT A COUNT READ THE WRONG
+  // ONE, AT A FLOOR OF FIVE.
+  //
+  // `raw-observations` and `distribution` were the same expression, `numeric && atLeast(5)`, and
+  // both were wrong twice over. A ROW IS NOT AN OBSERVATION: `stress-aa-salary-spread` is 240 rows
+  // and 234 salaries, and the six blanks are exactly the six a beat has to name rather than draw.
+  // And five readings are not a distribution — `boxplot.md` says so on disk: "a reader has no way
+  // to tell 'this is a real distribution' from 'this is five points wearing a distribution's
+  // costume'."
+  //
+  // BOTH FLOORS ARE READ OFF THE CORPUS'S OWN SHEETS rather than picked here. `scatter.md` is the
+  // only sheet in forty that declares an observation floor machine-readably (`rows < 8`), so eight
+  // is what "enough raw observations to have a shape" means in this toolchain. `histogram.md`
+  // states the other one in prose — "fewer than about three bins can't show a shape at all (you
+  // have a number, not a distribution)", with "about ten roughly-round bins" as its working
+  // default — and ten bins that each hold more than a single reading is twenty observations.
+  const RAW_OBSERVATION_FLOOR = 8;
+  const DISTRIBUTION_FLOOR = 20;
+  const observationsOf = (column) => (rows === null ? null : Math.max(0, rows - column.missing));
+  const observed = measures.map(observationsOf).filter((n) => n !== null);
+  const mostObservations = observed.length > 0 ? Math.max(...observed) : null;
+  const observationNote =
+    mostObservations === null
+      ? `no measure in this profile has a countable number of observations — ${rowNote}`
+      : `${mostObservations} observation(s) of one measure across ${rowNote}`;
+  const observationRefusal = (floor) =>
+    `${observationNote}, and ${floor} is the floor this toolchain's own sheets state`;
+
+  // ROUND SIX (2026-08-22), Z1 — THE REQUIREMENT NAMED AFTER THE SHAPE COULD NOT FIRE ON IT.
+  //
+  //     "part-to-whole": [measures.length >= 2 && nonnegative, ...]
+  //
+  // Two or more numeric COLUMNS — the WIDE form, one row per whole with a column per part. A
+  // part-to-whole table is ordinarily written the other way round, long: one column naming the
+  // parts, one carrying their values. The canonical shape carried one measure, failed by
+  // construction, and took five treatments with it (Diverging stacked bar, Marimekko, Pie and
+  // donut, Stacked bar, Treemap). None was chosen in six rounds and twenty-seven stories, and the
+  // absence read as taste rather than as arithmetic.
+  //
+  // Both forms are read now. WHAT DOES NOT WIDEN IS THE SIGN: a part that is negative is not a
+  // part. `stress-z-budget-parts` carries -9.7 (a provision write-back the French budget
+  // nomenclature allows) and its column still sums to 100 — the parts CANCEL, they do not compose
+  // — and `stress-e-electricity-mix` carries -4.1 for net imports. No slice, band or tile can draw
+  // either, so both are refused, by name, value and consequence rather than by the bare string
+  // "part-to-whole" appearing in a list of things a table did not supply.
+  //
+  // WHAT THIS DELIBERATELY DOES NOT CLAIM. That the categories exhaust one whole. A column profile
+  // can see the SHAPE of a part-to-whole and can never see its exhaustiveness — seven countries'
+  // forest loss composes a total, seven cantons' unemployment RATES do not, and the two tables are
+  // identical in profile. So the matched fact says which of the two facts it established and which
+  // one is still the journalist's; `references/chart-choice.md` carries the same rule in words
+  // ("a whole must be real").
+  const negativeParts = measures.filter((column) => column.min !== null && column.min < 0);
+  const wideParts = measures.length >= 2;
+  // ONE ROW PER PART is what makes the long form the long form, and it is a fact the profile does
+  // carry: a category column whose distinct count IS the row count names each part exactly once.
+  // Without it `stress-aa-salary-spread` — 240 salaries across 5 departments — reads as a
+  // part-to-whole, and 240 employees are observations of a distribution, not slices of a pie.
+  const partsColumn = facts.text.find((column) => column.distinct !== null && rows !== null && column.distinct === rows);
+  const longParts = measures.length === 1 && atLeast(2) && Boolean(partsColumn);
+  const partToWholeFact = wideParts
+    ? `${measureNote}, every one of them non-negative — the wide form, one row per whole`
+    : `one non-negative measure, and "${partsColumn?.name}" names each of ${rowNote} exactly once — the long form a part-to-whole table is ordinarily written in. That those categories EXHAUST one whole is the journalist's to confirm; a column profile can see this shape and never that`;
+  const partToWholeRefusal = !numeric
+    ? "this table carries no measure beside its own axis, so there are no parts to compose"
+    : negativeParts.length > 0
+      ? `measure "${negativeParts[0].name}" reaches ${negativeParts[0].min}: a negative member is not a part. No slice, band or tile can draw one — parts that include it cancel rather than compose — so a diverging bar or a waterfall is the honest form for this table, not a share`
+      : !nonnegative
+        ? `no minimum is stated for ${measures.filter((column) => column.min === null).map((column) => `"${column.name}"`).join(", ")}, so nothing here establishes that these parts are non-negative`
+        : `${measureNote} and ${facts.text.length} category column(s) over ${rowNote}, no one of which names each row exactly once: a part-to-whole needs either two or more measures to compose (the wide form), or one measure beside a category column carrying one row per part (the long form). A category repeated across many rows is a table of observations, not of parts`;
   const integral = nonnegative && measures.every((column) => Number.isInteger(column.min) && Number.isInteger(column.max));
   const positive = numeric && measures.every((column) => column.min !== null && column.min > 0);
   const tests = {
@@ -488,11 +561,19 @@ function requirementFinding(requirement, facts) {
     "region-join": [regional, `${facts.regional.length} regional identifier column(s)`],
     "place-labels": [regional, `${facts.regional.length} regional identifier column(s)`],
     "geographic-points": [facts.geographicPoints, "latitude and longitude columns are both present"],
-    "raw-observations": [raw, `${rowNote} with a measure to read`],
-    distribution: [raw, `${rowNote} with a measure to read`],
+    "raw-observations": [
+      mostObservations !== null && mostObservations >= RAW_OBSERVATION_FLOOR,
+      observationNote,
+      observationRefusal(RAW_OBSERVATION_FLOOR),
+    ],
+    distribution: [
+      mostObservations !== null && mostObservations >= DISTRIBUTION_FLOOR,
+      observationNote,
+      observationRefusal(DISTRIBUTION_FLOOR),
+    ],
     rank: [numeric && categorical && atLeast(2), `a measure, a category and ${rowNote} to put in order`],
     "ordered-categories": [numeric && categorical && atLeast(2), `a measure, a category and ${rowNote} to put in order`],
-    "part-to-whole": [measures.length >= 2 && nonnegative, "two or more non-negative measures are present"],
+    "part-to-whole": [nonnegative && (wideParts || longParts), partToWholeFact, partToWholeRefusal],
     "repeatable-schema": [facts.columns.length > 0, `${facts.columns.length} profiled columns`],
   };
   const result = tests[requirement];
@@ -524,6 +605,12 @@ function explicitSignal(text, signals) {
 function rankChoice(choice, index, model, facts) {
   const matchedEvidence = [];
   const unresolvedRequirements = [];
+  // A REQUIREMENT'S NAME IS NOT A REASON (round six, Z1). `requirementFinding` has computed the
+  // refusal in the profile's own words since round four — which column, which value, what the
+  // profile could not establish — and this function threw every one of them away, so the
+  // journalist read "part-to-whole" and had to guess what their table was missing. The names stay
+  // (both gates and the graphical view key on them); the reasons travel beside them.
+  const unresolvedReasons = [];
   const tradeoffs = [];
   let score = 0;
   const text = evidenceText(model);
@@ -568,15 +655,22 @@ function rankChoice(choice, index, model, facts) {
       const finding = requirementFinding(requirement, facts);
       if (!finding) {
         unresolvedRequirements.push(requirement);
+        unresolvedReasons.push(
+          `${requirement.replaceAll("-", " ")}: this profile has no reading for that requirement at all — it is not a fact a column profile carries, and nothing here decides it either way`,
+        );
       } else if (finding.matched) {
         score += 2;
         matchedEvidence.push({ source: finding.source, fact: `${requirement.replaceAll("-", " ")}: ${finding.fact}` });
       } else {
         score -= 1;
         unresolvedRequirements.push(requirement);
+        unresolvedReasons.push(`${requirement.replaceAll("-", " ")}: ${finding.fact}`);
       }
     }
-    if (!choice.dataShape?.requires?.length) unresolvedRequirements.push("no machine-readable data-shape requirements");
+    if (!choice.dataShape?.requires?.length) {
+      unresolvedRequirements.push("no machine-readable data-shape requirements");
+      unresolvedReasons.push("this treatment declares no machine-readable data-shape requirements, so nothing about it can be scored against the frozen profile");
+    }
   } else if (choice.kind === "producer") {
     if (choice.value === "datawrapper" && explicitSignal(text, ["datawrapper"])) {
       score += 5;
@@ -592,6 +686,7 @@ function rankChoice(choice, index, model, facts) {
     canonicalIndex: index,
     matchedEvidence,
     unresolvedRequirements,
+    unresolvedReasons,
     tradeoffs,
   };
 }
@@ -620,13 +715,17 @@ export function recommendVisualChoice({ model, profile = {} } = {}) {
     top.tradeoffs.push("This is a conservative fallback because confirmed evidence does not positively distinguish the choices.");
   }
   const unmet = [...new Set(ranking.flatMap((row) => row.unresolvedRequirements))].sort();
+  const unmetReasons = [...new Set(ranking.flatMap((row) => row.unresolvedReasons))].sort();
   const refusal =
     top || ranking.length === 0
       ? null
-      : `nothing is recommended: this profile establishes ${facts.rowCount === null ? "no stated row count" : `${facts.rowCount} row(s)`} and ${facts.measures.length} measure column(s) beside the table's own axis, and every one of the ${ranking.length} reachable choice(s) still needs something it does not supply — ${unmet.join(", ")}. Say that to the journalist rather than picking the least unsupported one.`;
+      : `nothing is recommended: this profile establishes ${facts.rowCount === null ? "no stated row count" : `${facts.rowCount} row(s)`} and ${facts.measures.length} measure column(s) beside the table's own axis, and every one of the ${ranking.length} reachable choice(s) still needs something it does not supply — ${unmet.join(", ")}. What each of those means for this table: ${unmetReasons.join("; ")}. Say that to the journalist rather than picking the least unsupported one.`;
   const profileProjection = {
     rowCount: facts.rowCount,
-    columns: facts.columns.map(({ name, type, distinct, min, max }) => ({ name, type, distinct, min, max })),
+    // `missing` is projected because the ranking now reads it: two profiles differing only in how
+    // many cells of a measure are blank rank differently, and a revision that could not tell them
+    // apart would let a stale recommendation be confirmed against changed evidence.
+    columns: facts.columns.map(({ name, type, distinct, missing, min, max }) => ({ name, type, distinct, missing, min, max })),
   };
   const profileRevision = digest(profileProjection);
   const selectionRevisions = {

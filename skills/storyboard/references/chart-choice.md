@@ -56,6 +56,32 @@ generic preference such as "more engaging" is not a reason.
   carries ONE measure, not two, so it supports no intent that needs two — this was the state of 9
   of the 21 frozen stories. The skill has one answer to which column is the year and which are the
   measures, `ground-claim.mjs`'s `findYearColumn` / `measureColumns`, and both modules read it.
+- **A part-to-whole table is written long, and the mechanism now reads it that way.** For six
+  rounds and twenty-seven stories, `part-to-whole` asked for two or more numeric COLUMNS — the wide
+  form, one row per whole — while a composition table is ordinarily one column naming the parts and
+  one carrying their values. Not one of the five treatments that depend on it (diverging stacked
+  bar, marimekko, pie and donut, stacked bar, treemap) was ever chosen, and that absence read as
+  taste. It was arithmetic. `requirementFinding` reads both forms now: two or more measures, or one
+  measure beside a category column that names each row EXACTLY ONCE. A category repeated down the
+  rows is a table of observations, not of parts.
+- **The profile can see the shape of a whole; only you can see that the whole is real.** Whether the
+  categories exhaust one total, without overlap, is not a fact any column profile carries — seven
+  countries' forest loss composes a total, seven cantons' unemployment RATES do not, and the two
+  tables are identical in profile. The scored path says so in its own matched evidence rather than
+  claiming the stronger fact. That judgement stays here, with the rule above it: a whole must be
+  real.
+- **A negative member is not a part, and no widening changes that.** `stress-z-budget-parts` carries
+  a −9.7 provision write-back whose column still sums to 100 — the parts CANCEL rather than compose
+  — and `stress-e-electricity-mix` carries −4.1 for net imports. No slice, band or tile can draw
+  either. The refusal names the column, its value and the form that CAN carry it (a diverging bar, a
+  waterfall), because "part-to-whole" printed in a list of unmet requirements is a name, not a
+  reason.
+- **A distribution is a count of observations, and five of them is not one.** `raw-observations` and
+  `distribution` are the only two requirements in the vocabulary that consult a count, and both read
+  the ROW count at a floor of five. A blank cell is not an observation: `stress-aa-salary-spread` is
+  240 rows and 234 salaries. Both floors now come from the sheets themselves — eight raw
+  observations (`scatter.md`'s own declared `rows < 8`) and twenty for a distribution (`histogram.md`
+  works in "about ten roughly-round bins", and a bin holding one reading shows no shape).
 - **A candidate must survive its own type sheet's refusals, not only its purpose sentence.** Read
   the sheet's "when NOT to reach for it" before proposing it; `references/type-survey.md` carries
   that sentence verbatim beside the purpose, and where the sheet states a count in rows,
