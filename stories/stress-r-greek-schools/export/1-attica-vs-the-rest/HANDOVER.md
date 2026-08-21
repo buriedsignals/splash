@@ -17,7 +17,7 @@ mid-article, immediately after the paragraph naming the regional divergence (STO
 Paste this as the image's alternative text. A reader using a screen reader gets the finding,
 not a description of a chart.
 
-> Slope chart, one line per Greek region, from its 2020 school count to its 2026 count. Attica's line is nearly flat (1802 to 1744, -3.2%); the steepest declines are in Western Macedonia, the Peloponnese and Central Greece. Anatoliki Makedonia kai Thraki keeps its 2020 dot only -- its 2026 figure is corrupted in the source data and is shown as unavailable, not estimated.
+> Slope chart, one line per Greek region, from its 2020 school count to its 2026 count. Attica's line is nearly flat (1802 to 1744, -3.2%); the steepest declines are in Western Macedonia, the Peloponnese and Central Greece. Anatoliki Makedonia kai Thraki keeps its 2020 dot only — its 2026 figure is corrupted in the source data and is shown as unavailable, not estimated.
 
 ## The credit line
 

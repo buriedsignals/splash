@@ -94,7 +94,7 @@ async function main() {
     `Slope chart, one line per Greek region, from its 2020 school count to its 2026 count. Attica's ` +
     `line is nearly flat (${attica.y2020} to ${attica.y2026}, ${atticaChange.toFixed(1)}%); the ` +
     `steepest declines are in Western Macedonia, the Peloponnese and Central Greece. Anatoliki ` +
-    `Makedonia kai Thraki keeps its 2020 dot only -- its 2026 figure is corrupted in the source ` +
+    `Makedonia kai Thraki keeps its 2020 dot only — its 2026 figure is corrupted in the source ` +
     `data and is shown as unavailable, not estimated.`;
 
   const { ground, accent, origin, source: paletteSource } = readPalette(STORY, { stopAt: STORY });

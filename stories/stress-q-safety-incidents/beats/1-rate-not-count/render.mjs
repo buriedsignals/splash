@@ -65,9 +65,9 @@ const { pngPath, svgPath } = await renderStill({
     districts,
     title: `${worst.name} has the worst safety record per resident, not Centro`,
     limits: `${worst.rate.toFixed(1)} incidents per 100,000 residents in ${worst.name}, against ${centro.rate.toFixed(1)} in Centro`,
-    caveat: `Centro recorded the most incidents in raw terms (${centro.incidents}) -- but not the highest rate.`,
+    caveat: `Centro recorded the most incidents in raw terms (${centro.incidents}) — but not the highest rate.`,
     source: "Source: municipal safety incident report and district population estimates · as of 21 August 2026",
-    alt: `A horizontal bar per district, sorted by incidents per 100,000 residents, zero baseline. ${worst.name} is longest at ${worst.rate.toFixed(1)} per 100,000, accented. Centro follows at ${centro.rate.toFixed(1)} per 100,000, annotated with its raw count of ${centro.incidents} -- the highest in the city, but not the highest rate. ${districts
+    alt: `A horizontal bar per district, sorted by incidents per 100,000 residents, zero baseline. ${worst.name} is longest at ${worst.rate.toFixed(1)} per 100,000, accented. Centro follows at ${centro.rate.toFixed(1)} per 100,000, annotated with its raw count of ${centro.incidents} — the highest in the city, but not the highest rate. ${districts
       .filter((d) => d.name !== worst.name && d.name !== "Centro")
       .map((d) => `${d.name} ${d.rate.toFixed(1)} per 100,000`)
       .join("; ")}.`,

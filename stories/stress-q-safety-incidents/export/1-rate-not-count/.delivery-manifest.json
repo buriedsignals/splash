@@ -1,14 +1,14 @@
 {
   "operationId": "c09bc31d-ef97-47cf-933a-204bec232e04",
-  "reviewId": "9332811c-9b53-4125-99dd-d76b95bea7bb",
+  "reviewId": "1-rate-not-count-review-retaken-2026-08-21",
   "planVersion": 1,
-  "draftDigest": "sha256:a7e513ff883939b514b94b04866006142e84eb9676c9dfd2278be8a010ec4154",
+  "draftDigest": "sha256:632df450b94f8cc03f34967bcc167d64c264fcb57625596b2039c8fa59626fdc",
   "findingIds": [
     "worst-record-is-per-resident-not-raw-count"
   ],
   "form": "owned-file",
   "format": "static",
-  "createdAt": "2026-08-21T08:13:37.955Z",
+  "createdAt": "2026-08-21T12:45:00Z",
   "schemaVersion": 1,
   "outputId": "1-rate-not-count",
   "state": "complete"

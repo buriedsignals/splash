@@ -1,14 +1,14 @@
 {
   "operationId": "7b83ab19-1613-4c08-912c-35b2fe25d338",
-  "reviewId": "74070f15-b7d8-4a99-9a8e-e044edaa19ad",
+  "reviewId": "1-attica-vs-the-rest-review-retaken-2026-08-21",
   "planVersion": 1,
-  "draftDigest": "sha256:e6c27a5bcafa3efc09c7908d4b0e52d221ae60b1b1e4aa9c4cb1a25a97ef1b1b",
+  "draftDigest": "sha256:cb6a8c408e61ae350f3346a7b1ecf8f55ae6e725de50b9088b33db91135b5d5e",
   "findingIds": [
     "attica-decline-far-smaller-than-the-rest"
   ],
   "form": "owned-file",
   "format": "static",
-  "createdAt": "2026-08-21T08:31:01.511Z",
+  "createdAt": "2026-08-21T12:45:00Z",
   "schemaVersion": 1,
   "outputId": "1-attica-vs-the-rest",
   "state": "complete"

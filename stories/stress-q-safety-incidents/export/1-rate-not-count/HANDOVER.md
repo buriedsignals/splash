@@ -17,7 +17,7 @@ replaces the headline's claim, before the raw counts are cited
 Paste this as the image's alternative text. A reader using a screen reader gets the finding,
 not a description of a chart.
 
-> A horizontal bar per district, sorted by incidents per 100,000 residents, zero baseline. Sul is longest at 233.0 per 100,000, accented. Centro follows at 205.0 per 100,000, its raw count of 412 named as a caveat below the chart -- the highest in the city, but not the highest rate.
+> A horizontal bar per district, sorted by incidents per 100,000 residents, zero baseline. Sul is longest at 233.0 per 100,000, accented. Centro follows at 205.0 per 100,000, its raw count of 412 named as a caveat below the chart — the highest in the city, but not the highest rate.
 
 ## The credit line
 
