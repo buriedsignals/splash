@@ -211,7 +211,18 @@ export function buildChartPayload(spec) {
     "text-annotations": [...textAnnotations, ...rangeEntries.map((entry) => entry.label)],
     "range-annotations": rangeEntries.map((entry) => entry.rule),
   };
-  if (!isBarEncoded(spec.chartType)) {
+  // FINDING 6 (round-three stress), measured live against published chart `1u88u`: `custom-colors`
+  // keyed by the resolved series label was sent and stored (`GET /v3/charts/1u88u` echoed it back
+  // verbatim), and the published embed's bars still rendered in Datawrapper's own default blue.
+  // Isolated live by PATCHing `base-color` and `custom-colors` to two DIFFERENT hex values on that
+  // same chart and reading the exported PNG's own pixels back: a single-series bar/column chart is
+  // painted from `visualize["base-color"]`, never from `custom-colors` — that key is what a
+  // genuinely multi-series bar chart would need, and it is left in place because it costs nothing
+  // to keep sending. This is not the plan-gated attribution limitation's shape — nothing here is
+  // account-tier-gated, it is a field this producer never sent.
+  if (isBarEncoded(spec.chartType)) {
+    visualize["base-color"] = spec.color;
+  } else {
     visualize["custom-range-y"] = computeYRange(spec).map(String);
   }
 

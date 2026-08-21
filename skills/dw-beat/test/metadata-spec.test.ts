@@ -205,6 +205,30 @@ describe("buildChartPayload", () => {
     ]);
   });
 
+  // FINDING 6 (round-three stress), measured live against published chart `1u88u`: `custom-colors`
+  // was sent and stored (`GET /v3/charts/1u88u` echoed it back verbatim) and the published embed's
+  // bars still rendered in Datawrapper's own default blue, `rgb(24, 161, 205)`. Isolated live by
+  // PATCHing the two fields to two DIFFERENT hex values on that same chart and reading the exported
+  // PNG's own pixels back: a single-series bar/column chart takes its fill from
+  // `visualize["base-color"]`, never from `custom-colors` — that key only colours a genuinely
+  // multi-series chart. This is not the plan-gated attribution limitation's shape (nothing here is
+  // gated by account tier); it is a field this producer never sent.
+  it("should colour a bar/column chart's own bars via base-color, the field Datawrapper actually paints from", () => {
+    const payload = buildChartPayload(baseSpec({ chartType: "d3-bars" }));
+    expect(payload.metadata.visualize["base-color"]).toBe("#0B7A75");
+    // custom-colors is left in place too — harmless, and what a genuinely multi-series bar chart
+    // would need — but it is base-color that a single-series bar/column chart is actually painted
+    // from, confirmed live.
+    expect(payload.metadata.visualize["custom-colors"]).toEqual({
+      "Co2 Mt": "#0B7A75",
+    });
+  });
+
+  it("should not send base-color for a chart type that is not bar/column-encoded", () => {
+    const payload = buildChartPayload(baseSpec());
+    expect(payload.metadata.visualize["base-color"]).toBeUndefined();
+  });
+
   it("should always disable forced Datawrapper attribution", () => {
     const payload = buildChartPayload(baseSpec());
     expect(payload.metadata.publish).toEqual({ "force-attribution": false });
