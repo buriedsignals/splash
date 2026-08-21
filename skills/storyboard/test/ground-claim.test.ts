@@ -1262,3 +1262,45 @@ describe("an aggregate 'equals' is never wider than the number it compares (roun
     expect(claim.detail).not.toContain("equals the sum");
   });
 });
+
+describe("a column is named by a WORD, not by a fragment of another (round five, T12/Y1)", () => {
+  // Round four taught the chooser to refuse a claim about a column the PROFILER refused, so it
+  // could not be decided against a surviving one. It matched the column's name tokens as bare
+  // SUBSTRINGS, so `survey_date`'s token "survey" is found inside the word "surveyed" — a word
+  // this sentence uses incidentally, about when the figures were collected, not about what they
+  // measure. The claim the sentence actually makes was then never attempted.
+  const SURVEYED_TRUE =
+    "Germany has the highest recycling rate of any country surveyed in March 2025.";
+  const SURVEYED_FALSE =
+    "Macedonia has the highest recycling rate of any country surveyed in March 2025.";
+
+  it("should decide the claim the sentence makes, not refuse it over a word it used in passing", () => {
+    const { claims } = grounded("stress-t-europe-recycling", SURVEYED_TRUE);
+    const claim = claims.find((c) => c.claim.includes("the highest"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("recycling_rate");
+    expect(claim.detail).not.toContain("survey_date");
+  });
+
+  // The shape this whole checker exists to prevent: a takeaway the frozen data REFUTES coming
+  // back `unverifiable`, which closes G1 without a murmur.
+  it("should REFUTE the same sentence with the wrong country, where it used to say unverifiable", () => {
+    const { claims } = grounded("stress-t-europe-recycling", SURVEYED_FALSE);
+    const claim = claims.find((c) => c.claim.includes("the highest"));
+    expect(claim.verdict).toBe("contradicted");
+    expect(claim.detail).toContain("18.4");
+  });
+
+  // And the round-four fix itself is not undone: a sentence that really does name the refused
+  // column is still refused, by name, with the profiler's own reason.
+  it("should still refuse a claim whose sentence really does name the refused column", () => {
+    const { claims } = grounded(
+      "stress-t-europe-recycling",
+      "Germany has the highest recycling rate, though the survey date differs across the table.",
+    );
+    const claim = claims.find((c) => c.claim.includes("the highest"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("survey_date");
+    expect(claim.detail).toContain("REFUSED to type");
+  });
+});

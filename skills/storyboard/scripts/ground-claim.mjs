@@ -901,6 +901,37 @@ function nameTokensOf(column) {
     .filter((t) => t.length >= 4 && !/^\d+$/.test(t));
 }
 
+// Anything in a column NAME that would otherwise be read as a regular expression. Column names
+// come out of a frozen CSV header, so they are text this file does not control.
+const REGEX_META_RE = /[.*+?^${}()|[\]\\]/g;
+
+/**
+ * Whether a column's own name token appears in the sentence AS A WORD.
+ *
+ * ROUND FIVE, finding T12. This was `haystack.includes(token)` — a bare substring test — and on
+ * the frozen `stress-t-europe-recycling` the refused column `survey_date` claimed the sentence
+ * "Germany has the highest recycling rate of any country SURVEYED in March 2025", because
+ * "surveyed" contains "survey". The sentence used that word incidentally, about WHEN the figures
+ * were collected; the claim it actually makes — Germany holds the maximum of `recycling_rate` —
+ * was never attempted, and came back `unverifiable`. The same sentence with a false country came
+ * back `unverifiable` too, which is a takeaway the frozen data REFUTES closing G1 in silence:
+ * the exact shape this checker exists to prevent.
+ *
+ * The boundaries are unicode property escapes rather than `\b`, which is ASCII-only and would
+ * misread every Greek and Arabic column name this tree has frozen. A trailing "s"/"es" on the
+ * sentence's side is allowed, because a table names its column in the singular ("resident") as
+ * often as the sentence names it in the plural ("residents"); nothing looser, since a looser
+ * match is the defect being closed here.
+ */
+function wordAppearsIn(token, haystack) {
+  const escaped = token.replace(REGEX_META_RE, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:es|s)?(?![\\p{L}\\p{N}])`, "iu").test(haystack);
+}
+
+function columnIsNamedIn(column, haystack) {
+  return nameTokensOf(column).some((t) => wordAppearsIn(t, haystack));
+}
+
 /**
  * WHICH COLUMN A CLAIM IS ABOUT. The old `findValueColumn` demanded there be exactly ONE numeric
  * column beside the year and returned `null` otherwise — measured across the 21 frozen stories,
@@ -947,7 +978,7 @@ function chooseValueColumn(columns, text) {
   // a candidate for anything.
   const meantButRefused = columns.filter(
     (c) => c.type !== "number" && typeof c.reason === "string" && c.reason.trim() !== "" &&
-      nameTokensOf(c).some((t) => haystack.includes(t)),
+      columnIsNamedIn(c, haystack),
   );
   if (meantButRefused.length > 0) {
     return {
@@ -959,7 +990,7 @@ function chooseValueColumn(columns, text) {
     };
   }
   if (candidates.length === 1) return { column: candidates[0] };
-  const named = candidates.filter((c) => nameTokensOf(c).some((t) => haystack.includes(t)));
+  const named = candidates.filter((c) => columnIsNamedIn(c, haystack));
   if (named.length === 1) return { column: named[0] };
   const names = (list) => list.map((c) => `"${c.name}"`).join(", ");
   return {
