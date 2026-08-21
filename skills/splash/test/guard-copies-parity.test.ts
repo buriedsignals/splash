@@ -339,6 +339,34 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/render-still.mjs",
     "scrolly/scripts/render-still.mjs",
   ],
+  // ROUND-FOUR FINDING 5: a beat drawn from a count with a denominator beside it says which
+  // reading it draws. `materialises-a-beat` reaches all eight, and the decision is entirely about
+  // a story's own frozen table and a BRIEF.md — nothing in it is skill-specific. Six of the eight
+  // sweep an empty population today; a copy that quietly narrowed what counts as a denominator, or
+  // what counts as a stated reading, would go green on a beat its neighbour refuses on the day one
+  // of them meets its first denominator, which is precisely the drift this file exists to catch.
+  denominatorReadingStated: [
+    "chart-beat/scripts/detect-denominator-reading.mjs",
+    "chart-web/scripts/detect-denominator-reading.mjs",
+    "chart-video/scripts/detect-denominator-reading.mjs",
+    "dw-beat/scripts/detect-denominator-reading.mjs",
+    "map-beat/scripts/detect-denominator-reading.mjs",
+    "map-web/scripts/detect-denominator-reading.mjs",
+    "image-beat/scripts/detect-denominator-reading.mjs",
+    "scrolly/scripts/detect-denominator-reading.mjs",
+  ],
+  // The DISCOVERY, walked for the same reason `exampleRunnersFor` is: it defines the population a
+  // red is measured over, and a copy that narrowed it would report an empty sweep as a green one.
+  beatsCalling: [
+    "chart-beat/scripts/detect-denominator-reading.mjs",
+    "chart-web/scripts/detect-denominator-reading.mjs",
+    "chart-video/scripts/detect-denominator-reading.mjs",
+    "dw-beat/scripts/detect-denominator-reading.mjs",
+    "map-beat/scripts/detect-denominator-reading.mjs",
+    "map-web/scripts/detect-denominator-reading.mjs",
+    "image-beat/scripts/detect-denominator-reading.mjs",
+    "scrolly/scripts/detect-denominator-reading.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

@@ -45,6 +45,7 @@ written out below the tables.
 | fills-its-frame |  | **R** |  | **R** |  | **R** |  | **R** |
 | storyboard-gate-is-visible | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | example-runners-are-called | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
+| denominator-reading-is-stated | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 
 ## discipline
 
@@ -56,6 +57,7 @@ written out below the tables.
 | palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |
 | guard-wired-to-run | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
+| typeface-is-recorded |  |  |  |  |  | **R** | **R** | **R** |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -63,7 +65,7 @@ Disciplines are checked for PRESENCE where an author reads them, and are not mec
 
 Nothing. Every format carries every rule it can reach.
 
-## Why a cell is blank, where the blankness was argued — 18 of them
+## Why a cell is blank, where the blankness was argued — 22 of them
 
 Only the cells a reader would otherwise re-open: a skill within the reachable set that is still
 excepted for a documented reason. A skill outside the reachable set needs no entry — the absent
@@ -87,6 +89,10 @@ trait already proves it.
 - `map-beat` cannot reach **framing-is-measured** — measured 2026-08-20: this format already carries its own, more exact mechanism for the same family of defect — binsCrossedByProjection/assertAreaEncodingIsHonest (assets/geo.ts) measures how many of a choropleth's OWN class breaks a projection's area bias alone can move a cell across (map-quake-density: up to 2 bins at a measured x24.0 bias) and refuses an undisclosed one. A choropleth has no shared zero-based axis for spreadAgainstExtent to read and no single group of comparable marks the way a bar chart's bars are; the analogous skew is already caught, more precisely, by this skill's own class-scale discipline
 - `map-web` cannot reach **framing-is-measured** — same reasoning as map-beat: map-web shares assets/geo.ts's join and class-scale mechanism wholesale (COPIES, `splash/test/guard-copies-parity.test.ts`), including binsCrossedByProjection/assertAreaEncodingIsHonest. No shared zero-based axis, no single group of comparable marks for either number to describe
 - `scrolly` cannot reach **framing-is-measured** — this skill's own doctrine says so directly — "it does not invent a second drawing engine" (SKILL.md) — its CHART track draws under chart-beat's or chart-web's own conventions rather than deciding a plot extent of its own, and its MAP and IMAGE tracks are covered by the same reasoning already argued for map-beat and image-beat above
+- `chart-beat` cannot reach **typeface-is-recorded** — measured 2026-08-21: this format already carries the more exact mechanism for the same defect, in code rather than prose — its own scripts/render-still.mjs holds FONT_FAMILY as a `let` that useTypeface reassigns from a recorded TYPEFACE.md (readTypeface walks up from the beat's own directory and throws naming every directory searched), refuses a family that does not resolve on this machine instead of substituting one, and refuses any element drawn in a family other than the one in force (assertDrawnInActiveTypeface). What it lacked was a writer, which palette now carries; the discipline is prose for the three formats whose render-still.mjs holds `export const FONT_FAMILY` as a const no recorded answer can reach. Same reasoning framing-serves-the-point is excepted on for map-beat
+- `chart-web` cannot reach **typeface-is-recorded** — measured 2026-08-21: same as chart-beat — this format's own scripts/render-still.mjs is the vendored 843-line copy carrying readTypeface, useTypeface's resolution probe and assertDrawnInActiveTypeface, so the face a delivered page's static frame is set in is a recorded answer refused rather than defaulted, enforced by the renderer instead of asked of the author
+- `chart-video` cannot reach **typeface-is-recorded** — measured 2026-08-21: same mechanism, and the format with the least slack for prose — a build rasterises every frame in the face in force, so a silent fallback is baked three hundred times over with no reader-side reflow to reveal it. Its own scripts/render-still.mjs carries readTypeface/useTypeface/assertDrawnInActiveTypeface
+- `map-beat` cannot reach **typeface-is-recorded** — measured 2026-08-21: same mechanism, reached from three of its own scripts rather than one — render-map.mjs, render-still.mjs and render-preview.mjs each call readTypeface and useTypeface, so a map beat's labels and legend are set in the recorded face or the run refuses
 
 ## What each skill is
 
@@ -306,3 +312,15 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a de-collided label stack that reorders the values it names, or a row whose label and whose value are drawn on one line while the marks they name are joined to something else
 
 **Earned by:** a thirteen-region slope de-collided its left labels in 2020 rank order and its right values independently against their own 2026 positions; both stacks overflowed the plot band, both fell back to an equal gap over it, and the one corrupted cell borrowed its 2020 y and sorted a row too high. The delivered graphic states in print that the Peloponnese has no 2026 figure and that Eastern Macedonia and Thrace has 392 schools — and, unreported until this guard read the file, that Epirus went 244 to 238 and the South Aegean 241 to 219, when the frozen source says 244 to 219 and 241 to 238. Four false rows of thirteen, through approval, through inspectSvg at 31 of 31 contrast entries, through assertDeliveredSize and assertTypeFloor, and out to a reader. The same beat's first version failed the other half of the same invariant, drawing a 1104-school region above an 1802-school one; only the pixels caught it
+
+### denominator-reading-is-stated — `denominatorReadingStated`
+
+**Offers:** a beat drawn from a table that puts a denominator beside a count states, in its own BRIEF.md, WHICH of the two readings it draws — `reading: raw` or `reading: per <column>` — so the choice is a decision on the record rather than something the next reader has to re-derive from the geometry
+
+**Earned by:** finding 5 of stress round four: `grep -rn "per capita|perCapita|denominator"` across skills/ and scripts/ returned nothing that reasons about a count against its denominator. stress-q-safety-incidents ranks five districts by `incidents` with `residents` in the very next column — Centro leads on the raw count (412) and Sul leads per resident (233 per 100,000 against Centro's 205), so the article's headline is true one way and false the other; stress-p-transport-ridership inverts at the very top, Porto carrying 416 trips per resident against Lisboa's 393. Four of the twenty-one frozen stories carry an explicit denominator, and of the four producers that met one, two found it unprompted and built the honest chart while the other two were never in a position to. `intake` now NAMES the candidate column and `storyboard`'s grounding REFUSES to confirm a raw-count superlative while one exists; this is the producing half of the same doctrine — report and ask, never repair. Measured on the day it landed: exactly six beats in the tree meet a denominator (stress-q x1, stress-p x3, stress-a x1, stress-r x1) and every one of them was SILENT about which reading it drew, including the two that got the reading right on purpose. THE CONSTRAINT THAT SHAPES THE RULE: stress-a-energy-bills carries `households` beside `price_eur` and draws `price_eur` RAW, correctly, because a household energy bill is already a per-household figure — so `reading: raw` is a complete answer and not a lesser one, the detector never divides, never re-ranks, and never has an opinion about which reading is right. DECLARED, NEVER INFERRED: the reading is read off a `reading:` line the BRIEF actually carries, never sniffed out of prose — a detector that looked for the word "per" would go green on stress-p beat 1's own "Per-capita framing smuggled in here", in a beat that draws the raw count. Six of the eight formats sweep an empty population today, which is exactly why the population is derived from `materialises-a-beat` rather than typed: the day one of them meets a denominator, it is already swept
+
+### typeface-is-recorded — `palette/references/typeface.md`
+
+**Refuses:** a beat set in a face nobody chose: a renderer holding FONT_FAMILY as a literal no recorded answer can reach, with nothing said where an author reads it about the story's own TYPEFACE.md, who writes one, or what a format that cannot read one owes instead
+
+**Earned by:** round four measured that five render paths REFUSE without TYPEFACE.md while `grep -rn "TYPEFACE.md" skills/ shared/ | grep -i write` returned nothing at all: no writer, no movement in the exchange, no owning skill. Each skill ships its own copy in its own directory, so a seed resolves by walking up and nobody noticed that a STORY has none — twenty of this tree's twenty-one hold none, and the one that does had it written by hand at the end of its run. A real beat says so in its own voice: stories/stress-l-mixed-unit-clinics/beats/mixed-unit-clinics/render-still.mjs documents in a comment that it deliberately skipped readTypeface/useTypeface because no story in the tree had the file and calling for it would have invented a requirement nothing could answer. A mechanism nothing can answer gets designed around, quietly, by the people it was built for
