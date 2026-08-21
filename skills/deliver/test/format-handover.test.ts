@@ -358,3 +358,27 @@ describe("formatHandover — the caveat's own material", () => {
     expect(doc).toContain("olympics.csv");
   });
 });
+
+// ROUND-FOUR FINDING 11: the hand-over is one of the three surfaces a credit reaches a reader
+// through — the newsroom pastes this blockquote by hand — so the honest empty answer has to be
+// LEGIBLE here, not a maintainer's token and not a blank. `unattributed` is what `STORYBOARD.md`
+// records; `Source: not stated` is what the desk reads.
+describe("formatHandover — a story whose journalist named no source", () => {
+  it("should print the state a reader can act on, never the recorded sentinel", () => {
+    const doc = formatHandover({ ...VALID, credit: "unattributed" });
+    expect(doc).toContain("> Source: not stated");
+    expect(doc).not.toContain("> unattributed");
+  });
+
+  it("should keep whatever the story appended to it — the effective date, most often", () => {
+    const doc = formatHandover({
+      ...VALID,
+      credit: "unattributed · as of 21 August 2026",
+    });
+    expect(doc).toContain("> Source: not stated · as of 21 August 2026");
+  });
+
+  it("should leave a real credit exactly as the journalist wrote it", () => {
+    expect(formatHandover(VALID)).toContain(`> ${VALID.credit}`);
+  });
+});

@@ -367,6 +367,19 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/detect-denominator-reading.mjs",
     "scrolly/scripts/detect-denominator-reading.mjs",
   ],
+  // ROUND-FOUR FINDING 11: the value `credit` takes when the journalist named no source, and the
+  // line a delivered artefact prints for it. `storyboard` records the answer; `deliver` renders it.
+  // Two readings of "unattributed" would be two definitions of what an absent source looks like to
+  // a reader — one of them a maintainer's token reaching a newsroom, or a blank where a credit
+  // goes — which is the same class of divergence `deliveryClosed` is walked for one field over.
+  isUnattributedCredit: [
+    "storyboard/scripts/storyboard.mjs",
+    "deliver/scripts/format-handover.mjs",
+  ],
+  creditLine: [
+    "storyboard/scripts/storyboard.mjs",
+    "deliver/scripts/format-handover.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {

@@ -33,6 +33,165 @@ const HAND = [
   "effectiveDate",
 ];
 
+// THE HONEST EMPTY ANSWER FOR `credit` — ROUND-FOUR FINDING 11.
+//
+// `credit` is one of the six HAND fields above, required, presence-checked, and until now it had no
+// value meaning "the journalist named no source". `stress-p-transport-ridership`'s three delivered
+// beats all print "Source: city network figures for 2025, compiled by Buried Signals". Its frozen
+// article names no source whatever —
+//
+//     grep -in "source\|according\|compiled\|buried" \
+//       stories/stress-p-transport-ridership/source/article.md   ->  nothing
+//
+// — and `Buried Signals` is this tree's own `NEWSROOM.md` `name`. A required question with no honest
+// empty answer, asked with nobody there to answer it, was filled with the most plausible string in
+// reach, and the consequence is data attributed to a real named organisation that never touched it.
+// Round two's finding 9 recurring, with a byline on it.
+//
+// THE SHAPE OF THE FIX is `palette/scripts/typeface.mjs`'s, landed this same round for the same
+// class of defect — a required answer nobody was present to give. That file proposes, records
+// `origin: default`, and says out loud that nobody chose, rather than silently substituting. The
+// third origin here is `none`, its recorded value is `unattributed`, and what a reader sees is
+// `Source: not stated`: visible, on the artefact, in the place a credit goes. A blank would not do
+// the same work — a credit line that renders as nothing reads as a rendering fault, which is how an
+// absent source stops being read as one.
+//
+// WHAT IS DELIBERATELY NOT COPIED FROM THAT FILE: it writes a file (`TYPEFACE.md`) because a
+// typeface answer carries a measurement no person can make by eye. A credit is a sentence a person
+// can read and type, and it already has a home — the `credit:` scalar in this story's own
+// `STORYBOARD.md`. A second file for it would be a second place to disagree.
+const UNATTRIBUTED_CREDIT = "unattributed";
+const UNATTRIBUTED_CREDIT_LINE = "Source: not stated";
+export { UNATTRIBUTED_CREDIT, UNATTRIBUTED_CREDIT_LINE };
+
+/** Who chose the credit. `none` is the honest word for nobody, and it is an ANSWER, not a failure. */
+export const CREDIT_ORIGINS = ["journalist", "newsroom", "none"];
+
+/**
+ * Whether a recorded `credit:` is the sentinel meaning the journalist named no source.
+ *
+ * Matched at the head of the value and on a word boundary, so a story that appends its effective
+ * date to the recorded scalar (`unattributed · as of 21 August 2026`, which is what a beat's own
+ * source line normally looks like) still reads as unattributed. A credit that merely CONTAINS the
+ * word — "Source: unattributed figures released by the ministry" — is a real credit and is not
+ * touched.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`, and walked by
+ * `splash/test/guard-copies-parity.test.ts`: the phase that RECORDS the answer and the phase that
+ * PRINTS it must not be able to disagree about what the answer means.
+ */
+export function isUnattributedCredit(value) {
+  if (typeof value !== "string") return false;
+  return new RegExp(`^${UNATTRIBUTED_CREDIT}\\b`, "iu").test(value.trim());
+}
+
+/**
+ * The credit line a delivered artefact actually PRINTS, given the recorded scalar.
+ *
+ * The sentinel becomes the sentence a reader sees; everything else is the journalist's own words,
+ * returned untouched. Nothing is invented for an empty credit — an empty credit is a gate failure,
+ * not a case to paper over, and `checkStoryboard` already refuses it.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`; see `isUnattributedCredit`.
+ */
+export function creditLine(credit) {
+  const text = String(credit ?? "").trim();
+  if (!isUnattributedCredit(text)) return text;
+  return `${UNATTRIBUTED_CREDIT_LINE}${text.slice(UNATTRIBUTED_CREDIT.length)}`;
+}
+
+// The cues a sentence uses when it says where a figure came from, English and French, as the two
+// languages this tree's own stories are written in. Deliberately a short, literal list: this is a
+// PROPOSAL step, and a cue it misses costs the journalist one correction, while a cue it invents
+// would be this defect again one level up.
+const ATTRIBUTION_CUES =
+  /\b(according to|as reported by|released by|released to|obtained from|provided by|published by|supplied by|figures from|data from|source[s]?\s*:|selon|d'après|publi[ée]s? par|fourni[es]? par|transmis(?:es)? par)\b/iu;
+
+/**
+ * The article's OWN attributing sentences, verbatim.
+ *
+ * Never a rewrite and never a summary: what comes back is what the journalist already wrote, so a
+ * proposal built on it is their words handed back rather than a plausible sentence composed here.
+ * An article that attributes nothing returns nothing, and that emptiness is the finding — it is what
+ * `proposeCredit` turns into a recommendation of `none` instead of a guess.
+ */
+export function attributionsIn(article) {
+  return String(article ?? "")
+    .split(/(?<=[.!?])\s+(?=[^\s])|\n{2,}/u)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence && !sentence.startsWith("#") && ATTRIBUTION_CUES.test(sentence));
+}
+
+/**
+ * The credit options a journalist reads and answers — the same movement `proposeTypeface` runs for
+ * the face, one field over: every option carries where it was read, why it is offered, and what a
+ * delivered artefact would PRINT if it were chosen.
+ *
+ * THE RECOMMENDATION IS NEVER THE HOUSE CONVENTION ON ITS OWN. `NEWSROOM.md`'s `credit` is a
+ * TEMPLATE with `{source}` where the story's own source goes; recommending it with that hole
+ * unfilled is the exact move that produced "compiled by Buried Signals" — the newsroom's name is
+ * the nearest string to hand, and a run with nobody watching reaches for it. So the convention is
+ * OFFERED, and the recommendation is the article's own attribution where there is one and `none`
+ * where there is not.
+ */
+export function proposeCredit({ newsroom, article } = {}) {
+  const convention = String(newsroom?.credit ?? "").trim();
+  const house = newsroom?.name || "the newsroom";
+  const attributions = attributionsIn(article);
+  const options = [];
+
+  for (const [index, sentence] of attributions.entries()) {
+    const value = convention
+      ? convention.replace("{source}", sentence.replace(/[.!?]+$/u, ""))
+      : `Source: ${sentence.replace(/[.!?]+$/u, "")}`;
+    options.push({
+      id: `article-${index + 1}`,
+      origin: "journalist",
+      value,
+      provenance: `the article's own words, attributing sentence ${index + 1} of ${attributions.length}`,
+      reasoning:
+        "The journalist already said where this came from, in their own copy. Handing it back for confirmation is the only proposal here that cannot invent a source, because there is nothing in it that was not already written.",
+    });
+  }
+
+  if (convention) {
+    options.push({
+      id: "newsroom",
+      origin: "newsroom",
+      value: convention,
+      provenance: `NEWSROOM.md — credit: ${JSON.stringify(convention)}`,
+      reasoning:
+        `${house}'s standing convention, read back rather than re-invented per story. It is a template: whatever goes where \`{source}\` sits has to come from the journalist or from the article, never from this file.`,
+    });
+  }
+
+  options.push({
+    id: "none",
+    origin: "none",
+    value: UNATTRIBUTED_CREDIT,
+    provenance: "no measurement — the article attributes nothing and nobody has said otherwise",
+    reasoning:
+      "Nobody named a source. Recording that as a value rather than leaving the question to be filled in is the whole point: the beat then says out loud that its data is unattributed, instead of looking as though it had been sourced.",
+  });
+
+  for (const option of options) option.prints = creditLine(option.value);
+
+  const recommended = attributions.length > 0 ? "article-1" : "none";
+  const recommendationReason =
+    recommended === "none"
+      ? `The article names no source — nothing in it attributes these figures to anyone, and ${house} publishing them is not the same as ${house} having compiled them. \`${UNATTRIBUTED_CREDIT}\` is the recorded answer for that, and the delivered artefact prints \`${UNATTRIBUTED_CREDIT_LINE}\` where a credit goes, so a desk reading a proof sees the gap instead of a plausible sentence nobody can check.`
+      : `The article attributes these figures itself, in ${attributions.length === 1 ? "one sentence" : `${attributions.length} sentences`}. The first is offered back as written; correct it if the credit line should read differently from the copy.`;
+
+  return {
+    newsroom: newsroom?.name ?? null,
+    attributions,
+    options,
+    recommended,
+    recommendationReason,
+    escape: "Something else — name the source and it is recorded exactly as you write it.",
+  };
+}
+
 // Every story-level scalar Gate 2 requires. `where.mjs` exports the same list, spelled
 // independently — the deliberate duplicate, cross-checked by `splash/test/where.test.ts`,
 // which GENERATES its fixtures from the union of both copies so a field added to either side

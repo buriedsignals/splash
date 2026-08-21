@@ -75,7 +75,7 @@ medium existed.
 | *"What does the reader compare it to — last year, the average, the announced target, the next town?"* | the editorially meaningful reference point | **the reference the reader measures against** — the mechanism that carries it is chosen with the medium, not here. A number alone says nothing |
 | *"What does this data NOT let you conclude?"* | the boundary the journalist knows and the data never states (sample, correlation vs causation, scope) | the anti-overclaim check on the title, and what an annotation is allowed to assert |
 | *"Which paragraph does this visual follow — and what does the text already say next to it?"* | what is already written | **do not duplicate** (if the axis carries `2024`, the callout gives the value, not the year) |
-| *"How do you credit it, and as of what date?"* | the house convention and the effective date | the visible source line, and traceability |
+| *"Who does this data come from, how do you credit them, and as of what date?"* | the SOURCE, credited — or, said plainly, that there is none | the visible source line, and traceability. **`unattributed` is a legitimate answer** and prints `Source: not stated` on the artefact |
 
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
 
@@ -110,9 +110,19 @@ Per question, on absence:
   no placement decided, propose one from the article's own structure — *"this follows the paragraph
   that first states the divergence, which argues for mid-article placement"* — and say what that
   placement implies for the questions still to come, so the proposal is a reason, not a guess.
-- **Credit** — propose the newsroom's standing convention (`NEWSROOM.md`, whose `credit` field
-  preflight has already read back) and today's date as the effective date; the journalist confirms
-  or corrects rather than dictating both from nothing.
+- **Credit** — **`unattributed` is a legitimate answer, and it is the DEFAULT one.** Run
+  `proposeCredit({ newsroom, article })` (`scripts/storyboard.mjs`): it reads the article's own
+  attributing sentences back — verbatim, never rewritten — offers the newsroom's standing convention
+  from `NEWSROOM.md` beside them, and always carries a third option whose recorded value is
+  `unattributed` and whose printed line is `Source: not stated`. It recommends the article's own
+  words where the article has any, and `none` where it has none. It never recommends the house
+  convention on its own, because that convention is a TEMPLATE with `{source}` where the story's
+  source goes, and filling that hole from nothing is exactly the failure this rule was written for:
+  `stress-p-transport-ridership` shipped three delivered beats reading *"Source: city network
+  figures for 2025, compiled by Buried Signals"* — an article that attributes nothing, and the
+  newsroom's own name in `NEWSROOM.md` doing duty as a data source it never touched. A credit is
+  the one hand field that names a THIRD PARTY, so an invented one is not a weak answer, it is a
+  false statement about somebody else. Today's date is still proposed as the effective date.
 
 None of this is a re-ask. The question was asked once; what follows an "I don't know" is a proposal
 the journalist disposes of in one move, exactly as movement ⑩ already does for slots and candidates

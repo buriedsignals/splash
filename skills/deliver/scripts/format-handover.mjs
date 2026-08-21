@@ -49,6 +49,52 @@ import { resolveScaffoldLanguage, untranslatedNotice } from "./journalist-langua
 // has the shape of a code), and this file still owns the second.
 const REQUIRED = ["format", "placement", "alt", "credit"];
 
+// THE HONEST EMPTY CREDIT, PRINTED WHERE A READER SEES IT — ROUND-FOUR FINDING 11.
+//
+// `storyboard` OWNS the `credit` scalar and the vocabulary below; this file PRINTS it. The two are
+// copied byte for byte rather than imported (no skill in this branch imports another's runtime) and
+// walked by `splash/test/guard-copies-parity.test.ts`, because a phase that records "the journalist
+// named no source" and a phase that renders that answer must not be able to disagree about what it
+// means. A hand-over that printed the raw sentinel — "> unattributed" — would be a maintainer's
+// token reaching a newsroom; one that printed nothing would look like a rendering fault. It prints
+// `Source: not stated`, which is the state, said out loud, in the place a credit goes.
+const UNATTRIBUTED_CREDIT = "unattributed";
+const UNATTRIBUTED_CREDIT_LINE = "Source: not stated";
+
+/**
+ * Whether a recorded `credit:` is the sentinel meaning the journalist named no source.
+ *
+ * Matched at the head of the value and on a word boundary, so a story that appends its effective
+ * date to the recorded scalar (`unattributed · as of 21 August 2026`, which is what a beat's own
+ * source line normally looks like) still reads as unattributed. A credit that merely CONTAINS the
+ * word — "Source: unattributed figures released by the ministry" — is a real credit and is not
+ * touched.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`, and walked by
+ * `splash/test/guard-copies-parity.test.ts`: the phase that RECORDS the answer and the phase that
+ * PRINTS it must not be able to disagree about what the answer means.
+ */
+export function isUnattributedCredit(value) {
+  if (typeof value !== "string") return false;
+  return new RegExp(`^${UNATTRIBUTED_CREDIT}\\b`, "iu").test(value.trim());
+}
+
+/**
+ * The credit line a delivered artefact actually PRINTS, given the recorded scalar.
+ *
+ * The sentinel becomes the sentence a reader sees; everything else is the journalist's own words,
+ * returned untouched. Nothing is invented for an empty credit — an empty credit is a gate failure,
+ * not a case to paper over, and `checkStoryboard` already refuses it.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`; see `isUnattributedCredit`.
+ */
+export function creditLine(credit) {
+  const text = String(credit ?? "").trim();
+  if (!isUnattributedCredit(text)) return text;
+  return `${UNATTRIBUTED_CREDIT_LINE}${text.slice(UNATTRIBUTED_CREDIT.length)}`;
+}
+
+
 // WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,
 // which is what lets a paragraph this honest exist here at all without opening a free-text field.
 //
@@ -358,7 +404,7 @@ export function formatHandover({ files, placement, alt, credit, caveat, format, 
     "",
     copy.credit,
     "",
-    `> ${credit}`,
+    `> ${creditLine(credit)}`,
     "",
   );
 
