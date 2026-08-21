@@ -18,6 +18,27 @@
 //   - a comparison over a period the frozen data itself marks incomplete refuses to confirm,
 //     narrowly, by column name only (see `findCoverageColumn`).
 //
+// ROUND FOUR (2026-08-21) opened HERE for the third consecutive time — five of the round's six
+// leading findings were this file — and the lesson of the three rounds is that adding a sixth
+// SHAPE would have been the same mistake a fourth time. What changed instead is WHAT A VERDICT IS
+// ALLOWED TO MEAN:
+//   - a numeral that merely falls inside a column's range is no longer "supported". It is
+//     `consistent`, a verdict of its own that `propose.mjs`'s `groundingScalar` cannot close G1
+//     on. `233` really is inside `incidents [96, 412]`, and so is `100`, the "k" of "100k", and
+//     neither is evidence for the sentence it sits in (see `checkNumericRanges`);
+//   - rows come from the FROZEN CSV now, not from a `profile.rows` no profile has ever carried,
+//     so shape 8 decides instead of always refusing (see `readFrozenRows`);
+//   - the superlative vocabulary is a stated list rather than four phrases, and a word whose
+//     direction the data cannot supply ("worst") is REFUSED BY NAME rather than being invisible
+//     (see `SUPERLATIVE_WORD_RE` and `resolveSuperlative`);
+//   - the column a claim is about is read off the sentence when a table carries several measures,
+//     and named when it cannot be (see `chooseValueColumn`) — nine of the twenty-one frozen
+//     stories used to fail every superlative for this reason alone;
+//   - a column the PROFILER refused is named, with its reason, on every claim it disarmed (see
+//     `refusedColumnNote`);
+//   - `coverage` gained `decided`, so a caller can tell a takeaway the data settled from one it
+//     merely had a shape for.
+//
 // This is NOT a fact-checker (it knows nothing outside `profile`) and NOT a conformance engine
 // (it never looks at a rendered chart or a spec). Everything it cannot actually check comes back
 // "unverifiable" with a reason — it never returns "supported" for something it did not verify,
@@ -32,12 +53,15 @@
 //                                                  // (`sum` is the total of a numeric column, and
 //                                                  // is what makes a part-to-whole takeaway
 //                                                  // checkable at all — see shape 1b below)
-//     rows: [{ [columnName]: value, ... }, ...],  // optional row-level data. Every frozen profile
-//                                                  // this file has been run against so far omits
-//                                                  // it entirely (`profileTable` never writes it —
-//                                                  // see `intake/scripts/freeze.mjs`), so treat
-//                                                  // "no `rows`" as the COMMON case, not the edge
-//                                                  // one. Without it, any claim that needs a
+//     rows: [{ [columnName]: value, ... }, ...],  // optional row-level data. NO frozen profile in
+//                                                  // this tree carries it (`profileTable` never
+//                                                  // writes it — see `intake/scripts/freeze.mjs`),
+//                                                  // which is why `groundTakeaway`'s third
+//                                                  // argument now accepts `{ csv }`: the text of
+//                                                  // the story's own frozen `source/data.csv`,
+//                                                  // read into rows by `readFrozenRows`. A
+//                                                  // profile carrying its own `rows` still wins.
+//                                                  // With NEITHER, any claim that needs a
 //                                                  // specific row's value — a year's own figure
 //                                                  // (shapes 2-4), or the entity an entity-named
 //                                                  // superlative names (shape 8) — comes back
@@ -58,7 +82,9 @@
 //      cross-skill import for a shared decision). A thousands-grouped integer ("14,205") or a
 //      French decimal ("1,7") is ONE claim or none, never two independent fragments each tested
 //      against a column's range by coincidence — the 2026-08-20/21 stress test's finding 4.
-//   1a. A numeric token in the takeaway that falls INSIDE the range of some numeric column.
+//   1a. A numeric token in the takeaway that falls INSIDE the range of some numeric column —
+//       `consistent`, NEVER `supported` (round four, finding 1): the numeral is placed, the
+//       claim it sits in is not confirmed.
 //   1b. A numeric token that equals a numeric column's `sum` within AGGREGATE_TOLERANCE — a
 //       part-to-whole total, "34 = 14 + 11 + 9". A number this function can place in NEITHER way is
 //       "unverifiable", never "contradicted": a total is by construction >= the max of the column
@@ -112,12 +138,14 @@
 //      guessed at (2026-08-20 stress test, stress-e-electricity-mix: share_pct summed to 95.2
 //      while the article said the six shares "make up the whole of national supply", and nothing
 //      before this shape ever read `sum` against that claim at all).
-//   8. A SUPERLATIVE naming one entity — "<X> has the most", "<X> has/reports the highest/lowest",
-//      "<X> leads", "<X> tops", "<X> ... more than any other". Decidable ONLY by resolving <X> to
-//      its own row and reading its value against the column's own max (or min, for "lowest") — see
-//      `resolveSuperlative`. Where `rows` is absent (the common case — see the profile-shape note
-//      above) or <X> cannot be matched to any row, this is "unverifiable", NAMING <X> in the
-//      detail — never `[]` (2026-08-20/21 stress test, finding 3: "Germany has the most." and
+//   8. A SUPERLATIVE naming one entity — "<X> has the most", "<X> has/reports the highest/lowest/
+//      largest/smallest/fewest/greatest/…", "<X> leads", "<X> tops", "<X> est en tête", "<X> ...
+//      more than any other". Decidable ONLY by resolving <X> to its own row and reading its value
+//      against the column's own max (or min) — see `resolveSuperlative`. Rows come from the
+//      frozen CSV (`readFrozenRows`); where none was handed over, or <X> matches no row, or <X>
+//      matches SEVERAL rows (a long-format table), or the word carries a polarity the data cannot
+//      supply ("the worst"), or it names a rank rather than the extreme ("the second shortest"),
+//      this is "unverifiable" NAMING what was missing — never `[]` (2026-08-20/21 stress test, finding 3: "Germany has the most." and
 //      "Brazil leads the annual figures again." both returned `[]` before this round, indistinguish-
 //      able from a takeaway with nothing checkable in it at all).
 //   9. A COMPARISON naming one entity against the rest of a column combined — "<X> ... more than
@@ -195,6 +223,73 @@ export function readNumericToken(raw) {
     };
   }
   return null;
+}
+
+// ROWS, AND WHERE THEY COME FROM (round-four finding 2, 2026-08-21).
+//
+// Shape 8 has always needed `profile.rows`, and `intake`'s `profileTable` has never written one.
+// Measured across the 21 frozen stories in `stories/`: every superlative ever put to this check,
+// in every story, came back "unverifiable" for that one reason — a shape that could not decide
+// anything, printing an honest-looking refusal. Three ways out were on the table: extend the
+// profile, hand the check the frozen CSV, or delete the shape.
+//   - Extending the profile decides nothing for any story that already exists: every
+//     `source/profile.json` in the tree is FROZEN and would keep its rowless shape.
+//   - Deleting the shape puts a false superlative back to being invisible, which is the defect.
+// So the check reads the frozen TABLE itself. The caller passes `{ csv }` — the text of the
+// story's own `source/data.csv` — and the rows are parsed here, read-only. Nothing is written and
+// nothing is re-profiled; a caller with no CSV to hand behaves exactly as it did before, and a
+// profile that carries its own `rows` still wins over the CSV.
+
+// One CSV line, split on commas outside double quotes, with doubled quotes read as one quote.
+// Deliberately small: this reads a table `intake` already froze and `profileTable` already
+// accepted, not arbitrary CSV from the wild.
+function splitCsvLine(line) {
+  const cells = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cell += '"';
+          i += 1;
+        } else quoted = false;
+      } else cell += ch;
+      continue;
+    }
+    if (ch === '"') quoted = true;
+    else if (ch === ",") {
+      cells.push(cell);
+      cell = "";
+    } else cell += ch;
+  }
+  cells.push(cell);
+  return cells.map((c) => c.trim());
+}
+
+/**
+ * The frozen table as rows — `[{ [columnName]: value }, ...]`, the exact shape shapes 8 and 9
+ * already expected `profile.rows` to have. Every cell is read by `readNumericToken`, the SAME
+ * rule `intake/scripts/profile.mjs` types a column by, so a cell this project calls ambiguous
+ * ("1,7") stays text here rather than becoming a number by a second, looser rule. A cell that is
+ * not a numeral at all — `stress-r`'s corrupt "term378" — stays exactly as written.
+ */
+export function readFrozenRows(csvText) {
+  if (typeof csvText !== "string" || csvText.trim() === "") return [];
+  const lines = csvText.replace(/\r\n/g, "\n").split("\n").filter((l) => l.trim() !== "");
+  if (lines.length < 2) return [];
+  const header = splitCsvLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const cells = splitCsvLine(line);
+    const row = {};
+    header.forEach((name, i) => {
+      const cell = cells[i] ?? "";
+      const read = readNumericToken(cell);
+      row[name] = read && !read.ambiguous ? read.value : cell;
+    });
+    return row;
+  });
 }
 
 // A numeral as written in free text: a thousands-grouped integer with an optional decimal tail
@@ -306,10 +401,67 @@ const TOTALITY_TOLERANCE = 1;
 // row hold the column's max (or min, for "lowest")? — decidable only once that row is resolved
 // (see resolveSuperlative for what happens when the profile carries no `rows` to resolve it
 // against, which is every frozen profile this branch has seen so far).
-const SUPERLATIVE_MOST_RE = /\bhas\s+the\s+most\b/gi;
-const SUPERLATIVE_HL_RE = /\bthe\s+(highest|lowest)\b/gi;
+//
+// ROUND FOUR, finding 3: this vocabulary was FOUR phrases — "has the most", "the highest",
+// "the lowest", "leads", "tops" — and 8 of the 12 ordinary superlatives the round-four corpus
+// carries were invisible to it, including `the worst`, the false headline the whole round was
+// built around ("Centro has the worst safety record in the city." → coverage
+// {sentences: 1, evaluated: 0}). Invisible is the one thing this may not be, so the vocabulary is
+// now a stated list, split three ways by what the data can actually settle:
+//   - a MAXIMUM word ("most", "highest", "largest", …) points at the column's own max;
+//   - a MINIMUM word ("lowest", "fewest", "smallest", …) at its own min;
+//   - a POLAR word ("worst", "best", "worst-hit", …) points at whichever END OF THE COLUMN IS
+//     BAD, and nothing in a profile says which that is: a high `incidents` is bad, a high
+//     `households_with_heat_pump_pct` is good, and the profile records neither. So a polar word
+//     is "unverifiable" NAMING the missing polarity — seen, refused, and explained.
+// A RANK qualifier ("the second shortest") is a fourth case: it names a place that is not the
+// extreme, which is the only thing this shape decides, so it is refused rather than misread as
+// the extreme — `stress-p`'s own slot 3 says "the second shortest of the six", and reading that
+// as "the shortest" would have produced a CONFIDENT FALSE CONTRADICTION.
+const SUPERLATIVE_MAX_WORDS = new Set([
+  "most",
+  "highest",
+  "largest",
+  "biggest",
+  "greatest",
+  "longest",
+  "strongest",
+]);
+const SUPERLATIVE_MIN_WORDS = new Set(["lowest", "smallest", "fewest", "shortest", "weakest", "least"]);
+const SUPERLATIVE_POLAR_WORDS = new Set([
+  "worst-hit",
+  "hardest-hit",
+  "worst",
+  "best",
+  "safest",
+  "poorest",
+  "richest",
+  "healthiest",
+  "cleanest",
+  "dirtiest",
+]);
+
+// "the [second] worst-hit" — the rank qualifier is captured so it can be refused by name, and the
+// hyphenated polar words come first in the alternation so "worst-hit" is never read as "worst".
+const SUPERLATIVE_WORD_RE =
+  /\bthe\s+(?:(second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|next|joint|equal)[\s-]+)?(worst-hit|hardest-hit|most|highest|largest|biggest|greatest|longest|strongest|lowest|smallest|fewest|shortest|weakest|least|worst|best|safest|poorest|richest|healthiest|cleanest|dirtiest)\b/gi;
+
+// The same polar words written without an article — "Attica was worst-hit" — which no "the"-
+// anchored pattern can see.
+const SUPERLATIVE_BARE_POLAR_RE = /\b(worst-hit|hardest-hit)\b/gi;
+
 const LEADS_RE = /\bleads\b/gi;
 const TOPS_RE = /\btops\b/gi;
+// The French form of the same claim — `stress-n-chomage-cantons`'s own article says
+// "Neuchâtel et Genève sont en tête", and this file already reads French comparisons (PAIR_FR_RE).
+const LEADS_FR_RE = /\ben\s+t[êe]te\b/gi;
+
+function superlativeExtremeOf(word) {
+  const w = word.toLowerCase();
+  if (SUPERLATIVE_MAX_WORDS.has(w)) return "max";
+  if (SUPERLATIVE_MIN_WORDS.has(w)) return "min";
+  return null;
+}
 
 // Shape 9 — "<entity> ... more than any other <noun>" (same question as shape 8, phrased as a
 // comparison) and "<entity> ... more than the other(s) ... combined" / "... more than all the
@@ -330,29 +482,104 @@ const MORE_THAN_COMBINED_RE = /\bmore\b[\s\S]{0,40}?\bthan\s+(?:the\s+other|all(
 // it the second half of that exact sentence resolves to "Germany" again, the wrong entity, one
 // clause too early. Returns `null` when the clause has no leading capital at all (a sentence
 // starting lowercase, or a marker sitting at position 0).
-function entitySubjectFor(text, markerStart) {
+const CLAUSE_BOUNDARY_CHARS = [".", "!", "?", "\n", ";"];
+const SENTENCE_BOUNDARY_CHARS = [".", "!", "?", "\n"];
+const LEADING_CAPITAL_RE = /^\s*([A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*)/u;
+const CAPITALISED_PHRASE_RE = /[A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*/gu;
+
+function clauseStart(text, markerStart) {
   let boundary = -1;
-  for (const ch of [".", "!", "?", "\n", ";"]) {
+  for (const ch of CLAUSE_BOUNDARY_CHARS) {
     const idx = text.lastIndexOf(ch, markerStart - 1);
     if (idx > boundary) boundary = idx;
   }
-  const prefix = text.slice(boundary + 1, markerStart);
-  const m = /^\s*([A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*)/u.exec(prefix);
-  return m ? m[1].trim() : null;
+  return boundary + 1;
+}
+
+// The SENTENCE a marker sits in — wider than its clause, because the measure a claim is about is
+// often named on the other side of a semicolon ("Germany reports the highest clinic COUNT;
+// Sweden the highest RATE"). Used only to decide WHICH COLUMN a claim is about (see
+// `chooseValueColumn`), never which entity.
+function sentenceAround(text, markerStart, markerEnd) {
+  let from = -1;
+  for (const ch of SENTENCE_BOUNDARY_CHARS) {
+    const idx = text.lastIndexOf(ch, markerStart - 1);
+    if (idx > from) from = idx;
+  }
+  let to = text.length;
+  for (const ch of SENTENCE_BOUNDARY_CHARS) {
+    const idx = text.indexOf(ch, markerEnd);
+    if (idx !== -1 && idx < to) to = idx;
+  }
+  return text.slice(from + 1, to);
+}
+
+// Every entity the CLAUSE a shape-8/9 marker sits in could plausibly be about, best guess first.
+// The clause's own leading capitalised phrase stays the primary answer — the measured assumption
+// that a short editorial sentence puts its subject first, and the reason ";" ends a clause here
+// ("Germany reports the highest count; Sweden the lowest" names each entity at the start of its
+// own clause). What round four added is the FALLBACK: when the leading phrase resolves to no row
+// at all — "In the ministry's own table, Brazil leads." leads with "In" — the other capitalised
+// phrases in the same clause are tried, nearest to the marker first, instead of the claim being
+// refused for an entity nobody meant. The fallback never overrides a leading phrase that DOES
+// resolve, so a sentence naming several real entities is still read subject-first.
+function entityCandidatesFor(text, markerStart) {
+  const prefix = text.slice(clauseStart(text, markerStart), markerStart);
+  const ordered = [];
+  const push = (value) => {
+    const v = (value ?? "").trim();
+    if (v && !ordered.includes(v)) ordered.push(v);
+  };
+  const leading = LEADING_CAPITAL_RE.exec(prefix);
+  if (leading) push(leading[1]);
+  for (const m of [...prefix.matchAll(CAPITALISED_PHRASE_RE)].reverse()) push(m[0]);
+  return ordered;
+}
+
+function entitySubjectFor(text, markerStart) {
+  return entityCandidatesFor(text, markerStart)[0] ?? null;
 }
 
 // A row is resolved for an entity name by matching it, case-insensitively, against ANY text-typed
 // value in that row — the profile's own header (`rows: [{ [columnName]: value, ... }]`) names no
 // fixed "entity column", and none of shapes 8/9's fixtures (a country code column beside a country
 // name column, e.g.) agree on one either.
-function resolveEntityRow(rows, entityName) {
-  if (!rows || rows.length === 0) return null;
-  const target = entityName.trim().toLowerCase();
-  return (
-    rows.find((row) =>
-      Object.values(row).some((v) => typeof v === "string" && v.trim().toLowerCase() === target),
-    ) ?? null
+// The names one written entity could be stored under: as written, without its possessive
+// ("Brazil's" → "Brazil"), and without a leading article ("The Netherlands" → "Netherlands").
+// Nothing looser — a prefix or fuzzy match would have made `stress-p`'s "Lisbon" resolve to the
+// table's "Lisboa", which is a DIFFERENT spelling the journalist should be told about, not one
+// this check should quietly paper over.
+function entityKeys(entityName) {
+  const base = entityName.trim().replace(/[.,;:]+$/, "");
+  const bare = base.replace(/['’]s$/i, "");
+  return [...new Set([base, bare, bare.replace(/^(the|le|la|les|l['’])\s+/i, "")])]
+    .map((k) => k.trim().toLowerCase())
+    .filter((k) => k.length > 0);
+}
+
+// EVERY row an entity name matches, not the first. A long-format table (heat-pump's five rows per
+// country) matches five, and one row's value says nothing about a claim made over all five — so
+// the count is returned and the caller refuses rather than silently reading row one.
+function resolveEntityRows(rows, entityName) {
+  if (!rows || rows.length === 0) return [];
+  const keys = entityKeys(entityName);
+  return rows.filter((row) =>
+    Object.values(row).some((v) => typeof v === "string" && keys.includes(v.trim().toLowerCase())),
   );
+}
+
+// The entity of `item` that the frozen table actually holds exactly one row for, tried in
+// `entityCandidatesFor`'s own order. Returns the ambiguity instead when a candidate matches
+// several rows and none matches exactly one.
+function resolveClaimEntity(item, rows) {
+  const candidates = item.entityCandidates ?? (item.entity ? [item.entity] : []);
+  let ambiguous = null;
+  for (const candidate of candidates) {
+    const hits = resolveEntityRows(rows, candidate);
+    if (hits.length === 1) return { name: candidate, row: hits[0] };
+    if (hits.length > 1 && !ambiguous) ambiguous = { name: candidate, count: hits.length };
+  }
+  return ambiguous ? { ambiguous } : {};
 }
 
 // A column this shape refuses to treat a period as fully comparable within, when it marks a row's
@@ -534,23 +761,45 @@ function extractComparisons(text) {
   // rule every other extraction in this function follows (this is what keeps SUPERLATIVE_HL_RE
   // from re-claiming the "highest"/"lowest" a SINCE_EN_RE or SUPERLATIVE_EVER_RE match already
   // owns).
+  const pushSuperlative = (span, fields) => {
+    if (found.some((f) => overlaps(f, span))) return;
+    const entityCandidates = entityCandidatesFor(text, span.start);
+    found.push({
+      kind: "superlative",
+      entity: entityCandidates[0] ?? null,
+      entityCandidates,
+      raw: text.slice(span.start, span.end),
+      ...fields,
+      ...span,
+    });
+  };
+
   const SUPERLATIVE_MARKERS = [
-    { re: SUPERLATIVE_MOST_RE, extreme: "max" },
     { re: LEADS_RE, extreme: "max" },
     { re: TOPS_RE, extreme: "max" },
+    { re: LEADS_FR_RE, extreme: "max" },
   ];
   for (const { re, extreme } of SUPERLATIVE_MARKERS) {
     for (const m of text.matchAll(re)) {
-      const span = { start: m.index, end: m.index + m[0].length };
-      if (found.some((f) => overlaps(f, span))) continue;
-      found.push({ kind: "superlative", extreme, entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+      pushSuperlative({ start: m.index, end: m.index + m[0].length }, { extreme });
     }
   }
-  for (const m of text.matchAll(SUPERLATIVE_HL_RE)) {
-    const span = { start: m.index, end: m.index + m[0].length };
-    if (found.some((f) => overlaps(f, span))) continue;
-    const extreme = m[1].toLowerCase() === "lowest" ? "min" : "max";
-    found.push({ kind: "superlative", extreme, entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+  for (const m of text.matchAll(SUPERLATIVE_WORD_RE)) {
+    const word = m[2].toLowerCase();
+    pushSuperlative(
+      { start: m.index, end: m.index + m[0].length },
+      {
+        extreme: superlativeExtremeOf(word),
+        polarWord: SUPERLATIVE_POLAR_WORDS.has(word) ? word : null,
+        rank: m[1] ? m[1].toLowerCase() : null,
+      },
+    );
+  }
+  for (const m of text.matchAll(SUPERLATIVE_BARE_POLAR_RE)) {
+    pushSuperlative(
+      { start: m.index, end: m.index + m[0].length },
+      { extreme: null, polarWord: m[1].toLowerCase(), rank: null },
+    );
   }
 
   // Shape 9 — "more than any other" (same question as shape 8) and "more than ... combined" (the
@@ -560,12 +809,17 @@ function extractComparisons(text) {
   for (const m of text.matchAll(MORE_THAN_COMBINED_RE)) {
     const span = { start: m.index, end: m.index + m[0].length };
     if (found.some((f) => overlaps(f, span))) continue;
-    found.push({ kind: "combined", entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+    const entityCandidates = entityCandidatesFor(text, span.start);
+    found.push({
+      kind: "combined",
+      entity: entityCandidates[0] ?? null,
+      entityCandidates,
+      raw: m[0],
+      ...span,
+    });
   }
   for (const m of text.matchAll(MORE_THAN_ANY_OTHER_RE)) {
-    const span = { start: m.index, end: m.index + m[0].length };
-    if (found.some((f) => overlaps(f, span))) continue;
-    found.push({ kind: "superlative", extreme: "max", entity: entitySubjectFor(text, span.start), raw: m[0], ...span });
+    pushSuperlative({ start: m.index, end: m.index + m[0].length }, { extreme: "max" });
   }
 
   return found;
@@ -581,9 +835,83 @@ function findYearColumn(columns) {
   );
 }
 
-function findValueColumn(columns, yearColumn) {
-  const candidates = columns.filter((c) => c.type === "number" && c !== yearColumn);
-  return candidates.length === 1 ? candidates[0] : null;
+// A MEASURE is a numeric column that is not the year column — a table's own x axis is not one of
+// the things it measures. (This is the rule finding 23 names as diverging from `propose.mjs`'s
+// `requirementFinding`, which counts `year` in `facts.numeric` AND `facts.temporal`; the answer
+// here is the one this file has always given.)
+function measureColumns(columns, yearColumn) {
+  return columns.filter(
+    (c) =>
+      c.type === "number" &&
+      c !== yearColumn &&
+      c.min !== null &&
+      c.min !== undefined &&
+      c.max !== null &&
+      c.max !== undefined,
+  );
+}
+
+// A column name, as the words a sentence could name it by. Tokens shorter than four characters
+// are dropped: "km" inside `network_km` and "pct" inside `share_pct` match far too much English
+// prose to be evidence of anything.
+const NAME_TOKEN_SPLIT_RE = /[^\p{L}\p{N}]+/u;
+
+function nameTokensOf(column) {
+  return column.name
+    .split(NAME_TOKEN_SPLIT_RE)
+    .map((t) => t.toLowerCase())
+    .filter((t) => t.length >= 4 && !/^\d+$/.test(t));
+}
+
+/**
+ * WHICH COLUMN A CLAIM IS ABOUT. The old `findValueColumn` demanded there be exactly ONE numeric
+ * column beside the year and returned `null` otherwise — measured across the 21 frozen stories,
+ * NINE fall in that dead zone, so every superlative and every entity-vs-combined claim in nine
+ * stories came back "cannot identify a single numeric value column" no matter what the sentence
+ * said, and the refusal did not even name the candidates it was torn between.
+ *
+ * A sentence names its own measure — "schools", "trips", "incidents" — so when a table carries
+ * several, the SENTENCE is asked. Exactly one candidate whose own name appears in the claim's
+ * sentence wins; none, or more than one, is refused BY NAME so the journalist can settle it by
+ * hand. Refusing when the sentence names two measures is not a weakness: `stress-q`'s takeaway
+ * names `incidents` AND `residents`, and which of the two a superlative is about is exactly the
+ * question round four's finding 5 says must be put to a human rather than guessed.
+ */
+function chooseValueColumn(columns, text) {
+  const yearColumn = findYearColumn(columns);
+  const candidates = measureColumns(columns, yearColumn);
+  if (candidates.length === 0) {
+    return {
+      column: null,
+      refusal: "this profile carries no numeric column with a range to check that against",
+    };
+  }
+  if (candidates.length === 1) return { column: candidates[0] };
+  const haystack = (text ?? "").toLowerCase();
+  const named = candidates.filter((c) => nameTokensOf(c).some((t) => haystack.includes(t)));
+  if (named.length === 1) return { column: named[0] };
+  const names = (list) => list.map((c) => `"${c.name}"`).join(", ");
+  return {
+    column: null,
+    refusal:
+      named.length === 0
+        ? `this profile carries ${candidates.length} measures (${names(candidates)}) and the claim names none of them, so nothing says which one it is about`
+        : `the claim names ${named.length} of this profile's measures (${names(named)}), so nothing says which one it is about`,
+  };
+}
+
+// A COLUMN THE PROFILER REFUSED (round-four finding 6). `stress-r`'s `σχολεία_2026` is typed
+// `text` for ONE corrupt cell in thirteen, so the takeaway's real numbers were never attempted
+// and the verdict came back an "unverifiable" indistinguishable from a genuinely hard claim.
+// Whenever this check fails to decide something numeric, it now says which column the profiler
+// refused and why — the journalist can then look at one cell instead of at the whole method.
+function refusedColumnNote(columns) {
+  const refused = columns.filter(
+    (c) => c.type !== "number" && typeof c.reason === "string" && c.reason.trim() !== "",
+  );
+  if (refused.length === 0) return "";
+  const named = refused.map((c) => `"${c.name}" (${c.reason})`).join("; ");
+  return ` — and note that the profiler REFUSED to type ${named}, so any number this claim makes about that column could not be attempted at all`;
 }
 
 function rowValue(rows, yearField, valueField, year) {
@@ -594,9 +922,12 @@ function rowValue(rows, yearField, valueField, year) {
   return Number.isNaN(n) ? undefined : n;
 }
 
-function resolveComparison(item, profile) {
+function resolveComparison(item, profile, text) {
   const claim = item.raw.trim();
   const columns = Array.isArray(profile.columns) ? profile.columns : [];
+  // The sentence the marker sits in, so `chooseValueColumn` can ask which measure this claim
+  // names when the table carries several.
+  const sentence = sentenceAround(text ?? item.raw, item.start ?? 0, item.end ?? (item.raw ?? "").length);
 
   if (item.kind === "trend") {
     const wordDirection = trendDirectionOf(item.directionWord);
@@ -654,8 +985,8 @@ function resolveComparison(item, profile) {
     };
   }
 
-  if (item.kind === "superlative") return resolveSuperlative(item, profile, claim, columns);
-  if (item.kind === "combined") return resolveCombined(item, profile, claim, columns);
+  if (item.kind === "superlative") return resolveSuperlative(item, profile, claim, columns, sentence);
+  if (item.kind === "combined") return resolveCombined(item, profile, claim, columns, sentence);
 
   if (!item.direction) {
     return { claim, verdict: "unverifiable", detail: "comparison direction word not recognised" };
@@ -676,12 +1007,13 @@ function resolveComparison(item, profile) {
   }
 
   const yearColumn = findYearColumn(columns);
-  const valueColumn = findValueColumn(columns, yearColumn);
+  const chosen = chooseValueColumn(columns, sentence);
+  const valueColumn = chosen.column;
   if (!yearColumn || !valueColumn) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: "cannot identify a single year column and a single value column in this profile",
+      detail: `${yearColumn ? chosen.refusal : "cannot identify a year column in this profile"}${refusedColumnNote(columns)}`,
     };
   }
 
@@ -753,7 +1085,8 @@ function resolveComparison(item, profile) {
 // row and reading its value against the column's extreme — there is no aggregate-only shortcut
 // for this shape the way there is for shape 9's "combined" claim (see resolveCombined): knowing
 // the column's max says nothing about whether the NAMED entity is the one holding it.
-function resolveSuperlative(item, profile, claim, columns) {
+function resolveSuperlative(item, profile, claim, columns, sentence) {
+  const refused = refusedColumnNote(columns);
   const coverageColumn = findCoverageColumn(columns);
   if (coverageColumn) {
     return {
@@ -763,14 +1096,31 @@ function resolveSuperlative(item, profile, claim, columns) {
     };
   }
 
-  const yearColumn = findYearColumn(columns);
-  const valueColumn = findValueColumn(columns, yearColumn);
-  if (!valueColumn || valueColumn.min === null || valueColumn.min === undefined || valueColumn.max === null || valueColumn.max === undefined) {
+  // A RANK that is not the extreme. This shape decides one question — does the named entity hold
+  // the column's own max or min — and "the second shortest" is not that question. Refused by
+  // name rather than read as the extreme, which would have contradicted a true sentence.
+  if (item.rank) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: "cannot identify a single numeric value column with a range in this profile to check this superlative against",
+      detail: `this names the ${item.rank} place, not the extreme — this check only decides whether a named entity holds a column's own maximum or minimum`,
     };
+  }
+
+  // A POLAR word, whose direction the data does not carry (finding 3).
+  if (item.polarWord || !item.extreme) {
+    const word = item.polarWord ?? claim;
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `"${word}" is a judgement, not a direction: this check would need the POLARITY of the column it is about — whether a HIGH value here is the bad end or the good one — and a profile records no such thing, so which end of the column "${word}" points at cannot be established${refused}`,
+    };
+  }
+
+  const chosen = chooseValueColumn(columns, sentence);
+  const valueColumn = chosen.column;
+  if (!valueColumn) {
+    return { claim, verdict: "unverifiable", detail: `${chosen.refusal}${refused}` };
   }
 
   if (!item.entity) {
@@ -784,21 +1134,28 @@ function resolveSuperlative(item, profile, claim, columns) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: `could not resolve "${item.entity}" to a row — profile has no row-level data`,
+      detail: `could not resolve "${item.entity}" to a row — neither the profile nor any frozen table handed to this check carries row-level data`,
     };
   }
 
-  const row = resolveEntityRow(rows, item.entity);
-  if (!row) {
+  const resolved = resolveClaimEntity(item, rows);
+  if (resolved.ambiguous) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `"${resolved.ambiguous.name}" matches ${resolved.ambiguous.count} rows in the frozen table — a claim about one entity cannot be decided from several of its rows`,
+    };
+  }
+  if (!resolved.row) {
     return { claim, verdict: "unverifiable", detail: `could not resolve "${item.entity}" to a row in the frozen data` };
   }
 
-  const value = Number(row[valueColumn.name]);
+  const value = Number(resolved.row[valueColumn.name]);
   if (Number.isNaN(value)) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: `row for "${item.entity}" has no numeric value in column "${valueColumn.name}"`,
+      detail: `row for "${resolved.name}" has no numeric value in column "${valueColumn.name}"${refused}`,
     };
   }
 
@@ -807,8 +1164,8 @@ function resolveSuperlative(item, profile, claim, columns) {
     claim,
     verdict: holds ? "supported" : "contradicted",
     detail: holds
-      ? `"${item.entity}"'s own value in "${valueColumn.name}" (${value}) is the column's ${extremeName} (${extreme})`
-      : `"${item.entity}"'s own value in "${valueColumn.name}" is ${value}, not the column's ${extremeName} (${extreme})`,
+      ? `"${resolved.name}"'s own value in "${valueColumn.name}" (${value}) is the column's ${extremeName} (${extreme})`
+      : `"${resolved.name}"'s own value in "${valueColumn.name}" is ${value}, not the column's ${extremeName} (${extreme})`,
   };
 }
 
@@ -822,7 +1179,8 @@ function resolveSuperlative(item, profile, claim, columns) {
 // rest) still needs the row resolved, to confirm the NAMED entity is the one holding that max —
 // a country whose own value is not the max cannot be "more than everyone else combined" even if
 // some other row in the column could be.
-function resolveCombined(item, profile, claim, columns) {
+function resolveCombined(item, profile, claim, columns, sentence) {
+  const refused = refusedColumnNote(columns);
   const coverageColumn = findCoverageColumn(columns);
   if (coverageColumn) {
     return {
@@ -832,13 +1190,13 @@ function resolveCombined(item, profile, claim, columns) {
     };
   }
 
-  const yearColumn = findYearColumn(columns);
-  const valueColumn = findValueColumn(columns, yearColumn);
-  if (!valueColumn || valueColumn.max === null || valueColumn.max === undefined || valueColumn.sum === null || valueColumn.sum === undefined) {
+  const chosen = chooseValueColumn(columns, sentence);
+  const valueColumn = chosen.column;
+  if (!valueColumn || valueColumn.sum === null || valueColumn.sum === undefined) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: "cannot identify a single numeric value column with a maximum and a sum in this profile to check this comparison against",
+      detail: `${valueColumn ? `column "${valueColumn.name}" carries no total, and this comparison is decided against one` : chosen.refusal}${refused}`,
     };
   }
 
@@ -857,20 +1215,27 @@ function resolveCombined(item, profile, claim, columns) {
     return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but no entity could be identified to confirm which row that is` };
   }
   if (!rows || rows.length === 0) {
-    return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" cannot be resolved to a row — profile has no row-level data` };
+    return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" cannot be resolved to a row — neither the profile nor any frozen table handed to this check carries row-level data` };
   }
-  const row = resolveEntityRow(rows, item.entity);
-  if (!row) {
+  const resolved = resolveClaimEntity(item, rows);
+  if (resolved.ambiguous) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `${arithmeticNote}, but "${resolved.ambiguous.name}" matches ${resolved.ambiguous.count} rows in the frozen table — a claim about one entity cannot be decided from several of its rows`,
+    };
+  }
+  if (!resolved.row) {
     return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" could not be resolved to a row` };
   }
-  const value = Number(row[valueColumn.name]);
+  const value = Number(resolved.row[valueColumn.name]);
   const holds = !Number.isNaN(value) && value === valueColumn.max;
   return {
     claim,
     verdict: holds ? "supported" : "contradicted",
     detail: holds
-      ? `"${item.entity}"'s own value in "${valueColumn.name}" (${value}) exceeds the sum of the rest (${restSum})`
-      : `"${item.entity}"'s own value in "${valueColumn.name}" is ${Number.isNaN(value) ? "not numeric" : value}, not the column's maximum (${valueColumn.max}) needed for this comparison`,
+      ? `"${resolved.name}"'s own value in "${valueColumn.name}" (${value}) exceeds the sum of the rest (${restSum})`
+      : `"${resolved.name}"'s own value in "${valueColumn.name}" is ${Number.isNaN(value) ? "not numeric" : value}, not the column's maximum (${valueColumn.max}) needed for this comparison`,
   };
 }
 
@@ -905,6 +1270,32 @@ function checkNumericRanges(text, columns, consumedSpans) {
     }
 
     const value = read.value;
+
+    // A part-to-whole TOTAL is tried FIRST, because it is the one numeric reading here that can
+    // actually fail: a column's `sum` is a single number computed from every row, and a takeaway
+    // hitting it within tolerance has been CONFIRMED, not merely placed. Two guards keep that
+    // from degenerating: the year column is never a total (a six-row 2025 column "sums" to
+    // 12150), and neither is a column whose sum equals its own min or max — `stress-s`'s one-row
+    // `year` sums to exactly 2026, so without this the very numeral finding 4 is about would come
+    // back "equals the sum of column year", a worse tautology than the one it replaced.
+    const summed = numericColumns.find(
+      (c) =>
+        c !== yearColumn &&
+        c.sum !== null &&
+        c.sum !== undefined &&
+        c.sum !== c.min &&
+        c.sum !== c.max &&
+        matchesAggregate(value, c.sum),
+    );
+    if (summed) {
+      claims.push({
+        claim: raw,
+        verdict: "supported",
+        detail: `equals the sum of column "${summed.name}" (${summed.sum})`,
+      });
+      continue;
+    }
+
     const inRange = numericColumns.filter((c) => value >= c.min && value <= c.max);
     if (inRange.length > 0) {
       // Partial periods, narrowly (finding 2). A bare numeral landing inside the YEAR column's
@@ -922,23 +1313,21 @@ function checkNumericRanges(text, columns, consumedSpans) {
         });
         continue;
       }
+      // ROUND FOUR, finding 1 — the verdict that says what a range hit is actually worth. A
+      // numeral sitting between a column's min and its max has been PLACED: it is the right order
+      // of magnitude, in the right units, for a column this table carries. That is a real and
+      // useful fact and it is still reported. What it is NOT is editorial support: `233` falls
+      // inside `incidents [96, 412]` and `100` — the "k" of "100k" — does too, and neither is
+      // evidence for the sentence they sit in. "consistent" is therefore its own verdict, and
+      // `propose.mjs`'s `groundingScalar` cannot close G1 on it (see `resolveGrounding`).
+      const placed = inRange[0];
+      const degenerate = placed.min === placed.max;
       claims.push({
         claim: raw,
-        verdict: "supported",
-        detail: `within the range of column "${inRange[0].name}" [${inRange[0].min}, ${inRange[0].max}]`,
-      });
-      continue;
-    }
-
-    // A total is not a member of the column it sums — it is >= that column's max, by construction.
-    // Checking it against `sum` is the only way a part-to-whole takeaway ("34 million tonnes, of
-    // which less than half…") can be confirmed rather than merely tolerated.
-    const summed = numericColumns.find((c) => matchesAggregate(value, c.sum));
-    if (summed) {
-      claims.push({
-        claim: raw,
-        verdict: "supported",
-        detail: `equals the sum of column "${summed.name}" (${summed.sum})`,
+        verdict: "consistent",
+        detail: degenerate
+          ? `"${raw}" equals the only value column "${placed.name}" holds (${placed.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
+          : `within the range of column "${placed.name}" [${placed.min}, ${placed.max}] — that places the numeral, it does not confirm the claim it sits in`,
       });
       continue;
     }
@@ -950,7 +1339,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
       verdict: "unverifiable",
       detail: `could not be placed in any numeric column's range or total (${numericColumns
         .map((c) => `"${c.name}" [${c.min}, ${c.max}]${c.sum === null || c.sum === undefined ? "" : `, sum ${c.sum}`}`)
-        .join(", ")}) — this check has no way to confirm or refute it`,
+        .join(", ")}) — this check has no way to confirm or refute it${refusedColumnNote(columns)}`,
     });
   }
   return claims;
@@ -983,12 +1372,25 @@ function splitIntoSentences(text) {
 // exactly the next version of this defect — silence dressed as confirmation one layer up instead
 // of one layer down — which is why `resolveGrounding` is where this is actually read, not left as
 // a field nothing consults.
+//
+// ROUND FOUR, finding 4 adds `decided`. `evaluated` answers "did this function have a shape for
+// that sentence at all", which is the distinction round three needed; it does NOT answer "did the
+// frozen data settle anything in it", and a caller collapsing N verdicts into one scalar needs
+// that second number. A sentence is DECIDED once it produced at least one claim the data actually
+// resolved — `supported` or `contradicted`. A `consistent` numeral does not decide a sentence:
+// placing "2026" inside `year [2026, 2026]` is a check that cannot fail, and the scalar it used
+// to close G1 with is precisely what this field exists to prevent.
 function computeCoverage(text, claims) {
   const sentences = splitIntoSentences(text);
-  const unevaluated = sentences.filter((sentence) => !claims.some((c) => sentence.includes(c.claim)));
+  const claimsIn = (sentence) => claims.filter((c) => sentence.includes(c.claim));
+  const unevaluated = sentences.filter((sentence) => claimsIn(sentence).length === 0);
+  const decided = sentences.filter((sentence) =>
+    claimsIn(sentence).some((c) => c.verdict === "supported" || c.verdict === "contradicted"),
+  );
   return {
     sentences: sentences.length,
     evaluated: sentences.length - unevaluated.length,
+    decided: decided.length,
     unevaluated,
   };
 }
@@ -997,15 +1399,24 @@ function computeCoverage(text, claims) {
 // who reads it. `claims` keeps its own established shape (one `{ claim, verdict, detail }` entry
 // per recognised claim); this wraps it rather than changing it, so every existing reader of the
 // array itself only has to learn the one extra level.
-export function groundTakeaway(takeaway, profile) {
+export function groundTakeaway(takeaway, profile, options = {}) {
   if (!takeaway || typeof takeaway !== "string") {
-    return { claims: [], coverage: { sentences: 0, evaluated: 0, unevaluated: [] } };
+    return { claims: [], coverage: { sentences: 0, evaluated: 0, decided: 0, unevaluated: [] } };
   }
-  const p = profile ?? {};
-  const columns = Array.isArray(p.columns) ? p.columns : [];
+  const base = profile ?? {};
+  const columns = Array.isArray(base.columns) ? base.columns : [];
+  // Rows: the profile's own if it carries them (no frozen profile in this tree does), otherwise
+  // the frozen CSV the caller handed over. See `readFrozenRows` for why this is where they come
+  // from now.
+  const rows = Array.isArray(base.rows)
+    ? base.rows
+    : typeof options.csv === "string"
+      ? readFrozenRows(options.csv)
+      : null;
+  const p = rows ? { ...base, rows } : base;
 
   const comparisons = extractComparisons(takeaway);
-  const claims = comparisons.map((item) => resolveComparison(item, p));
+  const claims = comparisons.map((item) => resolveComparison(item, p, takeaway));
 
   const consumedSpans = comparisons.map((c) => [c.start, c.end]);
   claims.push(...checkNumericRanges(takeaway, columns, consumedSpans));

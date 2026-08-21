@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { groundTakeaway } from "../scripts/ground-claim.mjs";
+import { groundTakeaway, readFrozenRows } from "../scripts/ground-claim.mjs";
+import { readFileSync } from "node:fs";
 // The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
 // in. See the block at the bottom of this file for why it is here and what stayed green without it.
 import { profileTable } from "../../intake/scripts/profile.mjs";
@@ -60,10 +61,14 @@ describe("groundTakeaway — numeric tokens against column ranges", () => {
     expect(claim.verdict).toBe("unverifiable");
   });
 
-  it("should mark a numeric token inside a column's range as supported", () => {
+  // ROUND FOUR, finding 1. A numeral that happens to sit between a column's min and its max was
+  // reported as editorial SUPPORT, which is how `233` and `100` (the "k" of "100k") "confirmed"
+  // a takeaway whose headline the same data refutes. Placing a numeral is a real fact and is
+  // still reported — under a verdict of its own, which `groundingScalar` cannot close G1 on.
+  it("should mark a numeric token inside a column's range CONSISTENT, never supported", () => {
     const { claims } = groundTakeaway("the total reached 42 units", PROFILE);
     const claim = claims.find((c) => c.claim === "42");
-    expect(claim.verdict).toBe("supported");
+    expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("value");
   });
 });
@@ -519,14 +524,14 @@ describe("groundTakeaway — superlatives ('the most', 'the highest/lowest', 'le
 
   it("should support 'has the most' when the named entity resolves to the column's own maximum", () => {
     const { claims } = groundTakeaway("Germany has the most.", PROFILE_WITH_ROWS);
-    const claim = claims.find((c) => c.claim.includes("has the most"));
+    const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("90");
   });
 
   it("should contradict 'has the most' when the named entity does not hold the maximum", () => {
     const { claims } = groundTakeaway("France has the most.", PROFILE_WITH_ROWS);
-    const claim = claims.find((c) => c.claim.includes("has the most"));
+    const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("contradicted");
     expect(claim.detail).toContain("60");
     expect(claim.detail).toContain("90");
@@ -535,7 +540,7 @@ describe("groundTakeaway — superlatives ('the most', 'the highest/lowest', 'le
   it("should return unverifiable, naming the entity it could not resolve, when the profile carries no rows", () => {
     const profile = { columns: PROFILE_WITH_ROWS.columns };
     const { claims } = groundTakeaway("Germany has the most.", profile);
-    const claim = claims.find((c) => c.claim.includes("has the most"));
+    const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("Germany");
   });
@@ -674,11 +679,11 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
     expect(yearClaim.detail).toContain("months_covered");
   });
 
-  it("should still support a year in a profile with no coverage column", () => {
+  it("should still PLACE a year in a profile with no coverage column, without calling it support", () => {
     const profile = { columns: [{ name: "year", type: "number", min: 2020, max: 2026, sum: 14161 }] };
     const { claims } = groundTakeaway("Permits rose to a record in 2026.", profile);
     const yearClaim = claims.find((c) => c.claim === "2026");
-    expect(yearClaim.verdict).toBe("supported");
+    expect(yearClaim.verdict).toBe("consistent");
   });
 
   it("should refuse a superlative over the data when a completeness flag column exists (stress-o shape)", () => {
@@ -694,7 +699,7 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
       ],
     };
     const { claims } = groundTakeaway("The 2026 period has the most visits.", profile);
-    const claim = claims.find((c) => c.claim.includes("has the most"));
+    const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("complete");
   });
@@ -745,5 +750,311 @@ describe("groundTakeaway — coverage reports what was actually read, beside the
     );
     expect(checkedAndPassed.coverage.evaluated).toBe(1);
     expect(checkedAndPassed.claims.some((c) => c.verdict === "supported")).toBe(true);
+  });
+});
+
+// =============================================================================================
+// ROUND FOUR (2026-08-21) — what a verdict is allowed to MEAN.
+//
+// Five findings, one cause: every one of them failed SILENTLY and was verified green while
+// failing. So every block below runs against REAL FROZEN STORY MATERIAL — a story's own
+// `source/profile.json` and `source/data.csv`, and sentences taken verbatim from its article, its
+// STORYBOARD.md or the BRIEF.md of a beat that shipped. A fixture built to fail proves only that
+// the fixture fails; these prove the check decides something about the corpus it is run on.
+//
+// The story files are read, never written. If a story moves, these reddens — which is the point:
+// the acceptance evidence for this round IS the corpus.
+// =============================================================================================
+
+const storyFile = (relative) =>
+  readFileSync(new URL(`../../../stories/${relative}`, import.meta.url), "utf8");
+const storyProfile = (story) => JSON.parse(storyFile(`${story}/source/profile.json`));
+const storyCsv = (story) => storyFile(`${story}/source/data.csv`);
+const grounded = (story, sentence) =>
+  groundTakeaway(sentence, storyProfile(story), { csv: storyCsv(story) });
+
+describe("readFrozenRows — where rows come from now (finding 2)", () => {
+  it("should read the frozen table into rows, reading each cell by the shared number reader", () => {
+    const rows = readFrozenRows(storyCsv("stress-l-mixed-unit-clinics"));
+    expect(rows.length).toBe(8);
+    expect(rows[1]).toEqual({ code: "DEU", country: "Germany", value: 1880, unit: "clinics" });
+  });
+
+  it("should leave a cell that is not a numeral as its own text, never coerced to NaN", () => {
+    const rows = readFrozenRows(storyCsv("stress-r-greek-schools"));
+    expect(rows[0]["σχολεία_2026"]).toBe("term378");
+    expect(rows[0]["σχολεία_2020"]).toBe(412);
+  });
+
+  it("should return no rows at all for a table with only a header, rather than a row of nulls", () => {
+    expect(readFrozenRows("a,b\n")).toEqual([]);
+  });
+});
+
+describe("a superlative that DECIDES, on real story material (finding 2)", () => {
+  // stories/stress-l-mixed-unit-clinics/source/article.md, last line. Its own shipped BRIEF.md
+  // records the old behaviour verbatim: "it returned `[]` — no claim shape at all".
+  it("should SUPPORT the frozen article's own superlative once the frozen CSV supplies the rows", () => {
+    const { claims } = grounded("stress-l-mixed-unit-clinics", "Germany has the most.");
+    const claim = claims.find((c) => c.claim.includes("the most"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("Germany");
+    expect(claim.detail).toContain("1880");
+  });
+
+  // stories/stress-l-mixed-unit-clinics/beats/mixed-unit-clinics/BRIEF.md:47-48 — the shipped
+  // beat's own headline. Read against `value` as the profiler typed it, the second clause is
+  // refuted, which is exactly why that beat had to say the two numbers do not compare.
+  it("should CONTRADICT the shipped beat's own second clause, on the same frozen table", () => {
+    const { claims } = grounded(
+      "stress-l-mixed-unit-clinics",
+      "Germany reports the highest clinic COUNT; Sweden the highest RATE — the two numbers do not compare.",
+    );
+    const highest = claims.filter((c) => c.claim.includes("the highest"));
+    expect(highest.length).toBe(2);
+    expect(highest[0].verdict).toBe("supported");
+    expect(highest[0].detail).toContain("Germany");
+    expect(highest[1].verdict).toBe("contradicted");
+    expect(highest[1].detail).toContain("Sweden");
+    expect(highest[1].detail).toContain("21.9");
+  });
+
+  // stories/stress-m-forest-loss/source/article.md:3, and the beat's own BRIEF.md:60-62 records
+  // `groundTakeaway` returning `[]` for it.
+  it("should SUPPORT a second story's frozen 'leads', naming the column it decided against", () => {
+    const { claims } = grounded("stress-m-forest-loss", "Brazil leads the annual figures again.");
+    const claim = claims.find((c) => c.claim === "leads");
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("loss_ha");
+    expect(claim.detail).toContain("1120000");
+  });
+
+  it("should refuse a superlative whose entity matches SEVERAL rows rather than pick one", () => {
+    // heat-pump's table is long-format: five rows per country, one per year.
+    const { claims } = grounded(
+      "heat-pump-adoption-across-europe",
+      "The Netherlands made the largest gain, climbing 18 percentage points.",
+    );
+    const claim = claims.find((c) => c.claim.includes("the largest"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("5 rows");
+  });
+
+  it("should fall back past a clause-leading capital that is not an entity at all", () => {
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "In the ministry's own table, Brazil leads.",
+    );
+    const claim = claims.find((c) => c.claim === "leads");
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("Brazil");
+  });
+
+  it("should read a possessive as its own entity", () => {
+    const { claims } = grounded("stress-m-forest-loss", "Brazil's own figure leads the table.");
+    const claim = claims.find((c) => c.claim === "leads");
+    expect(claim.verdict).toBe("supported");
+  });
+});
+
+describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => {
+  // The exact reproduction in the round-four raw findings: "3 of 3 claim(s) confirmed" on
+  // per-100k rates matched against a raw-count column by coincidence — 100 included.
+  it("should call stress-q's per-100k rates consistent, and confirm none of them", () => {
+    const { claims } = grounded(
+      "stress-q-safety-incidents",
+      "Sul records 233 incidents per 100k residents, against Centro's 205.",
+    );
+    for (const numeral of ["233", "100", "205"]) {
+      const claim = claims.find((c) => c.claim === numeral);
+      expect(claim.verdict).toBe("consistent");
+    }
+    expect(claims.some((c) => c.verdict === "supported")).toBe(false);
+  });
+
+  // stress-s's `year` column is min 2026, max 2026 — a range test that cannot fail.
+  it("should name the tautology when a column's own min and max are the same value", () => {
+    const { claims } = grounded(
+      "stress-s-unspent-fund",
+      "Of the €4.1 billion allocated to the regional resilience fund, €0 had been disbursed by the end of June 2026.",
+    );
+    const year = claims.find((c) => c.claim === "2026");
+    expect(year.verdict).toBe("consistent");
+    expect(year.detail).toContain("CANNOT FAIL");
+    // The two numbers the sentence actually asserts remain unplaced, and nothing else is
+    // confirmed — so this takeaway has NOTHING for a scalar to close G1 on.
+    expect(claims.find((c) => c.claim === "4.1").verdict).toBe("unverifiable");
+    expect(claims.find((c) => c.claim === "0").verdict).toBe("unverifiable");
+    expect(claims.some((c) => c.verdict === "supported")).toBe(false);
+  });
+
+  // A part-to-whole total is the one numeric reading here that CAN fail, so it stays "supported"
+  // — but only where it is a real total. Two degeneracies are refused: a year column (whose six
+  // 2025 rows "sum" to 12150) and a column whose sum is its own min or max, which is what a
+  // one-row table always produces.
+  it("should not read the year column as a part-to-whole total", () => {
+    const { claims } = grounded("stress-s-unspent-fund", "The fund's own total is 2026.");
+    const claim = claims.find((c) => c.claim === "2026");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).not.toContain("sum");
+  });
+
+  it("should not read a year column's own sum as a part-to-whole total", () => {
+    // stress-p's `year` column is six rows of 2025, so it "sums" to 12150 — a number that is a
+    // total of nothing.
+    const { claims } = grounded("stress-p-transport-ridership", "The networks carried 12150 in all.");
+    const claim = claims.find((c) => c.claim === "12150");
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).not.toContain("equals the sum");
+  });
+
+  it("should not read a one-row column's own value as its own total", () => {
+    // stress-s's `fund` column is min 1, max 1, sum 1 — every one of those is the same number.
+    const { claims } = grounded("stress-s-unspent-fund", "The fund disbursed 1 euro.");
+    const claim = claims.find((c) => c.claim === "1");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).not.toContain("sum");
+  });
+});
+
+describe("the superlative vocabulary stops being four phrases (finding 3)", () => {
+  // The frozen headline this whole round was built around
+  // (stories/stress-q-safety-incidents/source/article.md:1). Before this it was INVISIBLE:
+  // coverage {sentences: 1, evaluated: 0}.
+  it("should SEE the frozen false headline and refuse it by naming the polarity it lacks", () => {
+    const { claims, coverage } = grounded(
+      "stress-q-safety-incidents",
+      "Centro has the worst safety record in the city.",
+    );
+    const claim = claims.find((c) => c.claim.includes("worst"));
+    expect(claim).toBeTruthy();
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("POLARITY");
+    expect(coverage.evaluated).toBe(1);
+    expect(coverage.unevaluated).toEqual([]);
+  });
+
+  for (const phrase of [
+    "the best",
+    "the largest",
+    "the biggest",
+    "the fewest",
+    "the greatest",
+    "the smallest",
+    "worst-hit",
+  ]) {
+    it(`should not be blind to "${phrase}"`, () => {
+      const { claims, coverage } = grounded(
+        "stress-m-forest-loss",
+        `Brazil is ${phrase} of the seven.`,
+      );
+      expect(claims.some((c) => c.claim.toLowerCase().includes(phrase.replace(/^the /, "")))).toBe(true);
+      expect(coverage.unevaluated).toEqual([]);
+    });
+  }
+
+  // stories/stress-p-transport-ridership/STORYBOARD.md, slot 3's own `proves`. Read as a bare
+  // superlative it would be CONTRADICTED (12 km is not the 9 km minimum) — and that verdict
+  // would be false, because the sentence never claimed the extreme.
+  it("should refuse a rank that is not the extreme rather than read it as one", () => {
+    const { claims } = grounded(
+      "stress-p-transport-ridership",
+      "Aveiro's network is 12 km — the second shortest of the six.",
+    );
+    const claim = claims.find((c) => c.claim.includes("shortest"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("second");
+  });
+
+  // stories/stress-n-chomage-cantons/source/article.md:3 — the same shape, in French.
+  it("should see a French 'en tête' the way it sees 'leads'", () => {
+    const { claims } = grounded(
+      "stress-n-chomage-cantons",
+      "Neuchâtel et Genève sont en tête, Appenzell Rhodes-Intérieures ferme la marche.",
+    );
+    const claim = claims.find((c) => /t[êe]te/.test(c.claim));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("Neuchâtel");
+  });
+});
+
+describe("a claim names its own measure (the two-measure dead zone)", () => {
+  // 9 of the 21 frozen stories carry more than one measure; before this, every shape-8 and
+  // shape-9 claim in all nine returned "cannot identify a single numeric value column".
+  it("should choose the column the sentence itself names", () => {
+    const { claims } = grounded(
+      "stress-q-safety-incidents",
+      "Centro records more incidents than any other district.",
+    );
+    const claim = claims.find((c) => c.claim.includes("than any other"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("incidents");
+  });
+
+  it("should decide a 'more than the others combined' claim on the column the sentence names", () => {
+    const { claims } = grounded(
+      "stress-p-transport-ridership",
+      "Lisboa carries more trips than all the other cities combined.",
+    );
+    const claim = claims.find((c) => c.claim.toLowerCase().includes("combined"));
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("trips_millions");
+  });
+
+  it("should refuse, naming every candidate, when the sentence names none of the measures", () => {
+    const { claims } = grounded("stress-r-greek-schools", "Attica has the most schools of any region.");
+    const claim = claims.find((c) => c.claim.includes("the most"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("σχολεία_2020");
+    expect(claim.detail).toContain("μαθητές_2026");
+  });
+
+  it("should refuse, naming both, when the sentence names more than one measure", () => {
+    const { claims } = grounded(
+      "stress-q-safety-incidents",
+      "Centro's incidents are the highest of the five districts, though residents differ.",
+    );
+    const claim = claims.find((c) => c.claim.includes("the highest"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("incidents");
+    expect(claim.detail).toContain("residents");
+  });
+});
+
+describe("a column the profiler refused stops disarming the check silently (finding 6)", () => {
+  // stress-r's σχολεία_2026 is typed `text` for one corrupt cell in thirteen ("term378").
+  it("should name the refused column and its reason on a claim whose numbers it would have decided", () => {
+    const { claims } = grounded(
+      "stress-r-greek-schools",
+      "Every Greek region lost schools between 2020 and 2026, but Attica's decline was far smaller than the rest.",
+    );
+    const year = claims.find((c) => c.claim === "2026");
+    expect(year.verdict).toBe("unverifiable");
+    expect(year.detail).toContain("σχολεία_2026");
+    expect(year.detail).toContain("only some values carry a unit");
+  });
+
+  it("should say the same on the superlative it could not place a column for", () => {
+    const { claims } = grounded("stress-r-greek-schools", "Attica has the most schools of any region.");
+    const claim = claims.find((c) => c.claim.includes("the most"));
+    expect(claim.detail).toContain("σχολεία_2026");
+  });
+
+  it("should stay quiet about refused columns in a profile that has none", () => {
+    const { claims } = grounded("stress-m-forest-loss", "The figure reached 999999999 hectares.");
+    const claim = claims.find((c) => c.claim === "999999999");
+    expect(claim.detail).not.toContain("profiler refused");
+  });
+});
+
+describe("coverage counts what the data DECIDED, not only what was touched (finding 4)", () => {
+  it("should separate a sentence the data decided from one it merely had a shape for", () => {
+    const { coverage } = grounded(
+      "stress-q-safety-incidents",
+      "Centro has the worst safety record in the city. Centro recorded 412 incidents last year, more than any other district.",
+    );
+    expect(coverage.sentences).toBe(2);
+    expect(coverage.evaluated).toBe(2);
+    expect(coverage.decided).toBe(1);
   });
 });
