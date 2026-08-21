@@ -213,11 +213,31 @@ const COPIES: Record<string, string[]> = {
   // actually covers, against a per-format floor — same shape as weightAgainstCeiling, a shared
   // comparison with the ceiling/floor itself living outside the compared span as each copy's own
   // measured constant.
+  // ROUND-FIVE FINDING T2 widened this from four to eight: it required `ships-standalone-html` and
+  // now requires `materialises-a-beat`, so the four FIXED-frame formats carry it too. The decision
+  // is unchanged and stays one decision across both kinds of frame — what differs is only where the
+  // fraction comes from (a browser's bounding box for a page, `frameFillFraction`'s own reading of
+  // the delivered PNG for a fixed frame) and the per-format floor, both of which live outside the
+  // compared span on purpose.
   graphicFillsItsFrame: [
+    "chart-beat/scripts/detect-fills-its-frame.mjs",
     "chart-web/scripts/detect-fills-its-frame.mjs",
+    "chart-video/scripts/detect-fills-its-frame.mjs",
+    "map-beat/scripts/detect-fills-its-frame.mjs",
     "map-web/scripts/detect-fills-its-frame.mjs",
+    "image-beat/scripts/detect-fills-its-frame.mjs",
     "scrolly/scripts/detect-fills-its-frame.mjs",
     "dw-beat/scripts/detect-fills-its-frame.mjs",
+  ],
+  // The reading behind the four fixed-frame copies. Not a catalogue decision of its own, walked for
+  // the same reason `readerVisibleText` is: a copy that moved the ink threshold, or counted coverage
+  // where its neighbour measures a box, would make one format's floor mean something else entirely
+  // while the shared decision above still looked identical.
+  frameFillFraction: [
+    "chart-beat/scripts/detect-fills-its-frame.mjs",
+    "chart-video/scripts/detect-fills-its-frame.mjs",
+    "map-beat/scripts/detect-fills-its-frame.mjs",
+    "image-beat/scripts/detect-fills-its-frame.mjs",
   ],
   // ROUND-FIVE, the owner's ruling on the staggered reveal: whether a build's stagger follows an
   // order the data actually carries. Both video formats decide it, and they decide OPPOSITE cases —

@@ -43,7 +43,7 @@ written out below the tables.
 | weight-has-a-ceiling |  |  |  |  | **R** | **R** | **R** | **R** |
 | every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
 | framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |
-| fills-its-frame |  | **R** |  | **R** |  | **R** |  | **R** |
+| fills-its-frame | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | storyboard-gate-is-visible | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | example-runners-are-called | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 | denominator-reading-is-stated | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
@@ -282,9 +282,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 
 ### fills-its-frame — `graphicFillsItsFrame`
 
-**Offers:** the graphic occupies a real, measured share of the window it is opened in, at every tested width, never a fraction of it stranded beside empty ground
+**Offers:** the graphic occupies a real, measured share of the frame it is given — the reader's own window where the container varies, the delivered frame itself where it is fixed — never a fraction of it stranded beside empty ground
 
-**Earned by:** stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width
+**Earned by:** stress-f-housing-pressure's choropleth drew in the left half of a 1440x900 window with the right half plain empty ground — map-web promises a page that fits the reader's window and chart-web promises a graphic that fills its container edge to edge, and nothing had ever measured either claim against a real delivered page at a real width. ROUND FIVE, FINDING T2: it was declared against `ships-standalone-html`, the trait describing its FIRST INSTANCE (a standalone page), so the question was asked of the four formats whose container varies and never of the four whose frame is fixed and known at render time. Re-declared against `materialises-a-beat`, the trait describing the PROPERTY — a beat with a delivered frame — which is every producing skill. The four fixed-frame formats measure the drawing's own box out of the delivered PNG's own pixels (`frameFillFraction`) rather than through a browser, against a floor measured from the population `exampleRunnersFor` derives; the four page formats keep the browser walk they already had. The re-declaration paid for itself at once: the lowest reading in the whole fixed-frame population is stress-t's own portrait map video at 43.15% of its frame, which is round five's finding T1 (portrait's real cost) measured for the first time instead of noticed by a reviewer
 
 ### reveal-fills-the-frame — `compositionFillsTheFrame`
 
