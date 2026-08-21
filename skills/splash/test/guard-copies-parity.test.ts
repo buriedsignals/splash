@@ -360,6 +360,12 @@ const COPIES: Record<string, string[]> = {
   // itself — where an author already reaches for `measureText` and `wrap`'s measurer — and
   // compared here across all seven copies, so a skill cannot quietly drop it. `render-still-parity`
   // walks the same file but accepts a copy that simply lacks a function; this does not.
+  //
+  // ROUND-FIVE FINDING T4 doubled the list: `render-still.mjs` imports `@resvg/resvg-js` at module
+  // load, so every copy above was unreachable from a component a browser bundles — which is every
+  // VIDEO component in this tree. `scripts/decollide.mjs` is the same function in a module that
+  // imports nothing, and the fourteen paths are compared together precisely so the browser-side
+  // copy cannot become a second, softer de-collision.
   decollide: [
     "chart-beat/scripts/render-still.mjs",
     "chart-web/scripts/render-still.mjs",
@@ -368,6 +374,13 @@ const COPIES: Record<string, string[]> = {
     "map-web/scripts/render-still.mjs",
     "image-beat/scripts/render-still.mjs",
     "scrolly/scripts/render-still.mjs",
+    "chart-beat/scripts/decollide.mjs",
+    "chart-web/scripts/decollide.mjs",
+    "chart-video/scripts/decollide.mjs",
+    "map-beat/scripts/decollide.mjs",
+    "map-web/scripts/decollide.mjs",
+    "image-beat/scripts/decollide.mjs",
+    "scrolly/scripts/decollide.mjs",
   ],
   // ROUND-FOUR FINDING 5: a beat drawn from a count with a denominator beside it says which
   // reading it draws. `materialises-a-beat` reaches all eight, and the decision is entirely about
