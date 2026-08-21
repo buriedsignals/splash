@@ -95,7 +95,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
-| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile, { csv })` checks the confirmed takeaway's own numbers, comparisons and superlatives against the frozen data profile — and against the frozen `source/data.csv` itself, which is where ROW-level facts come from, since no `profile.json` in this tree carries rows. A number equal to a column's `sum` (a part-to-whole total) is `supported`; a number merely inside a column's range is **`consistent`** — placed, not confirmed; a number it can place neither way is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
+| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile, { csv })` checks the confirmed takeaway's own numbers, comparisons and superlatives against the frozen data profile — and against the frozen `source/data.csv` itself, which is where ROW-level facts come from, since no `profile.json` in this tree carries rows. A number equal to a column's `sum` (a part-to-whole total) is `supported`; a number merely inside the range of the column **its own sentence names** is **`consistent`** — placed, not confirmed; a number it can place neither way is `unverifiable`, naming the column it was put to and the range it missed, never `contradicted`. A stated multiplier ("1.12 million") is read as a second reading beside the numeral as written. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
 | Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
 | Producer catalogue and gate | `references/datawrapper-chart-types.json`; `scripts/producer-gate.mjs` | Complete upstream `VisualizationType` inventory at its recorded source revision, conservative mappings from Splash treatments, the conditional custom-or-Datawrapper question, and validation of persisted `producer`/`datawrapperType` fields |
@@ -188,6 +188,25 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    in `profile.rows`; a windowed superlative ("lower... than in any year since 1993", "the lowest
    since 1993") checked against every row in the claimed range, not just its boundary year; and
    "highest/lowest ever" checked against the whole profile.
+
+   **A numeral is placed against the column its own SENTENCE names** (round five), never against
+   whichever column happens to contain it. `chooseValueColumn` is asked the same question here as
+   for every other shape, so two clauses of one takeaway cannot be decided against two different
+   columns; a numeral the sentence gives no column for is reported unplaced, naming the candidates
+   and the range it would have fallen into. A bare **calendar year** belongs to the profile's own
+   period column and to nothing else — `stress-y-rural-broadband`'s survey year `2025` used to be
+   "placed" inside `households [240, 47933]` — unless the sentence explicitly names a measure, in
+   which case a four-digit figure really can be that measure's own value.
+
+   **A stated multiplier is read as an ALTERNATIVE reading, never as a replacement** (round five).
+   "1.12 million" is checked both as written and as 1120000, and the detail says which reading
+   placed it: the column's own unit may already carry the scale, as `glace_fondue_mt` does for
+   "34 millions de tonnes". The scale-word table declares its languages — **English, French, Greek
+   and Arabic**, the four this tree has frozen a story in — and a scale word outside them is not
+   read at all, leaving the numeral checked as written. `billion` carries both 10^9 and 10^12,
+   because it means one in English and the other in French, so both are tried and neither assumed.
+   A run of digits glued to a WORD on its left is not a number the sentence states: `Commune-063`
+   produced the claim `-063` and `consumption_m3` produced `3`.
 
    **A number it can place in neither a range nor a total is `unverifiable`, never `contradicted`.**
    Reading "I could not place this number" as "the data refutes this number" refused every
@@ -317,7 +336,8 @@ if (errors.length > 0) {
 | Leading spaces that mark a line as a slot's own field, not a top-level one | `4` (`/^\s{4,}[A-Za-z]+:/`) | `parseStoryboard` |
 | How many numeric columns a comparison claim may resolve to before it is ambiguous | `1` (`findValueColumn`'s `candidates.length === 1` — more or fewer and the comparison comes back `unverifiable`, never guessed) | `scripts/ground-claim.mjs` |
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
-| How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative, with an absolute floor of 0.5) | `scripts/ground-claim.mjs` |
+| How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative) or half a unit of the numeral's **own last written digit** ("34" → 0.5, "0.61" → 0.005), whichever is wider — and never more than the smaller of the two numbers being compared | `scripts/ground-claim.mjs` |
+| Which languages a numeral's stated multiplier is read in | `4` — English, French, Greek, Arabic (`MULTIPLIER_WORDS`); outside them the scale word is not read and the numeral is checked as written | `scripts/ground-claim.mjs` |
 | Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |
 
 ## Files

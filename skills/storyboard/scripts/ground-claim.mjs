@@ -39,6 +39,34 @@
 //   - `coverage` gained `decided`, so a caller can tell a takeaway the data settled from one it
 //     merely had a shape for.
 //
+// ROUND FIVE (2026-08-21) opened HERE for the FOURTH consecutive time, and this round every
+// defect was in code round four had just written. What changed is not another shape and not
+// another verdict — it is WHAT EVIDENCE A VERDICT IS ALLOWED TO REST ON:
+//   - an "equals" may not be wider than the number it compares. `matchesAggregate`'s absolute
+//     floor of 0.5 declared `0.61` — stress-u's 2025 AREA — equal to the sum of `volume_km3`
+//     (0.482), 27% away, under `supported`. The window is now half a unit of the numeral's OWN
+//     last written digit, or the relative 1%, whichever is wider, and never more than the smaller
+//     of the two numbers being compared (see `roundingWindowOf`);
+//   - a column is named by a WORD, not by a fragment of another. "surveyed" was matching the
+//     refused column `survey_date`, so the claim the sentence actually made was never attempted —
+//     including a FALSE one the frozen data refutes, which then closed G1 as `unverifiable`
+//     (see `wordAppearsIn`);
+//   - a numeral is placed against the column its own SENTENCE names, never against whichever
+//     column happens to contain it: a survey year was "placed" inside a count of households, and
+//     two clauses of one takeaway were decided against two different columns (see
+//     `checkNumericRanges`, and `chooseValueColumn`'s new `named`);
+//   - a bare calendar year is a PERIOD, and belongs to the period column or to nothing
+//     (`looksLikeCalendarYear`);
+//   - a stated multiplier is READ — "1.12 million" against a column in base units — but as an
+//     ALTERNATIVE reading beside the numeral as written, because the column's own unit may
+//     already carry the scale ("34 millions de tonnes" against `glace_fondue_mt`, which sums to
+//     34). The table declares the four languages this tree has frozen a story in, and says so
+//     rather than missing the fifth in silence (see `MULTIPLIER_WORDS`);
+//   - a run of digits glued to a word on its left is not a number a sentence states
+//     (`Commune-063` produced the claim `-063`, `consumption_m3` produced `3`);
+//   - and a sentence boundary needs whitespace after it, so the "." inside "0.61" stops ending
+//     one (`isSentenceEnd`, shared by `sentenceAround` and `clauseStart`).
+//
 // This is NOT a fact-checker (it knows nothing outside `profile`) and NOT a conformance engine
 // (it never looks at a rendered chart or a spec). Everything it cannot actually check comes back
 // "unverifiable" with a reason — it never returns "supported" for something it did not verify,
