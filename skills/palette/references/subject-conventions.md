@@ -3,6 +3,29 @@
 `SUBJECT_CONVENTIONS` in `scripts/palette.mjs` holds four entries. This file is why each one is
 there, and — more importantly — why there are only four.
 
+## What language the table reads, and what it does outside it
+
+`CONVENTION_LANGUAGES` — **English, French, Greek and Arabic**, the four this tree has frozen a story
+in. Each entry's `match` carries the same words in all four, behind unicode word boundaries rather
+than `\b`, which is ASCII-only and cannot see the edge of a Greek or Arabic word.
+
+**Why it had to be said, round five, finding X1.** `stress-x-tunisian-water` is a story about
+`استهلاك المياه` — water consumption — and blue for water is the strongest entry in this table. The
+regexes held English and French words only, so the proposal reached the newsroom branch as though
+the story carried no convention at all, and the journalist recorded **this table's own hex**
+(`#1F6FB2`) through the proposal's "something else" escape.
+
+**And where it is looked up.** That story's recorded subject is `محافظة تونس` — Tunis governorate. No
+vocabulary in any language can find water in the words "Tunis governorate", because there is none
+there: the subject LINE names the entity, and a convention is about the SUBJECT MATTER. So the
+subject is asked first and what the story says it is ABOUT (`proposePalette`'s `about` — the
+takeaway) second, and the option's provenance says which of the two answered.
+
+**Outside the four.** Gaining languages can never be finished. What this table may not do is answer
+"no convention applies" in a way that reads identically whether it looked and found nothing or could
+not read a word — so `scriptsWithNoConvention` names the script, and `noConventionReason` says it out
+loud. A silent miss is the defect; a stated one is not.
+
 ## The claim being made
 
 A subject-fit colour is not "a colour that suits the topic". It is a colour a reader **already

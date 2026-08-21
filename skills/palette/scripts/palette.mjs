@@ -99,15 +99,38 @@ export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
  * hold, not a colour that felt right — see `references/subject-conventions.md` for the evidence
  * behind each one and for why the list is short.
  *
- * `match` is tested against the subject line the journalist wrote, lowercased. A subject that
- * matches nothing gets no subject option at all, and the house theme wins by default. Growing
- * this table with a convention nobody can point to a source for is the failure mode; a missing
- * entry costs a journalist one extra sentence, an invented one teaches a reader something false.
+ * `match` is tested against the subject line the journalist wrote, lowercased — and, when the
+ * subject line carries nothing, against what the story SAYS IT IS ABOUT (see `proposePalette`'s
+ * `about`). A subject that matches nothing gets no subject option at all, and the house theme wins
+ * by default. Growing this table with a convention nobody can point to a source for is the failure
+ * mode; a missing entry costs a journalist one extra sentence, an invented one teaches a reader
+ * something false.
+ *
+ * THE LANGUAGES THIS TABLE DECLARES: English, French, Greek and Arabic — the four this tree has
+ * frozen a story in (`CONVENTION_LANGUAGES`). ROUND FIVE, finding X1: every one of these regexes
+ * held English and French words only, behind `\b` boundaries, and `\b` is ASCII-only. So
+ * `stress-x-tunisian-water` — a story about `استهلاك المياه`, water consumption, and blue for water
+ * is the strongest entry in this table — reached the newsroom branch as though it carried no
+ * convention at all, and the journalist recorded THIS TABLE'S OWN HEX through the proposal's
+ * "something else" escape. The boundaries below are unicode property escapes for that reason, and
+ * a subject in a script none of the four uses is NAMED rather than silently answered (see
+ * `scriptsWithNoConvention` and `proposePalette`'s `noConventionReason`).
  */
+export const CONVENTION_LANGUAGES = ["English", "French", "Greek", "Arabic"];
+
+/** A word boundary that is not ASCII-only. `\b` cannot see the edge of a Greek or Arabic word. */
+const EDGE_BEFORE = "(?<![\\p{L}\\p{N}])";
+const EDGE_AFTER = "(?![\\p{L}\\p{N}])";
+const edged = (alternatives) => new RegExp(`${EDGE_BEFORE}(?:${alternatives})${EDGE_AFTER}`, "u");
 export const SUBJECT_CONVENTIONS = [
   {
     id: "renewables",
-    match: /\b(renewable|renewables?|solar|wind|photovoltaic|clean energy|énergies? renouvelables?|solaire|éolien)\b/,
+    match: edged(
+      "renewable|renewables?|solar|wind|photovoltaic|clean energy|" +
+        "\u00e9nergies? renouvelables?|solaire|\u00e9olien|" +
+        "\u03b1\u03bd\u03b1\u03bd\u03b5\u03ce\u03c3\u03b9\u03bc\u03b5?\u03c2?|\u03b7\u03bb\u03b9\u03b1\u03ba\u03ae?|\u03b1\u03b9\u03bf\u03bb\u03b9\u03ba\u03ae?|" +
+        "\u0627\u0644\u0645\u062a\u062c\u062f\u062f\u0629|\u0645\u062a\u062c\u062f\u062f\u0629|\u0634\u0645\u0633\u064a\u0629|\u0627\u0644\u0631\u064a\u0627\u062d|\u0631\u064a\u0627\u062d",
+    ),
     accent: "#1B7F4B",
     label: "renewable generation",
     reasoning:
@@ -115,7 +138,11 @@ export const SUBJECT_CONVENTIONS = [
   },
   {
     id: "fossil",
-    match: /\b(coal|lignite|fossil|oil|petroleum|charbon|fossile|pétrole)\b/,
+    match: edged(
+      "coal|lignite|fossil|oil|petroleum|charbon|fossile|p\u00e9trole|" +
+        "\u03ac\u03bd\u03b8\u03c1\u03b1\u03ba\u03b1?\u03c2?|\u03bb\u03b9\u03b3\u03bd\u03af\u03c4\u03b7?\u03c2?|\u03c0\u03b5\u03c4\u03c1\u03ad\u03bb\u03b1\u03b9\u03bf|\u03bf\u03c1\u03c5\u03ba\u03c4\u03ac|" +
+        "\u0627\u0644\u0641\u062d\u0645|\u0641\u062d\u0645|\u0627\u0644\u0646\u0641\u0637|\u0646\u0641\u0637|\u0623\u062d\u0641\u0648\u0631\u064a|\u0627\u0644\u0628\u062a\u0631\u0648\u0644",
+    ),
     accent: "#3A3A3A",
     label: "coal and fossil fuel",
     reasoning:
@@ -123,7 +150,12 @@ export const SUBJECT_CONVENTIONS = [
   },
   {
     id: "water",
-    match: /\b(water|river|rivers|rainfall|flood|precipitation|drought|eau|rivières?|pluie|inondation|sécheresse)\b/,
+    match: edged(
+      "water|river|rivers|rainfall|flood|precipitation|drought|" +
+        "eau|rivi\u00e8res?|pluie|inondation|s\u00e9cheresse|" +
+        "\u03bd\u03b5\u03c1\u03cc|\u03bd\u03b5\u03c1\u03bf\u03cd|\u03c0\u03bf\u03c4\u03b1\u03bc\u03cc\u03c2?|\u03c0\u03bf\u03c4\u03b1\u03bc\u03bf\u03cd|\u03b2\u03c1\u03bf\u03c7\u03ae|\u03c0\u03bb\u03b7\u03bc\u03bc\u03cd\u03c1\u03b1|\u03be\u03b7\u03c1\u03b1\u03c3\u03af\u03b1|" +
+        "\u0627\u0644\u0645\u064a\u0627\u0647|\u0645\u064a\u0627\u0647|\u0627\u0644\u0645\u0627\u0621|\u0645\u0627\u0621|\u0646\u0647\u0631|\u0623\u0646\u0647\u0627\u0631|\u0627\u0644\u0623\u0645\u0637\u0627\u0631|\u0623\u0645\u0637\u0627\u0631|\u0645\u0637\u0631|\u0641\u064a\u0636\u0627\u0646|\u062c\u0641\u0627\u0641",
+    ),
     accent: "#1F6FB2",
     label: "water",
     reasoning:
@@ -131,7 +163,11 @@ export const SUBJECT_CONVENTIONS = [
   },
   {
     id: "heat",
-    match: /\b(heat|heatwave|temperature|warming|canicule|chaleur|température|réchauffement)\b/,
+    match: edged(
+      "heat|heatwave|temperature|warming|canicule|chaleur|temp\u00e9rature|r\u00e9chauffement|" +
+        "\u03b8\u03b5\u03c1\u03bc\u03bf\u03ba\u03c1\u03b1\u03c3\u03af\u03b1|\u03ba\u03b1\u03cd\u03c3\u03c9\u03bd\u03b1?\u03c2?|\u03c5\u03c0\u03b5\u03c1\u03b8\u03ad\u03c1\u03bc\u03b1\u03bd\u03c3\u03b7|" +
+        "\u0627\u0644\u062d\u0631\u0627\u0631\u0629|\u062d\u0631\u0627\u0631\u0629|\u0627\u0644\u0627\u062d\u062a\u0631\u0627\u0631|\u0627\u062d\u062a\u0631\u0627\u0631",
+    ),
     accent: "#C1440E",
     label: "heat and warming",
     reasoning:
@@ -151,6 +187,39 @@ export function matchConvention(subject, conventions = SUBJECT_CONVENTIONS) {
   const text = subject.toLowerCase();
   const hits = conventions.filter((c) => c.match.test(text));
   return hits.length === 1 ? hits[0] : null;
+}
+
+// The writing systems `CONVENTION_LANGUAGES` covers, and the ones a newsroom in this tree's reach
+// could plausibly file in and this table could not read a word of.
+const CONVENTION_SCRIPTS = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Arabic}]/u;
+const NAMED_SCRIPTS = [
+  ["Cyrillic", /\p{Script=Cyrillic}/u],
+  ["Hebrew", /\p{Script=Hebrew}/u],
+  ["Han", /\p{Script=Han}/u],
+  ["Hiragana", /\p{Script=Hiragana}/u],
+  ["Katakana", /\p{Script=Katakana}/u],
+  ["Hangul", /\p{Script=Hangul}/u],
+  ["Devanagari", /\p{Script=Devanagari}/u],
+  ["Thai", /\p{Script=Thai}/u],
+  ["Armenian", /\p{Script=Armenian}/u],
+  ["Georgian", /\p{Script=Georgian}/u],
+  ["Ethiopic", /\p{Script=Ethiopic}/u],
+];
+
+/**
+ * EVERY SCRIPT IN THIS TEXT THAT NONE OF `CONVENTION_LANGUAGES` IS WRITTEN IN.
+ *
+ * The second half of the policy this whole table now follows: gaining languages can never be
+ * finished, so a lexicon that has been taught four still meets a fifth. What it may not do is answer
+ * "no convention applies" in a way that reads identically whether it looked and found nothing or
+ * could not read a word. Empty is the ordinary answer and is itself information.
+ */
+export function scriptsWithNoConvention(text) {
+  const value = String(text ?? "");
+  const found = NAMED_SCRIPTS.filter(([, re]) => re.test(value)).map(([name]) => name);
+  if (found.length > 0) return found;
+  const stray = [...value].find((ch) => /\p{L}/u.test(ch) && !CONVENTION_SCRIPTS.test(ch));
+  return stray ? [`U+${stray.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`] : [];
 }
 
 /**
@@ -199,7 +268,7 @@ function scoreOption(option) {
  * here has a write path, not a commented-out one, not a flag that turns it on — the same rule
  * `newsroom-charter` holds.
  */
-export function proposePalette({ newsroom, subject } = {}) {
+export function proposePalette({ newsroom, subject, about } = {}) {
   const options = [];
 
   // SUBJECT FIRST. A convention the reader already holds — blue for water, green for renewables —
@@ -208,7 +277,15 @@ export function proposePalette({ newsroom, subject } = {}) {
   // explicitly, on the reasoning that a subject convention is "a reason to DEPART from the house
   // theme"; the owner's ruling inverts it (twin/FEEDBACK-2026-08-10.md, A8). House is what leads
   // when the subject carries no convention, which is most of the time.
-  const convention = matchConvention(subject);
+  // WHERE THE CONVENTION IS LOOKED UP, and the second half of round five's finding X1. The subject
+  // LINE is the journalist's name for the entity the beat is about — `stress-x-tunisian-water`
+  // records `محافظة تونس`, Tunis governorate — and a convention is about the SUBJECT MATTER. No
+  // vocabulary in any language can find water in the words "Tunis governorate", because there is
+  // none there; that story is about `استهلاك المياه` and its own takeaway says so. So the subject
+  // line is asked first, and what the story says it is ABOUT second, with which of the two answered
+  // written into the option's provenance so the journalist can disagree with the reading.
+  const convention = matchConvention(subject) ?? matchConvention(about);
+  const conventionReadIn = matchConvention(subject) ? "the subject" : "the takeaway";
   if (convention) {
     const ground = (newsroom && newsroom.ground) || "#FFFFFF";
     options.push(
@@ -219,7 +296,7 @@ export function proposePalette({ newsroom, subject } = {}) {
         accent: convention.accent,
         label: `the ${convention.label} convention`,
         reasoning: convention.reasoning,
-        provenance: `references/subject-conventions.md — ${convention.id}; ground kept from ${
+        provenance: `references/subject-conventions.md — ${convention.id}, read in ${conventionReadIn}; ground kept from ${
           newsroom && newsroom.ground ? "NEWSROOM.md" : "the default white, because no NEWSROOM.md ground was given"
         }`,
       }),
@@ -261,6 +338,12 @@ export function proposePalette({ newsroom, subject } = {}) {
     });
   }
 
+  // THE STATED MISS. Read across BOTH texts the convention was looked for in, so a subject line in
+  // one script and a takeaway in another are both accounted for.
+  const unreadable = [
+    ...new Set([...scriptsWithNoConvention(subject), ...scriptsWithNoConvention(about)]),
+  ];
+
   return {
     subject: subject || null,
     options,
@@ -272,7 +355,7 @@ export function proposePalette({ newsroom, subject } = {}) {
     noConventionReason: convention
       ? null
       : subject
-        ? "No convention applies to this subject, so the newsroom's colours lead. The conventions this skill will propose are the few a reader can be expected to already hold — see references/subject-conventions.md for why the list is short and what it would take to add one."
+        ? `No convention applies to this subject, so the newsroom's colours lead. The conventions this skill will propose are the few a reader can be expected to already hold — see references/subject-conventions.md for why the list is short and what it would take to add one.${unreadable.length > 0 ? ` This table reads ${CONVENTION_LANGUAGES.slice(0, -1).join(", ")} and ${CONVENTION_LANGUAGES[CONVENTION_LANGUAGES.length - 1]}; ${unreadable.join(", ")} is a script it holds no word of, so "no convention applies" here means "none could be read", not "none exists".` : ""}`
         : "No subject was given to look a convention up by, so the newsroom's colours lead.",
     // The SUBJECT option is recommended when it exists and passes; the PRIMARY house accent second;
     // any passing option third — which, since a newsroom may record several accents, is how a

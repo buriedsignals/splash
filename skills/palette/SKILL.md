@@ -188,9 +188,9 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Layer | File | Role |
 | --- | --- | --- |
 | Colour maths | `scripts/palette.mjs` | `contrast` — a verbatim copy of the block in `render-still.mjs`, guarded against drift by `helper-parity.test.ts` |
-| Conventions | `scripts/palette.mjs` | `SUBJECT_CONVENTIONS`, `matchConvention` — a deliberately short table, one entry per association a reader already holds |
+| Conventions | `scripts/palette.mjs` | `SUBJECT_CONVENTIONS`, `matchConvention`, `CONVENTION_LANGUAGES`, `scriptsWithNoConvention` — a deliberately short table, one entry per association a reader already holds, read in English, French, Greek and Arabic |
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
-| Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject})` — the options, each with provenance, reasoning and measured contrast |
+| Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject, about})` — the options, each with provenance, reasoning and measured contrast. `about` is what the story SAYS IT IS ABOUT (its takeaway): a subject line names the entity, and a convention is about the subject matter |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
 | Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
@@ -327,12 +327,14 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 | How finely the remedy walks the accent toward the far pole (steps, so `1/50` per step) | `50` | `adjustToContrast`, `scripts/palette.mjs` |
 | How many conventions may match a subject before none is offered | `1` | `matchConvention`, `scripts/palette.mjs` |
 | Which subject conventions exist at all, and their accents | `4` entries | `SUBJECT_CONVENTIONS`, `scripts/palette.mjs` |
+| The languages a convention's own words are read in | English, French, Greek, Arabic | `CONVENTION_LANGUAGES`, `scripts/palette.mjs` |
 
 ## Files
 
 - `scripts/palette.mjs` — `contrast`, `NON_TEXT_CONTRAST_MIN`, `TEXT_CONTRAST_MIN`,
   `LARGE_TEXT_CONTRAST_MIN`, `adjustToContrast`, `assertLegible`, `SUBJECT_CONVENTIONS`,
-  `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`. No write path — the
+  `matchConvention`, `CONVENTION_LANGUAGES`, `scriptsWithNoConvention`, `proposePalette`,
+  `readPalette` and `parsePalette`. No write path — the
   colour answer is authored, and only the typeface answer is written (`scripts/typeface.mjs`).
 - `scripts/format-proposal.mjs` — `formatProposal`, the markdown the journalist reads and answers.
 - `scripts/typeface.mjs` — `DEFAULT_STACK`, `ORIGINS`, `newsroomFaces`, `proposeTypeface`,
