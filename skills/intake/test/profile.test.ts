@@ -435,3 +435,108 @@ describe("profileTable names a candidate denominator column", () => {
     expect(incidents.denominator).toBeUndefined();
   });
 });
+
+describe("profileTable reads a unit only where the data states one", () => {
+  // ROUND FIVE, FINDING C1. `stress-y-rural-broadband`'s first column holds `Commune-001` …
+  // `Commune-186`, and this profiler typed it `number`, `unit: "Commune"`, `min: -186`,
+  // `sum: -17391` — then round four's denominator detector attached `households` to it, so the
+  // toolchain was prepared to reason about place names per household. The unit reader took the
+  // alphabetic prefix as a unit and the hyphen as a minus sign.
+  it("should not read a <letters>-<digits> identifier as a signed number with a unit", () => {
+    const table = profileTable([
+      ["municipality"],
+      ["Commune-001"],
+      ["Commune-002"],
+      ["Commune-003"],
+    ]);
+    const municipality = table.columns.find((c) => c.name === "municipality");
+    expect(municipality.type).toBe("text");
+    expect(municipality.unit).toBeUndefined();
+    expect(municipality.min).toBe(null);
+    expect(municipality.sum).toBe(null);
+  });
+
+  it("should refuse every leading-token shape the corpus actually carries", () => {
+    // Measured over the 114 frozen CSVs in this tree: the leading form matched eight distinct
+    // tokens and not one of them was a measure — a commune id, a Wikidata QID, a USGS quake id,
+    // an OWID code, a tank designation, a disease name, a month. Each shape is checked with a
+    // sibling that carries the SAME leading token, because a column with one value would be
+    // refused for its length alone rather than for its shape.
+    for (const shape of ["COVID-19", "T-34", "OWID_EU27", "Q11924", "ci38457511", "March 2025"]) {
+      const column = profileTable([["v"], [shape], [shape.replace(/\d/, "7")]]).columns[0];
+      expect(`${shape} -> ${column.type}, unit ${column.unit}`).toBe(`${shape} -> text, unit undefined`);
+    }
+  });
+
+  it("should never read a hyphen as part of a trailing unit", () => {
+    // The same identifier the other way round: a hyphen glues a token to a number, it never
+    // states what the number is measured in.
+    const table = profileTable([["v"], ["19-COVID"], ["20-COVID"]]);
+    const v = table.columns.find((c) => c.name === "v");
+    expect(v.type).toBe("text");
+    expect(v.unit).toBeUndefined();
+  });
+
+  it("should not read a parenthesised aside as a unit", () => {
+    // stress-o-museum-visits' own `period` column: "2025 (Jan-Mar)" beside plain years.
+    const table = profileTable([["period"], ["2025 (Jan-Mar)"], ["2024 (Jan-Mar)"]]);
+    const period = table.columns.find((c) => c.name === "period");
+    expect(period.type).toBe("text");
+    expect(period.unit).toBeUndefined();
+  });
+
+  it("should not read a bare plus sign as a unit", () => {
+    // An age band's open top ("80+") is not eighty of something.
+    const table = profileTable([["age_band"], ["80+"], ["90+"]]);
+    const band = table.columns.find((c) => c.name === "age_band");
+    expect(band.type).toBe("text");
+    expect(band.unit).toBeUndefined();
+  });
+
+  it("should keep reading a trailing unit written as letters", () => {
+    const table = profileTable([["mass"], ["9 kg"], ["12 kg"]]);
+    const mass = table.columns.find((c) => c.name === "mass");
+    expect(mass.type).toBe("number");
+    expect(mass.unit).toBe("kg");
+  });
+
+  it("should keep reading a padded trailing unit — round one's own fixture", () => {
+    const table = profileTable([["pressure"], ["12 %"], [" 12 % "]]);
+    const pressure = table.columns.find((c) => c.name === "pressure");
+    expect(pressure.type).toBe("number");
+    expect(pressure.unit).toBe("%");
+    expect(pressure.min).toBe(12);
+  });
+
+  it("should read a currency symbol in front of a number as that number's unit", () => {
+    const table = profileTable([["price"], ["$1200"], ["$980.5"]]);
+    const price = table.columns.find((c) => c.name === "price");
+    expect(price.type).toBe("number");
+    expect(price.unit).toBe("$");
+    expect(price.min).toBe(980.5);
+  });
+
+  it("should report a value above 100 in a column whose own DATA states it is a percentage", () => {
+    // stress-f-housing-pressure's own rows: Malta is "143 %". Reported, never repaired — a share
+    // above 100 is either an error or a figure that was never a share, and only the journalist
+    // can say which.
+    const table = profileTable([["pressure"], ["12 %"], ["143 %"], ["9 %"]]);
+    const pressure = table.columns.find((c) => c.name === "pressure");
+    expect(pressure.percentAboveHundred).toEqual({ count: 1, values: [143] });
+  });
+
+  it("should say nothing about a value above 100 when only the column NAME calls it a percentage", () => {
+    // stress-y's `broadband_pct` holds 104.2. The name says percent and so does the article; the
+    // DATA says nothing, and a profiler that read a unit off a name would be guessing.
+    const table = profileTable([["broadband_pct"], ["62.3"], ["104.2"]]);
+    const pct = table.columns.find((c) => c.name === "broadband_pct");
+    expect(pct.unit).toBeUndefined();
+    expect(pct.percentAboveHundred).toBeUndefined();
+  });
+
+  it("should say nothing when a percentage column stays at or below 100", () => {
+    const table = profileTable([["pressure"], ["12 %"], ["100 %"]]);
+    const pressure = table.columns.find((c) => c.name === "pressure");
+    expect(pressure.percentAboveHundred).toBeUndefined();
+  });
+});

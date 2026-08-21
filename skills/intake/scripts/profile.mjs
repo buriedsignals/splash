@@ -59,17 +59,45 @@ export function readNumericToken(raw) {
 }
 
 
-// A unit riding along with a plain number, either trailing ("12 %") or leading ("$100"). The
-// numeric core is deliberately the SAME shape NUMERIC_RE accepts — this never widens what counts
-// as a number, only what is allowed to sit next to one. "0x1F" is not caught by either: the
-// trailing form leaves "x1F" as the "unit", which contains a digit and so is not `[^\d\s]+`; the
-// leading form requires the value to START with the unit, but "0x1F" starts with a digit.
+// WHAT A UNIT MAY LEGITIMATELY BE, decided with the corpus in front of us (finding C1, round five).
+//
+// The reader that learned `"12 %"` in round one and was widened to a LEADING unit in round two
+// typed `stress-y-rural-broadband`'s 186 place names — `Commune-001` … `Commune-186` — as a
+// MEASURE: `number`, `unit: "Commune"`, `min: -186`, `sum: -17391`, with a denominator attached to
+// it downstream. It read the alphabetic prefix as a unit and the hyphen as a minus sign. `COVID-19`
+// reads as -19 the same way, and so does every case id, product code, region code and ISO
+// designation shaped `<letters>-<digits>`.
+//
+// MEASURED over the 114 CSVs frozen in this tree, before deciding anything: the LEADING form
+// matched twelve distinct tokens — `Commune`, `OWID_EU`, `Q`, `ci`, `ew`, `hv`, `nc`, `nn`, `pr`,
+// `uu`, `March`, `term` — and not one of them is a measure. Every single one is an identifier or a
+// month. The TRAILING form matched `%` (two stories, both real), `+` (an age band's open top,
+// "80+") and `(Jan-Mar)` (a parenthesised aside on a year, `stress-o`). So the corpus says a unit
+// is a MARK a number is measured in, never a word glued to an id, and this reader now accepts only:
+//
+//   - in FRONT of a number, a currency symbol and nothing else (Unicode `Sc`: `$`, `€`, `£`, `¥`,
+//     …). No letters, ever — that arm is where the whole defect lived, and in this tree it has
+//     never once carried a measure. A Unicode category rather than a list of currencies, so this
+//     is not one more lexicon written against the language its first story happened to be in.
+//   - AFTER a number, a short token of unit characters: letters (`kg`, `km`, `GWh`) and the marks a
+//     measure carries (`%`, `‰`, `°`, `²`, `³`, `·`, `/`), currency symbols included. No hyphen, so
+//     `19-COVID` is not nineteen COVIDs; no bracket, so `2025 (Jan-Mar)` is not a year in Jan-Mars;
+//     and never a bare sign, so `80+` is not eighty of something.
+//
+// The numeric core is deliberately the SAME shape NUMERIC_RE accepts — this never widens what
+// counts as a number, only what is allowed to sit next to one. "0x1F" is caught by neither form:
+// the trailing form would leave "x1F" as the "unit", which contains a digit and so is not
+// `[^\d\s]+`; the leading form requires a currency symbol, and "0x1F" starts with a digit.
 const UNIT_SUFFIX_RE = /^([+-]?(?:\d+\.?\d*|\.\d+))\s*([^\d\s]+)$/;
-const UNIT_PREFIX_RE = /^([^\d\s+-]+)\s*([+-]?(?:\d+\.?\d*|\.\d+))$/;
+const UNIT_PREFIX_RE = /^(\p{Sc})\s*([+-]?(?:\d+\.?\d*|\.\d+))$/u;
+
+// The trailing token itself: at most eight characters, all of them unit characters, at least one of
+// them a letter, a currency symbol or a measure mark — so a lone "/" is no more a unit than "+" is.
+const UNIT_TOKEN_RE = /^(?=.*[\p{L}\p{Sc}%‰°])[\p{L}\p{Sc}%‰°²³·\/]{1,8}$/u;
 
 function splitUnit(v) {
   const suffix = v.match(UNIT_SUFFIX_RE);
-  if (suffix) return { core: suffix[1], unit: suffix[2], raw: v };
+  if (suffix && UNIT_TOKEN_RE.test(suffix[2])) return { core: suffix[1], unit: suffix[2], raw: v };
   const prefix = v.match(UNIT_PREFIX_RE);
   if (prefix) return { core: prefix[2], unit: prefix[1], raw: v };
   return null;
@@ -281,6 +309,19 @@ export function profileTable(rows) {
             return read && !read.ambiguous ? read.value : Number(stripThousands(v));
           })
         : [];
+    // A PERCENTAGE ABOVE 100 — reported, never repaired (finding Y5, stress round five).
+    // `stress-y-rural-broadband` carries 104.2 in a column the article itself calls a percentage,
+    // and nothing anywhere in this toolchain noticed. What this profiler can HONESTLY know is
+    // narrow, and the narrowness is the point: a column is a percentage when its own VALUES say so
+    // — the uniform trailing "%" read above — and never when only its NAME says so. `broadband_pct`
+    // is named for a percentage and the article calls it one; the DATA says nothing, and reading a
+    // unit off a name is the same guess `UNIT_COLUMN_NAME_RE` and the denominator detector both
+    // refuse to make about a sibling column. So a column that merely LOOKS like a percentage gets
+    // no report here, and that limit is stated rather than papered over with a name match.
+    // Never a verdict either: a share above 100 is either an error or a figure that was never a
+    // share (an index, an occupancy, a change) — `stress-f-housing-pressure`'s Malta is "143 %".
+    // This names the values and stops; nothing is clamped, dropped or re-scaled.
+    const percentAboveHundred = unit === "%" ? numbers.filter((n) => n > 100) : [];
     // Only a plain four-digit year reads unambiguously as one step of a date column's sequence —
     // see isSequenceColumn's header for why "YYYY-MM"/"YYYY-MM-DD" are left out here.
     const sequenceValues =
@@ -300,6 +341,11 @@ export function profileTable(rows) {
       // range of the column it sums, so without this the only check that can see it reads it as a
       // number the data refutes — which is exactly what it did (storyboard's ground-claim.mjs).
       sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
+      // Which values a percentage column states above 100 — see percentAboveHundred above. Absent,
+      // not null, when the column is not a percentage the DATA declared or has no such value.
+      ...(percentAboveHundred.length
+        ? { percentAboveHundred: { count: percentAboveHundred.length, values: percentAboveHundred } }
+        : {}),
       // Which values a sequence-like column's own grain skips — see isSequenceColumn/findGaps.
       // `null` for any column where "gaps" is not a meaningful question, not merely an unanswered one.
       gaps,
