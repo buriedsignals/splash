@@ -825,7 +825,7 @@ function extractComparisons(text) {
   return found;
 }
 
-function findYearColumn(columns) {
+export function findYearColumn(columns) {
   const byName = columns.find((c) => /year|date|ann[ée]e/i.test(c.name));
   if (byName) return byName;
   return (
@@ -836,10 +836,15 @@ function findYearColumn(columns) {
 }
 
 // A MEASURE is a numeric column that is not the year column — a table's own x axis is not one of
-// the things it measures. (This is the rule finding 23 names as diverging from `propose.mjs`'s
-// `requirementFinding`, which counts `year` in `facts.numeric` AND `facts.temporal`; the answer
-// here is the one this file has always given.)
-function measureColumns(columns, yearColumn) {
+// the things it measures. THIS IS THE SKILL'S ONE ANSWER TO "is `year` a measure?", and it lives
+// here because this file has always given it. Round four's finding 23 was that `propose.mjs`'s
+// `requirementFinding` answered the opposite way — counting `year` in `facts.numeric` AND
+// `facts.temporal`, so a plain (year, value) table claimed two measures and satisfied
+// `multiple-series` on the strength of its own x axis, in 9 of the 21 frozen stories. Two modules
+// inside ONE skill, opposite answers. `propose.mjs` now imports `findYearColumn` and
+// `measureColumns` from here rather than deciding again; that import is the whole of the fix, and
+// it is not a cross-skill import — both modules are `storyboard`'s own.
+export function measureColumns(columns, yearColumn) {
   return columns.filter(
     (c) =>
       c.type === "number" &&

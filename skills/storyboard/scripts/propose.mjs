@@ -26,7 +26,7 @@
 // order already-reachable rows as revision-bound advice, but it remains read-only and discloses
 // unresolved requirements and ties.
 
-import { groundTakeaway } from "./ground-claim.mjs";
+import { groundTakeaway, findYearColumn, measureColumns } from "./ground-claim.mjs";
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
@@ -351,7 +351,14 @@ function profileFacts(profile) {
         }];
       })
     : [];
+  // THE SKILL'S ONE ANSWER TO "is `year` a measure?", read from where it lives rather than
+  // decided again here — `ground-claim.mjs`'s `findYearColumn`/`measureColumns` (finding 23).
+  // `numeric` is still every number column, because "this table carries numbers" is a real fact;
+  // what a treatment's requirements are scored against is `measures`, which is `numeric` minus the
+  // table's own x axis.
   const numeric = columns.filter((column) => column.type === "number");
+  const yearColumn = findYearColumn(columns);
+  const measures = measureColumns(columns, yearColumn);
   const text = columns.filter((column) => column.type === "text");
   const temporal = columns.filter((column) =>
     column.type === "date" || /(^|_)(date|time|year|month|day|week|quarter)($|_)/.test(column.normalizedName),
@@ -365,6 +372,8 @@ function profileFacts(profile) {
     rowCount: Number.isSafeInteger(profile?.rowCount) && profile.rowCount >= 0 ? profile.rowCount : null,
     columns,
     numeric,
+    yearColumn,
+    measures,
     text,
     temporal,
     regional,
@@ -372,41 +381,84 @@ function profileFacts(profile) {
   };
 }
 
+// WHAT A REQUIREMENT IS ALLOWED TO READ AS SATISFIED.
+//
+// ROUND FOUR (2026-08-21), findings 22 and 23. Measured: of the requirements this table answers,
+// TWO consulted `rowCount` (`raw-observations`, `distribution`). Every other one was satisfied by
+// column TYPE alone, so `stress-s-unspent-fund` — ONE row, `year=2026`, `fund=1` — was handed
+// `chart.streamgraph` first, confidently, with zero unresolved requirements, on a table that
+// supports no comparison whatsoever.
+//
+// The vocabulary already held the right idea in exactly one entry: `two-moments` asked for
+// `distinct >= 2`. THE RULE, GENERALISED FROM IT AND STATED ONCE HERE: a requirement that names a
+// COMPARISON, a SERIES, an AXIS or an ORDER needs more than one observation to be true. A time
+// axis with one moment is not an axis; a series of one point is not a series; a ranking of one
+// row is not a ranking. `atLeast` is the whole mechanism, and it answers `false` when the profile
+// does not state a row count at all — an unknown row count is not evidence either.
+//
+// TWO ENTRIES DELIBERATELY TAKE NO ROW FLOOR, and the reason is worth writing down rather than
+// rediscovering. `part-to-whole` is true of a ONE-row table carrying three non-negative measures
+// (that is a pie chart, and a legitimate one); what it needs is two measures, not two rows.
+// `categorical` says a text column exists, which is a fact about the table and not a claim about
+// how many things it compares — `few-categories` and `ordered-categories` are where the count of
+// categories is answered.
+//
+// And `facts.measures`, not `facts.numeric`, is what every numeric requirement is scored against
+// (finding 23): a table's own x axis is not one of the things it measures. See `profileFacts`.
 function requirementFinding(requirement, facts) {
-  const numeric = facts.numeric.length > 0;
+  const measures = facts.measures;
+  const numeric = measures.length > 0;
   const categorical = facts.text.length > 0;
-  const temporal = facts.temporal.length > 0;
   const regional = facts.regional.length > 0;
-  const raw = numeric && facts.rowCount !== null && facts.rowCount >= 5;
-  const nonnegative = numeric && facts.numeric.every((column) => column.min !== null && column.min >= 0);
-  const positive = numeric && facts.numeric.every((column) => column.min !== null && column.min > 0);
+  const rows = facts.rowCount;
+  const atLeast = (n) => rows !== null && rows >= n;
+  const rowNote = `${rows ?? "an unstated number of"} profiled row(s)`;
+  const measureNote = `${measures.length} measure column(s) beside the table's own axis`;
+  // A moment a column never varies over is one moment. Where `distinct` is unstated the row count
+  // answers instead, which is the same question asked of the only other fact available.
+  const twoMoments = facts.temporal.some((column) =>
+    column.distinct === null ? atLeast(2) : column.distinct >= 2,
+  );
+  const momentNote = `a temporal column carries at least two distinct moments across ${rowNote}`;
+  const raw = numeric && atLeast(5);
+  const nonnegative = numeric && measures.every((column) => column.min !== null && column.min >= 0);
+  const integral = nonnegative && measures.every((column) => Number.isInteger(column.min) && Number.isInteger(column.max));
+  const positive = numeric && measures.every((column) => column.min !== null && column.min > 0);
   const tests = {
-    "numeric-value": [numeric, `${facts.numeric.length} numeric column(s)`],
-    "numeric-series": [numeric, `${facts.numeric.length} numeric column(s)`],
-    "continuous-value": [numeric, `${facts.numeric.length} numeric column(s)`],
-    count: [numeric, `${facts.numeric.length} numeric column(s)`],
-    "unit-conversion": [numeric, `${facts.numeric.length} numeric column(s)`],
-    "nonnegative-value": [nonnegative, "numeric minima are non-negative"],
-    "positive-value": [positive, "numeric minima are positive"],
-    "signed-value": [facts.numeric.some((column) => column.min < 0 && column.max > 0), "a numeric column crosses zero"],
-    "numeric-pair": [facts.numeric.length >= 2, `${facts.numeric.length} numeric columns`],
-    "multiple-series": [facts.numeric.length >= 2, `${facts.numeric.length} numeric columns`],
-    "few-series": [facts.numeric.length >= 1 && facts.numeric.length <= 6, `${facts.numeric.length} numeric columns`],
+    "numeric-value": [numeric, measureNote],
+    "numeric-series": [numeric && atLeast(2), `${measureNote} over ${rowNote}`],
+    "continuous-value": [numeric, measureNote],
+    count: [integral, "a non-negative measure whose extremes are both whole numbers"],
+    // NOT A COLUMN FACT AT ALL. "An explicit units-per-icon conversion" is a decision the
+    // journalist makes about how to draw, and no profile can establish it — reporting it as
+    // satisfied because the table carries numbers is the same defect as calling one moment an
+    // axis. It is stated as unresolved every time, in its own words, rather than silently.
+    "unit-conversion": [
+      false,
+      null,
+      "the profile cannot state a units-per-icon conversion — how many things one icon stands for is the journalist's decision, not a fact about a column",
+    ],
+    "nonnegative-value": [nonnegative, "measure minima are non-negative"],
+    "positive-value": [positive, "measure minima are positive"],
+    "signed-value": [measures.some((column) => column.min < 0 && column.max > 0), "a measure crosses zero"],
+    "numeric-pair": [measures.length >= 2 && atLeast(2), `${measureNote} over ${rowNote}`],
+    "multiple-series": [measures.length >= 2 && atLeast(2), `${measureNote} over ${rowNote}`],
+    "few-series": [measures.length >= 1 && measures.length <= 6 && atLeast(2), `${measureNote} over ${rowNote}`],
     categorical: [categorical, `${facts.text.length} text column(s)`],
     "few-categories": [facts.text.some((column) => column.distinct !== null && column.distinct <= 12), "a text column has at most 12 distinct values"],
-    temporal: [temporal, `${facts.temporal.length} temporal column(s)`],
-    "calendar-date": [temporal, `${facts.temporal.length} temporal column(s)`],
-    "ordered-axis": [temporal, `${facts.temporal.length} temporal column(s)`],
-    "two-moments": [facts.temporal.some((column) => column.distinct === null || column.distinct >= 2), "a temporal column has at least two values"],
+    temporal: [twoMoments, momentNote],
+    "calendar-date": [twoMoments, momentNote],
+    "ordered-axis": [twoMoments, momentNote],
+    "two-moments": [twoMoments, momentNote],
     "geographic-regions": [regional, `${facts.regional.length} regional identifier column(s)`],
     "region-join": [regional, `${facts.regional.length} regional identifier column(s)`],
     "place-labels": [regional, `${facts.regional.length} regional identifier column(s)`],
     "geographic-points": [facts.geographicPoints, "latitude and longitude columns are both present"],
-    "raw-observations": [raw, `${facts.rowCount ?? "unknown"} profiled rows`],
-    distribution: [raw, `${facts.rowCount ?? "unknown"} profiled rows with numeric values`],
-    rank: [numeric && categorical, "numeric and categorical columns are both present"],
-    "ordered-categories": [numeric && categorical, "numeric and categorical columns are both present"],
-    "part-to-whole": [facts.numeric.length >= 2 && nonnegative, "multiple non-negative numeric columns are present"],
+    "raw-observations": [raw, `${rowNote} with a measure to read`],
+    distribution: [raw, `${rowNote} with a measure to read`],
+    rank: [numeric && categorical && atLeast(2), `a measure, a category and ${rowNote} to put in order`],
+    "ordered-categories": [numeric && categorical && atLeast(2), `a measure, a category and ${rowNote} to put in order`],
+    "part-to-whole": [measures.length >= 2 && nonnegative, "two or more non-negative measures are present"],
     "repeatable-schema": [facts.columns.length > 0, `${facts.columns.length} profiled columns`],
   };
   const result = tests[requirement];
@@ -414,7 +466,13 @@ function requirementFinding(requirement, facts) {
   return {
     matched: result[0] === true,
     source: "source/profile.json",
-    fact: result[0] === true ? result[1] : `profile does not establish ${requirement.replaceAll("-", " ")}`,
+    // A third element, where an entry has one, is what this requirement's REFUSAL says in its own
+    // words. Without it the refusal reads "profile does not establish unit conversion", which
+    // tells a journalist to go looking for a column that could never exist.
+    fact:
+      result[0] === true
+        ? result[1]
+        : (result[2] ?? `profile does not establish ${requirement.replaceAll("-", " ")}`),
   };
 }
 
@@ -440,9 +498,9 @@ function rankChoice(choice, index, model, facts) {
       score += 5;
       matchedEvidence.push({ source: "source/profile.json", fact: "geographic identifiers are present" });
     }
-    if (choice.value === "chart" && facts.numeric.length) {
+    if (choice.value === "chart" && facts.measures.length) {
       score += 2;
-      matchedEvidence.push({ source: "source/profile.json", fact: `${facts.numeric.length} numeric column(s) are present` });
+      matchedEvidence.push({ source: "source/profile.json", fact: `${facts.measures.length} measure column(s) are present` });
     }
     if (choice.value === "image" && explicitSignal(text, ["photo", "photograph", "image", "portrait"])) {
       score += 5;
@@ -513,13 +571,25 @@ export function recommendVisualChoice({ model, profile = {} } = {}) {
     .map(({ choice, index }) => rankChoice(choice, index, model, facts))
     .sort((a, b) => b.score - a.score || a.canonicalIndex - b.canonicalIndex)
     .map((row, index) => ({ ...row, rank: index + 1 }));
-  const top = ranking[0] ?? null;
-  const tied = Boolean(top && ranking[1] && ranking[1].score === top.score);
+  // A CHOICE WITH AN UNRESOLVED REQUIREMENT IS NOT A RECOMMENDATION (round four, finding 22).
+  // Before this, `ranking[0]` was recommended whatever it left unanswered, so a one-row table got
+  // a confident top pick with its own unmet requirements printed one field away. The ranking is
+  // still returned in full — the unresolved rows are the honest half of the answer — but the
+  // RECOMMENDATION is drawn only from the rows the frozen profile fully establishes, and when
+  // there is no such row the refusal says so and names what is missing.
+  const eligible = ranking.filter((row) => row.unresolvedRequirements.length === 0);
+  const top = eligible[0] ?? null;
+  const tied = Boolean(top && eligible[1] && eligible[1].score === top.score);
   if (top && tied) {
     top.tradeoffs.push("The top choices have equal evidence scores; stable catalogue order breaks the tie.");
   } else if (top && top.matchedEvidence.length === 0) {
     top.tradeoffs.push("This is a conservative fallback because confirmed evidence does not positively distinguish the choices.");
   }
+  const unmet = [...new Set(ranking.flatMap((row) => row.unresolvedRequirements))].sort();
+  const refusal =
+    top || ranking.length === 0
+      ? null
+      : `nothing is recommended: this profile establishes ${facts.rowCount === null ? "no stated row count" : `${facts.rowCount} row(s)`} and ${facts.measures.length} measure column(s) beside the table's own axis, and every one of the ${ranking.length} reachable choice(s) still needs something it does not supply — ${unmet.join(", ")}. Say that to the journalist rather than picking the least unsupported one.`;
   const profileProjection = {
     rowCount: facts.rowCount,
     columns: facts.columns.map(({ name, type, distinct, min, max }) => ({ name, type, distinct, min, max })),
@@ -537,6 +607,7 @@ export function recommendVisualChoice({ model, profile = {} } = {}) {
     selectionRevisions,
     profileRevision,
     recommendedOptionId: top?.optionId ?? null,
+    refusal,
     tied,
     ranking,
   };

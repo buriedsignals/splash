@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   resolveGrounding,
@@ -554,5 +554,157 @@ describe("advisory graphical ranking", () => {
     });
     expect(changed.profileRevision).not.toBe(first.profileRevision);
     expect(changed.revision).not.toBe(first.revision);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND FOUR (2026-08-21), findings 22 and 23 — THE RECOMMENDER READ A COLUMN'S TYPE AS EVIDENCE
+// THAT A STORY EXISTS.
+//
+// Reproduced by the controller against `stress-s-unspent-fund`'s frozen profile — one row,
+// `year=2026`, `fund=1`:
+//
+//   recommended: chart.streamgraph | tied: false
+//      6 chart.streamgraph      | unresolved: 0
+//      4 chart.area             | unresolved: 0
+//
+// Not a tie broken by catalogue order and not a "conservative fallback" — a confident top pick
+// with NO unresolved requirement at all, on a table that supports no comparison whatsoever. Two
+// causes, both closed below, both measured on frozen stories rather than on a fixture built to
+// fail.
+// ---------------------------------------------------------------------------------------------
+
+const STORIES = join(import.meta.dirname, "..", "..", "..", "stories");
+
+function frozenProfile(story: string) {
+  return JSON.parse(
+    readFileSync(join(STORIES, story, "source", "profile.json"), "utf8"),
+  );
+}
+
+function everyTreatment() {
+  const catalogue = JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, "..", "references", "visual-catalog.json"),
+      "utf8",
+    ),
+  );
+  return {
+    schemaVersion: "splash-selection/v1",
+    revisions: {
+      story: "sha256:story",
+      catalogue: catalogue.catalogRevision,
+      capabilities: "sha256:capabilities",
+    },
+    evidence: {},
+    choices: catalogue.treatments.map((treatment: any) => ({
+      id: treatment.id,
+      kind: "treatment",
+      enabled: treatment.state === "selectable",
+      dataShape: treatment.dataShape,
+    })),
+  };
+}
+
+describe("row count is evidence, and a column type is not a story", () => {
+  it("should recommend nothing for a one-row table, and say why", () => {
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: frozenProfile("stress-s-unspent-fund"),
+    });
+    expect(result.recommendedOptionId).toBeNull();
+    expect(result.refusal).toMatch(/one row|1 row/i);
+    expect(result.ranking.every((row) => row.unresolvedRequirements.length > 0)).toBe(true);
+  });
+
+  it("should refuse to call a single moment an ordered axis", () => {
+    const oneMoment = {
+      rowCount: 1,
+      columns: [
+        { name: "year", type: "number", distinct: 1, min: 2026, max: 2026 },
+        { name: "fund", type: "number", distinct: 1, min: 1, max: 1 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      profile: oneMoment,
+      model: {
+        ...everyTreatment(),
+        choices: [
+          {
+            id: "chart.line",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["ordered-axis"] },
+          },
+        ],
+      },
+    });
+    expect(result.ranking[0].unresolvedRequirements).toContain("ordered-axis");
+  });
+
+  // Finding 23. `ground-claim.mjs` has always excluded the year column from the measures — a
+  // table's own x axis is not one of the things it measures. `requirementFinding` counted it in
+  // `facts.numeric` AND `facts.temporal`, so a plain (year, value) table claimed TWO measures and
+  // satisfied `multiple-series` on the strength of its own x axis.
+  it("should not count the year column as one of the measures", () => {
+    const yearAndValue = {
+      rowCount: 30,
+      columns: [
+        { name: "year", type: "number", distinct: 30, min: 1995, max: 2024 },
+        { name: "forest_loss_ha", type: "number", distinct: 30, min: 10, max: 900 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      profile: yearAndValue,
+      model: {
+        ...everyTreatment(),
+        choices: [
+          {
+            id: "chart.streamgraph",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["multiple-series"] },
+          },
+          {
+            id: "chart.scatter",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["numeric-pair"] },
+          },
+        ],
+      },
+    });
+    expect(result.ranking[0].unresolvedRequirements).toContain("multiple-series");
+    expect(result.ranking[1].unresolvedRequirements).toContain("numeric-pair");
+    expect(result.recommendedOptionId).toBeNull();
+  });
+
+  // The corpus measurement the raw findings file recorded: NINE of the twenty-one frozen stories
+  // carry a year column beside exactly one measure, and every one of them claimed two.
+  it("should stop the nine year-column stories claiming two measures", () => {
+    const stories = readdirSync(STORIES).filter((name) =>
+      existsSync(join(STORIES, name, "source", "profile.json")),
+    );
+    expect(stories.length).toBeGreaterThan(20);
+    const model = {
+      ...everyTreatment(),
+      choices: [
+        {
+          id: "chart.streamgraph",
+          kind: "treatment",
+          enabled: true,
+          dataShape: { requires: ["multiple-series"] },
+        },
+      ],
+    };
+    const claiming = stories.filter((story) => {
+      const profile = frozenProfile(story);
+      const numbers = (profile.columns ?? []).filter((c: any) => c.type === "number");
+      const years = numbers.filter((c: any) => /year|date|ann[ée]e/i.test(c.name));
+      if (years.length !== 1 || numbers.length !== 2) return false;
+      const result = recommendVisualChoice({ model, profile });
+      return result.ranking[0].unresolvedRequirements.length === 0;
+    });
+    expect(claiming).toEqual([]);
   });
 });
