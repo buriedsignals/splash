@@ -7,17 +7,15 @@
 // does not build once copied, on its own, into a journalist's root.
 //
 // Same deliberate departure `web-income-life-expectancy/render-web.mjs` documents: after calling
-// the skill's generic `renderWeb`, this file PATCHES the HTML it wrote —
+// the skill's generic `renderWeb`, this file PATCHES the HTML it wrote — the inlined interaction
+// script is swapped for this directory's OWN `boxplot-interaction.mjs`, because the skill's own
+// `assets/interaction.mjs` resolves hover/tap by nearest-x, which has no meaning on this beat's
+// categorical decade axis (see `DecadeBoxplotWeb.tsx`'s own doc-comment). A small CSS override for
+// the `.cat` hit rectangles is appended. The substitution fails loud if the shape it expects to
+// find has changed, rather than silently leaving the wrong script in place.
 //
-//   1. `<html lang="fr">` → `<html lang="en">` (this beat's words are English throughout).
-//   2. The inlined interaction script is swapped for this directory's OWN
-//      `boxplot-interaction.mjs` — the skill's own `assets/interaction.mjs` resolves hover/tap by
-//      nearest-x, which has no meaning on this beat's categorical decade axis (see
-//      `DecadeBoxplotWeb.tsx`'s own doc-comment). A small CSS override for the `.cat` hit
-//      rectangles is appended.
-//
-// Both substitutions fail loud if the shape they expect to find has changed, rather than silently
-// leaving the wrong script or the wrong language tag in place.
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/weby-boxplot-france-co2-decades/render-web.mjs [outDir] [--data <csv>]
 
@@ -25,7 +23,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { summarizeDecade } from "./boxplot-geometry.ts";
 import { DecadeBoxplotWeb, FRAME } from "./DecadeBoxplotWeb.tsx";
 
@@ -240,13 +238,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -283,9 +274,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: DecadeBoxplotWeb,
     props: {
+      language: "en",
       frame: FRAME,
       decades,
       title,

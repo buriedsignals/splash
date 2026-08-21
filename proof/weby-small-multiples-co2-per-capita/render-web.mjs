@@ -21,7 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { SmallMultiplesCo2Web, FRAME } from "./SmallMultiplesCo2Web.tsx";
 
 /**
@@ -284,13 +284,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -347,9 +340,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: SmallMultiplesCo2Web,
     props: {
+      language: "en",
       frame: FRAME,
       countries,
       order: [0, 1, 2, 3], // COUNTRIES is already ascending-2024-value; render order == array order

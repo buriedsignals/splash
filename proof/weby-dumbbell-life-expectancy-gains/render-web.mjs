@@ -13,16 +13,14 @@
 // calls the skill's generic `renderWeb` and PATCHES the output HTML exactly the way
 // `web-income-life-expectancy/render-web.mjs`'s own `patchForThisBeat` does:
 //
-//   1. `<html lang="fr">` → `<html lang="en">` — `renderWeb`'s own HTML shell hard-codes
-//      `lang="fr"` (baked in for the CO₂ beat's French words, its first real caller). This beat's
-//      words are English throughout; leaving the French tag would misdeclare the page's language.
-//   2. The inlined interaction script is swapped for this directory's OWN
-//      `dumbbell-interaction.mjs`, and a small CSS override is appended, for the reason that
-//      file's own header explains: this beat's hit-test is per-row, not nearest-by-x or
-//      nearest-by-2D-distance, so neither of the two existing interaction scripts applies.
+// the inlined interaction script is swapped for this directory's OWN `dumbbell-interaction.mjs`,
+// and a small CSS override is appended, for the reason that file's own header explains: this beat's
+// hit-test is per-row, not nearest-by-x or nearest-by-2D-distance, so neither of the two existing
+// interaction scripts applies. The substitution fails loud if the shape it expects to find has
+// changed, rather than silently leaving the wrong script in place.
 //
-// Both substitutions fail loud if the shape they expect to find has changed, rather than silently
-// leaving the wrong script or the wrong language tag in place.
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/weby-dumbbell-life-expectancy-gains/render-web.mjs [outDir]
 
@@ -30,7 +28,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import {
   DumbbellLifeExpectancyGainsWeb,
   FRAME,
@@ -259,13 +257,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -315,9 +306,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   );
   console.log(`endpoints: 2000 ${y2000} | 2023 ${y2023}`);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: DumbbellLifeExpectancyGainsWeb,
     props: {
+      language: "en",
       frame: FRAME,
       rows: sorted,
       title,

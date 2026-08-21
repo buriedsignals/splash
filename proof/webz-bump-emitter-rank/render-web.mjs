@@ -12,7 +12,7 @@
 // every ISO-coded entity for that year. So are the countries drawn, the subject, the ordinal words
 // for its two ranks, and every crossing and its year.
 //
-// After the skill's `renderWeb` writes the self-contained HTML, this runner does three story-owned
+// After the skill's `renderWeb` writes the self-contained HTML, this runner does two story-owned
 // repairs to that file in place, before anything is served or checked:
 //
 //   1. Appends this beat's OWN interaction script (`./bump-interaction.mjs`) as a second inline
@@ -22,10 +22,9 @@
 //   2. Appends this beat's own CSS: the third grid column a bump chart's name gutter needs, the
 //      fixed-size HTML rings and dots, and the tracing rules — including the one that exempts the
 //      subject's own accent line from ever being dimmed.
-//   3. Corrects `<html lang="fr">` to `<html lang="en">`. The skill's `renderWeb` hard-codes `fr`
-//      because the first beat built against it wrote its words in French; this beat's words are
-//      English, and a screen reader picks its pronunciation from that attribute, not from the words.
-//      A per-story fix, not a change to the skill: `renderWeb` takes no `lang` parameter.
+//
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage, from `twin/`:  bun proof/webz-bump-emitter-rank/render-web.mjs
 
@@ -33,7 +32,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { BumpWeb, FRAME } from "./BumpWeb.tsx";
 
 /**
@@ -282,9 +281,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: BumpWeb,
     props: {
+      language: "en",
       years,
       data: tracks,
       rankRows: beat.rankRows,
@@ -312,8 +315,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
  *  story-level fix rather than a change to the skill's generic `renderWeb`. */
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-
-  html = html.replace('<html lang="fr">', '<html lang="en">');
 
   const interactionSource = await readFile(join(HERE, "bump-interaction.mjs"), "utf8");
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");

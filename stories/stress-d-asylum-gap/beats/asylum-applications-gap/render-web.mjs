@@ -14,7 +14,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { AsylumGapWeb, FRAME } from "./AsylumGapWeb.tsx";
 
 function parseCsvRows(text) {

@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { renderWeb as renderWebFunc } from "/Users/tomvaillant/.agents/skills/chart-web/scripts/render-web.mjs";
+import { renderWeb as renderWebFunc } from "#shared/chart-web/scripts/render-web.mjs";
 import { SlopeWeb, FRAME, parseSlopeData } from "./SlopeWeb.tsx";
 
 /**

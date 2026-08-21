@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, readTypeface, contrast } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { readCities, tripsPerResident, fmt, SOURCE_LINE } from "../../ridership.ts";
 import { RankSlopeWeb, FRAME } from "./RankSlopeWeb.tsx";
 

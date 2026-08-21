@@ -6,20 +6,15 @@
 // that imports a story workspace does not build once it is copied on its own into a journalist's
 // root, the exact bug `proof/co2-suisse/render-web.mjs`'s own header note names.
 //
-// After the skill's `renderWeb` writes the self-contained HTML, this runner does two small,
-// story-owned repairs to that file, in place, before anything is served or checked:
+// After the skill's `renderWeb` writes the self-contained HTML, this runner does one small,
+// story-owned repair to that file, in place, before anything is served or checked: it appends this
+// beat's OWN interaction script (`./bar-interaction.mjs`) as a second inline `<script>` — see
+// `RankingWeb.tsx`'s own header doc-comment for why this beat does not reuse the skill's
+// nearest-point `interaction.mjs` for its own hover/tap/keyboard wiring (that script still runs
+// first, finds no `.pt` circles in this beat's markup, and is a harmless no-op).
 //
-//   1. Appends this beat's OWN interaction script (`./bar-interaction.mjs`) as a second inline
-//      `<script>` — see `RankingWeb.tsx`'s own header doc-comment for why this beat does not reuse
-//      the skill's nearest-point `interaction.mjs` for its own hover/tap/keyboard wiring (that
-//      script still runs first, finds no `.pt` circles in this beat's markup, and is a harmless
-//      no-op).
-//   2. Corrects `<html lang="fr">` to `<html lang="en">` — the skill's `renderWeb` hard-codes
-//      `lang="fr"` because every web beat built against it so far (`co2-suisse`) wrote its title,
-//      subtitle and source in French. This beat's own words (`BEAT` below, from `BRIEF.md`) are
-//      English, so the shipped `lang` attribute has to say so — a screen reader picks its
-//      pronunciation from that attribute, not from the words themselves. This is a per-story fix,
-//      not a change to the skill: `renderWeb` takes no `lang` parameter to set correctly instead.
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/web-co2-ranking/render-web.mjs [outDir] [--data <csv>]
 
@@ -27,7 +22,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { RankingWeb, FRAME } from "./RankingWeb.tsx";
 
 /**
@@ -130,9 +125,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: RankingWeb,
     props: {
+      language: "en",
       data,
       frame: FRAME,
       title: BEAT.title,
@@ -156,8 +155,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
  *  one is a story-level fix rather than a change to the skill's generic `renderWeb`. */
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-
-  html = html.replace('<html lang="fr">', '<html lang="en">');
 
   const interactionSource = await readFile(join(HERE, "bar-interaction.mjs"), "utf8");
   const ownScript = `<script>\n${interactionSource}\n</script>\n`;

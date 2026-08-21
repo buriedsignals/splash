@@ -8,12 +8,8 @@
 // own, into a journalist's root.
 //
 // Same deliberate departure the income/life-expectancy runner takes, and for the same reason: after
-// calling the skill's generic `renderWeb`, this file PATCHES the HTML it wrote —
-//
-//   1. `<html lang="fr">` → `<html lang="en">`. This beat's words are English throughout
-//      (`BRIEF.md`); leaving the French tag would misdeclare the page's language to assistive tech
-//      for no reason connected to this story.
-//   2. The inlined interaction script is swapped for this directory's OWN `pyramid-interaction.mjs`,
+// calling the skill's generic `renderWeb`, this file PATCHES the HTML it wrote — the inlined
+// interaction script is swapped for this directory's OWN `pyramid-interaction.mjs`,
 //      and a small CSS override is appended. Both exist because this format's own generic
 //      `assets/interaction.mjs` resolves hover/tap by nearest-X over one shared `.hit-area`
 //      overlay — wrong here, where the interactive unit is a whole ROW (both sexes at once), not a
@@ -23,7 +19,10 @@
 //      interaction script it inlines (by design — nothing in that file may import a story's own
 //      files), so this runner still calls it for what it DOES generalise (SSR the one fluid frame,
 //      derive the furniture, build the HTML shell, write the file) and then patches the one piece
-//      that doesn't. Both substitutions fail loud if the shape they expect to find has changed.
+//      that doesn't. The substitution fails loud if the shape it expects to find has changed.
+//
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/weby-population-pyramid-switzerland/render-web.mjs [outDir] [--data <csv>]
 
@@ -31,7 +30,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { FRAME, SwissAgePyramidWeb } from "./SwissAgePyramidWeb.tsx";
 
 /**
@@ -215,13 +214,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -298,9 +290,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   );
   console.log(`halves: male ${male} | female ${female}`);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: SwissAgePyramidWeb,
     props: {
+      language: "en",
       frame: FRAME,
       bands,
       title: `Switzerland's population bulges at ages ${peak.ageBand}, not among the youngest`,

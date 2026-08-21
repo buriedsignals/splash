@@ -10,8 +10,10 @@
 //
 // After the skill's `renderWeb` writes the self-contained HTML, this runner appends this beat's
 // own interaction script (`./grouped-bar-interaction.mjs` — the skill's own nearest-point
-// `interaction.mjs` still runs first and is a harmless no-op, no `.pt` circles here) and patches
-// `lang="fr"` to `lang="en"` (this beat's words are English throughout).
+// `interaction.mjs` still runs first and is a harmless no-op, no `.pt` circles here).
+//
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/webx-wind-vs-solar/render-web.mjs [outDir] [--data <csv>]
 
@@ -19,7 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { GroupedBarWeb, FRAME } from "./GroupedBarWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
 // same one the component labels every bar with, so the prose and the bars agree.
@@ -150,9 +152,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   );
   console.log(`series: wind ${wind} | solar ${solar}`);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: GroupedBarWeb,
     props: {
+      language: "en",
       groups,
       title,
       subtitle,
@@ -175,8 +181,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-  html = html.replace('<html lang="fr">', '<html lang="en">');
-
   const interactionSource = await readFile(join(HERE, "grouped-bar-interaction.mjs"), "utf8");
   const ownScript = `<script>\n${interactionSource}\n</script>\n`;
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");

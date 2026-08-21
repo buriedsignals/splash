@@ -12,7 +12,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { makeBins } from "./histogram-geometry";
 import { HistogramWeb, FRAME } from "./HistogramWeb.tsx";
 
@@ -126,9 +126,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: HistogramWeb,
     props: {
+      language: "en",
       bins,
       frame: FRAME,
       title,
@@ -151,8 +155,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-  html = html.replace('<html lang="fr">', '<html lang="en">');
-
   const interactionSource = await readFile(join(HERE, "histogram-interaction.mjs"), "utf8");
   const ownScript = `<script>\n${interactionSource}\n</script>\n`;
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");

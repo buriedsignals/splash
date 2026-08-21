@@ -10,11 +10,15 @@
 // root, which is the premise the whole twin rests on. The skill's own script now runs the skill's
 // own seed; this file runs the story.
 //
-// `renderWeb` is imported from the skill's script directly rather than through `#shared/*`: it reads
-// its own sibling `assets/interaction.mjs` at render time, so a flat vendored copy under `shared/`
-// would resolve that path to nothing. In a real installed root the skill is copied whole and this
-// import points at the copy — the same "no vendoring path exists for this one, so state the
-// dependency plainly" reasoning `ChartWebSeed.tsx` already gives for its `WebLayout` type.
+// `renderWeb` comes through `#shared/chart-web/scripts/render-web.mjs` — the vendored copy under
+// `shared/`, not four levels up into `skills/`. It used to be the latter, on the argument that a
+// FLAT copy under `shared/` (the shape `shared/chart-beat/` has) would resolve this format's
+// runtime read of its own sibling `assets/interaction.mjs` to nothing. True of a flat copy, and
+// the wrong conclusion: `shared/chart-web/` mirrors the skill's own `scripts/` + `assets/`
+// layout, so every sibling path this format resolves at render time resolves inside the copy.
+// The old import was a path no installed Splash root has — `skills/` is not carried into one —
+// which is finding 21 of stress round four, measured on a story written on another machine whose
+// runner still names an absolute path into its author's home directory.
 //
 // Usage:  bun proof/co2-suisse/render-web.mjs [outDir] [--data <csv>]
 
@@ -22,7 +26,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { EmissionsWeb, FRAME } from "./EmissionsWeb.tsx";
 
 /**
@@ -137,9 +141,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   if (data.length < 2)
     throw new Error(`need at least two readings, got ${data.length}`);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: EmissionsWeb,
     props: {
+      language: "fr",
       data,
       frame: FRAME,
       title: BEAT.title,

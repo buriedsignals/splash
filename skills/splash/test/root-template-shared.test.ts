@@ -9,7 +9,7 @@
 // the content IS, only that the two copies AGREE.
 import { describe, it, expect } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const CANONICAL_DIR = join(
@@ -154,5 +154,71 @@ describe("map-beat/assets/timing-contract.ts — vendored copy stays byte-identi
       "utf8",
     );
     expect(vendored).toBe(canonicalVocabulary);
+  });
+});
+
+// FINDING 21 (stress round four): `shared/` held `chart-beat/` and `chart-video/` only, so every
+// web beat in the tree imported four levels up into `skills/chart-web/scripts/` — a path no
+// installed Splash root has, since `skills/` is not copied into one. It was not hypothetical:
+// `stories/heat-pump-adoption-across-europe`'s own runner still named
+// `/Users/<author>/.agents/skills/chart-web/scripts/render-web.mjs`, an absolute path into
+// another machine's home directory, and died on every run.
+//
+// `shared/chart-web/` is NOT flat, unlike `shared/chart-beat/`, and that is the whole reason this
+// copy did not exist before: `render-web.mjs` resolves siblings at RENDER time — it reads
+// `../assets/interaction.mjs` off disk and imports `../assets/filter.ts` and
+// `../assets/ChartWebSeed.tsx` — so a flat copy would resolve them to nothing. The copy mirrors
+// the skill's own `scripts/` + `assets/` layout instead, which makes every one of those paths
+// resolve inside the copy. `PALETTE.md` and `TYPEFACE.md` come with it because the seed reads them
+// at module load, walking up from `assets/` and stopping at the copy's own root.
+const CHART_WEB_DIR = join(import.meta.dirname, "..", "..", "chart-web");
+const SHARED_CHART_WEB = join(import.meta.dirname, "..", "..", "..", "shared", "chart-web");
+
+describe("twin/shared/chart-web — the vendored web format, so a story imports the way an installed root would", () => {
+  for (const relative of [
+    "scripts/render-web.mjs",
+    "scripts/render-still.mjs",
+    "assets/ChartWebSeed.tsx",
+    "assets/entrance.ts",
+    "assets/filter.ts",
+    "assets/interaction.mjs",
+    "assets/sample-data/rainfall.json",
+    "PALETTE.md",
+    "TYPEFACE.md",
+  ]) {
+    it(`should carry ${relative}, byte-identical to chart-web's own`, async () => {
+      const parts = relative.split("/");
+      expect(existsSync(join(SHARED_CHART_WEB, ...parts))).toBe(true);
+      const canonical = await readFile(join(CHART_WEB_DIR, ...parts), "utf8");
+      const vendored = await readFile(join(SHARED_CHART_WEB, ...parts), "utf8");
+      expect(vendored).toBe(canonical);
+    });
+  }
+
+  // A copy that cannot be LOADED is not a copy of anything. `render-web.mjs` reads `PALETTE.md`
+  // and builds its seed at module scope, so importing it is a real exercise of every sibling path
+  // the vendoring had to keep working — the check that would have caught a flat copy.
+  it("should import and export renderWeb, with every sibling path resolving inside the copy", async () => {
+    const module = await import(join(SHARED_CHART_WEB, "scripts", "render-web.mjs"));
+    expect(typeof module.renderWeb).toBe("function");
+  });
+
+  it("should be what every web beat in the tree imports — no runner reaches up into skills/", () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        if (name === "node_modules" || name.startsWith(".")) continue;
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        // The IMPORT SPECIFIER, not the file's text: a runner's own header may legitimately name
+        // the canonical script it is a vendored copy of, and a substring check cannot tell that
+        // apart from the import this refuses.
+        else if (name.endsWith(".mjs") && /from ["'][^"']*skills\/chart-web\/scripts\//.test(readFileSync(path, "utf8")))
+          offenders.push(path);
+      }
+    };
+    for (const area of ["proof", "stories"])
+      walk(join(import.meta.dirname, "..", "..", "..", area));
+    expect(offenders).toEqual([]);
   });
 });

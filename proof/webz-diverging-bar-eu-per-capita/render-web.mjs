@@ -16,22 +16,23 @@
 //
 // After calling the skill's generic `renderWeb`, this file PATCHES the HTML it wrote — the same
 // `patchForThisBeat` shape the lollipop beat uses:
-//   1. `<html lang="fr">` → `<html lang="en">` (this beat's words are English throughout, and its
-//      one formatter is `en`, formatting with `Intl.NumberFormat("en-US")`).
-//   2. The inlined `<script>` block is swapped for this directory's OWN
+//   1. The inlined `<script>` block is swapped for this directory's OWN
 //      `diverging-interaction.mjs` — per-row hit rects need per-row wiring, not the skill's line
 //      format nearest-by-x mechanic.
-//   3. This beat's own CSS is appended: the four-column / three-row plot grid, the two value-label
+//   2. This beat's own CSS is appended: the four-column / three-row plot grid, the two value-label
 //      sides, the subject band's chip colour, and `.row-hit`'s hover/focus states — none of which
 //      the format's generic stylesheet can know about.
+//
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/webz-diverging-bar-eu-per-capita/render-web.mjs [outDir] [--data <csv>]
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
-import { readPalette } from "../../skills/chart-web/scripts/render-still.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-web/scripts/render-still.mjs";
 import { DivergingBarWeb, FRAME } from "./DivergingBarWeb.tsx";
 import { en } from "./diverging-geometry.ts";
 
@@ -237,13 +238,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -320,9 +314,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     source: paletteSource,
   } = readPalette(HERE, { stopAt: join(HERE, "..") });
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: DivergingBarWeb,
     props: {
+      language: "en",
       frame: FRAME,
       rows,
       ...words,

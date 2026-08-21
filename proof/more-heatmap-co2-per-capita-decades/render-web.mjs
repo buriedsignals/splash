@@ -23,8 +23,8 @@
 //   2. Appends this beat's own CSS: the column-header row ABOVE the plot (the format's shared
 //      `.chart-plot` puts its axis row below), the legend row, and the in-cell value's own type.
 //
-// `renderWeb` hard-codes `<html lang="fr">`; this beat's words are English, so the runner patches
-// it — a per-story fix, not a change to the skill, which takes no `lang` parameter.
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage: bun proof/more-heatmap-co2-per-capita-decades/render-web.mjs [outDir]
 
@@ -35,7 +35,7 @@ import {
   readPalette,
   seriesInks,
 } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { Co2HeatmapWeb, FRAME, checkRampFloor } from "./Co2HeatmapWeb.tsx";
 
 /**
@@ -189,9 +189,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   checkRampFloor(GROUND, RAMP);
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: Co2HeatmapWeb,
     props: {
+      language: "en",
       cells,
       countries,
       decades: DECADES,
@@ -216,8 +220,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
  *  fix rather than a change to the skill's generic `renderWeb`. */
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-
-  html = html.replace('<html lang="fr">', '<html lang="en">');
 
   const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");

@@ -21,7 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { SlopeWeb, FRAME } from "./SlopeWeb.tsx";
 
 /**
@@ -244,9 +244,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: SlopeWeb,
     props: {
+      language: "en",
       data,
       frame: FRAME,
       title: BEAT.title,
@@ -279,17 +283,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     throw new Error(`could not find </body> to inject slope-interaction.mjs into ${outPath}`);
   html = withOwnScript;
 
-  // This beat's words are English throughout (`BEAT` above, from `BRIEF.md`), and `renderWeb`'s own
-  // shell hard-codes `lang="fr"` — the language every web beat built against it before this one was
-  // written in. A screen reader takes its pronunciation from that attribute, not from the words, so
-  // shipping the French tag over English prose is a defect, not a detail. A per-story repair, not a
-  // change to the skill: `renderWeb` takes no `lang` parameter to set correctly instead.
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to repair to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
 
   if (!html.includes("</style>"))
     throw new Error("renderWeb output has no </style> to append this beat's own rules to");

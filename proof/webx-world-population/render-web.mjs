@@ -19,7 +19,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { WorldPopulationWeb, FRAME } from "./WorldPopulationWeb.tsx";
 // The beat's own formatters, taking their locale from the language the page declares — the same
 // ones the component labels every reading with, so the prose and the axis cannot disagree.
@@ -128,9 +128,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: WorldPopulationWeb,
     props: {
+      language: "en",
       data,
       title,
       limits,
@@ -176,13 +180,6 @@ const LEAVE_GUARDED = `    hitArea.addEventListener("pointerleave", function (ev
 
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
 
   if (html.split(LEAVE_LINE).length !== 2)
     throw new Error(

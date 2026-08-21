@@ -14,12 +14,14 @@
 //
 // After calling the skill's generic `renderWeb`, this file PATCHES the HTML it wrote — the same
 // `patchForThisBeat` shape `web-income-life-expectancy/render-web.mjs` uses:
-//   1. `<html lang="fr">` → `<html lang="en">` (this beat's words are English throughout).
-//   2. The inlined `<script>` block is swapped for this directory's OWN `lollipop-interaction.mjs`
+//   1. The inlined `<script>` block is swapped for this directory's OWN `lollipop-interaction.mjs`
 //      — a lollipop's per-row hit-rects need per-row wiring, not the skill's line-format
 //      nearest-by-x mechanic (see that file's own doc-comment for why).
-//   3. A small CSS override is appended for `.row-hit`'s own hover/focus states — the skill's
+//   2. A small CSS override is appended for `.row-hit`'s own hover/focus states — the skill's
 //      generic stylesheet only styles `.pt`, which this beat's markup never uses.
+//
+// The page's language is `renderWeb`'s own argument now (`props.language`, recorded beside
+// this beat's words), so nothing is patched into the shipped file to correct it.
 //
 // Usage:  bun proof/weby-lollipop-co2-per-capita/render-web.mjs [outDir] [--data <csv>]
 
@@ -27,7 +29,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { LollipopCo2Web, FRAME } from "./LollipopCo2Web.tsx";
 
 /**
@@ -218,13 +220,6 @@ const EXTRA_CSS = `
 async function patchForThisBeat(outPath) {
   let html = await readFile(outPath, "utf8");
 
-  const langMarker = '<html lang="fr">';
-  if (!html.includes(langMarker))
-    throw new Error(
-      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
-    );
-  html = html.replace(langMarker, '<html lang="en">');
-
   const scriptBlockRe = /<script>\n[\s\S]*?\n<\/script>/;
   if (!scriptBlockRe.test(html))
     throw new Error(
@@ -260,9 +255,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );
 
+  // The language this beat's words are written in, handed to `renderWeb` as a real input
+  // rather than patched into the shipped file afterwards — see `assertRecordedLanguage` in
+  // `skills/chart-web/scripts/render-web.mjs`. Recorded here, never detected from the prose.
   const { outPath } = await renderWeb({
     component: LollipopCo2Web,
     props: {
+      language: "en",
       frame: FRAME,
       rows: sorted,
       title: claim,

@@ -13,7 +13,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, framingMeasurement } from "#shared/chart-beat/render-still.mjs";
-import { renderWeb } from "../../../../skills/chart-web/scripts/render-web.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
 import { FlatInspectionsWeb, FRAME } from "./FlatInspectionsWeb.tsx";
 import { scaleLinear } from "d3-scale";
 
