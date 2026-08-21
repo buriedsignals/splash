@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "slot-1-overall-picture-review-1",
+  "outputId": "1-overall-picture",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:d1e0ed082b4c5a76f33d62f4affcf2c8dfc337c9cd9e64601f043072b58c04bf",
+  "findingIds": [
+    "slot-1-overall-picture"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "beat-1-render-and-look-2026-08-21",
+      "outputId": "1-overall-picture",
+      "planVersion": 1,
+      "draftDigest": "sha256:d1e0ed082b4c5a76f33d62f4affcf2c8dfc337c9cd9e64601f043072b58c04bf",
+      "findingIds": [
+        "slot-1-overall-picture"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T12:00:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Slot 1 proves that Lisboa carries more trips than the other five networks put together. Every figure in the title, standfirst, callout and alt text is computed by render.mjs from source/data.csv and printed before the render; nothing is typed. The PNG was opened and read at 1920x1080.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
+  "decidedAt": "2026-08-21T12:00:00Z",
+  "notes": "assertDeliveredSize, assertTypeFloor, assertWithinStage and assertDrawnInActiveTypeface all passed against the delivered PNG and SVG, and the PNG was opened and looked at on the newsroom's own dark ground."
+}

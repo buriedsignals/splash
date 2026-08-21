@@ -1,0 +1,15 @@
+{
+  "operationId": "74edca95-5f7e-460c-8ac3-0ef40e4cb3be",
+  "reviewId": "slot-2-trips-per-resident-review-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:f96a58799f8140905878ada92bce703be4ca250f1e442f9bb6e7d10793076709",
+  "findingIds": [
+    "slot-2-trips-per-resident"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-21T08:26:26.390Z",
+  "schemaVersion": 1,
+  "outputId": "2-trips-per-resident",
+  "state": "complete"
+}

@@ -1,0 +1,50 @@
+{
+  "rowCount": 13,
+  "columns": [
+    {
+      "name": "περιφέρεια",
+      "type": "text",
+      "missing": 0,
+      "distinct": 13,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "σχολεία_2020",
+      "type": "number",
+      "missing": 0,
+      "distinct": 13,
+      "min": 155,
+      "max": 1802,
+      "sum": 6683,
+      "gaps": null
+    },
+    {
+      "name": "σχολεία_2026",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"term378\" has one, \"1021\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 13,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "μαθητές_2026",
+      "type": "number",
+      "missing": 0,
+      "distinct": 13,
+      "min": 12008,
+      "max": 318440,
+      "sum": 826073,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

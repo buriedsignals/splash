@@ -1,0 +1,15 @@
+{
+  "operationId": "177ffc68-20da-4ff8-bf12-4b428110a4e8",
+  "reviewId": "slot-1-overall-picture-review-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:d1e0ed082b4c5a76f33d62f4affcf2c8dfc337c9cd9e64601f043072b58c04bf",
+  "findingIds": [
+    "slot-1-overall-picture"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-21T08:26:26.386Z",
+  "schemaVersion": 1,
+  "outputId": "1-overall-picture",
+  "state": "complete"
+}

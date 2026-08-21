@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "slot-2-trips-per-resident-review-1",
+  "outputId": "2-trips-per-resident",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:f96a58799f8140905878ada92bce703be4ca250f1e442f9bb6e7d10793076709",
+  "findingIds": [
+    "slot-2-trips-per-resident"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "beat-2-verify-web-2026-08-21",
+      "outputId": "2-trips-per-resident",
+      "planVersion": 1,
+      "draftDigest": "sha256:f96a58799f8140905878ada92bce703be4ca250f1e442f9bb6e7d10793076709",
+      "findingIds": [
+        "slot-2-trips-per-resident"
+      ],
+      "status": "failed",
+      "completedAt": "2026-08-21T12:00:00Z"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "beat-2-hover-probe-off-crossing-2026-08-21",
+      "outputId": "2-trips-per-resident",
+      "planVersion": 1,
+      "draftDigest": "sha256:f96a58799f8140905878ada92bce703be4ca250f1e442f9bb6e7d10793076709",
+      "findingIds": [
+        "slot-2-trips-per-resident"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T12:00:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "Slot 2 proves that ranked by trips per resident the order changes at the top — Porto first, Lisboa second — and Aveiro falls to last. Every rank, total, population and rate is computed from source/data.csv by render-web.mjs, through the story's single tripsPerResident. The page was driven in a real browser at seven viewports and its screenshots were opened.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf, see NOTES-FOR-MAINTAINER.md)",
+  "decidedAt": "2026-08-21T12:00:00Z",
+  "notes": "verify-web.mjs: 48 passed, 14 failed, 11 skipped. All 14 failures are one check, HOVER's \"every reading answers a real pointer on its own mark\", which probes each mark at the centre of its bounding box. On a slopegraph that centre is exactly where two lines cross, so the probe point is ambiguous by construction and the same check fails on this format's own committed slope artifact (proof/web-co2-decline-slope/co2-decline-slope.html, 26/30 and 25/30). A second run drove the same page with a real pointer at 15% and 85% along every line, away from the crossings: 12 of 12 answered with their own city. Keyboard focus is unambiguous everywhere, and the accessible table carries all six readings. CARGO passed: every asset inlined once, every dash in the path's own units, the table carries all 6 marks. FIT passed at all seven viewports."
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "74070f15-b7d8-4a99-9a8e-e044edaa19ad",
+  "outputId": "1-attica-vs-the-rest",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:e6c27a5bcafa3efc09c7908d4b0e52d221ae60b1b1e4aa9c4cb1a25a97ef1b1b",
+  "findingIds": [
+    "attica-decline-far-smaller-than-the-rest"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "ae5f7c48-3c4c-49f7-b3d8-5827e65c7eac",
+      "outputId": "1-attica-vs-the-rest",
+      "planVersion": 1,
+      "draftDigest": "sha256:e6c27a5bcafa3efc09c7908d4b0e52d221ae60b1b1e4aa9c4cb1a25a97ef1b1b",
+      "findingIds": [
+        "attica-decline-far-smaller-than-the-rest"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T08:31:01.490Z"
+    }
+  ],
+  "angleEvidenceBrief": "Every Greek region lost schools 2020-2026; Attica's own decline (-3.2%) is far smaller than the double-digit declines in Western Macedonia, the Peloponnese and Central Greece. The rendered slope chart accents Attica's near-flat line against the other twelve regions' own lines, in Greek script throughout, with the one 29-character label kept on one line by a measured gutter and the one corrupted 2026 cell (Anatoliki Makedonia kai Thraki, source cell reads term378) declared '2026 unavailable' rather than estimated or dropped. Visual QA: inspectSvg reports zero failing contrast entries, alt text present, no root <title> leak; PNG opened and read at real size (see the beat's own report for the two hand-fixed render defects this caught before this review was written).",
+  "decision": "approve",
+  "reviewer": "journalist (stress test, unattended run)",
+  "decidedAt": "2026-08-21T08:31:01.490Z",
+  "notes": "No human journalist was available; this review was completed as their stand-in per the stress test's own rule -- see the story's report for what a real journalist was asked and what was chosen on their behalf."
+}

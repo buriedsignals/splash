@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "9332811c-9b53-4125-99dd-d76b95bea7bb",
+  "outputId": "1-rate-not-count",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:a7e513ff883939b514b94b04866006142e84eb9676c9dfd2278be8a010ec4154",
+  "findingIds": [
+    "worst-record-is-per-resident-not-raw-count"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "id": "f41087e5-bada-41b8-bccb-a4a4a2d29b40",
+      "outputId": "1-rate-not-count",
+      "planVersion": 1,
+      "draftDigest": "sha256:a7e513ff883939b514b94b04866006142e84eb9676c9dfd2278be8a010ec4154",
+      "findingIds": [
+        "worst-record-is-per-resident-not-raw-count"
+      ],
+      "status": "passed",
+      "completedAt": "2026-08-21T08:12:45.334Z"
+    }
+  ],
+  "angleEvidenceBrief": "Raw incident counts (Centro 412, the highest) make Centro read as the worst district. Dividing by the residents column beside it reverses the ranking: Sul is 233 incidents per 100,000 residents, Centro is 205. The rendered bar chart sorts by the per-capita rate, accents Sul, and annotates Centro's raw count as a caveat rather than asserting the headline's claim. Visual QA: inspectSvg reports zero failing contrast entries, alt text present, no root <title> leak; PNG opened and read at real size.",
+  "decision": "approve",
+  "reviewer": "journalist (stress test, unattended run)",
+  "decidedAt": "2026-08-21T08:12:45.334Z",
+  "notes": "No human journalist was available; this review was completed as their stand-in per the stress test's own rule -- see the beat's report for what a real journalist was asked and what was chosen on their behalf."
+}

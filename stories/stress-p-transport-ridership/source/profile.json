@@ -1,0 +1,59 @@
+{
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "city",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "trips_millions",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 11,
+      "max": 214,
+      "sum": 394,
+      "gaps": null
+    },
+    {
+      "name": "population",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 61000,
+      "max": 545000,
+      "sum": 1157000,
+      "gaps": null
+    },
+    {
+      "name": "network_km",
+      "type": "number",
+      "missing": 0,
+      "distinct": 6,
+      "min": 9,
+      "max": 148,
+      "sum": 277,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 2025,
+      "max": 2025,
+      "sum": 12150,
+      "gaps": []
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}
