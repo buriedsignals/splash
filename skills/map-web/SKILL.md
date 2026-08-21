@@ -247,6 +247,12 @@ before it drives anything; `test/verify-guards.test.ts` runs all four over every
 
 `scripts/render-web.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: record the proposal's own recommended option — never inventing a colour, never one that failed the 3:1 floor — with `origin` naming its source and the file's own prose saying no journalist answered; a proposal with no passing option still ends the turn there. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
 
+## The typeface
+
+**This format does not read the story's recorded typeface, and that is a gap, not a design.** `scripts/render-still.mjs:26` holds `export const FONT_FAMILY = "Helvetica, Arial, sans-serif"` as a **const**, and `scripts/render-web.mjs:488` writes the same stack into the delivered page's own CSS. Neither can be reached by a recorded answer: this format has no `readTypeface`/`useTypeface` at all (measured 2026-08-21 — 0 calls), so a hovering reader's tooltip, the size legend and the accessible table are all set in a face nobody chose.
+
+Four of the seven formats that draw their own marks hold `FONT_FAMILY` as a `let` that `useTypeface` reassigns from a recorded `TYPEFACE.md`, refuse a family this machine does not have rather than substituting one, and refuse an element drawn in any other family. This one does not, so until it does, a beat here SAYS so: record the story's answer with `palette`'s own writer (`proposeTypeface` + `writeTypeface`, `skills/palette/scripts/typeface.mjs`, which measures every face `NEWSROOM.md` records on the machine that will render), and name in the beat's own hand-over that this render did not reach it. A gap that is written down is one somebody can close. That is `typeface-is-recorded`, this format's own share of `skills/palette/references/typeface.md`.
+
 ## Quick start
 
 ```sh
