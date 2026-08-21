@@ -315,6 +315,9 @@ async function render() {
     title,
     source,
     ground,
+    // This beat's words are English throughout, handed to `renderScrolly` as a real input
+    // — see `assertRecordedLanguage`. Recorded here, never detected from the prose.
+    language: "en",
     outDir,
     name: "one-line-four-readings.html",
     proseLane: PROSE_LANE,

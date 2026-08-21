@@ -476,6 +476,26 @@
         "scrolly": "carried"
       },
       "exceptions": {}
+    },
+    {
+      "id": "example-runners-are-called",
+      "kind": "capability",
+      "requires": ["materialises-a-beat"],
+      "offers": "every runner committed beside a beat that calls this format's own machinery is SPAWNED by the suite, not read by it, so a change to that machinery's signature reddens on the day it lands rather than leaving the format's own worked examples dead behind a suite that only ever exercises the seed",
+      "earnedBy": "finding 16 of stress round four: `renderWeb` grew one required argument (props.language, round two's own finding 1) and not one of the eighteen example runners committed beside a chart-web beat was migrated — runs=5 fails=18, the five that ran belonging to map-web. chart-web/SKILL.md:29 already warned about the SAME failure from a previous occurrence (a dropped `layouts` argument, fifteen beats dead, 'for an hour and a half, with a green suite'), so twice is a mechanism, not an accident: nothing in this tree ever CALLED a committed runner, and a check that READ one would have gone green the day somebody wrote the argument into a comment. Measured for contrast at the same moment, render-still.mjs and render-map.mjs were 14 of 14 green — the rot was one format's, and the sweep that would have caught it existed for none of them. Also measured, and not in the finding: scrolly's own ten runners, eight of them dead on the identical refusal, which nobody had noticed either. Two tuning decisions in the sweep are measurements rather than choices — every one of the 27 dead runners in the tree died within 250ms while a real render takes 6s to minutes, so a runner still alive at its deadline is an ANSWER (it reached its format's entrypoint and went past it) and never a failure; and a runner with no outDir to aim at a scratch directory is excluded and NAMED rather than allowed to rewrite a committed artefact on every run (one such in the tree: proof/palette-proof/render.mjs). dw-beat carries the sweep over an empty population today — it delegates rendering to a remote API and has no committed runner at all — which is exactly why the population is derived from a trait rather than typed: the day it has one, it is already swept",
+      "detectedBy": "deadExampleRunners",
+      "walkedBy": "test/example-runners-run.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-web": "carried",
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
     }
   ]
 }

@@ -242,6 +242,51 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/storyboard-gate.mjs",
     "scrolly/scripts/storyboard-gate.mjs",
   ],
+  // FINDING 16 (round-four stress): the sweep that CALLS a format's own committed runners. All four
+  // of its functions are compared, not only the decision: the discovery is what defines the
+  // population a red is measured over, and a copy that quietly narrowed its own discovery would
+  // report an empty sweep as a green one — the exact shape of the failure the rule exists to close.
+  // Nothing in any of them is skill-specific; the skill is a parameter.
+  exampleRunnersFor: [
+    "chart-beat/scripts/example-runners.mjs",
+    "chart-web/scripts/example-runners.mjs",
+    "chart-video/scripts/example-runners.mjs",
+    "dw-beat/scripts/example-runners.mjs",
+    "map-beat/scripts/example-runners.mjs",
+    "map-web/scripts/example-runners.mjs",
+    "image-beat/scripts/example-runners.mjs",
+    "scrolly/scripts/example-runners.mjs",
+  ],
+  runExampleRunners: [
+    "chart-beat/scripts/example-runners.mjs",
+    "chart-web/scripts/example-runners.mjs",
+    "chart-video/scripts/example-runners.mjs",
+    "dw-beat/scripts/example-runners.mjs",
+    "map-beat/scripts/example-runners.mjs",
+    "map-web/scripts/example-runners.mjs",
+    "image-beat/scripts/example-runners.mjs",
+    "scrolly/scripts/example-runners.mjs",
+  ],
+  deadExampleRunners: [
+    "chart-beat/scripts/example-runners.mjs",
+    "chart-web/scripts/example-runners.mjs",
+    "chart-video/scripts/example-runners.mjs",
+    "dw-beat/scripts/example-runners.mjs",
+    "map-beat/scripts/example-runners.mjs",
+    "map-web/scripts/example-runners.mjs",
+    "image-beat/scripts/example-runners.mjs",
+    "scrolly/scripts/example-runners.mjs",
+  ],
+  spawnRunner: [
+    "chart-beat/scripts/example-runners.mjs",
+    "chart-web/scripts/example-runners.mjs",
+    "chart-video/scripts/example-runners.mjs",
+    "dw-beat/scripts/example-runners.mjs",
+    "map-beat/scripts/example-runners.mjs",
+    "map-web/scripts/example-runners.mjs",
+    "image-beat/scripts/example-runners.mjs",
+    "scrolly/scripts/example-runners.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {
