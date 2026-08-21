@@ -53,6 +53,7 @@ written out below the tables.
 | static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |
+| guard-wired-to-run | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
@@ -285,3 +286,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Offers:** a beat's own render/produce script can read whether a closed STORYBOARD.md stands above it — found at all, and whether its own front matter carries a confirmed takeaway — without the check ever refusing the render, so the gate the orchestrator already refuses to jump is at least visible to the one place that could otherwise jump it silently
 
 **Earned by:** the orchestrator (skills/splash) refuses a phase jump and says so in its own SKILL.md; no craft skill's own render/produce entrypoint could even ASK whether one stood above it — renderStill and readPinnedSize never looked. A hard refusal was considered and rejected: the stress-testing methodology that found this very finding depends on rendering a beat directly with no STORYBOARD.md at all (fifteen beats, three rounds), and a refusal with no unattended-satisfiable path would repeat the exact mistake this project's own PALETTE.md history already had to fix. storyboardGateStatus reports instead — found/closed/reason, never a throw — on the one trait every producing skill actually shares (materialises-a-beat), rather than an invented population
+
+### guard-wired-to-run — `doctrine/SKILL.md`
+
+**Refuses:** a guard's own decision function declared in a skill's `GUARDS` array and reachable only from its own `*.test.ts` — never from that skill's producer/render script, and never from a real DRIVER (a script that drives a live rendered page, e.g. via Puppeteer, or a CLI that walks real delivered files) that runs as part of the actual pipeline rather than a unit test's synthetic input
+
+**Earned by:** surfaced by a concurrent round-three dispatch on finding 7: pageLanguageMatchesStory was declared and unit-tested in chart-web, map-web and scrolly, and called from none of their own render scripts — the white-on-dark mismatch stress-i refused shipped silently on stress-n regardless. Measured across all eight producing skills and every guard-kind decidedBy the catalogue names (never a capability's own detectedBy — a capability's dedicated walkedBy sweep against real proof/ files IS its intended driver, the same contract doctrine/test/guard-parity.test.ts already enforces, not the gap this rule is about): 40 guard-kind declarations total, 14 called from a producer/render script or a real Puppeteer-driving verify file, 26 reachable only from their own test file — pageLanguageMatchesStory's three were not the whole population, only the ones a defect had already been measured against. Too large a population (65%) to close by wiring in this one wave without risking the very producers this rule protects, so it is written down where every author of a new guard reads it rather than mechanically enforced per skill the way a guard's own decision is

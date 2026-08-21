@@ -304,3 +304,17 @@ whole; nudging east from `31` to `33` keeps that widening from re-centring the b
 to newly clip Belarus. Cost: Switzerland reads about 11% smaller than it did at the old bounds — a
 real trade, checked against the baked `geometry.json` (every shape's projected bounding box) rather
 than eyeballed, and still clearly the only outlined, labelled, accent-coloured region on the map.
+
+## A declared guard is wired to run
+
+`guard-wired-to-run` (`skills/doctrine/references/guard-catalogue.json`): a guard this skill
+declares in its own `verify-*.mjs` `GUARDS` array is wired to actually run against what ships —
+called from this skill's own producer/render script when the check reads static output, or from a
+real DRIVER (a script that drives a live rendered page, e.g. via Puppeteer, or a CLI that walks
+real delivered files) when the check needs one — never left reachable only from its own
+`*.test.ts`. Measured 2026-08-21 across all eight producing skills: 26 of 40 guard-kind decisions
+were declared and unit-tested but never called outside their own test file —
+`pageLanguageMatchesStory` on chart-web/map-web/scrolly (the defect that named this discipline) was
+three of the twenty-six, not all of them. Too large a population to close in one wave, so this is
+written down rather than mechanically enforced per skill; a guard added from here on is wired at
+the moment it is written, not left for the next stress round to find idle.
