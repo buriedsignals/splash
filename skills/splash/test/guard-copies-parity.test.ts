@@ -296,6 +296,49 @@ const COPIES: Record<string, string[]> = {
     "deliver/scripts/another-format.mjs",
     "splash/scripts/where.mjs",
   ],
+  // ROUND-FOUR FINDINGS 12, 13 and 14: a de-collided label stack that stopped naming what it
+  // names. Reachable wherever a skill draws its own marks, which is all seven — the defect is in
+  // the arithmetic that places a label, not in a genre, and the same slope, dumbbell or ranked
+  // column can be drawn as a still, a page, a build or a track inside a scrolly. A copy that
+  // loosened either clause would accept, on one format, a graphic its neighbour refuses — and
+  // what it would be accepting is a chart printing a number against the wrong row.
+  mislabelledRows: [
+    "chart-beat/scripts/detect-label-rows.mjs",
+    "chart-web/scripts/detect-label-rows.mjs",
+    "chart-video/scripts/detect-label-rows.mjs",
+    "map-beat/scripts/detect-label-rows.mjs",
+    "map-web/scripts/detect-label-rows.mjs",
+    "image-beat/scripts/detect-label-rows.mjs",
+    "scrolly/scripts/detect-label-rows.mjs",
+  ],
+  // The READER, walked for the same reason `marksFromSource` is: `mislabelledRows` decides on the
+  // shape this returns, and a copy that stopped recognising a leader would hand it an empty set
+  // of stacks and report a crossed chart as a clean one — the vacuous green this whole file
+  // exists to make impossible.
+  labelStacksFrom: [
+    "chart-beat/scripts/detect-label-rows.mjs",
+    "chart-web/scripts/detect-label-rows.mjs",
+    "chart-video/scripts/detect-label-rows.mjs",
+    "map-beat/scripts/detect-label-rows.mjs",
+    "map-web/scripts/detect-label-rows.mjs",
+    "image-beat/scripts/detect-label-rows.mjs",
+    "scrolly/scripts/detect-label-rows.mjs",
+  ],
+  // Not a decision about a defect but the MECHANISM that makes two of them impossible, and the
+  // reason findings 12 and 13 happened at all: `types/slope.md` requires vertical de-collision
+  // and no skill offered one, so every author wrote it again. Declared in `render-still.mjs`
+  // itself — where an author already reaches for `measureText` and `wrap`'s measurer — and
+  // compared here across all seven copies, so a skill cannot quietly drop it. `render-still-parity`
+  // walks the same file but accepts a copy that simply lacks a function; this does not.
+  decollide: [
+    "chart-beat/scripts/render-still.mjs",
+    "chart-web/scripts/render-still.mjs",
+    "chart-video/scripts/render-still.mjs",
+    "map-beat/scripts/render-still.mjs",
+    "map-web/scripts/render-still.mjs",
+    "image-beat/scripts/render-still.mjs",
+    "scrolly/scripts/render-still.mjs",
+  ],
 };
 
 describe("every copied guard decision is still the same decision", () => {
