@@ -36,6 +36,22 @@ jobs:
             skills/splash/test/phases.test.ts \
             skills/splash/test/where.test.ts
 
+      # The four project-wide walks. None needs a credential and none renders anything: each reads
+      # the tree, or calls a reader against a frozen csv already committed beside it.
+      #
+      # `guard-copies-parity` is the one that most needed adding. This repository forbids cross-skill
+      # runtime imports, so a decision reaching a second skill is COPIED and held byte-identical by
+      # that test alone -- it is the mechanism the whole guard catalogue rests on, and until now CI
+      # ran `guard-parity` (which checks the catalogue's own bookkeeping) while never checking that
+      # the copies still agree. A skill could drift from its twin with a green pipeline.
+      - name: Run the project-wide walks
+        run: |
+          bun test \
+            skills/splash/test/guard-copies-parity.test.ts \
+            skills/splash/test/csv-hand-split.test.ts \
+            skills/splash/test/csv-readers-parse-their-fixtures.test.ts \
+            skills/splash/test/landing-matches-the-catalogue.test.ts
+
       - name: Verify the capability matrix
         run: bun run matrix:check
 
@@ -45,8 +61,35 @@ jobs:
       - name: Verify the guard catalogue
         run: bun run guards:check
 
+      # `landing/index.html` is published by pages.yml on every push to main and hard-codes the
+      # toolchain's own inventory -- "Charts 32 forms", "Maps 8 forms", every name spelled out. It
+      # is the most public claim in this repository and, until this step existed, the only generated
+      # claim nothing read.
+      - name: Verify the public page against the visual catalogue
+        run: bun run landing:check
+
       - name: Run the guard-parity test
         run: bun test skills/doctrine/test/guard-parity.test.ts
+
+      # Each of these SPAWNS every example runner committed beside a beat that calls the skill, and
+      # asserts none is dead. It exists because eighteen `chart-web` runners and eight `scrolly` ones
+      # had been dead for a day behind a green suite: a required argument was added to `renderWeb`
+      # and its callers were never migrated, while the suite exercised only the seed, which carried
+      # the argument.
+      #
+      # Only the four skills whose runners need NO credential are here. Measured 2026-08-21 by
+      # reading every runner the sweep calls: map-web 1 of 1, scrolly 1 of 10, chart-beat 6 of 101
+      # and map-beat's three via their bake step all reach for a MapTiler key, so those four sweeps
+      # would report a dead runner in a secretless job for a reason that is not about the runner.
+      # They run in the credential-gated job below instead. Local timings for the four here:
+      # chart-web 12s, chart-video 73s, image-beat and dw-beat under a second.
+      - name: Call the example runners that need no credential
+        run: |
+          bun test \
+            skills/chart-web/test/example-runners-run.test.ts \
+            skills/chart-video/test/example-runners-run.test.ts \
+            skills/image-beat/test/example-runners-run.test.ts \
+            skills/dw-beat/test/example-runners-run.test.ts
 
   render-map:
     if: github.event_name == 'workflow_dispatch'
@@ -78,3 +121,15 @@ jobs:
       - name: Run the credential-gated live-map browser verification
         if: env.MAPTILER_KEY != ''
         run: bun test skills/map-web/test/live-map.test.ts
+
+      # The four example-runner sweeps whose beats reach for a MapTiler key -- see the note in the
+      # secretless job for which runners and why they cannot live there. chart-beat's population is
+      # 101 runners and is the slow one.
+      - name: Call the example runners that need a map credential
+        if: env.MAPTILER_KEY != ''
+        run: |
+          bun test \
+            skills/chart-beat/test/example-runners-run.test.ts \
+            skills/map-beat/test/example-runners-run.test.ts \
+            skills/map-web/test/example-runners-run.test.ts \
+            skills/scrolly/test/example-runners-run.test.ts

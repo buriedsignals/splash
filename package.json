@@ -14,7 +14,8 @@
     "catalog": "bun scripts/visual-catalog.mjs",
     "catalog:check": "bun scripts/visual-catalog.mjs --check",
     "guards": "bun scripts/guards.mjs",
-    "guards:check": "bun scripts/guards.mjs --check"
+    "guards:check": "bun scripts/guards.mjs --check",
+    "landing:check": "bun scripts/landing.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "1.7.5",
