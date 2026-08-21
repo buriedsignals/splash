@@ -118,6 +118,55 @@ describe("creditTracesToRecord decides, and can fail", () => {
     expect(found.unattested.join("\n")).toContain("names no credit heading");
   });
 
+
+  // A CREDIT IN A SCRIPT WITH NO CASE — round five, finding X4. `NAME_RUN_RE` is a run of two or
+  // more CAPITALISED words, and Arabic, Hebrew, Chinese, Japanese, Korean, Thai and Devanagari have
+  // no case at all, so no organisation name in any of them is ever extracted and this decision
+  // passed vacuously on every story not written in a cased script. Measured as a controlled pair on
+  // a copy of `stress-x-tunisian-water`'s own delivery: a fabricated Arabic credit returned
+  // `{traces: true, unattested: []}`, and the SAME fabrication written in Latin returned
+  // `{traces: false}` with the full refusal.
+  it("refuses a fabricated credit written in a script with no case", () => {
+    const found = creditTracesToRecord(
+      storyWith("تستهلك محافظة تونس أكثر من غيرها من المياه في السنة.", {
+        "HANDOVER.md": handoverWith("المعهد الوطني للإحصاء وشركة كهرباء قرطاج"),
+      }),
+    );
+    expect(found.applies).toBe(true);
+    expect(found.traces).toBe(false);
+    expect(found.unattested.join("\n")).toContain("no case");
+  });
+
+  it("accepts a caseless credit the frozen record does attest", () => {
+    const found = creditTracesToRecord(
+      storyWith("تستهلك محافظة تونس أكثر من غيرها من المياه في السنة.", {
+        "HANDOVER.md": handoverWith("المصدر: الشركة الوطنية للمياه، أرقام السنة المدنية 2025"),
+      }),
+    );
+    expect(found.traces).toBe(true);
+  });
+
+  // THE STATED LIMIT, reported rather than discovered later. In a caseless script this decision
+  // cannot delimit a NAME, so what it decides is weaker than what it decides in a cased one: a
+  // fabrication smuggled into an otherwise-attested line passes. That is written into the result.
+  it("says out loud that its caseless reading is weaker than its cased one", () => {
+    const found = creditTracesToRecord(
+      storyWith("تستهلك محافظة تونس أكثر من غيرها من المياه في السنة.", {
+        "HANDOVER.md": handoverWith("المصدر: الشركة الوطنية للمياه، أرقام السنة المدنية 2025"),
+      }),
+    );
+    expect(found.limits.join("\n")).toContain("no organisation name can be delimited");
+  });
+
+  it("states no such limit on a credit written entirely in a cased script", () => {
+    const found = creditTracesToRecord(
+      storyWith("Figures the transport regulator released.", {
+        "HANDOVER.md": handoverWith("Source: National Transport Regulator"),
+      }),
+    );
+    expect(found.limits).toEqual([]);
+  });
+
   it("never fires on a beat nothing was delivered from", () => {
     const found = creditTracesToRecord(
       storyWith("Lisboa carried 214 million trips.", { "HANDOVER.md": handoverWith("Source: x") }, { deliveredFrom: "another-beat" }),

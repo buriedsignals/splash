@@ -61,6 +61,29 @@ const CREDIT_HEADINGS = ["## The credit line", "## La ligne de crédit"];
  *  agency a credit names. */
 const NAME_RUN_RE = /[A-ZÀ-ÖØ-Þ][\w'’&.-]*(?:\s+[A-ZÀ-ÖØ-Þ][\w'’&.-]*)+/gu;
 
+/** A LETTER FROM A SCRIPT THAT HAS NO CASE — round five, finding X4.
+ *
+ *  `NAME_RUN_RE` above is a run of two or more CAPITALISED words, and capitalisation is the whole of
+ *  how this decision has ever found an organisation. Arabic, Hebrew, Chinese, Japanese, Korean, Thai
+ *  and Devanagari have no case at all, so no name in any of them is ever extracted and this rule
+ *  passed VACUOUSLY on every story not written in a cased script. Measured as a controlled pair on a
+ *  copy of `stress-x-tunisian-water`'s own delivery: the credit replaced with
+ *  `المعهد الوطني للإحصاء وشركة كهرباء قرطاج` — not one of those words anywhere in the frozen
+ *  `source/` — returned `{traces: true, unattested: []}`, while the SAME fabrication written in Latin
+ *  (`Zarzis Hydrological Bureau`) returned `{traces: false}` with the full refusal.
+ *
+ *  WHAT IS DECIDED INSTEAD, and why it is weaker rather than the same. There is no capitalisation to
+ *  delimit a name by and this rule will not invent one: taking every multi-word phrase as a name
+ *  would accuse the real, recorded credit of `stress-x` itself, whose Arabic words are a TRANSLATION
+ *  of an attribution the frozen article makes in English ("the figures come from the national water
+ *  utility"). So the question narrows to the one the same evidence still settles — is the credit
+ *  FOREIGN TO THE RECORD WHOLESALE, not one word of it anywhere in the frozen `source/`? — and the
+ *  narrowing is REPORTED in `limits` rather than left for a reader to discover. A fabrication
+ *  smuggled into an otherwise-attested line passes here and would not pass in a cased script; that
+ *  is a stated miss, and a stated miss is not the defect. A silent one is. */
+const CASELESS_LETTER_RE =
+  /[\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Thai}\p{Script=Devanagari}]/u;
+
 /** A dash typed as two hyphen-minus characters: spaced (` -- `) or set tight between words
  *  (`word--word`). Never a leading `--flag`, which is a real thing a page may legitimately show. */
 const DOUBLE_HYPHEN_RE = /(?<=\s)--(?=\s)|(?<=\w)--(?=\w)/u;
@@ -182,6 +205,11 @@ function printedCredit(handover) {
  * estimates" describes a table and attributes nothing to anyone, and passes, correctly. The harm
  * this rule exists for is the other kind — a real, named third party recorded as having compiled
  * data it never touched.
+ *
+ * `limits` NAMES WHAT THIS ANSWER IS WORTH LESS THAN. Empty in the ordinary case; non-empty where the
+ * credit is written in a script with no case, because there the question decided is weaker than the
+ * question decided elsewhere — see `CASELESS_LETTER_RE`. An empty `limits` is itself information: the
+ * verdict above it was reached the full-strength way.
  */
 export function creditTracesToRecord(beatDir) {
   const story = storyAbove(beatDir);
@@ -191,6 +219,7 @@ export function creditTracesToRecord(beatDir) {
 
   const record = frozenRecord(story);
   const unattested = [];
+  const limits = [];
   for (const delivery of deliveries) {
     const handover = join(delivery, "HANDOVER.md");
     if (!existsSync(handover)) {
@@ -203,6 +232,21 @@ export function creditTracesToRecord(beatDir) {
         `${basename(delivery)}/HANDOVER.md names no credit heading this decision knows (${CREDIT_HEADINGS.join(", ")}) — a hand-over written in a language it has not been taught reads as a delivery with no credit at all`,
       );
       continue;
+    }
+
+    // THE SAME QUESTION, NARROWED, FOR A CREDIT WITH NO CASE TO READ (finding X4). Runs only when the
+    // credit actually carries a caseless letter, so nothing about a Latin or Greek credit changes.
+    if (CASELESS_LETTER_RE.test(credit)) {
+      limits.push(
+        `${basename(delivery)}: the credit prints "${credit}", written in a script with no case — no organisation name can be delimited in it, so what was decided here is only whether the credit is foreign to the frozen record WHOLESALE. A fabricated name inside an otherwise-attested line would pass, and would not pass in a cased script`,
+      );
+      const words = (credit.match(/[\p{L}\p{N}'’]+/gu) ?? []).filter((word) => word.length > 1);
+      const attested = words.filter((word) => record.includes(word.toLowerCase()));
+      if (words.length > 0 && attested.length === 0) {
+        unattested.push(
+          `${basename(delivery)}: the credit prints "${credit}" — not one word of it appears anywhere in the story's frozen source/, and the script it is written in has no case, so no name inside it could be read on its own. If the journalist named no source, record credit: unattributed and the artefact prints "Source: not stated"`,
+        );
+      }
     }
     for (const run of credit.match(NAME_RUN_RE) ?? []) {
       // ATTESTED IF ANY WORD OF THE NAME IS IN THE RECORD, not if every word is. The strict form
@@ -224,7 +268,7 @@ export function creditTracesToRecord(beatDir) {
       );
     }
   }
-  return { applies: true, deliveries: deliveries.map((dir) => basename(dir)), traces: unattested.length === 0, unattested };
+  return { applies: true, deliveries: deliveries.map((dir) => basename(dir)), traces: unattested.length === 0, unattested, limits };
 }
 
 /**
