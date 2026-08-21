@@ -229,7 +229,7 @@ It is the one point in the journey where taste travels both ways: the model gain
 instead of an abstract rule, and the journalist gains vocabulary for saying what they want. This is
 quality lever number one.
 
-## ⑨ The palette — subject first, newsroom second, journalist third
+## ⑨ The palette and the typeface — subject first, newsroom second, journalist third
 
 `palette`'s `proposePalette` proposes in that order and recommends in that order. A convention
 the reader already holds (blue for water, green for renewables) beats house colours for THIS chart,
@@ -238,6 +238,18 @@ subject, the proposal SAYS so and the newsroom's colours lead — never silently
 option with no explanation, which is what the run did.
 
 Lands in `PALETTE.md`.
+
+**And the same question for the TYPE, in the same movement.** `palette`'s `proposeTypeface({
+newsroom, resolves })` offers every face `NEWSROOM.md` records, in the newsroom's own order, plus
+the substrate's own stack as an explicit option — each one MEASURED on the machine that will
+render, because resvg draws the fallback for a face it does not have and reports nothing.
+`writeTypeface` records the answer. Lands in `TYPEFACE.md`, beside `PALETTE.md`.
+
+It is asked here, at the movement where the newsroom's own charter is already open, and not left to
+the render: five render paths refuse without that file, and until round four nothing anywhere wrote
+one — so a story reached its first render with a refusal naming three ways out and no way to take
+any of them. There is always an answer: a face this machine does not have is refused rather than
+swapped, and `origin: default` records the stated fallback as a choice with the gap named.
 
 ## ⑩ The storyboard proposal, and the beat brief
 

@@ -1,9 +1,9 @@
 ---
 name: palette
-description: Use to decide the colours a beat is drawn in — the ground, the accent that carries the argument, and the further house accents a multi-series beat needs. Proposes the subject's own convention first when the subject carries one a reader already holds, the newsroom's house colours second, and says out loud when no convention applies; measures every accent against the WCAG non-text floor and REFUSES one a reader cannot see, at the proposal and again when the answer is read back; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default.
+description: Use to decide the colours a beat is drawn in — the ground, the accent that carries the argument, and the further house accents a multi-series beat needs. Proposes the subject's own convention first when the subject carries one a reader already holds, the newsroom's house colours second, and says out loud when no convention applies; measures every accent against the WCAG non-text floor and REFUSES one a reader cannot see, at the proposal and again when the answer is read back; records the journalist's answer in PALETTE.md. ALSO owns the same question for TYPE: proposes the newsroom's recorded typefaces, measures whether each one actually resolves on the machine that will render, refuses a face nothing here can draw, and WRITES the answer into TYPEFACE.md. Every craft skill's own seed reads those files and refuses rather than default; a beat that reads them refuses rather than default.
 ---
 
-# palette — propose the colours, measure them, let the journalist decide
+# palette — propose the colours and the face, measure them, let the journalist decide
 
 ## Overview
 
@@ -39,10 +39,16 @@ This skill closes that. It does four things and refuses a fifth:
    accent, each clearing the mark floor and reading apart from the others — instead of falling back
    to the furniture grey, which is what a three-series beat did until this landed.
 
-The fifth thing — **writing a colour anywhere** — it does not do. There is no write path in this
-skill, not a commented-out one, not a flag. `PALETTE.md` is authored from the journalist's answer,
+The fifth thing — **writing a colour anywhere** — it does not do. `scripts/palette.mjs` has no write
+path, not a commented-out one, not a flag. `PALETTE.md` is authored from the journalist's answer,
 the same way `NEWSROOM.md` is — or, when no journalist is present, from the proposal's own
 measured recommendation, exactly as described below.
+
+**The typeface half DOES write**, in `scripts/typeface.mjs`, and the asymmetry is deliberate rather
+than an inconsistency: a colour answer is two hex codes a person can type into a file, while a
+typeface answer carries a measurement no person can make by eye — whether the machine that will
+render actually HAS the face. Answer and measurement are recorded together or the record is worth
+nothing. See "The typeface", below.
 
 ## When nobody is there to answer (unattended and batch runs)
 
@@ -81,6 +87,67 @@ to a local file a later run can still revise, never an irreversible action taken
 name. It does not generalise to `splash/SKILL.md`'s other human gates — G2b's format choice, final
 delivery confirmation — which stay exactly as strict as they already are.
 
+## The typeface — the same question, one property over
+
+`readTypeface`, `parseTypeface`, `useTypeface` and `assertDrawnInActiveTypeface` have shipped in
+every `render-still.mjs` for as long as `readPalette` has, five render paths REFUSE without a
+recorded `TYPEFACE.md`, and — measured 2026-08-21, round four's finding 17 —
+`grep -rn "TYPEFACE.md" skills/ shared/ | grep -i write` returned **nothing**. No writer, no
+movement in the exchange, no owning skill. Twenty of this tree's twenty-one stories have no
+`TYPEFACE.md`; the one that has it wrote it by hand. `NEWSROOM.md` records `Space Grotesk`, which
+does not resolve on this machine, so the refusal at the render was right and there was no path to
+answer it.
+
+This skill owns that question now, because it is the same mechanism: a recorded answer, walked up
+from the beat's own directory, refused rather than defaulted, with `origin` naming who chose.
+`references/typeface.md` carries the full rule (`typeface-is-recorded`) and the measurements behind
+it. In brief:
+
+1. **`proposeTypeface({newsroom, resolves})`** offers every face `NEWSROOM.md` records, in the
+   newsroom's own order, plus the substrate stack as an explicit option — never as a silent floor.
+2. **It cannot be run unmeasured.** `resolves` is required, and it is `familyResolves` from any
+   `render-still.mjs`: resvg never errors on a family it lacks, it draws the fallback and reports
+   nothing, so an unmeasured proposal would recommend a face the render then refuses. A proposal
+   without the probe THROWS rather than guessing.
+3. **`recommended` names a face this machine has, and one that belongs in a chart.** A face that
+   does not resolve is never recommended. Nor is one that resolves but is a monospaced or display
+   face: `stress-p` reached that judgement by hand ("a monospaced typewriter face is not a chart
+   face and choosing it only because it resolves would be a worse answer than a stated fallback"),
+   and it is now made the same way, with the reason printed. A caution never removes an option — a
+   journalist who wants Courier can have it.
+4. **`writeTypeface({dir, option, ...})` WRITES the answer** — the one thing the colour half
+   deliberately does not do, and for a reason that does not apply here. A colour answer is two hex
+   codes a person can type; a typeface answer carries a measurement no person can make by eye, so
+   the answer and its measurement are written together or the file is worth nothing. It refuses an
+   unmeasured option, refuses a face that does not resolve (the same refusal `useTypeface` makes at
+   the render, made where three answers are still available), and refuses to overwrite a recorded
+   answer without `replace: true`.
+
+**The unattended rule is the colour one, and it always has an answer.** With a journalist: print
+`formatTypefaceProposal`, end the turn, record what they say. With nobody there: record
+`recommended`, with `answeredBy: "nobody"` and the proposal's own `recommendationReason`, which is
+written into the file's prose. There is no `recommended: null` branch here — the stated fallback is
+always available as `origin: default` — so this never becomes a refusal nobody can honour.
+
+```js
+import { familyResolves } from "#shared/chart-beat/render-still.mjs";
+import { proposeTypeface, formatTypefaceProposal, writeTypeface } from "<splash>/skills/palette/scripts/typeface.mjs";
+
+const proposal = proposeTypeface({ newsroom, resolves: familyResolves });
+console.log(formatTypefaceProposal(proposal));            // the question, when someone is there
+await writeTypeface({                                     // the answer, wherever it came from
+  dir: storyDir,
+  option: proposal.options.find((o) => o.id === proposal.recommended),
+  newsroom,
+  answeredBy: "nobody",
+  because: proposal.recommendationReason,
+});
+```
+
+The two modules are composed at the CALL SITE rather than imported into each other: `familyResolves`
+needs a rasteriser this skill does not have, and a second copy of that decision, in a skill with no
+renderer to check it against, is drift waiting to happen.
+
 ## When to use
 
 - Before the first beat of a story is rendered, once `NEWSROOM.md` is resolved (valid *or*
@@ -92,6 +159,8 @@ delivery confirmation — which stay exactly as strict as they already are.
   no business making — see `references/subject-conventions.md`, last section.
 - **Not** to derive a newsroom's charter from scratch. That is `newsroom-charter`, which
   measures the newsroom's own website; this skill starts from the result.
+- For the TYPEFACE, at the same moment and from the same `NEWSROOM.md` — one question per story,
+  asked and recorded beside the colour one. A story that renders anything needs both files.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -125,6 +194,9 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
 | Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
+| Typeface proposal | `scripts/typeface.mjs` | `proposeTypeface({newsroom, resolves})` — every recorded face, in the newsroom's order, each measured on THIS machine, plus the substrate stack as an option; throws rather than propose unmeasured |
+| Typeface question | `scripts/typeface.mjs` | `formatTypefaceProposal(proposal)` — the question the journalist reads, with the escape and the install branch |
+| Typeface writer | `scripts/typeface.mjs` | `writeTypeface({dir, option, ...})`, `renderTypefaceRecord(option, ...)` — the answer on disk, refusing a face this machine cannot draw and refusing to overwrite one already recorded |
 | Series inks | `chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out |
 
 ## How it works (the shape)
@@ -260,8 +332,17 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 
 - `scripts/palette.mjs` — `contrast`, `NON_TEXT_CONTRAST_MIN`, `TEXT_CONTRAST_MIN`,
   `LARGE_TEXT_CONTRAST_MIN`, `adjustToContrast`, `assertLegible`, `SUBJECT_CONVENTIONS`,
-  `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`. No write path.
+  `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`. No write path — the
+  colour answer is authored, and only the typeface answer is written (`scripts/typeface.mjs`).
 - `scripts/format-proposal.mjs` — `formatProposal`, the markdown the journalist reads and answers.
+- `scripts/typeface.mjs` — `DEFAULT_STACK`, `ORIGINS`, `newsroomFaces`, `proposeTypeface`,
+  `formatTypefaceProposal`, `renderTypefaceRecord` and `writeTypeface`. The one write path in this
+  skill, and `references/typeface.md` says why type has one and colour does not.
+- `references/typeface.md` — `typeface-is-recorded`: what was measured, the rule, and what a skill
+  whose renderer still holds `FONT_FAMILY` as a `const` has to say instead.
+- `test/typeface.test.ts` — the proposal's refusal to run unmeasured, the recommendation that never
+  names a face this machine lacks, the writer's three refusals, and the record read back by the real
+  `parseTypeface`.
 - `assets/PALETTE.example.md` — the recorded-answer shape: `ground`, `accent`, the optional
   `accents` list, `origin`.
 - `references/subject-conventions.md` — the evidence behind each convention, why the table is short,
