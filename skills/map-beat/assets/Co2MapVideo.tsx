@@ -31,6 +31,7 @@ import {
   type JoinedRow,
 } from "./geo";
 import { MAP_TIMING, progressOf, type BeatTiming } from "./timing";
+import { labelsClippedByPlate } from "../scripts/detect-label-clipped-by-plate.mjs";
 
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;
@@ -191,6 +192,25 @@ export function Co2MapVideo({
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
   const labelAt = geometry.anchors.label;
   if (!labelAt) throw new Error("the bake projected no label anchor");
+
+  // A LABEL THE PLATE CLIPS IS A LABEL NOBODY READS, and a clip throws nothing. The subject's own
+  // run is measured here, where the family and the size it will be drawn in are known, against the
+  // plate's own clip rectangle. `stress-t-europe-recycling` had to write this by hand inside its own
+  // component after finding a truncated name in a delivered frame; it belongs to the skill.
+  const labelBox = {
+    what: `the subject label "${subjectLabel}"`,
+    left: PAD + labelAt[0] * scale - measureText(subjectLabel, SUBJECT_LABEL),
+    right: PAD + labelAt[0] * scale,
+    top: MAP_Y + labelAt[1] * scale - SUBJECT_LABEL.fontSize * 0.75,
+    bottom: MAP_Y + labelAt[1] * scale + SUBJECT_LABEL.fontSize * 0.25,
+  };
+  const clipped = labelsClippedByPlate([labelBox], {
+    left: PAD,
+    right: PAD + MAP,
+    top: MAP_Y,
+    bottom: MAP_Y + MAP,
+  });
+  if (clipped.length > 0) throw new Error(clipped.join("\n"));
 
   // ── The edit. Six windows, every one read off the contract.
   const establish = progressOf(frame, timing.establish);

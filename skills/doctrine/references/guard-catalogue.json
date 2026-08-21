@@ -443,6 +443,20 @@
       "exceptions": {}
     },
     {
+      "id": "label-fits-inside-the-plate",
+      "kind": "guard",
+      "requires": ["bakes-a-plate"],
+      "decidedBy": "labelsClippedByPlate",
+      "refuses": "a label whose measured box falls outside the plate's own clip rectangle — a run the clip path cuts silently, in a delivered frame where a reader sees a truncated word and no error was ever raised",
+      "earnedBy": "stress-t-europe-recycling's first render put Macedonia's label south-east of it, over the Aegean; at that plate's scale the run passed the plate's right edge and the delivered frame read \"Mac…\" and \"18.4\". A clip is silent by construction — nothing throws, nothing renders red — so the beat's author found it by LOOKING at the frame, wrote the check by hand inside their own component, and named the absence in NOTES-FOR-MAINTAINER.md as \"a map label clipped by the plate is silent\". The decision measures BOXES in the frame's own pixels against the plate's own rectangle: the caller measures its own text, because only the component knows the family and size it is about to draw in, and the refusal names which edge and by how much, because a caller deciding whether to re-bake an anchor needs the number rather than a boolean. Every clipped label is reported, not the first, since anchors move together in a re-bake. CLIP_TOLERANCE_PX is half a pixel for the reason decollide's own MOVED_AT is: a run half a pixel past the clip is not a truncated word, and a caller with no canvas measures text by an approximation good to rather worse than that. Measured on stress-t's own committed anchors: they clear the shipped 560px plate and start clipping at 389px, which says the headroom is real and not large",
+      "states": {
+        "map-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
+    },
+    {
       "id": "reveal-order-is-earned",
       "kind": "guard",
       "requires": ["timed-build-that-ends"],

@@ -29,6 +29,7 @@ written out below the tables.
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
 | reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
+| label-fits-inside-the-plate |  |  |  |  | **R** | **R** |  | **R** |
 | reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
 | labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 
@@ -291,6 +292,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a drawn composition covering a floor-breaking sliver of the fixed graphic it was given, the container filling its frame while the picture inside it does not
 
 **Earned by:** skills/scrolly's own description promises a FIXED graphic that fills the frame; stress-g-eight-checkpoints delivered a graphic covering roughly 15% of a 1440x900 frame and verify-scrolly.mjs passed it, because every existing assertion measured the VEHICLE (the handover, the card, the frame that never moves) and none of them measured the DRAWING inside it. Measured against every delivered scrolly under proof/: stress-g was not the outlier — the seed's own ChartFrame and this format's other chart-track beats read even thinner (2.2%-7.1% ink coverage) than stress-g's own worst step (3.6%-3.7%); an image or map track routinely clears 20%+. The floor is set from that measured population, never from an invented ideal
+
+### label-fits-inside-the-plate — `labelsClippedByPlate`
+
+**Refuses:** a label whose measured box falls outside the plate's own clip rectangle — a run the clip path cuts silently, in a delivered frame where a reader sees a truncated word and no error was ever raised
+
+**Earned by:** stress-t-europe-recycling's first render put Macedonia's label south-east of it, over the Aegean; at that plate's scale the run passed the plate's right edge and the delivered frame read "Mac…" and "18.4". A clip is silent by construction — nothing throws, nothing renders red — so the beat's author found it by LOOKING at the frame, wrote the check by hand inside their own component, and named the absence in NOTES-FOR-MAINTAINER.md as "a map label clipped by the plate is silent". The decision measures BOXES in the frame's own pixels against the plate's own rectangle: the caller measures its own text, because only the component knows the family and size it is about to draw in, and the refusal names which edge and by how much, because a caller deciding whether to re-bake an anchor needs the number rather than a boolean. Every clipped label is reported, not the first, since anchors move together in a re-bake. CLIP_TOLERANCE_PX is half a pixel for the reason decollide's own MOVED_AT is: a run half a pixel past the clip is not a truncated word, and a caller with no canvas measures text by an approximation good to rather worse than that. Measured on stress-t's own committed anchors: they clear the shipped 560px plate and start clipping at 389px, which says the headroom is real and not large
 
 ### reveal-order-is-earned — `staggerLacksAnOrder`
 

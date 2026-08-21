@@ -239,6 +239,17 @@ const COPIES: Record<string, string[]> = {
     "map-beat/scripts/detect-fills-its-frame.mjs",
     "image-beat/scripts/detect-fills-its-frame.mjs",
   ],
+  // ROUND-FIVE FINDING T4 (second half): whether a label's box escapes the plate's clip rectangle.
+  // Carried by every format that BAKES a plate, and the copies matter because the failure mode is
+  // silence: a copy that widened its tolerance, or stopped checking one of the four edges, would
+  // ship a truncated word its neighbour refuses, and nothing downstream would say so. It imports
+  // nothing, like `decollide.mjs`, because the place the decision has to be MADE is inside a
+  // component a browser bundles.
+  labelsClippedByPlate: [
+    "map-beat/scripts/detect-label-clipped-by-plate.mjs",
+    "map-web/scripts/detect-label-clipped-by-plate.mjs",
+    "scrolly/scripts/detect-label-clipped-by-plate.mjs",
+  ],
   // ROUND-FIVE, the owner's ruling on the staggered reveal: whether a build's stagger follows an
   // order the data actually carries. Both video formats decide it, and they decide OPPOSITE cases —
   // chart-video's line earns its stagger (one mark per year, distinct and ascending), map-beat's

@@ -19,6 +19,8 @@ map-beat ships no size table, so gate 2c's size pin reaches nothing in the produ
 
 decollide is exported from render-still.mjs, which imports @resvg/resvg-js at module load. A Remotion-bundled video component cannot import that module, so decollide is unreachable from every video format in this tree; label placement in a video is still done by hand.
 
+CLOSED 2026-08-21: every skill that draws its own geometry now carries scripts/decollide.mjs, the same function in a module that imports nothing. splash/test/decollide-is-reachable.test.ts walks them and pins the premise.
+
 ## Found at production
 
 claimViolations only knows one claim shape — the subject is BELOW a comparison and below its neighbours — with no way to ask the opposite. A takeaway whose subject is a maximum has to write its own check.
@@ -34,3 +36,9 @@ verify-map.mjs declares export function surfaceLuminance twice, byte for byte (a
 ## Found at delivery
 
 The closing format offer tells the journalist "Name one, or say you are done", and recordFormatAnswer accepts only "declined" or "taken" — the word the offer puts in their mouth is rejected by the recorder.
+
+## Found at production
+
+A map label clipped by the plate is silent — this beat measured its own two label boxes against the plate by hand, in its own component, after a delivered frame read "Mac…" and "18.4".
+
+CLOSED 2026-08-21: `labelsClippedByPlate` (`map-beat`/`map-web`/`scrolly`, `scripts/detect-label-clipped-by-plate.mjs`) is that check in the skill, called by map-beat's own video seed. This beat still carries its own `assertLabelFits`, because a story may not import out of a skill; the decision it makes is now the skill's, and the catalogue's, rather than only this file's.
