@@ -70,6 +70,8 @@ and record which fired.
 | Sample | `assets/sample-data/regions.json` | 43 European regions with numeric values, chosen to demonstrate the full colour ramp span |
 | Preview | `assets/preview.png` | The static seed rendered on a light ground, so a reader of this skill sees what it produces |
 
+**Copying `assets/geo.ts` or `scripts/bake-plate.mjs` into a beat's own file:** tag a function you keep verbatim `@parity` (or `@parity-exempt: <reason>` the moment it must differ), and reuse this file's own RFC 4180 row tokeniser rather than a fresh `.split(",")` — `splash/test/geo-parity.test.ts`, `bake-parity.test.ts` and `csv-hand-split.test.ts` walk the whole tree for exactly those three mistakes, discovered rather than listed.
+
 **The accent in a choropleth.** The ramp is a gradient encoding a quantity — the one legitimate
 gradient in this system — and it colours every region, so it cannot also carry the semantic accent.
 The ramp is derived neutral, from the newsroom's ground toward its own ink (so it lightens instead

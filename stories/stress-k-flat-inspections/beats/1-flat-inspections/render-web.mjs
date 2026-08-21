@@ -32,14 +32,66 @@ const DEFAULT_DATA_PATH = join(HERE, "data.csv");
 const DEFAULT_OUT_DIR = join(HERE, "renders");
 const OUTPUT_NAME = "flat-inspections.html";
 
+// RFC 4180 row tokeniser, inlined — a bare `.split(",")` tears a quoted or thousands-grouped field
+// in half; `csv-hand-split.test.ts` walks this project for that exact mistake.
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        }
+        quoted = false;
+        i += 1;
+        continue;
+      }
+      field += char;
+      i += 1;
+      continue;
+    }
+    if (char === '"') {
+      quoted = true;
+      i += 1;
+      continue;
+    }
+    if (char === ",") {
+      row.push(field);
+      field = "";
+      i += 1;
+      continue;
+    }
+    if (char === "\n" || char === "\r") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i += char === "\r" && text[i + 1] === "\n" ? 2 : 1;
+      continue;
+    }
+    field += char;
+    i += 1;
+  }
+  if (field !== "" || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
 export function rowsFromCsv(csv) {
-  const [header, ...lines] = csv.trim().split(/\r?\n/);
-  const cols = header.split(",");
-  const nameAt = cols.indexOf("region");
-  const valueAt = cols.indexOf("failed_inspections");
+  const [header, ...lines] = parseCsvRows(csv.trim());
+  const nameAt = header.indexOf("region");
+  const valueAt = header.indexOf("failed_inspections");
   if (nameAt < 0 || valueAt < 0) throw new Error(`csv has no region / failed_inspections column, got: ${header}`);
   return lines
-    .map((line) => line.split(","))
     .map((cells) => ({ name: cells[nameAt], value: Number(cells[valueAt]) }))
     .filter((r) => r.name && Number.isFinite(r.value));
 }

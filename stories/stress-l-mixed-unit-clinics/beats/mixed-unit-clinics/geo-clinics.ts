@@ -114,7 +114,10 @@ export function rowsFromCsv(csv: string): ClinicsRow[] {
 // ── The join, run once per study set ──────────────────────────────────────────────────────────
 
 /** Join every declared KEY to a value from ONE group's own rows, and fail loud both ways —
- *  `geo-discipline.md` rule 5. */
+ *  `geo-discipline.md` rule 5.
+ *  @parity-exempt: takes this panel's own `ClinicsRow[]` and joins one unit group at a time, never
+ *  a value `Map` with `alias`/`expectedNoData`/`expectedExtraValues` declarations — the two study
+ *  sets (COUNT, RATE) are joined separately, on purpose, and never share the tagged join's options. */
 export function joinValues(
   keys: readonly string[],
   rows: ClinicsRow[],
@@ -150,6 +153,7 @@ export function joinShapes<T extends { key: string }>(
 
 // ── Classes / legend position ─────────────────────────────────────────────────────────────────
 
+/** @parity */
 export function binIndexLowerInclusive(
   value: number,
   breaks: number[],
@@ -173,12 +177,14 @@ export function scalePosition(value: number, breaks: number[]): number {
 
 // ── Colour ─────────────────────────────────────────────────────────────────────────────────────
 
+/** @parity */
 function channels(hex: string): number[] {
   if (!HEX.test(hex))
     throw new Error(`expected #rrggbb, got ${JSON.stringify(hex)}`);
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
+/** @parity */
 export function mixHex(from: string, to: string, ratio: number): string {
   const target = channels(to);
   return (
@@ -193,6 +199,7 @@ export function mixHex(from: string, to: string, ratio: number): string {
   );
 }
 
+/** @parity */
 export function luminanceOf(hex: string): number {
   const [r, g, b] = channels(hex).map((v) => {
     const c = v / 255;
@@ -201,11 +208,13 @@ export function luminanceOf(hex: string): number {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
+/** @parity */
 export function contrastOf(a: string, b: string): number {
   const [hi, lo] = [luminanceOf(a), luminanceOf(b)].sort((x, y) => y - x);
   return (hi! + 0.05) / (lo! + 0.05);
 }
 
+/** @parity */
 export function sequentialRamp(
   ground: string,
   ink: string,
@@ -218,6 +227,7 @@ export function sequentialRamp(
   );
 }
 
+/** @parity */
 export function dataRampEnd(accent: string, ground: string): string {
   return mixHex(
     accent,
@@ -226,6 +236,7 @@ export function dataRampEnd(accent: string, ground: string): string {
   );
 }
 
+/** @parity */
 export function assertRampReads(
   ramp: string[],
   ground: string,
@@ -241,18 +252,25 @@ export function assertRampReads(
     const step = lightness[i]! - lightness[i - 1]!;
     if (rising !== step > 0)
       throw new Error(
-        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}).`,
+        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}) — ` +
+          `the ramp runs ${rising ? "lighter" : "darker"} everywhere else, so a reader has no ` +
+          `ordering here. Derive the far end from a colour that sits on the other side of the ground.`,
       );
     if (Math.abs(step) < 0.02)
       throw new Error(
-        `${where}: classes ${i} and ${i + 1} are ${Math.abs(step).toFixed(4)} apart in luminance.`,
+        `${where}: classes ${i} (${ramp[i - 1]}) and ${i + 1} (${ramp[i]}) are ` +
+          `${Math.abs(step).toFixed(4)} apart in relative luminance, under the 0.02 this family ` +
+          `holds two classes apart by. They will read as one class.`,
       );
   }
   const top = ramp[ramp.length - 1]!;
   const ratio = contrastOf(top, ground);
   if (ratio < 3)
     throw new Error(
-      `${where}: top class ${top} measures ${ratio.toFixed(2)}:1 against ${ground}, under the 3:1 floor.`,
+      `${where}: the ramp's top class ${top} measures ${ratio.toFixed(2)}:1 against the ground ` +
+        `${ground} — under the 3:1 floor WCAG 2.2 SC 1.4.11 Non-text Contrast sets for a graphical ` +
+        `object. The class carrying this map's argument cannot be seen. Record an accent with more ` +
+        `room against this ground, or change the ground.`,
     );
   return ramp;
 }
@@ -265,6 +283,7 @@ export const OTHER_UNIT_FILL = "#EDEDED";
 
 // ── Geometry ───────────────────────────────────────────────────────────────────────────────────
 
+/** @parity */
 export function pathFromRings(rings: Ring[]): string {
   return rings
     .filter((ring) => ring.length >= 3)
@@ -275,6 +294,7 @@ export function pathFromRings(rings: Ring[]): string {
     .join("");
 }
 
+/** @parity */
 function round(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -292,6 +312,7 @@ export function simplifyRing(ring: Ring, minGap: number): Ring {
   return kept.length >= 3 ? kept : ring.slice(0, 3);
 }
 
+/** @parity */
 export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
   if (ring.length < 3) return false;
   let minX = Infinity,
@@ -512,6 +533,7 @@ export function placeValueLabels(
 
 // ── Language ───────────────────────────────────────────────────────────────────────────────────
 
+/** @parity */
 export function en(value: number, decimals = 1): string {
   return new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: decimals,

@@ -98,20 +98,25 @@ function minFrameHeightPx(width, south, north) {
 function assertWorldFillsFrame(camera, width) {
   if (camera.worldWidthPx >= width - 1) return;
   throw new Error(
-    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ${width}px.`,
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
   );
 }
 function assertCameraReachesBounds(frameCorners, bounds, width) {
   const [[askedWest, askedSouth], [askedEast, askedNorth]] = bounds;
   const shortfall = [];
-  if (frameCorners.south > askedSouth + 0.01) shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
-  if (frameCorners.north < askedNorth - 0.01) shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
-  if (frameCorners.west > askedWest + 0.01) shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
-  if (frameCorners.east < askedEast - 0.01) shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+  if (frameCorners.south > askedSouth + 0.01)
+    shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+  if (frameCorners.north < askedNorth - 0.01)
+    shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+  if (frameCorners.west > askedWest + 0.01)
+    shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+  if (frameCorners.east < askedEast - 0.01)
+    shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
   if (shortfall.length === 0) return;
   throw new Error(
     `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
-      `${minFrameHeightPx(width, askedSouth, askedNorth)}px of height.`,
+      `${minFrameHeightPx(width, askedSouth, askedNorth)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
   );
 }
 

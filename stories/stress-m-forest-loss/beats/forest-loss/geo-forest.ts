@@ -113,10 +113,17 @@ export function rowsFromCsv(csv: string): ForestRow[] {
 
 // ── The join, exactly as `map-beat/assets/geo.ts` states it: fails loud both ways ───────────────
 
+/** @parity */
 export function unmatchedValues(
   keys: readonly string[],
   values: Map<string, number>,
-  { alias = {}, expectedExtraValues = [] as readonly string[] | "any" } = {},
+  {
+    alias = {},
+    expectedExtraValues = [],
+  }: {
+    alias?: Record<string, string>;
+    expectedExtraValues?: readonly string[] | "any";
+  } = {},
 ): string[] {
   if (expectedExtraValues === "any") return [];
   const reachable = new Set(keys.map((key) => alias[key] ?? key));
@@ -126,19 +133,25 @@ export function unmatchedValues(
   );
 }
 
+/** @parity */
 export function joinValues(
   keys: readonly string[],
   values: Map<string, number>,
   {
-    alias = {} as Record<string, string>,
-    expectedNoData = [] as readonly string[],
-    expectedExtraValues = [] as readonly string[] | "any",
+    alias = {},
+    expectedNoData = [],
+    expectedExtraValues = [],
+  }: {
+    alias?: Record<string, string>;
+    expectedNoData?: readonly string[];
+    expectedExtraValues?: readonly string[] | "any";
   } = {},
 ): { rows: JoinedRow[]; noData: string[]; matched: number } {
   const rows: JoinedRow[] = [];
   const noData: string[] = [];
   const unmatched: string[] = [];
   const wronglyDeclared: string[] = [];
+
   for (const key of keys) {
     const value = values.get(alias[key] ?? key);
     const declared = expectedNoData.includes(key);
@@ -151,21 +164,24 @@ export function joinValues(
       rows.push({ key, value });
     }
   }
+
   if (unmatched.length > 0)
     throw new Error(
       `${unmatched.length} of ${keys.length} shapes found no value and were not declared as no-data: ${unmatched.join(", ")}. ` +
-        `Either the source really is silent about them (declare them), or the key is wrong (alias it).`,
+        `Either the source really is silent about them (declare them), or the key is wrong (alias it) — a bad join renders as no-data and looks legitimate.`,
     );
   if (wronglyDeclared.length > 0)
     throw new Error(
       `declared as no-data but the source reports them: ${wronglyDeclared.join(", ")}. The declaration is stale.`,
     );
+
   const stray = unmatchedValues(keys, values, { alias, expectedExtraValues });
   if (stray.length > 0)
     throw new Error(
       `${stray.length} value${stray.length === 1 ? "" : "s"} found no shape and were not declared out of scope: ${stray.join(", ")}. ` +
-        `Either the source really does cover ground the study set does not, or the key is wrong (alias it).`,
+        `Either the source really does cover ground the study set does not (pass expectedExtraValues: "any", or name them), or the key is wrong (alias it) — a value with no shape renders as nothing at all, which is worse than looking legitimate.`,
     );
+
   return { rows, noData, matched: rows.length - noData.length };
 }
 
@@ -188,6 +204,7 @@ export function joinShapes<T extends { key: string }>(
 
 // ── Classes / legend position ─────────────────────────────────────────────────────────────────
 
+/** @parity */
 export function binIndexLowerInclusive(
   value: number,
   breaks: number[],
@@ -214,7 +231,8 @@ export function scalePosition(value: number, breaks: number[]): number {
 /** `geo-discipline.md` rule 10 — a map has no time axis, so the reveal takes the argument's own
  *  order. The article says "the animation should build country by country"; this beat's own
  *  argument is "Brazil leads", so the order runs LOWEST to HIGHEST, landing on Brazil last, the
- *  same "distribution builds toward the subject" shape the CO2 seed uses. */
+ *  same "distribution builds toward the subject" shape the CO2 seed uses.
+ *  @parity */
 export function revealOrder(rows: JoinedRow[]): string[] {
   const missing = rows.filter((r) => r.value === null).map((r) => r.key);
   const present = rows
@@ -226,11 +244,13 @@ export function revealOrder(rows: JoinedRow[]): string[] {
 
 // ── Colour ─────────────────────────────────────────────────────────────────────────────────────
 
+/** @parity */
 function channels(hex: string): number[] {
   if (!HEX.test(hex))
     throw new Error(`expected #rrggbb, got ${JSON.stringify(hex)}`);
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
+/** @parity */
 export function mixHex(from: string, to: string, ratio: number): string {
   const target = channels(to);
   return (
@@ -244,6 +264,7 @@ export function mixHex(from: string, to: string, ratio: number): string {
       .join("")
   );
 }
+/** @parity */
 export function luminanceOf(hex: string): number {
   const [r, g, b] = channels(hex).map((v) => {
     const c = v / 255;
@@ -251,10 +272,12 @@ export function luminanceOf(hex: string): number {
   });
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
+/** @parity */
 export function contrastOf(a: string, b: string): number {
   const [hi, lo] = [luminanceOf(a), luminanceOf(b)].sort((x, y) => y - x);
   return (hi! + 0.05) / (lo! + 0.05);
 }
+/** @parity */
 export function sequentialRamp(
   ground: string,
   ink: string,
@@ -266,6 +289,7 @@ export function sequentialRamp(
     mixHex(ground, ink, from + ((to - from) * i) / (steps - 1)),
   );
 }
+/** @parity */
 export function dataRampEnd(accent: string, ground: string): string {
   return mixHex(
     accent,
@@ -273,6 +297,7 @@ export function dataRampEnd(accent: string, ground: string): string {
     0.4,
   );
 }
+/** @parity */
 export function assertRampReads(
   ramp: string[],
   ground: string,
@@ -288,18 +313,25 @@ export function assertRampReads(
     const step = lightness[i]! - lightness[i - 1]!;
     if (rising !== step > 0)
       throw new Error(
-        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}).`,
+        `${where}: class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}) — ` +
+          `the ramp runs ${rising ? "lighter" : "darker"} everywhere else, so a reader has no ` +
+          `ordering here. Derive the far end from a colour that sits on the other side of the ground.`,
       );
     if (Math.abs(step) < 0.02)
       throw new Error(
-        `${where}: classes ${i} and ${i + 1} are ${Math.abs(step).toFixed(4)} apart in luminance.`,
+        `${where}: classes ${i} (${ramp[i - 1]}) and ${i + 1} (${ramp[i]}) are ` +
+          `${Math.abs(step).toFixed(4)} apart in relative luminance, under the 0.02 this family ` +
+          `holds two classes apart by. They will read as one class.`,
       );
   }
   const top = ramp[ramp.length - 1]!;
   const ratio = contrastOf(top, ground);
   if (ratio < 3)
     throw new Error(
-      `${where}: top class ${top} measures ${ratio.toFixed(2)}:1 against ${ground}, under the 3:1 floor.`,
+      `${where}: the ramp's top class ${top} measures ${ratio.toFixed(2)}:1 against the ground ` +
+        `${ground} — under the 3:1 floor WCAG 2.2 SC 1.4.11 Non-text Contrast sets for a graphical ` +
+        `object. The class carrying this map's argument cannot be seen. Record an accent with more ` +
+        `room against this ground, or change the ground.`,
     );
   return ramp;
 }
@@ -309,6 +341,7 @@ export const WATER_FILL = "#AAC9E0";
 
 // ── Geometry ───────────────────────────────────────────────────────────────────────────────────
 
+/** @parity */
 export function pathFromRings(rings: Ring[]): string {
   return rings
     .filter((ring) => ring.length >= 3)
@@ -318,6 +351,7 @@ export function pathFromRings(rings: Ring[]): string {
     )
     .join("");
 }
+/** @parity */
 function round(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -333,6 +367,7 @@ export function simplifyRing(ring: Ring, minGap: number): Ring {
   kept.push(ring[ring.length - 1]!);
   return kept.length >= 3 ? kept : ring.slice(0, 3);
 }
+/** @parity */
 export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
   if (ring.length < 3) return false;
   let minX = Infinity,
@@ -375,6 +410,10 @@ export function bboxCenter(box: BBox): [number, number] {
 
 // ── Language ───────────────────────────────────────────────────────────────────────────────────
 
+/** @parity-exempt: this beat's own source reports whole hectares (`source/data.csv`'s `loss_ha`
+ *  column, six and seven figures) and both callers (`ForestMapStill.tsx`, `ForestMapVideo.tsx`)
+ *  print it with the default; the tagged copies format a percentage-scale figure, where a decimal
+ *  place is real precision rather than false precision on a number this large. */
 export function en(value: number, decimals = 0): string {
   return new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: decimals,

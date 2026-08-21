@@ -25,8 +25,62 @@ import { PermitsRoseThenPartial } from "./PermitsRoseThenPartial.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// RFC 4180 row tokeniser, inlined — a bare `.split(",")` tears a quoted or thousands-grouped field
+// in half; `csv-hand-split.test.ts` walks this project for that exact mistake.
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        }
+        quoted = false;
+        i += 1;
+        continue;
+      }
+      field += char;
+      i += 1;
+      continue;
+    }
+    if (char === '"') {
+      quoted = true;
+      i += 1;
+      continue;
+    }
+    if (char === ",") {
+      row.push(field);
+      field = "";
+      i += 1;
+      continue;
+    }
+    if (char === "\n" || char === "\r") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i += char === "\r" && text[i + 1] === "\n" ? 2 : 1;
+      continue;
+    }
+    field += char;
+    i += 1;
+  }
+  if (field !== "" || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
 function parseCsv(text) {
-  const [header, ...rows] = text.trim().split(/\r?\n/).map((r) => r.split(","));
+  const [header, ...rows] = parseCsvRows(text.trim());
   return rows
     .filter((r) => r.some((c) => c.trim() !== ""))
     .map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
