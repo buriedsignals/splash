@@ -15,6 +15,40 @@ import { CO2_TIMING } from "../assets/timing.ts";
 
 const TWIN = resolve(import.meta.dirname, "..", "..", "..");
 
+/**
+ * RFC 4180 row tokeniser, a copy of this skill's own `render-video.mjs`'s — inlined rather than
+ * imported, because that module is a SCRIPT that renders when it loads. A naive comma split corrupts a quoted thousands
+ * separator ("1,234.5") or a quoted name carrying its own comma ("Netherlands, the"); this walks
+ * the text one character at a time instead. Returns one array of raw field strings per row
+ * (header included), quotes stripped, doubled quotes un-escaped, and a lone CR or CRLF closing a
+ * row the same way LF does.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+
 /** The windows a linear traversal hands its marks — the same arithmetic `drawnSoFar` walks the
  *  line's own points with, expressed as a start frame per mark so the decision can read it. */
 function linearWindows(positions: (number | null)[], event: { start: number; duration: number }) {
@@ -82,12 +116,12 @@ describe("staggerLacksAnOrder", () => {
   // Not a fixture built to pass: the frozen series this skill's own seed renders, read off disk and
   // walked with this format's own timing contract.
   it("should earn its stagger on proof/co2-suisse's own frozen series", () => {
-    const csv = readFileSync(join(TWIN, "proof/co2-suisse/data.csv"), "utf8").trim();
-    const [header, ...rows] = csv.split("\n");
-    const yearAt = header.split(",").indexOf("Year");
+    const rows = parseCsvRows(readFileSync(join(TWIN, "proof/co2-suisse/data.csv"), "utf8").trim());
+    const yearAt = rows[0]!.indexOf("Year");
     expect(yearAt).toBeGreaterThan(-1);
     const years = rows
-      .map((row) => Number(row.split(",")[yearAt]))
+      .slice(1)
+      .map((cells) => Number(cells[yearAt]))
       .filter((year) => Number.isFinite(year) && year >= 1950)
       .sort((a, b) => a - b);
     expect(years.length).toBeGreaterThan(50);
@@ -98,20 +132,20 @@ describe("staggerLacksAnOrder", () => {
   });
 
   it("should refuse the same stagger over stress-t's eleven one-month readings", () => {
-    const csv = readFileSync(
-      join(TWIN, "stories/stress-t-europe-recycling/beats/europe-recycling-map/recycling.csv"),
-      "utf8",
-    ).trim();
-    const [header, ...rows] = csv.split("\n");
-    const columns = header.split(",");
-    const dateAt = columns.indexOf("survey_date");
-    const countryAt = columns.indexOf("country");
+    const rows = parseCsvRows(
+      readFileSync(
+        join(TWIN, "stories/stress-t-europe-recycling/beats/europe-recycling-map/recycling.csv"),
+        "utf8",
+      ).trim(),
+    );
+    const dateAt = rows[0]!.indexOf("survey_date");
+    const countryAt = rows[0]!.indexOf("country");
     expect(dateAt).toBeGreaterThan(-1);
     expect(countryAt).toBeGreaterThan(-1);
     // Every reading is March 2025, written three different ways in the frozen source. The period,
     // not the spelling, is the position — so they are read as the one month they all are.
-    const marks = rows.map((row, i) => ({
-      key: row.split(",")[countryAt],
+    const marks = rows.slice(1).map((cells, i) => ({
+      key: cells[countryAt]!,
       start: 112 + i * 8,
       at: "2025-03",
     }));
