@@ -614,8 +614,15 @@ function isSentenceEnd(text, i) {
 function isClauseEnd(text, i) {
   return text[i] === ";" || isSentenceEnd(text, i);
 }
-const LEADING_CAPITAL_RE = /^\s*([A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*)/u;
-const CAPITALISED_PHRASE_RE = /[A-ZÀ-Ý][\p{L}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}'’.-]*)*/gu;
+// `\p{N}` is in the CHARACTER class and not in the START class, and both halves are deliberate.
+// A journalist's row key is routinely alphanumeric -- `Commune-186`, a case number, a product code
+// -- and until round five no story in this tree had one, so the name was silently cut at its first
+// digit and "Commune-186" was refused as `could not resolve "Commune-"`. Digits are admitted INSIDE
+// a name for that reason. They are not admitted at the START, and continuation still requires a
+// capitalised word, so a bare numeral standing next to a name ("Germany 67.8") is never swallowed
+// into it -- which is what keeps a number a claim rather than part of a subject.
+const LEADING_CAPITAL_RE = /^\s*([A-ZÀ-Ý][\p{L}\p{N}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}\p{N}'’.-]*)*)/u;
+const CAPITALISED_PHRASE_RE = /[A-ZÀ-Ý][\p{L}\p{N}'’.-]*(?:\s+[A-ZÀ-Ý][\p{L}\p{N}'’.-]*)*/gu;
 
 function clauseStart(text, markerStart) {
   for (let i = markerStart - 1; i >= 0; i -= 1) if (isClauseEnd(text, i)) return i + 1;

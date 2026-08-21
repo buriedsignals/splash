@@ -1424,3 +1424,41 @@ describe("a stated multiplier is read, and a digit glued to a word is not a numb
     expect(claims.some((c) => c.claim === "104.2")).toBe(true);
   });
 });
+
+// ROUND FIVE, found by the controller integrating Task B: an entity whose own name carries digits
+// could not be resolved to its row. `stress-y-rural-broadband` keys its rows `Commune-001` …
+// `Commune-186`, and a takeaway naming one came back
+//   could not resolve "Commune-" to a row in the frozen data
+// because both capitalised-phrase patterns admitted letters, apostrophes, dots and hyphens and NOT
+// digits, so the name was cut at the first digit. Pre-existing since round four -- this is simply
+// the first story in the tree whose row keys are alphanumeric, and identifiers of that shape
+// (case IDs, product codes, commune numbers) are ordinary in a journalist's table.
+describe("an entity whose name carries digits resolves to its own row", () => {
+  const STORY = `${import.meta.dir}/../../../stories/stress-y-rural-broadband/source`;
+
+  it("reads the whole identifier, not the part before the first digit", () => {
+    const profile = JSON.parse(readFileSync(`${STORY}/profile.json`, "utf8"));
+    const csv = readFileSync(`${STORY}/data.csv`, "utf8");
+    const { claims } = groundTakeaway(
+      "Commune-186 reported the lowest coverage of any municipality.",
+      profile,
+      { csv },
+    );
+    expect(claims.length).toBeGreaterThan(0);
+    // Whatever the verdict, the entity it names must be the whole identifier.
+    expect(claims.some((c) => (c.detail ?? "").includes('"Commune-"'))).toBe(false);
+  });
+
+  it("still refuses to swallow a following numeral into a name", () => {
+    // "Germany 67.8" must not resolve an entity called "Germany 67.8" -- continuation requires a
+    // capitalised word, so a bare numeral after a name is never joined to it.
+    const profile = JSON.parse(
+      readFileSync(`${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/profile.json`, "utf8"),
+    );
+    const csv = readFileSync(
+      `${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/data.csv`, "utf8",
+    );
+    const { claims } = groundTakeaway("Germany has the most.", profile, { csv });
+    expect(claims[0].verdict).toBe("supported");
+  });
+});
