@@ -8,6 +8,8 @@ import {
   fr,
   joinValues,
   keepRing,
+  labelPlacementIssues,
+  placeValueLabels,
   luminanceOf,
   mixHex,
   pathFromRings,
@@ -220,8 +222,12 @@ describe("sequentialRamp", () => {
   const TO = 0.78;
 
   it("should darken on a light ground and lighten on a dark one", () => {
-    const light = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(luminanceOf);
-    const dark = sequentialRamp("#101820", "#FFFFFF", 6, FROM, TO).map(luminanceOf);
+    const light = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(
+      luminanceOf,
+    );
+    const dark = sequentialRamp("#101820", "#FFFFFF", 6, FROM, TO).map(
+      luminanceOf,
+    );
     expect(light).toEqual([...light].sort((a, b) => b - a));
     expect(dark).toEqual([...dark].sort((a, b) => a - b));
   });
@@ -243,13 +249,17 @@ describe("sequentialRamp", () => {
   });
 
   it("should separate every step from its neighbour, so two classes never read as one", () => {
-    const ramp = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(luminanceOf);
+    const ramp = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(
+      luminanceOf,
+    );
     for (let i = 1; i < ramp.length; i++)
       expect(Math.abs(ramp[i]! - ramp[i - 1]!)).toBeGreaterThan(0.02);
   });
 
   it("should refuse a ground that is not a hex colour", () => {
-    expect(() => sequentialRamp("white", "#000000", 6, FROM, TO)).toThrow(/#rrggbb/);
+    expect(() => sequentialRamp("white", "#000000", 6, FROM, TO)).toThrow(
+      /#rrggbb/,
+    );
   });
 });
 
@@ -506,12 +516,19 @@ describe("groundWidthKm and extentBand — the six rungs of B4.1", () => {
   const PLANET = { west: -20, east: 340, north: 78.22313, south: -60.53717 }; // map-quake-density
   const HEMISPHERE = { west: -26, east: 33, north: 68.2186, south: 33.36922 }; // mapgen-choropleth-web
   const CONTINENT = { west: 6.3, east: 30, north: 50.15432, south: 42.53759 }; // mapmore-flow-danube
-  const CITY = { west: 6.057228, east: 6.229172, north: 46.2639, south: 46.1449 }; // mapvid-locator-geneva
+  const CITY = {
+    west: 6.057228,
+    east: 6.229172,
+    north: 46.2639,
+    south: 46.1449,
+  }; // mapvid-locator-geneva
 
   it("should measure ground, not degrees", () => {
     // 59° across Europe is not 59° across the equator, and the render decisions are about ground.
     expect(Math.round(groundWidthKm(HEMISPHERE))).toBe(4152);
-    expect(Math.round(groundWidthKm({ ...HEMISPHERE, north: 29.5, south: -29.5 }))).toBe(6568);
+    expect(
+      Math.round(groundWidthKm({ ...HEMISPHERE, north: 29.5, south: -29.5 })),
+    ).toBe(6568);
   });
 
   it("should put each committed camera on the rung a reader would name", () => {
@@ -529,10 +546,18 @@ describe("groundWidthKm and extentBand — the six rungs of B4.1", () => {
       north: 0.0001,
       south: -0.0001,
     });
-    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 + 1))).toBe("planet");
-    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 - 1))).toBe("hemisphere");
-    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 64 - 1))).toBe("country");
-    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 1024 - 1))).toBe("city");
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 + 1))).toBe(
+      "planet",
+    );
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 4 - 1))).toBe(
+      "hemisphere",
+    );
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 64 - 1))).toBe(
+      "country",
+    );
+    expect(extentBand(atEquator(EARTH_CIRCUMFERENCE_KM / 1024 - 1))).toBe(
+      "city",
+    );
   });
 });
 
@@ -540,8 +565,18 @@ describe("admittedRatios — what the fit added, and what it took away", () => {
   it("should report the Geneva locator showing 2.5x the city its claim names", () => {
     // proof/mapvid-locator-geneva: 11 organisations spanning 0.070° x 0.040°, in a frame showing
     // 0.172° x 0.120°. Nothing in the tree recorded this.
-    const corners = { west: 6.057228, east: 6.229172, north: 46.2639, south: 46.1449 };
-    const study = { west: 6.121882, east: 6.191689, south: 46.191865, north: 46.233535 };
+    const corners = {
+      west: 6.057228,
+      east: 6.229172,
+      north: 46.2639,
+      south: 46.1449,
+    };
+    const study = {
+      west: 6.121882,
+      east: 6.191689,
+      south: 46.191865,
+      north: 46.233535,
+    };
     const admitted = admittedRatios(corners, study);
     expect(admitted.lon).toBeCloseTo(2.46, 1);
     expect(admitted.lat).toBeCloseTo(2.86, 1);
@@ -551,7 +586,12 @@ describe("admittedRatios — what the fit added, and what it took away", () => {
     // proof/map-quake-density: the catalogue spans 151.91° of latitude, the frame 138.76°, and the
     // 104 poleward events that fall outside are exactly this ratio's shortfall.
     const corners = { west: -20, east: 340, north: 78.223, south: -60.537 };
-    const study = { west: -19.7276, east: 339.8246, north: 86.6053, south: -65.3009 };
+    const study = {
+      west: -19.7276,
+      east: 339.8246,
+      north: 86.6053,
+      south: -65.3009,
+    };
     const admitted = admittedRatios(corners, study);
     expect(admitted.lon).toBeCloseTo(1.0, 2);
     expect(admitted.lat).toBeLessThan(1);
@@ -588,7 +628,9 @@ describe("the world-map-in-portrait limit", () => {
 
   it("should letterbox a planet beat in a 1080x1920 portrait export and hand the rest to furniture", () => {
     const stage = stageBoxFor(1080, 1920, 360);
-    expect([stage.width, stage.height, stage.spareHeightPx]).toEqual([1080, 1080, 840]);
+    expect([stage.width, stage.height, stage.spareHeightPx]).toEqual([
+      1080, 1080, 840,
+    ]);
   });
 
   it("should leave every narrower geography alone, at every export size", () => {
@@ -615,14 +657,20 @@ describe("the world-map-in-portrait limit", () => {
 
 describe("mercatorAreaBias and binsCrossedByProjection — B4.2's hardest half", () => {
   it("should reproduce the two figures the audit measured by hand", () => {
-    expect(mercatorAreaBias({ west: 0, east: 1, north: 71.5, south: 34.5 })).toBeCloseTo(6.75, 2);
-    expect(mercatorAreaBias({ west: 0, east: 1, north: 78.223, south: -60.537 })).toBeCloseTo(24.0, 1);
+    expect(
+      mercatorAreaBias({ west: 0, east: 1, north: 71.5, south: 34.5 }),
+    ).toBeCloseTo(6.75, 2);
+    expect(
+      mercatorAreaBias({ west: 0, east: 1, north: 78.223, south: -60.537 }),
+    ).toBeCloseTo(24.0, 1);
   });
 
   it("should read a frame straddling the equator against the equator itself", () => {
     // The least-distorted latitude inside such a frame is 0, not the nearer edge — a symmetric
     // frame would otherwise report x1.00 and call Mercator honest at every latitude.
-    expect(mercatorAreaBias({ west: 0, east: 1, north: 45, south: -45 })).toBeCloseTo(2.0, 2);
+    expect(
+      mercatorAreaBias({ west: 0, east: 1, north: 45, south: -45 }),
+    ).toBeCloseTo(2.0, 2);
   });
 
   it("should count how many of the beat's OWN legend bins the projection can move a cell", () => {
@@ -637,7 +685,11 @@ describe("mercatorAreaBias and binsCrossedByProjection — B4.2's hardest half",
     const planet = { west: -20, east: 340, north: 78.223, south: -60.537 };
     const breaks = [13, 51, 284, 663];
     expect(() =>
-      assertAreaEncodingIsHonest(planet, breaks, "104 of the 14 175 events fall outside the frame"),
+      assertAreaEncodingIsHonest(
+        planet,
+        breaks,
+        "104 of the 14 175 events fall outside the frame",
+      ),
     ).toThrow(/24.0x/);
     expect(() =>
       assertAreaEncodingIsHonest(
@@ -648,7 +700,11 @@ describe("mercatorAreaBias and binsCrossedByProjection — B4.2's hardest half",
     ).not.toThrow();
     // And it costs nothing at the continent rung, where the projection cannot move a cell at all.
     expect(() =>
-      assertAreaEncodingIsHonest({ west: 8, east: 32, north: 49.4, south: 41.8 }, breaks, ""),
+      assertAreaEncodingIsHonest(
+        { west: 8, east: 32, north: 49.4, south: 41.8 },
+        breaks,
+        "",
+      ),
     ).not.toThrow();
   });
 });
@@ -664,7 +720,9 @@ describe("markRadiusCeilingPx — the size a mark may be at THIS camera", () => 
       { px: 300, py: 300 },
     ]);
     expect(gaps[0]).toBeCloseTo(0.57, 2);
-    expect(markRadiusCeilingPx(gaps[Math.floor(gaps.length / 2)]!, 30)).toBeGreaterThan(10);
+    expect(
+      markRadiusCeilingPx(gaps[Math.floor(gaps.length / 2)]!, 30),
+    ).toBeGreaterThan(10);
   });
 
   it("should say today's continent-extent symbols are 2.3x too big", () => {
@@ -691,6 +749,92 @@ describe("studyExtentOf", () => {
 
   it("should refuse to measure nothing", () => {
     expect(() => studyExtentOf([], 0)).toThrow(/camera nobody chose/);
+  });
+});
+
+// FINDING 10 (stress round three): stress-l-mixed-unit-clinics's own ClinicsMapStill.tsx hand-
+// nudged three of its eight value labels ("Belgium and the Netherlands sit close enough at this
+// plate's own scale ... that their bbox-centre labels collide; Germany's own centre sits close
+// enough to its accent outline to clip against it") in the BEAT's own component. Fixed where
+// labels are placed, not per beat: `labelPlacementIssues` measures a collision or a clip,
+// `placeValueLabels` avoids both automatically from each label's own preferred anchor.
+describe("labelPlacementIssues", () => {
+  it("should report no issues when every label clears every other", () => {
+    const issues = labelPlacementIssues([
+      { key: "A", x: 0, y: 0, width: 20, height: 12 },
+      { key: "B", x: 100, y: 100, width: 20, height: 12 },
+    ]);
+    expect(issues).toEqual([]);
+  });
+
+  it("should report a pair of labels whose own boxes overlap", () => {
+    // Benelux's own shape: two centroids 8px apart, each label ~28px wide.
+    const issues = labelPlacementIssues([
+      { key: "NLD", x: 100, y: 100, width: 28, height: 12 },
+      { key: "BEL", x: 108, y: 100, width: 28, height: 12 },
+    ]);
+    expect(issues).toEqual(["NLD/BEL: value labels overlap"]);
+  });
+
+  it("should report a label whose own box spills outside the shape it names", () => {
+    // Germany's own shape: a small country, a label wider than its own outline.
+    const issues = labelPlacementIssues([
+      {
+        key: "DEU",
+        x: 100,
+        y: 100,
+        width: 40,
+        height: 12,
+        rings: [
+          [
+            [90, 95],
+            [110, 95],
+            [110, 105],
+            [90, 105],
+            [90, 95],
+          ],
+        ],
+      },
+    ]);
+    expect(issues).toEqual(["DEU: value label clips its own shape's outline"]);
+  });
+});
+
+describe("placeValueLabels", () => {
+  it("should keep a label at its own preferred anchor when nothing collides", () => {
+    const placed = placeValueLabels([
+      { key: "A", x: 0, y: 0, width: 20, height: 12 },
+      { key: "B", x: 200, y: 200, width: 20, height: 12 },
+    ]);
+    expect(placed).toEqual([
+      { key: "A", x: 0, y: 0 },
+      { key: "B", x: 200, y: 200 },
+    ]);
+  });
+
+  it("should nudge a later label clear of an earlier one placed at the same anchor", () => {
+    const placed = placeValueLabels([
+      { key: "NLD", x: 100, y: 100, width: 28, height: 12 },
+      { key: "BEL", x: 108, y: 100, width: 28, height: 12 },
+    ]);
+    expect(
+      labelPlacementIssues(
+        placed.map((p, i) => ({ ...p, width: 28, height: 12 })),
+      ),
+    ).toEqual([]);
+    // The first label placed never moves for one placed after it.
+    expect(placed[0]).toEqual({ key: "NLD", x: 100, y: 100 });
+  });
+
+  it("should never throw, even when a label cannot clear every candidate", () => {
+    // Three centroids stacked on the exact same point — no ring of offsets clears all three
+    // pairwise, and the function still returns one placement per label rather than refusing.
+    const placed = placeValueLabels([
+      { key: "A", x: 0, y: 0, width: 200, height: 200 },
+      { key: "B", x: 0, y: 0, width: 200, height: 200 },
+      { key: "C", x: 0, y: 0, width: 200, height: 200 },
+    ]);
+    expect(placed.map((p) => p.key)).toEqual(["A", "B", "C"]);
   });
 });
 

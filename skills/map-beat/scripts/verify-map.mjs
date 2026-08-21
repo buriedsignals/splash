@@ -34,8 +34,10 @@ import { decodePng } from "./compare-png.mjs";
 // Within-skill only — not a cross-skill import, the same rule that lets `extent-range.mjs` reach
 // `../assets/geo.ts` already. `unmatchedValues` is the actual decision; declaring it here rather
 // than a second copy is what keeps FINDING 6's own defect (two implementations quietly drifting)
-// from being possible for its own guard.
-export { unmatchedValues } from "../assets/geo.ts";
+// from being possible for its own guard. `labelPlacementIssues` (FINDING 10, round three) is the
+// same pattern: the decision lives beside `placeValueLabels`, the repair a beat calls, so the two
+// cannot quietly disagree about what "clear" means.
+export { unmatchedValues, labelPlacementIssues } from "../assets/geo.ts";
 
 /** The guards this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
@@ -48,6 +50,7 @@ export const GUARDS = [
   "csvSplitByHand",
   "unmatchedValues",
   "credentialReadsWithoutAlias",
+  "labelPlacementIssues",
 ];
 
 /** Every credential name this skill's own scripts read straight off `env`/`process.env` by its

@@ -25,6 +25,7 @@ written out below the tables.
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
 | csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
 | unmatched-value-hides |  |  |  |  | **R** |  |  |  |
+| value-labels-collide-or-clip |  |  |  |  | **R** |  |  |  |
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
 | reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
@@ -229,6 +230,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a source's own value with no shape to receive it, unless the beat declared its source out of scope
 
 **Earned by:** joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for "Atlantis", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong
+
+### value-labels-collide-or-clip — `labelPlacementIssues`
+
+**Refuses:** a choropleth's own value label overlapping another label, or spilling outside the shape it names
+
+**Earned by:** stress-l-mixed-unit-clinics's own ClinicsMapStill.tsx hand-nudged three of its eight labels in the BEAT's own component — Belgium and the Netherlands collided at this plate's own scale, and Germany's own centroid clipped against its accent outline — because the mechanism to place them without a person nudging by eye did not exist. Measured across every delivered choropleth (every proof/ and stories/ file drawing with pathFromRings, 2026-08-21): forest-loss's own still/video draw a ranked list beside the map rather than a label per shape, both ChoroplethWeb beats (mapgen-choropleth-web, stress-f-housing-pressure) read every value from HTML on hover, and mapscrolly-one-map-europe-carbon drives its labels through a leader-line system — mixed-unit-clinics is the only delivered choropleth that bakes a static value label per shape at once, and the only one that collided. One beat today, not the placement's population — but the fix lives in the placement (assets/geo.ts's labelPlacementIssues/placeValueLabels) precisely so the next multi-label beat inherits it instead of re-earning it by hand
 
 ### palette-names-its-source — `palette/SKILL.md`
 

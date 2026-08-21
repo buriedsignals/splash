@@ -17,6 +17,7 @@ import {
   boundingBoxOf,
   en,
   pathFromRings,
+  placeValueLabels,
   scalePosition,
   type BakedShape,
   type JoinedRow,
@@ -181,39 +182,62 @@ function ChoroplethPanel({
           );
         })}
       </g>
-      {/* Value labels, one per country in this panel, at the projected shape centroid */}
-      {panel.study.map((code) => {
-        const shape = byKey.get(code);
-        const value = valueByKey.get(code);
-        if (!shape || value == null) return null;
-        const [cx, cy] = bboxCenter(boundingBoxOf(shape.rings));
-        const isSubject = code === panel.topCode;
-        // Belgium and the Netherlands sit close enough at this plate's own scale (240px for all of
-        // Europe) that their bbox-centre labels collide; Germany's own centre sits close enough to
-        // its accent outline to clip against it. A leader-line label would be the honest fix at a
-        // bigger scale — at THIS one, a small fixed nudge (in unscaled plate pixels, so it moves
-        // with the projection rather than fighting it) is what keeps every number legible.
-        const nudge: Record<string, [number, number]> = {
-          NLD: [-14, -6],
-          BEL: [10, 10],
-          DEU: [0, 10],
-        };
-        const [ndx, ndy] = nudge[code] ?? [0, 0];
-        return (
-          <text
-            key={code}
-            x={x + (cx + ndx) * scale}
-            y={y + (cy + ndy) * scale}
-            fontFamily={FONT_FAMILY}
-            fontSize={MARKER.fontSize}
-            fontWeight={isSubject ? 800 : 500}
-            fill={isSubject ? accent : ink}
-            textAnchor="middle"
-          >
-            {en(value, panel.key === "count" ? 0 : 1)}
-          </text>
+      {/* Value labels, one per country in this panel, placed automatically clear of every other
+          label in this panel and of the shape each one names — never a per-beat hand nudge (see
+          `placeValueLabels`, `map-beat/assets/geo.ts`: this beat used to carry three hand-picked
+          offsets here, the exact defect the shared placement function now closes for every future
+          multi-label choropleth, not just this one). Positions are computed in FRAME pixels (the
+          space the labels are actually drawn and read in, not the plate's own unscaled space), so
+          the placement sees the labels' real measured size. */}
+      {(() => {
+        const specs = panel.study
+          .map((code) => {
+            const shape = byKey.get(code);
+            const value = valueByKey.get(code);
+            if (!shape || value == null) return null;
+            const [cx, cy] = bboxCenter(boundingBoxOf(shape.rings));
+            const text = en(value, panel.key === "count" ? 0 : 1);
+            return {
+              key: code,
+              x: x + cx * scale,
+              y: y + cy * scale,
+              width: measureText(text, {
+                fontSize: MARKER.fontSize,
+                fontWeight: 800,
+              }),
+              height: MARKER.fontSize,
+              rings: shape.rings.map((ring) =>
+                ring.map(([px, py]): [number, number] => [
+                  x + px * scale,
+                  y + py * scale,
+                ]),
+              ),
+              text,
+            };
+          })
+          .filter((spec): spec is NonNullable<typeof spec> => spec !== null);
+        const placedByKey = new Map(
+          placeValueLabels(specs).map((placed) => [placed.key, placed]),
         );
-      })}
+        return specs.map((spec) => {
+          const placed = placedByKey.get(spec.key)!;
+          const isSubject = spec.key === panel.topCode;
+          return (
+            <text
+              key={spec.key}
+              x={placed.x}
+              y={placed.y}
+              fontFamily={FONT_FAMILY}
+              fontSize={MARKER.fontSize}
+              fontWeight={isSubject ? 800 : 500}
+              fill={isSubject ? accent : ink}
+              textAnchor="middle"
+            >
+              {spec.text}
+            </text>
+          );
+        });
+      })()}
       {/* Legend: a horizontal class bar under the plate */}
       <g transform={`translate(${x}, ${y + PLATE + 20})`}>
         {panel.ramp.map((colour, i) => (
