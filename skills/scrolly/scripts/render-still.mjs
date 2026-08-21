@@ -392,6 +392,39 @@ export function seriesInks(palette, count) {
 }
 
 /**
+ * A RUN THIS RASTERISER WILL OTHERWISE TYPESET AS A LEFT-TO-RIGHT PARAGRAPH — round-five finding X3.
+ *
+ * MEASURED on 2026-08-21. resvg runs Arabic joining and the Unicode bidi algorithm inside each run
+ * on its own — a frozen Arabic string comes out joined and in reading order with no help. What it
+ * does NOT do is resolve the PARAGRAPH level: it treats every `<text>` as left-to-right and IGNORES
+ * SVG's own `direction` attribute and `unicode-bidi` (three renders of one string, with
+ * `direction="rtl"`, with `unicode-bidi: bidi-override`, and with neither, produced identical ink).
+ * So a sentence ending in an ASCII full stop has that stop drawn at the visual RIGHT of the line —
+ * the START of the sentence — and reads `.الجدول`. `stress-x-tunisian-water`'s own frozen article
+ * records that a previous attempt was rejected by the desk for that class of defect.
+ *
+ * What resvg DOES honour is the Unicode explicit formatting CHARACTERS, because they are characters
+ * and not attributes: RLE+PDF, RLI+PDI, FSI+PDI and a TRAILING RLM all place the stop correctly; the
+ * bare string and a LEADING RLM do not. U+2067 RIGHT-TO-LEFT ISOLATE / U+2069 POP DIRECTIONAL
+ * ISOLATE is what is used here — an ISOLATE rather than an embedding, so the run cannot change the
+ * direction of anything drawn after it.
+ *
+ * Applied only to a run that actually carries a right-to-left letter, so a bare number is left
+ * alone. APPLY IT TO THE STRING THAT IS MEASURED AS WELL AS THE ONE THAT IS DRAWN: both control
+ * characters are zero-width, but measuring one string and drawing another is how a gutter stops
+ * being measured.
+ *
+ * This lived in `stress-x-tunisian-water`'s own component, in a helper whose header said there was
+ * nowhere in this toolchain for it to live. There is now, and `detect-rtl-isolation.mjs`'s
+ * `rtlRunsAreIsolated` is the guard that refuses a run drawn without it.
+ */
+const RTL_LETTER = /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+export function rtl(text) {
+  const value = String(text ?? "");
+  return RTL_LETTER.test(value) ? `\u2067${value}\u2069` : value;
+}
+
+/**
  * The rendered width of a string, in the font it will actually be drawn in — resvg lays the
  * text out and reports the ink box. This is what a measured gutter is measured with; a fixed
  * constant here is the defect this function exists to remove.

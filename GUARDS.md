@@ -32,6 +32,7 @@ written out below the tables.
 | label-fits-inside-the-plate |  |  |  |  | **R** | **R** |  | **R** |
 | reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
 | labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
+| rtl-runs-carry-their-direction | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
 | accent-survives-delegation |  |  |  | **R** |  |  |  |  |
 
 ## capability
@@ -329,6 +330,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a de-collided label stack that reorders the values it names, or a row whose label and whose value are drawn on one line while the marks they name are joined to something else
 
 **Earned by:** a thirteen-region slope de-collided its left labels in 2020 rank order and its right values independently against their own 2026 positions; both stacks overflowed the plot band, both fell back to an equal gap over it, and the one corrupted cell borrowed its 2020 y and sorted a row too high. The delivered graphic states in print that the Peloponnese has no 2026 figure and that Eastern Macedonia and Thrace has 392 schools — and, unreported until this guard read the file, that Epirus went 244 to 238 and the South Aegean 241 to 219, when the frozen source says 244 to 219 and 241 to 238. Four false rows of thirteen, through approval, through inspectSvg at 31 of 31 contrast entries, through assertDeliveredSize and assertTypeFloor, and out to a reader. The same beat's first version failed the other half of the same invariant, drawing a 1104-school region above an 1802-school one; only the pixels caught it
+
+### rtl-runs-carry-their-direction — `rtlRunsAreIsolated`
+
+**Refuses:** a right-to-left run drawn with no explicit Unicode direction, which this rasteriser lays out as a left-to-right paragraph so its sentence-final punctuation lands at the wrong end of the line
+
+**Earned by:** round five, finding X3, on stress-x-tunisian-water. Measured 2026-08-21: resvg runs Arabic joining and the bidi algorithm INSIDE a run on its own — a frozen Arabic string comes out joined and in reading order with no help — but it resolves the PARAGRAPH level as left-to-right and IGNORES SVG's `direction` and `unicode-bidi` entirely: three renders of one string, with direction="rtl", with unicode-bidi: bidi-override, and with neither, produced identical ink. The consequence a reader sees is `.الجدول` — an ASCII full stop drawn at the visual right of the line, at the START of the sentence — and that beat's own frozen article records that a previous attempt was rejected by the desk for exactly that class of defect. What resvg DOES honour is the Unicode formatting CHARACTERS, because they are characters and not attributes: U+2067/U+2069 (RLI/PDI), U+202B/U+202C (RLE/PDF) and a TRAILING U+200F all place the stop correctly; the bare string and a LEADING U+200F do not. Before this rule, grepping skills and shared for rtl, unicode-bidi, right-to-left or bidi returned two hits, both inside a bundled third-party map library — no direction switch, no anchor flip, no axis-side rule anywhere — so every beat in every right-to-left story had to rediscover this by rendering, zooming in and reading the punctuation, which is what that beat's component did in a local helper whose own header says it has nowhere to live. A RASTERISER LIMITATION WITH A KNOWN REMEDY, and the point of the rule is that the toolchain SAYS SO rather than shipping silently-wrong punctuation. It deliberately does not ask for direction="rtl": that attribute is precisely what is ignored, so requiring it would certify the defect. Population, measured the day it landed: 105 distinct committed beats across the seven skills that draw their own geometry, ONE of which draws a right-to-left letter at all (stress-x-tunisian-water, 15 such runs, every one isolated) — a ratchet over a population that legitimately grows the next time a newsroom files in Arabic or Hebrew
 
 ### denominator-reading-is-stated — `denominatorReadingStated`
 

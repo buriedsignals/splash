@@ -467,6 +467,23 @@ const COPIES: Record<string, string[]> = {
   // `materialises-a-beat` reaches all eight. A copy that narrowed what counts as an attribution, or
   // what counts as reader-visible, would go green on a delivery its neighbour refuses — and what it
   // would be passing is a real named organisation credited with data it never touched.
+  // ROUND-FIVE FINDING X3: resvg ignores SVG's `direction` and lays every paragraph out left to
+  // right, so a right-to-left run has to carry its own Unicode formatting characters or its
+  // sentence-final punctuation is drawn at the wrong end of the line. `draws-own-geometry` reaches
+  // seven skills — every format that rasterises its own SVG — and the decision is the same one in
+  // all seven: which characters the rasteriser honours is a fact about the rasteriser, not about a
+  // chart, a map or a photograph. A copy that started accepting `direction="rtl"` would certify the
+  // exact defect, and a copy that stopped decoding numeric entities would pass a run a reader still
+  // receives as Arabic.
+  rtlRunsAreIsolated: [
+    "chart-beat/scripts/detect-rtl-isolation.mjs",
+    "chart-web/scripts/detect-rtl-isolation.mjs",
+    "chart-video/scripts/detect-rtl-isolation.mjs",
+    "map-beat/scripts/detect-rtl-isolation.mjs",
+    "map-web/scripts/detect-rtl-isolation.mjs",
+    "image-beat/scripts/detect-rtl-isolation.mjs",
+    "scrolly/scripts/detect-rtl-isolation.mjs",
+  ],
   creditTracesToRecord: [
     "chart-beat/scripts/detect-delivered-text.mjs",
     "chart-web/scripts/detect-delivered-text.mjs",
