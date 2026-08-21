@@ -208,6 +208,20 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    A run of digits glued to a WORD on its left is not a number the sentence states: `Commune-063`
    produced the claim `-063` and `consumption_m3` produced `3`.
 
+   **EVERY NAME-BASED LEXICON IN THIS FILE DECLARES ITS LANGUAGES, AND NAMES A SCRIPT IT COULD NOT
+   READ** (round five, finding X1 — the round's structural theme, fixed in the same movement in
+   `palette`, `intake` and the delivery guards). `LEXICON_LANGUAGES` is **English, French, Greek and
+   Arabic**, the four this tree has frozen a story in, and it covers the superlative and comparison
+   vocabulary, the share-column names `isShareColumn` reads, and the denominator tokens. Before it,
+   `stress-x-tunisian-water`'s takeaway — `أكثر من غيرها`, "more than any other" — produced NO CLAIM
+   AT ALL, so the one thing that beat asserts was never put to the frozen table and nothing said so.
+   Gaining languages can never be finished, so the half that CAN be: a takeaway written in a script
+   none of the four uses is reported in `coverage.unreadable`, by name, and `resolveGrounding` says
+   it out loud. **A silent miss is the defect; a stated one is not.** The ENTITY a claim is about is
+   read the same way twice over — a capitalised phrase where there is case, and a row key of the
+   frozen table itself where there is none, because Arabic, Hebrew and CJK have no capitals and a
+   refusal about the script must never read as a refusal about the claim.
+
    **A number it can place in neither a range nor a total is `unverifiable`, never `contradicted`.**
    Reading "I could not place this number" as "the data refutes this number" refused every
    part-to-whole takeaway ever written, including a real production case. Only a value that contradicts a fact this function DID
@@ -338,6 +352,7 @@ if (errors.length > 0) {
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
 | How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative) or half a unit of the numeral's **own last written digit** ("34" → 0.5, "0.61" → 0.005), whichever is wider — and never more than the smaller of the two numbers being compared | `scripts/ground-claim.mjs` |
 | Which languages a numeral's stated multiplier is read in | `4` — English, French, Greek, Arabic (`MULTIPLIER_WORDS`); outside them the scale word is not read and the numeral is checked as written | `scripts/ground-claim.mjs` |
+| Which languages EVERY name-based lexicon in the grounding check is read in | `4` — English, French, Greek, Arabic (`LEXICON_LANGUAGES`); a script outside them is NAMED in `coverage.unreadable` rather than answered in silence | `scripts/ground-claim.mjs` |
 | Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |
 
 ## Files
