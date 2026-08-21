@@ -9,7 +9,8 @@ description: Use to run the DELIVERY phase of the doctrine twin — offer the jo
 
 Runs the DELIVERY phase: the last step of an output's life, after a render exists at the canonical
 `<storiesRoot>/<storyId>/beats/<outputId>/renders/` location.
-`offerForms({medium, format, storiesRoot, storyId, outputId, planVersion, findingIds, env})` names the
+`offerForms({medium, format, storiesRoot, storyId, outputId, planVersion, findingIds,
+capabilities, env})` names the
 delivery forms its format allows. `materialise({form, format, storiesRoot, storyId, outputId,
 planVersion, findingIds, env, fetchFn, cms})` writes exactly the chosen form. Both APIs
 derive the source and `export/<outputId>/` destination from the separately declared stories root
@@ -133,7 +134,7 @@ remain untouched on disk.
 ## How it works (the shape)
 
 1. **`offerForms({medium, format, storiesRoot, storyId, outputId, planVersion, findingIds,
-   env = process.env})`** first resolves the canonical beat from that identity and validates its
+   capabilities, env = process.env})`** first resolves the canonical beat from that identity and validates its
    `OUTPUT-REVIEW.json` — **Gate 3 closes before Gate 4 opens.** The record must be
    schema version 1, decide `approve`, name this output, match the exact current render digest,
    current plan version and current finding IDs, and contain a passing QA run bound to that same
@@ -384,6 +385,13 @@ const forms = offerForms({
 // present `forms` (id, label, gives, available, reason) to the journalist here, and wait for an
 // available choice. "embed" remains visible with available:false and setup guidance until Engine
 // reports that the Cloudflare account and broker-backed token are ready.
+//
+// PASS `capabilities` — the object `runPreflight` already returned this session. Without it this
+// menu can only see whether the two Cloudflare variables EXIST, and presence is not permission:
+// round-four finding 10 is preflight reporting hostedEmbed {available:false, reason:"Cloudflare
+// answered 403"} while this same menu offered the embed form with no reason at all. Handed the
+// probe's row, the form is offered as unavailable IN PREFLIGHT'S OWN WORDS, and never with the
+// setup sentence — a journalist whose token is present and refused must not be told to add it.
 
 const written = await materialise({
   ...identity,

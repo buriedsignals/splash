@@ -167,10 +167,24 @@ function rejectLegacyFormatOption(options, apiName) {
  * `env` annotates the credential-backed "embed" form: `resolveCloudflareCredentials` is a PRESENCE
  * check only (no network call here — `offerForms` stays synchronous and cheap to call on every
  * turn). Missing credentials keep the form visible but disabled with the concrete setup reason,
- * while every other form remains available. A PRESENT-but-wrong credential leaves the form
- * enabled; `materialise` is where a real network call happens, and a rejected token fails loudly
- * there instead. "cms-insertion" needs no credential (nothing it does calls a network — see
- * `references/cms-insertion.md`).
+ * while every other form remains available. "cms-insertion" needs no credential (nothing it does
+ * calls a network — see `references/cms-insertion.md`).
+ *
+ * `capabilities` IS THE PROBE, CARRIED IN — round-four finding 10. Presence is not permission, and
+ * the sentence that used to stand here said so and then shrugged: "a PRESENT-but-wrong credential
+ * leaves the form enabled; `materialise` is where a real network call happens, and a rejected token
+ * fails loudly there instead." Measured against a live Cloudflare account, that is preflight
+ * reporting `hostedEmbed {available: false, reason: "Cloudflare answered 403"}` in the same session
+ * as this menu offering `[embed] Deploy and receive embed code` with no reason at all — one
+ * credential, two accounts of it, and the journalist reads both. A row that `materialise` cannot
+ * honour is not an offer; it is a choice that fails after they make it.
+ *
+ * So the probe's verdict is HANDED IN, in the same `capabilities` shape `otherFormatsFor` already
+ * takes, by the caller that already ran preflight this session — no network call is added here and
+ * this function stays synchronous. With no `capabilities` argument the presence check is exactly
+ * what it always was: a caller with no preflight in hand is not told a lie in either direction.
+ * The credentials are checked FIRST, because a probe from another environment cannot make a
+ * delivery possible in this one.
  */
 export function offerForms(options) {
   rejectLegacyFormatOption(options, "offerForms");
@@ -182,6 +196,7 @@ export function offerForms(options) {
     outputId,
     planVersion,
     findingIds,
+    capabilities,
     env = process.env,
   } = options;
   const forms = FORMS_BY_FORMAT[format];
@@ -203,15 +218,17 @@ export function offerForms(options) {
   requireApprovedOutput({ beatDir: identity.beatDir, planVersion, findingIds });
 
   const hasCloudflare = Boolean(resolveCloudflareCredentials(env));
+  // The probe's row, when one was handed in. Absent means "nobody measured", which is not the same
+  // fact as "measured and refused" and must not be reported as one.
+  const hostedEmbed = capabilities?.hostedEmbed;
+  const hostedEmbedGap = !hasCloudflare
+    ? "Cloudflare hosted delivery is not configured; add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN, then retry this form."
+    : hostedEmbed && hostedEmbed.available === false
+      ? `Cloudflare hosted delivery is configured, and the check Splash ran against it was refused: ${hostedEmbed.reason}. The credentials are present, so this is the account or the token's permissions rather than a missing setting.`
+      : null;
   return Object.keys(forms).map((id) =>
-    id === "embed" && !hasCloudflare
-      ? {
-          id,
-          ...forms[id],
-          available: false,
-          reason:
-            "Cloudflare hosted delivery is not configured; add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN, then retry this form.",
-        }
+    id === "embed" && hostedEmbedGap
+      ? { id, ...forms[id], available: false, reason: hostedEmbedGap }
       : { id, ...forms[id], available: true },
   );
 }

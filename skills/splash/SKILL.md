@@ -209,6 +209,12 @@ unavailable while `offerForms` would have offered it — **a delivery constraint
   only described: it throws, naming every blocker, when `ready` is false, and does nothing at all
   otherwise. It never inspects `capabilities` — call it once, right after `runPreflight`, instead of
   trusting a human to read the JSON and honour it by hand.
+- **The whole `capabilities` object travels to the delivery phase, not only through
+  `capabilityGap`.** `deliver`'s `offerForms` takes it and reads `capabilities.hostedEmbed`, because
+  that form is the one whose credential can be present and still refused. It used to check only that
+  the two Cloudflare variables existed, so preflight said `{available: false, reason: "Cloudflare
+  answered 403"}` and the delivery menu offered the form anyway, in the same session — one
+  credential, two accounts of it, both documented rules held (round-four finding 10).
 - `capabilityGap(capabilities, medium)` (`scripts/preflight.mjs`) is the seam a later phase reads
   before offering a medium: `null` when the medium is open, otherwise the exact line to surface —
   phrased as an unavailable **capability** ("map beats are unavailable: …"), never as an environment
