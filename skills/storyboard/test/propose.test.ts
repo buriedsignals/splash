@@ -820,3 +820,20 @@ describe("row count is evidence, and a column type is not a story", () => {
     expect(claiming).toEqual([]);
   });
 });
+
+// ROUND FIVE. `detail` counted the claims the check could not place and never said WHY it could
+// not place them, so every refusal reached the journalist as one number. The reasons carry the
+// column names, the ranges and the profiler's own refusals now, which is the half of the answer
+// that tells a journalist what to do next.
+describe("resolveGrounding — an unplaced claim says why, not just that it was unplaced", () => {
+  it("should name the reason a claim could not be placed, not only how many were not", () => {
+    const resolved = resolveGrounding("Le glacier a perdu 120 km2 de surface", {
+      columns: [{ name: "surface", type: "number", min: 40, max: 90, sum: 500 }],
+    });
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(resolved.detail).toContain("nothing was confirmed and nothing was refuted");
+    // The column it was put to, and the range it missed — not just "1 could not be placed".
+    expect(resolved.detail).toContain("surface");
+    expect(resolved.detail).toContain("[40, 90]");
+  });
+});

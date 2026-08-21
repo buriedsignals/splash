@@ -107,14 +107,19 @@ export function resolveGrounding(takeaway, profile, options = {}) {
         ? "supported"
         : "unverifiable";
 
+  // WHY a claim could not be placed, and not only HOW MANY could not. Round five: every refusal
+  // in `ground-claim.mjs` now carries the column names, the ranges and the profiler's own reasons
+  // — the half of the answer that tells a journalist what to do next — and this string reduced
+  // all of it to a count. A number is not a reason.
+  const unplaceableReasons = unplaceable.map((c) => `${c.claim}: ${c.detail}`).join("; ");
   const detail =
     contradicted.length > 0
       ? `the data refutes ${contradicted.length} of ${claims.length} claim(s): ${contradicted.map((c) => `${c.claim} — ${c.detail}`).join("; ")}`
       : supported.length > 0
-        ? `${supported.length} of ${claims.length} claim(s) confirmed against the frozen data (${supported.map((c) => `${c.claim}: ${c.detail}`).join("; ")})${unplaceable.length > 0 ? `; ${unplaceable.length} could not be placed either way` : ""}`
+        ? `${supported.length} of ${claims.length} claim(s) confirmed against the frozen data (${supported.map((c) => `${c.claim}: ${c.detail}`).join("; ")})${unplaceable.length > 0 ? `; ${unplaceable.length} could not be placed either way (${unplaceableReasons})` : ""}`
         : claims.length === 0
           ? "no mechanically checkable claim in this takeaway — nothing was confirmed and nothing was refuted"
-          : `none of ${claims.length} claim(s) came back confirmed or refuted — nothing was confirmed and nothing was refuted`;
+          : `none of ${claims.length} claim(s) came back confirmed or refuted — nothing was confirmed and nothing was refuted (${unplaceableReasons})`;
 
   const placedNote =
     consistent.length > 0
