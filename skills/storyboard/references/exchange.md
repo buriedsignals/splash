@@ -288,6 +288,14 @@ against the story as it then stands, and offered: *"Ou même le relancer sur des
 article qui seraient intéressants à transformer en visuel"* (the owner, 2026-08-10). Nothing here is
 invented for the record — an article that yielded one angle records one.
 
+**And the call is no longer optional in practice, because the delivery refuses without it.** This
+movement used to say `recordSurveyedSubjects` is called before it ends, and nothing checked: the
+reader at the end of the run read a MISSING `SUBJECTS.md` as an empty survey and told the journalist
+their article's other angles had been looked at when none ever had. `readSurveyedSubjects` now
+throws, naming this movement and this call. An article that genuinely yielded nothing else is
+recorded as the empty survey — `subjects: []` — because "there was nothing else" is an answer, and
+an answer is written down.
+
 Then `BRIEF.md`, before any code: evidence hierarchy, reveal order, single accent, source, the
 anti-patterns of this case. Derived from the nine previous movements, so never conjured from nowhere.
 

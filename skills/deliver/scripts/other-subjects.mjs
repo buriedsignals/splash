@@ -163,10 +163,36 @@ export async function recordSurveyedSubjects({ storyDir, subjects }) {
   return rows;
 }
 
-/** The recorded angles, or `[]` when the proposal recorded none. A reader, not a parser library. */
+/**
+ * The recorded angles. A reader, not a parser library.
+ *
+ * A MISSING FILE IS NOT AN ANSWER. This used to return `[]` for it, which made "this article
+ * yielded nothing else" and "nobody ever surveyed this article" the same value — and the closing
+ * offer says a sentence over that value: *your article had other angles in it, and none of them is
+ * waiting*. Measured 2026-08-21: twenty of this tree's twenty-one stories hold no `SUBJECTS.md` at
+ * all, four of them delivered, and `stress-p` went through three renders, three approvals and three
+ * deliveries before the file was written at the very end from memory of a survey that had already
+ * happened (`stories/stress-p-transport-ridership/NOTES-FOR-MAINTAINER.md`) — the
+ * lives-in-a-conversation-and-dies-with-it failure this file exists to prevent, happening around
+ * the file itself.
+ *
+ * So the two cases are now different values, and the empty one is still first-class: an article
+ * that yielded nothing else RECORDS the empty survey, which is one call, at the movement where the
+ * material is still in front of everybody.
+ */
 export async function readSurveyedSubjects(storyDir) {
   const text = await readFile(join(storyDir, SUBJECTS_FILE), "utf8").catch(() => null);
-  if (text === null) return [];
+  if (text === null) {
+    throw new Error(
+      `no ${SUBJECTS_FILE} in ${storyDir}: the survey this offer reads back was never written ` +
+        `down. It belongs to movement 10 of the storyboard exchange, where the angles still exist ` +
+        `— call recordSurveyedSubjects({ storyDir, subjects }) there with every angle the survey ` +
+        `found, kept or dropped. An article that yielded nothing else records the empty survey ` +
+        `(subjects: []); "there was nothing else" is an answer and is written down like any other. ` +
+        `Reading a missing file as an empty survey is how a delivery closed telling a journalist ` +
+        `their article's other angles had been checked when nothing had been.`,
+    );
+  }
   const subjects = [];
   let current = null;
   for (const line of text.split(/\r?\n/)) {

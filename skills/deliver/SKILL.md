@@ -289,6 +289,14 @@ remain untouched on disk.
    into **`stories/<slug>/SUBJECTS.md`** — the STORY's directory, not a beat's, because a sub-subject
    belongs to the article and has no beat of its own until somebody asks for one.
 
+   **A missing `SUBJECTS.md` REFUSES here rather than reading as an empty article.** Until round
+   four the reader returned `[]` for a story nobody had ever surveyed, so the offer said *your
+   article had other angles in it, and none of them is waiting* over a survey that had never
+   happened — measured on twenty of this tree's twenty-one stories, four of them delivered. The
+   honest empty case is unchanged and is now WRITTEN: an article that yielded nothing else records
+   `recordSurveyedSubjects({storyDir, subjects: []})`, one call, at the movement where the material
+   is still in front of everybody.
+
    **Re-checked, never trusted.** A stored `reachable: yes` is a verdict about an hour ago.
    `otherSubjectsFor` runs the same checks the format offer runs — the medium's capability now, the
    producible pair now — and marks an angle whose beat now exists as `drawn`. Only `offered` rows
@@ -475,7 +483,8 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
   can be walked to a delivered export (a duplicate of the storyboard's catalogue, cross-checked by a
   test, never imported).
 - `scripts/other-subjects.mjs` — `recordSurveyedSubjects` (the writer, called at the proposal),
-  `readSurveyedSubjects`, `otherSubjectsFor` (the reader, which re-checks), `formatSubjectOffer`,
+  `readSurveyedSubjects` (which REFUSES a story that was never surveyed, rather than reading its
+  silence as an empty article), `otherSubjectsFor` (the reader, which re-checks), `formatSubjectOffer`,
   `recordSubjectAnswer`, and `SUBJECT_OFFER_RECEIPT`, the second dotfile a closed delivery carries.
 - `scripts/deploy-embed.mjs` — `cloudflareProjectName`, `deployFile`,
   `resolveCloudflareCredentials`, `contentTypeFor`, the bounded Cloudflare Pages call sequence,

@@ -213,7 +213,26 @@ describe("the survey's output is kept, in the story's own directory", () => {
     ).rejects.toThrow(/share the id/);
   });
 
+  // A MISSING FILE IS NOT AN ANSWER, and until round four it read as one. `readSurveyedSubjects`
+  // returned `[]` both for a story whose article genuinely yielded nothing else and for a story
+  // nobody ever surveyed, so the closing offer said the same sentence over both — "your article had
+  // other angles in it, and none of them is waiting" — about angles no survey had ever looked for.
+  // Measured 2026-08-21: twenty of this tree's twenty-one stories hold no SUBJECTS.md at all, four
+  // of them delivered, and the only one that does had it hand-written at the delivery from memory
+  // of a survey that had already happened (stories/stress-p-transport-ridership/NOTES-FOR-MAINTAINER.md).
+  it("should refuse to read a survey that was never recorded", async () => {
+    await expect(readSurveyedSubjects(storyDir)).rejects.toThrow(
+      /SUBJECTS\.md/,
+    );
+    await expect(otherSubjectsFor({ storyDir })).rejects.toThrow(
+      /recordSurveyedSubjects/,
+    );
+  });
+
+  // And the honest empty case stays a first-class outcome — it is now WRITTEN rather than skipped,
+  // which is the whole difference between "this article yielded nothing else" and silence.
   it("should report no angles at all when the proposal recorded none", async () => {
+    await recordSurveyedSubjects({ storyDir, subjects: [] });
     expect(await readSurveyedSubjects(storyDir)).toEqual([]);
     expect(await otherSubjectsFor({ storyDir })).toEqual([]);
   });
