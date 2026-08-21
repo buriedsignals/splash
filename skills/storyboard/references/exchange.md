@@ -47,8 +47,14 @@ not confirmed (`233` sits inside `incidents [96, 412]`, and so does the `100` of
 takeaway one of whose sentences produced no claim at all is one this check did not read the whole
 of, so it withholds `supported` and names the sentence it never saw.
 
+A numeral is placed against the column its own SENTENCE names, never against whichever column
+happens to contain it, so a takeaway naming two measures gets a refusal naming both rather than a
+placement nobody chose; and a bare calendar year is read as a period, not as a measurement. Where
+the sentence states a scale word ("1.12 million") the numeral is read both ways — as written and
+multiplied — because the column's own unit may already carry the scale.
+
 Whichever verdict lands, say what the check could and could not see — `resolved.detail` carries
-both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as
+both halves, including WHY each unplaced claim could not be placed. An `unverifiable` claim is information, not a refusal, and it must not be presented as
 one.
 
 ## ③ The journalist's hand — five questions, each with a destination
