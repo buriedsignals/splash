@@ -77,7 +77,7 @@ export function newsroomFaces(newsroom) {
  * unmeasured proposal recommends a face the render will refuse — or, worse, one it will silently
  * substitute in a path that never calls `useTypeface`.
  */
-export function proposeTypeface({ newsroom, resolves } = {}) {
+export function proposeTypeface({ newsroom, resolves, sample } = {}) {
   if (typeof resolves !== "function") {
     throw new Error(
       "proposeTypeface has to measure whether a family resolves on THIS machine and cannot do it " +
@@ -101,6 +101,9 @@ export function proposeTypeface({ newsroom, resolves } = {}) {
         ? "The graphic reads as this newsroom's, set in the face its own pages are set in. It is what the charter measured off their site; using it is what collecting it was for."
         : "Also this newsroom's own, recorded after the primary. A house rarely has one face, and the second is usually the one its charts already use.",
     resolves: Boolean(resolves(family)),
+    // MEASURED AGAINST THE STORY'S OWN STRINGS (round five, finding X2). `null` when no sample was
+    // given — which is a different fact from `false` and has to read as one.
+    drawsTheSample: sample ? Boolean(resolves(family, sample)) : null,
     caution: cautionFor(family),
   }));
 
@@ -113,6 +116,7 @@ export function proposeTypeface({ newsroom, resolves } = {}) {
     reasoning:
       "Nobody chose this face. Recording that as a value rather than leaving it as a literal in the renderer is the whole point: the beat then says out loud that its type was not decided, instead of looking as though it had been.",
     resolves: true,
+    drawsTheSample: null,
     caution: null,
   });
 
@@ -148,6 +152,18 @@ export function proposeTypeface({ newsroom, resolves } = {}) {
     options,
     recommended,
     recommendationReason,
+    // WHAT THIS PROPOSAL IS WORTH ON A STORY THAT IS NOT IN LATIN — round five, finding X2, and the
+    // same policy `palette.mjs`'s subject conventions now follow: a measurement that could not be
+    // made is NAMED, never implied. Two different limits, and each has to be readable on its own:
+    //   · no sample at all — every `resolves` here is about a Latin probe string, and a journalist
+    //     reading it about an Arabic or Greek story is reading an answer to another question;
+    //   · a sample given — the answer is "does this family supply its own ink for this text", and
+    //     the substrate provides no way to ask the question a reader actually cares about, which is
+    //     whether the glyphs come out as glyphs. Both halves measured on this machine 2026-08-21.
+    sampleLimit: sample
+      ? "Measured against this story's own strings. What a `true` here means is that the family supplies its OWN ink for them — it is NOT a promise that every glyph is a glyph. resvg uses a family it finds for the whole run and draws the characters that family lacks as EMPTY BOXES, and no bounding box or per-character probe can tell that apart: `Geeza Pro` resolves for this tree's Arabic story and draws its ASCII colon and its `2025` as boxes. Look at the render in the story's own strings before recording a face."
+      : "Measured with no sample of the story's own text — every answer above is about a Latin probe string, and says nothing about a story written in another script. Pass `sample` (the strings this beat will actually draw) to have the question asked about them."
+    ,
     escape:
       "Something else — name the face and I will measure it here before anything is recorded.",
     install:
@@ -157,9 +173,13 @@ export function proposeTypeface({ newsroom, resolves } = {}) {
 
 function measuredLine(option) {
   if (option.origin === "default") return "  - Measured: nothing to measure — this is the fallback itself.";
-  return option.resolves
+  const base = option.resolves
     ? "  - Measured: **this machine has it**. A probe string laid out in this family and in a family that exists nowhere produced different ink."
     : "  - Measured: **this machine does not have it**. The same probe produced identical ink in this family and in a nonsense one, which is what a silent fallback looks like from the outside.";
+  if (option.drawsTheSample === null) return base;
+  return option.drawsTheSample
+    ? `${base} In **this story's own strings** it also draws its own ink, rather than falling through to the substrate's fallback.`
+    : `${base} In **this story's own strings** it draws nothing of its own — the render would fall through to whatever this machine's fallback chain has for that script, which may be right and is not this face.`;
 }
 
 function optionBlock(option, index, recommended) {
@@ -182,13 +202,16 @@ function optionBlock(option, index, recommended) {
  * both in the same session.
  */
 export function formatTypefaceProposal(proposal) {
-  const { options, recommended, recommendationReason, escape, install } = proposal;
+  const { options, recommended, recommendationReason, escape, install, sampleLimit } = proposal;
   const head = [
     "# The typeface this story is set in",
     "",
     "PROPOSED, not applied. Nothing is rendered in this face until you answer.",
     "",
     recommendationReason,
+    // A limit the journalist can act on belongs in the document the journalist reads, not in a field
+    // only a caller sees. Round five, finding X2.
+    ...(sampleLimit ? ["", `**What was measured, and what could not be.** ${sampleLimit}`] : []),
   ];
   const body = options.map((option, index) => optionBlock(option, index + 1, recommended));
   const tail = [

@@ -256,9 +256,12 @@ option with no explanation, which is what the run did.
 Lands in `PALETTE.md`.
 
 **And the same question for the TYPE, in the same movement.** `palette`'s `proposeTypeface({
-newsroom, resolves })` offers every face `NEWSROOM.md` records, in the newsroom's own order, plus
-the substrate's own stack as an explicit option — each one MEASURED on the machine that will
-render, because resvg draws the fallback for a face it does not have and reports nothing.
+newsroom, resolves, sample })` offers every face `NEWSROOM.md` records, in the newsroom's own order,
+plus the substrate's own stack as an explicit option — each one MEASURED on the machine that will
+render, because resvg draws the fallback for a face it does not have and reports nothing. **Pass
+`sample`**: the strings this story will actually draw, category labels and all. Without it every
+answer is about a Latin probe, which on a Greek or Arabic story is an answer to another question —
+and the proposal's own `sampleLimit` says which of the two you are reading.
 `writeTypeface` records the answer. Lands in `TYPEFACE.md`, beside `PALETTE.md`.
 
 It is asked here, at the movement where the newsroom's own charter is already open, and not left to

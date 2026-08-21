@@ -478,7 +478,7 @@ export function requestedFamily(stack) {
 }
 
 /**
- * DOES THIS MACHINE ACTUALLY HAVE THE FACE? Measured, not assumed
+ * DOES THIS MACHINE ACTUALLY HAVE THE FACE, FOR THE TEXT THIS STORY WILL DRAW? Measured, not assumed
  * (`survey/typeface-feasibility.md` §1): resvg NEVER errors on a family it cannot find. It renders
  * happily in whatever it does have and there is no return value that says so. Chrome falls back
  * silently, and Canvas `measureText` falls back silently. No substrate will ever tell us.
@@ -487,17 +487,40 @@ export function requestedFamily(stack) {
  * family and in a family that certainly exists nowhere, and compare the ink. Identical ink means
  * the requested family resolved to the same fallback the nonsense one did — it did not resolve.
  *
- * Its blind spot, stated: a face whose metrics are IDENTICAL to the fallback's at every character
- * of the probe string would read as unresolved. The string below is long and mixed precisely to
+ * ROUND FIVE, FINDING X2 — THE PROBE STRING IS AN ARGUMENT NOW. `RESOLUTION_PROBE` is Latin, and
+ * until this round it was the only string this function ever laid out. So the one measurement the
+ * typeface gate makes said nothing whatever about a story written in another script: on
+ * `stress-x-tunisian-water`, `familyResolves("Geeza Pro")` is true — correctly, for Latin — and
+ * rendered with that story's own strings Geeza Pro draws the ASCII colon and `2025` as EMPTY BOXES.
+ * The check was green precisely where it mattered. Pass the text the story will actually draw and
+ * the answer is about that text: `familyResolves("Helvetica", "المحافظة: تونس 2025")` is FALSE,
+ * which is this function saying, correctly, that Helvetica carries no Arabic of its own and the
+ * render will fall through to whatever the substrate has.
+ *
+ * WHAT THIS STILL CANNOT SEE, stated rather than left to be discovered a second time. Measured on
+ * this machine 2026-08-21: a family resvg DOES find is used for the whole run, and the characters it
+ * lacks come out as notdef boxes — while the same characters laid out ALONE fall back correctly. So
+ * neither a bounding box nor a per-character probe can tell a covered run from a boxed one, and this
+ * function returns TRUE for a family that will ship boxes. Two renders settle it by eye and nothing
+ * in the API does: `المحافظة: تونس 2025` draws five boxes in `Geeza Pro` and none in `Helvetica`.
+ * A recorded face has to be LOOKED at, in the story's own strings, before it is written down —
+ * `stress-x-tunisian-water/TYPEFACE.md` is what that looks like when it is done properly.
+ *
+ * Its older blind spot, unchanged: a face whose metrics are IDENTICAL to the fallback's at every
+ * character of the probe would read as unresolved. The default probe is long and mixed precisely to
  * make that improbable, and the failure direction is the safe one — a false refusal is loud, a
  * false acceptance is a PNG in a face nobody chose.
  */
 const RESOLUTION_PROBE = "Handgloves 0123456789 — MWmw il1 %";
-export function familyResolves(family) {
+export function familyResolves(family, sample = RESOLUTION_PROBE) {
+  const text = String(sample ?? RESOLUTION_PROBE)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
   const ink = (name) => {
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
-      `<text x="0" y="300" font-family="${name}" font-size="120">${RESOLUTION_PROBE}</text></svg>`;
+      `<text x="0" y="300" font-family="${name}" font-size="120">${text}</text></svg>`;
     const box = new Resvg(svg, { font: { loadSystemFonts: true } }).getBBox();
     return box ? `${box.x}|${box.y}|${box.width}|${box.height}` : "none";
   };

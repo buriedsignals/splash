@@ -103,19 +103,32 @@ from the beat's own directory, refused rather than defaulted, with `origin` nami
 `references/typeface.md` carries the full rule (`typeface-is-recorded`) and the measurements behind
 it. In brief:
 
-1. **`proposeTypeface({newsroom, resolves})`** offers every face `NEWSROOM.md` records, in the
-   newsroom's own order, plus the substrate stack as an explicit option — never as a silent floor.
+1. **`proposeTypeface({newsroom, resolves, sample})`** offers every face `NEWSROOM.md` records, in
+   the newsroom's own order, plus the substrate stack as an explicit option — never as a silent
+   floor. `sample` is the text the story will actually draw.
 2. **It cannot be run unmeasured.** `resolves` is required, and it is `familyResolves` from any
    `render-still.mjs`: resvg never errors on a family it lacks, it draws the fallback and reports
    nothing, so an unmeasured proposal would recommend a face the render then refuses. A proposal
    without the probe THROWS rather than guessing.
-3. **`recommended` names a face this machine has, and one that belongs in a chart.** A face that
+3. **The probe is the STORY'S OWN STRINGS, not a Latin one.** Round five, finding X2:
+   `RESOLUTION_PROBE` is `"Handgloves 0123456789 — MWmw il1 %"`, and it was the only string
+   `familyResolves` ever laid out — so the gate said nothing about a story in another script. On
+   `stress-x-tunisian-water`, `familyResolves("Geeza Pro")` is true, correctly, for Latin, and that
+   face draws that story's own ASCII colon and `2025` as **empty boxes**. `familyResolves(family,
+   sample)` now takes the probe as an argument, and `proposeTypeface` measures every option against
+   the sample and reports `drawsTheSample`. **What it still cannot see is stated, in
+   `proposal.sampleLimit` and in the document the journalist reads**: resvg uses a family it finds
+   for the whole run and draws the characters that family lacks as boxes, and no bounding box or
+   per-character probe can tell that apart — so a face has to be LOOKED at in the story's own
+   strings before it is recorded. A proposal made with NO sample says that too, rather than letting
+   a Latin answer read as an answer about the story.
+4. **`recommended` names a face this machine has, and one that belongs in a chart.** A face that
    does not resolve is never recommended. Nor is one that resolves but is a monospaced or display
    face: `stress-p` reached that judgement by hand ("a monospaced typewriter face is not a chart
    face and choosing it only because it resolves would be a worse answer than a stated fallback"),
    and it is now made the same way, with the reason printed. A caution never removes an option — a
    journalist who wants Courier can have it.
-4. **`writeTypeface({dir, option, ...})` WRITES the answer** — the one thing the colour half
+5. **`writeTypeface({dir, option, ...})` WRITES the answer** — the one thing the colour half
    deliberately does not do, and for a reason that does not apply here. A colour answer is two hex
    codes a person can type; a typeface answer carries a measurement no person can make by eye, so
    the answer and its measurement are written together or the file is worth nothing. It refuses an
@@ -133,7 +146,7 @@ always available as `origin: default` — so this never becomes a refusal nobody
 import { familyResolves } from "#shared/chart-beat/render-still.mjs";
 import { proposeTypeface, formatTypefaceProposal, writeTypeface } from "<splash>/skills/palette/scripts/typeface.mjs";
 
-const proposal = proposeTypeface({ newsroom, resolves: familyResolves });
+const proposal = proposeTypeface({ newsroom, resolves: familyResolves, sample: everyStringThisBeatDraws });
 console.log(formatTypefaceProposal(proposal));            // the question, when someone is there
 await writeTypeface({                                     // the answer, wherever it came from
   dir: storyDir,
@@ -194,7 +207,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
 | Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
-| Typeface proposal | `scripts/typeface.mjs` | `proposeTypeface({newsroom, resolves})` — every recorded face, in the newsroom's order, each measured on THIS machine, plus the substrate stack as an option; throws rather than propose unmeasured |
+| Typeface proposal | `scripts/typeface.mjs` | `proposeTypeface({newsroom, resolves, sample})` — every recorded face, in the newsroom's order, each measured on THIS machine against the story's OWN strings, plus the substrate stack as an option; throws rather than propose unmeasured, and names in `sampleLimit` the question the rasteriser gives no way to ask |
 | Typeface question | `scripts/typeface.mjs` | `formatTypefaceProposal(proposal)` — the question the journalist reads, with the escape and the install branch |
 | Typeface writer | `scripts/typeface.mjs` | `writeTypeface({dir, option, ...})`, `renderTypefaceRecord(option, ...)` — the answer on disk, refusing a face this machine cannot draw and refusing to overwrite one already recorded |
 | Series inks | `chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out |
