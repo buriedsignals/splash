@@ -14,6 +14,7 @@ import {
   runPreflight,
   assertPreflightReady,
   capabilityGap,
+  surfaceGap,
 } from "../scripts/preflight.mjs";
 
 const okFetch = async () => new Response("{}", { status: 200 });
@@ -594,5 +595,88 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(check?.status).toBe("fail");
     expect(check?.detail).toContain("@resvg/resvg-js");
     expect(report.ready).toBe(false);
+  });
+});
+
+// ROUND-FIVE FINDING Y2 — THE QUESTION MOVED TO WHERE IT CAN STILL BE ANSWERED.
+//
+// The run that earned this created chart `yNwL8`, uploaded 186 rows, PUBLISHED it, exported the
+// PNG, and only then refused it: "the delegated export came back on the opposite side from the
+// ground this story declared: ground #16191B (luminance 0.009), export luminance 0.991". This
+// phase had said `datawrapper {available: true}` and nothing about a surface; the producer gate
+// said nothing about a surface; and `proposePalette` for that newsroom offers ONLY dark-ground
+// options, so no palette the journalist could record would have been honoured. A live chart now
+// exists on an account for a delivery nobody was ever told could not be made.
+//
+// Phase 0 already reads `NEWSROOM.md`, and `ground` is in it. So the question is answerable HERE,
+// before a story exists, let alone a chart. The delegate's two surfaces were MEASURED live on chart
+// `cc6eK` — a plain export comes back at mean luminance 0.991, the same export with `dark=true` at
+// 0.018 — and the published EMBED follows the reader's own colour scheme, defaulting to light
+// (`<meta name="color-scheme" content="light dark">` on the published page), which is the one form
+// that cannot be asked for a side at all.
+const darkGround = `---
+name: Buried Signals
+url: https://buriedsignals.com
+language: en
+brandColor: "#D4A853"
+ground: "#16191B"
+typefaces: "Space Grotesk"
+---
+`;
+
+describe("runPreflight — the surface a delegated render comes back on", () => {
+  it("says a light-ground newsroom is served by both Datawrapper forms", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_TOKEN: "t" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.datawrapper.surface.ground).toBe("#FFFFFF");
+    expect(report.capabilities.datawrapper.surface.static).toBe(true);
+    expect(report.capabilities.datawrapper.surface.web).toBe(true);
+    expect(surfaceGap(report.capabilities)).toBe(null);
+  });
+
+  it("says a dark-ground newsroom can have the static form and not the embed", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), darkGround);
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_TOKEN: "t" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.datawrapper.surface.ground).toBe("#16191B");
+    expect(report.capabilities.datawrapper.surface.static).toBe(true);
+    expect(report.capabilities.datawrapper.surface.web).toBe(false);
+    expect(surfaceGap(report.capabilities)).toContain("#16191B");
+    expect(surfaceGap(report.capabilities)).toMatch(/embed/i);
+  });
+
+  // A closed capability narrows what a later phase may offer; it is never a verdict. The surface
+  // question is the same kind of answer, and must not become a blocker either.
+  it("never lets the surface answer block the session", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), darkGround);
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_TOKEN: "t" },
+      fetchFn: okFetch,
+    });
+    expect(report.ready).toBe(true);
+    expect(report.capabilities.datawrapper.available).toBe(true);
+  });
+
+  it("says nothing about a surface when the newsroom declined a house profile", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), declined);
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_TOKEN: "t" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.datawrapper.surface).toBe(null);
+    expect(surfaceGap(report.capabilities)).toBe(null);
   });
 });

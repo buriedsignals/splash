@@ -113,9 +113,15 @@ export async function publishChart(id, token, fetchFn = fetch, options = {}) {
   return readBody(call, "json");
 }
 
-export async function exportChartPng(id, token, fetchFn = fetch, { width = 900, height, zoom = 2, plain = false, timeoutMs: requestedTimeout } = {}) {
+// `dark` is the one lever this API gives a caller over the SURFACE the render comes back on, and
+// nothing here used it until round-five finding Y2. Measured live on chart `cc6eK`: the same export
+// call comes back on a #ffffff plate (mean luminance 0.991) by default and on #252525 (0.018) with
+// `dark=true`. Only sent when asked for, so every existing caller's request is byte-for-byte what
+// it was.
+export async function exportChartPng(id, token, fetchFn = fetch, { width = 900, height, zoom = 2, plain = false, dark = false, timeoutMs: requestedTimeout } = {}) {
   const params = new URLSearchParams({ unit: "px", width: String(width), zoom: String(zoom), plain: String(plain) });
   if (height) params.set("height", String(height));
+  if (dark) params.set("dark", "true");
   const call = await request(`${API_BASE}/charts/${chartIdForPath(id)}/export/png?${params.toString()}`, {
     method: "GET",
     headers: authHeaders(token),

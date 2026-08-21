@@ -12,7 +12,7 @@ import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./meta
 import { toCsv } from "./csv.mjs";
 import { chartIdForPath, createChart, setChartData, patchChart, publishChart, exportChartPng } from "./dw-client.mjs";
 import { sizeFor } from "./sizes.mjs";
-import { assertExportedSurface, pageLanguageMatchesStory } from "./verify-owned.mjs";
+import { assertExportedSurface, planExportSurface, pageLanguageMatchesStory } from "./verify-owned.mjs";
 import { accentPaintsTheMarks } from "./detect-accent-reaches-the-marks.mjs";
 
 export function datawrapperFormatFor(format) {
@@ -384,6 +384,13 @@ async function produceUnlocked(
     );
   }
   const provider = { format: datawrapperFormatFor(spec.format) };
+  // FINDING Y2 (round-five stress): the surface question, moved to where it can still be answered.
+  // The run that earned this created a chart, uploaded 186 rows, PUBLISHED it, exported the PNG,
+  // and only then refused it for landing on the opposite side from the story's own ground. Nothing
+  // earlier had asked. `planExportSurface` asks here — before `createChart`, before a row is
+  // uploaded, before anything exists on the account — and either names the surface the export must
+  // be requested on or throws while there is still nothing to undo.
+  const surface = beatDir ? planExportSurface(beatDir, spec.format) : null;
   const rendersDir = beatDir ? join(beatDir, "renders") : outDir;
   if (beatDir) {
     await ensureRealDirectory(beatDir, "Datawrapper beat directory");
@@ -465,6 +472,10 @@ async function produceUnlocked(
       // not an owned PNG — but a published chart can be exported as a PNG through the same
       // `exportChartPng` call the static branch already makes, and that export is the surface this
       // branch measures. It is never written to disk; only the iframe page below is delivered.
+      // No `dark` here on purpose: this branch delivers a published EMBED, which follows the
+      // reader's own colour scheme and defaults to light, so the probe has to measure the surface
+      // a reader actually receives rather than one this producer could have asked a PNG for.
+      // `planExportSurface` has already refused a dark-ground story on this branch, above.
       const surfaceProbe = await exportChartPng(chart.id, token, fetchFn, { width: 400, zoom: 1 });
       assertExportedSurface(surfaceProbe, beatDir);
 
@@ -519,6 +530,10 @@ async function produceUnlocked(
     width: row.width,
     height: row.height,
     zoom: 1,
+    // The surface this beat's own story declared, asked for rather than accepted. `false` when the
+    // story declared a light ground, or none, or one on neither side — which is exactly what every
+    // call sent before finding Y2, so nothing that worked changes shape.
+    dark: surface?.dark ?? false,
   });
   assertExportedSize(png, size, row);
   // The second thing that can only be read off the bytes that came back. `assertExportedSize` catches

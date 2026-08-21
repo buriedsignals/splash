@@ -156,14 +156,35 @@ re-derives it, which is what lets it catch a future `iframePage` that stops hono
 `spec.language` — the exact shape of the historical bug that hard-coded `lang="fr"` regardless of
 what a beat actually said.
 
-**Why it can only refuse, and what would let it do better.** `ChartSpec` REQUIRES an accent
-(`color`) and has no field for a ground: Datawrapper paints on whatever surface its own theme
-chooses, and this producer never asks. Widening it means sending a background or a Datawrapper theme
-and then CONFIRMING, against the live API, that the field is honoured where it was asked for —
-`scripts/verify-range-annotation.mjs` exists because a key in a schema is not the same claim as a
-rule actually rendering. That needs a real token, so it is a measured follow-up and not a guess.
-Until then a dark-ground story gets a loud refusal naming both luminances, which is the correct
-half of the fix and never the wrong picture.
+**The surface is now ASKED FOR, and asked before anything exists** (FINDING Y2, round-five stress:
+the run that earned this created the chart, uploaded 186 rows, PUBLISHED it, exported the PNG, and
+only then refused it — the refusal was right and its placement was the defect; `runPreflight` said
+`datawrapper {available: true}`, the producer gate never mentioned a surface, and `palette` offers
+that newsroom only dark grounds, so no answer the journalist could record would have been honoured).
+
+`planExportSurface` runs on the beat's own declared ground BEFORE `createChart` — before a row is
+uploaded, before anything exists on the account — and does one of three things:
+
+- names the surface the export must be requested on, and the static branch asks for it;
+- returns `null` when no ground was declared, or when the ground sits in the mid-grey band
+  `plateFollowsGround` has no opinion about — the two must agree, or a plan this made and a check
+  that then refused it would be worse than no plan;
+- throws for the one case that cannot be asked at all — a dark-ground story on `format: "web"` —
+  with nothing yet created to undo.
+
+MEASURED against the live API, not assumed, on chart `cc6eK`: `GET /export/png` comes back on a
+`#ffffff` plate (mean luminance 0.991) and the same call with `dark=true` on `#252525` (0.018). The
+published EMBED is the one artefact no request steers — it follows the READER's own colour scheme
+and defaults to light (`<meta name="color-scheme" content="light dark">` on that same published
+page, unchanged by a `?dark=true` query), which is why the web branch's probe still asks for no
+surface and measures what a reader actually receives. Proved end to end on chart `NJPlK`: a story
+declaring `ground: "#16191B"` was delivered a PNG at mean luminance 0.022, and
+`assertExportedSurface` passed rather than refused.
+
+`splash`'s own `runPreflight` now carries the same answer one phase earlier — its `datawrapper`
+capability row has a `surface` field derived from `NEWSROOM.md`'s ground by the same two decisions,
+copied byte for byte — so a newsroom hears which Datawrapper forms its ground can carry in phase 0
+rather than after publication. `surfaceGap(capabilities)` is the seam that says it in words.
 
 The rest of the catalogue is not weak here, it is unreachable — no marks of ours to carry a dash, no
 reveal to arrive anywhere, nothing baked. Each of those cells carries its reason in

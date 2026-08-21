@@ -156,6 +156,144 @@ async function checkNewsroom(newsroomPath) {
     : { id: "newsroom-profile", status: "fail", detail: errors.join("; "), profile };
 }
 
+// ROUND-FIVE FINDING Y2 — THE SURFACE QUESTION, ASKED IN THE ONE PHASE THAT CAN STILL ANSWER IT.
+//
+// A story run against a dark-ground newsroom created a Datawrapper chart, uploaded 186 rows,
+// PUBLISHED it, exported the PNG, and only then refused it: "the delegated export came back on the
+// opposite side from the ground this story declared: ground #16191B (luminance 0.009), export
+// luminance 0.991". The refusal is right and its PLACEMENT was the defect. This phase had reported
+// `datawrapper {available: true}` and said nothing about a surface; the producer gate offers
+// "Datawrapper or custom?" and says nothing about a surface; and `palette` proposes only
+// dark-ground options for that newsroom, so no palette the journalist could have recorded would
+// have been honoured. A live chart exists on an account for a delivery nobody was told could not be
+// made.
+//
+// This phase already reads NEWSROOM.md, and `ground` is in it — so the question is answerable here,
+// before a story exists, let alone a chart. It stays an ANSWER, never a verdict: `available` is
+// still only about the token, `ready` is untouched, and what this adds is one more thing a later
+// phase can offer honestly instead of discovering after publication.
+//
+// THE DELEGATE'S TWO SURFACES, MEASURED rather than assumed — live on chart `cc6eK`, a published
+// scatter, mean luminance of the exported plate: a plain export comes back at 0.991, the same
+// export with `dark=true` at 0.018. So a STATIC beat can be asked for whichever side follows this
+// newsroom's ground. A WEB beat delivers a published EMBED, which follows the READER's own colour
+// scheme and defaults to light (`<meta name="color-scheme" content="light dark">` on that same
+// published page, unchanged by a `?dark=true` query) — that is the one form no request can steer.
+//
+// The two decisions below are `dw-beat`'s, `scrolly`'s, `map-beat`'s and `map-web`'s, byte for
+// byte, held to the same text by `splash/test/guard-copies-parity.test.ts`. That identity is the
+// whole value of asking here: this phase and the producer that later refuses must not be able to
+// disagree about which side a ground is on, or moving the question earlier would only move where
+// the surprise lands.
+const DELEGATE_LIGHT_SURFACE = 0.991;
+const DELEGATE_DARK_SURFACE = 0.018;
+
+/** The relative luminance of a CSS colour, or `null` when the string is not a painted colour.
+ *
+ *  THE `null` IS THE POINT. This guard failed three correct beats by reading
+ *  `getComputedStyle(".scrolly").backgroundColor` — which is `rgba(0, 0, 0, 0)` on an element that
+ *  sets no background — and taking its zeros for black. A transparent surface has not been measured;
+ *  it has been missed. Returning a number there is how a broken instrument reports confidently.
+ *
+ *  Translucent is NOT transparent: `rgba(255,255,255,0.5)` is paint, and its own colour is the best
+ *  reading available without compositing the whole stack. */
+export function surfaceLuminance(css) {
+  if (typeof css !== "string") return null;
+  const value = css.trim();
+  if (!value || value === "transparent" || value === "none") return null;
+  let channels = null;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1]
+            .split("")
+            .map((d) => d + d)
+            .join("")
+        : hex[1];
+    channels = [0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16));
+  } else if (/^rgba?\(/i.test(value)) {
+    const parts = value.match(/[\d.]+/g);
+    if (!parts || parts.length < 3) return null;
+    if (parts.length >= 4 && Number(parts[3]) === 0) return null;
+    channels = parts.slice(0, 3).map(Number);
+  }
+  if (!channels || channels.some((c) => !Number.isFinite(c))) return null;
+  const channel = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return (
+    0.2126 * channel(channels[0]) +
+    0.7152 * channel(channels[1]) +
+    0.0722 * channel(channels[2])
+  );
+}
+
+/** The two sides a mid-grey band apart: below this a surface is DARK, above it LIGHT, and in
+ *  between it belongs to neither and this guard says nothing. */
+const DARK_SIDE = 0.25;
+const LIGHT_SIDE = 0.6;
+/** Whether a baked plate is on the same side as the ground its beat declared.
+ *
+ *  The delivered route beat declared `--ground: #16191B` and painted every label white on a dark
+ *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
+ *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
+ *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
+ *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
+
+export function plateFollowsGround({ ground, plate }) {
+  if (plate == null || ground == null) return true;
+  const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
+  const one = side(ground);
+  const two = side(plate);
+  if (one === "middle" || two === "middle") return true;
+  return one === two;
+}
+
+/** What a delegated Datawrapper render can and cannot be asked to come back on, for this newsroom.
+ *
+ *  `null` — never a default — when no house profile was parsed, or when it recorded no ground, or
+ *  when the ground is not a hex this decision can read. A value that was not read must not travel
+ *  as a value that was; a newsroom that declined a profile has declared nothing to honour.
+ *
+ *  Both answers are DERIVED from `plateFollowsGround`, never typed: `static` asks whether EITHER of
+ *  the delegate's two surfaces follows this ground, because that form's export can request one;
+ *  `web` asks only about the light one, because a published embed follows the reader and defaults
+ *  there. A ground in the mid-grey band the decision has no opinion about comes back true on both,
+ *  which is the same silence every other caller of that decision gets. */
+export function delegatedSurfaceFor(profile) {
+  const ground = profile && typeof profile.ground === "string" ? profile.ground.trim() : "";
+  const luminance = surfaceLuminance(ground);
+  if (luminance == null) return null;
+  return {
+    ground,
+    static:
+      plateFollowsGround({ ground: luminance, plate: DELEGATE_DARK_SURFACE }) ||
+      plateFollowsGround({ ground: luminance, plate: DELEGATE_LIGHT_SURFACE }),
+    web: plateFollowsGround({ ground: luminance, plate: DELEGATE_LIGHT_SURFACE }),
+  };
+}
+
+/** The seam a later phase reads so a Datawrapper FORM this newsroom's ground cannot carry is never
+ *  offered — the twin of `capabilityGap`, one question over.
+ *
+ *  `null` when there is nothing to say: no profile, no ground, or a ground both forms serve. When
+ *  there is, the line names the ground, which form it costs, and why — phrased as a narrowed form,
+ *  never as an environment failure, exactly as `capabilityGap` is. Whoever reads it still has every
+ *  option: a static Datawrapper beat, or a producer that owns its own ground. What they no longer
+ *  have is the version of this sentence that arrives after the chart is live. */
+export function surfaceGap(capabilities) {
+  const surface = capabilities?.datawrapper?.surface;
+  if (!surface || surface.web) return null;
+  return (
+    `the Datawrapper embed form is unavailable on this newsroom's ground (${surface.ground}): a ` +
+    `published Datawrapper embed follows the reader's own colour scheme and defaults to light, so ` +
+    `it cannot be asked for this side. A static Datawrapper beat still can — its export is ` +
+    `requested on the matching surface — and so can any producer that draws its own ground.`
+  );
+}
+
 // One row of `capabilities`: whether a key actually opens the medium it gates, probed for real
 // (never merely "is it set") — the same discipline `checkDependencies` applies to `node_modules`.
 // Absence and a rejected key both resolve to `available: false`; only `reason` tells them apart,
@@ -189,15 +327,23 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
       fetchFn,
       fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys), then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
     }),
-    datawrapper: await checkCapability({
-      id: "datawrapper",
-      opens: "Datawrapper beats",
-      canonicalEnv: "DATAWRAPPER_TOKEN",
-      env,
-      probeFn: probeDatawrapper,
-      fetchFn,
-      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
-    }),
+    // The token is one question and the SURFACE is another, and only the first one used to be
+    // asked (round-five finding Y2). `surface` is carried on the row whether the token opened or
+    // not — it describes what this NEWSROOM's ground can be delivered on, which is true regardless
+    // of whose credential is in the environment — and it never touches `available`, which stays
+    // exactly what it was: whether the key works.
+    datawrapper: {
+      ...(await checkCapability({
+        id: "datawrapper",
+        opens: "Datawrapper beats",
+        canonicalEnv: "DATAWRAPPER_TOKEN",
+        env,
+        probeFn: probeDatawrapper,
+        fetchFn,
+        fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
+      })),
+      surface: delegatedSurfaceFor(newsroom.profile),
+    },
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
     // report the capability available.

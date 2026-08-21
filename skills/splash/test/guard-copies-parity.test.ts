@@ -83,12 +83,21 @@ const COPIES: Record<string, string[]> = {
     // PNG a delegated renderer handed back. The decision cannot tell them apart, which is the whole
     // argument for copying it rather than writing a fourth one.
     "dw-beat/scripts/verify-owned.mjs",
+    // ROUND-FIVE FINDING Y2, and the fifth copy is the only one that is not a check after the fact.
+    // A run against a dark-ground newsroom created a chart, uploaded 186 rows, PUBLISHED it,
+    // exported the PNG and only then refused it for landing on the opposite side from the story's
+    // own ground. Phase 0 already reads NEWSROOM.md and `ground` is in it, so preflight can answer
+    // the question while it is still free to answer — but only if it decides "which side is this
+    // ground on" the SAME way the producer that would later refuse decides it. A preflight that
+    // said dark where the guard says middle would not have moved the surprise, only relocated it.
+    "splash/scripts/preflight.mjs",
   ],
   surfaceLuminance: [
     "scrolly/scripts/verify-scrolly.mjs",
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
     "dw-beat/scripts/verify-owned.mjs",
+    "splash/scripts/preflight.mjs",
   ],
   plateMatchesGeometry: [
     "map-beat/scripts/verify-map.mjs",

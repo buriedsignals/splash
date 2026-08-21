@@ -190,6 +190,53 @@ export function groundForBeat(dir) {
   }
 }
 
+/** WHICH OF THE DELEGATE'S TWO SURFACES THIS BEAT MUST ASK FOR — decided before anything exists.
+ *
+ *  FINDING Y2 (round-five stress). The refusal below is right; its PLACEMENT was the defect. The run
+ *  that earned this created chart `yNwL8`, uploaded 186 rows, patched the metadata, PUBLISHED it,
+ *  exported the PNG, and only then threw "the delegated export came back on the opposite side from
+ *  the ground this story declared: ground #16191B (luminance 0.009), export luminance 0.991". Every
+ *  earlier moment that could have asked the question stayed silent: `runPreflight` reported
+ *  `datawrapper {available: true}`, the producer gate offered "Datawrapper or custom?" without
+ *  mentioning a surface, and `proposePalette` for that newsroom offers ONLY dark-ground options — so
+ *  a Buried Signals story cannot record a palette this producer was able to honour, and found out
+ *  after a live chart existed on the account.
+ *
+ *  THE DELEGATE HAS TWO SURFACES AND THIS PRODUCER NEVER ASKED FOR EITHER. Measured live on chart
+ *  `cc6eK`: `GET /v3/charts/cc6eK/export/png` comes back on `#ffffff` (mean luminance 0.991), and
+ *  the same call with `dark=true` comes back on `#252525` (0.018). So a dark-ground newsroom is not
+ *  locked out of this path at all — it was only ever locked out of a request nobody made.
+ *
+ *  THE WEB BRANCH IS THE ONE THAT CANNOT BE ASKED. It delivers a PUBLISHED EMBED, not an owned PNG,
+ *  and a Datawrapper embed follows the READER's own colour scheme — measured on the published page
+ *  for `cc6eK`: `<meta name="color-scheme" content="light dark">` and a `prefers-color-scheme`
+ *  stylesheet, with the `?dark=true` query changing nothing in the delivered markup. Its default
+ *  side is light, so a light-ground story is served and a dark-ground one is refused HERE, with
+ *  nothing yet created, rather than after publication.
+ *
+ *  `null` — never a default, never a guess — for a beat outside a story, and for a ground on neither
+ *  side of the mid-grey band. `plateFollowsGround` says nothing about a middle ground either, and
+ *  the two must agree: a plan this made and a check that then refused it would be worse than no plan.
+ */
+export function planExportSurface(beatDir, format) {
+  const declared = groundForBeat(beatDir);
+  if (!declared) return null;
+  const luminance = surfaceLuminance(declared.ground);
+  const side = luminance < DARK_SIDE ? "dark" : luminance > LIGHT_SIDE ? "light" : "middle";
+  if (side === "middle") return null;
+  if (format === "web" && side === "dark") {
+    throw new Error(
+      `this story declares a dark ground (${declared.ground}, luminance ${luminance.toFixed(3)}, ` +
+        `read from ${declared.source}) and a Datawrapper embed cannot be asked for a surface: the ` +
+        `published page follows the reader's own colour scheme and defaults to light. Nothing has ` +
+        `been created on the account. A static Datawrapper beat CAN be delivered on this ground ` +
+        `(its export is asked for the dark surface), or the beat can be drawn by a producer that ` +
+        `owns its own ground.`,
+    );
+  }
+  return { dark: side === "dark", ground: declared.ground, source: declared.source };
+}
+
 /** The exported PNG's own surface, against the ground the beat's story declared. THROWS when they
  *  are on opposite sides; returns `null` when there was no ground to compare with.
  *

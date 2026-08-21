@@ -36,6 +36,7 @@ import { deflateSync } from "node:zlib";
 import {
   GUARDS,
   assertExportedSurface,
+  planExportSurface,
   credentialNamesRead,
   credentialReadsWithoutAlias,
   csvSplitByHand,
@@ -54,8 +55,12 @@ import { produce } from "../scripts/produce.mjs";
 /** The five calls `produce` makes, answered without a network — `produce.test.ts`'s own fake, kept
  *  here rather than imported, because importing a test file re-registers its suite. */
 function fakeDatawrapper({ pngBytes }: { pngBytes: Uint8Array }) {
+  // Every call, in order — so a test can assert not only what came back but that NOTHING was asked
+  // for at all, which is the whole of round-five finding Y2's fix.
+  const calls: { url: string; method: string }[] = [];
   const fetchFn = async (url: string | URL, init: RequestInit = {}) => {
     const u = String(url);
+    calls.push({ url: u, method: init.method ?? "GET" });
     if (u === "https://api.datawrapper.de/v3/charts" && init.method === "POST")
       return new Response(JSON.stringify({ id: "aBcDe" }), { status: 200 });
     if (u === "https://api.datawrapper.de/v3/charts/aBcDe/data")
@@ -76,7 +81,7 @@ function fakeDatawrapper({ pngBytes }: { pngBytes: Uint8Array }) {
       return new Response(pngBytes, { status: 200 });
     throw new Error(`fakeDatawrapper: unexpected call to ${u}`);
   };
-  return { fetchFn };
+  return { fetchFn, calls };
 }
 
 const SPEC = {
@@ -303,9 +308,16 @@ describe("the guard runs inside produce, not only inside a test", () => {
    * and that export is what this branch measures. It is never written to disk; only the iframe
    * page is delivered.
    */
-  it("refuses the web branch too, on the same exported-PNG surface the static branch measures", async () => {
+  //
+  // ROUND-FIVE FINDING Y2 MOVED THE MOMENT. That refusal fired after the chart was created,
+  // uploaded to and PUBLISHED — `DATAWRAPPER.json` recorded `state: "prepared"` because a live
+  // chart genuinely existed by then. A Datawrapper embed follows the reader's own colour scheme
+  // and cannot be asked for a surface at all (measured on the published page for `cc6eK`:
+  // `<meta name="color-scheme" content="light dark">`), so the answer never depended on anything
+  // the network was going to say. It is given before the first call now, and NOTHING is created.
+  it("refuses the web branch on a dark ground before it creates anything at all", async () => {
     const { beatDir, root } = storyTree("story", "#16191B");
-    const { fetchFn } = fakeDatawrapper({
+    const { fetchFn, calls } = fakeDatawrapper({
       pngBytes: flatPng(1920, 1080, [255, 255, 255]),
     });
     await expect(
@@ -319,12 +331,48 @@ describe("the guard runs inside produce, not only inside a test", () => {
           fetchFn,
         },
       ),
-    ).rejects.toThrow(/opposite side/);
+    ).rejects.toThrow(/cannot be asked for a surface/);
+    expect(calls).toHaveLength(0);
     expect(existsSync(join(beatDir, "renders", "chart.html"))).toBe(false);
-    const receipt = JSON.parse(
-      readFileSync(join(beatDir, "DATAWRAPPER.json"), "utf8"),
-    );
-    expect(receipt.state).toBe("prepared");
+    expect(existsSync(join(beatDir, "DATAWRAPPER.json"))).toBe(false);
+  });
+
+  // The static branch is the one that CAN be asked, so a dark-ground newsroom is served rather than
+  // refused: the export request carries `dark=true`, measured live on chart `cc6eK` to come back on
+  // a #252525 plate against #ffffff without it.
+  it("asks the delegate for the dark surface when the story's ground is dark", async () => {
+    const { root } = storyTree("story", "#16191B");
+    const { fetchFn, calls } = fakeDatawrapper({
+      pngBytes: flatPng(1920, 1080, [24, 24, 24]),
+    });
+    const result = await produce(spec, {
+      storiesRoot: root,
+      storyId: "a-story",
+      outputId: "the-beat",
+      size: "landscape",
+      token: "t",
+      fetchFn,
+    });
+    expect(readFileSync(result.pngPath).length).toBeGreaterThan(0);
+    const exportCall = calls.find((call) => call.url.includes("/export/png"));
+    expect(exportCall.url).toContain("dark=true");
+  });
+
+  it("asks for no surface at all when the story declared a light ground", async () => {
+    const { root } = storyTree("story", "#FFFFFF");
+    const { fetchFn, calls } = fakeDatawrapper({
+      pngBytes: flatPng(1920, 1080, [255, 255, 255]),
+    });
+    await produce(spec, {
+      storiesRoot: root,
+      storyId: "a-story",
+      outputId: "the-beat",
+      size: "landscape",
+      token: "t",
+      fetchFn,
+    });
+    const exportCall = calls.find((call) => call.url.includes("/export/png"));
+    expect(exportCall.url).not.toContain("dark");
   });
 
   it("writes the web branch's iframe page when the story's ground and the exported probe agree", async () => {
@@ -409,5 +457,67 @@ describe("credentialReadsWithoutAlias", () => {
       }
     }
     expect(credentialReadsWithoutAlias(combined)).toEqual([]);
+  });
+});
+
+// ROUND-FIVE FINDING Y2 — THE REFUSAL WAS RIGHT AND ITS PLACEMENT WAS THE DEFECT.
+//
+// The run that earned this created chart `yNwL8`, uploaded 186 rows, patched the metadata,
+// PUBLISHED it, exported the PNG, and only then threw:
+//
+//   the delegated export came back on the opposite side from the ground this story declared:
+//   ground #16191B (luminance 0.009), export luminance 0.991
+//
+// `runPreflight` said `datawrapper {available: true}`; the producer gate offered "Datawrapper or
+// custom?" without mentioning the surface at all; and `proposePalette` for this newsroom offers
+// ONLY dark-ground options, so a Buried Signals story cannot record a palette that producer could
+// honour. A live chart now exists on the account for a delivery the journalist was never told
+// could not be made.
+//
+// Two things changed. The surface is now DECIDED before anything is created — `planExportSurface`
+// runs on the beat's own declared ground, and throws there rather than after publication. And the
+// delegate is ASKED for the matching surface instead of being left to pick: measured live on chart
+// `cc6eK`, `GET /export/png?dark=true` comes back on a #252525 plate (luminance 0.018) against
+// #ffffff (0.991) without it. A dark-ground newsroom can use this path now.
+describe("the surface question, asked before anything exists on the account", () => {
+  it("asks for the dark surface when the story's ground is dark", () => {
+    const { beatDir } = storyTree("story", "#16191B");
+    const plan = planExportSurface(beatDir, "static");
+    expect(plan?.dark).toBe(true);
+    expect(plan?.ground).toBe("#16191B");
+  });
+
+  it("asks for the light surface when the story's ground is light", () => {
+    const { beatDir } = storyTree("story", "#FFFFFF");
+    expect(planExportSurface(beatDir, "static")?.dark).toBe(false);
+  });
+
+  it("says nothing when the beat's story declared no ground at all", () => {
+    const { beatDir } = storyTree("nowhere");
+    expect(planExportSurface(beatDir, "static")).toBe(null);
+  });
+
+  // #999999 measures 0.319, between DARK_SIDE (0.25) and LIGHT_SIDE (0.6) — the band where
+  // `plateFollowsGround` deliberately declines to have an opinion.
+  it("says nothing for a ground on neither side, exactly as plateFollowsGround does", () => {
+    const { beatDir } = storyTree("story", "#999999");
+    expect(planExportSurface(beatDir, "static")).toBe(null);
+  });
+
+  // The web branch delivers a PUBLISHED EMBED, not an owned PNG, and a Datawrapper embed follows
+  // the READER's operating-system colour scheme — measured on the published page for chart
+  // `cc6eK`: `<meta name="color-scheme" content="light dark">` with a `prefers-color-scheme`
+  // stylesheet. There is no surface to ask for, so a dark-ground story is told so HERE, with
+  // nothing yet created, instead of after the chart is live.
+  it("refuses a web beat whose story declared a dark ground, naming what it cannot promise", () => {
+    const { beatDir } = storyTree("story", "#16191B");
+    expect(() => planExportSurface(beatDir, "web")).toThrow(
+      /reader's own colour scheme|cannot be asked for a surface/i,
+    );
+  });
+
+  it("allows a web beat on a light ground — the embed's own default side", () => {
+    const { beatDir } = storyTree("story", "#FFFFFF");
+    expect(planExportSurface(beatDir, "web")?.dark).toBe(false);
   });
 });
