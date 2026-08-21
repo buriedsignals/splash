@@ -26,12 +26,22 @@ mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.m
 example lives beside the skill the same replace-me way `chart-beat`'s seed and
 `chart-video`'s compositions do — see "Quick start" for how to drive it.
 
-**A cost worth knowing before you change `renderWeb`'s signature.** The second build dropped the
-`layouts` argument without migrating the beats that passed it, and all fifteen stopped rendering
-with the same `Cannot destructure property 'width'` — for an hour and a half, with a green suite,
-because the only file that would have caught it (`test/render-web.test.ts`) imported the same
-removed export and could not load either. The format's machinery and the beats that call it move
-together or not at all.
+**A cost worth knowing before you change `renderWeb`'s signature, and it has been paid twice.**
+The second build dropped the `layouts` argument without migrating the beats that passed it, and all
+fifteen stopped rendering with the same `Cannot destructure property 'width'` — for an hour and a
+half, with a green suite, because the only file that would have caught it
+(`test/render-web.test.ts`) imported the same removed export and could not load either. Then it
+happened again: a later build ADDED a required `props.language`, migrated no caller, and eighteen
+committed beats — every web beat in the tree — died on `assertRecordedLanguage` for the whole of
+stress round four, with a green suite again, because every test this format has exercises the SEED
+and the seed's own props carry the new argument. The format's machinery and the beats that call it
+move together or not at all.
+
+That warning stood on this line through the second occurrence, which is why it is no longer only a
+warning. `scripts/example-runners.mjs` and `test/example-runners-run.test.ts` SPAWN every runner
+committed beside a beat that calls this skill — they do not read one, because a check that read a
+runner would have gone green the day somebody wrote the new argument into a comment. The catalogue
+carries it as `example-runners-are-called`, and every producing skill has the same sweep.
 
 Its THIRD build closed three things the owner named after looking at the rendered output: the beat
 now **fits the window it opens in** (it filled its container's width and then grew off the bottom of
@@ -283,8 +293,9 @@ bun skills/chart-web/scripts/verify-web.mjs --shots --out /tmp/canon-web-verify
 # the other.
 open /tmp/canon-web-verify   # fit-*.png, hover-*.png, filter-late-*.png, nojs-filter.png, control-focus-*.png
 
-# a real story's own runner, filed beside the story, not inside the skill:
-bun proof/co2-suisse/render-web.mjs /tmp/web-twin --data /tmp/web-twin/data.csv   # → co2.html
+# a real story's own runner, filed beside the story, not inside the skill. It reads the frozen
+# data.csv committed beside it, so the only argument it needs is where to write:
+bun proof/co2-suisse/render-web.mjs /tmp/web-twin   # → /tmp/web-twin/co2.html
 ```
 
 The first command runs the SEED's runner (`render`, at the bottom of `scripts/render-web.mjs`), which
