@@ -305,13 +305,46 @@ export function readFrozenRows(csvText) {
 const NUMBER_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+[.,]\d+|-?\d+/g;
 
 // The relative slack a rounded total is allowed against the exact sum of its column, so a takeaway
-// writing "34" against a column summing to 33.8 still resolves. Absolute floor of 0.5 so a small
-// column (sum 9) is not held to a tolerance of 0.09.
+// writing "34" against a column summing to 33.8 still resolves.
 const AGGREGATE_TOLERANCE = 0.01;
 
-function matchesAggregate(value, sum) {
+/**
+ * HOW MUCH ROUNDING THE NUMERAL ITSELF ADMITS TO — half a unit of its own last written digit.
+ *
+ * ROUND FIVE, finding U1. This used to be a flat absolute floor of 0.5, and its comment gave the
+ * right reason for it ("so a small column (sum 9) is not held to a tolerance of 0.09") and the
+ * wrong shape: 0.5 is the rounding window of an INTEGER, and the floor applied it to every numeral
+ * whatever its precision. Measured on the frozen `stress-u-rhone-glacier`: `0.61` — the glacier's
+ * 2025 AREA — was declared equal to the sum of `volume_km3` (0.482), 27% away, under `supported`,
+ * the one verdict `groundingScalar` closes G1 on. For a sum of 0.482 the window was ±0.5, so any
+ * value from −0.018 to 0.982 "equalled" it, and the smaller the column the wider the relative
+ * window, without limit. **7 of the 27 frozen stories carry a column summing under 50.**
+ *
+ * A journalist writing "34" for a total of 33.8 has rounded to the unit, and half a unit is
+ * exactly what they may be out by. A journalist writing "0.61" has rounded to the hundredth, and
+ * half a hundredth is exactly what THEY may be out by. So the window is read off the numeral as
+ * written rather than fixed: "34" → 0.5, "0.61" → 0.005, "14,205" → 0.5, "1.7" → 0.05. A token
+ * with an exponent or nothing after a separator falls back to the integer window.
+ */
+function roundingWindowOf(raw) {
+  const decimals = /^[+-]?[\d,]*\.(\d+)$/.exec(String(raw).trim());
+  return decimals ? 0.5 * Math.pow(10, -decimals[1].length) : 0.5;
+}
+
+/**
+ * Whether `value`, as the journalist WROTE it (`raw`), reads as the total of a column summing to
+ * `sum`. Two bounds, and a match has to satisfy both:
+ *   - the rounding window above, OR the relative slack, whichever is wider — a big column is
+ *     allowed 1%, a small one is allowed the precision its own numeral was written to;
+ *   - and NEVER more than the smaller of the two numbers being compared, which is the round-five
+ *     rule stated plainly: the tolerance may not exceed the value it is comparing. Without it,
+ *     "0" still "equals" a column summing to 0.4.
+ */
+function matchesAggregate(value, sum, raw) {
   if (sum === null || sum === undefined || !Number.isFinite(sum)) return false;
-  return Math.abs(value - sum) <= Math.max(0.5, Math.abs(sum) * AGGREGATE_TOLERANCE);
+  const window = Math.max(roundingWindowOf(raw ?? value), Math.abs(sum) * AGGREGATE_TOLERANCE);
+  const cannotExceed = Math.min(Math.abs(value), Math.abs(sum));
+  return Math.abs(value - sum) <= Math.min(window, cannotExceed);
 }
 
 const LESS_RE = /^(less|fewer|lower|below|smaller|moins)$/i;
@@ -1487,7 +1520,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
         c.sum !== undefined &&
         c.sum !== c.min &&
         c.sum !== c.max &&
-        matchesAggregate(value, c.sum),
+        matchesAggregate(value, c.sum, raw),
     );
     if (summed) {
       claims.push({

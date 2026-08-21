@@ -1199,3 +1199,66 @@ describe("a claim about a column the profiler refused is not decided against a d
     expect(claims[0].verdict).toBe("supported");
   });
 });
+
+// =============================================================================================
+// ROUND FIVE (2026-08-21) — THE CHECK STOPS ANSWERING WITH THE WRONG EVIDENCE.
+//
+// The fourth consecutive round to open in this file, and this time every defect is in code round
+// four wrote. Same discipline as the round-four block above: every case below runs against REAL
+// FROZEN STORY MATERIAL, because a fixture built to fail proves only that the fixture fails.
+// =============================================================================================
+
+describe("an aggregate 'equals' is never wider than the number it compares (round five, U1)", () => {
+  // The round's headline, verbatim from the raw findings: `0.61` is stress-u's 2025 AREA, and it
+  // was declared equal to the sum of `volume_km3` (0.482) — 27% away — under `supported`, the
+  // strongest verdict this checker gives and the one `groundingScalar` closes G1 on. The cause
+  // was the absolute floor of 0.5, which scales catastrophically downward: for a sum of 0.482 the
+  // window was ±0.5, so any value from −0.018 to 0.982 "equalled" it.
+  it("should refuse to call stress-u's 2025 area the total of a column 27% away", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The Rhone glacier has fallen to 0.61 square kilometres in 2025.",
+    );
+    const claim = claims.find((c) => c.claim === "0.61");
+    expect(claim).toBeTruthy();
+    expect(claim.verdict).not.toBe("supported");
+    expect(claim.detail).not.toContain("equals the sum");
+  });
+
+  // The floor's own reason survives: a numeral WRITTEN as a round integer really is allowed half a
+  // unit of rounding slack. What it may not do is carry that half-unit down onto a column two
+  // orders of magnitude smaller than it.
+  it("should still confirm a total a journalist rounded, on the same frozen story", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The eight readings add to 10.5 square kilometres of ice in all.",
+    );
+    const claim = claims.find((c) => c.claim === "10.5");
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("area_km2");
+  });
+
+  // And a small column is still checkable — at the precision the numeral itself was written to.
+  it("should confirm a small column's own total when the numeral is written to its precision", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The eight volume readings add to 0.48 cubic kilometres in all.",
+    );
+    const claim = claims.find((c) => c.claim === "0.48");
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("volume_km3");
+  });
+
+  // The second bound, stated in the brief as "the floor cannot exceed the value it is comparing".
+  // A bare "0" is written to the unit, so the rounding window alone would still hand it the full
+  // half-unit — enough to swallow stress-u's `volume_km3` total of 0.482 whole.
+  it("should never let the rounding window exceed the numbers it is comparing", () => {
+    const { claims } = grounded(
+      "stress-u-rhone-glacier",
+      "The glacier lost 0 cubic kilometres in all over the period.",
+    );
+    const claim = claims.find((c) => c.claim === "0");
+    expect(claim.verdict).not.toBe("supported");
+    expect(claim.detail).not.toContain("equals the sum");
+  });
+});
