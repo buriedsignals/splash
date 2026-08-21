@@ -70,9 +70,10 @@ const UNATTRIBUTED_CREDIT_LINE = "Source: not stated";
  * word — "Source: unattributed figures released by the ministry" — is a real credit and is not
  * touched.
  *
- * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`, and walked by
- * `splash/test/guard-copies-parity.test.ts`: the phase that RECORDS the answer and the phase that
- * PRINTS it must not be able to disagree about what the answer means.
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`, and walked by `splash/test/guard-copies-parity.test.ts`:
+ * the phase that RECORDS the answer, the phase that HANDS IT OVER and the producer that composes
+ * a delegated chart's own source line must not be able to disagree about what the answer means.
  */
 export function isUnattributedCredit(value) {
   if (typeof value !== "string") return false;
@@ -86,7 +87,8 @@ export function isUnattributedCredit(value) {
  * returned untouched. Nothing is invented for an empty credit — an empty credit is a gate failure,
  * not a case to paper over, and `checkStoryboard` already refuses it.
  *
- * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`; see `isUnattributedCredit`.
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`; see `isUnattributedCredit`.
  */
 export function creditLine(credit) {
   const text = String(credit ?? "").trim();
@@ -217,7 +219,6 @@ function refuseMaintainerText(field, value) {
 const ROLE_BY_EXTENSION = {
   en: {
     ".svg": "the vector file — this is the one to give the CMS, and it stays sharp at any size",
-    ".png": "a raster copy, for a system that cannot take the vector",
     ".html": "the page itself — one self-contained file, nothing else to run",
     ".mp4": "the video file",
     ".txt": "the live address this beat was published to",
@@ -226,7 +227,6 @@ const ROLE_BY_EXTENSION = {
   },
   fr: {
     ".svg": "le fichier vectoriel — c'est celui à donner au CMS, et il reste net à toutes les tailles",
-    ".png": "une copie matricielle, pour un système qui ne prend pas le vectoriel",
     ".html": "la page elle-même — un seul fichier autonome, rien d'autre à faire tourner",
     ".mp4": "le fichier vidéo",
     ".txt": "l'adresse en ligne où ce visuel a été publié",
@@ -259,11 +259,43 @@ const ROLE_BY_BASENAME = {
   },
 };
 
-function roleFor(name, written) {
+// A RASTER'S ROLE DEPENDS ON WHETHER A VECTOR WAS ACTUALLY DELIVERED BESIDE IT — round-five
+// finding Y13. The extension table answered "a raster copy, for a system that cannot take the
+// vector" unconditionally, so a beat whose producer returns one raster and nothing else — a
+// delegated Datawrapper still — handed the newsroom a document pointing at a vector file that was
+// never rendered and never will be. Reported three times over: on a static chart beat that has no
+// SVG, and on a VIDEO beat whose delivered QA frames were each described as the fallback for a
+// vector that does not exist there either.
+//
+// The answer is read off THE DELIVERED SET, not off the format and not off a table: a vector is
+// beside this file, or it is not.
+const RASTER_ROLE = {
+  en: {
+    beside: "a raster copy, for a system that cannot take the vector",
+    alone: "the image file — this is the one to give the CMS; this beat rendered no vector",
+  },
+  fr: {
+    beside: "une copie matricielle, pour un système qui ne prend pas le vectoriel",
+    alone:
+      "le fichier image — c'est celui à donner au CMS ; ce visuel n'a pas de version vectorielle",
+  },
+};
+
+const VECTOR_EXTENSION = ".svg";
+const RASTER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
+
+function extensionOf(name) {
+  const dot = name.lastIndexOf(".");
+  return dot === -1 ? "" : name.slice(dot).toLowerCase();
+}
+
+function roleFor(name, written, { vectorDelivered = false } = {}) {
   const named = ROLE_BY_BASENAME[written][name];
   if (named) return named;
-  const dot = name.lastIndexOf(".");
-  const extension = dot === -1 ? "" : name.slice(dot).toLowerCase();
+  const extension = extensionOf(name);
+  if (RASTER_EXTENSIONS.includes(extension)) {
+    return RASTER_ROLE[written][vectorDelivered ? "beside" : "alone"];
+  }
   const roles = ROLE_BY_EXTENSION[written];
   return roles[extension] ?? roles.other;
 }
@@ -385,9 +417,14 @@ export function formatHandover({ files, placement, alt, credit, caveat, format, 
     "",
   ];
 
+  // Derived from what was actually written, once, before a single role is looked up.
+  const vectorDelivered = files.some(
+    (file) => extensionOf(baseName(file)) === VECTOR_EXTENSION,
+  );
+
   for (const file of files) {
     const name = baseName(file);
-    lines.push(`- **\`${name}\`** — ${roleFor(name, scaffold.written)}`);
+    lines.push(`- **\`${name}\`** — ${roleFor(name, scaffold.written, { vectorDelivered })}`);
   }
 
   lines.push(

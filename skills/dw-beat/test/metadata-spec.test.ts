@@ -401,3 +401,48 @@ describe("computeYRange", () => {
     expect(max).toBeGreaterThan(64);
   });
 });
+
+// ROUND-FIVE FINDING Y1: round four gave `credit` an honest empty value — `unattributed`, which a
+// delivered artefact prints as `Source: not stated` — and landed it in the phase that RECORDS the
+// answer (`storyboard`) and the phase that HANDS IT OVER (`deliver`) and in neither of the two
+// places that draw pixels. Measured by the controller against this very function:
+//
+//     buildChartPayload({... credit: "unattributed" ...}).metadata.describe["source-name"]
+//     -> "unattributed, 2025-06-30"
+//
+// The word "unattributed" would print under a published newsroom chart, in the place a source goes,
+// on the one producer in this tree that composes its credit line MECHANICALLY rather than through a
+// component an agent writes by hand. `detect-delivered-text.mjs:223` states the opposite in its own
+// error text — "record `credit: unattributed` and the artefact prints \"Source: not stated\"" — so
+// the guard that refuses an invented credit was already promising a sentence no producer produced.
+describe("the recorded credit a delegated chart actually prints", () => {
+  it("should print the sentinel as the sentence a reader sees, never the recorded word itself", () => {
+    const payload = buildChartPayload(
+      baseSpec({ credit: "unattributed", effectiveDate: "2025-06-30" }),
+    );
+    expect(payload.metadata.describe["source-name"]).toBe(
+      "Source: not stated, 2025-06-30",
+    );
+  });
+
+  it("should keep whatever the recorded scalar appends after the sentinel", () => {
+    const payload = buildChartPayload(
+      baseSpec({
+        credit: "unattributed · as of 21 August 2026",
+        effectiveDate: "2025-06-30",
+      }),
+    );
+    expect(payload.metadata.describe["source-name"]).toBe(
+      "Source: not stated · as of 21 August 2026, 2025-06-30",
+    );
+  });
+
+  it("should return a real credit untouched — this rewrites the sentinel and nothing else", () => {
+    const payload = buildChartPayload(
+      baseSpec({ credit: "Source: unattributed figures released by the ministry" }),
+    );
+    expect(payload.metadata.describe["source-name"]).toBe(
+      "Source: unattributed figures released by the ministry, 2024 data",
+    );
+  });
+});

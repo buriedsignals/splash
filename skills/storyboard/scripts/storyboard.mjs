@@ -76,9 +76,10 @@ export const CREDIT_ORIGINS = ["journalist", "newsroom", "none"];
  * word — "Source: unattributed figures released by the ministry" — is a real credit and is not
  * touched.
  *
- * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`, and walked by
- * `splash/test/guard-copies-parity.test.ts`: the phase that RECORDS the answer and the phase that
- * PRINTS it must not be able to disagree about what the answer means.
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`, and walked by `splash/test/guard-copies-parity.test.ts`:
+ * the phase that RECORDS the answer, the phase that HANDS IT OVER and the producer that composes
+ * a delegated chart's own source line must not be able to disagree about what the answer means.
  */
 export function isUnattributedCredit(value) {
   if (typeof value !== "string") return false;
@@ -92,7 +93,8 @@ export function isUnattributedCredit(value) {
  * returned untouched. Nothing is invented for an empty credit — an empty credit is a gate failure,
  * not a case to paper over, and `checkStoryboard` already refuses it.
  *
- * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs`; see `isUnattributedCredit`.
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`; see `isUnattributedCredit`.
  */
 export function creditLine(credit) {
   const text = String(credit ?? "").trim();

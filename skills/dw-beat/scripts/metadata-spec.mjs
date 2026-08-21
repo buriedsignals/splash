@@ -13,6 +13,61 @@
 // which independent cross-checks confirmed each one, and — the one thing that file is honest about
 // not having — whether a live render in *this* environment actually drew the rule.
 
+// ROUND-FIVE FINDING Y1 — WHAT THE DELEGATED CHART ACTUALLY PRINTS WHERE A SOURCE GOES.
+//
+// Round four gave `credit` an honest empty value for a journalist who names no source, and landed it
+// in the phase that RECORDS the answer (`storyboard`) and the phase that HANDS IT OVER (`deliver`)
+// and in neither of the two places that draw pixels. Measured by the controller against
+// `buildChartPayload` below: `credit: "unattributed"` came back as `"unattributed, 2025-06-30"` in
+// `metadata.describe["source-name"]` — the maintainer's own token, printed under a published
+// newsroom chart in the place a source goes — while this skill's `detect-delivered-text.mjs` was
+// already telling authors the opposite ("record `credit: unattributed` and the artefact prints
+// \"Source: not stated\"").
+//
+// This producer is the only one in the tree that composes its credit line MECHANICALLY: every other
+// format's credit reaches a reader through a component an agent writes by hand from the recorded
+// scalar. So the sentinel has to be resolved here, on the way into the payload, or it is resolved
+// nowhere. The decision below is `storyboard`'s and `deliver`'s, byte for byte —
+// `splash/test/guard-copies-parity.test.ts` holds the three copies to the same text, comments and
+// tuning constants included.
+const UNATTRIBUTED_CREDIT = "unattributed";
+const UNATTRIBUTED_CREDIT_LINE = "Source: not stated";
+
+/**
+ * Whether a recorded `credit:` is the sentinel meaning the journalist named no source.
+ *
+ * Matched at the head of the value and on a word boundary, so a story that appends its effective
+ * date to the recorded scalar (`unattributed · as of 21 August 2026`, which is what a beat's own
+ * source line normally looks like) still reads as unattributed. A credit that merely CONTAINS the
+ * word — "Source: unattributed figures released by the ministry" — is a real credit and is not
+ * touched.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`, and walked by `splash/test/guard-copies-parity.test.ts`:
+ * the phase that RECORDS the answer, the phase that HANDS IT OVER and the producer that composes
+ * a delegated chart's own source line must not be able to disagree about what the answer means.
+ */
+export function isUnattributedCredit(value) {
+  if (typeof value !== "string") return false;
+  return new RegExp(`^${UNATTRIBUTED_CREDIT}\\b`, "iu").test(value.trim());
+}
+
+/**
+ * The credit line a delivered artefact actually PRINTS, given the recorded scalar.
+ *
+ * The sentinel becomes the sentence a reader sees; everything else is the journalist's own words,
+ * returned untouched. Nothing is invented for an empty credit — an empty credit is a gate failure,
+ * not a case to paper over, and `checkStoryboard` already refuses it.
+ *
+ * COPIED, byte for byte, into `deliver/scripts/format-handover.mjs` and into
+ * `dw-beat/scripts/metadata-spec.mjs`; see `isUnattributedCredit`.
+ */
+export function creditLine(credit) {
+  const text = String(credit ?? "").trim();
+  if (!isUnattributedCredit(text)) return text;
+  return `${UNATTRIBUTED_CREDIT_LINE}${text.slice(UNATTRIBUTED_CREDIT.length)}`;
+}
+
 const TEXT_ANNOTATION_CONNECTOR_LINE_OFF = {
   enabled: false,
   type: "straight",
@@ -233,7 +288,11 @@ export function buildChartPayload(spec) {
     metadata: {
       describe: {
         intro: spec.limits,
-        "source-name": `${spec.credit}, ${spec.effectiveDate}`,
+        // `creditLine`, never `spec.credit` raw: the recorded scalar may be the sentinel meaning
+        // the journalist named no source, and what belongs under a published chart is the sentence
+        // that says so, not the token that records it. See the copied decision at the head of this
+        // file (round-five finding Y1).
+        "source-name": `${creditLine(spec.credit)}, ${spec.effectiveDate}`,
       },
       visualize,
       // Confirmed live (references/range-annotation-shape.md §4): this is the real field

@@ -434,13 +434,23 @@ const COPIES: Record<string, string[]> = {
   // Two readings of "unattributed" would be two definitions of what an absent source looks like to
   // a reader — one of them a maintainer's token reaching a newsroom, or a blank where a credit
   // goes — which is the same class of divergence `deliveryClosed` is walked for one field over.
+  //
+  // ROUND-FIVE FINDING Y1 added the THIRD copy, and it is the one that draws pixels. Measured by
+  // the controller: `buildChartPayload({... credit: "unattributed" ...})` came back with
+  // `metadata.describe["source-name"] === "unattributed, 2025-06-30"`, so round four's fix had
+  // landed in the phase that RECORDS the answer and the phase that HANDS IT OVER and in neither of
+  // the two places that draw pixels. `dw-beat` is the one producer that composes its credit line
+  // mechanically rather than through a component an agent writes by hand, which is why it is the
+  // one producer this decision can be copied INTO at all.
   isUnattributedCredit: [
     "storyboard/scripts/storyboard.mjs",
     "deliver/scripts/format-handover.mjs",
+    "dw-beat/scripts/metadata-spec.mjs",
   ],
   creditLine: [
     "storyboard/scripts/storyboard.mjs",
     "deliver/scripts/format-handover.mjs",
+    "dw-beat/scripts/metadata-spec.mjs",
   ],
   // ROUND-FOUR FINDINGS 11 AND 15: what a DELIVERED artefact is allowed to say. Both decisions read
   // the files under `stories/<story>/export/<outputId>/` — the hand-over a newsroom pastes from and
