@@ -56,7 +56,20 @@ const WIDTHS = [
   { w: 375, h: 812 },
 ];
 
-/** The five calls `produce` makes, answered without a network — the same fixture shape
+/** A conformant PNG header — nothing this file's own test decodes, but Finding 5 (round-three
+ *  stress) now has the web branch export a measurement PNG through this same endpoint too, and a
+ *  fake that cannot answer that call is a fake that would hide the wiring being wrong. */
+function fakePng(): Uint8Array {
+  const bytes = new Uint8Array(28);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  new DataView(bytes.buffer).setUint32(8, 13);
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12);
+  new DataView(bytes.buffer).setUint32(16, 1);
+  new DataView(bytes.buffer).setUint32(20, 1);
+  return bytes;
+}
+
+/** The six calls `produce` can now make, answered without a network — the same fixture shape
  *  `test/produce.test.ts` and `test/verify-owned.test.ts` each carry their own copy of. */
 function fakeDatawrapper() {
   const fetchFn = async (url: string | URL, init: RequestInit = {}) => {
@@ -77,6 +90,8 @@ function fakeDatawrapper() {
           status: 200,
         },
       );
+    if (u.startsWith("https://api.datawrapper.de/v3/charts/aBcDe/export/png"))
+      return new Response(fakePng(), { status: 200 });
     throw new Error(`fakeDatawrapper: unexpected call to ${u}`);
   };
   return { fetchFn };

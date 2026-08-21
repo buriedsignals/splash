@@ -169,7 +169,12 @@ function storyTree(where: "beat" | "story" | "nowhere", ground = "#16191B") {
 
 describe("the guard a delegated producer still carries", () => {
   it("declares the catalogue guards this format can reach", () => {
-    expect(GUARDS).toEqual(["plateFollowsGround", "csvSplitByHand", "pageLanguageMatchesStory", "credentialReadsWithoutAlias"]);
+    expect(GUARDS).toEqual([
+      "plateFollowsGround",
+      "csvSplitByHand",
+      "pageLanguageMatchesStory",
+      "credentialReadsWithoutAlias",
+    ]);
   });
 
   it("does not hand-split the csv it fetches for the CO2 proof", () => {
@@ -287,6 +292,59 @@ describe("the guard runs inside produce, not only inside a test", () => {
     expect(result.pngPath).toBe(join(beatDir, "renders", "chart.png"));
     expect(readFileSync(result.pngPath).length).toBeGreaterThan(0);
   });
+
+  /**
+   * FINDING 5 (round-three stress): `format: "interactive"` used to return before this guard
+   * existed at all — the white-on-dark mismatch refused on `stress-i-median-wages` (a real
+   * `format: "static"` run) shipped silently the very next day on `stress-n-chomage-cantons` (a
+   * real `format: "web"` run), recorded `state: "local-complete"`. This branch delivers an iframe
+   * page, not an owned PNG, so it owns no bytes of its own to measure — but a published chart can
+   * be exported as a PNG through the same `exportChartPng` call the static branch already makes,
+   * and that export is what this branch measures. It is never written to disk; only the iframe
+   * page is delivered.
+   */
+  it("refuses the web branch too, on the same exported-PNG surface the static branch measures", async () => {
+    const { beatDir, root } = storyTree("story", "#16191B");
+    const { fetchFn } = fakeDatawrapper({
+      pngBytes: flatPng(1920, 1080, [255, 255, 255]),
+    });
+    await expect(
+      produce(
+        { ...spec, format: "web" },
+        {
+          storiesRoot: root,
+          storyId: "a-story",
+          outputId: "the-beat",
+          token: "t",
+          fetchFn,
+        },
+      ),
+    ).rejects.toThrow(/opposite side/);
+    expect(existsSync(join(beatDir, "renders", "chart.html"))).toBe(false);
+    const receipt = JSON.parse(
+      readFileSync(join(beatDir, "DATAWRAPPER.json"), "utf8"),
+    );
+    expect(receipt.state).toBe("prepared");
+  });
+
+  it("writes the web branch's iframe page when the story's ground and the exported probe agree", async () => {
+    const { beatDir, root } = storyTree("story", "#FFFFFF");
+    const { fetchFn } = fakeDatawrapper({
+      pngBytes: flatPng(1920, 1080, [255, 255, 255]),
+    });
+    const result = await produce(
+      { ...spec, format: "web" },
+      {
+        storiesRoot: root,
+        storyId: "a-story",
+        outputId: "the-beat",
+        token: "t",
+        fetchFn,
+      },
+    );
+    expect(result.htmlPath).toBe(join(beatDir, "renders", "chart.html"));
+    expect(readFileSync(result.htmlPath, "utf8")).toContain("<iframe");
+  });
 });
 
 /**
@@ -297,15 +355,24 @@ describe("the guard runs inside produce, not only inside a test", () => {
  */
 describe("pageLanguageMatchesStory", () => {
   it("agrees when the page's own <html lang> matches the recorded language", () => {
-    expect(pageLanguageMatchesStory('<html lang="fr-FR"><head></head></html>', "fr-FR")).toBe(true);
+    expect(
+      pageLanguageMatchesStory(
+        '<html lang="fr-FR"><head></head></html>',
+        "fr-FR",
+      ),
+    ).toBe(true);
   });
 
   it("refuses a page whose <html lang> is a different language than recorded", () => {
-    expect(pageLanguageMatchesStory('<html lang="en"><head></head></html>', "fr-FR")).toBe(false);
+    expect(
+      pageLanguageMatchesStory('<html lang="en"><head></head></html>', "fr-FR"),
+    ).toBe(false);
   });
 
   it("refuses a page with no <html lang> attribute at all", () => {
-    expect(pageLanguageMatchesStory("<html><head></head></html>", "fr-FR")).toBe(false);
+    expect(
+      pageLanguageMatchesStory("<html><head></head></html>", "fr-FR"),
+    ).toBe(false);
   });
 });
 
@@ -318,13 +385,15 @@ describe("pageLanguageMatchesStory", () => {
  */
 describe("credentialReadsWithoutAlias", () => {
   it("says nothing about a canonical name that declares its own alias list", () => {
-    const source = 'const DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"];\nconst t = env.DATAWRAPPER_TOKEN;';
+    const source =
+      'const DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"];\nconst t = env.DATAWRAPPER_TOKEN;';
     expect(credentialNamesRead(source)).toEqual(["DATAWRAPPER_TOKEN"]);
     expect(credentialReadsWithoutAlias(source)).toEqual([]);
   });
 
   it("refuses a canonical name read with no alias list anywhere in the source", () => {
-    const source = 'const token = process.env.DATAWRAPPER_TOKEN;\nif (!token) throw new Error("no token");';
+    const source =
+      'const token = process.env.DATAWRAPPER_TOKEN;\nif (!token) throw new Error("no token");';
     expect(credentialReadsWithoutAlias(source)).toEqual(["DATAWRAPPER_TOKEN"]);
   });
 

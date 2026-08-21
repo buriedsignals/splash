@@ -12,7 +12,7 @@ import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./meta
 import { toCsv } from "./csv.mjs";
 import { chartIdForPath, createChart, setChartData, patchChart, publishChart, exportChartPng } from "./dw-client.mjs";
 import { sizeFor } from "./sizes.mjs";
-import { assertExportedSurface } from "./verify-owned.mjs";
+import { assertExportedSurface, pageLanguageMatchesStory } from "./verify-owned.mjs";
 
 export function datawrapperFormatFor(format) {
   if (format === "static") return "static";
@@ -438,9 +438,35 @@ async function produceUnlocked(
 
   if (provider.format === "interactive") {
     if (beatDir) {
+      // Finding 5 (round-three stress): this branch used to return here, before the guard the
+      // static branch already carried even existed for it — the white-on-dark mismatch refused on
+      // `stress-i-median-wages` (a real `format: "static"` run) shipped silently the very next day
+      // on `stress-n-chomage-cantons` (a real `format: "web"` run), recorded `state:
+      // "local-complete"`. This branch owns no bytes of its own — it delivers a published embed,
+      // not an owned PNG — but a published chart can be exported as a PNG through the same
+      // `exportChartPng` call the static branch already makes, and that export is the surface this
+      // branch measures. It is never written to disk; only the iframe page below is delivered.
+      const surfaceProbe = await exportChartPng(chart.id, token, fetchFn, { width: 400, zoom: 1 });
+      assertExportedSurface(surfaceProbe, beatDir);
+
+      const artifactHtml = iframePage(publicUrl, spec.takeaway, spec.language);
+      // Finding 7 (round-three stress): `pageLanguageMatchesStory` was exported and unit-tested and
+      // nothing in this producer ever called it, so the delivered page's own `<html lang>` was only
+      // ever checked by hand. Reads the ARTEFACT this call is about to write, never re-derives it —
+      // `spec.language` is the story's own recorded answer, the same value `iframePage` was just
+      // built from, so this catches a future `iframePage` that stops honouring it (the exact shape
+      // of the historical bug that hard-coded `lang="fr"` regardless of what a beat actually said)
+      // before a mismatched page ever reaches disk.
+      if (!pageLanguageMatchesStory(artifactHtml, spec.language)) {
+        throw new Error(
+          `the delivered iframe page's own <html lang> does not match the story's recorded ` +
+            `language ${JSON.stringify(spec.language)}`,
+        );
+      }
+
       await ensureRealDirectory(rendersDir, "Datawrapper renders directory");
       artifactPath = join(rendersDir, `${name}.html`);
-      await writeAtomic(artifactPath, iframePage(publicUrl, spec.takeaway, spec.language));
+      await writeAtomic(artifactPath, artifactHtml);
     }
     const result = { format: "web", provider, chartId: chart.id, publicUrl, htmlPath: artifactPath };
     if (beatDir) {

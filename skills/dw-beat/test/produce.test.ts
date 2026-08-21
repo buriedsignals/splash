@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { existsSync } from "node:fs";
 import { rm, readFile, mkdir, mkdtemp, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
@@ -262,6 +263,23 @@ describe("produce", () => {
     });
   });
 
+  // FINDING 6 (round-three stress): base-color is the field a single-series bar/column chart is
+  // actually painted from, established live against published chart `1u88u` — reaching it end to
+  // end through `produce`, not only inside `buildChartPayload`'s own unit test.
+  it("should send base-color through to the real PATCH call for a bar-encoded chart", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec({ chartType: "d3-bars" }), {
+      size: "landscape",
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn,
+    });
+    const patchCall = calls.find((c) => c.method === "PATCH");
+    expect(JSON.parse(patchCall.body).metadata.visualize["base-color"]).toBe(
+      "#0B7A75",
+    );
+  });
+
   it("should disable forced attribution on every chart it creates", async () => {
     const { fetchFn, calls } = fakeDatawrapper();
     await produce(baseSpec(), {
@@ -375,13 +393,18 @@ describe("produce", () => {
     const { fetchFn } = fakeDatawrapper();
     const { root, identity } = await storyBeat("dw-lang-beat-");
     try {
-      const result = await produce(baseSpec({ format: "web", language: "fr-FR" }), {
-        ...identity,
-        name: "co2",
-        token: "secret",
-        fetchFn,
-      });
-      expect(await readFile(result.htmlPath, "utf8")).toContain('<html lang="fr-FR">');
+      const result = await produce(
+        baseSpec({ format: "web", language: "fr-FR" }),
+        {
+          ...identity,
+          name: "co2",
+          token: "secret",
+          fetchFn,
+        },
+      );
+      expect(await readFile(result.htmlPath, "utf8")).toContain(
+        '<html lang="fr-FR">',
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -399,6 +422,30 @@ describe("produce", () => {
           fetchFn,
         }),
       ).rejects.toThrow(/never defaulted to "en"/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  // FINDING 7 (round-three stress): `pageLanguageMatchesStory` was exported and unit-tested and
+  // nothing in this producer ever called it, so the delivered page's own `<html lang>` was only
+  // ever checked by hand. Wired in as a regression guard on the ARTEFACT this call is about to
+  // write: `spec.language` carrying a character `iframePage`'s own sanitiser strips (valid under
+  // `validateChartSpec`, which only checks the field is non-empty) used to reach the delivered file
+  // as a silently different string than what the story recorded — nothing compared the two before.
+  it("should refuse to deliver a page whose own <html lang> would not match the recorded language after sanitising", async () => {
+    const { fetchFn } = fakeDatawrapper();
+    const { root, beatDir, identity } = await storyBeat("dw-lang-mismatch-");
+    try {
+      await expect(
+        produce(baseSpec({ format: "web", language: "fr-FR!" }), {
+          ...identity,
+          name: "co2",
+          token: "secret",
+          fetchFn,
+        }),
+      ).rejects.toThrow(/does not match the story's recorded language/);
+      expect(existsSync(join(beatDir, "renders", "co2.html"))).toBe(false);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
