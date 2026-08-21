@@ -329,3 +329,109 @@ describe("profileTable", () => {
     expect(rainfall.mixedUnits).toBeUndefined();
   });
 });
+
+// FINDING 5 (stress round four): nothing in this toolchain reasoned about a COUNT against its own
+// DENOMINATOR. `stress-q-safety-incidents` ranks five districts by `incidents` while `residents`
+// sits in the very next column — Centro leads on the raw count and Sul leads per resident, and the
+// article's headline is true one way and false the other. Four of the twenty-one frozen stories
+// carry an explicit denominator and none of them was ever asked about it.
+//
+// Reporting, never repair — the same doctrine `gaps` and `mixedUnits` already follow in this file.
+// The profiler NEVER divides: `stress-a-energy-bills` carries `households` beside `price_eur` and
+// its shipped beat draws `price_eur` raw, correctly, because a household bill is already a
+// per-household figure. Dividing again would be nonsense. So this names a candidate and stops.
+describe("profileTable names a candidate denominator column", () => {
+  it("should name the denominator column beside a count column, by name", () => {
+    // stress-q-safety-incidents's own frozen table, verbatim.
+    const table = profileTable([
+      ["district", "incidents", "residents"],
+      ["Centro", "412", "201000"],
+      ["Norte", "388", "455000"],
+      ["Sul", "205", "88000"],
+      ["Leste", "96", "52000"],
+      ["Oeste", "271", "310000"],
+    ]);
+    const incidents = table.columns.find((c) => c.name === "incidents");
+    expect(incidents.denominator).toEqual({ column: "residents" });
+  });
+
+  it("should never divide anything, and never invent a rate column", () => {
+    const table = profileTable([
+      ["district", "incidents", "residents"],
+      ["Centro", "412", "201000"],
+      ["Sul", "205", "88000"],
+    ]);
+    const incidents = table.columns.find((c) => c.name === "incidents");
+    // Reporting only: the column keeps its own range and total exactly as before, and no
+    // per-denominator figure is computed, stored or added to the table anywhere.
+    expect(incidents.min).toBe(205);
+    expect(incidents.max).toBe(412);
+    expect(incidents.sum).toBe(617);
+    expect(table.columns.map((c) => c.name)).toEqual(["district", "incidents", "residents"]);
+  });
+
+  it("should not name the denominator column against itself", () => {
+    const table = profileTable([
+      ["district", "incidents", "residents"],
+      ["Centro", "412", "201000"],
+      ["Sul", "205", "88000"],
+    ]);
+    const residents = table.columns.find((c) => c.name === "residents");
+    expect(residents.denominator).toBeUndefined();
+  });
+
+  it("should exclude the year column, which is not a count with a denominator", () => {
+    // stress-p-transport-ridership's own frozen table carries `year` beside `population`.
+    const table = profileTable([
+      ["city", "trips_millions", "population", "network_km", "year"],
+      ["Lisboa", "214", "545000", "148", "2025"],
+      ["Porto", "96", "231000", "67", "2025"],
+      ["Braga", "31", "137000", "22", "2025"],
+    ]);
+    const year = table.columns.find((c) => c.name === "year");
+    const trips = table.columns.find((c) => c.name === "trips_millions");
+    expect(year.denominator).toBeUndefined();
+    expect(trips.denominator).toEqual({ column: "population" });
+  });
+
+  it("should name a denominator written in the journalist's own language", () => {
+    // stress-r-greek-schools: `μαθητές_2026` (pupils) beside `σχολεία_2026` (schools).
+    const table = profileTable([
+      ["περιφέρεια", "σχολεία_2026", "μαθητές_2026"],
+      ["Αττική", "1744", "318440"],
+      ["Κρήτη", "489", "55210"],
+    ]);
+    const schools = table.columns.find((c) => c.name === "σχολεία_2026");
+    expect(schools.denominator).toEqual({ column: "μαθητές_2026" });
+  });
+
+  it("should report a denominator candidate beside a column that must NOT be divided by it", () => {
+    // stress-a-energy-bills: `households` beside `price_eur`. A household bill is ALREADY a
+    // per-household figure, so dividing again would be nonsense — which is exactly why this is a
+    // report and not a repair. The profile says the column is there; the journalist decides.
+    const table = profileTable([
+      ["country", "price_eur", "households"],
+      ["Germany", "1,234.5", "41200000"],
+      ["Denmark", "48210.75", "2700000"],
+    ]);
+    const price = table.columns.find((c) => c.name === "price_eur");
+    expect(price.denominator).toEqual({ column: "households" });
+  });
+
+  it("should say nothing at all when no column names a denominator", () => {
+    const rainfall = profileTable(ROWS).columns.find((c) => c.name === "rainfall");
+    expect(rainfall.denominator).toBeUndefined();
+  });
+
+  it("should not read a text column as a denominator", () => {
+    // A column literally named "population" but holding words is no denominator: nothing can be
+    // counted against it, and naming it would send the journalist looking at the wrong column.
+    const table = profileTable([
+      ["district", "incidents", "population"],
+      ["Centro", "412", "urban"],
+      ["Sul", "205", "rural"],
+    ]);
+    const incidents = table.columns.find((c) => c.name === "incidents");
+    expect(incidents.denominator).toBeUndefined();
+  });
+});

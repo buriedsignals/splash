@@ -141,6 +141,65 @@ function typeOf(values) {
 // "unité"/"unités" (French) is trusted to make that claim.
 const UNIT_COLUMN_NAME_RE = /^unit(e|é)?s?$/i;
 
+// A DENOMINATOR, read off a column's own NAME (finding 5, stress round four). A count is not a
+// rate: `stress-q-safety-incidents` ranks five districts by `incidents` while `residents` sits in
+// the next column, and the article's headline ("Centro has the worst safety record") is true on the
+// raw counts and false per resident — Centro is 205 incidents per 100,000 residents, Sul is 233.
+// Nothing in this toolchain ever asked the question, in any of the four frozen stories that carry an
+// explicit denominator (`residents`, `population`, `households`, `μαθητές_2026`).
+//
+// REPORTING, NEVER REPAIR — the discipline `gaps` and `mixedUnits` already follow in this file.
+// This NEVER divides, never adds a rate column, never re-ranks anything: `stress-a-energy-bills`
+// carries `households` beside `price_eur`, and its shipped beat draws `price_eur` RAW, correctly,
+// because a household energy bill is already a per-household figure. A profiler that divided there
+// would be inventing a number nobody claimed. So the profile says only that a denominator-shaped
+// column is present, and names it; the journalist decides what it means.
+//
+// IDENTITY, NOT SHAPE — the same test `UNIT_COLUMN_NAME_RE` and `isSequenceColumn` already use.
+// Two columns' shapes can never settle this: every table in this tree carries some numeric column
+// beside another, and "the bigger one is the denominator" would name `network_km` against
+// `trips_millions` and `incidents` against nothing. Only a column one of whose own name TOKENS is
+// literally a population word is trusted to make the claim. The list is measured against the four
+// frozen stories that carry one, in the languages they were written in, and is deliberately short:
+// a word not on it is a column this profiler says nothing about, which is the honest answer.
+const DENOMINATOR_NAME_TOKENS = new Set([
+  "resident",
+  "residents",
+  "population",
+  "populations",
+  "inhabitant",
+  "inhabitants",
+  "habitant",
+  "habitants",
+  "household",
+  "households",
+  "menage",
+  "menages",
+  "m\u00e9nage",
+  "m\u00e9nages",
+  "pupil",
+  "pupils",
+  "student",
+  "students",
+  "\u03bc\u03b1\u03b8\u03b7\u03c4\u03ae\u03c2",
+  "\u03bc\u03b1\u03b8\u03b7\u03c4\u03ad\u03c2",
+  "eleve",
+  "eleves",
+  "\u00e9l\u00e8ve",
+  "\u00e9l\u00e8ves",
+]);
+
+// A column name as the words it is made of — `\u03bc\u03b1\u03b8\u03b7\u03c4\u03ad\u03c2_2026` is "pupils" and a year, and the year
+// suffix must not hide the word. Split on anything that is neither a letter nor a digit, which is
+// the same splitting `storyboard`'s own `nameTokensOf` does for a different question.
+const NAME_TOKEN_SPLIT_RE = /[^\p{L}\p{N}]+/u;
+
+function namesADenominator(name) {
+  return name
+    .split(NAME_TOKEN_SPLIT_RE)
+    .some((token) => DENOMINATOR_NAME_TOKENS.has(token.toLowerCase()));
+}
+
 // A column reports its gaps only when it plausibly IS a sequence, where skipping a step is
 // itself information — a calendar year is one; a price, a percentage, a headcount are not,
 // because any two rows in those columns can legitimately sit any distance apart, and reporting
@@ -249,10 +308,26 @@ export function profileTable(rows) {
       _values: values,
     };
   });
+  // The denominator-shaped columns, named once for the whole table — see DENOMINATOR_NAME_TOKENS.
+  // A column that IS one never carries the field itself: it is the thing counts are read against,
+  // not a count with a denominator of its own.
+  const denominators = columns.filter((c) => c.type === "number" && namesADenominator(c.name));
   for (const column of columns) {
     if (column.type === "number") {
       const mixedUnits = mixedUnitsOf(column, columns);
       if (mixedUnits) column.mixedUnits = mixedUnits;
+      // A sequence column (`gaps` is the record that this profiler already decided it is one — a
+      // calendar year, above all) is an x axis, not a count: dividing 2025 by a population says
+      // nothing, so the question is not put there at all.
+      const others = denominators.filter((c) => c !== column);
+      if (others.length > 0 && column.gaps === null && !namesADenominator(column.name)) {
+        // Several candidates are all named rather than the first one silently winning — a second
+        // denominator nobody mentioned is the same silence this whole field exists to break.
+        column.denominator =
+          others.length === 1
+            ? { column: others[0].name }
+            : { column: others[0].name, others: others.slice(1).map((c) => c.name) };
+      }
     }
     delete column._values;
   }
