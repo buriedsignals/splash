@@ -607,6 +607,49 @@ async function beatsAwaitingDelivery(storyDir, beats) {
   return waiting;
 }
 
+// `done` MEANS THE BYTES THAT WERE APPROVED ARE THE BYTES THAT WERE DELIVERED, and until round
+// seven it meant "a hand-over exists".
+//
+// Measured on a real story (real-gwis-wildfire-counts, D6): the beat was delivered; the PRODUCER
+// found a wrong sentence in its own alt text and re-rendered; the gate above correctly reopened
+// production; a new OUTPUT-REVIEW.json was written against the new render — and this file answered
+// `{"phase":"done","missing":[]}` while `export/` still held the previous SVG and
+// `.delivery-manifest.json` still named the previous draft digest. A phase answer of `done` over
+// stale bytes is the most expensive lie this tool can tell: it is the state in which a journalist
+// ships.
+//
+// The comparison was already possible: `OUTPUT-REVIEW.json` binds the digest of the render that was
+// approved, and `materialise` writes the digest it built from into the delivery manifest. Nothing
+// read the two against each other outside `feedbackRevisionState`, which cannot run before a
+// `FEEDBACK.md` exists — and a producer correcting its own beat writes no feedback. So the check
+// existed and was unreachable on the path a producer takes most often, which is the round-four G3
+// finding one gate later and by the same mechanism.
+//
+// DERIVED, never declared: this asks the two records what they say and compares them. The digest is
+// the whole comparison — a review re-issued under a new id over the SAME bytes has nothing to
+// re-deliver, and demanding a matching review id would send a journalist round the loop for a
+// record that changed while their files did not.
+//
+// A hand-over with no manifest beside it is the same answer for a smaller reason: nothing on disk
+// records what those bytes were built from, so nothing can assert they are the approved ones.
+async function beatsWithStaleDelivery(storyDir, beats) {
+  const stale = [];
+  for (const beat of beats) {
+    const manifestPath = join(storyDir, "export", beat, ".delivery-manifest.json");
+    if (!(await regularFileStat(manifestPath))) {
+      stale.push(beat);
+      continue;
+    }
+    // The review has already been validated and matched to the current render by
+    // `beatsAwaitingBoundReview`, which returns first when it has anything to say.
+    const review = await json(join(storyDir, "beats", beat, "OUTPUT-REVIEW.json"));
+    const manifest = await json(manifestPath);
+    validateRevisionManifest(manifest, beat, manifestPath);
+    if (manifest.draftDigest !== review.draftDigest) stale.push(beat);
+  }
+  return stale;
+}
+
 function nonEmptyText(value) {
   return typeof value === "string" && value.trim() !== "";
 }
@@ -1015,6 +1058,19 @@ export async function whereIs(storyDir) {
   // `delivery` is a phase with work left to dispatch, not a blocked state to report and stop on.
   const undelivered = await beatsAwaitingDelivery(storyDir, rendered);
   if (undelivered.length > 0) return { phase: "delivery", ...legacyState, missing: [] };
+
+  // AND A DELIVERY THAT HAPPENED IS NOT A DELIVERY THAT STILL HOLDS. Same shape as the
+  // editor-feedback revision above and reported the same way — a phase with a producer left to
+  // dispatch, naming which beats and why, rather than a blocked state with a list to read.
+  const staleDeliveries = await beatsWithStaleDelivery(storyDir, rendered);
+  if (staleDeliveries.length > 0) {
+    return {
+      phase: "delivery",
+      ...legacyState,
+      revision: { reason: "stale-delivery", beats: staleDeliveries },
+      missing: [],
+    };
+  }
 
   // AND THE CLOSING OFFER IS PART OF WHAT DELIVERED MEANS — round-four finding 8. A hand-over is
   // G4's file, not G4's whole question: `materialise` writes both receipts as `pending` the moment

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -111,8 +111,46 @@ async function deliver(storyDir: string, beat: string, fileName: string) {
   // questions to the journalist and recording what they said. This helper stands for a delivery
   // that ran to the end, so it records both answers — round-four finding 8 is the story that
   // stopped at the hand-over and was called `done` with neither question ever asked.
-  await writeFile(join(storyDir, "export", beat, ".another-format"), "declined\n");
-  await writeFile(join(storyDir, "export", beat, ".other-subjects"), "declined\n");
+  await writeFile(
+    join(storyDir, "export", beat, ".another-format"),
+    "declined\n",
+  );
+  await writeFile(
+    join(storyDir, "export", beat, ".other-subjects"),
+    "declined\n",
+  );
+  // AND IT RECORDS WHICH APPROVAL IT WAS BUILT FROM. `materialise` writes
+  // `.delivery-manifest.json` as the last act of every delivery it publishes, naming the render
+  // digest the delivered bytes came from. Nothing else in `export/` can answer "are these still the
+  // bytes the journalist approved?", which is the question `done` is an assertion about — so a
+  // helper standing for a delivery that ran to the end writes it, exactly as one does.
+  await recordDelivery(storyDir, beat);
+}
+
+/**
+ * The receipt a real delivery leaves, bound to whatever review the beat carries at the time. Beats
+ * that have not closed G3 yet get no manifest, which is what a beat nothing has delivered looks
+ * like on disk.
+ */
+async function recordDelivery(storyDir: string, beat: string) {
+  const reviewPath = join(storyDir, "beats", beat, "OUTPUT-REVIEW.json");
+  const review = await readFile(reviewPath, "utf8").catch(() => null);
+  if (review === null) return;
+  const bound = JSON.parse(review);
+  await writeFile(
+    join(storyDir, "export", beat, ".delivery-manifest.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      state: "complete",
+      operationId: `delivery-${beat}`,
+      outputId: beat,
+      reviewId: bound.id,
+      planVersion: bound.planVersion,
+      draftDigest: bound.draftDigest,
+      findingIds: bound.findingIds,
+      ...(bound.feedbackDigest ? { feedbackDigest: bound.feedbackDigest } : {}),
+    }),
+  );
 }
 
 // G3 closes into TWO files: `APPROVED.md` (the journalist said yes) and `OUTPUT-REVIEW.json` (what
@@ -456,7 +494,12 @@ describe("whereIs", () => {
     await writeFile(join(beatDir, "APPROVED.md"), "seen");
     await deliver(dir, "1-rainfall", "rainfall.png");
     const feedbackPath = join(beatDir, "FEEDBACK.md");
-    const manifestPath = join(dir, "export", "1-rainfall", ".delivery-manifest.json");
+    const manifestPath = join(
+      dir,
+      "export",
+      "1-rainfall",
+      ".delivery-manifest.json",
+    );
     await approveCurrentOutput(beatDir, { reviewId: "review-old" });
     await writeFile(feedbackPath, "Move the annotation above the line.");
 
@@ -467,7 +510,9 @@ describe("whereIs", () => {
     });
 
     await writeFile(join(beatDir, "renders", "still.png"), "revised render");
-    const review = await approveCurrentOutput(beatDir, { reviewId: "review-new" });
+    const review = await approveCurrentOutput(beatDir, {
+      reviewId: "review-new",
+    });
     expect(await whereIs(dir)).toMatchObject({
       phase: "delivery",
       revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
@@ -490,7 +535,10 @@ describe("whereIs", () => {
     );
     expect(await whereIs(dir)).toMatchObject({ phase: "done", missing: [] });
 
-    await writeFile(feedbackPath, "Move the annotation below the line instead.");
+    await writeFile(
+      feedbackPath,
+      "Move the annotation below the line instead.",
+    );
     expect(await whereIs(dir)).toMatchObject({
       phase: "production",
       revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
@@ -507,7 +555,10 @@ describe("whereIs", () => {
     await writeFile(join(beatDir, "APPROVED.md"), "seen");
     await deliver(dir, "1-rainfall", "rainfall.png");
     await writeFile(join(beatDir, "FEEDBACK.md"), "Change the label.");
-    await writeFile(join(beatDir, "OUTPUT-REVIEW.json"), JSON.stringify({ decision: "approve" }));
+    await writeFile(
+      join(beatDir, "OUTPUT-REVIEW.json"),
+      JSON.stringify({ decision: "approve" }),
+    );
     await expect(whereIs(dir)).rejects.toThrow(/unsupported schemaVersion/);
   });
 
@@ -578,8 +629,13 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
-    await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(dir, "beats", "1-rainfall", "renders", "still.png"),
+      "x",
+    );
     await approve(dir, "1-rainfall");
 
     await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
@@ -589,6 +645,84 @@ describe("whereIs", () => {
 
     await deliver(dir, "1-rainfall", "still.png");
     expect((await whereIs(dir)).phase).toBe("done");
+  });
+
+  // A RE-RENDER PLUS A RE-APPROVAL DOES NOT REOPEN DELIVERY — the D6 finding, reproduced.
+  //
+  // Measured on a real story (`stories/real-gwis-wildfire-counts`, run report §D6): the beat was
+  // delivered; the producer found a wrong sentence in its own alt text and re-rendered; `whereIs`
+  // correctly reopened PRODUCTION, because the review no longer bound the current render; a new
+  // OUTPUT-REVIEW.json was written against the new render — and `whereIs` answered
+  // `{"phase":"done","missing":[]}` while `export/` still held the previous SVG and
+  // `.delivery-manifest.json` still named `draftDigest: sha256:7352f896…` against the review's
+  // `sha256:5742f0b8…`.
+  //
+  // The check that would have caught it lives inside `feedbackRevisionState`, behind a `FEEDBACK.md`
+  // that cannot exist when the PRODUCER corrects its own beat before anyone has given feedback. So
+  // the whole mechanism was unreachable on the one path a producer takes most often.
+  //
+  // RED, with `beatsAwaitingDelivery` back to "HANDOVER.md exists":
+  //   expect(received).toBe(expected)   Expected: "delivery"   Received: "done"
+  it("should reopen delivery when the render changed and the approval was renewed over it", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    const beatDir = join(dir, "beats", "1-rainfall");
+    await mkdir(join(beatDir, "renders"), { recursive: true });
+    await writeFile(
+      join(beatDir, "renders", "still.svg"),
+      "<svg><desc>the wrong sentence</desc></svg>",
+    );
+    await approve(dir, "1-rainfall");
+    await deliver(dir, "1-rainfall", "still.svg");
+    expect((await whereIs(dir)).phase).toBe("done");
+
+    // The producer corrects its own beat. No FEEDBACK.md: nobody has given feedback yet.
+    await writeFile(
+      join(beatDir, "renders", "still.svg"),
+      "<svg><desc>the corrected sentence</desc></svg>",
+    );
+    expect((await whereIs(dir)).phase).toBe("production");
+
+    // And re-approves it against the render they were actually shown.
+    await approveCurrentOutput(beatDir, { reviewId: "review-1-rainfall-2" });
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("delivery");
+    expect(state).toMatchObject({
+      revision: { reason: "stale-delivery", beats: ["1-rainfall"] },
+    });
+    expect(state.missing).toEqual([]);
+
+    // Delivering again over the approved render is what closes it, and nothing else.
+    await deliver(dir, "1-rainfall", "still.svg");
+    expect((await whereIs(dir)).phase).toBe("done");
+  });
+
+  // The other half of the same claim: a hand-over with nothing recording which approval it was
+  // built from cannot support `done` either. `materialise` has written the manifest since it
+  // existed; a hand-over beside no manifest is a delivery this toolchain did not make, and the
+  // only honest answer about its bytes is that nothing knows.
+  it("should not call a story done when nothing records which approval the delivery was built from", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(dir, "beats", "1-rainfall", "renders", "still.png"),
+      "x",
+    );
+    await approve(dir, "1-rainfall");
+    await deliver(dir, "1-rainfall", "still.png");
+    await rm(join(dir, "export", "1-rainfall", ".delivery-manifest.json"));
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("delivery");
+    expect(state).toMatchObject({
+      revision: { reason: "stale-delivery", beats: ["1-rainfall"] },
+    });
   });
 
   it("should report inconsistency when export holds a file but no render exists", async () => {
@@ -1013,7 +1147,14 @@ describe("gate 2's second file: the survey of the article's other angles", () =>
   // reachable, callable and gives the same answer on the same directory — including on a REAL
   // story in this tree that has no survey recorded.
   it("should give the same answer from both gates' copies, on a real story and on a recorded one", async () => {
-    const real = join(import.meta.dirname, "..", "..", "..", "stories", "stress-r-greek-schools");
+    const real = join(
+      import.meta.dirname,
+      "..",
+      "..",
+      "..",
+      "stories",
+      "stress-r-greek-schools",
+    );
     expect(await storyboardSurveyGap(real)).toBe(await whereSurveyGap(real));
     expect(await storyboardSurveyGap(real)).toContain("SUBJECTS.md");
     expect(await storyboardSurveyGap(dir)).toBe(await whereSurveyGap(dir));

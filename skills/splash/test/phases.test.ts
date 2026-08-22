@@ -129,7 +129,9 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   // G3's second file, and `deliver` has always demanded it: OUTPUT-REVIEW.json binds the approval
   // to the exact render, plan version, finding IDs and a passing QA run. Round-four finding 7 is
   // this gate reporting `delivery` without it, on a beat `materialise` refused outright.
-  await approveCurrentOutput(join(storyDir, "beats", "1-rainfall"));
+  const review = await approveCurrentOutput(
+    join(storyDir, "beats", "1-rainfall"),
+  );
   observed.add((await whereIs(storyDir)).phase); // delivery: approved and bound, nothing exported
 
   // Delivery is per beat, into `export/<beat>/` — the shape `deliver`'s `exportDirFor` writes,
@@ -148,9 +150,33 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   // The delivery turn ends by putting both halves of the closing offer to the journalist —
   // the same beat in another format, and the article's other subjects — and recording what they
   // said. `materialise` writes both receipts as `pending` so an offer nobody made is visible.
-  await writeFile(join(storyDir, "export", "1-rainfall", ".another-format"), "declined\n");
-  await writeFile(join(storyDir, "export", "1-rainfall", ".other-subjects"), "declined\n");
-  observed.add((await whereIs(storyDir)).phase); // done: handed over, and both questions answered
+  await writeFile(
+    join(storyDir, "export", "1-rainfall", ".another-format"),
+    "declined\n",
+  );
+  await writeFile(
+    join(storyDir, "export", "1-rainfall", ".other-subjects"),
+    "declined\n",
+  );
+  observed.add((await whereIs(storyDir)).phase); // still delivery: nothing binds these bytes to that approval
+
+  // AND THE LAST THING A DELIVERY WRITES is the receipt naming the approval it was built from.
+  // `done` is the claim that the bytes in `export/` are the bytes the journalist approved, and this
+  // is the only record on disk that can support it — see `beatsWithStaleDelivery` in where.mjs.
+  await writeFile(
+    join(storyDir, "export", "1-rainfall", ".delivery-manifest.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      state: "complete",
+      operationId: "delivery-1-rainfall",
+      outputId: "1-rainfall",
+      reviewId: review.id,
+      planVersion: review.planVersion,
+      draftDigest: review.draftDigest,
+      findingIds: review.findingIds,
+    }),
+  );
+  observed.add((await whereIs(storyDir)).phase); // done: handed over, answered, bound to the approval
 
   return observed;
 }
