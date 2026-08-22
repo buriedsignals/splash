@@ -126,7 +126,12 @@ const CAMERA_CENSUS: Record<
     km: 4152,
     bias: 5.1,
   },
-  "mapgen-choropleth-web": { band: "hemisphere", km: 4152, bias: 5.1 },
+  // 2026-08-22: this beat's camera moved when the live fit stopped padding at planet extent
+  // (407.1 degrees of visible longitude became 360.0, and 241 of 241 regions are on screen with
+  // nothing cropped). The band is unchanged and the AREA BIAS IMPROVED, 5.1 to 4.3 — less Mercator
+  // distortion across the frame, which is what dropping the padding buys. Re-recorded rather than
+  // widened: a census with a tolerance stops being a census.
+  "mapgen-choropleth-web": { band: "hemisphere", km: 4089, bias: 4.3 },
   "mapvid-dot-population": { band: "hemisphere", km: 4126, bias: 4.3 },
   "mapmore-dot-population": { band: "hemisphere", km: 4125, bias: 4.3 },
   "mapgen-flowmap-video": { band: "continent", km: 1873, bias: 1.3 },
