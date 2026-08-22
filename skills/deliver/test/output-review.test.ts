@@ -200,6 +200,36 @@ describe("OutputReview v1", () => {
     expect(() => renderDigest(beatDir)).toThrow(/symbolic link/);
   });
 
+  // ROUND SIX, beat V: `writeOutputReview` computes the draft digest for the record it writes and
+  // then required the caller to hand the IDENTICAL value back inside every QA run — along with the
+  // plan version, the finding IDs, the output id and the schema version it also already holds. The
+  // first call of that run failed on a missing QA draft digest, and the caller had to discover that
+  // `renderDigest` must be imported separately to satisfy a function that had just called it. Five
+  // values repeated by hand is five chances to hand back a value that binds nothing.
+  it("completes a QA run from the record it is already writing", async () => {
+    const record = await writeOutputReview({
+      beatDir,
+      id: "review-terse-qa",
+      planVersion: TEST_PLAN_VERSION,
+      findingIds: TEST_FINDING_IDS,
+      qaRuns: [{ id: "qa-terse", status: "passed", completedAt: TEST_COMPLETED_AT }],
+      angleEvidenceBrief: "The QA run says nothing the review does not already say.",
+      decision: "approve",
+      reviewer: "fixture-editor",
+      decidedAt: TEST_COMPLETED_AT,
+    });
+    expect(record.qaRuns[0]).toEqual({
+      schemaVersion: QA_RUN_SCHEMA_VERSION,
+      id: "qa-terse",
+      outputId: record.outputId,
+      planVersion: record.planVersion,
+      draftDigest: record.draftDigest,
+      findingIds: record.findingIds,
+      status: "passed",
+      completedAt: TEST_COMPLETED_AT,
+    });
+  });
+
   it("does not write an approval whose QA receipt is stale", async () => {
     const previous = await readFile(join(beatDir, OUTPUT_REVIEW_FILE), "utf8");
     await expect(

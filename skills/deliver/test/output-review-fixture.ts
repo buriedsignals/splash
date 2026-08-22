@@ -1,9 +1,5 @@
 import { basename } from "node:path";
-import {
-  QA_RUN_SCHEMA_VERSION,
-  renderDigest,
-  writeOutputReview,
-} from "../scripts/output-review.mjs";
+import { writeOutputReview } from "../scripts/output-review.mjs";
 
 export const TEST_PLAN_VERSION = 1;
 export const TEST_FINDING_IDS = ["finding-test-1"];
@@ -17,8 +13,11 @@ export async function approveCurrentOutput(
     reviewId = `review-${basename(beatDir)}-1`,
   }: { planVersion?: number; findingIds?: string[]; reviewId?: string } = {},
 ) {
-  const outputId = basename(beatDir);
-  const draftDigest = renderDigest(beatDir);
+  // The QA run says only what is ITS OWN: which run this was, whether it passed, and when. The
+  // output id, the plan version, the draft digest and the finding IDs are the review's, and
+  // `writeOutputReview` completes them from the record it is writing. This fixture used to repeat
+  // all four and import `renderDigest` to do it — the shape round six's beat V hit on its first
+  // call, failing on a missing QA draft digest that the function had already computed.
   return writeOutputReview({
     beatDir,
     id: reviewId,
@@ -26,12 +25,7 @@ export async function approveCurrentOutput(
     findingIds,
     qaRuns: [
       {
-        schemaVersion: QA_RUN_SCHEMA_VERSION,
-        id: `qa-${outputId}-1`,
-        outputId,
-        planVersion,
-        draftDigest,
-        findingIds,
+        id: `qa-${basename(beatDir)}-1`,
         status: "passed",
         completedAt: TEST_COMPLETED_AT,
       },

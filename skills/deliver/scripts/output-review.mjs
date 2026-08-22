@@ -310,15 +310,43 @@ export async function writeOutputReview({
   replacesReviewId,
 }) {
   const currentFeedbackDigest = feedbackDigest(beatDir);
+  const outputId = currentOutputId(beatDir);
+  const draftDigest = renderDigest(beatDir);
+  // A QA RUN IS COMPLETED FROM THE RECORD IT BELONGS TO, not repeated by its caller.
+  //
+  // This function computes the draft digest, reads the output id, and is handed the plan version
+  // and the finding IDs — and it then required all five of those back, by hand, inside every QA
+  // run. The first call of a round-six run failed on a missing QA draft digest and the caller had
+  // to discover that `renderDigest` must be imported separately to satisfy a function that had
+  // just called it. Five values repeated by hand is five chances to hand back a value that binds
+  // nothing, on the record whose entire job is to bind.
+  //
+  // A caller that states one of them DIFFERENTLY keeps its own value: a QA run really taken against
+  // another draft, or another plan version, is a fact, and `approvalAgainstCurrent` refuses the
+  // approval over it one line below. This fills silence; it never overwrites an answer.
+  const completedQaRuns = Array.isArray(qaRuns)
+    ? qaRuns.map((run) =>
+        !run || typeof run !== "object" || Array.isArray(run)
+          ? run
+          : {
+              schemaVersion: QA_RUN_SCHEMA_VERSION,
+              outputId,
+              planVersion: version,
+              draftDigest,
+              findingIds: ids,
+              ...run,
+            },
+      )
+    : qaRuns;
   const record = {
     schemaVersion: OUTPUT_REVIEW_SCHEMA_VERSION,
     id,
-    outputId: currentOutputId(beatDir),
+    outputId,
     planVersion: version,
     draftRef: DRAFT_REF,
-    draftDigest: renderDigest(beatDir),
+    draftDigest,
     findingIds: ids,
-    qaRuns,
+    qaRuns: completedQaRuns,
     angleEvidenceBrief,
     decision,
     ...(reviewer === undefined ? {} : { reviewer }),

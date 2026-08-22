@@ -142,6 +142,15 @@ its own schema version, ID, status, completion time, and the same output/render/
 QA receipt; it does not run QA or manufacture that receipt. Unknown schema versions fail closed and
 remain untouched on disk.
 
+**A QA run states only what is ITS OWN** — its id, its status, when it completed. The output id, the
+plan version, the draft digest and the finding IDs belong to the REVIEW, and `writeOutputReview`
+completes each run from the record it is writing. It used to require all five back by hand, and a
+round-six run's first call failed on a missing QA draft digest that this same function had just
+computed, sending the caller off to import `renderDigest` separately. Five values repeated by hand
+is five chances to hand back a value that binds nothing, on the record whose entire job is to bind.
+A run that states one of them DIFFERENTLY keeps its own value — QA really taken against another
+draft is a fact — and the approval is refused over it, as before.
+
 ## How it works (the shape)
 
 1. **`offerForms({medium, format, storiesRoot, storyId, outputId, planVersion, findingIds,

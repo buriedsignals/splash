@@ -975,7 +975,15 @@ export async function whereIs(storyDir) {
     return {
       phase: "production",
       ...legacyState,
-      missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
+      // NAMING THE FILE IT WANTS. This used to read `beat <beat>: rendered but not approved` and
+      // stop there — a refusal that states a condition and not the thing that satisfies it, which
+      // is the same shape as a required record no documented path produces. Every other refusal in
+      // this file names its file (`STORYBOARD.md`, `OUTPUT-REVIEW.json`, `SUBJECTS.md`); this one
+      // is the gate a resumed session meets most often.
+      missing: waiting.map(
+        (beat) =>
+          `beat ${beat}: rendered but not approved — gate 3 closes into beats/${beat}/APPROVED.md, written after the journalist has been shown this render and has said yes`,
+      ),
     };
   }
 

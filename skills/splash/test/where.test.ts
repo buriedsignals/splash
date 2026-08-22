@@ -393,7 +393,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toContain(
-      "beat 1-rainfall: rendered but not approved",
+      "beat 1-rainfall: rendered but not approved — gate 3 closes into beats/1-rainfall/APPROVED.md, written after the journalist has been shown this render and has said yes",
     );
   });
 
@@ -425,7 +425,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
-      "beat 2-snowpack: rendered but not approved",
+      "beat 2-snowpack: rendered but not approved — gate 3 closes into beats/2-snowpack/APPROVED.md, written after the journalist has been shown this render and has said yes",
     ]);
   });
 
@@ -542,7 +542,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
-      "beat 2-snowpack: rendered but not approved",
+      "beat 2-snowpack: rendered but not approved — gate 3 closes into beats/2-snowpack/APPROVED.md, written after the journalist has been shown this render and has said yes",
     ]);
   });
 
