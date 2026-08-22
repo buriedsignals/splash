@@ -17,6 +17,10 @@ import { whereIs } from "../scripts/where.mjs";
 // `no-cross-skill-imports.test.ts` for. G3 closes into TWO files and G4 into three, and this drive
 // has to close them the way a real run does or it never reaches the phases past `production`.
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+// And G2 closes into TWO files. `SUBJECTS.md` is the survey of the article's other angles, written
+// at movement 10 of the exchange by the call below — the one this drive makes rather than writing
+// the file by hand, because "the call the doctrine names actually closes the gate" is the fact.
+import { recordSurveyedSubjects } from "../../deliver/scripts/other-subjects.mjs";
 
 const PHASES = [
   "intake",
@@ -91,6 +95,20 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   observed.add((await whereIs(storyDir)).phase); // storyboard: file exists, takeaway unconfirmed
 
   await writeFile(join(storyDir, "STORYBOARD.md"), confirmedStoryboard);
+  observed.add((await whereIs(storyDir)).phase); // storyboard: no survey of the other angles yet
+
+  await recordSurveyedSubjects({
+    storyDir,
+    subjects: [
+      {
+        id: "station-coverage",
+        learns:
+          "how much of the basin one weather station can honestly speak for",
+        medium: "map",
+        format: "static",
+      },
+    ],
+  });
   observed.add((await whereIs(storyDir)).phase); // production: takeaway confirmed, nothing rendered
 
   await mkdir(join(storyDir, "beats", "1-rainfall", "renders"), {

@@ -35,6 +35,7 @@ import { whereIs } from "../scripts/where.mjs";
 import { requireApprovedOutput } from "../../deliver/scripts/output-review.mjs";
 import { deliveryClosed } from "../../deliver/scripts/another-format.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import { recordSurveyedSubjects } from "../../deliver/scripts/other-subjects.mjs";
 
 const SOURCE_STORY = join(
   import.meta.dirname,
@@ -57,6 +58,24 @@ beforeEach(async () => {
   await cp(SOURCE_STORY, storyDir, { recursive: true });
   beatDir = join(storyDir, "beats", BEAT);
   exportDir = join(storyDir, "export", BEAT);
+  // GATE 2'S SECOND FILE, closed on the COPY. `stress-r-greek-schools` was run before anything
+  // required `SUBJECTS.md`, so the story on disk carries none and `whereIs` now holds it — and
+  // every other story of that generation — at `storyboard`. That refusal IS the fix this test's
+  // own subject (two gates, one requirement) exists to generalise, and it is asserted on its own
+  // in `where.test.ts`. Here it is closed, with the call the exchange names, so the cases below
+  // stay about G3 and G4.
+  await recordSurveyedSubjects({
+    storyDir,
+    subjects: [
+      {
+        id: "teachers-per-school",
+        learns:
+          "whether the staffing gap follows the same regional split as the schools themselves",
+        medium: "chart",
+        format: "static",
+      },
+    ],
+  });
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

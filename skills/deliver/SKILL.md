@@ -312,6 +312,15 @@ remain untouched on disk.
    `recordSurveyedSubjects({storyDir, subjects: []})`, one call, at the movement where the material
    is still in front of everybody.
 
+   **And this refusal is no longer the FIRST time anybody is asked.** Round six: six formats across
+   two rounds each reached this call with no `SUBJECTS.md` and each wrote the file here,
+   retroactively, from memory of a survey that had already happened. A requirement met at the last
+   call of a run is a wall, not a gate. Gate 2 now closes into two files — `STORYBOARD.md` and
+   `SUBJECTS.md` — through `surveyGap`, carried by `splash/scripts/where.mjs` and
+   `storyboard/scripts/storyboard.mjs`, so a story that never ran movement ⑩ never leaves the
+   storyboard phase. The throw below stays as the last line of defence for a story whose file was
+   deleted after the gate closed.
+
    **Re-checked, never trusted.** A stored `reachable: yes` is a verdict about an hour ago.
    `otherSubjectsFor` runs the same checks the format offer runs — the medium's capability now, the
    producible pair now — and marks an angle whose beat now exists as `drawn`. Only `offered` rows

@@ -65,6 +65,13 @@ function declaration(file: string, name: string): string {
 }
 
 const COPIES: Record<string, string[]> = {
+  // ROUND SIX, task GATE: gate 2's SECOND file. `SUBJECTS.md` was required at G4, produced at G2 by
+  // `recordSurveyedSubjects`, and required by no gate in between — reported independently by six
+  // formats across two rounds, the most-reported defect in this project's history. Both gate-2
+  // readers now run this decision: `where.mjs` inside `whereIs`, and `storyboard.mjs` beside
+  // `checkStoryboard`, which is pure over the frontmatter and structurally cannot see a file. One
+  // reader learning the rule alone is the A7/A14 divergence class, so the copy is walked here.
+  surveyGap: ["splash/scripts/where.mjs", "storyboard/scripts/storyboard.mjs"],
   // Task A (round-three stress redesign): the shared number reader. `ground-claim.mjs`'s free-text
   // numeral scanner and `profile.mjs`'s column-level numeric parsing both hand an isolated token
   // to this one decision — a thousands-grouped integer settles itself only with its own trailing

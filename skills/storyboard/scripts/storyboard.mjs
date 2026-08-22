@@ -807,6 +807,41 @@ export async function mutateStoryboardRevisioned(
 // argument a caller could omit to switch a rule off. The false green this closes was exactly that:
 // `where.test.ts` called `checkStoryboard(meta)` with one argument inside the test that exists to
 // prove the two gates agree, silencing the very checks it was meant to compare.
+/**
+ * GATE 2 CLOSES INTO TWO FILES, and this is the one nothing asked for until round six.
+ *
+ * `STORYBOARD.md` is the record of what will be DRAWN. `SUBJECTS.md` is the record of what was
+ * found and NOT drawn — every angle the survey turned up, kept or dropped — written at movement 10
+ * of the storyboard exchange by `recordSurveyedSubjects({ storyDir, subjects })`, while the angles
+ * still exist. It is read back at the very end of the run and offered to the journalist.
+ *
+ * It was required at G4 and by no gate before it. `readSurveyedSubjects` threw for it at the
+ * closing offer — after the storyboard, the palette, the component, the render, the approval and
+ * the hand-over — and both gate-2 readers answered that the storyboard was closed. Six formats
+ * reported that independently across two rounds (U, V, W, Y, AC and AD), each working around it by
+ * writing the file at delivery from memory of a survey that had already happened, which is the
+ * lives-in-a-conversation-and-dies-with-it failure the file exists to prevent, happening around the
+ * file itself. It is the most-reported defect in this project's history.
+ *
+ * `null` when the survey has been recorded; otherwise the one line the gate refuses in, naming the
+ * file, the movement and the call — a refusal that does not name what it wants is how six runs each
+ * had to rediscover the same call.
+ */
+export async function surveyGap(storyDir) {
+  const recorded = await readFile(join(storyDir, "SUBJECTS.md"), "utf8").catch((error) => {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  });
+  if (recorded !== null) return null;
+  return (
+    "the survey of the article's other angles: no SUBJECTS.md in this story's own directory. It " +
+    "belongs to movement 10 of the storyboard exchange, where the angles still exist — call " +
+    "recordSurveyedSubjects({ storyDir, subjects }) there with every angle the survey found, kept " +
+    "or dropped. An article that yielded nothing else records the EMPTY survey (subjects: []): " +
+    '"there was nothing else" is an answer, and an answer is written down like any other.'
+  );
+}
+
 export function checkStoryboard(meta) {
   const errors = [];
 

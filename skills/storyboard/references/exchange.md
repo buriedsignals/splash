@@ -319,13 +319,25 @@ against the story as it then stands, and offered: *"Ou même le relancer sur des
 article qui seraient intéressants à transformer en visuel"* (the owner, 2026-08-10). Nothing here is
 invented for the record — an article that yielded one angle records one.
 
-**And the call is no longer optional in practice, because the delivery refuses without it.** This
-movement used to say `recordSurveyedSubjects` is called before it ends, and nothing checked: the
-reader at the end of the run read a MISSING `SUBJECTS.md` as an empty survey and told the journalist
-their article's other angles had been looked at when none ever had. `readSurveyedSubjects` now
-throws, naming this movement and this call. An article that genuinely yielded nothing else is
-recorded as the empty survey — `subjects: []` — because "there was nothing else" is an answer, and
-an answer is written down.
+**And the call is not optional, because GATE 2 ITSELF refuses without it.** This movement used to
+say `recordSurveyedSubjects` is called before it ends, and nothing checked: the reader at the end of
+the run read a MISSING `SUBJECTS.md` as an empty survey and told the journalist their article's other
+angles had been looked at when none ever had. `readSurveyedSubjects` throws for that, naming this
+movement and this call. An article that genuinely yielded nothing else is recorded as the empty
+survey — `subjects: []` — because "there was nothing else" is an answer, and an answer is written
+down.
+
+**But a refusal at the END of the run is not a gate, it is a wall.** The throw arrived after the
+storyboard, the palette, the component, the render, the approval and the hand-over, and six formats
+across two rounds each hit it and each wrote the file retroactively, from memory of a survey that had
+already happened — the exact failure the file exists to prevent, happening around the file itself.
+So **gate 2 closes into TWO files**: `STORYBOARD.md` and `SUBJECTS.md`. `surveyGap(storyDir)` is the
+one decision that says so, exported by `storyboard/scripts/storyboard.mjs` for this phase to run on
+itself beside `checkStoryboard`, and carried byte-identically by `splash/scripts/where.mjs`, whose
+`whereIs` reports the gap as `G2-subjects` and keeps the story in the `storyboard` phase until this
+movement has actually happened. `checkStoryboard` stays pure over the front matter and takes no
+second argument; the file question is a directory question and is asked by the function that owns
+it.
 
 Then `BRIEF.md`, before any code: evidence hierarchy, reveal order, single accent, source, the
 anti-patterns of this case. Derived from the nine previous movements, so never conjured from nowhere.

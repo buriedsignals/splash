@@ -14,9 +14,11 @@ import {
 import {
   checkStoryboard,
   parseStoryboard,
+  surveyGap as storyboardSurveyGap,
   REQUIRED_SCALARS as STORYBOARD_SCALARS,
   REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../storyboard/scripts/storyboard.mjs";
+import { surveyGap as whereSurveyGap } from "../scripts/where.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 
 let dir: string;
@@ -24,6 +26,14 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "story-"));
   for (const child of ["source", "beats", "export"])
     await mkdir(join(dir, child), { recursive: true });
+  // GATE 2'S SECOND FILE, neutralised here for the same reason `beats/` and `export/` are left
+  // empty: every fixture below varies ONE thing, and for almost all of them that thing is the
+  // frontmatter. `surveyGap` is a DIRECTORY rule — the survey of the article's other angles, which
+  // `recordSurveyedSubjects` writes at movement ⑩ — so a story that has not recorded it never
+  // leaves the storyboard phase, and a fixture that meant to vary the takeaway would be varying
+  // this instead. The rule itself is exercised by its own describe block at the foot of this file,
+  // which removes the file again.
+  await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n---\n");
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -838,5 +848,59 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     // Naming what IS accepted, not only what is not — the `sizeFor`/`readPalette` discipline, at
     // the gate rather than at the renderer.
     expect(gap).toContain("landscape, square, portrait");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// GATE 2 CLOSES INTO TWO FILES, and the second one was required by nothing until round six.
+//
+// `SUBJECTS.md` is required at G4 — `readSurveyedSubjects` throws without it — produced at G2 by
+// `recordSurveyedSubjects`, and was required by no gate in between. Six formats reported it
+// independently across two rounds (U, V, W, Y, AC, AD), which makes it the most-reported defect in
+// this project's history, and the sentence every one of them wrote is the same: `whereIs` answered
+// `production, missing: []` on a story that could not close.
+//
+// The rule now lives in `surveyGap`, carried BYTE-IDENTICALLY by `storyboard/scripts/storyboard.mjs`
+// and walked by `test/guard-copies-parity.test.ts`, because a gate that only one of the two readers
+// can run is the divergence class `splash/SKILL.md`'s own gotcha section exists to close.
+// ---------------------------------------------------------------------------------------------
+describe("gate 2's second file: the survey of the article's other angles", () => {
+  it("should keep a story in storyboard when its frontmatter is complete and no SUBJECTS.md exists", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await rm(join(dir, "SUBJECTS.md"), { force: true });
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.gate).toBe("G2-subjects");
+    expect(state.missing.join("\n")).toContain("SUBJECTS.md");
+    expect(state.missing.join("\n")).toContain("recordSurveyedSubjects");
+  });
+
+  it("should leave storyboard once the survey has been recorded", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    expect((await whereIs(dir)).phase).toBe("production");
+  });
+
+  // THEME 3: a distributed guard that nothing calls has not landed. `guard-copies-parity.test.ts`
+  // proves the two copies are the same TEXT; this proves the storyboard phase's own copy is
+  // reachable, callable and gives the same answer on the same directory — including on a REAL
+  // story in this tree that has no survey recorded.
+  it("should give the same answer from both gates' copies, on a real story and on a recorded one", async () => {
+    const real = join(import.meta.dirname, "..", "..", "..", "stories", "stress-r-greek-schools");
+    expect(await storyboardSurveyGap(real)).toBe(await whereSurveyGap(real));
+    expect(await storyboardSurveyGap(real)).toContain("SUBJECTS.md");
+    expect(await storyboardSurveyGap(dir)).toBe(await whereSurveyGap(dir));
+    expect(await storyboardSurveyGap(dir)).toBeNull();
+  });
+
+  it("should accept the EMPTY survey, because there was nothing else is an answer", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n---\n");
+    expect((await whereIs(dir)).phase).toBe("production");
   });
 });
