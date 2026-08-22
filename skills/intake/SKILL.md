@@ -87,10 +87,28 @@ section is about: `denominator` names a column this profiler READ and recognised
 names one it could not read at all. A reader that cannot tell them apart has been handed a guess.
 Identity, never shape, is unchanged — nothing here claims an unread column IS a denominator.
 
-**The limit that remains, said out loud:** an undeclared language spelling itself in plain ASCII —
-Dutch `bevolking`, Italian `popolazione` — passes both nets and no character test will ever see it.
+### The ASCII half is closed by data, not by a stated limit
+
+Round six, task LANG. `bevolking` is Dutch for population and is plain ASCII, so no script net and
+no letter net can ever see it — and until this round the profiler answered a confident nothing about
+it while `population`, one column over in another language, downgraded the verdict. A concept has
+names in every language, so the list is now MEASURED rather than remembered:
+`doctrine/references/concept-labels.json` holds Wikidata's own labels and aliases for `human
+population`, `inhabitant`, `household`, `student` and `schoolchild`, filtered to the tokens no
+character test in this tree can flag, and copied into the generated region of
+`DENOMINATOR_NAME_TOKENS` in all ten files that read a column name. CLDR was measured first and
+carries one of the twelve concepts these lexicons key on, so it is not the source.
+
+**Vendored, never fetched.** `scripts/concept-labels.mjs --write` copies the table into the files; a
+lexicon that needs a network is a lexicon that fails in a newsroom without one, and nothing under
+`skills/` names Wikidata at all.
+
+**The limit that remains, said out loud:** the table declares 39 languages — the EU's own official
+languages plus the European and Mediterranean neighbours — and a language outside that reach spelling
+itself in plain ASCII (Indonesian `penduduk`, Swahili `wakazi`) still passes both nets.
 `storyboard`'s grounding check is where that limit is stated to the journalist, on the verdict it
-would otherwise inflate.
+would otherwise inflate. `ludność` is deliberately NOT in the table: `lettersNotRead` already names
+it, and a gap is reported once between the two mechanisms, never twice.
 
 ## A unit is a mark, not a word glued to an identifier
 

@@ -350,6 +350,7 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
 | How many conventions may match a subject before none is offered | `1` | `matchConvention`, `scripts/palette.mjs` |
 | Which subject conventions exist at all, and their accents | `4` entries | `SUBJECT_CONVENTIONS`, `scripts/palette.mjs` |
 | The languages a convention's own words are read in | English, French, Greek, Arabic | `CONVENTION_LANGUAGES`, `scripts/palette.mjs` |
+| Where each convention's OTHER names come from | `doctrine/references/concept-labels.json` — Wikidata's labels and aliases for `renewable energy`, `solar energy`, `wind power`, `coal`, `fossil fuel`, `petroleum`, `water`, `river`, `precipitation`, `flood`, `drought`, `heat wave`, `temperature` and `global warming`, measured once and VENDORED into each `match` regex's generated region. Regenerate with `scripts/concept-labels.mjs --write` | `SUBJECT_CONVENTIONS`, `scripts/palette.mjs` |
 
 ## Files
 
