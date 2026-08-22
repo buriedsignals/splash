@@ -177,44 +177,35 @@ answer is that 0 of 24 delivered pages draw a leader; comparing review identity 
 staleness when a legitimate re-binding moves the record and not the file; and blocking `whereIs` on
 the new destination field, which would have demoted two stories that are `done` today.
 
-## Still open, named
+## Still open, named — and it is all design now
 
-- `mutateStoryboard` does not clear a slot's `destination` when the format changes. The stale value
-  is refused loudly by both gates, so it is observed rather than silently believed.
-- The example-runner sweep does not yet refuse a runner that swallows its own failure. It is the
-  only such runner in the tree, and the decision lives in eight byte-identical copies.
-- Two defects in `stories/heat-pump-adoption-across-europe` were found by chart-web's widened walk;
-  the render was rebuilt, and the story's own storyboard remains parked at G2 for an older reason.
-- The map/web weight ceiling is measured and documented, not derived.
-- The 82-of-143 pointer collision is stated at production time rather than solved. Solving it means
-  de-colliding fixed-size targets over a fluid map — the same problem `decollide.mjs` solves for
-  labels — and that is a design change, not a fix.
-- `unmatchedValues` and `labelPlacementIssues` are carried and recorded unwired in map-web, for
-  map-beat's own reason: both need a substrate only the beat that drew them holds.
-- `mutateStoryboard` does not clear a slot's `destination` when the format changes.
+Everything mechanical from this round is closed. What is left is three questions that cannot be
+answered by a fix, and they are recorded rather than guessed at.
 
-## The corpus rebuilt against the fixed skills
+- **82 of 143 pointer-active marks on the world beat answer `elementFromPoint` at their own centre
+  with a NEIGHBOUR's button** (Monaco covered by the Vatican, Lithuania by Latvia, San Marino by
+  Bosnia); 91 at 1024x768 and 122 at 375x667. It is stated at production time and not solved,
+  because solving it means de-colliding fixed-size targets over a fluid map — which moves a target
+  away from the region it is meant to point at — and because that button is also the keyboard target
+  and the carrier of the `aria-label`, both of which are complete on that beat. Dropping a colliding
+  button trades a partial pointer path for a broken keyboard path.
+- **`graphicFillsItsFrame`'s floor should not be a window fraction at all.** Re-baking a beat to its
+  camera's own shape moved the measured worst case from 22.9% to 15.0% — and the two renders hold the
+  same 36 degrees of latitude at the same pixels per degree, so the number moved without the drawing
+  getting worse. A constant that moves like that is measuring the wrong thing.
+- **`unmatchedValues` and `labelPlacementIssues` are carried and recorded unwired** in map-web and
+  map-beat: the first needs a declared study set joined against a frozen source, the second a
+  laid-out label stack with measured text boxes, and neither skill's own seed has one. A skill-side
+  caller would have to invent a study set to ask about, which is the fixture the wiring rule exists
+  to refuse.
 
-The skill fixes and the beats on disk disagreed until the beats were rebuilt, and rebuilding them
-found two more things nobody had predicted.
-
-- **The weight ceiling was already stale.** `MEASURED_MAX_BYTES` claimed 1,809,942 while a page in
-  its own discovered population sat at 2,015,174 — 205,232 bytes heavier than the maximum it said it
-  was measured from. Now derived, and asserted in both directions.
-- **A story's alt text named the wrong end of its own legend** for every reading — "darkest, top
-  class" on a ramp that climbs — pre-dating any of this work. It is now read off the painted ramp.
-
-And one floor was **lowered**, which is worth stating plainly rather than burying. Re-baking
-`stress-f-housing-pressure` to its camera's own shape took it under `graphicFillsItsFrame`: 30.3 /
-27.8 / 38.6% became 16.3 / 15.0 / 22.5%. Both rendered pages were measured before the constant moved:
-the box is 660px tall either way, holds the same 36 degrees of latitude, and Sweden is drawn at 13.2
-against 13.1 pixels per degree. **The square plate was padding** — 63 degrees of longitude shown for
-a 34-degree camera. So `MEASURED_MIN_FRACTION` was re-measured (0.229 to 0.150) rather than the
-beat's editorial camera widened or a red left standing. The right long-term shape is not a window
-fraction at all, and that is named without being built.
-
-Two beats now correctly sit at `production` awaiting a bound review, because re-rendering an approved
-beat makes its delivery stale — which is the mechanism this round built, working.
+One thing was **added** to a ratchet that says it may only shrink: `swallowedExampleRunners` is
+unwired in the same sense its sibling `deadExampleRunners` is — driven by the sweep test, with no
+`scripts/` caller — so its name went into all eight `RECORDED_UNWIRED` lists with the reason beside
+it. The alternative considered and refused was to give `example-runners.mjs` an `import.meta.main`,
+which would have made every in-file mention count as a caller and cleared eight debt entries at once,
+bought by inventing a command no `SKILL.md` tells anyone to run. That is exactly what the wiring rule
+refuses, so the ratchet was made to say something true rather than something tidy.
 
 ## The one open thing that is the owner's, not mine
 
