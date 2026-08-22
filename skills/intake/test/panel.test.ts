@@ -164,6 +164,24 @@ describe("per-period coverage, so a collapse is visible", () => {
     expect(year.gapsAreNotCoverage.says).toContain("coverage");
   });
 
+  it("should not count a blank as one of the entities a period carries", () => {
+    // The shared derivation will take a key column that has blanks in it where nothing blank-free
+    // keys the table — `name` here — and a blank names nobody. Counting it would make a period
+    // carry more entities than the table has.
+    const { panel } = profileTable([
+      ["name", "year", "v"],
+      ["A", "2020", "1"],
+      ["B", "2020", "2"],
+      ["", "2020", "3"],
+      ["A", "2021", "4"],
+      ["B", "2021", "5"],
+      ["", "2021", "6"],
+    ]);
+    expect(panel.entity).toBe("name");
+    expect(panel.entities).toBe(2);
+    expect(panel.coverage.fullest.entities).toBe(2);
+  });
+
   it("should say nothing about coverage when every period really does carry every entity", () => {
     // The wildfire file is balanced: 260 entities in all 15 years. There is no collapse to name.
     const year = read("real-gwis-wildfire-counts").columns.find(
@@ -329,7 +347,44 @@ describe("what stops the arithmetic reporting a coincidence", () => {
     expect(panel.periods).toBe(1);
     expect(panel.aggregates.byArithmetic).toEqual([]);
     expect(panel.aggregates.arithmetic.ran).toBe(false);
-    expect(panel.aggregates.arithmetic.reason).toContain("coincidence");
+    expect(panel.aggregates.arithmetic.reason).toContain(
+      "AGGREGATE_MIN_PERIODS",
+    );
+  });
+
+  it("should not decide a one-period table even when the structure DID set a row apart", () => {
+    // The floor has to hold where the rest of the mechanism is willing to answer: `T` has no code
+    // where the others do, so the structure proposes it, and A + B is exactly T. Once.
+    const { panel } = profileTable([
+      ["region", "code", "year", "v"],
+      ["A", "AAA", "2020", "1"],
+      ["B", "BBB", "2020", "2"],
+      ["T", "", "2020", "3"],
+    ]);
+    expect(panel.periods).toBe(1);
+    expect(panel.aggregates.byStructure.map((a: any) => a.entity)).toEqual([
+      "T",
+    ]);
+    expect(panel.aggregates.byArithmetic).toEqual([]);
+    expect(panel.aggregates.arithmetic.reason).toContain(
+      "AGGREGATE_MIN_PERIODS",
+    );
+  });
+
+  it("should not call a proposed row an aggregate of the single row that repeats it", () => {
+    // `T` is proposed (no code where A has one) and equals A in every period. Two identical series
+    // is worth knowing and is not a sum: an aggregate is made of rows, plural.
+    const { panel } = profileTable([
+      ["region", "code", "year", "v"],
+      ["A", "AAA", "2020", "1"],
+      ["A", "AAA", "2021", "5"],
+      ["T", "", "2020", "1"],
+      ["T", "", "2021", "5"],
+    ]);
+    expect(panel.aggregates.byStructure.map((a: any) => a.entity)).toEqual([
+      "T",
+    ]);
+    expect(panel.aggregates.byArithmetic).toEqual([]);
   });
 
   it("should not read a CATEGORY column as the column of codes", () => {
