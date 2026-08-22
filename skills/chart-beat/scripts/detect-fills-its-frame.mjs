@@ -14,9 +14,19 @@ import { decodePng } from "./compare-png.mjs";
  *  constant this function reads by name: the achievable floor differs by format for a structural
  *  reason — chart-web's own frame IS its viewBox, fluid by construction, and clears 60%+ at every
  *  measured width; a map-web beat is bound by its baked plate's own true aspect against the window's,
- *  and the measured population's worst case is 15.0% (`stress-f-housing-pressure`, 1280x800 — a
- *  PORTRAIT camera in a landscape window) — each
- *  copy's own caller supplies the floor its OWN measured population earned. `under` is strictly `<`,
+ *  so its own caller measures a different thing entirely: the fraction of the axis the box is BOUND
+ *  ON, never the area. Measured 2026-08-23 over ten pages at three widths, the area reading spread
+ *  15.0-62.8% (4.2x) and the binding reading 51.1-91.5% (1.8x) — the area punished a plate for the
+ *  shape of its own camera, and a beat re-baked to the shape its camera actually asks for fell from
+ *  worst-in-format to mid-pack without one pixel of its drawing changing. Each copy's own caller
+ *  supplies both the reading and the floor its OWN measured population earned.
+ *
+ *  WHAT NO COPY OF THIS CAN DETECT, measured rather than assumed: the defect this rule was written
+ *  for. A box stranded at one edge with all its leftover room on the other side moved from 622.6px
+ *  to 16.0px from the left and shifted the area fraction by 0.00 points and the binding fraction by
+ *  0.00 points, on two pages at two widths. Both readings are about SIZE; stranding is about
+ *  POSITION. The rule earns its place on what it does catch — a box that never grew into the room it
+ *  was given — and the catalogue says so rather than claiming the rest. `under` is strictly `<`,
  *  not `<=`, the same reasoning `weightAgainstCeiling` states for `over`: a page sitting exactly on
  *  the floor is the measurement the floor was taken FROM, not yet a violation of it. */
 export function graphicFillsItsFrame(fraction, floor) {
