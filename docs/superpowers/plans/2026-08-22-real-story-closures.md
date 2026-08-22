@@ -138,6 +138,31 @@ and it is the documented one. The producer gate reads the surface preflight alre
   `European Union (27)`. The output was unchanged — no name in the six bands carries a comma — which
   is exactly why the guard exists rather than the eye.
 
+## What the map/web work found that nobody had
+
+Two of the eleven map/web defects were raised by the owner directly, looking at real rendered maps,
+and both turned out bigger than the report had them.
+
+**The map did not fill its width.** The frame is now derived from the camera's own shape, and the
+live fit drops its padding at planet extent. Measured with a real key: **407.1 degrees of visible
+longitude became 360.0, with 241 of 241 regions on screen and nothing cropped**. The camera's area
+bias improved from 5.1 to 4.3 — less Mercator distortion across the frame, which is what dropping
+the padding buys, and the recorded camera census was re-recorded rather than widened.
+
+**The ocean did not follow the palette.** Water and no-data are now derived from the story's own
+ground and measured against the ramp by a new guard. The finding underneath is larger than the one
+reported: the two fixed hexes sit inside the ramp **on the light ground too** (0.485 and 0.557, both
+between classes 2 and 3), so every beat this format has ever shipped painted "did not report" at a
+class's own luminance. A country nobody measured read as a value.
+
+**And the driver, once it stopped asserting the seed's invariant, measured something new:** of 241
+marks, 143 are pointer-active and **82 of those answer `elementFromPoint` at their own centre with a
+NEIGHBOUR's button** (Monaco covered by the Vatican, Lithuania by Latvia, San Marino by Bosnia); 91
+at 1024x768 and 122 at 375x667. It is named rather than removed, and the refusal is argued: that
+button is also the keyboard target and the carrier of the `aria-label`, and both of those channels
+are complete on that beat. Dropping a colliding button trades a partial pointer path for a broken
+keyboard path, which is the wrong trade for the reader with the least.
+
 ## Refused, with the measurement — and right to be
 
 Four of the seven packages refused an instruction of mine and were correct each time. The pattern is
@@ -160,3 +185,23 @@ the new destination field, which would have demoted two stories that are `done` 
   only such runner in the tree, and the decision lives in eight byte-identical copies.
 - Two defects in `stories/heat-pump-adoption-across-europe` were found by chart-web's widened walk;
   the render was rebuilt, and the story's own storyboard remains parked at G2 for an older reason.
+- The map/web weight ceiling is measured and documented, not derived.
+- The 82-of-143 pointer collision is stated at production time rather than solved. Solving it means
+  de-colliding fixed-size targets over a fluid map — the same problem `decollide.mjs` solves for
+  labels — and that is a design change, not a fix.
+- `unmatchedValues` and `labelPlacementIssues` are carried and recorded unwired in map-web, for
+  map-beat's own reason: both need a substrate only the beat that drew them holds.
+- `mutateStoryboard` does not clear a slot's `destination` when the format changes.
+
+## The one open thing that is the owner's, not mine
+
+Four of the seven packages independently declined to add a `guard-catalogue.json` rule, each with
+the same measurement: every rule declares `requires: [traits]`, the population derives from
+`PRODUCING_SKILLS`, and `intake`, `palette`, `storyboard`, `splash`, `deliver`, `doctrine` and
+`newsroom-charter` are not among the eight. A rule for them would derive an empty population — a
+requirement that cannot fire, which is the very thing this round kept finding.
+
+So the sharing mechanism this branch is built on covers **eight skills of fifteen**, and everything
+fixed in this round outside those eight — the editorial checker, the profiler, the gates, delivery —
+is local by construction. That is section A of `2026-08-22-open-findings.md` and it is a design
+decision, not a defect. It is the largest thing still open on this branch.
