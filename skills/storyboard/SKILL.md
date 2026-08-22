@@ -393,15 +393,26 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      `"yes"`, or throws the refusal the journalist hears.
    - **⑦** — `proposeSizes(format)`: the three export sizes for a static or a video, none for a page
      that fills its container.
-   - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates are not one IDEA each
+   - **⑩** — **a candidate is `{ type, why, format?, marks? }`**, and both functions below read
+     exactly that shape: `type` is the treatment name (any name its type sheet's title yields),
+     `why` is the reason THIS story is worth seeing that way and is REQUIRED, because a candidate
+     with no reason is a name in a list; `format` is optional and is checked through
+     `confirmFormatReachable`; `marks` is optional and is HOW MANY MARKS THIS BEAT WOULD DRAW. A
+     bare string, a missing reason, an unknown key and a `marks` that is not a whole count are each
+     refused by name.
+     `assertDistinctWays(candidates)` refuses a set whose candidates are not one IDEA each
      (the run offered three and all three were bars of the same three numbers; a bar and a lollipop
      are one idea, in the lollipop sheet's own words), and
      `formatCandidates({medium, candidates, profile})` renders the menu from the computed options —
      every candidate carrying the type sheet's own purpose sentence verbatim, the same sheet's own
      "when NOT to reach for it" sentence, and the caller's reason why THIS story is worth
-     seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all, and
-     where a sheet states a limit in ROWS the menu throws rather than offering a type that sheet
-     refuses at this size.
+     seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all.
+     **A sheet's limit in ROWS is about the MARKS, not the source table.** Pass `marks` and the menu
+     throws when the beat exceeds the sheet's own ceiling; leave it out and the limit travels to the
+     journalist as a by-hand check with the row count printed beside it. `profile.rowCount` is never
+     the number the limit is tested against: on a long-form panel it was 7,585 where the beat drew
+     211 marks, and the sheet's own sentence was quoted at the journalist as though it were about
+     their beat.
      The graphical variant passes those same currently reachable choices to
      `recommendVisualChoice({model, profile})`. Its scored facts come only from confirmed
      `STORYBOARD.md` fields and `source/profile.json`; unknown data-shape requirements remain named

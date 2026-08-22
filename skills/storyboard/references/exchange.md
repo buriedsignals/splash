@@ -369,12 +369,27 @@ carries the type sheet's own purpose sentence verbatim and the reason THIS story
 way, which is required, because a candidate with no reason is a name in a list. A candidate whose
 pair the catalog refuses cannot be rendered at all.
 
+**A candidate is an object, and this is the shape both functions accept:**
+
+```js
+{ type: "Beeswarm", why: "every country as its own mark", format: "static", marks: 211 }
+```
+
+`type` and `why` are required; `format` and `marks` are optional. `marks` is how many marks THIS
+beat would draw. A bare treatment name, a candidate with no reason, an unknown key, or a `marks`
+that is not a whole count are each refused by name — `assertDistinctWays` and `formatCandidates`
+read the same shape through the same reader, so a set that passes one cannot throw in the other.
+
 **AND EACH CARRIES THE OTHER HALF OF ITS OWN SHEET.** Every candidate line names when NOT to reach
 for that type, in the sheet's own words, because a slot once closed on a Scatter of six rows while
-`types/scatter.md` refused exactly that on disk. Pass the frozen `profile`: where a sheet states a
-limit in ROWS — the one unit `source/profile.json` carries — this THROWS rather than renders. A
-limit in any other unit (slices, levels) is handed to the journalist to check by hand rather than
-silently measured against a row count, which is not what the sheet means. When a candidate departs from the chooser's first
+`types/scatter.md` refused exactly that on disk. **A sheet's limit in ROWS is about the MARKS the
+beat draws, never the source table's row count**: pass `marks` on the candidate and this THROWS
+rather than renders; leave it out and the limit travels to the journalist as a by-hand check with
+the row count printed beside it, so the difference is visible. On a long-form panel those two
+numbers are nothing like each other — 7,585 rows for a beat drawing 211 marks — and the version
+that assumed they were the same quoted `beeswarm.md`'s own sentence at the journalist as though it
+were about their beat. A limit in any other unit (slices, levels) is handed to the journalist to
+check by hand for the same reason. When a candidate departs from the chooser's first
 surviving type, its reason also says why. The journalist drops, reorders, adds, vetoes.
 Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly this gate,
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate

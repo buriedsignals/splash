@@ -393,9 +393,9 @@ describe("the candidates are genuinely different ways of seeing it", () => {
   it("should refuse a candidate set that is one idea wearing three labels", () => {
     expect(() =>
       assertDistinctWays([
-        { type: "Bar and column" },
-        { type: "bar and column" },
-        { type: "Bar and column" },
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "bar and column", why: "one way of seeing it" },
+        { type: "Bar and column", why: "one way of seeing it" },
       ]),
     ).toThrow(/1 way\(s\) of seeing this data, not 3/);
   });
@@ -403,8 +403,8 @@ describe("the candidates are genuinely different ways of seeing it", () => {
   it("should accept two genuinely different types, because two honest ways beat three fake ones", () => {
     expect(
       assertDistinctWays([
-        { type: "Stacked bar" },
-        { type: "Waterfall (bridge)" },
+        { type: "Stacked bar", why: "one way of seeing it" },
+        { type: "Waterfall (bridge)", why: "one way of seeing it" },
       ]),
     ).toBe(true);
   });
@@ -413,7 +413,7 @@ describe("the candidates are genuinely different ways of seeing it", () => {
     expect(() =>
       assertDistinctWays([
         { why: "it looks nice" },
-        { type: "Bar and column" },
+        { type: "Bar and column", why: "one way of seeing it" },
       ]),
     ).toThrow(/must name the type/);
   });
@@ -495,7 +495,7 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: sixRows,
         candidates: [
-          { type: "Scatter (and bubble)", format: "static", why: "population against trips" },
+          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
           { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
         ],
       }),
@@ -511,11 +511,11 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile,
         candidates: [
-          { type: "Scatter (and bubble)", format: "static", why: "population against trips" },
+          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
           { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
         ],
       }),
-    ).toThrow(/refuses 6 row\(s\)/);
+    ).toThrow(/refuses 6 mark\(s\)/);
   });
 
   it("should render every candidate with the sheet's own refusal beside its purpose", () => {
@@ -600,11 +600,11 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile,
         candidates: [
-          { type: "Beeswarm", format: "static", why: "every salary as its own mark" },
+          { type: "Beeswarm", format: "static", marks: 240, why: "every salary as its own mark" },
           { type: "Histogram", format: "static", why: "the shape of the spread" },
         ],
       }),
-    ).toThrow(/refuses 240 row\(s\)/);
+    ).toThrow(/refuses 240 mark\(s\)/);
   });
 
   it("should still allow the same beeswarm under its own stated ceiling", () => {
@@ -612,7 +612,7 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "chart",
       profile: { rowCount: 90, columns: [] },
       candidates: [
-        { type: "Beeswarm", format: "static", why: "every reading as its own mark" },
+        { type: "Beeswarm", format: "static", marks: 90, why: "every reading as its own mark" },
         { type: "Histogram", format: "static", why: "the shape of the spread" },
       ],
     });
@@ -734,11 +734,11 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: frozenProfile("stress-p-transport-ridership"),
         candidates: [
-          { type: "Scatter and bubble", format: "static", why: "population against trips" },
+          { type: "Scatter and bubble", format: "static", marks: 6, why: "population against trips" },
           { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
         ],
       }),
-    ).toThrow(/refuses 6 row\(s\)/);
+    ).toThrow(/refuses 6 mark\(s\)/);
   });
 
   // The other file an agent reads a treatment NAME out of. Its ranking tables spell types the
@@ -783,22 +783,22 @@ describe("a candidate is checked against its own sheet's refusal", () => {
 
   it("should refuse a candidate naming a treatment no sheet and no catalogue holds", () => {
     expect(() =>
-      assertDistinctWays([{ type: "OD flow diagram" }, { type: "Choropleth" }]),
+      assertDistinctWays([{ type: "OD flow diagram", why: "one way of seeing it" }, { type: "Choropleth", why: "one way of seeing it" }]),
     ).toThrow(/OD flow diagram/);
   });
 
   it("should still accept a catalogued treatment whose medium holds no sheets", () => {
     expect(
-      assertDistinctWays([{ type: "Photograph sequence" }, { type: "Bar and column" }]),
+      assertDistinctWays([{ type: "Photograph sequence", why: "one way of seeing it" }, { type: "Bar and column", why: "one way of seeing it" }]),
     ).toBe(true);
   });
 
   it("should refuse two labels for one idea, because the sheet says they are one idea", () => {
     expect(() =>
       assertDistinctWays([
-        { type: "Bar and column" },
-        { type: "Lollipop" },
-        { type: "Treemap" },
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "Lollipop", why: "one way of seeing it" },
+        { type: "Treemap", why: "one way of seeing it" },
       ]),
     ).toThrow(/Lollipop/);
   });
@@ -806,9 +806,9 @@ describe("a candidate is checked against its own sheet's refusal", () => {
   it("should still accept three types that are genuinely three ideas", () => {
     expect(
       assertDistinctWays([
-        { type: "Bar and column" },
-        { type: "Dot strip" },
-        { type: "Treemap" },
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "Dot strip", why: "one way of seeing it" },
+        { type: "Treemap", why: "one way of seeing it" },
       ]),
     ).toBe(true);
   });
@@ -1237,5 +1237,110 @@ describe("resolveGrounding — an unplaced claim says why, not just that it was 
     // The column it was put to, and the range it missed — not just "1 could not be placed".
     expect(resolved.detail).toContain("surface");
     expect(resolved.detail).toContain("[40, 90]");
+  });
+});
+
+// ROUND SEVEN, D8 ON `stories/real-ember-renewables-share` — THE LIMIT IS ABOUT THE DRAWING.
+//
+// `types/beeswarm.md` says it wants at most 150 points. The frozen table is a long-form PANEL:
+// 7,585 rows, 246 entities × 126 years. The beat draws ONE year's slice — 211 marks — and the menu
+// refused with
+//
+//     "Beeswarm" refuses 7585 row(s): its own sheet says it wants at most 150
+//
+// a number 36× the one the sheet is about, with the sheet's own sentence quoted at the journalist
+// as though it were about their beat. Here the refusal was coincidentally right (211 > 150 too);
+// on a panel whose slice is small — 27 EU countries out of 7,585 rows — the same code refuses a
+// type the data comfortably supports. `rowCount` is a fact about the SOURCE TABLE, and a row limit
+// in a type sheet is a fact about the MARKS. They are the same number only for a tidy table with
+// one row per mark, and nothing checked whether this was one.
+//
+// So the beat says how many marks it would draw, and where nobody says, the limit travels to the
+// journalist as something to check by hand — named, quantified, and with the row count beside it
+// so the difference is visible — rather than being enforced against a number that is not it.
+describe("a row limit is measured against the marks a beat draws", () => {
+  const panel = { rowCount: 7585, columns: [] };
+
+  it("refuses when the marks the beat declares exceed the sheet's own ceiling", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: panel,
+        candidates: [
+          { type: "Beeswarm", format: "static", marks: 211, why: "every country as its own mark" },
+          { type: "Histogram", format: "static", why: "the shape of the spread" },
+        ],
+      }),
+    ).toThrow(/211 mark\(s\)/);
+  });
+
+  it("allows the same type on the same table when the beat draws few enough marks", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: panel,
+      candidates: [
+        { type: "Beeswarm", format: "static", marks: 27, why: "the EU twenty-seven, one mark each" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).toContain("**Beeswarm**");
+  });
+
+  it("never quotes the source table's row count as the number the sheet refuses", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: panel,
+      candidates: [
+        { type: "Beeswarm", format: "static", why: "every country as its own mark" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).not.toMatch(/refuses 7585/);
+    expect(text).toContain("rows > 150");
+    expect(text).toContain("7585 row(s)");
+    expect(text).toMatch(/marks/i);
+  });
+});
+
+// ROUND SEVEN, D12. Both functions took `{ type, why, format }` objects and threw on anything else,
+// and `SKILL.md` and `references/exchange.md` both described candidates as treatment NAMES. Two
+// failed calls to find out. Worse, the two functions disagreed with each other: `formatCandidates`
+// required `why` and `assertDistinctWays` did not, so a set that passed the distinctness check
+// still threw one call later. One shape, described where it is called, and refused by name when it
+// is not the shape.
+describe("one candidate shape, and the mechanism refuses what it does not accept", () => {
+  it("names the shape to write when a candidate is a bare string", () => {
+    expect(() => assertDistinctWays(["Line", "Treemap"])).toThrow(/\{ type, why, format \}/);
+  });
+
+  it("asks for the reason in the distinctness check too, not only when the menu renders", () => {
+    expect(() =>
+      assertDistinctWays([{ type: "Line" }, { type: "Treemap", why: "the parts of the whole" }]),
+    ).toThrow(/carries no reason/);
+  });
+
+  it("refuses a key it does not know, rather than ignoring it", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        candidates: [
+          { type: "Line", why: "the trajectory", rows: 40 },
+          { type: "Treemap", why: "the parts of the whole" },
+        ],
+      }),
+    ).toThrow(/rows/);
+  });
+
+  it("refuses a mark count that is not a count", () => {
+    for (const marks of ["211", -1, 1.5])
+      expect(() =>
+        formatCandidates({
+          medium: "chart",
+          candidates: [
+            { type: "Line", why: "the trajectory", marks },
+            { type: "Treemap", why: "the parts of the whole" },
+          ],
+        }),
+      ).toThrow(/marks/);
   });
 });
