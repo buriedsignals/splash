@@ -67,7 +67,14 @@ describe("verify-web against a beat that lives in stories/, not proof/", () => {
 
     // And the two guards that used to answer about a directory rather than about this page.
     expect(out).toContain("rtl-runs-carry-their-direction");
-    expect(out).toContain("labels-name-their-own-row");
+    // `labels-name-their-own-row` read zero labels on every chart-web beat, because
+    // `labelStacksFrom` scans SVG `<text>` and this format draws every word in HTML. It now reads
+    // what the page paints — and says, with the count, that this beat draws no LEADER, which is the
+    // remaining reason the rule has nothing to decide here. A skip carrying its own measurement is
+    // the opposite of the silent green this whole round is about.
+    expect(out).toMatch(
+      /labels-name-their-own-row[\s\S]*?\d+ painted label\(s\) and \d+ drawn line\(s\), none of them a leader/,
+    );
 
     expect(out).toMatch(/\d+ checks passed, 0 failed/);
     expect(exitCode).toBe(0);
