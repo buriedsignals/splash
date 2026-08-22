@@ -789,6 +789,37 @@ const RELATION_MATCHERS = RELATION_VOCABULARY.map(([kind, phrases]) => [
   ),
 ]);
 
+/**
+ * A word saying the numeral that follows is a DISTANCE between two values, not one of them.
+ *
+ * Kept apart from `RELATION_VOCABULARY` deliberately: a comparator says how to test the numeral, a
+ * span word says WHAT THE NUMERAL IS, and the two compose — "spanned more than 30 years" carries
+ * one of each. The window is the same, and the marker may sit before the comparator.
+ */
+const DIFFERENCE_MARKERS = [
+  "spanned", "spans", "span of", "gap of", "gap between", "difference of", "difference between",
+  "spread of", "range of", "apart",
+  "écart de", "écart entre", "amplitude de",
+];
+
+const DIFFERENCE_MATCHERS = DIFFERENCE_MARKERS.map(
+  (word) =>
+    [
+      word,
+      new RegExp(
+        `(?<![\\p{L}\\p{N}])${word.replace(RELATION_PHRASE_META_RE, "\\$&").replace(/ /g, "\\s+")}(?![\\p{L}\\p{N}])`,
+        "iu",
+      ),
+    ],
+);
+
+/** The span word governing the numeral that starts at `start`, or `null`. */
+function differenceBefore(text, start) {
+  const before = text.slice(Math.max(0, start - RELATION_WINDOW), start);
+  for (const [word, re] of DIFFERENCE_MATCHERS) if (re.test(before)) return word;
+  return null;
+}
+
 /** The comparator immediately governing the numeral that starts at `start`, or `null`. */
 function relationBefore(text, start) {
   const before = text.slice(Math.max(0, start - RELATION_WINDOW), start);
@@ -1213,6 +1244,50 @@ function resolveEntityRows(rows, entityName) {
   );
 }
 
+/** Edit distance, bounded — only ever asked about two short names. */
+function editDistance(a, b) {
+  const rows = [Array.from({ length: b.length + 1 }, (_, i) => i)];
+  for (let i = 1; i <= a.length; i += 1) {
+    rows[i] = [i];
+    for (let j = 1; j <= b.length; j += 1)
+      rows[i][j] = Math.min(
+        rows[i - 1][j] + 1,
+        rows[i][j - 1] + 1,
+        rows[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+  }
+  return rows[a.length][b.length];
+}
+
+/** How close two names have to be before the difference is a SPELLING question and not two
+ *  different subjects. Both bounds matter: two edits apart is "Lisbon"/"Lisboa", and the length
+ *  floor keeps a two-letter word like a sentence-initial "In" from being near anything. */
+const NEAR_SPELLING_MIN_LENGTH = 5;
+const NEAR_SPELLING_MAX_EDITS = 2;
+
+/** The key this table holds that `candidate` is nearly spelled as, or `null`. */
+function nearlySpelled(candidate, rows) {
+  const written = String(candidate ?? "").trim();
+  if (written.length < NEAR_SPELLING_MIN_LENGTH || !Array.isArray(rows)) return null;
+  const lower = written.toLowerCase();
+  const keys = new Map();
+  for (const row of rows)
+    for (const value of Object.values(row)) {
+      if (typeof value !== "string") continue;
+      const key = value.trim();
+      if (key.length >= NEAR_SPELLING_MIN_LENGTH && !keys.has(key.toLowerCase())) keys.set(key.toLowerCase(), key);
+    }
+  let best = null;
+  for (const [low, key] of keys) {
+    if (low === lower) return null;
+    if (Math.abs(low.length - lower.length) > NEAR_SPELLING_MAX_EDITS) continue;
+    const distance = editDistance(low, lower);
+    if (distance > 0 && distance <= NEAR_SPELLING_MAX_EDITS && (best === null || distance < best.distance))
+      best = { key, distance };
+  }
+  return best ? best.key : null;
+}
+
 // The entity of `item` that the frozen table actually holds exactly one row for, tried in
 // `entityCandidatesFor`'s own order. Returns the ambiguity instead when a candidate matches
 // several rows and none matches exactly one.
@@ -1224,8 +1299,34 @@ function resolveClaimEntity(item, rows) {
     if (hits.length === 1) return { name: candidate, row: hits[0] };
     if (hits.length > 1 && !ambiguous) ambiguous = { name: candidate, count: hits.length };
   }
-  if (!ambiguous && candidates.length === 0) return resolveEntityWithoutCase(item, rows);
-  return ambiguous ? { ambiguous } : {};
+  // A NAME THE TABLE ALMOST HOLDS IS A SPELLING QUESTION, NOT A MISSING SUBJECT.
+  //
+  // `stress-p-transport-ridership` writes "Lisbon" and its table holds "Lisboa", and this file has
+  // always refused that on purpose: reading one as the other would quietly settle a question the
+  // journalist owns. What it could not do was tell that case apart from a candidate that was never
+  // a name at all — a sentence-initial "In" — and the reading below, which looks for the table's own
+  // keys in the sentence, would have answered the Lisbon claim about "Porto", the city it is
+  // COMPARED WITH. So a candidate whose spelling nearly matches a key is reported as the spelling
+  // question it is, and only a candidate with no near match at all lets the sentence be read.
+  if (!ambiguous) {
+    for (const candidate of candidates) {
+      const near = nearlySpelled(candidate, rows);
+      if (near) return { spelling: { wrote: candidate.trim(), holds: near } };
+    }
+  }
+  // THE TABLE IS READ WHENEVER CAPITALISATION DID NOT ANSWER, not only when there was none to read.
+  //
+  // This used to run only for `candidates.length === 0`, which is the caseless-script case it was
+  // written for. On a real panel it left "In 2023 the country with the shortest life expectancy was
+  // Nigeria" refused as *could not resolve "In"* — the sentence's first word, capitalised because
+  // it starts a sentence, taken as the subject and never checked against the table. A candidate the
+  // table holds no row for is not an answer; the table's own keys, looked for in the claim's clause,
+  // are. An ambiguity found by capitalisation still wins, because that one WAS a name.
+  if (!ambiguous) {
+    const found = resolveEntityWithoutCase(item, rows);
+    if (found.row || found.ambiguous) return found;
+  }
+  return ambiguous ? { ambiguous } : { tried: candidates };
 }
 
 /**
@@ -1248,7 +1349,23 @@ function resolveClaimEntity(item, rows) {
  * the ambiguity branch reports the rest.
  */
 function resolveEntityWithoutCase(item, rows) {
-  const clause = String(item.clause ?? "");
+  // TWO TEXTS, IN THIS ORDER, and the order is the whole safety of it. `item.clause` is what
+  // precedes the marker, which is where a subject usually sits ("Germany has the highest"), and it
+  // is tried first so `stress-t-europe-recycling`'s "Germany has the highest ... and Macedonia the
+  // lowest" still resolves each half to its own half. The SENTENCE is tried only when that came
+  // back with nothing — which is the shape a real story turned up: "In 2023 the country with the
+  // longest period life expectancy at birth was Monaco" puts the subject AFTER the marker, so the
+  // clause the old reading had was "In 2023 the country with ", and the check refused a sentence
+  // whose subject it was looking straight at.
+  for (const text of [item.clause, item.sentence]) {
+    const found = entityNamedIn(String(text ?? ""), rows);
+    if (found.row || found.ambiguous) return found;
+  }
+  return {};
+}
+
+/** The one row of `rows` whose own key appears in `text` as a word; the longest match wins. */
+function entityNamedIn(clause, rows) {
   if (!clause.trim() || !rows || rows.length === 0) return {};
   const named = new Map();
   for (const row of rows) {
@@ -1263,6 +1380,142 @@ function resolveEntityWithoutCase(item, rows) {
   const keys = [...named.keys()].sort((a, b) => b.length - a.length);
   for (const key of keys) if (named.get(key).length === 1) return { name: key, row: named.get(key)[0] };
   return keys.length > 0 ? { ambiguous: { name: keys[0], count: named.get(keys[0]).length } } : {};
+}
+
+/**
+ * THE SHAPE OF A PANEL, DERIVED FROM THE ROWS (three real stories, 2026-08-22).
+ *
+ * Every fixture this file was built against holds ONE row per period, and every check below was
+ * written on that assumption. Real open data is not that shape: Our World in Data, the World Bank,
+ * Eurostat and Ember all publish one row per ENTITY per period, and on a 7,585-row file "higher in
+ * 2023 than in 2000" was answered from `ASEAN (Ember)`'s rows — the first rows of those years —
+ * for a sentence about the world, and came back `supported`. The same reading came back
+ * `contradicted`, the verdict that BLOCKS G1, on a true sentence about Ghana.
+ *
+ * So the shape is established before anything is read out of the table, and it is DERIVED, never
+ * named: a table is a panel when one period value carries more than one row, and the column that
+ * keys those rows apart is the text column whose value is unique WITHIN every period. That test is
+ * arithmetic on the table in hand; a list of column names ("entity", "country", "iso3") would have
+ * been a population typed rather than derived, which is the defect this repository keeps finding.
+ *
+ * Where several columns key the rows apart — the Ember file's `entity` and `code` both do — the one
+ * that is never blank wins, then the one carrying more distinct values, then the leftmost. `code`
+ * is blank on 645 of those rows, and a key that is sometimes absent cannot name a subject.
+ */
+export function panelShapeOf(columns, rows) {
+  const periodColumn = findYearColumn(Array.isArray(columns) ? columns : []);
+  if (!periodColumn || !Array.isArray(rows) || rows.length === 0) return { isPanel: false, periodColumn: periodColumn ?? null, entityColumn: null };
+  const perPeriod = new Map();
+  for (const row of rows) {
+    const key = String(row[periodColumn.name]);
+    perPeriod.set(key, (perPeriod.get(key) ?? 0) + 1);
+  }
+  const rowsPerPeriod = Math.max(...perPeriod.values());
+  if (rowsPerPeriod <= 1) return { isPanel: false, periodColumn, entityColumn: null };
+
+  const keyed = [];
+  for (const column of columns.filter((c) => c.type === "text")) {
+    const seen = new Set();
+    const values = new Set();
+    let blank = 0;
+    let collides = false;
+    for (const row of rows) {
+      const raw = row[column.name];
+      const written = raw === null || raw === undefined ? "" : String(raw).trim();
+      if (written === "") {
+        blank += 1;
+        continue;
+      }
+      const lower = written.toLowerCase();
+      values.add(lower);
+      const pair = `${row[periodColumn.name]} ${lower}`;
+      if (seen.has(pair)) {
+        collides = true;
+        break;
+      }
+      seen.add(pair);
+    }
+    if (collides || values.size < 2) continue;
+    keyed.push({ column, blank, distinct: values.size, at: columns.indexOf(column) });
+  }
+  keyed.sort((a, b) => a.blank - b.blank || b.distinct - a.distinct || a.at - b.at);
+  return {
+    isPanel: true,
+    periodColumn,
+    entityColumn: keyed[0]?.column ?? null,
+    rowsPerPeriod,
+    periods: perPeriod.size,
+  };
+}
+
+/** Every subject this panel names, as written, once each. */
+function panelEntityNames(rows, panel) {
+  const names = new Map();
+  for (const row of rows) {
+    const raw = row[panel.entityColumn.name];
+    const written = raw === null || raw === undefined ? "" : String(raw).trim();
+    if (written !== "" && !names.has(written.toLowerCase())) names.set(written.toLowerCase(), written);
+  }
+  return [...names.values()];
+}
+
+/** The rows this panel holds for one subject. */
+function panelRowsFor(rows, panel, name) {
+  const key = name.trim().toLowerCase();
+  return rows.filter(
+    (row) => String(row[panel.entityColumn.name] ?? "").trim().toLowerCase() === key,
+  );
+}
+
+/**
+ * WHICH SUBJECT OF A PANEL A CLAIM IS ABOUT.
+ *
+ * Two readings, in this order, and the answer says which one answered — because they are worth
+ * different amounts. A CAPITALISED name in the claim's own clause is the subject the journalist
+ * wrote; failing that, the panel's own key values are looked for in the sentence AS WORDS, which is
+ * how "the world's renewable share" resolves to the row named `World` and how a claim written in a
+ * script with no case resolves at all. The second reading is reported as what it is, so a wrong
+ * resolution is visible rather than silent, and the longest match wins so `Europe (excl. Russia)`
+ * is not shadowed by `Europe`.
+ */
+function resolvePanelEntity(item, rows, panel, sentence) {
+  const names = panelEntityNames(rows, panel);
+  const candidates = item.entityCandidates ?? (item.entity ? [item.entity] : []);
+  for (const candidate of candidates) {
+    const keys = entityKeys(candidate);
+    const hit = names.filter((n) => keys.includes(n.toLowerCase()));
+    if (hit.length === 1) return { name: hit[0], how: "named in this sentence" };
+  }
+  const text = `${item.clause ?? ""} ${sentence ?? ""}`;
+  const appearing = names
+    .filter((n) => n.length >= 2 && wordAppearsIn(n, text))
+    .sort((a, b) => b.length - a.length);
+  if (appearing.length > 0)
+    return {
+      name: appearing[0],
+      how: `read out of this sentence's own words against the "${panel.entityColumn.name}" column`,
+      others: appearing.slice(1),
+    };
+  return { tried: candidates };
+}
+
+/** The refusal a panel earns when the claim names no subject it carries. Names what would lift it. */
+function panelSubjectRefusal(panel, resolved) {
+  const tried = (resolved.tried ?? []).filter((c) => String(c).trim() !== "");
+  return (
+    `this frozen table carries ${panel.rowsPerPeriod} rows for a single "${panel.periodColumn.name}" — one per "${panel.entityColumn.name}" — so comparing two periods means comparing two rows of ONE subject, and this sentence names no "${panel.entityColumn.name}" the table holds` +
+    (tried.length > 0 ? ` (it read ${tried.map((t) => `"${t}"`).join(", ")}, and the table holds no such row)` : "") +
+    `. Name the "${panel.entityColumn.name}" in the takeaway, and this becomes decidable`
+  );
+}
+
+/** A period the sentence names that this panel actually carries, or `null`. */
+function periodAnchorIn(sentence, panel, rows) {
+  const held = new Set(rows.map((r) => Number(r[panel.periodColumn.name])));
+  const found = [...String(sentence ?? "").matchAll(/\b(\d{4})\b/g)]
+    .map((m) => Number(m[1]))
+    .filter((y) => held.has(y));
+  return found.length === 1 ? found[0] : null;
 }
 
 // A column this shape refuses to treat a period as fully comparable within, when it marks a row's
@@ -2206,12 +2459,22 @@ function askAboutTheDenominator(result, item, profile, columns, sentence) {
   };
 }
 
+/**
+ * ONE period's value, or the reason there is not one.
+ *
+ * This was `rows.find(...)` returning a bare number — the FIRST row of that period, whichever
+ * subject it belonged to — and on three real panels that was the alphabetically first country in
+ * the file, for every claim, in every story. The shape is the fix as much as the caller is: a
+ * reader that cannot express "several rows answer to this period" will always answer from one of
+ * them, and the caller cannot tell that it did.
+ */
 function rowValue(rows, yearField, valueField, year) {
-  const row = rows.find((r) => Number(r[yearField]) === year);
-  if (!row) return undefined;
-  const v = row[valueField];
+  const matching = rows.filter((r) => Number(r[yearField]) === year);
+  if (matching.length === 0) return { missing: true };
+  if (matching.length > 1) return { several: matching.length };
+  const v = matching[0][valueField];
   const n = typeof v === "number" ? v : Number(v);
-  return Number.isNaN(n) ? undefined : n;
+  return Number.isNaN(n) ? { missing: true } : { value: n };
 }
 
 function resolveComparison(item, profile, text) {
@@ -2267,6 +2530,30 @@ function resolveComparison(item, profile, text) {
       };
     }
     const column = shareColumns[0];
+
+    // A COLUMN OF INDEPENDENT SHARES IS NOT A PARTITION OF ANYTHING (Ember, 2026-08-22).
+    //
+    // `renewable_share_of_electricity__pct` holds 7,585 percentages, each measured against a
+    // DIFFERENT denominator — one country, one year. Its `sum` is 221,735.86 of nothing, and this
+    // check compared a sentence's "100%" against that number and came back `contradicted`, which is
+    // the verdict that blocks G1. A journalist's only way past it was to delete a true, plain
+    // sentence from their own takeaway.
+    //
+    // A totality claim needs the column's rows to BE the parts of one whole, and a panel's are not:
+    // the same subject appears once per period. So the refusal is by shape, it names the shape, and
+    // it RELEASES the numeral it could not decide (`releaseSpan`) so the range check still gets to
+    // say what "100" is — which, on this column, is exactly its own maximum.
+    const totalityRows = Array.isArray(profile.rows) ? profile.rows : null;
+    const totalityPanel = panelShapeOf(columns, totalityRows);
+    if (totalityPanel.isPanel) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        releaseSpan: true,
+        detail: `column "${column.name}" is a share measured once per "${totalityPanel.entityColumn?.name ?? "subject"}" per "${totalityPanel.periodColumn.name}", and this table carries ${totalityPanel.rowsPerPeriod} such rows for a single period — so its sum across all ${totalityRows.length} rows (${column.sum}) is not a quantity anything is a part of, and a totality claim cannot be checked against it`,
+      };
+    }
+
     const holds = Math.abs(column.sum - TOTALITY_WHOLE_VALUE) <= TOTALITY_TOLERANCE;
     // ROUND SIX, finding Z2 — PARTS THAT CANCEL ARE NOT PARTS OF A WHOLE. `stress-z-budget-parts`
     // returned `supported` here: `part_pct` sums to exactly 100 and the claim said the parts make
@@ -2360,29 +2647,63 @@ function resolveComparison(item, profile, text) {
     return { claim, verdict: "unverifiable", detail: "no year found near this superlative to anchor the check on" };
   }
 
-  const valueA = rowValue(rows, yearColumn.name, valueColumn.name, item.yearA);
-  if (valueA === undefined) {
-    return { claim, verdict: "unverifiable", detail: `year ${item.yearA} is not present in the frozen data` };
+  // THE SUBJECT, ESTABLISHED BEFORE ANY ROW IS READ (real stories, 2026-08-22). On a panel every
+  // period carries one row per subject, so "in 2023" names no row at all until the subject is
+  // settled. See `panelShapeOf` for what this cost before it existed.
+  const panel = panelShapeOf(columns, rows);
+  let scope = rows;
+  let about = "";
+  if (panel.isPanel && panel.entityColumn) {
+    const resolved = resolvePanelEntity(
+      { ...item, entityCandidates: item.entityCandidates ?? entityCandidatesFor(text ?? item.raw, item.start ?? 0) },
+      rows,
+      panel,
+      sentence,
+    );
+    if (!resolved.name) return { claim, verdict: "unverifiable", detail: panelSubjectRefusal(panel, resolved) };
+    scope = panelRowsFor(rows, panel, resolved.name);
+    about = ` for "${resolved.name}" (${resolved.how})`;
   }
 
+  const readA = rowValue(scope, yearColumn.name, valueColumn.name, item.yearA);
+  if (readA.several !== undefined) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `the frozen table holds ${readA.several} rows for ${item.yearA}${about}, and one period with several rows is not one value — this comparison cannot be decided from them`,
+    };
+  }
+  if (readA.value === undefined) {
+    return { claim, verdict: "unverifiable", detail: `year ${item.yearA} is not present in the frozen data${about}` };
+  }
+  const valueA = readA.value;
+
   if (item.kind === "pair") {
-    const valueB = rowValue(rows, yearColumn.name, valueColumn.name, item.yearB);
-    if (valueB === undefined) {
-      return { claim, verdict: "unverifiable", detail: `year ${item.yearB} is not present in the frozen data` };
+    const readB = rowValue(scope, yearColumn.name, valueColumn.name, item.yearB);
+    if (readB.several !== undefined) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail: `the frozen table holds ${readB.several} rows for ${item.yearB}${about}, and one period with several rows is not one value — this comparison cannot be decided from them`,
+      };
     }
+    if (readB.value === undefined) {
+      return { claim, verdict: "unverifiable", detail: `year ${item.yearB} is not present in the frozen data${about}` };
+    }
+    const valueB = readB.value;
     const holds = item.direction === "less" ? valueA < valueB : valueA > valueB;
     return {
       claim,
       verdict: holds ? "supported" : "contradicted",
-      detail: `${valueColumn.name} in ${item.yearA} = ${valueA}, in ${item.yearB} = ${valueB}`,
+      detail: `${valueColumn.name}${about} in ${item.yearA} = ${valueA}, in ${item.yearB} = ${valueB}`,
     };
   }
 
   // "since" (windowed against the claimed range) and "ever" (windowed against the whole profile).
   const windowRows =
     item.kind === "ever"
-      ? rows.filter((r) => Number(r[yearColumn.name]) !== item.yearA)
-      : rows.filter((r) => {
+      ? scope.filter((r) => Number(r[yearColumn.name]) !== item.yearA)
+      : scope.filter((r) => {
           const y = Number(r[yearColumn.name]);
           const lo = Math.min(item.yearA, item.yearB);
           const hi = Math.max(item.yearA, item.yearB);
@@ -2404,13 +2725,13 @@ function resolveComparison(item, profile, text) {
     return {
       claim,
       verdict: "contradicted",
-      detail: `${valueColumn.name} in ${item.yearA} = ${valueA} is not ${item.direction} than ${valueColumn.name} in ${y} = ${v}`,
+      detail: `${valueColumn.name}${about} in ${item.yearA} = ${valueA} is not ${item.direction} than ${valueColumn.name} in ${y} = ${v}`,
     };
   }
   return {
     claim,
     verdict: "supported",
-    detail: `${valueColumn.name} in ${item.yearA} = ${valueA} is ${item.direction === "less" ? "less than every" : "more than every"} other year checked`,
+    detail: `${valueColumn.name}${about} in ${item.yearA} = ${valueA} is ${item.direction === "less" ? "less than every" : "more than every"} other year checked`,
   };
 }
 
@@ -2479,16 +2800,72 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
     };
   }
 
-  const resolved = resolveClaimEntity(item, rows);
+  // A SUPERLATIVE OVER A PANEL IS A SUPERLATIVE WITHIN ONE PERIOD (real stories, 2026-08-22).
+  //
+  // On a table holding one row per subject per period, two things broke at once. Every subject owns
+  // many rows, so `resolveClaimEntity` refused all of them — *"Nigeria" matches 74 rows* — and the
+  // column's own `max` is its maximum across every subject AND every period, which is not the
+  // question "who leads in 2023" asks. Both are the same mistake: the population was the whole file
+  // when the claim is about one slice of it. So the period the sentence names selects the rows, the
+  // extreme is computed FROM THOSE ROWS, and a sentence naming no period this table carries is
+  // refused rather than answered against 315 years at once.
+  const panel = panelShapeOf(columns, rows);
+  let scope = rows;
+  let extremeValue = extreme;
+  let within = "";
+  // ONE period is not a question. A table whose rows are all the same period carries no choice of
+  // period to make, so the anchor is only demanded where there is genuinely something to anchor to.
+  if (panel.isPanel && panel.entityColumn && panel.periods > 1) {
+    const anchor = periodAnchorIn(sentence, panel, rows);
+    if (anchor === null) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail: `this frozen table carries ${panel.rowsPerPeriod} rows for a single "${panel.periodColumn.name}" — one per "${panel.entityColumn.name}" — so which "${panel.entityColumn.name}" holds the ${extremeName} is a question about ONE period, and this sentence names no single "${panel.periodColumn.name}" the table holds. Name the period, and this becomes decidable${refused}`,
+      };
+    }
+    scope = rows.filter((r) => Number(r[panel.periodColumn.name]) === anchor);
+    const values = scope.map((r) => Number(r[valueColumn.name])).filter((v) => Number.isFinite(v));
+    if (values.length === 0) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail: `no row of "${panel.periodColumn.name}" ${anchor} carries a numeric value in column "${valueColumn.name}"${refused}`,
+      };
+    }
+    extremeValue = item.extreme === "min" ? Math.min(...values) : Math.max(...values);
+    within = ` within "${panel.periodColumn.name}" ${anchor}`;
+  }
+
+  // The SENTENCE stands in for the clause when the marker's own clause is empty — a superlative can
+  // sit in a clause that names nobody ("In 2023 the country with the longest ... was Monaco" puts the
+  // subject after the verb), and reading the table's own keys out of the sentence is the whole point
+  // of the fallback. Without this the check refused a sentence whose subject it was looking straight at.
+  const resolved = resolveClaimEntity({ ...item, sentence }, scope);
+  if (resolved.spelling) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `this sentence names "${resolved.spelling.wrote}" and the frozen table holds "${resolved.spelling.holds}" — near enough to be the same subject spelled two ways, and far enough that reading one as the other would settle a question that belongs to the journalist. Use the table's own spelling, or say why they differ`,
+    };
+  }
   if (resolved.ambiguous) {
     return {
       claim,
       verdict: "unverifiable",
-      detail: `"${resolved.ambiguous.name}" matches ${resolved.ambiguous.count} rows in the frozen table — a claim about one entity cannot be decided from several of its rows`,
+      detail: `"${resolved.ambiguous.name}" matches ${resolved.ambiguous.count} rows in the frozen table${within} — a claim about one entity cannot be decided from several of its rows`,
     };
   }
   if (!resolved.row) {
-    return { claim, verdict: "unverifiable", detail: `could not resolve "${item.entity}" to a row in the frozen data` };
+    const tried = (resolved.tried ?? []).filter((c) => String(c).trim() !== "");
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail:
+        tried.length > 0
+          ? `could not resolve any name this sentence offers to a row in the frozen data${within} — it read ${tried.map((t) => `"${t}"`).join(", ")}, and the table holds no such row`
+          : `could not identify which entity this claim is about${within}`,
+    };
   }
 
   const value = Number(resolved.row[valueColumn.name]);
@@ -2500,13 +2877,13 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
     };
   }
 
-  const holds = value === extreme;
+  const holds = value === extremeValue;
   return {
     claim,
     verdict: holds ? "supported" : "contradicted",
     detail: holds
-      ? `"${resolved.name}"'s own value in "${valueColumn.name}" (${value}) is the column's ${extremeName} (${extreme})`
-      : `"${resolved.name}"'s own value in "${valueColumn.name}" is ${value}, not the column's ${extremeName} (${extreme})`,
+      ? `"${resolved.name}"'s own value in "${valueColumn.name}"${within} (${value}) is the ${within === "" ? "column's " : ""}${extremeName} (${extremeValue})`
+      : `"${resolved.name}"'s own value in "${valueColumn.name}"${within} is ${value}, not the ${within === "" ? "column's " : ""}${extremeName} (${extremeValue})`,
   };
 }
 
@@ -2558,7 +2935,14 @@ function resolveCombined(item, profile, claim, columns, sentence) {
   if (!rows || rows.length === 0) {
     return { claim, verdict: "unverifiable", detail: `${arithmeticNote}, but "${item.entity}" cannot be resolved to a row — neither the profile nor any frozen table handed to this check carries row-level data` };
   }
-  const resolved = resolveClaimEntity(item, rows);
+  const resolved = resolveClaimEntity({ ...item, sentence }, rows);
+  if (resolved.spelling) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `${arithmeticNote}, but this sentence names "${resolved.spelling.wrote}" and the frozen table holds "${resolved.spelling.holds}" — near enough to be the same subject spelled two ways, and far enough that reading one as the other would settle a question that belongs to the journalist`,
+    };
+  }
   if (resolved.ambiguous) {
     return {
       claim,
@@ -2593,6 +2977,9 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
   // returned no salary" both came back "could not be placed").
   const rows = Array.isArray(table.rows) ? table.rows : null;
   const rowCount = Number.isFinite(table.rowCount) ? table.rowCount : null;
+  // The table's own shape, established once: on a panel a row is one subject's period, and a
+  // numeral cannot be attributed to "the row that holds it" without saying whose row that is.
+  const panel = panelShapeOf(columns, rows);
   const labelColumn = labelColumnOf(columns);
   const rowSaid = (row) => {
     if (labelColumn) return `"${String(row[labelColumn.name])}"`;
@@ -2793,6 +3180,25 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
       continue;
     }
 
+    // A DIFFERENCE IS NOT A LEVEL (OWID life expectancy, 2026-08-22). "Life expectancy in 2023
+    // spanned more than 30 years between the shortest and the longest" put `30` inside
+    // `life_expectancy_0 [10.99, 86.37]` and reported it placed — and 30 is not a life expectancy
+    // anybody has, it is the distance between two of them. A numeral governed by a span word is
+    // therefore measured against the column's SPAN rather than its membership, and the answer says
+    // which of the two it read, so a journalist can see that the check understood the sentence.
+    const difference = differenceBefore(text, start);
+    if (difference) {
+      const span = target.max - target.min;
+      const panelNote = panel.isPanel
+        ? `, taken across every "${panel.periodColumn.name}" this table carries and every "${panel.entityColumn?.name ?? "subject"}" in it — a span within one period is narrower and this check cannot tell which the sentence means`
+        : "";
+      say(
+        "consistent",
+        `"${raw}" is governed by "${difference}", so it reads as a DIFFERENCE rather than a level: column "${target.name}" itself spans ${tidyNumber(span)} (${target.min} to ${target.max})${panelNote} — that places the numeral, it does not confirm the claim it sits in`,
+      );
+      continue;
+    }
+
     const placed = readings.find((r) => r.value >= target.min && r.value <= target.max);
     if (placed) {
       // Partial periods, narrowly (finding 2). A bare numeral landing inside the YEAR column's
@@ -2831,7 +3237,30 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
           matched = ` — and it is exactly that column's minimum (${target.min})`;
         } else {
           const row = rowHolding(rows, target, placed.value);
-          if (row) matched = ` — and the frozen table holds it verbatim for ${rowSaid(row)}`;
+          // WHOSE ROW HOLDS IT (OWID life expectancy, 2026-08-22). On a panel this note named a
+          // country the sentence never mentions, from another century: "Life expectancy in Nigeria
+          // was 54.5 years" came back *the frozen table holds it verbatim for "Switzerland"* —
+          // Switzerland in 1920 — because `rowHolding` returns the first row anywhere that carries
+          // the value. The sentence's own subject is established first, and the answer either
+          // belongs to that subject or says out loud that it does not.
+          if (row && panel.isPanel && panel.entityColumn) {
+            const subject = resolvePanelEntity(
+              { entityCandidates: entityCandidatesFor(text, start), clause: sentence },
+              rows,
+              panel,
+              sentence,
+            );
+            if (subject.name) {
+              const own = rowHolding(panelRowsFor(rows, panel, subject.name), target, placed.value);
+              matched = own
+                ? ` — and the frozen table holds it verbatim for "${subject.name}"`
+                : ` — but no row this sentence's own subject ("${subject.name}") owns holds it; the row that does belongs to ${rowSaid(row)}, which this sentence does not name`;
+            } else {
+              matched = ` — and some row of the frozen table holds it verbatim (${rowSaid(row)}), which is not necessarily what this sentence is about: this table carries ${panel.rowsPerPeriod} rows for a single "${panel.periodColumn.name}"`;
+            }
+          } else if (row) {
+            matched = ` — and the frozen table holds it verbatim for ${rowSaid(row)}`;
+          }
         }
       }
 
@@ -2871,6 +3300,29 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
         say("supported", `equals the number of blank cells column "${blankIn.name}" carries (${blankIn.missing}), as the frozen profile records them`);
         continue;
       }
+    }
+
+    // A CORRECTLY ROUNDED EXTREME IS NOT AN UNPLACEABLE NUMBER (OWID life expectancy, 2026-08-22).
+    // `86.4` — the rounding, to the tenth, of `life_expectancy_0`'s own maximum 86.3724 — came back
+    // "could not be placed in the column this sentence names", because it sits a fortieth ABOVE the
+    // range. A refusal there does not read as a rounding question; it reads as "the data does not
+    // know this number", and the only way past it is to print the unrounded figure, which is the
+    // opposite of what a graphic should teach. The window is the numeral's own precision, the same
+    // one `matchesAggregate` uses, so "86.4" admits half a tenth and "86" would admit half a unit.
+    const roundedEnd = !relation
+      ? readings
+          .flatMap((r) => [
+            { end: "maximum", value: target.max, off: Math.abs(r.value - target.max), window: r.window, note: r.note },
+            { end: "minimum", value: target.min, off: Math.abs(r.value - target.min), window: r.window, note: r.note },
+          ])
+          .find((c) => Number.isFinite(c.value) && c.off <= c.window && c.off > 0)
+      : null;
+    if (roundedEnd) {
+      say(
+        "consistent",
+        `"${raw}" is the rounding of column "${target.name}"'s own ${roundedEnd.end} (${roundedEnd.value}) at the precision it was written to${roundedEnd.note} — that places the numeral, it does not confirm the claim it sits in`,
+      );
+      continue;
     }
 
     // Neither a member of the column this sentence is about nor a column total. That is this
@@ -3189,7 +3641,13 @@ export function groundTakeaway(takeaway, profile, options = {}) {
     entity: item.entity ?? null,
   }));
 
-  const consumedSpans = comparisons.map((c) => [c.start, c.end]);
+  // A shape that could not decide its own numeral RELEASES it, so the range check below still gets
+  // to say what the number is. Without this, a totality claim refused for the table's shape took
+  // "100%" with it and the journalist heard nothing at all about a numeral that is, on that column,
+  // exactly its maximum.
+  const consumedSpans = comparisons
+    .filter((_, i) => !parsed[i].releaseSpan)
+    .map((c) => [c.start, c.end]);
   const numerals = checkNumericRanges(takeaway, columns, consumedSpans, { rows, rowCount: base.rowCount });
 
   // THE GUESS STAYS AS THE DEFAULT. No recorded answer, no change of any kind — this is the line
@@ -3219,10 +3677,20 @@ export function groundTakeaway(takeaway, profile, options = {}) {
   //     answer about Germany's maximum is not a verdict on Macedonia's minimum.
   const recordedSentenceText = recordedSentence(takeaway, options.recorded);
   const recordedEntity = String(options.recorded.entity ?? "").trim().toLowerCase();
+  //
+  // THE FOURTH CONDITION IS THAT THERE IS NO FOURTH CONDITION ON SHAPE (GWIS wildfires,
+  // 2026-08-22). This used to require `c.shape !== recordedShape` — a parsed claim that AGREED with
+  // the recorded shape stayed in `claims` and voted. On a panel that is where it did its damage:
+  // the recorded branch correctly refused ("Canada matches 15 rows"), the pattern read the same
+  // sentence as the same shape and answered `supported` from another country's rows, and
+  // `resolveGrounding` collapses to `supported` whenever any claim is. The documented rule is that
+  // the recorded shape DECIDES; a reading that decides it instead is not honouring the rule because
+  // it happens to agree about the grammar. So every parsed reading of the recorded sentence, about
+  // the recorded entity, is set aside — and the ones that agreed on shape are reported separately
+  // from the ones that did not, because only the second kind is evidence of a defect in a pattern.
   const superseded = parsed.filter(
     (c) =>
       c.shape !== null &&
-      c.shape !== recordedShape &&
       (recordedShape === "none" || recordedSentenceText.includes(c.claim)) &&
       (recordedEntity === "" || !c.entity || entityKeys(c.entity).includes(recordedEntity)),
   );
@@ -3233,12 +3701,17 @@ export function groundTakeaway(takeaway, profile, options = {}) {
   ];
   const coverage = computeCoverage(takeaway, claims);
   coverage.recorded = { shape: recordedShape, column: options.recorded.column ?? null };
-  coverage.disagreements = superseded.map((c) => ({
+  const asDisagreement = (c) => ({
     claim: c.claim,
     parsedShape: c.shape,
     recordedShape,
     verdict: c.verdict,
     detail: c.detail,
-  }));
+  });
+  // A reading of another shape is a DEFECT in this file's own patterns and is reported as one. A
+  // reading of the SAME shape is not a defect — it is simply not the answer, because the journalist
+  // gave one — and it is reported apart so the first list keeps meaning what it says.
+  coverage.disagreements = superseded.filter((c) => c.shape !== recordedShape).map(asDisagreement);
+  coverage.replaced = superseded.filter((c) => c.shape === recordedShape).map(asDisagreement);
   return { claims, coverage };
 }

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "bun:test";
-import { groundTakeaway, readFrozenRows, measureColumns, findYearColumn } from "../scripts/ground-claim.mjs";
+import {
+  groundTakeaway,
+  readFrozenRows,
+  measureColumns,
+  findYearColumn,
+} from "../scripts/ground-claim.mjs";
 import { readFileSync } from "node:fs";
 // The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
 // in. See the block at the bottom of this file for why it is here and what stayed green without it.
@@ -139,7 +144,9 @@ describe("groundTakeaway — part-to-whole totals (the takeaway this check wrong
   it("should return no contradicted verdict at all for the run's own verbatim takeaway", () => {
     const { claims } = groundTakeaway(OLYMPICS_TAKEAWAY, OLYMPICS_PROFILE);
     expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
-    expect(claims.find((c) => c.claim.startsWith("34")).verdict).toBe("supported");
+    expect(claims.find((c) => c.claim.startsWith("34")).verdict).toBe(
+      "supported",
+    );
   });
 
   it("should not stretch the aggregate match to a value well off the sum", () => {
@@ -298,10 +305,22 @@ describe("groundTakeaway — 'highest/lowest ever' superlatives", () => {
 describe("the real profileTable output, fed to the real grounding check", () => {
   // The Milan Cortina CSV, verbatim, as `intake` would have parsed it.
   const ROWS = [
-    ["acteur", "emissions_tco2e", "glace_fondue_mt", "manteau_neigeux_km2", "basis"],
+    [
+      "acteur",
+      "emissions_tco2e",
+      "glace_fondue_mt",
+      "manteau_neigeux_km2",
+      "basis",
+    ],
     ["Jeux (émissions officielles)", "930000", "14", "2.3", "publié"],
     ["Eni", "700000", "11", "1.7", "publié"],
-    ["Stellantis + ITA Airways", "600000", "9", "1.5", "dérivé par soustraction"],
+    [
+      "Stellantis + ITA Airways",
+      "600000",
+      "9",
+      "1.5",
+      "dérivé par soustraction",
+    ],
   ];
 
   it("should carry a sum on every numeric column, which is the field the aggregate arm reads", () => {
@@ -334,8 +353,24 @@ describe("the real profileTable output, fed to the real grounding check", () => 
 const VACANT_HOMES_PROFILE = {
   rowCount: 4,
   columns: [
-    { name: "year", type: "number", missing: 0, distinct: 4, min: 2019, max: 2022, sum: 8082 },
-    { name: "vacant_homes_pct", type: "number", missing: 0, distinct: 4, min: 7.2, max: 8.4, sum: 31.3 },
+    {
+      name: "year",
+      type: "number",
+      missing: 0,
+      distinct: 4,
+      min: 2019,
+      max: 2022,
+      sum: 8082,
+    },
+    {
+      name: "vacant_homes_pct",
+      type: "number",
+      missing: 0,
+      distinct: 4,
+      min: 7.2,
+      max: 8.4,
+      sum: 31.3,
+    },
   ],
 };
 
@@ -387,7 +422,10 @@ describe("groundTakeaway — a direction word checked against its own numbers' o
     // is no numeric anchor here for this check to place a verdict on at all. See the doc comment
     // at the top of ground-claim.mjs for the reasoning.
     expect(
-      groundTakeaway("Vacancy is climbing, year after year.", VACANT_HOMES_PROFILE).claims,
+      groundTakeaway(
+        "Vacancy is climbing, year after year.",
+        VACANT_HOMES_PROFILE,
+      ).claims,
     ).toEqual([]);
   });
 });
@@ -397,8 +435,24 @@ describe("groundTakeaway — a direction word checked against its own numbers' o
 const ELECTRICITY_MIX_PROFILE = {
   rowCount: 6,
   columns: [
-    { name: "source", type: "text", missing: 0, distinct: 6, min: null, max: null, sum: null },
-    { name: "share_pct", type: "number", missing: 0, distinct: 6, min: -4.1, max: 41.2, sum: 95.2 },
+    {
+      name: "source",
+      type: "text",
+      missing: 0,
+      distinct: 6,
+      min: null,
+      max: null,
+      sum: null,
+    },
+    {
+      name: "share_pct",
+      type: "number",
+      missing: 0,
+      distinct: 6,
+      min: -4.1,
+      max: 41.2,
+      sum: 95.2,
+    },
   ],
   duplicates: { count: 0, rows: [] },
 };
@@ -409,7 +463,9 @@ describe("groundTakeaway — a part-to-whole totality claim checked against the 
       "Together these make up the whole of national supply.",
       ELECTRICITY_MIX_PROFILE,
     );
-    const totality = claims.find((c) => c.claim.toLowerCase().includes("whole"));
+    const totality = claims.find((c) =>
+      c.claim.toLowerCase().includes("whole"),
+    );
     expect(totality).toBeTruthy();
     expect(totality.verdict).toBe("contradicted");
     expect(totality.detail).toContain("95.2");
@@ -420,10 +476,21 @@ describe("groundTakeaway — a part-to-whole totality claim checked against the 
   it("should support a totality claim when the summed share column does add up to the whole", () => {
     const profile = {
       columns: [
-        { name: "share_pct", type: "number", missing: 0, distinct: 3, min: 20, max: 50, sum: 100 },
+        {
+          name: "share_pct",
+          type: "number",
+          missing: 0,
+          distinct: 3,
+          min: 20,
+          max: 50,
+          sum: 100,
+        },
       ],
     };
-    const { claims } = groundTakeaway("All of the shares together make up the whole of supply.", profile);
+    const { claims } = groundTakeaway(
+      "All of the shares together make up the whole of supply.",
+      profile,
+    );
     const totality = claims.find((c) => /whole|all of/i.test(c.claim));
     expect(totality).toBeTruthy();
     expect(totality.verdict).toBe("supported");
@@ -431,9 +498,22 @@ describe("groundTakeaway — a part-to-whole totality claim checked against the 
 
   it("should mark a totality claim unverifiable, never supported and never silent, when no share column can be identified", () => {
     const profile = {
-      columns: [{ name: "tonnes", type: "number", missing: 0, distinct: 3, min: 9, max: 14, sum: 34 }],
+      columns: [
+        {
+          name: "tonnes",
+          type: "number",
+          missing: 0,
+          distinct: 3,
+          min: 9,
+          max: 14,
+          sum: 34,
+        },
+      ],
     };
-    const { claims } = groundTakeaway("Together these make up the whole of the total.", profile);
+    const { claims } = groundTakeaway(
+      "Together these make up the whole of the total.",
+      profile,
+    );
     const totality = claims.find((c) => /whole/i.test(c.claim));
     expect(totality).toBeTruthy();
     expect(totality.verdict).toBe("unverifiable");
@@ -452,10 +532,23 @@ import { readNumericToken as readNumericTokenFromIntake } from "../../intake/scr
 import { readNumericToken as readNumericTokenFromStoryboard } from "../scripts/ground-claim.mjs";
 
 describe("readNumericToken — both copies give the same answer for the same string", () => {
-  const CASES = ["42", "1.7", "8.4", "-4.1", "14,205", "14,205.5", "1,7", "1,234", "not-a-number", ""];
+  const CASES = [
+    "42",
+    "1.7",
+    "8.4",
+    "-4.1",
+    "14,205",
+    "14,205.5",
+    "1,7",
+    "1,234",
+    "not-a-number",
+    "",
+  ];
   for (const raw of CASES) {
     it(`should agree on "${raw}"`, () => {
-      expect(readNumericTokenFromStoryboard(raw)).toEqual(readNumericTokenFromIntake(raw));
+      expect(readNumericTokenFromStoryboard(raw)).toEqual(
+        readNumericTokenFromIntake(raw),
+      );
     });
   }
 
@@ -464,7 +557,9 @@ describe("readNumericToken — both copies give the same answer for the same str
   });
 
   it("should read a thousands-grouped number that settles itself with a decimal tail", () => {
-    expect(readNumericTokenFromStoryboard("14,205.5")).toEqual({ value: 14205.5 });
+    expect(readNumericTokenFromStoryboard("14,205.5")).toEqual({
+      value: 14205.5,
+    });
   });
 
   it("should refuse a thousands-grouped number with no settling evidence, naming the ambiguity", () => {
@@ -492,9 +587,20 @@ describe("groundTakeaway — a numeral is one claim or none, never two fragments
   // of the two readings survives (see `settleGroupedNumeral`). It is still not `supported`.
   it("should read '14,205' as ONE claim, never split into '14' and '205'", () => {
     const profile = {
-      columns: [{ name: "permits_issued", type: "number", min: 14205, max: 58990, sum: 339775 }],
+      columns: [
+        {
+          name: "permits_issued",
+          type: "number",
+          min: 14205,
+          max: 58990,
+          sum: 339775,
+        },
+      ],
     };
-    const { claims } = groundTakeaway("Permits fell to 14,205 in the partial year.", profile);
+    const { claims } = groundTakeaway(
+      "Permits fell to 14,205 in the partial year.",
+      profile,
+    );
     expect(claims.some((c) => c.claim === "14")).toBe(false);
     expect(claims.some((c) => c.claim === "205")).toBe(false);
     const whole = claims.find((c) => c.claim === "14,205");
@@ -505,9 +611,14 @@ describe("groundTakeaway — a numeral is one claim or none, never two fragments
 
   it("should read the French '1,7' as ONE claim, never split into '1' and '7'", () => {
     const profile = {
-      columns: [{ name: "taux", type: "number", min: 1.7, max: 6.4, sum: 93.8 }],
+      columns: [
+        { name: "taux", type: "number", min: 1.7, max: 6.4, sum: 93.8 },
+      ],
     };
-    const { claims } = groundTakeaway("Le taux atteint 1,7 % à Appenzell.", profile);
+    const { claims } = groundTakeaway(
+      "Le taux atteint 1,7 % à Appenzell.",
+      profile,
+    );
     expect(claims.some((c) => c.claim === "1")).toBe(false);
     expect(claims.some((c) => c.claim === "7")).toBe(false);
     const whole = claims.find((c) => c.claim === "1,7");
@@ -532,14 +643,20 @@ describe("groundTakeaway — superlatives ('the most', 'the highest/lowest', 'le
   };
 
   it("should support 'has the most' when the named entity resolves to the column's own maximum", () => {
-    const { claims } = groundTakeaway("Germany has the most.", PROFILE_WITH_ROWS);
+    const { claims } = groundTakeaway(
+      "Germany has the most.",
+      PROFILE_WITH_ROWS,
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("90");
   });
 
   it("should contradict 'has the most' when the named entity does not hold the maximum", () => {
-    const { claims } = groundTakeaway("France has the most.", PROFILE_WITH_ROWS);
+    const { claims } = groundTakeaway(
+      "France has the most.",
+      PROFILE_WITH_ROWS,
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("contradicted");
     expect(claim.detail).toContain("60");
@@ -561,13 +678,19 @@ describe("groundTakeaway — superlatives ('the most', 'the highest/lowest', 'le
   });
 
   it("should confirm 'tops' the same way", () => {
-    const { claims } = groundTakeaway("Germany tops the table.", PROFILE_WITH_ROWS);
+    const { claims } = groundTakeaway(
+      "Germany tops the table.",
+      PROFILE_WITH_ROWS,
+    );
     const claim = claims.find((c) => c.claim === "tops");
     expect(claim.verdict).toBe("supported");
   });
 
   it("should read a bare 'the lowest' as the column's own minimum", () => {
-    const { claims } = groundTakeaway("Italy reports the lowest value.", PROFILE_WITH_ROWS);
+    const { claims } = groundTakeaway(
+      "Italy reports the lowest value.",
+      PROFILE_WITH_ROWS,
+    );
     const claim = claims.find((c) => c.claim.includes("the lowest"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("30");
@@ -597,7 +720,13 @@ describe("groundTakeaway — 'more than any other' / 'more than all the others c
   const FOREST_PROFILE = {
     columns: [
       { name: "country", type: "text", min: null, max: null, sum: null },
-      { name: "loss_ha", type: "number", min: 39000, max: 1120000, sum: 2702000 },
+      {
+        name: "loss_ha",
+        type: "number",
+        min: 39000,
+        max: 1120000,
+        sum: 2702000,
+      },
       { name: "year", type: "number", min: 2025, max: 2025, sum: 14175 },
     ],
   };
@@ -607,7 +736,9 @@ describe("groundTakeaway — 'more than any other' / 'more than all the others c
       "Brazil lost more forest than the other six countries combined",
       FOREST_PROFILE,
     );
-    const claim = claims.find((c) => c.claim.toLowerCase().includes("combined"));
+    const claim = claims.find((c) =>
+      c.claim.toLowerCase().includes("combined"),
+    );
     expect(claim).toBeTruthy();
     expect(claim.verdict).toBe("contradicted");
     expect(claim.detail).toContain("1120000");
@@ -618,15 +749,26 @@ describe("groundTakeaway — 'more than any other' / 'more than all the others c
     const profile = {
       columns: [
         { name: "country", type: "text", min: null, max: null, sum: null },
-        { name: "loss_ha", type: "number", min: 39000, max: 1120000, sum: 2702000 },
+        {
+          name: "loss_ha",
+          type: "number",
+          min: 39000,
+          max: 1120000,
+          sum: 2702000,
+        },
       ],
       rows: [
         { country: "Brazil", loss_ha: 1120000 },
         { country: "Congo DR", loss_ha: 588000 },
       ],
     };
-    const { claims } = groundTakeaway("Brazil lost more forest than any other country", profile);
-    const claim = claims.find((c) => c.claim.toLowerCase().includes("any other"));
+    const { claims } = groundTakeaway(
+      "Brazil lost more forest than any other country",
+      profile,
+    );
+    const claim = claims.find((c) =>
+      c.claim.toLowerCase().includes("any other"),
+    );
     expect(claim.verdict).toBe("supported");
   });
 
@@ -634,14 +776,22 @@ describe("groundTakeaway — 'more than any other' / 'more than all the others c
     const profile = {
       columns: [
         { name: "country", type: "text", min: null, max: null, sum: null },
-        { name: "loss_ha", type: "number", min: 39000, max: 1120000, sum: 1400000 },
+        {
+          name: "loss_ha",
+          type: "number",
+          min: 39000,
+          max: 1120000,
+          sum: 1400000,
+        },
       ],
     };
     const { claims } = groundTakeaway(
       "Brazil lost more forest than the other countries combined",
       profile,
     );
-    const claim = claims.find((c) => c.claim.toLowerCase().includes("combined"));
+    const claim = claims.find((c) =>
+      c.claim.toLowerCase().includes("combined"),
+    );
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("Brazil");
   });
@@ -654,11 +804,20 @@ describe("groundTakeaway — 'leads' with no row data (finding 3)", () => {
     const profile = {
       columns: [
         { name: "country", type: "text", min: null, max: null, sum: null },
-        { name: "loss_ha", type: "number", min: 39000, max: 1120000, sum: 2702000 },
+        {
+          name: "loss_ha",
+          type: "number",
+          min: 39000,
+          max: 1120000,
+          sum: 2702000,
+        },
         { name: "year", type: "number", min: 2025, max: 2025, sum: 14175 },
       ],
     };
-    const { claims } = groundTakeaway("Brazil leads the annual figures again.", profile);
+    const { claims } = groundTakeaway(
+      "Brazil leads the annual figures again.",
+      profile,
+    );
     expect(claims.length).toBeGreaterThan(0);
     const claim = claims.find((c) => c.claim === "leads");
     expect(claim.verdict).toBe("unverifiable");
@@ -672,7 +831,13 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
   const PERMITS_PROFILE = {
     columns: [
       { name: "year", type: "number", min: 2020, max: 2026, sum: 14161 },
-      { name: "permits_issued", type: "number", min: 14205, max: 58990, sum: 339775 },
+      {
+        name: "permits_issued",
+        type: "number",
+        min: 14205,
+        max: 58990,
+        sum: 339775,
+      },
       { name: "months_covered", type: "number", min: 3, max: 12, sum: 75 },
     ],
   };
@@ -689,8 +854,15 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
   });
 
   it("should still PLACE a year in a profile with no coverage column, without calling it support", () => {
-    const profile = { columns: [{ name: "year", type: "number", min: 2020, max: 2026, sum: 14161 }] };
-    const { claims } = groundTakeaway("Permits rose to a record in 2026.", profile);
+    const profile = {
+      columns: [
+        { name: "year", type: "number", min: 2020, max: 2026, sum: 14161 },
+      ],
+    };
+    const { claims } = groundTakeaway(
+      "Permits rose to a record in 2026.",
+      profile,
+    );
     const yearClaim = claims.find((c) => c.claim === "2026");
     expect(yearClaim.verdict).toBe("consistent");
   });
@@ -699,7 +871,13 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
     const profile = {
       columns: [
         { name: "period", type: "text", min: null, max: null, sum: null },
-        { name: "visits", type: "number", min: 118000, max: 501000, sum: 1975000 },
+        {
+          name: "visits",
+          type: "number",
+          min: 118000,
+          max: 501000,
+          sum: 1975000,
+        },
         { name: "complete", type: "text", min: null, max: null, sum: null },
       ],
       rows: [
@@ -707,7 +885,10 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
         { period: "2026 (Jan-Mar)", visits: 118000, complete: "no" },
       ],
     };
-    const { claims } = groundTakeaway("The 2026 period has the most visits.", profile);
+    const { claims } = groundTakeaway(
+      "The 2026 period has the most visits.",
+      profile,
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("complete");
@@ -717,7 +898,9 @@ describe("groundTakeaway — partial periods (months_covered / complete) narrow 
 // COVERAGE — so silence stops looking like confirmation.
 describe("groundTakeaway — coverage reports what was actually read, beside the claims", () => {
   it("should mark a sentence 'evaluated' once it produces a claim, even an unverifiable one", () => {
-    const profile = { columns: [{ name: "value", type: "number", min: 0, max: 10, sum: 20 }] };
+    const profile = {
+      columns: [{ name: "value", type: "number", min: 0, max: 10, sum: 20 }],
+    };
     const { coverage } = groundTakeaway("Germany has the most.", profile);
     expect(coverage.sentences).toBe(1);
     expect(coverage.evaluated).toBe(1);
@@ -725,10 +908,15 @@ describe("groundTakeaway — coverage reports what was actually read, beside the
   });
 
   it("should mark a sentence 'unevaluated' when nothing in it produced any claim at all", () => {
-    const { coverage } = groundTakeaway("Renewables overtook coal as the main source", NORWAY_PROFILE);
+    const { coverage } = groundTakeaway(
+      "Renewables overtook coal as the main source",
+      NORWAY_PROFILE,
+    );
     expect(coverage.sentences).toBe(1);
     expect(coverage.evaluated).toBe(0);
-    expect(coverage.unevaluated).toEqual(["Renewables overtook coal as the main source"]);
+    expect(coverage.unevaluated).toEqual([
+      "Renewables overtook coal as the main source",
+    ]);
   });
 
   it("should tell apart a takeaway that was checked-and-passed from one that is entirely unverifiable", () => {
@@ -738,10 +926,15 @@ describe("groundTakeaway — coverage reports what was actually read, beside the
         { name: "value", type: "number", min: 10, max: 90, sum: 220 },
       ],
     };
-    const allUnverifiable = groundTakeaway("Germany has the most.", profileNoRows);
+    const allUnverifiable = groundTakeaway(
+      "Germany has the most.",
+      profileNoRows,
+    );
     // Every claim unverifiable, but the sentence WAS read — visibly different from silence.
     expect(allUnverifiable.coverage.evaluated).toBe(1);
-    expect(allUnverifiable.claims.every((c) => c.verdict === "unverifiable")).toBe(true);
+    expect(
+      allUnverifiable.claims.every((c) => c.verdict === "unverifiable"),
+    ).toBe(true);
 
     const NORWAY_LIKE = {
       columns: [
@@ -758,7 +951,9 @@ describe("groundTakeaway — coverage reports what was actually read, beside the
       NORWAY_LIKE,
     );
     expect(checkedAndPassed.coverage.evaluated).toBe(1);
-    expect(checkedAndPassed.claims.some((c) => c.verdict === "supported")).toBe(true);
+    expect(checkedAndPassed.claims.some((c) => c.verdict === "supported")).toBe(
+      true,
+    );
   });
 });
 
@@ -776,8 +971,12 @@ describe("groundTakeaway — coverage reports what was actually read, beside the
 // =============================================================================================
 
 const storyFile = (relative) =>
-  readFileSync(new URL(`../../../stories/${relative}`, import.meta.url), "utf8");
-const storyProfile = (story) => JSON.parse(storyFile(`${story}/source/profile.json`));
+  readFileSync(
+    new URL(`../../../stories/${relative}`, import.meta.url),
+    "utf8",
+  );
+const storyProfile = (story) =>
+  JSON.parse(storyFile(`${story}/source/profile.json`));
 const storyCsv = (story) => storyFile(`${story}/source/data.csv`);
 const grounded = (story, sentence) =>
   groundTakeaway(sentence, storyProfile(story), { csv: storyCsv(story) });
@@ -786,7 +985,12 @@ describe("readFrozenRows — where rows come from now (finding 2)", () => {
   it("should read the frozen table into rows, reading each cell by the shared number reader", () => {
     const rows = readFrozenRows(storyCsv("stress-l-mixed-unit-clinics"));
     expect(rows.length).toBe(8);
-    expect(rows[1]).toEqual({ code: "DEU", country: "Germany", value: 1880, unit: "clinics" });
+    expect(rows[1]).toEqual({
+      code: "DEU",
+      country: "Germany",
+      value: 1880,
+      unit: "clinics",
+    });
   });
 
   it("should leave a cell that is not a numeral as its own text, never coerced to NaN", () => {
@@ -804,7 +1008,10 @@ describe("a superlative that DECIDES, on real story material (finding 2)", () =>
   // stories/stress-l-mixed-unit-clinics/source/article.md, last line. Its own shipped BRIEF.md
   // records the old behaviour verbatim: "it returned `[]` — no claim shape at all".
   it("should SUPPORT the frozen article's own superlative once the frozen CSV supplies the rows", () => {
-    const { claims } = grounded("stress-l-mixed-unit-clinics", "Germany has the most.");
+    const { claims } = grounded(
+      "stress-l-mixed-unit-clinics",
+      "Germany has the most.",
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("Germany");
@@ -831,7 +1038,10 @@ describe("a superlative that DECIDES, on real story material (finding 2)", () =>
   // stories/stress-m-forest-loss/source/article.md:3, and the beat's own BRIEF.md:60-62 records
   // `groundTakeaway` returning `[]` for it.
   it("should SUPPORT a second story's frozen 'leads', naming the column it decided against", () => {
-    const { claims } = grounded("stress-m-forest-loss", "Brazil leads the annual figures again.");
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "Brazil leads the annual figures again.",
+    );
     const claim = claims.find((c) => c.claim === "leads");
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("loss_ha");
@@ -840,13 +1050,21 @@ describe("a superlative that DECIDES, on real story material (finding 2)", () =>
 
   it("should refuse a superlative whose entity matches SEVERAL rows rather than pick one", () => {
     // heat-pump's table is long-format: five rows per country, one per year.
+    //
+    // The refusal itself is the point of this test and it has not moved. What moved is the REASON
+    // it gives. It used to say "The Netherlands matches 5 rows", which is true and tells a
+    // journalist nothing they can act on; since the panel work of 2026-08-22 it names the shape it
+    // found and the one thing that would settle it — which period the superlative is about. A
+    // refusal that does not name what would lift it is the defect round four found in this very
+    // function, one level up.
     const { claims } = grounded(
       "heat-pump-adoption-across-europe",
       "The Netherlands made the largest gain, climbing 18 percentage points.",
     );
     const claim = claims.find((c) => c.claim.includes("the largest"));
     expect(claim.verdict).toBe("unverifiable");
-    expect(claim.detail).toContain("5 rows");
+    expect(claim.detail).toContain('one per "country"');
+    expect(claim.detail).toContain("Name the period");
   });
 
   it("should fall back past a clause-leading capital that is not an entity at all", () => {
@@ -860,7 +1078,10 @@ describe("a superlative that DECIDES, on real story material (finding 2)", () =>
   });
 
   it("should read a possessive as its own entity", () => {
-    const { claims } = grounded("stress-m-forest-loss", "Brazil's own figure leads the table.");
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "Brazil's own figure leads the table.",
+    );
     const claim = claims.find((c) => c.claim === "leads");
     expect(claim.verdict).toBe("supported");
   });
@@ -901,7 +1122,9 @@ describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => 
     expect(year.detail).toContain("CANNOT FAIL");
     // The two numbers the sentence actually asserts remain unplaced, and nothing else is
     // confirmed — so this takeaway has NOTHING for a scalar to close G1 on.
-    expect(claims.find((c) => c.claim.startsWith("4.1")).verdict).toBe("unverifiable");
+    expect(claims.find((c) => c.claim.startsWith("4.1")).verdict).toBe(
+      "unverifiable",
+    );
     expect(claims.find((c) => c.claim === "0").verdict).toBe("unverifiable");
     expect(claims.some((c) => c.verdict === "supported")).toBe(false);
   });
@@ -911,7 +1134,10 @@ describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => 
   // 2025 rows "sum" to 12150) and a column whose sum is its own min or max, which is what a
   // one-row table always produces.
   it("should not read the year column as a part-to-whole total", () => {
-    const { claims } = grounded("stress-s-unspent-fund", "The fund's own total is 2026.");
+    const { claims } = grounded(
+      "stress-s-unspent-fund",
+      "The fund's own total is 2026.",
+    );
     const claim = claims.find((c) => c.claim === "2026");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).not.toContain("sum");
@@ -920,7 +1146,10 @@ describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => 
   it("should not read a year column's own sum as a part-to-whole total", () => {
     // stress-p's `year` column is six rows of 2025, so it "sums" to 12150 — a number that is a
     // total of nothing.
-    const { claims } = grounded("stress-p-transport-ridership", "The networks carried 12150 in all.");
+    const { claims } = grounded(
+      "stress-p-transport-ridership",
+      "The networks carried 12150 in all.",
+    );
     const claim = claims.find((c) => c.claim === "12150");
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).not.toContain("equals the sum");
@@ -928,7 +1157,10 @@ describe("a numeral inside a range is PLACED, not confirmed (finding 1)", () => 
 
   it("should not read a one-row column's own value as its own total", () => {
     // stress-s's `fund` column is min 1, max 1, sum 1 — every one of those is the same number.
-    const { claims } = grounded("stress-s-unspent-fund", "The fund disbursed 1 euro.");
+    const { claims } = grounded(
+      "stress-s-unspent-fund",
+      "The fund disbursed 1 euro.",
+    );
     const claim = claims.find((c) => c.claim === "1");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).not.toContain("sum");
@@ -966,7 +1198,11 @@ describe("the superlative vocabulary stops being four phrases (finding 3)", () =
         "stress-m-forest-loss",
         `Brazil is ${phrase} of the seven.`,
       );
-      expect(claims.some((c) => c.claim.toLowerCase().includes(phrase.replace(/^the /, "")))).toBe(true);
+      expect(
+        claims.some((c) =>
+          c.claim.toLowerCase().includes(phrase.replace(/^the /, "")),
+        ),
+      ).toBe(true);
       expect(coverage.unevaluated).toEqual([]);
     });
   }
@@ -1020,7 +1256,9 @@ describe("a claim names its own measure (the two-measure dead zone)", () => {
       "stress-p-transport-ridership",
       "Lisboa carries more trips than all the other cities combined.",
     );
-    const claim = claims.find((c) => c.claim.toLowerCase().includes("combined"));
+    const claim = claims.find((c) =>
+      c.claim.toLowerCase().includes("combined"),
+    );
     // Same as above: the column is chosen and the arithmetic decided, and finding 5's denominator
     // question is what holds the confirmation back — `population` sits beside `trips_millions`.
     expect(claim.verdict).toBe("unverifiable");
@@ -1029,7 +1267,10 @@ describe("a claim names its own measure (the two-measure dead zone)", () => {
   });
 
   it("should refuse, naming every candidate, when the sentence names none of the measures", () => {
-    const { claims } = grounded("stress-r-greek-schools", "Attica has the most schools of any region.");
+    const { claims } = grounded(
+      "stress-r-greek-schools",
+      "Attica has the most schools of any region.",
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("σχολεία_2020");
@@ -1062,13 +1303,19 @@ describe("a column the profiler refused stops disarming the check silently (find
   });
 
   it("should say the same on the superlative it could not place a column for", () => {
-    const { claims } = grounded("stress-r-greek-schools", "Attica has the most schools of any region.");
+    const { claims } = grounded(
+      "stress-r-greek-schools",
+      "Attica has the most schools of any region.",
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.detail).toContain("σχολεία_2026");
   });
 
   it("should stay quiet about refused columns in a profile that has none", () => {
-    const { claims } = grounded("stress-m-forest-loss", "The figure reached 999999999 hectares.");
+    const { claims } = grounded(
+      "stress-m-forest-loss",
+      "The figure reached 999999999 hectares.",
+    );
     const claim = claims.find((c) => c.claim === "999999999");
     expect(claim.detail).not.toContain("profiler refused");
   });
@@ -1116,7 +1363,8 @@ describe("coverage counts what the data DECIDED, not only what was touched (find
 // =============================================================================================
 
 describe("a raw-count superlative is not confirmed while a denominator sits beside it (finding 5)", () => {
-  const CENTRO = "Centro recorded 412 incidents last year, more than any other district.";
+  const CENTRO =
+    "Centro recorded 412 incidents last year, more than any other district.";
 
   it("should refuse to confirm the frozen article's own raw-count superlative", () => {
     const { claims } = grounded("stress-q-safety-incidents", CENTRO);
@@ -1127,7 +1375,9 @@ describe("a raw-count superlative is not confirmed while a denominator sits besi
 
   it("should name BOTH rankings, with the numbers, so the journalist can choose", () => {
     const { claims } = grounded("stress-q-safety-incidents", CENTRO);
-    const detail = claims.find((c) => c.claim.includes("more than any other")).detail;
+    const detail = claims.find((c) =>
+      c.claim.includes("more than any other"),
+    ).detail;
     expect(detail).toContain('"residents"');
     expect(detail).toContain('"incidents"');
     // The raw leader and the per-resident leader, both named, both with their own figure.
@@ -1175,7 +1425,10 @@ describe("a raw-count superlative is not confirmed while a denominator sits besi
 
   it("should leave a table with no denominator column exactly as it was", () => {
     // stress-l-mixed-unit-clinics: `code`, `country`, `value`, `unit` — no population anywhere.
-    const { claims } = grounded("stress-l-mixed-unit-clinics", "Germany has the most.");
+    const { claims } = grounded(
+      "stress-l-mixed-unit-clinics",
+      "Germany has the most.",
+    );
     const claim = claims.find((c) => c.claim.includes("the most"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).not.toContain("per ");
@@ -1193,10 +1446,20 @@ const STORIES = `${import.meta.dir}/../../../stories`;
 describe("a claim about a column the profiler refused is not decided against a different one", () => {
   it("names the refused column and its reason instead of ruling on the survivor", () => {
     const profile = JSON.parse(
-      readFileSync(`${STORIES}/stress-r-greek-schools/source/profile.json`, "utf8"),
+      readFileSync(
+        `${STORIES}/stress-r-greek-schools/source/profile.json`,
+        "utf8",
+      ),
     );
-    const csv = readFileSync(`${STORIES}/stress-r-greek-schools/source/data.csv`, "utf8");
-    const { claims } = groundTakeaway("Attica has the most σχολεία of any region.", profile, { csv });
+    const csv = readFileSync(
+      `${STORIES}/stress-r-greek-schools/source/data.csv`,
+      "utf8",
+    );
+    const { claims } = groundTakeaway(
+      "Attica has the most σχολεία of any region.",
+      profile,
+      { csv },
+    );
 
     expect(claims).toHaveLength(1);
     expect(claims[0].verdict).toBe("unverifiable");
@@ -1210,10 +1473,18 @@ describe("a claim about a column the profiler refused is not decided against a d
 
   it("still decides a claim that names only a surviving measure", () => {
     const profile = JSON.parse(
-      readFileSync(`${STORIES}/stress-l-mixed-unit-clinics/source/profile.json`, "utf8"),
+      readFileSync(
+        `${STORIES}/stress-l-mixed-unit-clinics/source/profile.json`,
+        "utf8",
+      ),
     );
-    const csv = readFileSync(`${STORIES}/stress-l-mixed-unit-clinics/source/data.csv`, "utf8");
-    const { claims } = groundTakeaway("Germany has the most.", profile, { csv });
+    const csv = readFileSync(
+      `${STORIES}/stress-l-mixed-unit-clinics/source/data.csv`,
+      "utf8",
+    );
+    const { claims } = groundTakeaway("Germany has the most.", profile, {
+      csv,
+    });
     expect(claims[0].verdict).toBe("supported");
   });
 });
@@ -1413,7 +1684,10 @@ describe("a stated multiplier is read, and a digit glued to a word is not a numb
   // already carry the scale. The Milan Cortina run's own takeaway says "34 millions de tonnes"
   // against `glace_fondue_mt`, which sums to exactly 34.
   it("should not lose a total whose column already carries the scale in its unit", () => {
-    const { claims } = groundTakeaway("le total atteint 34 millions de tonnes", OLYMPICS_PROFILE);
+    const { claims } = groundTakeaway(
+      "le total atteint 34 millions de tonnes",
+      OLYMPICS_PROFILE,
+    );
     const claim = claims.find((c) => c.claim.includes("34"));
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("glace_fondue_mt");
@@ -1452,19 +1726,27 @@ describe("an entity whose name carries digits resolves to its own row", () => {
     );
     expect(claims.length).toBeGreaterThan(0);
     // Whatever the verdict, the entity it names must be the whole identifier.
-    expect(claims.some((c) => (c.detail ?? "").includes('"Commune-"'))).toBe(false);
+    expect(claims.some((c) => (c.detail ?? "").includes('"Commune-"'))).toBe(
+      false,
+    );
   });
 
   it("still refuses to swallow a following numeral into a name", () => {
     // "Germany 67.8" must not resolve an entity called "Germany 67.8" -- continuation requires a
     // capitalised word, so a bare numeral after a name is never joined to it.
     const profile = JSON.parse(
-      readFileSync(`${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/profile.json`, "utf8"),
+      readFileSync(
+        `${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/profile.json`,
+        "utf8",
+      ),
     );
     const csv = readFileSync(
-      `${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/data.csv`, "utf8",
+      `${import.meta.dir}/../../../stories/stress-l-mixed-unit-clinics/source/data.csv`,
+      "utf8",
     );
-    const { claims } = groundTakeaway("Germany has the most.", profile, { csv });
+    const { claims } = groundTakeaway("Germany has the most.", profile, {
+      csv,
+    });
     expect(claims[0].verdict).toBe("supported");
   });
 });
@@ -1479,7 +1761,10 @@ describe("ROUND SIX — a totality claim is not confirmed by parts that cancel (
   // stories/stress-z-budget-parts: `part_pct` reaches 100 only because a -9.7 provision
   // write-back cancels a +9.7 overshoot. The positive parts sum to 109.7.
   it("should REFUSE to confirm the frozen story's totality sentence on a column that cancels", () => {
-    const { claims } = grounded("stress-z-budget-parts", "Les parts font ensemble 100 % du budget.");
+    const { claims } = grounded(
+      "stress-z-budget-parts",
+      "Les parts font ensemble 100 % du budget.",
+    );
     const totality = claims.find((c) => c.claim.includes("100"));
     expect(totality).toBeTruthy();
     expect(totality.verdict).not.toBe("supported");
@@ -1490,10 +1775,25 @@ describe("ROUND SIX — a totality claim is not confirmed by parts that cancel (
 
   it("should still CONFIRM a totality whose share column is made of non-negative parts", () => {
     const profile = {
-      columns: [{ name: "share_pct", type: "number", missing: 0, distinct: 3, min: 20, max: 50, sum: 100 }],
+      columns: [
+        {
+          name: "share_pct",
+          type: "number",
+          missing: 0,
+          distinct: 3,
+          min: 20,
+          max: 50,
+          sum: 100,
+        },
+      ],
     };
-    const { claims } = groundTakeaway("All of the shares together make up the whole of supply.", profile);
-    expect(claims.find((c) => /whole|all of/i.test(c.claim)).verdict).toBe("supported");
+    const { claims } = groundTakeaway(
+      "All of the shares together make up the whole of supply.",
+      profile,
+    );
+    expect(claims.find((c) => /whole|all of/i.test(c.claim)).verdict).toBe(
+      "supported",
+    );
   });
 });
 
@@ -1501,7 +1801,10 @@ describe("ROUND SIX — the relation a numeral sits under, not only the numeral 
   // The headline. "the sum of the parts is GREATER than 100" came back `supported` because the
   // numeral 100 matched the column's own sum.
   it("should refuse to confirm a sentence that DENIES the total it names", () => {
-    const { claims } = grounded("stress-z-budget-parts", "La somme des parts est supérieure à 100.");
+    const { claims } = grounded(
+      "stress-z-budget-parts",
+      "La somme des parts est supérieure à 100.",
+    );
     const claim = claims.find((c) => c.claim.includes("100"));
     expect(claim).toBeTruthy();
     expect(claim.verdict).not.toBe("supported");
@@ -1527,7 +1830,9 @@ describe("ROUND SIX — the relation a numeral sits under, not only the numeral 
       "milan-cortina-la-glace-des-sponsors",
       "Soit 34 millions de tonnes de glace au total.",
     );
-    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe("supported");
+    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe(
+      "supported",
+    );
   });
 
   it("should SUPPORT an 'at least' claim the same total satisfies", () => {
@@ -1535,7 +1840,9 @@ describe("ROUND SIX — the relation a numeral sits under, not only the numeral 
       "milan-cortina-la-glace-des-sponsors",
       "Soit au moins 34 millions de tonnes de glace au total.",
     );
-    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe("supported");
+    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe(
+      "supported",
+    );
   });
 });
 
@@ -1548,7 +1855,10 @@ describe("ROUND SIX — the relation a numeral sits under, not only the numeral 
 describe("ROUND SIX — a range hit says what it actually matched (beat AA)", () => {
   // stories/stress-aa-salary-spread: annual_salary_eur [14664, 238530], 240 rows, 6 blank cells.
   it("should name the column's own MAXIMUM without raising the verdict", () => {
-    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238530 euros.");
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "The highest salary is 238530 euros.",
+    );
     const claim = claims.find((c) => c.claim === "238530");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("maximum");
@@ -1556,7 +1866,10 @@ describe("ROUND SIX — a range hit says what it actually matched (beat AA)", ()
   });
 
   it("should name the column's own MINIMUM without raising the verdict", () => {
-    const { claims } = grounded("stress-aa-salary-spread", "The lowest salary is 14664 euros.");
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "The lowest salary is 14664 euros.",
+    );
     const claim = claims.find((c) => c.claim === "14664");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("minimum");
@@ -1577,7 +1890,10 @@ describe("ROUND SIX — a range hit says what it actually matched (beat AA)", ()
   });
 
   it("should say when the frozen table holds the numeral verbatim, and still not confirm the sentence", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "In 2010 there were 9 kilns still firing.");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "In 2010 there were 9 kilns still firing.",
+    );
     const claim = claims.find((c) => c.claim === "9");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("kilns_active");
@@ -1585,12 +1901,18 @@ describe("ROUND SIX — a range hit says what it actually matched (beat AA)", ()
   });
 
   it("should leave a numeral merely INSIDE the range `consistent`, as round four decided", () => {
-    const { claims } = grounded("stress-aa-salary-spread", "A typical salary here is 40000 euros.");
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "A typical salary here is 40000 euros.",
+    );
     expect(claims.find((c) => c.claim === "40000").verdict).toBe("consistent");
   });
 
   it("should never let an exact match reach `supported`, whatever the sentence around it", () => {
-    for (const sentence of ["Fewer than 42 kilns were active.", "42 kilns were active."]) {
+    for (const sentence of [
+      "Fewer than 42 kilns were active.",
+      "42 kilns were active.",
+    ]) {
       const { claims } = grounded("stress-ac-alcanede-kilns", sentence);
       expect(claims.find((c) => c.claim === "42").verdict).toBe("consistent");
     }
@@ -1600,7 +1922,9 @@ describe("ROUND SIX — a range hit says what it actually matched (beat AA)", ()
 describe("ROUND SIX — a coordinate column is not a measure (beat AC)", () => {
   it("should not offer site_lat and site_lon as measures a superlative could be about", () => {
     const columns = storyProfile("stress-ac-alcanede-kilns").columns;
-    const names = measureColumns(columns, findYearColumn(columns)).map((c) => c.name);
+    const names = measureColumns(columns, findYearColumn(columns)).map(
+      (c) => c.name,
+    );
     expect(names).not.toContain("site_lat");
     expect(names).not.toContain("site_lon");
     expect(names).toContain("kilns_active");
@@ -1611,11 +1935,16 @@ describe("ROUND SIX — a coordinate column is not a measure (beat AC)", () => {
       { name: "year", type: "number", min: 2000, max: 2020 },
       { name: "tunnel_long_m", type: "number", min: 900, max: 5400 },
     ];
-    expect(measureColumns(columns, findYearColumn(columns)).map((c) => c.name)).toContain("tunnel_long_m");
+    expect(
+      measureColumns(columns, findYearColumn(columns)).map((c) => c.name),
+    ).toContain("tunnel_long_m");
   });
 
   it("should stop naming coordinate columns in a geographic superlative's refusal", () => {
-    const { claims } = grounded("stress-ab-emigration-flows", "Lisboa has the highest.");
+    const { claims } = grounded(
+      "stress-ab-emigration-flows",
+      "Lisboa has the highest.",
+    );
     const claim = claims[0];
     expect(claim.detail).not.toContain("origin_lat");
     expect(claim.detail).not.toContain("dest_lon");
@@ -1624,24 +1953,35 @@ describe("ROUND SIX — a coordinate column is not a measure (beat AC)", () => {
 
 describe("ROUND SIX — a four-digit measure value is not forced onto the period column (beat AC)", () => {
   it("should not put a measure value on the period column just because it reads as a year", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "The kilns employed 1860 people in 1980.");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "The kilns employed 1860 people in 1980.",
+    );
     const claim = claims.find((c) => c.claim === "1860");
     // Before this round: `could not be placed in the column this sentence names, "year" [1980, 2026]`
     // — a measure value put to the period column, which cannot hold it.
-    expect(claim.detail).not.toContain('the column this sentence names, "year"');
+    expect(claim.detail).not.toContain(
+      'the column this sentence names, "year"',
+    );
     expect(claim.detail).toContain("kilns_active");
     expect(claim.detail).toContain("coincidence");
   });
 
   it("should still place a real year on the period column", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "The kilns employed 1860 people in 1980.");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "The kilns employed 1860 people in 1980.",
+    );
     const claim = claims.find((c) => c.claim === "1980");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain('"year"');
   });
 
   it("should refuse to place a bare year inside a measure's range by coincidence", () => {
-    const { claims } = grounded("stress-ab-emigration-flows", "In 2025, 18400 people left Lisboa.");
+    const { claims } = grounded(
+      "stress-ab-emigration-flows",
+      "In 2025, 18400 people left Lisboa.",
+    );
     const year = claims.find((c) => c.claim === "2025");
     expect(year.verdict).toBe("unverifiable");
     expect(year.detail).toMatch(/coincidence/);
@@ -1650,7 +1990,10 @@ describe("ROUND SIX — a four-digit measure value is not forced onto the period
 
 describe("ROUND SIX — the frozen table settles a thousands separator (beats AA and AC)", () => {
   it("should read a comma-grouped numeral the frozen table can settle", () => {
-    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238,530 euros.");
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "The highest salary is 238,530 euros.",
+    );
     const claim = claims.find((c) => c.claim === "238,530");
     expect(claim.verdict).toBe("consistent");
     expect(claim.detail).toContain("238530");
@@ -1658,21 +2001,30 @@ describe("ROUND SIX — the frozen table settles a thousands separator (beats AA
   });
 
   it("should settle the finding-4 numeral against its own frozen column", () => {
-    const { claims } = grounded("stress-j-partial-year-permits", "Only 14,205 permits were issued.");
+    const { claims } = grounded(
+      "stress-j-partial-year-permits",
+      "Only 14,205 permits were issued.",
+    );
     const claim = claims.find((c) => c.claim === "14,205");
     expect(claim.verdict).not.toBe("unverifiable");
     expect(claim.detail).toContain("14205");
   });
 
   it("should still refuse a comma the frozen table cannot settle", () => {
-    const { claims } = grounded("stress-n-chomage-cantons", "Le taux atteint 1,7 pour cent.");
+    const { claims } = grounded(
+      "stress-n-chomage-cantons",
+      "Le taux atteint 1,7 pour cent.",
+    );
     const claim = claims.find((c) => c.claim.includes("1,7"));
     expect(claim.verdict).toBe("unverifiable");
     expect(claim.detail).toContain("comma");
   });
 
   it("should never turn one token into two claims, the round-three rule", () => {
-    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238,530 euros.");
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "The highest salary is 238,530 euros.",
+    );
     expect(claims.filter((c) => c.claim === "238").length).toBe(0);
     expect(claims.filter((c) => c.claim === "530").length).toBe(0);
   });
@@ -1680,7 +2032,10 @@ describe("ROUND SIX — the frozen table settles a thousands separator (beats AA
 
 describe("ROUND SIX — the two-year comparison reads its direction word wherever it sits", () => {
   it("should decide a comparison whose direction word comes AFTER the first year", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "Kilns in 2020 were fewer than in 1990.");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "Kilns in 2020 were fewer than in 1990.",
+    );
     const pair = claims.find((c) => /2020[\s\S]*1990/.test(c.claim));
     expect(pair).toBeTruthy();
     expect(pair.verdict).toBe("supported");
@@ -1688,13 +2043,21 @@ describe("ROUND SIX — the two-year comparison reads its direction word whereve
   });
 
   it("should CONTRADICT the same shape when the frozen data refutes it", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "Kilns in 2020 were more than in 1990.");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "Kilns in 2020 were more than in 1990.",
+    );
     const pair = claims.find((c) => /2020[\s\S]*1990/.test(c.claim));
     expect(pair.verdict).toBe("contradicted");
   });
 
   it("should still decide the direction-word-first shape it always could", () => {
-    const { claims } = grounded("stress-ac-alcanede-kilns", "There were fewer kilns in 2020 than in 1990.");
-    expect(claims.find((c) => /2020[\s\S]*1990/.test(c.claim)).verdict).toBe("supported");
+    const { claims } = grounded(
+      "stress-ac-alcanede-kilns",
+      "There were fewer kilns in 2020 than in 1990.",
+    );
+    expect(claims.find((c) => /2020[\s\S]*1990/.test(c.claim)).verdict).toBe(
+      "supported",
+    );
   });
 });
