@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { groundTakeaway, readFrozenRows } from "../scripts/ground-claim.mjs";
+import { groundTakeaway, readFrozenRows, measureColumns, findYearColumn } from "../scripts/ground-claim.mjs";
 import { readFileSync } from "node:fs";
 // The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
 // in. See the block at the bottom of this file for why it is here and what stayed green without it.
@@ -485,7 +485,12 @@ describe("readNumericToken — both copies give the same answer for the same str
 });
 
 describe("groundTakeaway — a numeral is one claim or none, never two fragments (finding 4)", () => {
-  it("should read '14,205' as ONE unverifiable claim, never split into '14' and '205'", () => {
+  // ROUND SIX amends the VERDICT here and not the guarantee. The guarantee — one claim or none,
+  // never two fragments — is what this case exists for and is asserted unchanged. The verdict moved
+  // from `unverifiable` to `consistent` because the frozen table now settles the comma: 14205 is
+  // `permits_issued`'s own minimum and 14.205 is a number this table holds nowhere, so exactly one
+  // of the two readings survives (see `settleGroupedNumeral`). It is still not `supported`.
+  it("should read '14,205' as ONE claim, never split into '14' and '205'", () => {
     const profile = {
       columns: [{ name: "permits_issued", type: "number", min: 14205, max: 58990, sum: 339775 }],
     };
@@ -494,7 +499,8 @@ describe("groundTakeaway — a numeral is one claim or none, never two fragments
     expect(claims.some((c) => c.claim === "205")).toBe(false);
     const whole = claims.find((c) => c.claim === "14,205");
     expect(whole).toBeTruthy();
-    expect(whole.verdict).toBe("unverifiable");
+    expect(whole.verdict).toBe("consistent");
+    expect(whole.detail).toContain("14205");
   });
 
   it("should read the French '1,7' as ONE claim, never split into '1' and '7'", () => {
@@ -1460,5 +1466,235 @@ describe("an entity whose name carries digits resolves to its own row", () => {
     );
     const { claims } = groundTakeaway("Germany has the most.", profile, { csv });
     expect(claims[0].verdict).toBe("supported");
+  });
+});
+
+// =============================================================================================
+// ROUND SIX (2026-08-22) — the fifth consecutive round to open in this checker, and the first in
+// which every finding is a WRONG-EVIDENCE answer rather than a missing one. Each block below
+// names the frozen story the controller measured it on; none of them is a fixture built to fail.
+// =============================================================================================
+
+describe("ROUND SIX — a totality claim is not confirmed by parts that cancel (finding Z2)", () => {
+  // stories/stress-z-budget-parts: `part_pct` reaches 100 only because a -9.7 provision
+  // write-back cancels a +9.7 overshoot. The positive parts sum to 109.7.
+  it("should REFUSE to confirm the frozen story's totality sentence on a column that cancels", () => {
+    const { claims } = grounded("stress-z-budget-parts", "Les parts font ensemble 100 % du budget.");
+    const totality = claims.find((c) => c.claim.includes("100"));
+    expect(totality).toBeTruthy();
+    expect(totality.verdict).not.toBe("supported");
+    expect(totality.verdict).toBe("unverifiable");
+    expect(totality.detail).toContain("109.7");
+    expect(totality.detail).toContain("-9.7");
+  });
+
+  it("should still CONFIRM a totality whose share column is made of non-negative parts", () => {
+    const profile = {
+      columns: [{ name: "share_pct", type: "number", missing: 0, distinct: 3, min: 20, max: 50, sum: 100 }],
+    };
+    const { claims } = groundTakeaway("All of the shares together make up the whole of supply.", profile);
+    expect(claims.find((c) => /whole|all of/i.test(c.claim)).verdict).toBe("supported");
+  });
+});
+
+describe("ROUND SIX — the relation a numeral sits under, not only the numeral (finding Z2)", () => {
+  // The headline. "the sum of the parts is GREATER than 100" came back `supported` because the
+  // numeral 100 matched the column's own sum.
+  it("should refuse to confirm a sentence that DENIES the total it names", () => {
+    const { claims } = grounded("stress-z-budget-parts", "La somme des parts est supérieure à 100.");
+    const claim = claims.find((c) => c.claim.includes("100"));
+    expect(claim).toBeTruthy();
+    expect(claim.verdict).not.toBe("supported");
+    // The column has two totals and the sentence does not say which it means.
+    expect(claim.detail).toContain("109.7");
+    expect(claim.detail).toContain("greater than 100");
+  });
+
+  // stories/milan-cortina-la-glace-des-sponsors: `glace_fondue_mt` sums to exactly 34, on three
+  // non-negative rows (14 + 11 + 9). One total, so the relation decides outright.
+  it("should CONTRADICT a 'more than' claim whose column totals exactly the numeral", () => {
+    const { claims } = grounded(
+      "milan-cortina-la-glace-des-sponsors",
+      "Soit plus de 34 millions de tonnes de glace au total.",
+    );
+    const claim = claims.find((c) => c.claim.includes("34"));
+    expect(claim.verdict).toBe("contradicted");
+    expect(claim.detail).toContain("glace_fondue_mt");
+  });
+
+  it("should still SUPPORT the frozen article's own equality, which states no relation", () => {
+    const { claims } = grounded(
+      "milan-cortina-la-glace-des-sponsors",
+      "Soit 34 millions de tonnes de glace au total.",
+    );
+    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe("supported");
+  });
+
+  it("should SUPPORT an 'at least' claim the same total satisfies", () => {
+    const { claims } = grounded(
+      "milan-cortina-la-glace-des-sponsors",
+      "Soit au moins 34 millions de tonnes de glace au total.",
+    );
+    expect(claims.find((c) => c.claim.includes("34")).verdict).toBe("supported");
+  });
+});
+
+// The brief for this round reads: "A numeral equal to a column's min or max, or present verbatim
+// in a row, is only `consistent` — never `supported`. `rowCount` and `column.missing` are never a
+// numeral's home." The first sentence is taken as the RULE to hold — round four reasoned it twice
+// and four tests above encode it — so the verdict does not move here; what moves is the EVIDENCE,
+// which used to hide an exact hit inside "within the range of …". The second sentence is the gap:
+// `rowCount` and `missing` had no way of being a numeral's home at all.
+describe("ROUND SIX — a range hit says what it actually matched (beat AA)", () => {
+  // stories/stress-aa-salary-spread: annual_salary_eur [14664, 238530], 240 rows, 6 blank cells.
+  it("should name the column's own MAXIMUM without raising the verdict", () => {
+    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238530 euros.");
+    const claim = claims.find((c) => c.claim === "238530");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("maximum");
+    expect(claim.detail).toContain("annual_salary_eur");
+  });
+
+  it("should name the column's own MINIMUM without raising the verdict", () => {
+    const { claims } = grounded("stress-aa-salary-spread", "The lowest salary is 14664 euros.");
+    const claim = claims.find((c) => c.claim === "14664");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("minimum");
+  });
+
+  it("should give a numeral the frozen table's own ROW COUNT and BLANK COUNT as a home", () => {
+    const { claims } = grounded(
+      "stress-aa-salary-spread",
+      "Payroll data for 240 employees, of whom 6 returned no salary.",
+    );
+    const rows = claims.find((c) => c.claim === "240");
+    expect(rows.verdict).toBe("supported");
+    expect(rows.detail).toContain("240");
+    expect(rows.detail).toMatch(/row/i);
+    const blanks = claims.find((c) => c.claim === "6");
+    expect(blanks.verdict).toBe("supported");
+    expect(blanks.detail).toContain("annual_salary_eur");
+  });
+
+  it("should say when the frozen table holds the numeral verbatim, and still not confirm the sentence", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "In 2010 there were 9 kilns still firing.");
+    const claim = claims.find((c) => c.claim === "9");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("kilns_active");
+    expect(claim.detail).toContain("verbatim");
+  });
+
+  it("should leave a numeral merely INSIDE the range `consistent`, as round four decided", () => {
+    const { claims } = grounded("stress-aa-salary-spread", "A typical salary here is 40000 euros.");
+    expect(claims.find((c) => c.claim === "40000").verdict).toBe("consistent");
+  });
+
+  it("should never let an exact match reach `supported`, whatever the sentence around it", () => {
+    for (const sentence of ["Fewer than 42 kilns were active.", "42 kilns were active."]) {
+      const { claims } = grounded("stress-ac-alcanede-kilns", sentence);
+      expect(claims.find((c) => c.claim === "42").verdict).toBe("consistent");
+    }
+  });
+});
+
+describe("ROUND SIX — a coordinate column is not a measure (beat AC)", () => {
+  it("should not offer site_lat and site_lon as measures a superlative could be about", () => {
+    const columns = storyProfile("stress-ac-alcanede-kilns").columns;
+    const names = measureColumns(columns, findYearColumn(columns)).map((c) => c.name);
+    expect(names).not.toContain("site_lat");
+    expect(names).not.toContain("site_lon");
+    expect(names).toContain("kilns_active");
+  });
+
+  it("should keep a column named `long` that measures something else", () => {
+    const columns = [
+      { name: "year", type: "number", min: 2000, max: 2020 },
+      { name: "tunnel_long_m", type: "number", min: 900, max: 5400 },
+    ];
+    expect(measureColumns(columns, findYearColumn(columns)).map((c) => c.name)).toContain("tunnel_long_m");
+  });
+
+  it("should stop naming coordinate columns in a geographic superlative's refusal", () => {
+    const { claims } = grounded("stress-ab-emigration-flows", "Lisboa has the highest.");
+    const claim = claims[0];
+    expect(claim.detail).not.toContain("origin_lat");
+    expect(claim.detail).not.toContain("dest_lon");
+  });
+});
+
+describe("ROUND SIX — a four-digit measure value is not forced onto the period column (beat AC)", () => {
+  it("should not put a measure value on the period column just because it reads as a year", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "The kilns employed 1860 people in 1980.");
+    const claim = claims.find((c) => c.claim === "1860");
+    // Before this round: `could not be placed in the column this sentence names, "year" [1980, 2026]`
+    // — a measure value put to the period column, which cannot hold it.
+    expect(claim.detail).not.toContain('the column this sentence names, "year"');
+    expect(claim.detail).toContain("kilns_active");
+    expect(claim.detail).toContain("coincidence");
+  });
+
+  it("should still place a real year on the period column", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "The kilns employed 1860 people in 1980.");
+    const claim = claims.find((c) => c.claim === "1980");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain('"year"');
+  });
+
+  it("should refuse to place a bare year inside a measure's range by coincidence", () => {
+    const { claims } = grounded("stress-ab-emigration-flows", "In 2025, 18400 people left Lisboa.");
+    const year = claims.find((c) => c.claim === "2025");
+    expect(year.verdict).toBe("unverifiable");
+    expect(year.detail).toMatch(/coincidence/);
+  });
+});
+
+describe("ROUND SIX — the frozen table settles a thousands separator (beats AA and AC)", () => {
+  it("should read a comma-grouped numeral the frozen table can settle", () => {
+    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238,530 euros.");
+    const claim = claims.find((c) => c.claim === "238,530");
+    expect(claim.verdict).toBe("consistent");
+    expect(claim.detail).toContain("238530");
+    expect(claim.detail).toContain("maximum");
+  });
+
+  it("should settle the finding-4 numeral against its own frozen column", () => {
+    const { claims } = grounded("stress-j-partial-year-permits", "Only 14,205 permits were issued.");
+    const claim = claims.find((c) => c.claim === "14,205");
+    expect(claim.verdict).not.toBe("unverifiable");
+    expect(claim.detail).toContain("14205");
+  });
+
+  it("should still refuse a comma the frozen table cannot settle", () => {
+    const { claims } = grounded("stress-n-chomage-cantons", "Le taux atteint 1,7 pour cent.");
+    const claim = claims.find((c) => c.claim.includes("1,7"));
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("comma");
+  });
+
+  it("should never turn one token into two claims, the round-three rule", () => {
+    const { claims } = grounded("stress-aa-salary-spread", "The highest salary is 238,530 euros.");
+    expect(claims.filter((c) => c.claim === "238").length).toBe(0);
+    expect(claims.filter((c) => c.claim === "530").length).toBe(0);
+  });
+});
+
+describe("ROUND SIX — the two-year comparison reads its direction word wherever it sits", () => {
+  it("should decide a comparison whose direction word comes AFTER the first year", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "Kilns in 2020 were fewer than in 1990.");
+    const pair = claims.find((c) => /2020[\s\S]*1990/.test(c.claim));
+    expect(pair).toBeTruthy();
+    expect(pair.verdict).toBe("supported");
+    expect(pair.detail).toContain("kilns_active");
+  });
+
+  it("should CONTRADICT the same shape when the frozen data refutes it", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "Kilns in 2020 were more than in 1990.");
+    const pair = claims.find((c) => /2020[\s\S]*1990/.test(c.claim));
+    expect(pair.verdict).toBe("contradicted");
+  });
+
+  it("should still decide the direction-word-first shape it always could", () => {
+    const { claims } = grounded("stress-ac-alcanede-kilns", "There were fewer kilns in 2020 than in 1990.");
+    expect(claims.find((c) => /2020[\s\S]*1990/.test(c.claim)).verdict).toBe("supported");
   });
 });

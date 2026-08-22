@@ -556,6 +556,18 @@ const SINCE_EN_RE =
 const PAIR_EN_RE =
   /\b(less|fewer|lower|below|smaller|more|higher|greater|above|larger)\b[\s\S]{0,120}?\bin\s+(\d{4})\b[\s\S]{0,120}?\bthan\b[\s\S]{0,40}?\bin\s+(\d{4})\b/gi;
 
+// ROUND SIX — THE SAME TWO SHAPES WITH THE DIRECTION WORD SECOND. Both patterns above demand the
+// comparative BEFORE the first year, so "There were fewer kilns in 2020 than in 1990" was decided
+// and "Kilns in 2020 were fewer than in 1990" produced no comparison at all — its two years fell
+// through to the per-numeral range check and came back `consistent`, which decides nothing. English
+// puts the subject first at least as often as the comparative, and the frozen corpus is full of it.
+// The capture order differs (year, direction, year), so `extractComparisons` reads these separately.
+const SINCE_EN_SECOND_RE =
+  /\bin\s+(\d{4})\b[\s\S]{0,120}?\b(less|fewer|lower|below|smaller|more|higher|greater|above|larger)\b[\s\S]{0,60}?\bthan\b[\s\S]{0,60}?\bsince\s+(\d{4})\b/gi;
+
+const PAIR_EN_SECOND_RE =
+  /\bin\s+(\d{4})\b[\s\S]{0,120}?\b(less|fewer|lower|below|smaller|more|higher|greater|above|larger)\b[\s\S]{0,60}?\bthan\b[\s\S]{0,40}?\bin\s+(\d{4})\b/gi;
+
 // French pair form: "En <yearA>, ... moins/plus ... qu'en <yearB>" — the Swiss proof takeaway's
 // own shape ("En 2024, la Suisse a émis moins de CO₂ ... qu'en 1967").
 const PAIR_FR_RE = /\ben\s+(\d{4})\s*,[\s\S]{0,120}?\b(moins|plus)\b[\s\S]{0,120}?\bqu['’]?en\s+(\d{4})\b/gi;
@@ -650,6 +662,212 @@ function isShareColumn(column) {
 // not invented fresh for this shape.
 const TOTALITY_WHOLE_VALUE = 100;
 const TOTALITY_TOLERANCE = 1;
+
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ROUND SIX (2026-08-22), finding Z2 \u2014 THE RELATION A NUMERAL SITS UNDER, NOT ONLY THE NUMERAL.
+//
+// The round's headline, measured by the controller on the frozen `stress-z-budget-parts`:
+//
+//     "La somme des parts est sup\u00e9rieure \u00e0 100."   ("the sum of the parts is GREATER than 100")
+//       -> supported | equals the sum of column "part_pct" (100)
+//
+// A sentence that DENIES equality was confirmed because the numeral in it matched the column's
+// own sum. The check read the number and not the relation. So a numeral matched to a column TOTAL
+// is now read together with the comparator that governs it: an equality is evidence for a sentence
+// that asserts equality, and evidence AGAINST one that asserts a strict inequality.
+//
+// The vocabulary declares its languages, exactly as `MULTIPLIER_WORDS` and `SHARE_COLUMN_NAME_TOKENS`
+// do \u2014 English, French, Greek and Arabic, the four `LEXICON_LANGUAGES` names. A comparator outside
+// them is not read, and the numeral is then decided as an equality, which is what this file did for
+// every language before this round; the limit is stated in SKILL.md rather than left to be found.
+// `at-most`/`at-least` are tried BEFORE the strict pair, because "no more than" ends with "more
+// than" and the anchored match would otherwise read the wrong relation out of the same words.
+const RELATION_WINDOW = 48;
+
+const RELATION_VOCABULARY = [
+  [
+    "at-least",
+    ["at least", "no fewer than", "no less than", "au moins", "pas moins de", "\u03c4\u03bf\u03c5\u03bb\u03ac\u03c7\u03b9\u03c3\u03c4\u03bf\u03bd", "\u0644\u0627 \u064a\u0642\u0644 \u0639\u0646"],
+  ],
+  ["at-most", ["at most", "no more than", "au plus", "\u03c4\u03bf \u03c0\u03bf\u03bb\u03cd", "\u0644\u0627 \u064a\u0632\u064a\u062f \u0639\u0646"]],
+  [
+    "greater",
+    [
+      "more than", "greater than", "larger than", "higher than", "over", "above", "exceeds",
+      "exceed", "exceeded", "beyond",
+      "plus de", "plus que", "sup\u00e9rieur \u00e0", "sup\u00e9rieure \u00e0", "sup\u00e9rieurs \u00e0", "sup\u00e9rieures \u00e0",
+      "d\u00e9passe", "d\u00e9passent", "au-del\u00e0 de",
+      "\u03c0\u03ac\u03bd\u03c9 \u03b1\u03c0\u03cc", "\u03c0\u03b5\u03c1\u03b9\u03c3\u03c3\u03cc\u03c4\u03b5\u03c1\u03bf \u03b1\u03c0\u03cc", "\u03c0\u03b5\u03c1\u03b9\u03c3\u03c3\u03cc\u03c4\u03b5\u03c1\u03b1 \u03b1\u03c0\u03cc", "\u03c5\u03c0\u03b5\u03c1\u03b2\u03b1\u03af\u03bd\u03b5\u03b9",
+      "\u0623\u0643\u062b\u0631 \u0645\u0646", "\u064a\u062a\u062c\u0627\u0648\u0632", "\u062a\u062a\u062c\u0627\u0648\u0632", "\u0641\u0648\u0642",
+    ],
+  ],
+  [
+    "less",
+    [
+      "less than", "fewer than", "smaller than", "lower than", "under", "below",
+      "moins de", "moins que", "inf\u00e9rieur \u00e0", "inf\u00e9rieure \u00e0", "inf\u00e9rieurs \u00e0", "inf\u00e9rieures \u00e0",
+      "en dessous de",
+      "\u03ba\u03ac\u03c4\u03c9 \u03b1\u03c0\u03cc", "\u03bb\u03b9\u03b3\u03cc\u03c4\u03b5\u03c1\u03bf \u03b1\u03c0\u03cc", "\u03bb\u03b9\u03b3\u03cc\u03c4\u03b5\u03c1\u03b1 \u03b1\u03c0\u03cc",
+      "\u0623\u0642\u0644 \u0645\u0646", "\u062f\u0648\u0646",
+    ],
+  ],
+];
+
+// Every phrase, compiled once, anchored to the END of the text that precedes the numeral: only
+// whitespace (and the punctuation a language puts between a comparator and its number) may sit
+// between the words and the digits, so nothing else in the sentence can be read as governing it.
+const RELATION_PHRASE_META_RE = /[.*+?^${}()|[\]\\]/g;
+
+const RELATION_MATCHERS = RELATION_VOCABULARY.map(([kind, phrases]) => [
+  kind,
+  phrases.map(
+    (phrase) =>
+      new RegExp(
+        `(?<![\\p{L}\\p{N}])${phrase.replace(RELATION_PHRASE_META_RE, "\\$&").replace(/ /g, "\\s+")}\\s*$`,
+        "iu",
+      ),
+  ),
+]);
+
+/** The comparator immediately governing the numeral that starts at `start`, or `null`. */
+function relationBefore(text, start) {
+  const before = text.slice(Math.max(0, start - RELATION_WINDOW), start);
+  for (const [kind, matchers] of RELATION_MATCHERS) {
+    for (const re of matchers) {
+      const m = re.exec(before);
+      if (m) return { kind, phrase: m[0].trim() };
+    }
+  }
+  return null;
+}
+
+/** Whether a column's own total satisfies the relation the sentence asserted about `value`. */
+function relationHolds(kind, total, value) {
+  if (kind === "greater") return total > value;
+  if (kind === "less") return total < value;
+  if (kind === "at-least") return total >= value;
+  if (kind === "at-most") return total <= value;
+  return true;
+}
+
+/** The relation as a journalist reads it back, so a refusal quotes the claim it refused. */
+function relationSaid(kind, value) {
+  if (kind === "greater") return `greater than ${value}`;
+  if (kind === "less") return `less than ${value}`;
+  if (kind === "at-least") return `at least ${value}`;
+  return `at most ${value}`;
+}
+
+// Floating-point addition over a frozen column produces 109.69999999999999 for six one-decimal
+// cells. A total a journalist reads has to be written the way their own table writes it.
+function tidyNumber(value) {
+  return Number(Number(value).toFixed(10));
+}
+
+/**
+ * A COLUMN'S TOTAL, OR ITS TWO TOTALS (round six, finding Z2's other half).
+ *
+ * `stress-z-budget-parts`'s `part_pct` reaches 100 only because a \u22129.7 provision write-back cancels
+ * a +9.7 overshoot: its positive members sum to 109.7. A column carrying a negative member has a
+ * NET total and a total of its positive parts, and those are two different numbers a sentence could
+ * mean. Where the frozen rows are available both are computed and reported; where they are not, the
+ * column's own `min` still says the column is signed, and that is said rather than passed over.
+ */
+function columnTotals(column, rows) {
+  const net = { kind: "net", value: tidyNumber(column.sum) };
+  if (!Number.isFinite(column.min) || column.min >= 0) return [net];
+  const values = (Array.isArray(rows) ? rows : [])
+    .map((r) => r[column.name])
+    .filter((v) => typeof v === "number" && Number.isFinite(v));
+  if (values.length === 0) return [net];
+  const positive = tidyNumber(values.filter((v) => v > 0).reduce((a, b) => a + b, 0));
+  const negative = tidyNumber(values.filter((v) => v < 0).reduce((a, b) => a + b, 0));
+  return [net, { kind: "positive", value: positive, negative }];
+}
+
+/** What a signed column has to say about itself, whenever one of its totals is offered as evidence. */
+function cancellationNote(column, totals) {
+  if (totals.length < 2) {
+    if (Number.isFinite(column.min) && column.min < 0) {
+      return ` \u2014 and note that "${column.name}" carries a negative member (its minimum is ${column.min}), so this total is a NET and not a sum of parts`;
+    }
+    return "";
+  }
+  const [net, positive] = totals;
+  return ` \u2014 and note that "${column.name}" carries a negative member: its positive members sum to ${positive.value} and its negative members to ${positive.negative}, so its total of ${net.value} is a NET, reached by CANCELLATION, and not a sum of parts`;
+}
+
+// A number read out of a frozen cell and a number read out of a takeaway are the same number when
+// they agree to the precision either was written to \u2014 never by `===` alone, which no decimal survives.
+function sameNumber(a, b) {
+  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+}
+
+/** Whether the frozen table holds `value` in `column`, verbatim \u2014 and which row does. */
+function rowHolding(rows, column, value) {
+  if (!Array.isArray(rows)) return null;
+  return rows.find((r) => typeof r[column.name] === "number" && sameNumber(r[column.name], value)) ?? null;
+}
+
+/**
+ * THE FROZEN TABLE SETTLES A THOUSANDS SEPARATOR (round six, beats AA and AC).
+ *
+ * `readNumericToken` refuses "238,530" because a lone token carries no evidence for itself: it
+ * could be 238530 with a US/UK grouping or 238.530 with a decimal comma. That refusal is right
+ * about the token and wrong about the SITUATION \u2014 this file is never handed a token alone, it is
+ * handed a token and the frozen table the sentence is about, and the table settles it. On
+ * `stress-aa-salary-spread`, 238530 is a cell of `annual_salary_eur` and 238.53 is nowhere; on
+ * `stress-j-partial-year-permits`, 14205 is `permits_issued`'s own minimum and 14.205 is nowhere.
+ *
+ * Exactly ONE reading held by the table settles the numeral; two readings, or none, leave it
+ * ambiguous \u2014 which is what keeps a French decimal comma from being read as a grouping wherever the
+ * table cannot tell them apart. A token with more than one comma group settles itself: no language
+ * writes two decimal commas in one number.
+ *
+ * `readNumericToken` itself is NOT touched. It is copied byte-for-byte from `intake/scripts/profile.mjs`
+ * (registered in `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`) and it answers a
+ * question about a token; this answers a different question, about a token AND a table, and lives
+ * only here because only this file has the table.
+ */
+export function settleGroupedNumeral(raw, columns, rows) {
+  const written = String(raw).trim();
+  if (!THOUSANDS_RE.test(written) || written.includes(".")) return null;
+  const grouped = Number(written.replace(/,/g, ""));
+  const commas = (written.match(/,/g) ?? []).length;
+  if (commas > 1) {
+    return {
+      value: grouped,
+      settledNote: ` (reading "${written}" as ${grouped}: a numeral carrying two comma groups can only be a thousands grouping)`,
+    };
+  }
+  const asDecimal = Number(written.replace(",", "."));
+  const numeric = columns.filter((c) => c.type === "number");
+  const heldBy = (candidate) =>
+    numeric.find(
+      (c) =>
+        (Number.isFinite(c.min) && sameNumber(c.min, candidate)) ||
+        (Number.isFinite(c.max) && sameNumber(c.max, candidate)) ||
+        (Number.isFinite(c.sum) && sameNumber(c.sum, candidate)) ||
+        rowHolding(rows, c, candidate) !== null,
+    ) ?? null;
+  const groupedIn = heldBy(grouped);
+  const decimalIn = heldBy(asDecimal);
+  if (groupedIn && !decimalIn) {
+    return {
+      value: grouped,
+      settledNote: ` (reading "${written}" as ${grouped}: the frozen table holds that number in column "${groupedIn.name}" and holds ${asDecimal} nowhere, which is what settles the comma)`,
+    };
+  }
+  if (decimalIn && !groupedIn) {
+    return {
+      value: asDecimal,
+      settledNote: ` (reading "${written}" as the decimal ${asDecimal}: the frozen table holds that number in column "${decimalIn.name}" and holds ${grouped} nowhere, which is what settles the comma)`,
+    };
+  }
+  return null;
+}
+
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 // Shape 8 — a SUPERLATIVE naming one entity: "the most", "the highest"/"the lowest" (bare, no
 // "since" or "ever" — SUPERLATIVE_SINCE_RE and SUPERLATIVE_EVER_RE above already own those two),
@@ -1056,6 +1274,32 @@ function extractComparisons(text) {
     });
   }
 
+  for (const m of text.matchAll(SINCE_EN_SECOND_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    found.push({
+      kind: "since",
+      direction: directionOf(m[2]),
+      yearA: Number(m[1]),
+      yearB: Number(m[3]),
+      raw: m[0],
+      ...span,
+    });
+  }
+
+  for (const m of text.matchAll(PAIR_EN_SECOND_RE)) {
+    const span = { start: m.index, end: m.index + m[0].length };
+    if (found.some((f) => overlaps(f, span))) continue;
+    found.push({
+      kind: "pair",
+      direction: directionOf(m[2]),
+      yearA: Number(m[1]),
+      yearB: Number(m[3]),
+      raw: m[0],
+      ...span,
+    });
+  }
+
   for (const m of text.matchAll(PAIR_FR_RE)) {
     const span = { start: m.index, end: m.index + m[0].length };
     if (found.some((f) => overlaps(f, span))) continue;
@@ -1300,11 +1544,44 @@ export function findYearColumn(columns) {
 // inside ONE skill, opposite answers. `propose.mjs` now imports `findYearColumn` and
 // `measureColumns` from here rather than deciding again; that import is the whole of the fix, and
 // it is not a cross-skill import — both modules are `storyboard`'s own.
+// A COORDINATE IS NOT A MEASURE (round six, beat AC). `stress-ac-alcanede-kilns` carries
+// `site_lat` and `site_lon`, and `stress-ab-emigration-flows` carries four of them; every
+// superlative in either story came back "this profile carries 4 measures (… "site_lat", "site_lon")
+// and the claim names none of them", so a geographic story could not decide a geographic claim.
+// A latitude is where a row IS, not what it measures — the same statement `measureColumns` has
+// always made about the year column.
+//
+// NAME AND VALUE BOTH HAVE TO AGREE, because "long" is an ordinary English word: a column is a
+// coordinate when one of its own name tokens is a coordinate word AND its values stay inside the
+// range that word can occupy (±90 for a latitude, ±180 for a longitude). `tunnel_long_m [900, 5400]`
+// is a length and stays a measure. The vocabulary is the Latin abbreviations a frozen CSV header
+// actually uses — the four `LEXICON_LANGUAGES` spell latitude and longitude the same way or do not
+// abbreviate them at all — and a header outside it is not read, which is stated in SKILL.md.
+const COORDINATE_NAME_TOKENS = new Set([
+  "lat", "lats", "latitude", "latitudes", "latitud",
+  "lon", "lons", "lng", "lng", "long", "longs", "longitude", "longitudes", "longitud",
+]);
+
+export function isCoordinateColumn(column) {
+  if (column.type !== "number") return false;
+  const tokens = String(column.name)
+    .split(NAME_TOKEN_SPLIT_RE)
+    .map((t) => t.toLowerCase())
+    .filter(Boolean);
+  const named = tokens.filter((t) => COORDINATE_NAME_TOKENS.has(t));
+  if (named.length === 0) return false;
+  const limit = named.some((t) => t.startsWith("lat")) ? 90 : 180;
+  return (
+    Number.isFinite(column.min) && Number.isFinite(column.max) && column.min >= -limit && column.max <= limit
+  );
+}
+
 export function measureColumns(columns, yearColumn) {
   return columns.filter(
     (c) =>
       c.type === "number" &&
       c !== yearColumn &&
+      !isCoordinateColumn(c) &&
       c.min !== null &&
       c.min !== undefined &&
       c.max !== null &&
@@ -1749,12 +2026,37 @@ function resolveComparison(item, profile, text) {
     }
     const column = shareColumns[0];
     const holds = Math.abs(column.sum - TOTALITY_WHOLE_VALUE) <= TOTALITY_TOLERANCE;
+    // ROUND SIX, finding Z2 — PARTS THAT CANCEL ARE NOT PARTS OF A WHOLE. `stress-z-budget-parts`
+    // returned `supported` here: `part_pct` sums to exactly 100 and the claim said the parts make
+    // the whole. It does so only because a −9.7 provision write-back cancels a +9.7 overshoot —
+    // the positive parts sum to 109.7 — so the 100 is an arithmetic coincidence and confirming a
+    // totality on it is the sharpest form of the wrong evidence this round is about.
+    //
+    // The rule is deliberately asymmetric, and this is the whole of it: a CONFIRMATION requires
+    // non-negative parts, a REFUTATION does not. A column that misses the whole misses it whichever
+    // total you take, so `stress-e-electricity-mix` (share_pct summing to 95.2 against an article
+    // claiming the whole) still comes back `contradicted` — it simply now says the column is signed
+    // too. Only the confirming direction is withdrawn, and it is withdrawn by name, never in silence.
+    const totals = columnTotals(column, profile.rows);
+    const cancels = Number.isFinite(column.min) && column.min < 0;
+    if (holds && cancels) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail:
+          `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE}) —` +
+          ` but it reaches that total by CANCELLATION, not by addition${cancellationNote(column, totals)}.` +
+          ` Parts that cancel are not parts of a whole, so this claim cannot be confirmed against this column`,
+      };
+    }
     return {
       claim,
       verdict: holds ? "supported" : "contradicted",
-      detail: holds
-        ? `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE})`
-        : `claims the whole, but column "${column.name}" sums to ${column.sum}, not ${TOTALITY_WHOLE_VALUE}`,
+      detail:
+        (holds
+          ? `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE})`
+          : `claims the whole, but column "${column.name}" sums to ${column.sum}, not ${TOTALITY_WHOLE_VALUE}`) +
+        cancellationNote(column, totals),
     };
   }
 
@@ -2036,12 +2338,25 @@ function resolveCombined(item, profile, claim, columns, sentence) {
   };
 }
 
-function checkNumericRanges(text, columns, consumedSpans) {
+function checkNumericRanges(text, columns, consumedSpans, table = {}) {
   const claims = [];
   const seen = new Set();
   const numericColumns = columns.filter((c) => c.type === "number" && c.min !== null && c.min !== undefined && c.max !== null && c.max !== undefined);
   const yearColumn = findYearColumn(columns);
   const coverageColumn = findCoverageColumn(columns);
+  // ROUND SIX — the frozen table itself, not only its profile. Rows settle a thousands separator,
+  // confirm that a numeral is a value the table actually holds, and split a signed column's total
+  // into the two totals it really has; `rowCount` and a column's `missing` are the two structural
+  // facts a takeaway's numerals were never allowed to be about (beat AA: "240 employees" and "6
+  // returned no salary" both came back "could not be placed").
+  const rows = Array.isArray(table.rows) ? table.rows : null;
+  const rowCount = Number.isFinite(table.rowCount) ? table.rowCount : null;
+  const labelColumn = labelColumnOf(columns);
+  const rowSaid = (row) => {
+    if (labelColumn) return `"${String(row[labelColumn.name])}"`;
+    if (yearColumn && row[yearColumn.name] !== undefined) return `the row for ${row[yearColumn.name]}`;
+    return "one of its rows";
+  };
 
   for (const m of text.matchAll(NUMBER_RE)) {
     const raw = m[0];
@@ -2062,8 +2377,17 @@ function checkNumericRanges(text, columns, consumedSpans) {
     // One number reader, shared with `intake/scripts/profile.mjs` (finding 4) — a token this
     // regex matched but `readNumericToken` cannot resolve to one value is ONE unverifiable claim,
     // never two independent fragments silently re-tested against a column's range.
-    const read = readNumericToken(raw);
-    if (!read) continue;
+    //
+    // ROUND SIX: a token `readNumericToken` calls ambiguous gets ONE more question put to it, and
+    // only one — not "what could this token be" but "which of its two readings does the frozen
+    // table actually hold" (see `settleGroupedNumeral`). The token reader itself is untouched: it
+    // is a byte-identical copy of intake's and it answers about a token alone, which is a
+    // different question from the one this file is in a position to ask.
+    const token = readNumericToken(raw);
+    if (!token) continue;
+    const settled = token.ambiguous ? settleGroupedNumeral(raw, columns, rows) : null;
+    const read = settled ?? token;
+    const settledNote = settled ? settled.settledNote : "";
 
     // The numeral AND the scale word beside it are one claim: "1.12 million" is what the
     // sentence says, and quoting back "1.12" alone would hide the reading that placed it.
@@ -2071,6 +2395,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
     const claimText = multiplier ? text.slice(start, multiplier.end) : raw;
     if (seen.has(claimText)) continue;
     seen.add(claimText);
+    const say = (verdict, detail) => claims.push({ claim: claimText, verdict, detail: `${detail}${settledNote}` });
 
     if (read.ambiguous) {
       claims.push({ claim: claimText, verdict: "unverifiable", detail: read.reason });
@@ -2078,7 +2403,7 @@ function checkNumericRanges(text, columns, consumedSpans) {
     }
 
     if (numericColumns.length === 0) {
-      claims.push({ claim: claimText, verdict: "unverifiable", detail: "profile has no numeric column with a range to check against" });
+      say("unverifiable", "profile has no numeric column with a range to check against");
       continue;
     }
 
@@ -2095,6 +2420,13 @@ function checkNumericRanges(text, columns, consumedSpans) {
       });
     }
     const value = read.value;
+
+    // ROUND SIX, finding Z2 — THE COMPARATOR THAT GOVERNS THIS NUMERAL, read before any evidence
+    // is offered for it. See `relationBefore` for the whole argument; in one line, an equality is
+    // evidence FOR a sentence asserting equality and evidence AGAINST one asserting an inequality,
+    // and reading the numeral without the relation is how "the sum of the parts is GREATER than
+    // 100" came back `supported` on a column summing to exactly 100.
+    const relation = relationBefore(text, start);
 
     // A part-to-whole TOTAL is tried FIRST, because it is the one numeric reading here that can
     // actually fail: a column's `sum` is a single number computed from every row, and a takeaway
@@ -2120,11 +2452,33 @@ function checkNumericRanges(text, columns, consumedSpans) {
       }
     }
     if (summed) {
-      claims.push({
-        claim: claimText,
-        verdict: "supported",
-        detail: `equals the sum of column "${summed.column.name}" (${summed.column.sum})${summed.reading.note}`,
-      });
+      const column = summed.column;
+      const totals = columnTotals(column, rows);
+      const note = cancellationNote(column, totals);
+      if (!relation) {
+        say("supported", `equals the sum of column "${column.name}" (${column.sum})${summed.reading.note}${note}`);
+        continue;
+      }
+      // The sentence asserts a RELATION about this total, so the total is put to that relation
+      // rather than to equality. A column carrying a negative member has two totals (its net and
+      // its positive parts) and they can answer differently — `stress-z-budget-parts` nets to 100
+      // and its positive parts sum to 109.7, so "supérieure à 100" is false of one and true of the
+      // other. Two answers is not a verdict; it is a question for the journalist, named as one.
+      const said = relationSaid(relation.kind, summed.reading.value);
+      const answers = totals.map((t) => relationHolds(relation.kind, t.value, summed.reading.value));
+      const listed = totals
+        .map((t) => (t.kind === "positive" ? `its positive members alone sum to ${t.value}` : `it sums to ${t.value}`))
+        .join(", and ");
+      if (answers.every(Boolean)) {
+        say("supported", `this sentence claims a total ${said}, and column "${column.name}" satisfies it — ${listed}${summed.reading.note}${note}`);
+      } else if (answers.every((a) => !a)) {
+        say("contradicted", `this sentence claims a total ${said}, and column "${column.name}" does not satisfy it — ${listed}${summed.reading.note}${note}`);
+      } else {
+        say(
+          "unverifiable",
+          `this sentence claims a total ${said}, and column "${column.name}" answers that TWO WAYS — ${listed}${note}. Which of the two totals this sentence means is not decidable here`,
+        );
+      }
       continue;
     }
 
@@ -2149,39 +2503,51 @@ function checkNumericRanges(text, columns, consumedSpans) {
       readings.length > 1 ? ` (read both as written and as ${readings[readings.length - 1].value})` : "";
     let target = chosen.column;
 
-    // A BARE CALENDAR YEAR IS A PERIOD, not a measurement. It belongs to the profile's own period
-    // column and to nothing else — unless the sentence explicitly names a measure, in which case
-    // a four-digit figure really can be that measure's own value ("1,800 households").
+    // A BARE CALENDAR YEAR IS A PERIOD, not a measurement — and ROUND SIX splits that rule in two,
+    // because round five's version decided both halves the same way and was wrong about each of
+    // them once. `stress-ac-alcanede-kilns` says "the kilns employed 1,860 people in 1980": `1860`
+    // is `workers`' own maximum and it was placed on the PERIOD column, which cannot hold it;
+    // `stress-ab-emigration-flows` has no period column at all, and its survey year `2025` landed
+    // inside `people_2025 [1900, 18400]` and came back `consistent`, which is the coincidence
+    // round five's own finding T13 was about, reached by the other road.
+    //
+    // The frozen table decides both. A year-shaped numeral belongs to the period column when that
+    // column's own range covers it; otherwise it belongs to the column this sentence names ONLY IF
+    // that column actually HOLDS the number, which is what tells a measure value shaped like a year
+    // from a year placed among measurements by arithmetic. Neither: refused, naming both misses.
+    const periodColumn =
+      yearColumn && yearColumn.type === "number" && Number.isFinite(yearColumn.min) && Number.isFinite(yearColumn.max)
+        ? yearColumn
+        : null;
     if (looksLikeCalendarYear(raw) && !multiplier) {
-      const periodColumn =
-        yearColumn && yearColumn.type === "number" && Number.isFinite(yearColumn.min) && Number.isFinite(yearColumn.max)
-          ? yearColumn
-          : null;
-      if (periodColumn) target = periodColumn;
-      else if (!chosen.named) {
-        claims.push({
-          claim: claimText,
-          verdict: "unverifiable",
-          detail:
-            `"${raw}" reads as a calendar year and this profile carries no period column to place it against` +
-            (wouldLandIn.length > 0
-              ? `; it falls inside ${rangeOf(wouldLandIn)}, which measures something else, and nothing in the sentence names that column — placing it there would be a coincidence`
-              : ", and it falls inside no column's range either") +
+      const inPeriod = periodColumn !== null && value >= periodColumn.min && value <= periodColumn.max;
+      const holder = chosen.column && rowHolding(rows, chosen.column, value) ? chosen.column : null;
+      if (inPeriod) target = periodColumn;
+      else if (holder) target = holder;
+      else {
+        say(
+          "unverifiable",
+          `"${raw}" reads as a calendar year` +
+            (periodColumn
+              ? `, and this profile's period column ${rangeOf([periodColumn])} does not cover it`
+              : `, and this profile carries no period column to place it against`) +
+            (chosen.column
+              ? `; the column this sentence names, "${chosen.column.name}", does not hold that value in any frozen row either, so placing it there would be a coincidence`
+              : `; and ${chosen.refusal}`) +
+            (wouldLandIn.length > 0 ? ` (it does fall inside ${rangeOf(wouldLandIn)})` : "") +
             refusedColumnNote(columns),
-        });
+        );
         continue;
       }
     }
 
     if (!target) {
-      claims.push({
-        claim: claimText,
-        verdict: "unverifiable",
-        detail:
-          `"${claimText}" was not placed: ${chosen.refusal}` +
+      say(
+        "unverifiable",
+        `"${claimText}" was not placed: ${chosen.refusal}` +
           (wouldLandIn.length > 0 ? ` (it would fall inside ${rangeOf(wouldLandIn)})` : "") +
           refusedColumnNote(columns),
-      });
+      );
       continue;
     }
 
@@ -2195,13 +2561,38 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // 2026" — "2026" alone, trivially inside `year`'s range, used to come back "supported" with
       // `months_covered` recording that row at 3 of 12 months).
       if (coverageColumn && target === yearColumn) {
-        claims.push({
-          claim: claimText,
-          verdict: "unverifiable",
-          detail: `"${raw}" falls inside "${yearColumn.name}"'s range, but the profile carries a "${coverageColumn.name}" column marking some period incomplete — a bare year cannot be confirmed comparable without knowing which row that is`,
-        });
+        say(
+          "unverifiable",
+          `"${raw}" falls inside "${yearColumn.name}"'s range, but the profile carries a "${coverageColumn.name}" column marking some period incomplete — a bare year cannot be confirmed comparable without knowing which row that is`,
+        );
         continue;
       }
+      const degenerate = target.min === target.max;
+
+      // ROUND SIX, beat AA — WHAT A RANGE HIT ACTUALLY MATCHED, said out loud. The verdict does not
+      // move: a numeral equal to a column's `min` or `max`, or held verbatim in one of its rows, is
+      // `consistent` and NEVER `supported`, which is round four's rule and this round re-states it
+      // rather than trading it away. What was wrong was the EVIDENCE. `238530` — the number
+      // `stress-aa-salary-spread`'s chart prints as the highest salary — came back "within the range
+      // of column annual_salary_eur [14664, 238530]", an answer that hides the fact it IS that
+      // maximum; a journalist reading it cannot tell an exact hit from a numeral that merely fell
+      // between two bounds. So the detail now names the match, and only the detail.
+      //
+      // A DEGENERATE column keeps its own sentence (min === max is a check that cannot fail), and a
+      // bare calendar year keeps the period column's, because "the table covers 2026" is not a fact
+      // about a measurement at all.
+      let matched = "";
+      if (!degenerate && !looksLikeCalendarYear(raw)) {
+        if (sameNumber(placed.value, target.max)) {
+          matched = ` — and it is exactly that column's maximum (${target.max})`;
+        } else if (sameNumber(placed.value, target.min)) {
+          matched = ` — and it is exactly that column's minimum (${target.min})`;
+        } else {
+          const row = rowHolding(rows, target, placed.value);
+          if (row) matched = ` — and the frozen table holds it verbatim for ${rowSaid(row)}`;
+        }
+      }
+
       // ROUND FOUR, finding 1 — the verdict that says what a range hit is actually worth. A
       // numeral sitting between a column's min and its max has been PLACED: it is the right order
       // of magnitude, in the right units, for a column this table carries. That is a real and
@@ -2209,30 +2600,46 @@ function checkNumericRanges(text, columns, consumedSpans) {
       // inside `incidents [96, 412]` and `100` — the "k" of "100k" — does too, and neither is
       // evidence for the sentence they sit in. "consistent" is therefore its own verdict, and
       // `propose.mjs`'s `groundingScalar` cannot close G1 on it (see `resolveGrounding`).
-      const degenerate = target.min === target.max;
-      claims.push({
-        claim: claimText,
-        verdict: "consistent",
-        detail:
-          (degenerate
-            ? `"${claimText}" equals the only value column "${target.name}" holds (${target.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
-            : `within the range of column "${target.name}" [${target.min}, ${target.max}] — that places the numeral, it does not confirm the claim it sits in`) +
-          placed.note,
-      });
+      say(
+        "consistent",
+        (degenerate
+          ? `"${claimText}" equals the only value column "${target.name}" holds (${target.min}) — a range whose min and max are the same value is a check that CANNOT FAIL, so this places the numeral and confirms nothing`
+          : `within the range of column "${target.name}" [${target.min}, ${target.max}]${matched} — that places the numeral, it does not confirm the claim it sits in`) + placed.note,
+      );
       continue;
+    }
+
+    // ROUND SIX, beat AA — `rowCount` AND `column.missing` ARE A NUMERAL'S HOME. The chart the beat
+    // shipped prints "234 of the company's 240 employees; 6 returned no salary". Both of those
+    // numbers are stated by the frozen profile — `rowCount` is 240, `annual_salary_eur.missing` is
+    // 6 — and both came back "could not be placed in the column this sentence names", because the
+    // only homes a numeral had were a column's range and a column's sum. They are tried only once a
+    // numeral has FAILED to be a member of the column its sentence names, so a numeral that is
+    // plausibly a measurement is never re-read as a fact about the table's shape instead; and a
+    // relation excludes them for the same reason it excludes an exact match above.
+    if (!relation) {
+      if (rowCount !== null && sameNumber(value, rowCount)) {
+        say("supported", `equals the number of rows the frozen table carries (${rowCount})`);
+        continue;
+      }
+      const blankIn = [target, ...columns].find(
+        (c) => c && Number.isFinite(c.missing) && c.missing > 0 && sameNumber(value, c.missing),
+      );
+      if (blankIn) {
+        say("supported", `equals the number of blank cells column "${blankIn.name}" carries (${blankIn.missing}), as the frozen profile records them`);
+        continue;
+      }
     }
 
     // Neither a member of the column this sentence is about nor a column total. That is this
     // function failing to place the number, which is not the same fact as the data refuting it —
     // see the header.
-    claims.push({
-      claim: claimText,
-      verdict: "unverifiable",
-      detail:
-        `could not be placed in the column this sentence names, "${target.name}" [${target.min}, ${target.max}]${target.sum === null || target.sum === undefined ? "" : `, sum ${target.sum}`}, nor read as any column's total${readingsTried}` +
+    say(
+      "unverifiable",
+      `could not be placed in the column this sentence names, "${target.name}" [${target.min}, ${target.max}]${target.sum === null || target.sum === undefined ? "" : `, sum ${target.sum}`}, nor read as any column's total${readingsTried}` +
         (wouldLandIn.length > 0 ? ` (it does fall inside ${rangeOf(wouldLandIn)}, which this sentence does not name)` : "") +
         ` — this check has no way to confirm or refute it${refusedColumnNote(columns)}`,
-    });
+    );
   }
   return claims;
 }
@@ -2326,7 +2733,7 @@ export function groundTakeaway(takeaway, profile, options = {}) {
   const claims = comparisons.map((item) => resolveComparison(item, p, takeaway));
 
   const consumedSpans = comparisons.map((c) => [c.start, c.end]);
-  claims.push(...checkNumericRanges(takeaway, columns, consumedSpans));
+  claims.push(...checkNumericRanges(takeaway, columns, consumedSpans, { rows, rowCount: base.rowCount }));
 
   return { claims, coverage: computeCoverage(takeaway, claims) };
 }
