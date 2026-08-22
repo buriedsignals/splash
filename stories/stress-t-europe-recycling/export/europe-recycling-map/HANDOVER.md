@@ -5,12 +5,7 @@ the exchange, read back — nothing here is new.
 
 ## The files
 
-- **`frame-329.png`** — a raster copy, for a system that cannot take the vector
-- **`frame-160.png`** — a raster copy, for a system that cannot take the vector
-- **`video-props.json`** — delivered with the beat
-- **`europe-recycling-final-frame.png`** — a raster copy, for a system that cannot take the vector
-- **`frame-70.png`** — a raster copy, for a system that cannot take the vector
-- **`frame-250.png`** — a raster copy, for a system that cannot take the vector
+- **`europe-recycling-final-frame.png`** — the video's own last frame — the poster image the player shows before the video plays, not a second version of it
 - **`europe-recycling.mp4`** — the video file
 
 ## Where it goes in the article
