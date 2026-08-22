@@ -104,14 +104,20 @@ export function parseRoutes(csv: string): Route[] {
     });
 }
 
-/** `[a-z0-9-]+` by construction — the one vocabulary the markup, the CSS and the live plan share. */
-export function slugOf(name: string): string {
-  return String(name)
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+/**
+ * `[a-z0-9-]+` by construction — the one vocabulary the markup, the CSS and the live plan share.
+ * It used to normalise NFD and strip combining marks before slugging, which no other copy does and
+ * which nothing in this beat needs: not one of the fourteen place names in `source/data.csv`
+ * carries a diacritic, so the extra pass changed no slug this page has ever emitted. A silent twin
+ * of a tagged function, differing only in dead code, is exactly what the geometry walk exists to
+ * find.
+
+ *  @parity */
+export function slugOf(text: string): string {
+  return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/(^-|-$)/g, "");
 }
 
 /**

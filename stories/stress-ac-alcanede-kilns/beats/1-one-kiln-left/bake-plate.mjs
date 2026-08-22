@@ -86,7 +86,9 @@ function resolveChrome() {
   candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
   const found = candidates.find((path) => existsSync(path));
   if (!found)
-    throw new Error(`no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}`);
+    throw new Error(
+      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
+    );
   return found;
 }
 
@@ -119,10 +121,11 @@ function cameraFacts(zoom, corners) {
 
 /** THE WORLD MUST FILL THE FRAME'S WIDTH — under it MapLibre draws a repeat continent carrying none
  *  of this beat's marks. */
-function assertWorldFillsFrame(camera, w) {
-  if (camera.worldWidthPx >= w - 1) return;
+function assertWorldFillsFrame(camera, width) {
+  if (camera.worldWidthPx >= width - 1) return;
   throw new Error(
-    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ${w}px.`,
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
   );
 }
 
