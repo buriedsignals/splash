@@ -423,6 +423,14 @@ ${liveBlock}
   // beat that strands one and then drops one of them has drawn a fact no reader can reach by any
   // means. That page is not written.
   const drawn = drawnRegionsOf(html);
+  // DECLARED, never dropped: a mark whose drawn geometry this reading cannot place is a mark nothing
+  // below measured, and a silence reported as a pass is the shape this project keeps finding.
+  if (drawn && drawn.unplaceable.length > 0)
+    console.log(
+      `no pointer path: ${drawn.unplaceable.length} mark(s) draw their geometry under an SVG ` +
+        `transform (${drawn.unplaceable.join(", ")}) — this reading works in frame units and cannot ` +
+        `place them, so nothing below counted them either way`,
+    );
   if (drawn && drawn.shapes.length > 0) {
     for (const width of READING_WIDTHS)
       console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame))));

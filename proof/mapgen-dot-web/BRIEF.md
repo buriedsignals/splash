@@ -14,9 +14,13 @@ countries would not do it (**46.8 %**), so five is the smallest set that clears 
 
 A dot map turns a value into TEXTURE. A reader sees where the mass is and cannot read a single number
 off it: no dot is labelled, no country can be, and the still's answer — a dot-value key and five
-direct labels — is as far as fixed ink goes. Here, hovering or focusing any of the 42 countries gives
-its exact population AND its own dot count (the bridge between the texture and the key), and the
-table below carries all 42 at once. The claim itself is still stated without any interaction: the
+direct labels — is as far as fixed ink goes. Here, focusing any of the 42 countries gives
+its exact population AND its own dot count (the bridge between the texture and the key), hovering
+does too for every country this camera draws larger than a pixel, and the table below carries all 42
+at once. **Not every country: measured on this beat's own bake, Liechtenstein and Malta are drawn
+under a pixel at every width and Andorra and the Faroe Islands join them at 343px, so the pointer
+never reaches them and no hit target can be built that does — the keyboard and the table are those
+four countries' path.** The claim itself is still stated without any interaction: the
 title names the five and the map labels them.
 
 ## Data

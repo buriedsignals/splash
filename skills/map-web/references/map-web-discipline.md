@@ -333,7 +333,9 @@ pane a bound the way this one does.
 ## Two channels, not one
 
 The map and the table are not a primary feature and its fallback — they are two channels carrying
-the same thirteen facts, and a reader picks whichever one their situation makes usable. This is why
+the same thirteen facts, and a reader picks whichever one their situation makes usable **where there
+is a choice to be made**. On a dense camera there is not, for some of the marks, and the next section
+is the measurement that proved it. This is why
 the map's own per-point `<button class="pt">` is STILL individually keyboard-reachable with its own
 `aria-label`, exactly the way `chart-web`'s points are: a sighted keyboard user who does not use
 a screen reader still benefits from being able to tab the map itself and hear/read the value at
@@ -346,6 +348,65 @@ opt-out above is a real cost and not a tidy-up: **a beat that ships the table ha
 beat that turns it off has one, and it is the spatial one.** **The filter narrows both channels
 together, never one alone** — see "Filters" below.
 
+### A mark smaller than a pixel has no pointer path at all — MEASURED 2026-08-23
+
+**This is a property of the CAMERA, not a defect in the layout, and no hit target closes it.**
+
+A ruling was written to replace the colliding-target invariant below with a live one: every mark's
+own centre answers `queryRenderedFeatures` with that mark's feature. It was driven with a real
+MapTiler key against the committed 241-region world beat
+(`stories/real-owid-life-expectancy/beats/1-life-expectancy-2023`), and it was refuted — and the
+refutation found something larger than the question. At 1600×900, asking at each mark's own centre:
+
+| answer | marks |
+| --- | --- |
+| its OWN feature | 140 |
+| a NEIGHBOUR's | 15 |
+| **nothing at all** | **86** |
+
+A bbox centre is the wrong pixel for a concave country (France's lands in Mali, Denmark's in open
+water, Croatia's inside Bosnia), so the question was asked again in its fairest possible form: does
+the map attribute **any** pixel anywhere to this mark — a 23×23 grid over its own projected bounding
+box, requiring a pixel to spare on all four sides, which is `verify-live-map.mjs`'s own discipline
+because a probe whose rounding decides the verdict measures rounding.
+
+| window | canvas | a pixel to spare | a single pixel only | **NO pixel anywhere** |
+| --- | --- | --- | --- | --- |
+| 1600×900 | 896×608 | 151 | 27 | **63** |
+| 1024×768 | 640×434 | 142 | 35 | **64** |
+| 375×667 | 263×178 | 92 | 67 | **82** |
+
+**At 1600×900 the map draws 896px for 360° of longitude, so one pixel is about 26 km and Monaco is
+about a thirteenth of one.** And the failures are exactly the marks a target would have been
+engineered for: MCO answers France, SMR and VAT answer Italy, MAC answers China, SGP answers
+Malaysia, AND answers France; LIE, MLT and HKG answer nothing. Of the 105 marks a neighbour's 28px
+button covers, **46 are not served by the live pointer either**.
+
+So the collision was never the problem. **A mark smaller than a pixel has no pointer path — not a
+colliding one, none — and no target engineering creates one.** The proposed invariant would have
+been red for 90 of 241 marks at 1600×900 and 149 at 375×667 and could never have gone green: a
+requirement that fires constantly and cannot be satisfied, which is worse than a missing one. It was
+refused rather than weakened into something that would pass.
+
+**What follows from it, and it is not a smaller target.**
+
+1. **For those marks, the keyboard and the accessible table ARE the path.** Not a fallback, not a
+   consolation, not a channel a reader chooses instead — the only two there are. That is why the
+   `.pt` button is never dropped for being covered: it is the keyboard target and the `aria-label`'s
+   carrier, and dropping it would trade a partial pointer path for no path at all.
+2. **The beat is TOLD, at production time, how many of its marks this happens to** — a count and the
+   names, at four container widths, printed where the producer reads it (`marksWithNoPointerPath` in
+   `assets/geo-choropleth.ts`, called by the format's own renderer and by the worked beat's runner).
+   A number nobody is shown is the same as no number, and this is a fact a journalist can act on:
+   tighten the camera, add an inset, or accept it knowingly and say so in the caveat. The production
+   count is a FLOOR — the live layer fits a narrower canvas than the fallback, so
+   `scripts/verify-live-map.mjs` prints a higher number (91 of 241 at 1600×900 against 75).
+3. **A beat that strands a mark and then drops either remaining channel is REFUSED, not shipped**
+   (`marksStrandedWithNoChannel`, `scripts/detect-stranded-marks.mjs`). The table's opt-out below is
+   a real cost on any beat; on a camera that draws marks under a pixel it is not available at all,
+   because a mark with no pointer path and no row is a fact this page has drawn that no reader can
+   reach by any means.
+
 ## Touch and hover share one target
 
 A decorative circle sized by its own value can be a few pixels across at the small end of the scale
@@ -357,6 +418,15 @@ be (`HIT_TARGET_PX` in `MapWebSeed.tsx`'s own header note has the arithmetic). T
 target is now a real HTML `<button>`, `28px` fixed CSS diameter, laid over the SVG by percentage
 position but NOT by percentage size — a legitimate touch/pointer target at every width this format
 ships, decoupled entirely from how big or small the decorative mark it sits on happens to be drawn.
+
+**That sentence is true of the BUTTON and false of the mark, and the difference is the section
+above.** A 28px button is a fair target at every width; it does not follow that every mark can be
+pointed at, and on a dense camera it is not even true of the buttons themselves — measured, 143
+pointer-active marks on the world beat with 82 of them under a neighbour's disc at 1600×900. In the
+LIVE layer those buttons have their pointer-events dropped on purpose and the canvas answers, so
+what a reader can point at there is the mark's own drawn shape — which for 91 of that beat's 241
+marks is smaller than a pixel. This paragraph is about a control's ergonomics. It is not, and was
+never, a promise that every mark is reachable by pointer.
 
 ## Progressive enhancement: a native tooltip before the script runs
 

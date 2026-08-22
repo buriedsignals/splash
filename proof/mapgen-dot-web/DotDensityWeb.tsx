@@ -5,9 +5,17 @@
  * WHY THIS TYPE EARNS THE WEB FORMAT. A dot map's weakness is exactly the thing this format fixes. It
  * turns a value into TEXTURE: a reader sees where the mass is and cannot read a single number off it,
  * because no dot is labelled and no country can be. The still's answer is a dot-value key ("1 dot =
- * N people") and five direct labels, which is as far as fixed ink goes. Here, hovering or focusing
- * any country gives its exact population and its own dot count, and the table below carries all 42
- * at once. The picture still states the claim without any interaction — the five clouds the title
+ * N people") and five direct labels, which is as far as fixed ink goes. Here, focusing any country
+ * gives its exact population and its own dot count, hovering does too for every country this camera
+ * draws larger than a pixel, and the table below carries all 42 at once.
+ *
+ * "EVERY COUNTRY" WAS NOT TRUE, AND IT IS MEASURED HERE RATHER THAN SOFTENED. This header used to
+ * say a reader could hover ANY of the 42. The live hover target is the country FILL (`mw-countries`,
+ * `hover: true`), so a country drawn smaller than a pixel answers a pointer with its neighbour or
+ * with nothing, and `marksWithNoPointerPath` over this beat's own bake finds Liechtenstein and Malta
+ * at every width down from 1000px, joined by Andorra and the Faroe Islands at 343px. The keyboard
+ * and the table below are those countries' path, and this beat keeps both — which is what makes the
+ * sentence above honest rather than merely narrower. The picture still states the claim without any interaction — the five clouds the title
  * names are labelled on the map — and the interaction supplies the precision the texture cannot.
  *
  * THE SPLIT THAT MAKES THIS RESPONSIVE (`map-web/references/map-web-discipline.md`, "Full
@@ -191,6 +199,13 @@ export function DotDensityWeb({
                 {countries.map((c) => (
                   <path
                     key={c.key}
+                    // NAMED IN THE ARTEFACT, so a reader of the delivered file can tell WHICH
+                    // country this outline is. Without it `marksStrandedWithNoChannel` could not see
+                    // this beat at all and reported zero marks with no pointer path on a page where
+                    // Liechtenstein and Malta are drawn under a pixel — a guard confirming a beat it
+                    // could not read. This outline is also the LIVE hover target (`mw-countries`,
+                    // `hover: true`), so its size IS the pointer question here.
+                    data-key={c.key}
                     d={ringPath(c.parts)}
                     fill={landFill}
                     stroke={muted}

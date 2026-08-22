@@ -1,6 +1,6 @@
 ---
 name: map-web
-description: Use to produce a map beat in the WEB format — a self-contained interactive HTML page that fits the reader's window, where hovering or focusing a region gives its exact value, a size legend stays readable, and an accessible table (on by default, opt-out per beat) carries the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
+description: Use to produce a map beat in the WEB format — a self-contained interactive HTML page that fits the reader's window, where focusing a region gives its exact value and hovering does too for every region this camera draws larger than a pixel, a size legend stays readable, and an accessible table (on by default; not optional on a camera that draws marks under a pixel, since it is then those marks' only complete reading) carries the same facts for a reader with no spatial access to the map. Fills the missing cell in this toolchain's matrix — charts ship static/web/video, maps shipped only static/video until this skill.
 ---
 
 # map-web — bake the plate once, draw circles a reader can interrogate, and answer for the reader who cannot see the shape
@@ -154,11 +154,12 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
-| Pure core (polygons) | `assets/geo-choropleth.ts` | `joinValues`/`unmatchedValues` (the join that fails loud), `binIndexLowerInclusive`/`scalePosition` (the classes), `sequentialRamp`/`dataRampEnd`/`assertRampReads` (the ramp), `noDataFor`/`waterFor`/`assertSurfacesRead` (the two surfaces that are NOT the data, derived from the same palette and measured against the ramp), `collidingPointerTargets`, `pathFromRings`/`simplifyRing`/`keepRing`. This skill's OWN copy, byte-shared with the worked beat |
+| Pure core (polygons) | `assets/geo-choropleth.ts` | `joinValues`/`unmatchedValues` (the join that fails loud), `binIndexLowerInclusive`/`scalePosition` (the classes), `sequentialRamp`/`dataRampEnd`/`assertRampReads` (the ramp), `noDataFor`/`waterFor`/`assertSurfacesRead` (the two surfaces that are NOT the data, derived from the same palette and measured against the ramp), `collidingPointerTargets` and `marksWithNoPointerPath` (whose 28px button a neighbour buries, and which marks this camera draws smaller than a pixel — the second is the larger fact and the one a journalist can act on), `pathFromRings`/`simplifyRing`/`keepRing`. This skill's OWN copy, byte-shared with the worked beat |
 | Pure core (points) | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
 | Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`), and makes the live layer obey the same filter selection the CSS obeys (`selectedGroup`, `applyFilter`) |
-| Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and clicks every filter chip for real. Asserts what can come apart: mark size against an independent camera derivation, nothing cropped, a real pointer reaching a mark's whole disc, and BOTH halves of every mark obeying one filter — plus an anti-vacuity pin, because with the filter broken in both halves at once every count agrees |
+| Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and clicks every filter chip for real. Asserts what can come apart: mark size against an independent camera derivation, nothing cropped, a real pointer reaching a mark's whole disc, and BOTH halves of every mark obeying one filter — plus an anti-vacuity pin, because with the filter broken in both halves at once every count agrees. Also REPORTS, over every mark rather than over its hover sample, how many the camera gives no pixel to at all — 91 of 241 on the world beat at 1600×900 |
+| Marks with no pointer path | `scripts/detect-stranded-marks.mjs` | `marksStrandedWithNoChannel` — reads the delivered page's own frame, rings, marks, keyboard targets and table, and REFUSES a beat that draws a mark smaller than a pixel and then leaves it without a table row or without a keyboard target. Those two are that mark's only remaining paths; a mark missing one of them is a fact nobody can reach |
 | Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter chips, point labels, hit-target buttons, legend, and, as a third layer that is a sibling of both map layers, the point labels and hit targets), inside a `.mw-stage` that bounds it to the window's leftover height — and `RegionTable` (the accessible table, carried by default) |
 | Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
 | Verify | `scripts/verify-interaction.mjs` | Drives the rendered beat in a real browser with REAL input: fit at four viewport sizes, `elementFromPoint` + a real pointer move per point checked against the sample data, a real click per filter chip, keyboard, and the no-JS pass. Mutation-proven to fail when the hover is swallowed, the filter selector is wrong, the fit is removed or the plate is stretched |
@@ -194,6 +195,13 @@ reader with no spatial access to the map has the `.pt` buttons' own `aria-label`
 and `references/map-web-discipline.md`'s "The accessibility question" states exactly what is lost by
 that: the complete set of readings, the comparison the beat is about, and a reading that does not
 cost thirteen separate interactions. Read it before opting out; do not opt out by not deciding.
+
+**And on a dense camera it is not an option at all.** A mark the camera draws smaller than a pixel
+has no pointer path — measured live on the 241-region world beat, 63 marks get no pixel from the map
+whatever at 1600×900 and 82 at 375×667 — so the table and the keyboard are the only two paths those
+marks have. `renderMapWeb` therefore REFUSES to write a page that strands a mark and drops either
+(`marksStrandedWithNoChannel`, `scripts/detect-stranded-marks.mjs`). Opting out of the table on a
+beat like that would delete one of two remaining channels, not one of three.
 
 ## Four guards, two substrates
 
@@ -317,12 +325,22 @@ light ground) and a real 241-region world beat driven live with a real key.
    close to 2:1 in Web Mercator, so a square frame spends half its pixels on ocean AND hands the
    delivered page a square to put in a wide window.
 
-6. **Expect the fallback's pointer path to be PARTIAL on a dense camera, and say so.** Every region
-   too small to land a pointer on by its own shape keeps a 28px button; on a world map those buttons
-   cover each other — measured, 143 pointer-active marks with 82 of them covered at 1600×900. The
-   button stays (it is also the keyboard target and the `aria-label`'s carrier, and both of those
-   channels are complete), `collidingPointerTargets` counts them, and the runner prints the count at
-   four widths. A limit that cannot be removed is one the beat states.
+6. **On a dense camera the pointer path is not partial — for some marks it does not exist, and the
+   beat is told which.** Every region too small to land a pointer on by its own shape keeps a 28px
+   button; on a world map those buttons cover each other — measured, 143 pointer-active marks with
+   82 of them covered at 1600×900, which `collidingPointerTargets` counts. But the collision was
+   never the problem. Driven live with a real key against the committed 241-region world beat,
+   **63 of its marks get no pixel from the map at all at 1600×900 and 82 at 375×667**: at that camera
+   one pixel is about 26 km and Monaco is about a thirteenth of one, and of the 105 marks a
+   neighbour's button covers, 46 are not served by the live pointer either. **A mark smaller than a
+   pixel has no pointer path and no target engineering creates one.** So `marksWithNoPointerPath`
+   counts THOSE and the runner prints the count and the names at four widths beside the colliding
+   one — a fact a journalist can act on by tightening the camera, adding an inset, or accepting it
+   knowingly in the caveat. The button stays either way: it is the keyboard target and the
+   `aria-label`'s carrier, and for a sub-pixel mark that channel and the table are the ONLY paths
+   left — which is why `marksStrandedWithNoChannel` REFUSES a beat that strands a mark and then
+   drops one of them. Read `references/map-web-discipline.md`, "A mark smaller than a pixel has no
+   pointer path at all", for the measurement in full.
 
 7. **Drive it live.** `scripts/verify-live-map.mjs --html <the beat's page>` reads the layers off the
    page's own plan, so it drives a choropleth as readily as the symbol seed, and it EXITS NON-ZERO

@@ -16,16 +16,23 @@
 // a keyboard target for it, has produced a mark no reader can reach by any means.
 //
 // READS THE ARTEFACT, NEVER THE COMPONENT, the same rule `detect-accessible-table.mjs` states: the
-// delivered page carries its own frame (the map `<svg>`'s `viewBox`), its own drawn rings
-// (`<path class="region" … data-key>`), its own marks (`data-detail`), its own keyboard targets and
-// its own table. Every input this decision needs is in the file that ships, so it judges what
-// shipped rather than what a render step meant to write.
+// delivered page carries its own frame (the map `<svg>`'s `viewBox`), its own drawn rings (a keyed
+// `<path>`), its own marks (`data-detail`), its own keyboard targets and its own table. Every input
+// this decision needs is in the file that ships, so it judges what shipped rather than what a render
+// step meant to write.
 //
-// WHAT IT CANNOT SEE, said out loud. A page that draws its marks as something other than a region
-// path — the symbol seed's circles, the hex grid's bins, a route beat's lines — has no areal
-// geometry to be sub-pixel, so this reports an empty set for it and that is the honest answer, not a
-// skip. `test/marks-smaller-than-a-pixel.test.ts` pins that at least one page in this format's own
-// delivered population does strand marks, so an empty sweep can never read as a pass.
+// WHAT IT CANNOT SEE, SAID OUT LOUD AND BOUNDED IN CODE rather than left as prose. This measures a
+// FILLED areal shape stated in frame units, which is what a choropleth region, a dot map's country
+// outline and a hex bin all are. Three things are therefore refused rather than measured wrongly:
+// a `fill="none"` path, whose pointer target is a STROKE WIDTH and not an enclosed area; a path
+// under an SVG `transform`, whose rings are not where it is drawn; and a `d` carrying any command
+// beyond `M`/`L`/`Z`, since a curve's control points are not vertices. The first two were found on
+// real committed pages (`stress-ab-emigration-flows`'s route ribbons and arrowheads), and the keys
+// dropped for the second are RETURNED so a caller can say so — a silence reported as a clean bill is
+// the shape this project keeps finding. A page whose marks carry no areal geometry at all — the
+// symbol seed's circles, a locator's pins — gets an empty answer, which is the honest one.
+// `test/marks-smaller-than-a-pixel.test.ts` pins that several pages in this format's own delivered
+// population DO strand marks, so an empty sweep can never read as a pass.
 
 import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
@@ -65,17 +72,55 @@ export function drawnWidthAt(containerWidthPx, frame) {
  *  projected into — never a second number derived somewhere else. The rings are parsed back out of
  *  the `d` attribute `pathFromRings` wrote (`M x yL x y…Z`, one subpath per ring), so what is
  *  measured is the geometry the reader's browser actually paints. Returns `null` for a page with no
- *  map svg at all, and an empty `shapes` for one whose marks are not regions. */
+ *  map svg at all, and an empty `shapes` for one that draws no keyed areal geometry.
+ *
+ *  A SHAPE IS A `<path>` THAT NAMES A KEY, not a `<path class="region">`, and the difference was a
+ *  false negative on a real page. The first version keyed off the choropleth's own class and
+ *  therefore reported ZERO stranded marks on `proof/mapgen-dot-web` — a beat whose live hover layer
+ *  is the country FILL (`mw-countries`, `hover: true`) and whose own prose claimed a reader could
+ *  hover any of its 42 countries, while Liechtenstein and Malta are drawn under a pixel at every
+ *  width. A guard that only recognises one beat's class name confirms every beat that spells it
+ *  differently. `marksStrandedWithNoChannel` intersects these keys with the ones the page ANNOUNCES,
+ *  so a context outline that is not a mark is still not judged as one.
+ *
+ *  PARTS ARE MERGED BY KEY: a country drawn as several `<path>` elements is one mark, and asking
+ *  whether its smallest island is sub-pixel would report a reachable country as stranded. */
 export function drawnRegionsOf(html) {
   const svg = /<svg[^>]*class="map"[^>]*>/.exec(html)?.[0];
   const viewBox = svg && /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
   if (!viewBox) return null;
-  const shapes = [];
-  for (const path of html.matchAll(/<path\b[^>]*class="region"[^>]*>/g)) {
+  const byKey = new Map();
+  const skipped = new Set();
+  for (const path of html.matchAll(/<path\b[^>]*>/g)) {
     const key = /\bdata-key="([^"]+)"/.exec(path[0])?.[1];
     const d = /\bd="([^"]+)"/.exec(path[0])?.[1];
     if (!key || !d) continue;
-    const rings = [];
+    // FILLED GEOMETRY ONLY, and this is a correctness bound rather than a convenience. A STROKED
+    // path — `stories/stress-ab-emigration-flows`'s route flows, `fill="none"` with a stroke-width
+    // of 30 down to 3.1 — is pointed at through its STROKE, and the area its open curve happens to
+    // enclose is not a thing the map paints or hit-tests. Measured on that page: eight route keys
+    // parse as "shapes" and the even-odd spans of an open curve answered a question nobody asked.
+    // A mark whose target is a stroke width is a different measurement and this is not it.
+    if ((/\bfill="([^"]*)"/.exec(path[0])?.[1] ?? "none").toLowerCase() === "none") continue;
+    // AND NOTHING THIS FUNCTION CANNOT PLACE. A `transform` composes a matrix onto the path's own
+    // coordinates and this reads frame units off the `d` attribute alone, so a transformed shape's
+    // rings are not where it is drawn. Skipped and RECORDED rather than measured wrongly or dropped
+    // in silence: found on `stories/stress-ab-emigration-flows`, whose eight route ARROWHEADS carry
+    // the route's `data-key` on a translated-and-rotated triangle. That triangle is decoration; the
+    // route's own pointer target is a 35px transparent stroke (`.fm-hit`), which is a stroke-width
+    // question and not this one.
+    if (/\btransform="/.test(path[0])) {
+      skipped.add(key);
+      continue;
+    }
+    // AND NOTHING WHOSE `d` IS NOT A POLYGON. `pathFromRings` writes `M x yL x y…Z` and nothing
+    // else; a `C`, `Q` or `A` in there means the outline has control points that are not vertices,
+    // and reading them as vertices would answer a different shape's question.
+    if (/[^\s\d.,\-MLZ]/.test(d)) {
+      skipped.add(key);
+      continue;
+    }
+    const rings = byKey.get(key) ?? [];
     for (const subpath of d.split("M")) {
       if (!subpath.trim()) continue;
       const ring = subpath
@@ -85,9 +130,15 @@ export function drawnRegionsOf(html) {
         .filter((point) => point.length === 2 && point.every(Number.isFinite));
       if (ring.length >= 3) rings.push(ring);
     }
-    if (rings.length > 0) shapes.push({ key, rings });
+    if (rings.length > 0) byKey.set(key, rings);
   }
-  return { frame: { width: Number(viewBox[1]), height: Number(viewBox[2]) }, shapes };
+  return {
+    frame: { width: Number(viewBox[1]), height: Number(viewBox[2]) },
+    shapes: [...byKey].map(([key, rings]) => ({ key, rings })),
+    // The keys this reading could not place, so a caller can say so rather than report a silence as
+    // a clean bill. `render-web.mjs` prints them.
+    unplaceable: [...skipped].filter((key) => !byKey.has(key)).sort(),
+  };
 }
 
 /** Every mark the page announces, keyed: `data-key` → the `data-detail` it carries, and whether the

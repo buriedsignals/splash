@@ -187,6 +187,76 @@ describe("the delivered page carries everything this decision needs", () => {
       drawnRegionsOf("<html><body><p>no map here</p></body></html>"),
     ).toBeNull();
   });
+
+  const svg = (paths: string) =>
+    `<svg class="map" viewBox="0 0 100 100">${paths}</svg>`;
+
+  it("reads a keyed path whatever class it carries — a beat is not one beat's class name", () => {
+    // THE FALSE NEGATIVE THIS CLOSES, on a real page. This reading first keyed off the choropleth's
+    // own `class="region"`, so `proof/mapgen-dot-web` — whose live hover target is the country FILL
+    // and whose own prose claimed a reader could hover any of its 42 countries — reported ZERO marks
+    // with no pointer path while Liechtenstein and Malta are drawn under a pixel at every width.
+    const found = drawnRegionsOf(
+      svg(
+        '<path d="M1 1L9 1L9 9L1 9Z" fill="#eee" stroke="#616161" data-key="LIE"></path>',
+      ),
+    )!;
+    expect(found.shapes.map((shape: { key: string }) => shape.key)).toEqual([
+      "LIE",
+    ]);
+  });
+
+  it("merges a mark drawn as several paths, rather than judging its smallest island", () => {
+    const found = drawnRegionsOf(
+      svg(
+        '<path d="M1 1L40 1L40 40L1 40Z" fill="#eee" data-key="ITA"></path>' +
+          '<path d="M90 90L90.2 90L90.2 90.2L90 90.2Z" fill="#eee" data-key="ITA"></path>',
+      ),
+    )!;
+    expect(found.shapes.length).toBe(1);
+    expect(found.shapes[0].rings.length).toBe(2);
+    // The mainland carries the mark; the speck alone would have called Italy unreachable.
+    expect(marksWithNoPointerPath(found.shapes, found.frame, 100)).toEqual([]);
+  });
+
+  it("refuses geometry it cannot judge instead of measuring it wrongly", () => {
+    // Three bounds, each found on or provoked by a real page. A STROKED path is pointed at through
+    // its stroke width, not through the area its open curve encloses (`stress-ab-emigration-flows`'s
+    // route ribbons: `fill="none"`, `stroke-width` 30 down to 3.1). A TRANSFORMED path's rings are
+    // not where it is drawn (that beat's arrowheads, translated and rotated). And a `d` carrying a
+    // curve has control points that are not vertices.
+    const stroked = drawnRegionsOf(
+      svg(
+        '<path d="M 1 1 Q 20 20 40 1" fill="none" stroke="#D4A853" stroke-width="30" data-key="route"></path>',
+      ),
+    )!;
+    expect(stroked.shapes).toEqual([]);
+    expect(stroked.unplaceable).toEqual([]);
+
+    const transformed = drawnRegionsOf(
+      svg(
+        '<path d="M0 0L-21 -13L-21 13Z" fill="#D4A853" transform="translate(472 161) rotate(-49)" data-key="arrow"></path>',
+      ),
+    )!;
+    expect(transformed.shapes).toEqual([]);
+    // NAMED, not dropped: a mark nothing measured is reported as such.
+    expect(transformed.unplaceable).toEqual(["arrow"]);
+
+    const curved = drawnRegionsOf(
+      svg('<path d="M1 1C5 5 9 9 1 1Z" fill="#eee" data-key="curve"></path>'),
+    )!;
+    expect(curved.shapes).toEqual([]);
+    expect(curved.unplaceable).toEqual(["curve"]);
+  });
+
+  it("says out loud, in the renderer, when it could not place a mark's geometry", () => {
+    const renderer = readFileSync(
+      join(TWIN, "skills/map-web/scripts/render-web.mjs"),
+      "utf8",
+    );
+    expect(renderer).toContain("drawn.unplaceable.length > 0");
+    expect(renderer).toContain("nothing below counted them either way");
+  });
 });
 
 describe("every delivered page in this format, swept", () => {
@@ -210,7 +280,11 @@ describe("every delivered page in this format, swept", () => {
     }
     expect(
       [...counted.values()].filter((n) => n > 0).length,
-    ).toBeGreaterThanOrEqual(3);
+    ).toBeGreaterThanOrEqual(4);
+    // `mapgen-dot-web` is in that list only because this reading stopped keying off one beat's class
+    // name: Liechtenstein and Malta are drawn under a pixel there, on a page whose live hover target
+    // is the country fill and whose own brief used to claim a reader could hover any of the 42.
+    expect(counted.get("proof/mapgen-dot-web/dot-population.html")).toBe(2);
     expect(
       counted.get(
         "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
