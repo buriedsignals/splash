@@ -120,10 +120,23 @@ export const SURFACES = {
   screen: {
     id: "screen",
     describes: "a reader's own display — a page, an embed, an app, a video",
-    groundIs: (newsroom) => (newsroom && newsroom.ground) || PAPER_GROUND,
-    says: (ground) =>
-      `Measured against ${ground}, the ground NEWSROOM.md records. A screen delivery lands on the ` +
-      `newsroom's own ground, which is the ground those accents were chosen for.`,
+    groundIs: (newsroom) => groundProvenance(newsroom, "screen").ground,
+    // THE SENTENCE IS BUILT FROM `origin`, THE SAME VALUE THE RATIOS WERE MEASURED WITH — round
+    // seven, defect D8. This sentence used to name NEWSROOM.md unconditionally, so a run with no
+    // profile passed printed "Measured against #FFFFFF, the ground NEWSROOM.md records" three
+    // lines above its own admission that the NEWSROOM.md it had found "was not read" — and that
+    // file records #16191B. Whichever half a reader believed, one of them was a lie about a
+    // specific hex code. There is no branch here that can name the file without the ground having
+    // come out of it, because the branch is taken on where the ground came from.
+    says: (ground, newsroom, origin) =>
+      origin === "newsroom"
+        ? `Measured against ${ground}, the ground NEWSROOM.md records. A screen delivery lands on ` +
+          `the newsroom's own ground, which is the ground those accents were chosen for.`
+        : `Measured against ${ground} — the ground this skill falls back to when no profile ` +
+          `records one. A screen delivery lands on the newsroom's own ground and none was ` +
+          `passed here, so this is a measurement against the default, NOT against the ground ` +
+          `this beat will actually be seen on. Read the profile with parseNewsroom ` +
+          `(splash/scripts/newsroom.mjs) and pass it as \`newsroom\` to measure the real one.`,
   },
   print: {
     id: "print",
@@ -140,6 +153,160 @@ export const SURFACES = {
 };
 
 /**
+ * THE OTHER VOCABULARY THAT DESCRIBES WHERE A BEAT GOES — the format gate's, and what each of its
+ * words says about the SURFACE.
+ *
+ * ROUND SEVEN, defect D11. Gate 2b (`storyboard/scripts/format-gate.mjs`) offers the journalist
+ * "Static / print", "Interactive web", "Video", "Scrollytelling", and records one of `static`,
+ * `web`, `video`, `scrolly`. Passing the format the gate just recorded into `proposePalette` is
+ * the obvious next call, and it was a hard throw — `surface must be one of screen, print — got
+ * "static"` — with nothing said about why the two vocabularies are different or which extra fact
+ * the surface needs. They overlap on the word "print" and diverge on everything else.
+ *
+ * Three of the four formats resolve, and the resolution is a MEASUREMENT rather than a convenience:
+ * a web page, a video and a scrollytelling page are read on a display and cannot be run off on a
+ * sheet — a scrolly has no static form at all, and a video's frames are a screen's. The fourth is
+ * genuinely ambiguous and stays refused: `static` is HALF this table's own label ("Static /
+ * print"), and a static graphic lands on a screen (an embedded PNG in the article) or on paper
+ * (the printed edition) — that is exactly the fact `SURFACES` exists to turn into a ground, and
+ * guessing it is how beat AD shipped a 2.20:1 accent onto a printed page. So the answer is a
+ * refusal that NAMES the missing fact, not a silent read as screen.
+ *
+ * The population is DERIVED, not typed: `test/the-format-gate-vocabulary.test.ts` reads
+ * `PUBLICATION_FORMATS` out of the gate itself and fails if this table has fallen behind. A skill
+ * may not IMPORT another skill at runtime (`splash/test/no-cross-skill-imports.test.ts`), which is
+ * why the derivation lives in the test rather than in this line.
+ */
+export const FORMAT_SURFACES = {
+  static: {
+    surface: null,
+    because:
+      "a static graphic lands on a screen (an embedded image in the article) or on paper (the " +
+      "printed edition), and the two have different grounds — this is the one format whose " +
+      "surface is a second fact",
+  },
+  web: {
+    surface: "screen",
+    because: "a web page is read on a display; there is no printed form of an interactive page",
+  },
+  video: {
+    surface: "screen",
+    because: "a video's frames are a display's, whatever they are broadcast through",
+  },
+  scrolly: {
+    surface: "screen",
+    because: "a scroll-driven graphic has no static form at all, so it can only be read on a display",
+  },
+};
+
+function unknownSurface(surface) {
+  const format = FORMAT_SURFACES[surface];
+  if (format) {
+    return (
+      `${JSON.stringify(surface)} is a publication FORMAT (gate 2b's own vocabulary: ` +
+      `${Object.keys(FORMAT_SURFACES).join(", ")}), not a surface. This one does not resolve to a ` +
+      `surface on its own — ${format.because}. Pass surface: "screen" or surface: "print" for ` +
+      `this beat. The two vocabularies share the word "print" and nothing else, which is what ` +
+      `makes passing one for the other look right.`
+    );
+  }
+  return (
+    `surface must be one of ${Object.keys(SURFACES).join(", ")} — got ${JSON.stringify(surface)}. ` +
+    `It is where the beat LANDS, and it decides the ground every accent is measured against: ` +
+    `print puts the marks on paper whatever ground NEWSROOM.md records for the screen. A ` +
+    `surface this table holds no measurement for is refused rather than treated as a screen. ` +
+    `Gate 2b's format words (${Object.keys(FORMAT_SURFACES).join(", ")}) are accepted here and ` +
+    `translated, so a recorded format can be passed straight through.`
+  );
+}
+
+/**
+ * The surface a caller stated, in either vocabulary, resolved to one this skill can measure.
+ *
+ * `statedAs` keeps the word the caller used, so `surfaceLimit` can say which vocabulary the answer
+ * came out of instead of silently renaming the journalist's own format.
+ */
+export function resolveSurface(surface) {
+  if (surface === null || surface === undefined) return { surface: null, statedAs: null, because: null };
+  if (SURFACES[surface]) return { surface, statedAs: surface, because: null };
+  const format = FORMAT_SURFACES[surface];
+  if (format && format.surface) {
+    return { surface: format.surface, statedAs: surface, because: format.because };
+  }
+  throw new Error(unknownSurface(surface));
+}
+
+/**
+ * IS THIS A NEWSROOM PROFILE AT ALL, and are the two fields the whole house style hangs off
+ * readable as colours?
+ *
+ * ROUND SEVEN, defect D9 (`real-ember-renewables`). The raw TEXT of `NEWSROOM.md` was passed where
+ * the parsed profile belongs. A string is truthy, `newsroom.ground` on it is `undefined`, so the
+ * proposal measured everything against white, offered no house option at all, and still reported
+ * "A newsroom profile was passed to this proposal, so its own recorded values are what was
+ * measured". The newsroom's real ground is `#16191B`, where its own primary accent measures
+ * 8.01:1; on the white it silently substituted, the same accent measures 2.20:1. A producer who
+ * did not notice would have recorded a palette measured against a ground nobody publishes on.
+ *
+ * Refused, not degraded, for the shape: a caller who passes a string, an array or a function
+ * believes they passed a profile, and there is no honest way to carry on measuring for them. The
+ * fields are refused too — `ground: "nope"` used to be handed straight back AS the ground, because
+ * the hex check only ran when `brandColor` and `ground` were BOTH present.
+ *
+ * A profile that is a real object but records neither colour is NOT refused: that is a legitimate
+ * `NEWSROOM.md` half-filled, and the honest answer is to measure what can be measured and SAY that
+ * nothing of the profile reached the numbers — see `lookUpNewsroom`.
+ */
+export function assertNewsroomProfile(newsroom) {
+  if (newsroom === null || newsroom === undefined) return newsroom;
+  if (typeof newsroom !== "object" || Array.isArray(newsroom)) {
+    throw new Error(
+      `newsroom must be a parsed profile object ({name, brandColor, ground, accents}), got ` +
+        `${typeof newsroom === "string" ? "a string" : Array.isArray(newsroom) ? "an array" : typeof newsroom}. ` +
+        `The raw text of NEWSROOM.md is the shape this most often is: read it with parseNewsroom ` +
+        `(splash/scripts/newsroom.mjs) first and pass what that returns. A value of the wrong ` +
+        `shape is refused here rather than measured around, because every field access on it is ` +
+        `undefined and the proposal would measure against the default ground while reporting that ` +
+        `it had measured the newsroom's.`,
+    );
+  }
+  for (const field of ["brandColor", "ground"]) {
+    if (newsroom[field] !== undefined && newsroom[field] !== null && !HEX.test(newsroom[field])) {
+      throw new Error(`newsroom.${field} must be #rrggbb, got ${JSON.stringify(newsroom[field])}`);
+    }
+  }
+  return newsroom;
+}
+
+/** Which of the newsroom's own recorded colours this profile actually carries, validated. */
+function recordedColours(newsroom) {
+  if (!newsroom || typeof newsroom !== "object") return [];
+  return ["brandColor", "ground"].filter((field) => HEX.test(String(newsroom[field] ?? "")));
+}
+
+/**
+ * THE GROUND, AND WHERE IT CAME FROM — one value, so no sentence can claim a provenance the
+ * measurement did not have.
+ *
+ * `origin` is one of three, and every sentence printed about the ground is built by branching on
+ * it rather than on the presence of an argument:
+ *
+ *   - `newsroom` — the ground is the one `NEWSROOM.md` records, which is what a screen delivery
+ *     lands on.
+ *   - `sheet` — the beat is printed, so the ground is the paper whatever a masthead's CSS says.
+ *   - `paper-default` — no profile records a ground, so `PAPER_GROUND` stands in. Same hex as the
+ *     sheet, entirely different claim: this one is a fallback nobody chose, and the run that
+ *     earned this distinction printed it as the newsroom's own record.
+ */
+export function groundProvenance(newsroom, surface) {
+  assertNewsroomProfile(newsroom);
+  const recorded = newsroom && HEX.test(String(newsroom.ground ?? "")) ? newsroom.ground : null;
+  if (resolveSurface(surface).surface === "print") return { ground: PAPER_GROUND, origin: "sheet", recorded };
+  if (recorded) return { ground: recorded, origin: "newsroom", recorded };
+  return { ground: PAPER_GROUND, origin: "paper-default", recorded: null };
+}
+
+/**
  * The ground to measure against, from the newsroom's profile and the surface the beat lands on.
  *
  * `null` — the surface was not stated — deliberately returns the SAME ground the old unqualified
@@ -148,17 +315,10 @@ export const SURFACES = {
  * `proposeTypeface`'s `sampleLimit` follows for a measurement it could not make.
  */
 export function groundForSurface(newsroom, surface) {
-  if (surface === null || surface === undefined) return (newsroom && newsroom.ground) || PAPER_GROUND;
-  const known = SURFACES[surface];
-  if (!known) {
-    throw new Error(
-      `surface must be one of ${Object.keys(SURFACES).join(", ")} — got ${JSON.stringify(surface)}. ` +
-        `It is where the beat LANDS, and it decides the ground every accent is measured against: ` +
-        `print puts the marks on paper whatever ground NEWSROOM.md records for the screen. A ` +
-        `surface this table holds no measurement for is refused rather than treated as a screen.`,
-    );
-  }
-  return known.groundIs(newsroom);
+  assertNewsroomProfile(newsroom);
+  const resolved = resolveSurface(surface);
+  if (resolved.surface === null) return groundProvenance(newsroom, null).ground;
+  return SURFACES[resolved.surface].groundIs(newsroom);
 }
 
 /**
@@ -836,12 +996,34 @@ function scoreOption(option) {
  * a second parser vendored here would be a copy nothing guards. The caller reads it and passes it
  * back in — this only refuses to lie about whether there is one.
  */
-export function lookUpNewsroom({ newsroom, from, stopAt } = {}) {
+export function lookUpNewsroom({ newsroom, from, stopAt, measured } = {}) {
   if (newsroom) {
+    assertNewsroomProfile(newsroom);
+    // WHAT OF IT ACTUALLY REACHED THE NUMBERS. `measured` is what the caller USED; with no caller
+    // to say, the profile's own validated fields are the best available answer. Round seven,
+    // defect D9: this sentence was unconditional, so a `newsroom` carrying none of the values it
+    // is read for still reported that its recorded values were what was measured.
+    const used = measured ?? recordedColours(newsroom);
+    if (used.length > 0) {
+      return {
+        searched: [],
+        found: null,
+        measured: used,
+        says:
+          `A newsroom profile was passed to this proposal, so its own recorded values are what ` +
+          `was measured (${used.join(", ")}).`,
+      };
+    }
     return {
       searched: [],
       found: null,
-      says: "A newsroom profile was passed to this proposal, so its own recorded values are what was measured.",
+      measured: [],
+      says:
+        "A newsroom profile was passed to this proposal and NOTHING in it could be used: it " +
+        "records no brandColor and no ground this skill can read as #rrggbb. So no house option " +
+        "was offered, and every ratio above was measured against the default ground rather than " +
+        "against the newsroom's own. Check the profile came through parseNewsroom " +
+        "(splash/scripts/newsroom.mjs) with its fields intact.",
     };
   }
   if (!from) {
@@ -900,7 +1082,15 @@ export function lookUpNewsroom({ newsroom, from, stopAt } = {}) {
 export function proposePalette({ newsroom, subject, about, surface = null, from, stopAt } = {}) {
   // THE SURFACE FIRST, because it decides the ground every ratio below is measured against — and
   // an unmeasured surface is refused here rather than quietly read as a screen. See `SURFACES`.
-  const ground = groundForSurface(newsroom, surface);
+  // A format word from gate 2b is translated to the surface it lands on, or refused by name when
+  // it does not decide one — see `FORMAT_SURFACES`.
+  assertNewsroomProfile(newsroom);
+  const stated = resolveSurface(surface);
+  surface = stated.surface;
+  // THE GROUND AND WHERE IT CAME FROM, together, so no sentence below can claim a provenance the
+  // ratios did not have. See `groundProvenance`.
+  const provenance = groundProvenance(newsroom, surface);
+  const ground = provenance.ground;
   const options = [];
 
   // SUBJECT FIRST. A convention the reader already holds — blue for water, green for renewables —
@@ -990,20 +1180,43 @@ export function proposePalette({ newsroom, subject, about, surface = null, from,
     // WHERE THIS BEAT LANDS, and the ground that follows from it. `null` is the honest word for a
     // surface nobody stated; `surfaceLimit` below is what stops it reading as an answer.
     surface,
+    // The word the caller actually used, when it was gate 2b's rather than this table's, and why
+    // that word decides a surface at all. `null` when the two vocabularies did not have to meet.
+    surfaceStatedAs: stated.statedAs === surface ? null : stated.statedAs,
     ground,
-    surfaceLimit: surface
-      ? SURFACES[surface].says(ground, newsroom)
-      : `The surface this beat lands on was NOT STATED, so every ratio above was measured against ` +
+    // WHERE THE GROUND CAME FROM: "newsroom", "sheet", or "paper-default". Every sentence about
+    // the ground is branched on this value rather than on the presence of an argument.
+    groundOrigin: provenance.origin,
+    surfaceLimit:
+      (stated.statedAs && stated.statedAs !== surface
+        ? `The format recorded at gate 2b is ${JSON.stringify(stated.statedAs)}, read here as the ` +
+          `${surface} surface — ${stated.because}. `
+        : "") +
+      (surface
+        ? SURFACES[surface].says(ground, newsroom, provenance.origin)
+        : `The surface this beat lands on was NOT STATED, so every ratio above was measured against ` +
         `${ground} — the ground ${
-          newsroom && newsroom.ground ? "NEWSROOM.md records" : "this skill falls back to when no profile is passed"
+          provenance.origin === "newsroom" ? "NEWSROOM.md records" : "this skill falls back to when no profile records one"
         }, which is a SCREEN ground. That is a measurement of one destination, not of this beat's. ` +
         `Pass surface: "print" when the delivery is paper — the ground moves to the sheet, and a ` +
         `house accent chosen to sit on a near-black screen ground can lose the 3:1 floor entirely ` +
         `on white (measured: #D4A853 on #16191B is 8.01:1 and on #FFFFFF is 2.20:1). The format is ` +
         `settled at gate 2b, before any colour is recorded, so this is never information the ` +
-        `journalist does not have yet.`,
+        `journalist does not have yet.`),
     // WHAT COULD BE SEEN OF `NEWSROOM.md`, measured rather than assumed — see `lookUpNewsroom`.
-    newsroomLookup: lookUpNewsroom({ newsroom, from, stopAt }),
+    // `measured` is what of the profile REACHED these numbers, not what it happens to record: on a
+    // print delivery the ground came off the sheet, so only the accents did.
+    newsroomLookup: lookUpNewsroom({
+      newsroom,
+      from,
+      stopAt,
+      measured: newsroom
+        ? [
+            ...(provenance.origin === "newsroom" ? ["ground"] : []),
+            ...(options.some((o) => o.origin === "newsroom") ? ["brandColor"] : []),
+          ]
+        : undefined,
+    }),
     options,
     // SAID, not silently absent. `SUBJECT_CONVENTIONS` holds four entries, so "no convention
     // applies" is the common case, not the exception — and in the run that meant exactly one
