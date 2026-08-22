@@ -9,6 +9,7 @@ import { describe, expect, it } from "bun:test";
 import { statSync } from "node:fs";
 import {
   weightAgainstCeiling,
+  ceilingFromPopulation,
   CEILING_BYTES,
   MEASURED_MAX_BYTES,
   MARGIN_BYTES,
@@ -74,5 +75,52 @@ describe("every map-web page on disk", () => {
         );
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * THE TWO CONSTANTS ARE DERIVED FROM THE POPULATION THEY CLAIM TO DESCRIBE, AND THIS IS WHERE THAT
+ * IS ENFORCED.
+ *
+ * `MEASURED_MAX_BYTES` and `MARGIN_BYTES` are typed literals — deliberately, so a reader of the
+ * script sees the numbers and a bump is a decision somebody made — but they are DESCRIPTIONS of a
+ * population that moves under them every time a beat is re-rendered, and until 2026-08-22 nothing
+ * checked that they still described it. They did not: `MEASURED_MAX_BYTES` stood at 1 809 942
+ * (`mapgen-dot-web`) while `stories/real-owid-life-expectancy`'s 241-region world choropleth had
+ * been sitting in the same discovered population at 2 015 174 bytes — 205 232 bytes HEAVIER than
+ * the maximum the ceiling was said to be measured from. The ceiling still held, by luck, because
+ * the margin happened to be wider than the drift; the sentence justifying it did not.
+ *
+ * That is this codebase's second-commonest defect shape — a population TYPED rather than DERIVED —
+ * and the fix is the one the camera census and the frame ratchet already use: derive both numbers
+ * from the population at test time and assert equality in BOTH directions. A page that grows, a
+ * beat that is added, a plate that is re-baked lighter — each turns this red and forces a deliberate
+ * re-record, rather than leaving a constant quietly describing a corpus that no longer exists.
+ */
+describe("the ceiling still describes the population it was measured from", () => {
+  it("is exactly the heaviest page on disk, and the largest step already taken between two of them", () => {
+    const sizes = discoverMapWebPages().map((page) => statSync(page.abs).size);
+    const derived = ceilingFromPopulation(sizes);
+    expect({
+      measuredMax: MEASURED_MAX_BYTES,
+      margin: MARGIN_BYTES,
+      ceiling: CEILING_BYTES,
+    }).toEqual(derived);
+  });
+
+  it("refuses a population it cannot measure a step in", () => {
+    // One page is a population with no step between two pages, and a margin invented for it would
+    // be exactly the round number this whole mechanism exists to refuse.
+    expect(() => ceilingFromPopulation([1000])).toThrow(/at least two/);
+    expect(() => ceilingFromPopulation([])).toThrow(/at least two/);
+  });
+
+  it("reads the step as the largest gap between ADJACENT sizes, not as max minus min", () => {
+    // 100 200 210 400: the adjacent steps are 100, 10 and 190 — the largest is 190, not 300.
+    expect(ceilingFromPopulation([400, 100, 210, 200])).toEqual({
+      measuredMax: 400,
+      margin: 190,
+      ceiling: 590,
+    });
   });
 });
