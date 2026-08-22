@@ -98,15 +98,33 @@ function keysFromEnv(): { name: string; value: string }[] {
   return found;
 }
 
-/** Tracked files under `twin/`, relative to it, as git itself sees them. */
-function trackedFiles(): string[] {
-  return execFileSync("git", ["ls-files", "-z", "--", "."], {
-    cwd: TWIN,
-    encoding: "utf8",
-  })
-    .split("\0")
-    .filter(Boolean)
-    .filter((rel) => existsSync(join(TWIN, rel)));
+/**
+ * Every file a `git add -A` would commit: tracked, PLUS untracked-and-not-ignored.
+ *
+ * The second half was added 2026-08-22 and the header's own reasoning is why it belongs. That
+ * reasoning — "an untracked scratch file with a key in it is not a leak; a staged one is" — is
+ * right about a scratch file inside an ignored directory, and wrong about one sitting where the
+ * next `git add -A` will sweep it up. The case that showed the difference: a stray
+ * `undefined/keyed.html` appeared at the repository root carrying a real 20-character key, written
+ * by a call that received an undefined output directory. It was untracked, so this guard passed;
+ * it was also NOT ignored, so one `git add -A` would have committed it — and a `git add -A` in
+ * this shared tree is not hypothetical, it swept one agent's staged work into another's commit the
+ * same week.
+ *
+ * Still git-based, not a directory walk, so the header's other reason stands: `--exclude-standard`
+ * means anything genuinely ignored — `node_modules`, real scratch directories — is still out of
+ * scope, and the distinction the guard draws is between "committable" and "not", which is the
+ * distinction that matters.
+ */
+function committableFiles(): string[] {
+  const listing = (args: string[]) =>
+    execFileSync("git", args, { cwd: TWIN, encoding: "utf8" })
+      .split("\0")
+      .filter(Boolean);
+  return [
+    ...listing(["ls-files", "-z", "--", "."]),
+    ...listing(["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
+  ].filter((rel) => existsSync(join(TWIN, rel)));
 }
 
 /**
@@ -144,7 +162,7 @@ function fileContains(path: string, needle: string): boolean {
  *  otherwise throw EISDIR mid-scan instead of reporting anything at all. */
 function scannablePaths(): string[] {
   const paths = [];
-  for (const rel of trackedFiles()) {
+  for (const rel of committableFiles()) {
     const path = join(TWIN, rel);
     let stat;
     try {
@@ -228,6 +246,6 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
   });
 
   it("should confirm the env file itself is untracked, which is what makes the key safe to hold", () => {
-    expect(trackedFiles()).not.toContain(".env");
+    expect(committableFiles()).not.toContain(".env");
   });
 });
