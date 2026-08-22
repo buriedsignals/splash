@@ -225,71 +225,65 @@ const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
 
 // Carried copy of storyboard/scripts/producer-gate.mjs's treatment eligibility. Splash skills are
 // installed independently, so the state reader cannot import another skill at runtime. The parity
-// test imports both copies and compares every catalogue alias, including the negative cases.
+// test imports both copies and compares the catalogue table, the media, and every name the shared
+// derivation yields, including the negative cases.
+//
+// KEYED BY THE TYPE SHEET'S OWN TITLE, not by a list of spellings (round seven, D7). This table
+// used to carry thirty hand-typed aliases and still missed "Stacked area" — the natural name for
+// the treatment and half of `chart-beat/references/types/area.md`'s own title — which silently
+// removed the custom-or-Datawrapper human gate on a real story. A list somebody has to remember to
+// extend is the shape; the answer is that a treatment answers to every name its own TITLE yields,
+// derived by `treatmentNames` below, which is byte-identical to the storyboard copy and held so by
+// `splash/test/guard-copies-parity.test.ts`.
 export const DATAWRAPPER_TREATMENTS = new Map([
-  ["area", ["d3-area"]],
-  ["area and stacked area", ["d3-area"]],
-  ["bar", ["d3-bars", "column-chart"]],
-  ["column", ["d3-bars", "column-chart"]],
-  ["bar and column", ["d3-bars", "column-chart"]],
-  ["bullet", ["d3-bars-bullet"]],
-  ["dumbbell", ["d3-range-plot"]],
-  ["range plot", ["d3-range-plot"]],
-  ["grouped bar", ["d3-bars-grouped", "grouped-column-chart"]],
-  ["grouped column", ["d3-bars-grouped", "grouped-column-chart"]],
-  ["line", ["d3-lines"]],
-  ["pie", ["d3-pies", "d3-donuts"]],
-  ["donut", ["d3-pies", "d3-donuts"]],
-  ["pie and donut", ["d3-pies", "d3-donuts"]],
-  ["population pyramid", ["d3-bars-split"]],
-  ["scatter", ["d3-scatter-plot"]],
-  ["scatter and bubble", ["d3-scatter-plot"]],
-  ["slope", ["d3-lines"]],
-  ["slopegraph", ["d3-lines"]],
-  ["slope chart", ["d3-lines"]],
-  ["stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
-  ["stacked column", ["d3-bars-stacked", "stacked-column-chart"]],
-  ["waterfall", ["waterfall"]],
-  ["waterfall bridge", ["waterfall"]],
+  ["Area (and stacked area)", ["d3-area"]],
+  ["Bar and column", ["d3-bars", "column-chart"]],
+  ["Bullet", ["d3-bars-bullet"]],
+  ["Dumbbell (range plot)", ["d3-range-plot"]],
+  ["Grouped bar", ["d3-bars-grouped", "grouped-column-chart"]],
+  ["Line", ["d3-lines"]],
+  ["Pie and donut", ["d3-pies", "d3-donuts"]],
+  ["Population pyramid", ["d3-bars-split"]],
+  ["Scatter (and bubble)", ["d3-scatter-plot"]],
+  ["Slope (slopegraph)", ["d3-lines"]],
+  ["Stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
+  ["Waterfall (bridge)", ["waterfall"]],
   // The three map types the pinned inventory has always carried, and which nothing above them
   // could reach until the gate stopped hard-coding `medium === "chart"`.
-  ["choropleth", ["d3-maps-choropleth"]],
-  ["map choropleth", ["d3-maps-choropleth"]],
-  ["choropleth map", ["d3-maps-choropleth"]],
-  ["proportional symbol", ["d3-maps-symbols"]],
-  ["map proportional symbol", ["d3-maps-symbols"]],
-  ["symbol map", ["d3-maps-symbols"]],
-  ["bubble map", ["d3-maps-symbols"]],
-  ["locator", ["locator-map"]],
-  ["map locator", ["locator-map"]],
-  ["locator map", ["locator-map"]],
+  ["Choropleth", ["d3-maps-choropleth"]],
+  ["Proportional symbol (symbol / bubble map)", ["d3-maps-symbols"]],
+  ["Locator", ["locator-map"]],
 ]);
 
-/** The aliases that answer for a MAP. Every other alias in the table above is a chart. */
-const MAP_TREATMENT_ALIASES = new Set([
-  "choropleth",
-  "map choropleth",
-  "choropleth map",
-  "proportional symbol",
-  "map proportional symbol",
-  "symbol map",
-  "bubble map",
-  "locator",
-  "map locator",
-  "locator map",
+/** The spellings NO title can yield, declared beside the treatment that owns them. "Grouped bar"
+ *  and "Stacked bar" are titles about ORIENTATION — the same treatment drawn sideways is a grouped
+ *  or a stacked COLUMN, and the delegate implements both — and no rule over the word "bar" produces
+ *  the word "column". A declared alias is therefore a claim that the derivation cannot reach this
+ *  word; the catalogue refuses one it already derives. */
+const DATAWRAPPER_DECLARED_ALIASES = new Map([
+  ["grouped column", "Grouped bar"],
+  ["stacked column", "Stacked bar"],
 ]);
 
-/** Which medium each alias answers for. A treatment serves ONE medium — "locator" is a map, and a
- *  chart slot must not be handed one because the word matched. DECLARED, not derived: the first
+/** The treatments that answer for a MAP. Every other row in the table above is a chart. */
+const MAP_TREATMENTS = new Set([
+  "Choropleth",
+  "Proportional symbol (symbol / bubble map)",
+  "Locator",
+]);
+
+/** Which medium each treatment answers for. A treatment serves ONE medium — "locator" is a map, and
+ *  a chart slot must not be handed one because the word matched. DECLARED, not derived: the first
  *  version tested the alias against /choropleth|symbol|bubble|locator/ and called "scatter and
  *  bubble" a map. Carried beside the table above for the same reason it is — this reader cannot
  *  import another skill at runtime — and held in parity by the same test. */
 export const DATAWRAPPER_TREATMENT_MEDIA = new Map(
-  [...DATAWRAPPER_TREATMENTS.keys()].map((alias) => [
-    alias,
-    MAP_TREATMENT_ALIASES.has(alias) ? "map" : "chart",
+  [...DATAWRAPPER_TREATMENTS.keys()].map((treatment) => [
+    treatment,
+    MAP_TREATMENTS.has(treatment) ? "map" : "chart",
   ]),
 );
+
 function normalizeTreatment(value) {
   return String(value ?? "")
     .normalize("NFKD")
@@ -302,12 +296,88 @@ function normalizeTreatment(value) {
     .replace(/\s+/g, " ");
 }
 
+/** Words that name a MEDIUM rather than a treatment. A name made of nothing else — a bare "map" —
+ *  names no treatment at all, and one of these at either end of a name is furniture a journalist
+ *  appended ("choropleth map", "slope chart") rather than part of the type. */
+const GENERIC_TREATMENT_WORDS = new Set(["map", "chart", "plot", "graph", "diagram", "graphic"]);
+
+/**
+ * EVERY NAME A TREATMENT ANSWERS TO, DERIVED FROM ITS OWN TITLE — never read out of a list somebody
+ * remembered to extend.
+ *
+ * ROUND SEVEN, D7, on `stories/real-gwis-wildfire-counts`. The slot wrote its treatment as
+ * "Stacked area", which is the natural name for it and literally half of that type's own sheet
+ * title, "Area (and stacked area)". `datawrapperMatch` returned `null` — and null here is not a
+ * neutral outcome, it REMOVES A GATE: the caller reads it as "not delegated", so the
+ * custom-or-Datawrapper question is never asked and the beat goes custom with nobody consulted.
+ * Only the exact catalogue string and the bare word "area" opened it. The same hole was measured
+ * one movement earlier, where five of fifteen provider names matched no survey row at all.
+ *
+ * The fix is the rule, not the five renames it would have taken to hide it. A title is a small
+ * grammar and each of its pieces is a name: the head ("Area"), the whole title with its brackets
+ * flattened ("area and stacked area"), whatever a parenthetical holds ("slopegraph", "range plot",
+ * "bridge"), and each alternative either side of a "/" or an "and" ("stacked area", "bubble",
+ * "isoline"). Each of those again with a leading or trailing generic medium word dropped, because
+ * "choropleth map" and "slope chart" are how people write them.
+ *
+ * MEASURED ACROSS THE FORTY TYPE SHEETS: no two sheets of one medium share a derived name, and
+ * exactly one name is shared across media — "bubble", which a bubble chart (a scatter) and a bubble
+ * map (proportional symbols) both legitimately answer to. Every caller supplies the medium, which
+ * is precisely what tells those two apart, so the collision is the right answer rather than a
+ * defect. Reproduce both counts with `treatmentNames` over `readTypeSheets()`.
+ */
+export function treatmentNames(value) {
+  const raw = String(value ?? "");
+  const parts = [raw.replace(/[()]/g, " "), raw.split("(")[0]];
+  for (const paren of raw.matchAll(/\(([^)]*)\)/g)) parts.push(paren[1]);
+  const names = new Set();
+  for (const part of parts) {
+    for (const piece of [part, ...part.split(/\s*[/,;]\s*|\s+(?:and|or)\s+/iu)]) {
+      const name = normalizeTreatment(piece.replace(/[()]/g, " ")).replace(/^(?:and|or) /u, "");
+      if (!name) continue;
+      names.add(name);
+      const words = name.split(" ");
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[words.length - 1])) words.pop();
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[0])) words.shift();
+      if (!GENERIC_TREATMENT_WORDS.has(words[0])) names.add(words.join(" "));
+    }
+  }
+  return [...names];
+}
+
+/** The names one treatment opens on, in this reader's copy: its title's own, plus any spelling
+ *  declared for it because no title can yield it. */
+function namesForTreatment(treatment) {
+  const declared = [...DATAWRAPPER_DECLARED_ALIASES]
+    .filter(([, owner]) => owner === treatment)
+    .map(([alias]) => alias);
+  return new Set([treatment, ...declared].flatMap(treatmentNames));
+}
+
+/** THE LONGEST SHARED NAME WINS, AND A WINNER IN ANOTHER MEDIUM IS NO MATCH — the storyboard gate's
+ *  own rule, reproduced here because these two readings of gate 2 must not be able to disagree.
+ *  "bubble" is one word two treatments legitimately answer to (a bubble chart is a scatter, a bubble
+ *  map is proportional symbols), so taking ANY shared name would hand a map slot asking for
+ *  "Scatter and bubble" a symbol map. Ties go to the medium asked for. */
 export function datawrapperTypesForTreatment({ medium, format, treatment }) {
   if ((medium !== "chart" && medium !== "map") || (format !== "static" && format !== "web"))
     return null;
-  const alias = normalizeTreatment(treatment);
-  if (DATAWRAPPER_TREATMENT_MEDIA.get(alias) !== medium) return null;
-  return DATAWRAPPER_TREATMENTS.get(alias) ?? null;
+  const asked = treatmentNames(treatment);
+  let best = null;
+  for (const [candidate, types] of DATAWRAPPER_TREATMENTS) {
+    const own = namesForTreatment(candidate);
+    const candidateMedium = DATAWRAPPER_TREATMENT_MEDIA.get(candidate);
+    for (const name of asked) {
+      if (!own.has(name)) continue;
+      const words = name.split(" ").length;
+      const wins =
+        !best ||
+        words > best.words ||
+        (words === best.words && best.medium !== medium && candidateMedium === medium);
+      if (wins) best = { types, words, medium: candidateMedium };
+    }
+  }
+  return best?.medium === medium ? best.types : null;
 }
 
 function producerGapFor(slot) {
