@@ -898,23 +898,53 @@ function findSurveyRow(survey, medium, type) {
 }
 
 /**
- * ONE CANDIDATE SHAPE (round five, V14; reported again in round six as AB5). `formatCandidates`
- * took an object and `assertDistinctWays` took an object OR a bare string, and the loose one
- * checked nothing at all: a type held by no sheet and no catalogue became its own "idea" and
- * passed, which is how a treatment this toolchain does not hold reaches a menu in the first place.
- * Both read a candidate through this function now, and a bare string is refused by naming the
- * shape to write instead.
+ * ONE CANDIDATE SHAPE (round five, V14; round six AB5; round seven D12), AND THE ONE PLACE IT IS
+ * CHECKED. `formatCandidates` took an object and `assertDistinctWays` took an object OR a bare
+ * string, and the loose one checked nothing at all: a type held by no sheet and no catalogue became
+ * its own "idea" and passed, which is how a treatment this toolchain does not hold reaches a menu
+ * in the first place.
+ *
+ * ROUND SEVEN found the same seam one layer up: `SKILL.md` and `references/exchange.md` both
+ * described candidates as treatment NAMES, both functions required objects, and the two functions
+ * disagreed with each other — `formatCandidates` required `why` and `assertDistinctWays` did not,
+ * so a set that passed the distinctness check still threw one call later. Two failed calls to find
+ * out. The documented shape and the accepted shape are the same one now, both functions read a
+ * candidate through here, and a shape this does not accept is refused BY NAME rather than
+ * half-ignored:
+ *
+ *     { type, why, format?, marks? }
+ *
+ * `marks` is how many marks THIS beat would draw, and it is the number a type sheet's row limit is
+ * actually about (see `formatCandidates`). An unknown key is refused rather than dropped, because a
+ * key silently ignored is a caller who believes they said something.
  */
-function candidateType(candidate) {
+const CANDIDATE_KEYS = new Set(["type", "why", "format", "marks"]);
+
+function readCandidate(candidate) {
   if (typeof candidate === "string") {
     throw new Error(
       `candidate "${candidate}" was written as a bare string; a candidate is an object shape — { type, why, format } — because a type with no reason beside it is a name in a list`,
     );
   }
-  if (!candidate || typeof candidate.type !== "string" || !candidate.type.trim()) {
+  if (!candidate || typeof candidate !== "object" || typeof candidate.type !== "string" || !candidate.type.trim()) {
     throw new Error("every candidate must name the type it would be");
   }
-  return candidate.type.trim();
+  const type = candidate.type.trim();
+  const unknown = Object.keys(candidate).filter((key) => !CANDIDATE_KEYS.has(key));
+  if (unknown.length) {
+    throw new Error(
+      `candidate "${type}" carries ${unknown.map((key) => JSON.stringify(key)).join(", ")}, which a candidate has no field for — the shape is { type, why, format, marks }, and a key nothing reads is a caller who believes they said something`,
+    );
+  }
+  if (typeof candidate.why !== "string" || !candidate.why.trim()) {
+    throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
+  }
+  if (candidate.marks !== undefined && (!Number.isSafeInteger(candidate.marks) || candidate.marks < 0)) {
+    throw new Error(
+      `candidate "${type}" declares marks ${JSON.stringify(candidate.marks)}; marks is how many marks this beat would DRAW, so it is a whole count or it is left out`,
+    );
+  }
+  return { type, why: candidate.why.trim(), format: candidate.format, marks: candidate.marks };
 }
 
 /**
@@ -930,7 +960,7 @@ function knownTreatment(type, survey) {
 }
 
 export function assertDistinctWays(candidates, { min = 2, survey = typeSurvey() } = {}) {
-  const types = candidates.map((candidate) => candidateType(candidate));
+  const types = candidates.map((candidate) => readCandidate(candidate).type);
   for (const type of types) {
     if (knownTreatment(type, survey)) continue;
     throw new Error(
@@ -993,16 +1023,30 @@ function ideaOf(type, survey) {
  *
  * A limit in any other unit (slices, levels) is NOT silently checked against the row count, which
  * is not what the sheet means: it is handed to the journalist to check by hand, named and
- * quantified. `profile` is optional only so a caller with no frozen profile still gets the
- * refusals in front of it; a caller that has one gets the row limit enforced.
+ * quantified.
+ *
+ * ROUND SEVEN, D8 — AND THE ROW LIMIT WAS BEING CHECKED AGAINST THE WRONG NUMBER TOO. On
+ * `real-ember-renewables-share` the frozen table is a long-form PANEL, 7,585 rows of 246 entities
+ * across 126 years, and the beat draws ONE year's slice. The menu refused a beeswarm with
+ * `"Beeswarm" refuses 7585 row(s): its own sheet says it wants at most 150` — 36× the number the
+ * sheet is about, with the sheet's own sentence quoted at the journalist as though it were about
+ * their beat. Both `rows` limits in the corpus (`beeswarm.md`'s "past roughly a hundred and fifty
+ * points", `scatter.md`'s "fewer than about eight or ten points") are about the MARKS THE BEAT
+ * DRAWS. `profile.rowCount` is a fact about the SOURCE TABLE, and the two are the same number only
+ * for a tidy table with one row per mark — which nothing here can check.
+ *
+ * So the candidate says how many marks it would draw (`marks`), and that is what the row limit is
+ * enforced against. Where nobody says, the limit is NOT enforced against the row count: it travels
+ * to the journalist as a by-hand check, with the row count printed beside it so the difference is
+ * visible rather than assumed. Under-enforcing a limit costs one conversation; enforcing it against
+ * a number 36× too big refuses types the data comfortably supports and quotes a sheet out of
+ * context to do it.
  */
 export function formatCandidates({ medium, candidates, profile = null, capabilities = {}, survey = typeSurvey() }) {
   assertDistinctWays(candidates, { survey });
   const rowCount = Number.isSafeInteger(profile?.rowCount) ? profile.rowCount : null;
-  const lines = candidates.map((candidate) => {
-    const type = candidateType(candidate);
-    const { why, format } = candidate;
-    if (!why || !why.trim()) throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
+  const lines = candidates.map((raw) => {
+    const { type, why, format, marks } = readCandidate(raw);
     if (format) confirmFormatReachable({ medium, format, capabilities });
     const row = findSurveyRow(survey, medium, type);
     // A NAME NOTHING RESOLVES TAKES THE SHEET'S REFUSAL AND ITS ROW LIMIT WITH IT, SILENTLY
@@ -1021,11 +1065,11 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
     const reach = format ? ` (${format})` : "";
     const rowLimits = (row?.limits ?? []).filter((limit) => limit.unit === "rows");
     for (const limit of rowLimits) {
-      if (rowCount === null) continue;
-      const refused = limit.op === "<" ? rowCount < limit.value : rowCount > limit.value;
+      if (marks === undefined) continue;
+      const refused = limit.op === "<" ? marks < limit.value : marks > limit.value;
       if (!refused) continue;
       throw new Error(
-        `"${type}" refuses ${rowCount} row(s): its own sheet (\`${row.sheet}\`) says it wants ${limit.op === "<" ? `at least ${limit.value}` : `at most ${limit.value}`} — "${row.refusal}" Offer a type this data can carry, or say to the journalist why this one still earns its place.`,
+        `"${type}" refuses ${marks} mark(s): its own sheet (\`${row.sheet}\`) says it wants ${limit.op === "<" ? `at least ${limit.value}` : `at most ${limit.value}`} — "${row.refusal}" Offer a type this data can carry, or say to the journalist why this one still earns its place.`,
       );
     }
     // And where the medium holds NO sheets at all — `image` today, whose two scrolly-only types
@@ -1040,7 +1084,15 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
     const handNote = byHand.length
       ? `\n  Check by hand — this sheet refuses ${byHand.join(", ")}, and a column profile counts rows, never ${byHand.map((l) => l.split(" ")[0]).join(" or ")}.`
       : "";
-    return `- **${type}**${reach}${purpose}${notFor}${handNote}\n  Why here: ${why.trim()}`;
+    // A ROW LIMIT NOBODY GAVE THE MARK COUNT FOR IS STATED, NOT GUESSED AT. The row count is
+    // printed beside it precisely so the difference is visible: on a long-form panel they are
+    // nothing like each other, and the version of this menu that assumed they were the same
+    // refused a beeswarm on 7,585 rows for a beat that draws 211 marks.
+    const unmeasured =
+      marks === undefined && rowLimits.length
+        ? `\n  Check by hand — this sheet refuses ${rowLimits.map((l) => `${l.unit} ${l.op} ${l.value}`).join(", ")}, counted as the MARKS this beat would draw. Nobody said how many that is (pass \`marks\`), and the frozen table's ${rowCount === null ? "row count is unknown" : `${rowCount} row(s) is not that number unless this beat draws one mark per row`}.`
+        : "";
+    return `- **${type}**${reach}${purpose}${notFor}${handNote}${unmeasured}\n  Why here: ${why}`;
   });
   return lines.join("\n");
 }
