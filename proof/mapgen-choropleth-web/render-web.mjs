@@ -55,6 +55,7 @@ import {
   joinShapes,
   joinValues,
   keepRing,
+  marksWithNoPointerPath,
   valuesFromCsv,
 } from "./geo-choropleth.ts";
 
@@ -997,6 +998,34 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
           `the fallback layer (${covered.slice(0, 6).join(", ")}${covered.length > 6 ? ", …" : ""}) — Tab reaches ` +
           `every one of them and the table carries every one of them, which is what this format's ` +
           `accessibility answer rests on. Say so in the caveat, or widen the camera.`,
+    );
+  }
+
+  // ── AND THE MARKS NO POINTER REACHES AT ALL, WHICH IS THE LARGER FACT ────────────────────────
+  //
+  // The verdict above is about a 28px button buried under a neighbour's. A live measurement went
+  // looking for a better hit target and found there is no such thing: driven with a real key against
+  // the committed 241-region world beat, `queryRenderedFeatures` answered NOTHING for 86 of them at
+  // their own centres, and widened to any pixel anywhere the map attributes to the mark, 63 have no
+  // pixel at all at 1600x900 and 82 at 375x667. At that camera the map draws 896px for 360° of
+  // longitude, so one pixel is about 26 km and Monaco is about a thirteenth of one. Of the 105 marks
+  // a neighbour's button covers, 46 are not served by the live pointer either.
+  //
+  // So a mark smaller than a pixel has NO pointer path and no target engineering creates one, and
+  // this is the count a journalist can actually act on — tighten the camera, add an inset, or accept
+  // it knowingly and say so in the caveat. `marksWithNoPointerPath` reads the same rings the plate
+  // draws; `skills/map-web/scripts/detect-stranded-marks.mjs` is where it becomes a refusal.
+  for (const width of [1600, 1024, 768, 375]) {
+    const drawn = Math.min(width - 32, geometry.frame.width);
+    const gone = marksWithNoPointerPath(named, geometry.frame, drawn);
+    console.log(
+      gone.length === 0
+        ? `no pointer path at ${width}px: every one of the ${named.length} marks is drawn at least one whole pixel of its own`
+        : `no pointer path at ${width}px: ${gone.length} of ${named.length} marks are drawn smaller than ` +
+          `a pixel (${gone.slice(0, 6).join(", ")}${gone.length > 6 ? ", …" : ""}) — NO pointer, tap or ` +
+          `hover reaches them at this camera and no hit target can be made that does. The keyboard and ` +
+          `the accessible table ARE their path. This is a floor: the live layer fits a narrower canvas ` +
+          `than the fallback, so the real count is higher — verify-live-map.mjs prints it.`,
     );
   }
 
