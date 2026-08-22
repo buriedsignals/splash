@@ -193,6 +193,29 @@ the new destination field, which would have demoted two stories that are `done` 
   map-beat's own reason: both need a substrate only the beat that drew them holds.
 - `mutateStoryboard` does not clear a slot's `destination` when the format changes.
 
+## The corpus rebuilt against the fixed skills
+
+The skill fixes and the beats on disk disagreed until the beats were rebuilt, and rebuilding them
+found two more things nobody had predicted.
+
+- **The weight ceiling was already stale.** `MEASURED_MAX_BYTES` claimed 1,809,942 while a page in
+  its own discovered population sat at 2,015,174 — 205,232 bytes heavier than the maximum it said it
+  was measured from. Now derived, and asserted in both directions.
+- **A story's alt text named the wrong end of its own legend** for every reading — "darkest, top
+  class" on a ramp that climbs — pre-dating any of this work. It is now read off the painted ramp.
+
+And one floor was **lowered**, which is worth stating plainly rather than burying. Re-baking
+`stress-f-housing-pressure` to its camera's own shape took it under `graphicFillsItsFrame`: 30.3 /
+27.8 / 38.6% became 16.3 / 15.0 / 22.5%. Both rendered pages were measured before the constant moved:
+the box is 660px tall either way, holds the same 36 degrees of latitude, and Sweden is drawn at 13.2
+against 13.1 pixels per degree. **The square plate was padding** — 63 degrees of longitude shown for
+a 34-degree camera. So `MEASURED_MIN_FRACTION` was re-measured (0.229 to 0.150) rather than the
+beat's editorial camera widened or a red left standing. The right long-term shape is not a window
+fraction at all, and that is named without being built.
+
+Two beats now correctly sit at `production` awaiting a bound review, because re-rendering an approved
+beat makes its delivery stale — which is the mechanism this round built, working.
+
 ## The one open thing that is the owner's, not mine
 
 Four of the seven packages independently declined to add a `guard-catalogue.json` rule, each with
