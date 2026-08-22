@@ -10,9 +10,9 @@
 // nothing in this tree ever CALLED a committed runner.
 //
 // So this file is not a reader. `exampleRunnersFor` finds the runners a skill actually has, and
-// `runExampleRunners` SPAWNS every one of them; `deadExampleRunners` is the decision the sweep
-// asserts on. A test that greps a runner for the argument it should be passing would have gone
-// green on the day someone wrote the argument into a comment.
+// `runExampleRunners` SPAWNS every one of them; `deadExampleRunners` and `swallowedExampleRunners`
+// are the two decisions the sweep asserts on. A test that greps a runner for the argument it should
+// be passing would have gone green on the day someone wrote the argument into a comment.
 //
 // TWO THINGS THIS SWEEP DELIBERATELY DOES NOT DO, each measured rather than assumed:
 //
@@ -29,6 +29,25 @@
 //     anywhere and is left out of the population rather than allowed to rewrite a committed
 //     artefact on every `bun test` (measured: `proof/palette-proof/render.mjs`, a colour probe that
 //     hard-writes beside itself, is the only one in the tree).
+//
+// AND THE THING IT COULD NOT SEE UNTIL 2026-08-22: A RUNNER THAT FAILS WITHOUT AN EXIT CODE.
+// `deadExampleRunners` reads the exit code, and a runner can fail without one.
+// `stories/heat-pump-adoption-across-europe/beats/1-the-gap-that-persists/render-web.mjs` ended
+// `main().catch(console.error)`, so when `renderWeb` grew its required `language` argument that
+// runner threw, PRINTED the throw, and exited 0 — and this sweep, written for exactly that format
+// change, called it alive for as long as it had existed. The page it shipped carried `lang="fr"`
+// against a storyboard recording `en` and no accessible table at all, on a format whose declared
+// capability is `same-facts-without-the-picture`. A mechanism that cannot observe its own failure
+// is the defect this file was written to close in other people's work; `swallowedExampleRunners`
+// is the same reading turned on this one. It decides on the SHAPE of a printed throw — a stack
+// frame — and not on the words "error" or "catch", which are legitimate output all over this tree.
+//
+// WHAT IT STILL CANNOT SEE, measured rather than assumed: a runner that catches its own failure and
+// prints only the MESSAGE (`console.error("render failed:", error.message)`) prints no frame and
+// exits 0, and is invisible to this decision exactly as it is to a grep for `.catch(console.error)`
+// — one spelling of one idiom. The evidence a printed throw leaves is the stack; a runner that
+// throws away its own stack leaves this sweep nothing to read, and the honest place to say so is
+// here rather than in a verdict that would read as a clean bill of health.
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -36,12 +55,34 @@ import { spawn } from "node:child_process";
 
 /** The capability this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["deadExampleRunners"];
+export const GUARDS = ["deadExampleRunners", "swallowedExampleRunners"];
 
 /** How long a runner is given to prove it got past its format's entrypoint. Measured, not chosen:
  *  the slowest death in the whole population was 250ms and the fastest complete render that is not
  *  trivially small was ~1.3s, so this is roughly a 16x margin over the thing it has to separate. */
 const DEADLINE_MS = 4000;
+
+/** How much of a runner's own stderr is kept — the TAIL of it, and that is the whole point. A
+ *  runtime prints a stack when it unwinds one, which is last; a cap that kept the head would keep a
+ *  runner's progress chatter and discard the evidence of the throw underneath it. Measured on the
+ *  four shapes Bun prints for a caught-and-logged error: the longest was 751 bytes, so this is a
+ *  ~5x margin over the thing it has to hold. */
+const KEPT_STDERR = 4000;
+
+/** A line a runtime prints while unwinding a stack: `at <name> (<file>:<line>:<col>)`, or the same
+ *  with no name, or with a URL instead of a path. Measured under the runtime this sweep actually
+ *  spawns rather than assumed — all four shapes Bun prints (a thrown Error object logged by
+ *  `console.error`, a `TypeError` raised by the runtime, a logged `error.stack`, and a Node-style
+ *  frame) indent the frame and end it at `:line:col`, optionally closed by a paren.
+ *
+ *  THREE THINGS IT DELIBERATELY REQUIRES, each of them narrowing a false positive rather than
+ *  tidying: the line is INDENTED (prose on stderr starts at the margin); the location carries a
+ *  path separator, so `at loadAndEvaluateModule (2:1)` alone is not a stack and a sentence ending
+ *  in `(see 1:2)` is not either; and the frame ENDS the line, so a mention of a file:line inside a
+ *  message does not read as a frame. Measured against the whole population on 2026-08-22: 67
+ *  runners answered, and not one of them printed a single byte on stderr, so nothing that runs
+ *  today is anywhere near this. */
+const STACK_FRAME = /^[ \t]{2,}at (?:\S+ )*\(?[^\s()]*[/\\][^\s()]*:\d+(?::\d+)?\)?[ \t\r]*$/m;
 
 /** How many runners are in flight at once. Four rather than one because the population is dominated
  *  by runners that survive to the deadline, and rather than eight because several of them spawn a
@@ -97,8 +138,8 @@ export function exampleRunnersFor(root, skill) {
  * Spawns each runner with a scratch output directory and a deadline, and reports what happened.
  *
  * `timedOut` is not a failure and never becomes one — see this file's own header for the
- * measurement behind that. `exitCode` is what the runner returned when it returned on its own, and
- * `stderr` is kept so a red names the refusal rather than only the file.
+ * measurement behind that. `exitCode` is what the runner returned when it returned on its own,
+ * `refusal` is the one line a red names it by, and `stderr` is what the process actually wrote.
  */
 export async function runExampleRunners(root, runners, scratchDir, spawnOne = spawnRunner) {
   const results = [];
@@ -121,7 +162,27 @@ export async function runExampleRunners(root, runners, scratchDir, spawnOne = sp
 export function deadExampleRunners(results) {
   return results
     .filter((result) => !result.timedOut && result.exitCode !== 0)
-    .map((result) => `${result.runner} exited ${result.exitCode}: ${result.stderr}`);
+    .map((result) => `${result.runner} exited ${result.exitCode}: ${result.refusal}`);
+}
+
+/**
+ * The second decision: a runner that ANSWERED, answered SUCCESSFULLY, and printed a throw doing it.
+ *
+ * `deadExampleRunners` above reads the exit code, and a runner can fail without one — see this
+ * file's own header for the beat that shipped a French page against an English storyboard behind a
+ * green sweep. A runner whose last line is `main().catch(console.error)` prints the failure and
+ * exits 0, so the exit code says alive and the bytes it printed say otherwise. This reads the
+ * bytes: an answered runner, a zero status, and a stack frame in what it wrote.
+ *
+ * A runner still alive at the deadline is not here, for the same reason it is not there — it was
+ * KILLED rather than allowed to answer, and half of a killed process's output is not a verdict.
+ */
+export function swallowedExampleRunners(results) {
+  return results
+    .filter(
+      (result) => !result.timedOut && result.exitCode === 0 && STACK_FRAME.test(result.stderr ?? ""),
+    )
+    .map((result) => `${result.runner} exited 0 after printing a throw: ${result.refusal}`);
 }
 
 /**
@@ -147,8 +208,19 @@ export function spawnRunner(root, runner, outDir) {
     }, DEADLINE_MS);
     child.on("close", (exitCode) => {
       clearTimeout(deadline);
+      // TWO READINGS OF ONE STREAM, and the second one is the fix. `refusal` is the sentence a red
+      // is worth reading — one `error:` line where the runner printed one. `stderr` is what the
+      // process WROTE, kept because a decision about the shape of a printed throw cannot be taken
+      // on a summary that has already dropped the stack: extracting the refusal and keeping only
+      // that is precisely how the evidence used to be thrown away.
       const refusal = /error:.*/.exec(stderr);
-      resolve({ runner, exitCode, timedOut, stderr: (refusal ? refusal[0] : stderr.trim()).slice(0, 300) });
+      resolve({
+        runner,
+        exitCode,
+        timedOut,
+        refusal: (refusal ? refusal[0] : stderr.trim()).slice(0, 300),
+        stderr: stderr.trim().slice(-KEPT_STDERR),
+      });
     });
   });
 }

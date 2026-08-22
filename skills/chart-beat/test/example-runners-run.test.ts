@@ -14,6 +14,7 @@ import {
   deadExampleRunners,
   exampleRunnersFor,
   runExampleRunners,
+  swallowedExampleRunners,
 } from "../scripts/example-runners.mjs";
 
 // The population is dominated by runners that survive to their deadline on purpose, four at a
@@ -46,5 +47,89 @@ describe(`${SKILL} — every example runner committed beside a beat still runs`,
       `${SKILL}: ${answered.length} ran to completion, ${results.length - answered.length} still working at the deadline`,
     );
     expect(deadExampleRunners(results)).toEqual([]);
+    expect(swallowedExampleRunners(results)).toEqual([]);
+  });
+});
+
+// THE SECOND DECISION, WALKED ON RESULTS BUILT BY HAND — because the sweep above cannot prove it
+// fires. No runner in this tree swallows a failure today: the one that did
+// (`stories/heat-pump-adoption-across-europe/beats/1-the-gap-that-persists/render-web.mjs`, fixed
+// in `22857ece`) is the only `.catch(console.error)` there has ever been, and re-measured over the
+// whole population on 2026-08-22 every one of the 67 runners that answered printed NOTHING at all
+// on stderr. A decision whose only evidence is a clean population is a decision nobody has seen
+// work, which is the shape of defect this sweep exists to refuse — so the cases are built here,
+// out of the bytes the runtime this sweep spawns really prints.
+const A_PRINTED_THROW = [
+  "1 |   const out = await renderWeb({",
+  "                            ^",
+  "error: renderWeb: props.language is required",
+  "      at renderWeb (/twin/skills/chart-web/scripts/render-web.mjs:88:11)",
+  "      at /twin/stories/a-story/beats/1-a-beat/render-web.mjs:64:1",
+  "      at loadAndEvaluateModule (2:1)",
+].join("\n");
+
+describe(`${SKILL} — a runner that fails without an exit code is still a dead runner`, () => {
+  const answered = (runner: string, over: Record<string, unknown>) => ({
+    runner,
+    exitCode: 0,
+    timedOut: false,
+    stderr: "",
+    refusal: "",
+    ...over,
+  });
+
+  it("names a runner that exited 0 while printing a thrown error", () => {
+    expect(
+      swallowedExampleRunners([
+        answered("stories/a-story/beats/1-a-beat/render-web.mjs", {
+          stderr: A_PRINTED_THROW,
+          refusal: "error: renderWeb: props.language is required",
+        }),
+      ]),
+    ).toEqual([
+      "stories/a-story/beats/1-a-beat/render-web.mjs exited 0 after printing a throw: " +
+        "error: renderWeb: props.language is required",
+    ]);
+  });
+
+  it("says nothing about a runner that exited 0 and printed no stack", () => {
+    expect(
+      swallowedExampleRunners([
+        answered("proof/a-beat/render.mjs", {}),
+        // Every word a shape rule must NOT decide on, in one line of legitimate output: this is
+        // why the decision reads a frame and not the vocabulary of failure.
+        answered("proof/b-beat/render.mjs", {
+          stderr: "error: caught 3 rows with no value at 1:1 — see docs/errors.md:12",
+        }),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("leaves a runner that answered with an exit code to deadExampleRunners", () => {
+    const results = [
+      answered("proof/a-beat/render.mjs", {
+        exitCode: 1,
+        stderr: A_PRINTED_THROW,
+        refusal: "error: renderWeb: props.language is required",
+      }),
+    ];
+    expect(swallowedExampleRunners(results)).toEqual([]);
+    expect(deadExampleRunners(results)).toEqual([
+      "proof/a-beat/render.mjs exited 1: error: renderWeb: props.language is required",
+    ]);
+  });
+
+  it("says nothing about a runner still working at its deadline", () => {
+    // Same reason `deadExampleRunners` does not: a runner alive at the deadline reached its
+    // format's entrypoint and went past it, and it was KILLED rather than allowed to answer.
+    expect(
+      swallowedExampleRunners([
+        answered("proof/a-beat/render.mjs", {
+          exitCode: null,
+          timedOut: true,
+          stderr: A_PRINTED_THROW,
+        }),
+      ]),
+    ).toEqual([]);
   });
 });
