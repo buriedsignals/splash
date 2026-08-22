@@ -48,9 +48,11 @@ accessible answer to that fact.
   access ships beside it by default (`regionTable`, opt-out per beat) — read
   `references/map-web-discipline.md`, "The accessibility question", which states plainly what
   turning it off costs that reader, before deciding either way. A choropleth (regions shaded by value) or a proportional-symbol map
-  (circles sized by value) both qualify — this seed is the symbol case; a choropleth's own web beat
-  reuses `map-beat/assets/geo.ts`'s join/ramp logic (carried as its own copy, the same rule this
-  skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
+  (circles sized by value) both qualify — this seed is the symbol case, and the choropleth case is
+  written: `assets/geo-choropleth.ts` is this skill's own copy of the polygon core (the join, the
+  classes, the ramp, the two surfaces that are not the data, the ring arithmetic), and
+  `proof/mapgen-choropleth-web/` is the complete worked beat to copy. Read "Producing a choropleth"
+  below before starting one.
 - **Not** to re-draw a map that already exists as a still or a video build — bake once, reuse the
   plate the same way `map-beat` reuses one camera across its own two formats.
 - **Not for a route or flow map, and this is a producer fact rather than a taste one.** What this
@@ -152,7 +154,8 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
-| Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
+| Pure core (polygons) | `assets/geo-choropleth.ts` | `joinValues`/`unmatchedValues` (the join that fails loud), `binIndexLowerInclusive`/`scalePosition` (the classes), `sequentialRamp`/`dataRampEnd`/`assertRampReads` (the ramp), `noDataFor`/`waterFor`/`assertSurfacesRead` (the two surfaces that are NOT the data, derived from the same palette and measured against the ramp), `collidingPointerTargets`, `pathFromRings`/`simplifyRing`/`keepRing`. This skill's OWN copy, byte-shared with the worked beat |
+| Pure core (points) | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
 | Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`), and makes the live layer obey the same filter selection the CSS obeys (`selectedGroup`, `applyFilter`) |
 | Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and clicks every filter chip for real. Asserts what can come apart: mark size against an independent camera derivation, nothing cropped, a real pointer reaching a mark's whole disc, and BOTH halves of every mark obeying one filter — plus an anti-vacuity pin, because with the filter broken in both halves at once every count agrees |
@@ -169,9 +172,17 @@ letterboxes, or leaves a gutter. Trust the picture.
 (`map-beat/references/types/proportional-symbol.md`: "there is no data JOIN for this type") and
 no polygon geometry to bake, cull or thin — the bake is a handful of `map.project()` calls, not a
 Natural-Earth GeoJSON join against declared study-set keys. That made it the faster, lower-risk format
-to prove the web mechanics AND the accessibility answer on first; a choropleth's own web beat is the
-next one to write, importing this skill's OWN copy of `map-beat/assets/geo.ts`'s join/ramp logic
-rather than `geo-symbol.ts`.
+to prove the web mechanics AND the accessibility answer on first.
+
+**CORRECTED 2026-08-22, and corrected rather than deleted, because what it cost is the point.** The
+sentence that stood here said *"a choropleth's own web beat is the next one to write, importing this
+skill's OWN copy of `map-beat/assets/geo.ts`'s join/ramp logic"*. There was no `geo.ts` under
+`assets/` to import — only `geo-symbol.ts`, which says in its own header that a symbol map has no
+polygon join — while `proof/mapgen-choropleth-web/` had been a complete, shipped, worked choropleth
+web beat for weeks. So the documented path for **the cell a journalist actually asks for** (shade the
+countries by a rate) pointed at a file that did not exist, and the one person who needed it built
+their beat by copying out of `proof/` instead, which is not what this file told them to do. Measured
+on a real story, 2026-08-22. The cell is written; "Producing a choropleth" below is how.
 
 **Why the accessible table ships by default, and what opting out costs.**
 `renderMapWeb`'s `regionTable` defaults to TRUE (2026-08-20) — a capability the catalogue says this
@@ -254,7 +265,87 @@ before it drives anything; `test/verify-guards.test.ts` runs all four over every
    section states for every format in this twin, sharpened by this format's own gotcha above: a
    computed value can lie, a screenshot cannot.
 
+## Producing a choropleth
+
+The cell a newsroom asks for most often, and the one this file used to say was unwritten. Everything
+below is measured on the two worked beats: `proof/mapgen-choropleth-web` (41 European countries,
+light ground) and a real 241-region world beat driven live with a real key.
+
+1. **Get the geography, and know what it costs you.** *Nothing in this toolchain acquires country
+   shapes, and that is a limit rather than an oversight — Natural Earth is 20 MB of public-domain
+   GeoJSON that has no business being committed to a skill.* What the toolchain owes you is a
+   REFUSAL YOU CAN ACT ON rather than a default path that silently is not there:
+   `map-beat/scripts/bake-plate.mjs` defaults `--shapes` to `/tmp/map-twin/ne50.geojson`, which no
+   script in this tree writes, and every `countries.geojson` on disk is a hand-curated 8-, 16- or
+   42-feature European subset. So acquire it explicitly, beside the beat, and freeze it there:
+
+   ```sh
+   curl -sSo /tmp/ne50.geojson \
+     https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson
+   ```
+
+   **1:50m, not 1:110m, and the difference is measured, not aesthetic.** At 1:110m a world beat lost
+   **64** readings to shapes that do not exist in the file; at 1:50m it lost **8**. Then trim it to
+   what the beat draws and SIMPLIFY it before baking — a 1:50m world at native resolution rendered
+   **2 190 830 bytes**, over this format's own weight ceiling; simplified at 0.09° (94 690 → 23 788
+   coordinates) it landed at **2 015 174**, 1.0 % of margin. `simplifyRing` is in the core.
+
+2. **Declare the study set as a LIST, and join on `ADM0_A3`.** Never `ISO_A3`: eight features in the
+   1:50m file carry `ISO_A3 = "-99"` — France, Norway, Kosovo, Northern Cyprus, Somaliland, Kashmir
+   and two Australian territories — so joining on it drops **France and Norway off a world map in
+   silence**. Strip every other property on the way in so the trap cannot be fallen into later.
+
+3. **Let the join fail loud, and declare all three silences.** `joinValues`/`unmatchedValues` refuse
+   a beat until every shape with no reading, every reading with no shape, and every alias is
+   DECLARED. On the world beat that was 4 aliases (`SDS→SSD`, `SAH→ESH`, `PSX→PSE`, `KOS→OWID_KOS` —
+   unaliased, four real countries render as no-data and look completely legitimate), 12 declared
+   silent shapes, and **8 readings that land on no shape at all** because Natural Earth folds each
+   into the state that administers it. That last class is the one the doctrine calls worse than a bad
+   join — a no-data shape is at least visible and wrong-coloured; a value with no shape leaves no
+   mark anywhere to be wrong. **Name them in the caveat the reader sees.**
+
+4. **Take the three colour decisions together, with `choroplethSurfaces`.** The ramp, the no-data
+   fill and the water tint are one decision, because the last two are only correct RELATIVE to the
+   first — see "Colours" below and `assertSurfacesRead` in `assets/geo-choropleth.ts`.
+
+5. **Bake at a width, and let the height come from the camera.** `--width`, never one `--size` on
+   both axes: `frameHeightFor` gives the frame the shape the bounds ask for, and
+   `frameMatchesItsCamera` refuses a frame more than 5 % larger than its camera. A world camera is
+   close to 2:1 in Web Mercator, so a square frame spends half its pixels on ocean AND hands the
+   delivered page a square to put in a wide window.
+
+6. **Expect the fallback's pointer path to be PARTIAL on a dense camera, and say so.** Every region
+   too small to land a pointer on by its own shape keeps a 28px button; on a world map those buttons
+   cover each other — measured, 143 pointer-active marks with 82 of them covered at 1600×900. The
+   button stays (it is also the keyboard target and the `aria-label`'s carrier, and both of those
+   channels are complete), `collidingPointerTargets` counts them, and the runner prints the count at
+   four widths. A limit that cannot be removed is one the beat states.
+
+7. **Drive it live.** `scripts/verify-live-map.mjs --html <the beat's page>` reads the layers off the
+   page's own plan, so it drives a choropleth as readily as the symbol seed, and it EXITS NON-ZERO
+   when it cannot find a key rather than reporting success for a run that never happened.
+
 ## Colours
+
+**A choropleth's ocean and its no-data fill follow the palette too, and until 2026-08-22 they did
+not.** Both were fixed hexes with a docstring arguing that fixing them is what makes a no-data
+reading "stay recognisable across every newsroom's own ground colour". Measured on this format's own
+two shipped grounds, that claim is false in both directions: on white with a `#B2182B` accent the
+ramp runs 0.815 → 0.101 and the fixed `#B9B9B9` (0.485) and `#AAC9E0` (0.557) both land *between
+class 2 and class 3*; on `#16191B` with `#D4A853` the ramp climbs 0.052 → 0.616 and the same two are
+brighter than five of the six classes, so on a world map the **sea was the loudest thing on a map
+about land**. A country with NO READING was painted at the luminance of a real class on every beat
+this format has shipped, and `assertRampReads` could not see it — it measures the ramp against the
+GROUND, never these two against the RAMP.
+
+`offRampLuminance` puts both in the one band that is not the data — between the ground and the first
+class, which is where "this is not a reading" belongs, because a region with no value is nearer to
+bare ground than to any class. `noDataFor`/`waterFor` derive them there (neutral for no-data, blue
+for water — rule 7 is a rule about HUE), `assertSurfacesRead` refuses a surface a reader would read
+as a value, a surface that is really the ground, and a pair nobody could tell apart. A ramp that
+starts too close to its own ground fails there and is told to raise its low end, which is the fix.
+The two old hexes are not deleted: they are the MIDPOINT of the axis each colour now travels, so the
+derivation passes through the value this family already used.
 
 `scripts/render-web.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: record the proposal's own recommended option — never inventing a colour, never one that failed the 3:1 floor — with `origin` naming its source and the file's own prose saying no journalist answered; a proposal with no passing option still ends the turn there. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
 
@@ -325,6 +416,12 @@ for its own generic function.
 | The smallest height the map is ever squeezed to before the page scrolls again | `180px` | `.mw-stage`'s `min-height`, `buildCss` in `render-web.mjs` |
 | The filter chip's own height (a pointer target, not a text row) | `32px` | `.mw-chip`'s `min-height`, `buildCss` in `render-web.mjs` |
 | How many reference sizes the legend shows | `3` | `niceReferenceValues`'s `count` default, `geo-symbol.ts` |
+| The frame's HEIGHT (derived from the camera, never `--size` on both axes) | `frameHeightFor(bounds, width)` | `bake-plate.mjs` |
+| How much of a frame may be margin the camera never asked for | `0.05` | `FRAME_MARGIN_TOLERANCE`, `bake-plate.mjs` |
+| The luminance a no-data fill and a water tint are placed at | the midpoint of ground → first class | `offRampLuminance`, `geo-choropleth.ts` |
+| How far those two must sit from the nearest class | `0.02` relative luminance | `SURFACE_CLEARANCE`, `geo-choropleth.ts` |
+| The smallest channel spread that still reads as a hue | `0.05` | `MIN_CHROMA`, `geo-choropleth.ts` |
+| Which regions keep a pointer-active button, as a FRACTION of the frame | `26 / 496` | `SMALL_REGION_FRAME_FRACTION`, `ChoroplethWeb.tsx` |
 | The camera this seed bakes | `[[-14, 34], [28, 64]]` — Lisbon to Stockholm, padded ~5° | `BEAT.bounds`, `bake-plate.mjs` |
 | Which basemap | `"dataviz-light"`, water overridden to `#aac9e0` before capture | `BEAT.style` / the `style.load` handler, `bake-plate.mjs` |
 | How long the capture waits before it gives up on `idle` | `15000` ms | `--settle`, `bake-plate.mjs` |
@@ -343,6 +440,13 @@ for its own generic function.
   stripped mechanics demo. One fluid render, bounded to the window by `.mw-stage`: an SVG carrying
   only geometry, an HTML overlay carrying every piece of furniture and every control, and
   `RegionTable`, the accessible table this format carries by default.
+- `assets/geo-choropleth.ts` — this skill's OWN copy of the pure POLYGON core: the join that fails
+  loud (`joinValues`/`unmatchedValues`), the classes, the ramp (`sequentialRamp`/`dataRampEnd`/
+  `assertRampReads`), the two surfaces that are not the data (`noDataFor`/`waterFor`/
+  `assertSurfacesRead` — derived from the same palette the ramp is, and measured against it),
+  `collidingPointerTargets`, and the ring arithmetic. `SEED_STUDY`/`SEED_BREAKS` are marked
+  **REPLACE ME**: a beat declares its own study set as a LIST, because a study set read back out of
+  the shapefile the shapes come from can never disagree with it. See "Producing a choropleth".
 - `assets/geo-symbol.ts` — this skill's OWN copy of the pure proportional-symbol geometry, trimmed
   to what this format draws (no polygon join — a symbol map has none), plus `groupsOf`/`slugOf`, the
   filter's own shared vocabulary between the component and the CSS `render-web.mjs` generates.
