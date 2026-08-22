@@ -95,7 +95,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
-| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile, { csv })` checks the confirmed takeaway's own numbers, comparisons and superlatives against the frozen data profile — and against the frozen `source/data.csv` itself, which is where ROW-level facts come from, since no `profile.json` in this tree carries rows. A number equal to a column's `sum` (a part-to-whole total) is `supported`; a number merely inside the range of the column **its own sentence names** is **`consistent`** — placed, not confirmed; a number it can place neither way is `unverifiable`, naming the column it was put to and the range it missed, never `contradicted`. A stated multiplier ("1.12 million") is read as a second reading beside the numeral as written. Not a fact-checker, not a conformance engine, one narrow class of error |
+| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile, { csv })` checks the confirmed takeaway's own numbers, comparisons and superlatives against the frozen data profile — and against the frozen `source/data.csv` itself, which is where ROW-level facts come from, since no `profile.json` in this tree carries rows. A number equal to a column's `sum` (a part-to-whole total) is `supported`, **read together with the comparator that governs it** ("more than 100" against a column summing to exactly 100 is `contradicted`, not confirmed); the frozen `rowCount` and a column's `missing` count are numerals' homes too; a number merely inside the range of the column **its own sentence names** is **`consistent`** — placed, not confirmed, and the detail says when it is exactly that column's min or max or is held verbatim in a row; a number it can place neither way is `unverifiable`, naming the column it was put to and the range it missed, never `contradicted`. A stated multiplier ("1.12 million") is read as a second reading beside the numeral as written, and a comma-grouped numeral the token reader calls ambiguous is settled by the frozen table when exactly one of its two readings is a number that table holds. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
 | Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
 | Producer catalogue and gate | `references/datawrapper-chart-types.json`; `scripts/producer-gate.mjs` | Complete upstream `VisualizationType` inventory at its recorded source revision, conservative mappings from Splash treatments, the conditional custom-or-Datawrapper question, and validation of persisted `producer`/`datawrapperType` fields |
@@ -195,8 +195,18 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    columns; a numeral the sentence gives no column for is reported unplaced, naming the candidates
    and the range it would have fallen into. A bare **calendar year** belongs to the profile's own
    period column and to nothing else — `stress-y-rural-broadband`'s survey year `2025` used to be
-   "placed" inside `households [240, 47933]` — unless the sentence explicitly names a measure, in
-   which case a four-digit figure really can be that measure's own value.
+   "placed" inside `households [240, 47933]`.
+
+   **ROUND SIX splits that rule in two, because one rule decided both halves and was wrong about
+   each of them once.** `stress-ac-alcanede-kilns` says "the kilns employed 1,860 people in 1980":
+   `1860` is `workers`' own MAXIMUM, and it was put to the PERIOD column, which cannot hold it, so
+   the answer named `year [1980, 2026]` about a number that was never a year. `stress-ab-emigration-flows`
+   carries no period column at all, and its survey year `2025` landed inside `people_2025 [1900, 18400]`
+   and came back `consistent` — the same coincidence, reached by the other road. The **frozen table**
+   decides both now: a year-shaped numeral belongs to the period column when that column's own range
+   covers it; otherwise it belongs to the column the sentence names ONLY IF that column actually
+   HOLDS the number in one of its rows; neither, and it is refused, naming both misses and the
+   column it would have fallen into by coincidence.
 
    **A stated multiplier is read as an ALTERNATIVE reading, never as a replacement** (round five).
    "1.12 million" is checked both as written and as 1120000, and the detail says which reading
@@ -207,6 +217,65 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    because it means one in English and the other in French, so both are tried and neither assumed.
    A run of digits glued to a WORD on its left is not a number the sentence states: `Commune-063`
    produced the claim `-063` and `consumption_m3` produced `3`.
+
+   **AND A COMMA-GROUPED NUMERAL IS SETTLED BY THE TABLE, NOT BY THE TOKEN** (round six, beats AA
+   and AC). `readNumericToken` refuses "238,530" because a lone token carries no evidence for
+   itself — it could be 238530 grouped, or 238.530 with a decimal comma — and that refusal is right
+   about the token and wrong about the situation: this check is never handed a token alone, it is
+   handed a token AND the frozen table the sentence is about. On `stress-aa-salary-spread` 238530 is
+   a cell of `annual_salary_eur` and 238.53 is nowhere; on `stress-j-partial-year-permits` 14205 is
+   `permits_issued`'s own minimum and 14.205 is nowhere. Exactly ONE reading held by the table
+   settles the numeral; two, or none, and it stays ambiguous, which is what keeps a French decimal
+   comma from being read as a grouping wherever the table cannot tell them apart. **`readNumericToken`
+   itself is untouched** — it is a byte-identical copy of `intake`'s and answers a question about a
+   token; `settleGroupedNumeral` answers a different question only this file can ask.
+
+   **THE RELATION A NUMERAL SITS UNDER, NOT ONLY THE NUMERAL** (round six, finding Z2 — the round's
+   headline). Measured by the controller on the frozen `stress-z-budget-parts`:
+
+   > `"La somme des parts est supérieure à 100."` → **`supported`**, *"equals the sum of column
+   > part_pct (100)"*
+
+   A sentence that DENIES equality was confirmed because the numeral in it matched the column's sum.
+   The check read the number and not the relation. A numeral matched to a column TOTAL is now read
+   together with the comparator that governs it: an equality is evidence FOR a sentence asserting
+   equality and evidence AGAINST one asserting a strict inequality, so "plus de 34 millions de
+   tonnes" against `glace_fondue_mt`, which sums to exactly 34, comes back `contradicted` and "au
+   moins 34" comes back `supported`. The vocabulary declares its languages like every other lexicon
+   here — English, French, Greek and Arabic — and a comparator outside them is not read, leaving the
+   numeral decided as an equality.
+
+   **AND PARTS THAT CANCEL ARE NOT PARTS OF A WHOLE** (the same finding's other half). `part_pct`
+   reaches 100 only because a −9.7 provision write-back cancels a +9.7 overshoot: its positive parts
+   sum to 109.7. A column carrying a negative member has TWO totals — its net and its positive parts
+   — and they can answer a relation differently, which is a question for the journalist, named as
+   one, not a verdict. The totality check (shape 7) is now asymmetric, and that asymmetry is the
+   whole of it: **a confirmation requires non-negative parts, a refutation does not.** A column that
+   misses the whole misses it whichever total you take, so `stress-e-electricity-mix` (share_pct
+   summing to 95.2 against an article claiming the whole) is still `contradicted` — it simply now
+   says the column is signed as well.
+
+   **`rowCount` AND `column.missing` ARE A NUMERAL'S HOME** (round six, beat AA). The chart that
+   beat shipped prints *"234 of the company's 240 employees; 6 returned no salary"*. Both of those
+   numbers are stated exactly by the frozen profile — `rowCount` is 240, `annual_salary_eur.missing`
+   is 6 — and both came back "could not be placed in the column this sentence names", because the
+   only homes a numeral had were a column's range and a column's sum. They are tried only once a
+   numeral has FAILED to be a member of the column its own sentence names, so a plausible measurement
+   is never re-read as a fact about the table's shape instead.
+
+   **A COORDINATE IS NOT A MEASURE** (round six, beat AC). `stress-ac-alcanede-kilns` carries
+   `site_lat` and `site_lon` and `stress-ab-emigration-flows` carries four of them, so every
+   superlative in either story came back *"this profile carries 4 measures ("kilns_active",
+   "workers", "site_lat", "site_lon") and the claim names none of them"* — a geographic story that
+   could not decide a geographic claim. A latitude is where a row IS, not what it measures, which is
+   the statement `measureColumns` has always made about the year column. Name and value both have to
+   agree, because "long" is an ordinary English word.
+
+   **AND THE TWO-YEAR COMPARISON READS ITS DIRECTION WORD WHEREVER IT SITS** (round six). Both
+   English comparison patterns demanded the comparative BEFORE the first year, so "There were fewer
+   kilns in 2020 than in 1990" was decided and "Kilns in 2020 were fewer than in 1990" produced no
+   comparison at all — its two years fell through to the per-numeral range check and came back
+   `consistent`, which decides nothing.
 
    **EVERY NAME-BASED LEXICON IN THIS FILE DECLARES ITS LANGUAGES, AND NAMES A SCRIPT IT COULD NOT
    READ** (round five, finding X1 — the round's structural theme, fixed in the same movement in
@@ -382,6 +451,10 @@ if (errors.length > 0) {
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
 | How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative) or half a unit of the numeral's **own last written digit** ("34" → 0.5, "0.61" → 0.005), whichever is wider — and never more than the smaller of the two numbers being compared | `scripts/ground-claim.mjs` |
 | Which languages a numeral's stated multiplier is read in | `4` — English, French, Greek, Arabic (`MULTIPLIER_WORDS`); outside them the scale word is not read and the numeral is checked as written | `scripts/ground-claim.mjs` |
+| Which languages the COMPARATOR governing a numeral is read in | `4` — English, French, Greek, Arabic (`RELATION_VOCABULARY`); outside them no relation is read and the numeral is decided as an equality, which is what this file did for every language before round six | `scripts/ground-claim.mjs` |
+| How close a comparator must sit to the numeral it governs | `RELATION_WINDOW` = `48` characters, and only whitespace may stand between the phrase and the digits | `scripts/ground-claim.mjs` |
+| What makes a numeric column a COORDINATE rather than a measure | its own name token is a coordinate word (`lat`/`lon`/`lng`/`long`/`latitude`/`longitude` and their Latin spellings) **and** its values stay inside that word's range (±90 / ±180) — `tunnel_long_m [900, 5400]` is a length and stays a measure | `scripts/ground-claim.mjs`'s `isCoordinateColumn` |
+| What settles a comma-grouped numeral the token reader calls ambiguous | the frozen table: exactly ONE of "238530" and "238.53" being a number some numeric column holds (as a cell, a min, a max or a sum). Two readings held, or none, and it stays ambiguous — which is what keeps a French decimal comma from being read as a grouping | `scripts/ground-claim.mjs`'s `settleGroupedNumeral` |
 | Which languages EVERY name-based lexicon in the grounding check is read in | `4` — English, French, Greek, Arabic (`LEXICON_LANGUAGES`); a script outside them is NAMED in `coverage.unreadable` rather than answered in silence | `scripts/ground-claim.mjs` |
 | What a LETTER outside those four's own repertoire does | NAMED in `coverage.unreadableLetters` (`lettersNotRead`), and a numeric column whose name carries one WITHHOLDS `supported` from a raw-count superlative — an undeclared language may not raise the verdict | `scripts/ground-claim.mjs` |
 | Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |
