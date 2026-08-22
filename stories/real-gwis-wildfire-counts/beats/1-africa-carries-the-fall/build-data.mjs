@@ -54,9 +54,17 @@ function parseCsvRows(text) {
   return rows;
 }
 
-const text = await readFile(SOURCE, "utf8");
-const [columns, ...body] = parseCsvRows(text.trim());
-const rows = body.map((cells) => Object.fromEntries(columns.map((name, i) => [name, cells[i]])));
+/** The frozen table as rows a caller can use — one object per row, keyed by the header's own names.
+ *  A NAMED reader rather than three statements at the top level, because that is what
+ *  `skills/splash/test/csv-readers-parse-their-fixtures.test.ts` calls: it walks every inlined
+ *  tokeniser in the tree and runs each one against its own frozen CSV, so a reader that quietly
+ *  stopped returning rows would be caught. A tokeniser nothing calls is invisible to it. */
+function rowsFromCsv(text) {
+  const [columns, ...body] = parseCsvRows(text.trim());
+  return body.map((cells) => Object.fromEntries(columns.map((name, i) => [name, cells[i]])));
+}
+
+const rows = rowsFromCsv(await readFile(SOURCE, "utf8"));
 
 const byEntityYear = new Map();
 for (const row of rows) byEntityYear.set(`${row.entity}|${row.year}`, Number(row.events));

@@ -90,6 +90,15 @@ const SKIPPED = new Set([
   // `stories/stress-t-europe-recycling/.../recycling.csv` — real frozen fixtures, just not ones
   // sitting under `skills/chart-video/`, which is where this walk looks for a beat's own csv.
   "skills/chart-video/test/reveal-order.test.ts",
+  // A TEMPLATE, not a beat: `assets/geo-choropleth.ts` is what a new choropleth beat COPIES, so it
+  // has no beat root and no frozen CSV of its own by construction. This walk flagged it for having
+  // no fixture, which was the right complaint about the wrong thing — the fixture was not what was
+  // missing, a test was. `valuesFromCsv` decides what every fill on the plate and on the live layer
+  // is coloured by, and nothing exercised it; it now has its own suite at
+  // `skills/map-web/test/values-from-csv.test.ts`, with the quoted-comma name, the blank left OUT
+  // rather than coloured zero, and both refusals. Dropping a CSV beside the template instead would
+  // have silenced this line without proving anything.
+  "skills/map-web/assets/geo-choropleth.ts",
 ]);
 
 // ── Extracting a reader out of its own file, verbatim ─────────────────────────────────────────
