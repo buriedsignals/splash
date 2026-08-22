@@ -162,7 +162,7 @@ describe("this format's own real pages, measured against the widened detector", 
     // This count is an exact ratchet on purpose — the next beat is expected to redden it too,
     // bumped deliberately rather than widened into a floor.
     const pages = discoverMapWebPages();
-    expect(pages.length).toBe(9);
+    expect(pages.length).toBe(10);
     const offenders: string[] = [];
     for (const page of pages) {
       const found = tableCarriesTheMarks(page.html);

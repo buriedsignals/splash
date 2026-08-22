@@ -63,7 +63,7 @@ describe("every map-web page on disk", () => {
     // This count is an exact ratchet on purpose — the next beat is expected to redden it too,
     // bumped deliberately rather than widened into a floor.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(9);
+    expect(files.length).toBe(10);
     const offenders: string[] = [];
     for (const file of files) {
       const bytes = statSync(file).size;

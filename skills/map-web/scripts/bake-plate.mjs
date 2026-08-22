@@ -67,7 +67,11 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const size = Number(flag("--size", "1000"));
+// `--size` is the frame's WIDTH, and it has never been anything else — the second axis was never a
+// decision anyone made, it was the same number used twice. `--width` is the name that says so;
+// `--size` stays for every caller written before this. The HEIGHT is DERIVED from the camera unless
+// a beat overrides it, so a wide camera gets a wide frame and fills the page it is drawn into.
+const size = Number(flag("--width", flag("--size", "1000")));
 const outDir = flag("--out", `/tmp/map-twin-web/plate-${size}`);
 const dataPath = flag("--data", join(HERE, "../assets/sample-data/regions.json"));
 /**
@@ -115,6 +119,9 @@ function beatCamera() {
 }
 
 const BEAT = beatCamera();
+// DERIVED FROM THE CAMERA, never typed and never the width used twice. `--height` overrides it for a
+// beat that has a reason; nothing in this tree has needed one. See `frameHeightFor` below.
+const frameHeight = Number(flag("--height", "0")) || frameHeightFor(BEAT.bounds, size);
 const settleMs = Number(flag("--settle", "15000"));
 const sealedBrowserPath = flag("--browser", null);
 const sealedMaplibreJsPath = flag("--maplibre-js", null);
@@ -211,12 +218,70 @@ function minFrameHeightPx(width, south, north) {
   return Math.ceil((width * (mercY(north) - mercY(south))) / (2 * Math.PI));
 }
 
+/** THE FRAME THE CAMERA ITSELF ASKS FOR: the height that gives a `width`-px frame the same aspect
+ * the beat's own bounds have in Web Mercator.
+ *
+ * THE DEFECT THIS CLOSES, reported by the owner looking at a rendered world map: the bake took ONE
+ * `--size` and applied it to both axes (`width: size, height: size`, in five places). A world camera
+ * is close to 2:1 in Web Mercator, so a square frame spends half its pixels on empty ocean above and
+ * below the world AND halves every country — and because the delivered page sizes its map box from
+ * the plate's own aspect, a square plate then sits as a square in the middle of a 1600px page with a
+ * gutter either side. The map did not take the width it was given, which is the visible half of the
+ * same defect.
+ *
+ * `minFrameHeightPx` above is this same derivation for the one camera that spans a full turn of
+ * longitude — where the frame width IS the world width — and it was in this file the whole time,
+ * used only to build an error message. This is it for every other camera: divide by the longitude
+ * span the beat actually asked for rather than by 2π. `one-world-is-painted.test.ts` pins the two
+ * against each other at planet extent and measures this one at more than one camera. */
+function frameHeightFor(bounds, width) {
+  const [[west, south], [east, north]] = bounds;
+  const lonSpan = ((east - west) * Math.PI) / 180;
+  const latSpan = mercY(north) - mercY(south);
+  if (!(lonSpan > 0) || !(latSpan > 0))
+    throw new Error(`a camera with no area has no frame: bounds ${JSON.stringify(bounds)}`);
+  return Math.max(1, Math.ceil((width * latSpan) / lonSpan));
+}
+
 /** A longitude into this camera's own frame, `[west, west + 360)`. `map.project` does NOT wrap to
  * the camera, so a Pacific-centred beat must normalise every longitude before projecting it or every
  * western-Pacific point projects to a negative x and is culled. Two of nineteen bakes carried this
  * as a closure over `BEAT`, which is why seventeen could not have it. @parity */
 function normaliseLon(lon, west) {
   return west + ((((lon - west) % 360) + 360) % 360);
+}
+
+/** How much of a frame may be margin the camera never asked for. 5%: on a 1000px frame that is 50px
+ * of empty ocean, which is visible; under it, the difference is the fit landing on an integer frame.
+ * Measured across this format's own beats — a re-baked European choropleth wastes 0.2%, a world
+ * choropleth 0.0%, and the two still on a square frame waste 8.6% and 46.2%. */
+const FRAME_MARGIN_TOLERANCE = 0.05;
+
+/** THE FRAME IS THE CAMERA'S OWN SHAPE, NOT A SQUARE. The owner's report, on a rendered map: *the
+ * map does not take the full available width.*
+ *
+ * `assertCameraReachesBounds` above already refuses a frame that CROPS the study area. This is its
+ * other half, and it was missing: a frame that is too generous on one axis does not crop anything —
+ * it pads. `fitBounds` fits the bounds on whichever axis binds first, so every pixel of the other
+ * axis past the camera's own aspect is empty ground, the marks are drawn that much smaller, and the
+ * delivered page — which sizes its map box from the plate's own aspect — then hands the reader a
+ * square in the middle of a wide window with a gutter either side. Measured on
+ * `stress-f-housing-pressure`: a camera asking for 0.538 baked into a 1.000 frame, 46.2% margin.
+ *
+ * The number in the message is `frameHeightFor`'s, so the fix is the value the fix is computed
+ * with. @parity-exempt: this format's own addition; the canonical bake has no equivalent yet. */
+function frameMatchesItsCamera(bounds, frame) {
+  const asked = ((bounds[1][0] - bounds[0][0]) * Math.PI) / 180 / (mercY(bounds[1][1]) - mercY(bounds[0][1]));
+  const drawn = frame.width / frame.height;
+  const margin = 1 - Math.min(asked, drawn) / Math.max(asked, drawn);
+  if (margin <= FRAME_MARGIN_TOLERANCE) return;
+  throw new Error(
+    `this frame is not the shape its camera asked for: ${frame.width}x${frame.height} is ` +
+      `${drawn.toFixed(3)}:1 where the bounds ask for ${asked.toFixed(3)}:1, so ` +
+      `${(margin * 100).toFixed(1)}% of the plate is margin no reader can read anything off — and a ` +
+      `page that sizes its map box from this plate cannot fill the width it is given. At ` +
+      `${frame.width}px wide this camera wants a ${frameHeightFor(bounds, frame.width)}px height.`,
+  );
 }
 
 /** THE WORLD MUST FILL THE FRAME'S WIDTH. Under it, MapLibre draws a repeat continent inside the
@@ -283,11 +348,11 @@ const browser = await puppeteer.launch({
 });
 try {
 const page = await browser.newPage();
-await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
+await page.setViewport({ width: size, height: frameHeight, deviceScaleFactor: 2 });
 if (sealed) {
   await page.setContent(
     `<!doctype html><html><head>
-<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
+<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${frameHeight}px}</style>
 </head><body><div id="map"></div></body></html>`,
     { waitUntil: "load" },
   );
@@ -298,7 +363,7 @@ if (sealed) {
     `<!doctype html><html><head>
 <link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
 <script src="${MAPLIBRE}"></script>
-<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
+<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${frameHeight}px}</style>
 </head><body><div id="map"></div></body></html>`,
     { waitUntil: "load" },
   );
@@ -359,17 +424,18 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: frameHeight },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, size);
 assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
+frameMatchesItsCamera(BEAT.bounds, { width: size, height: frameHeight });
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
-await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: size } });
+await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: frameHeight } });
 
 // ── The projection (rule 4) ────────────────────────────────────────────────────────────────────
 const projected = await page.evaluate((rows) => {
@@ -386,7 +452,7 @@ const projectedPoints = points.map((p) => {
   return { ...p, px, py };
 });
 
-const frame = { width: size, height: size };
+const frame = { width: size, height: frameHeight };
 const offFrame = projectedPoints.filter((p) => !keepPoint(p, frame)).map((p) => p.name);
 
 const geometry = {

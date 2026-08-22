@@ -32,19 +32,29 @@ function parseCsvRows(text) {
 }
 
 /**
- * The pure half of THIS beat: the join, the classes, the ramp, the ring arithmetic. No browser, no
- * rasteriser — this is what makes the join testable at all, and what lets the bake step (node) and
- * a test import it without either dragging a browser's runtime behind it.
+ * THE PURE CORE OF A CHOROPLETH × WEB BEAT: the join, the classes, the ramp, the two surfaces that
+ * are not the data, and the ring arithmetic. No browser, no rasteriser — which is what makes the
+ * join testable at all, and what lets the bake (node), the SSR and a test import it without any of
+ * them dragging a browser's runtime behind them.
  *
- * This is this beat's OWN physical copy of the relevant pieces of `map-beat/assets/geo.ts`
- * (`references/geo-discipline.md` rule 3's own header note: a beat carries its own copy, never an
- * import across proof/ beats or out of a skill — see `mapmore-flow-danube/geo-flow.ts`'s header for
- * the same rule stated there). Trimmed to what a WEB beat needs: no `revealOrder` (that is this
- * project's own answer to `geo-discipline.md` rule 10, "a choropleth's reveal order is the value
- * order" — a rule about a VIDEO's time axis; a static SVG has no frames to reveal across). Kept:
- * `scalePosition`, because this beat's own legend still places two named marks (the subject and the
- * comparison) on one continuous scale beside the discrete class bar, the same way
- * `map-beat/assets/Co2MapStill.tsx` does.
+ * WHY THIS FILE EXISTS AT ALL, said plainly because for a whole chantier it did not. `SKILL.md` used
+ * to state that "a choropleth's own web beat is the next one to write, importing this skill's OWN
+ * copy of `map-beat/assets/geo.ts`'s join/ramp logic" — while `proof/mapgen-choropleth-web` had
+ * been a complete, shipped, worked choropleth web beat for weeks. There was no `geo.ts` here to
+ * import, only `geo-symbol.ts`, which says in its own header that a symbol map has no polygon join.
+ * So the documented path for THE CELL A JOURNALIST ACTUALLY ASKS FOR — shade the countries by a rate
+ * — pointed at a file that did not exist, and the one person who needed it built their beat by
+ * copying out of `proof/` instead. Measured on a real story, 2026-08-22.
+ *
+ * This is that file: this skill's OWN copy of the polygon core, carried rather than imported (a
+ * skill has to build after being copied alone into a journalist's root —
+ * `splash/test/no-cross-skill-imports.test.ts`), byte-identical to the worked beat's own copy for
+ * everything that is format mechanics rather than one story's numbers.
+ *
+ * Trimmed the same way that beat's copy is: no `revealOrder` (that is `geo-discipline.md` rule 10's
+ * answer for a VIDEO's time axis; a web page has no frames to reveal across). Kept `scalePosition`,
+ * because a choropleth's legend still places named marks on one continuous scale beside the
+ * discrete class bar.
  */
 
 export type Ring = [number, number][];
@@ -65,68 +75,28 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 // ── The beat's own data ────────────────────────────────────────────────────────────────────────
 
 /**
- * This beat's declared study set — Natural Earth's `ADM0_A3` keys, not `ISO_A3`
- * (`geo-discipline.md` rule 5: France, Norway and Kosovo carry `ISO_A3 = "-99"` in that field;
- * `countries.geojson` in this folder does not even carry an `ISO_A3` property, so the trap is
- * structurally absent here, but the join below still names the field it uses, on purpose).
+ * REPLACE ME. Do not parameterise me.
  *
- * Kosovo is deliberately NOT in this list. `countries.geojson` (copied verbatim from
- * `proof/mapmore-dot-population`) carries a `KOS` shape, and Our World in Data's own alias would be
- * `OWID_KOS`, but this beat's own declared study set simply never claims to include Kosovo — the
- * task this file was written against called that "honest": a beat's study set is its own declared
- * claim, and leaving a region out of the declared set entirely is a different, cleaner thing from
- * joining it via an alias.
+ * A BEAT'S STUDY SET IS ITS OWN DECLARED CLAIM, and declaring it as a LIST is the whole of what
+ * makes the join checkable. Read it back out of the shapefile the shapes come from and it can never
+ * disagree with it, and `joinValues`/`unmatchedValues` below are then measuring nothing.
+ *
+ * `ADM0_A3`, never `ISO_A3` (`doctrine/references/geo-discipline.md` rule 5). In Natural Earth's
+ * 1:50m file eight features carry `ISO_A3 = "-99"` — France, Norway, Kosovo, Northern Cyprus,
+ * Somaliland, Kashmir and two Australian territories — so a join on that field drops France and
+ * Norway off a world map without a word. Measured, on a real 241-region beat.
+ *
+ * These eight keys are the seed's own: enough to render, and obviously not a beat.
  */
-export const CO2_2023_STUDY = [
-  "ALB",
-  "AND",
-  "AUT",
-  "BEL",
-  "BGR",
-  "BIH",
-  "BLR",
-  "CHE",
-  "CZE",
-  "DEU",
-  "DNK",
-  "ESP",
-  "EST",
-  "FIN",
-  "FRA",
-  "FRO",
-  "GBR",
-  "GRC",
-  "HRV",
-  "HUN",
-  "IRL",
-  "ISL",
-  "ITA",
-  "LIE",
-  "LTU",
-  "LUX",
-  "LVA",
-  "MDA",
-  "MKD",
-  "MLT",
-  "MNE",
-  "NLD",
-  "NOR",
-  "POL",
-  "PRT",
-  "ROU",
-  "SRB",
-  "SVK",
-  "SVN",
-  "SWE",
-  "UKR",
-] as const;
+export const SEED_STUDY = ["FRA", "DEU", "ESP", "ITA", "POL", "SWE", "GRC", "PRT"] as const;
 
-/** Class boundaries in tonnes per person — the same six-class split
- *  `map-beat/assets/geo.ts`'s own `CO2_BREAKS` uses for the same quantity (CO₂ per capita):
- *  under 2, then 2s, then 10 and over. Reused deliberately, not re-derived, because it is the same
- *  measured quantity and there is no reason for two different beats to draw two different class
- *  boundaries for it. */
-export const CO2_BREAKS = [2, 4, 6, 8, 10];
+/** REPLACE ME. Class boundaries in the beat's own unit — six classes from five boundaries.
+ *
+ *  ROUND NUMBERS A READER ALREADY THINKS IN, not quantiles, unless the beat's own claim is about a
+ *  quantile. A quantile scale moves the boundary the title names to wherever this year's data put
+ *  it, which is exactly the boundary a reader cannot read off a legend. Check the distribution
+ *  across whatever you choose: a class holding half the study set, or none of it, is not a class. */
+export const SEED_BREAKS = [2, 4, 6, 8, 10];
 
 // ── Reading the source ─────────────────────────────────────────────────────────────────────────
 

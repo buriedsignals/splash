@@ -65,7 +65,9 @@ import {
   assertRampReads,
   dataRampEnd,
   sequentialRamp,
-  NO_DATA_FILL,
+  assertSurfacesRead,
+  noDataFor,
+  waterFor,
   type BakedShape,
 } from "./geo-choropleth";
 
@@ -141,12 +143,40 @@ export function choroplethRamp(
       ground,
       dataRampEnd(accent, ground),
       breaks.length + 1,
-      0.1,
+      // THE LOW END LEAVES ROOM FOR THE TWO SURFACES THAT ARE NOT THE DATA. It was 0.10, and at
+      // 0.10 the band between this ground and the first class is 0.185 of relative luminance —
+      // enough for a no-data grey, not enough for a water tint that still reads as blue
+      // (`assertSurfacesRead` refuses it at 0.039 chroma against a 0.05 floor). 0.20 gives the band
+      // 0.348 and both surfaces a colour a reader can name. A ramp that starts on top of its own
+      // ground has nowhere to put "no reading", which is what that band is for.
+      0.2,
       0.78,
     ),
     ground,
     "the per-capita CO2 choropleth ramp",
   );
+}
+
+/** THE THREE COLOUR DECISIONS OF A CHOROPLETH, MADE TOGETHER AND MEASURED TOGETHER: the ramp that
+ *  carries the data, the fill for a region with no reading, and the tint the sea is painted in.
+ *
+ *  Together, because the last two are only correct RELATIVE to the first — see `assertSurfacesRead`
+ *  in `geo-choropleth.ts` for the measurement that used to be missing and what it cost on both of
+ *  this format's shipped grounds. Every call site comes through here, so the bake, the SSR'd page
+ *  and the live plan cannot disagree about what colour the ocean is. */
+export function choroplethSurfaces(
+  ground: string,
+  accent: string,
+  breaks: number[],
+): { ramp: string[]; noData: string; water: string } {
+  const ramp = choroplethRamp(ground, accent, breaks);
+  const { noData, water } = assertSurfacesRead(
+    ramp,
+    ground,
+    { noData: noDataFor(ramp, ground), water: waterFor(ramp, ground) },
+    "the per-capita CO2 choropleth",
+  );
+  return { ramp, noData, water };
 }
 
 /** The exact colour one value is painted in — no-data included, explicitly, never by falling through
@@ -155,9 +185,10 @@ export function fillFor(
   value: number | null,
   ramp: string[],
   breaks: number[],
+  noData: string,
 ): string {
   return value === null
-    ? NO_DATA_FILL
+    ? noData
     : ramp[binIndexLowerInclusive(value, breaks)]!;
 }
 
@@ -234,7 +265,7 @@ export function ChoroplethWeb({
       `a choropleth needs at least two shapes, got ${shapes.length}`,
     );
 
-  const ramp = choroplethRamp(ground, accent, breaks);
+  const { ramp, noData } = choroplethSurfaces(ground, accent, breaks);
   const anyNoData = shapes.some((r) => r.value === null);
 
   const subject = shapes.find((r) => r.key === SUBJECT_KEY);
@@ -316,7 +347,7 @@ export function ChoroplethWeb({
                     key={region.key}
                     className="region"
                     d={pathFromRings(region.rings)}
-                    fill={fillFor(region.value, ramp, breaks)}
+                    fill={fillFor(region.value, ramp, breaks, noData)}
                     fillRule="evenodd"
                     stroke={ground}
                     strokeWidth={0.8}
@@ -451,7 +482,7 @@ export function ChoroplethWeb({
           <p className="mw-legend-nodata">
             <span
               className="mw-legend-swatch"
-              style={{ background: NO_DATA_FILL, borderColor: muted }}
+              style={{ background: noData, borderColor: muted }}
             />
             {NO_DATA_LABEL}
           </p>
