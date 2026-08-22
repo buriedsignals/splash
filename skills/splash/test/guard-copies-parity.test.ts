@@ -606,6 +606,64 @@ const COPIES: Record<string, string[]> = {
   ],
 };
 
+/** A module-level CONSTANT's whole declaration, from `const NAME` to the line that closes it.
+ *
+ *  `constantsBehind` above follows a constant a compared function references, and it can only see a
+ *  ONE-LINE declaration — `^const NAME = .*;$`, with `.` never matching a newline. Every lexicon in
+ *  this tree is a multi-line `new Set([…])` or array, so the denominator token list — copied into TEN
+ *  files, and the single decision behind "is there a denominator beside this count" — was walked by
+ *  nothing at all. Measured while writing this: eight of the ten spelled their Greek and Arabic
+ *  entries as literal characters and two as `\u` escapes, two encodings of one list, and no test in
+ *  this tree could see the difference, let alone a token added to one copy and not the nine others.
+ *
+ *  The declaration is compared WITH the comments inside it and WITHOUT the doc comment above it: the
+ *  comments inside carry the languages the list claims to read and the generated region's own
+ *  provenance, and they are the first thing a copy drops; the doc comment above legitimately differs,
+ *  because `intake/scripts/profile.mjs` explains the whole denominator mechanism where a producer's
+ *  `detect-denominator-reading.mjs` only says where the list came from. */
+function constantDeclaration(file: string, name: string): string {
+  const source = readFileSync(file, "utf8");
+  const at = source.indexOf(`const ${name} = `);
+  expect(`${file} declares ${name}`).toBe(
+    at >= 0 ? `${file} declares ${name}` : `${file} does NOT declare ${name}`,
+  );
+  const closes = [source.indexOf("\n]);", at), source.indexOf("\n];", at)].filter((i) => i > at);
+  const end = Math.min(...closes);
+  return source.slice(at, source.indexOf("\n", end + 1));
+}
+
+/** A LEXICON IS A DECISION. `COPIES` walks functions; these are the word lists those functions
+ *  decide WITH, and a list that grew in one copy and not the others is the same divergence in a
+ *  different shape — one skill calling a column a denominator while its neighbour says nothing.
+ *  Round six's own theme is what that costs: only the denominator column's NAME changing language
+ *  moved a verdict from `unverifiable` to `supported`, which is a lexicon gap RAISING confidence. */
+const SHARED_CONSTANTS: Record<string, string[]> = {
+  DENOMINATOR_NAME_TOKENS: [
+    "intake/scripts/profile.mjs",
+    "storyboard/scripts/ground-claim.mjs",
+    "chart-beat/scripts/detect-denominator-reading.mjs",
+    "chart-web/scripts/detect-denominator-reading.mjs",
+    "chart-video/scripts/detect-denominator-reading.mjs",
+    "dw-beat/scripts/detect-denominator-reading.mjs",
+    "map-beat/scripts/detect-denominator-reading.mjs",
+    "map-web/scripts/detect-denominator-reading.mjs",
+    "image-beat/scripts/detect-denominator-reading.mjs",
+    "scrolly/scripts/detect-denominator-reading.mjs",
+  ],
+};
+
+describe("every copied lexicon is still the same lexicon", () => {
+  for (const [name, files] of Object.entries(SHARED_CONSTANTS)) {
+    it(`${name} should be identical in all ${files.length} scripts that carry it`, () => {
+      const [first, ...rest] = files.map((file) => join(SKILLS, file));
+      const canonical = constantDeclaration(first, name);
+      expect(canonical.length).toBeGreaterThan(200);
+      for (const file of rest)
+        expect(`${file}\n${constantDeclaration(file, name)}`).toBe(`${file}\n${canonical}`);
+    });
+  }
+});
+
 describe("every copied guard decision is still the same decision", () => {
   for (const [name, files] of Object.entries(COPIES)) {
     it(`${name} should be identical in all ${files.length} scripts that carry it`, () => {

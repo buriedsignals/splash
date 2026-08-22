@@ -193,6 +193,110 @@ export const SUBJECT_CONVENTIONS = [
   {
     id: "renewables",
     match: edged(
+      // ROUND SIX, task LANG — generated from `skills/doctrine/references/concept-labels.json`,
+      // measured once from Wikidata's own labels and aliases and VENDORED; the hand-written four
+      // languages follow below and are unchanged. A phrase whose letters `scriptsWithNoConvention`
+      // can already flag is not here — that net names it, this table names what no character test
+      // can see.
+      // >>> generated: renewables — bun run scripts/concept-labels.mjs --write
+      "atsinaujinanti\\s+energija|" +
+      "aurinkoenergia|" +
+      "aurinkovoima|" +
+      "bioenergy|" +
+      "cadastre\\s+solaire|" +
+      "duurzame\\s+energie|" +
+      "eguzki\\s+energia|" +
+      "energetyka\\s+wiatrowa|" +
+      "energia\\s+berriztagarri|" +
+      "energia\\s+eolica|" +
+      "energia\\s+eolica\\s+marina|" +
+      "energia\\s+eoliko|" +
+      "energia\\s+renovable|" +
+      "energia\\s+rinnovabile|" +
+      "energia\\s+solar|" +
+      "energia\\s+solar\\s+termodin\u00e2mica|" +
+      "energia\\s+solare|" +
+      "energia\\s+v\u00e2ntului|" +
+      "energia\\s+wiatrowa|" +
+      "energie\\s+rinnovabili|" +
+      "energija\\s+vjetra|" +
+      "energjia\\s+diellore|" +
+      "eolica|" +
+      "erneuerbare\\s+energie|" +
+      "erneuerbare\\s+energien|" +
+      "fornybar\\s+energi|" +
+      "fuinneamh\\s+gaoithe|" +
+      "f\u00f6rnybar\\s+energi|" +
+      "green\\s+energy|" +
+      "grianfhuinneamh|" +
+      "haize\\s+energia|" +
+      "hernieuwbare\\s+energie|" +
+      "microeolica|" +
+      "minieolica|" +
+      "napenergia|" +
+      "obnovljiva\\s+energija|" +
+      "p\u00e4ikeseenergia|" +
+      "recyclebare\\s+energie|" +
+      "regenerative\\s+energie|" +
+      "regenerative\\s+energien|" +
+      "renewable\\s+energy|" +
+      "r\u00fczgar\\s+enerjisi|" +
+      "r\u00fczgar\\s+g\u00fcc\u00fc|" +
+      "r\u00fczg\u00e2r\\s+enerjisi|" +
+      "r\u00fczg\u00e2r\\s+g\u00fcc\u00fc|" +
+      "solar\\s+energy|" +
+      "solar\\s+power|" +
+      "solarenergie|" +
+      "solarna\\s+energija|" +
+      "solenergi|" +
+      "solengergi|" +
+      "solkraft|" +
+      "solkraftverk|" +
+      "solvarme|" +
+      "sonnenenergie|" +
+      "sonnenkraft|" +
+      "sonnenw\u00e4rme|" +
+      "sz\u00e9lenergia|" +
+      "taastuvenergia|" +
+      "tuuleenergeetika|" +
+      "tuuleenergia|" +
+      "tuulienergia|" +
+      "tuulivoima|" +
+      "uusiutuva\\s+energia|" +
+      "vedvarende\\s+energi|" +
+      "veterna\\s+energija|" +
+      "vetrna\\s+energija|" +
+      "vindenergi|" +
+      "vindkraft|" +
+      "vindorka|" +
+      "wind\\s+power|" +
+      "wind\\s+power\\s+energy|" +
+      "windenergie|" +
+      "windkracht|" +
+      "windkraft|" +
+      "windkraftenergie|" +
+      "yenilenebilir\\s+enerji|" +
+      "zonne\\s+energie|" +
+      "zonneenergie|" +
+      "zonnekracht|" +
+      "\u00e9lectricit\u00e9\\s+\u00e9olienne|" +
+      "\u00e9nergie\\s+solaire|" +
+      "\u00e9nergie\\s+\u00e9olienne|" +
+      "\u03b1\u03b9\u03bf\u03bb\u03b9\u03ba\u03ae\\s+\u03b5\u03bd\u03ad\u03c1\u03b3\u03b5\u03b9\u03b1|" +
+      "\u03b1\u03bd\u03b1\u03bd\u03b5\u03ce\u03c3\u03b9\u03bc\u03b5\u03c2\\s+\u03c0\u03b7\u03b3\u03ad\u03c2\\s+\u03b5\u03bd\u03ad\u03c1\u03b3\u03b5\u03b9\u03b1\u03c2|" +
+      "\u03b1\u03bd\u03b1\u03bd\u03b5\u03ce\u03c3\u03b9\u03bc\u03b7\\s+\u03b5\u03bd\u03ad\u03c1\u03b3\u03b5\u03b9\u03b1|" +
+      "\u03b7\u03bb\u03b9\u03b1\u03ba\u03ae\\s+\u03b5\u03bd\u03ad\u03c1\u03b3\u03b5\u03b9\u03b1|" +
+      "\u0627\u0644\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0631\u064a\u062d\u064a\u0629|" +
+      "\u0627\u0644\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0634\u0645\u0633\u064a\u0629|" +
+      "\u0627\u0644\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0647\u0648\u0627\u0626\u064a\u0629|" +
+      "\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0631\u064a\u0627\u062d|" +
+      "\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0634\u0645\u0633|" +
+      "\u0637\u0627\u0642\u0629\\s+\u0631\u064a\u0627\u062d|" +
+      "\u0637\u0627\u0642\u0629\\s+\u0634\u0645\u0633\u064a\u0629|" +
+      "\u0637\u0627\u0642\u0629\\s+\u0645\u062a\u062c\u062f\u062f\u0629|" +
+      "\u0637\u0627\u0642\u0647\\s+\u0631\u064a\u062d\u064a\u0647|" +
+      "\u0637\u0627\u0642\u0647\\s+\u0634\u0645\u0633\u064a\u0647|" +
+      // <<< generated
       "renewable|renewables?|solar|wind|photovoltaic|clean energy|" +
         "\u00e9nergies? renouvelables?|solaire|\u00e9olien|" +
         "\u03b1\u03bd\u03b1\u03bd\u03b5\u03ce\u03c3\u03b9\u03bc\u03b5?\u03c2?|\u03b7\u03bb\u03b9\u03b1\u03ba\u03ae?|\u03b1\u03b9\u03bf\u03bb\u03b9\u03ba\u03ae?|" +
@@ -206,6 +310,134 @@ export const SUBJECT_CONVENTIONS = [
   {
     id: "fossil",
     match: edged(
+      // ROUND SIX, task LANG — generated from `skills/doctrine/references/concept-labels.json`,
+      // measured once from Wikidata's own labels and aliases and VENDORED; the hand-written four
+      // languages follow below and are unchanged. A phrase whose letters `scriptsWithNoConvention`
+      // can already flag is not here — that net names it, this table names what no character test
+      // can see.
+      // >>> generated: fossil — bun run scripts/concept-labels.mjs --write
+      "aardolie|" +
+      "akmens\\s+anglis|" +
+      "akmens\\s+anglys|" +
+      "bergolja|" +
+      "berg\u00f6l|" +
+      "bitumihiili|" +
+      "bitumipitoinen\\s+hiili|" +
+      "black\\s+gold|" +
+      "breosla\\s+iontaiseach|" +
+      "carbone|" +
+      "carbone\\s+fossile|" +
+      "carboni\\s+fossili|" +
+      "carbons|" +
+      "combustibil\\s+fosil|" +
+      "combustibili\\s+fosili|" +
+      "combustibili\\s+fossili|" +
+      "combustible\\s+fosil|" +
+      "combustible\\s+fossile|" +
+      "crise\\s+p\u00e9troli\u00e8re|" +
+      "crises\\s+p\u00e9troli\u00e8res|" +
+      "degizraktenis|" +
+      "erd\u00f6l|" +
+      "erregai\\s+fosil|" +
+      "exploitation\\s+p\u00e9troli\u00e8re|" +
+      "fosilna\\s+goriva|" +
+      "fosilno\\s+gorivo|" +
+      "fossiele\\s+brandstof|" +
+      "fossiilinen\\s+polttoaine|" +
+      "fossiiliset\\s+polttoaineet|" +
+      "fossiilne\\s+k\u00fctus|" +
+      "fossil\\s+energi|" +
+      "fossil\\s+fuel|" +
+      "fossil\\s+fuels|" +
+      "fossila\\s+br\u00e4nslen|" +
+      "fossile\\s+brennstoffe|" +
+      "fossile\\s+brennstoffer|" +
+      "fossile\\s+br\u00e6ndsler|" +
+      "fossile\\s+energie|" +
+      "fossile\\s+energietr\u00e4ger|" +
+      "fossile\\s+treibstoffe|" +
+      "fossiler\\s+brennstoff|" +
+      "fossiler\\s+energietr\u00e4ger|" +
+      "fossiler\\s+treibstoff|" +
+      "fossilt\\s+brennstoff|" +
+      "fossilt\\s+brensel|" +
+      "fossilt\\s+br\u00e4nsle|" +
+      "fossilt\\s+drivstoff|" +
+      "grafitazione|" +
+      "gual|" +
+      "harrikatz|" +
+      "ikatz|" +
+      "ikatza|" +
+      "kivihiili|" +
+      "kivis\u00fcsi|" +
+      "kohle|" +
+      "kolen|" +
+      "kolgruva|" +
+      "kolm|" +
+      "komur|" +
+      "kull|" +
+      "k\u00f6m\u00fcr|" +
+      "l\u00ebnd\u00eb\\s+djeg\u00ebse\\s+fosile|" +
+      "maa\u00f6ljy|" +
+      "mineralolja|" +
+      "mineralolje|" +
+      "must\\s+kuld|" +
+      "musta\\s+kulta|" +
+      "nafta|" +
+      "neft|" +
+      "nyersolaj|" +
+      "olej\\s+skalny|" +
+      "oljefyndighet|" +
+      "oljef\u00f6rekomst|" +
+      "oljek\u00e4lla|" +
+      "oljereserver|" +
+      "paliwa\\s+kopalne|" +
+      "pampetro|" +
+      "peitriliam|" +
+      "petrole|" +
+      "petroleo|" +
+      "petroleumsressursar|" +
+      "petroli|" +
+      "petroliera|" +
+      "petrolio|" +
+      "petrolio\\s+greggio|" +
+      "petrolioa|" +
+      "premog|" +
+      "produits\\s+p\u00e9troliers|" +
+      "qymyr|" +
+      "raaka\u00f6ljy|" +
+      "ropa|" +
+      "ropa\\s+naftowa|" +
+      "ruwe\\s+olie|" +
+      "steenkolen|" +
+      "steenkool|" +
+      "steinolje|" +
+      "stein\u00f6l|" +
+      "toornafta|" +
+      "ugalj|" +
+      "ugljen|" +
+      "uhlie|" +
+      "vuori\u00f6ljy|" +
+      "\u00e9nergie\\s+fossile|" +
+      "\u03b1\u03c1\u03b3\u03cc\\s+\u03c0\u03b5\u03c4\u03c1\u03ad\u03bb\u03b1\u03b9\u03bf|" +
+      "\u03b3\u03b1\u03b9\u03ac\u03bd\u03b8\u03c1\u03b1\u03ba\u03b1\u03c2|" +
+      "\u03bf\u03c1\u03c5\u03ba\u03c4\u03ac\\s+\u03ba\u03b1\u03cd\u03c3\u03b9\u03bc\u03b1|" +
+      "\u03c0\u03b5\u03c4\u03c1\u03ad\u03bb\u03b1\u03b9\u03bf|" +
+      "\u0622\u0628\u0627\u0631\\s+\u0627\u0644\u0646\u0641\u0637|" +
+      "\u0627\u0644\u0628\u062a\u0631\u0648\u0644|" +
+      "\u0627\u0644\u0628\u062a\u0631\u0648\u0644\\s+\u0627\u0644\u062e\u0627\u0645|" +
+      "\u0627\u0644\u0637\u0627\u0642\u0629\\s+\u0627\u0644\u0623\u062d\u0641\u0648\u0631\u064a\u0629|" +
+      "\u0627\u0644\u0641\u062d\u0645\\s+\u0627\u0644\u062d\u062c\u0631\u064a|" +
+      "\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a\\s+\u0627\u0644\u0646\u0641\u0637\u064a\u0629|" +
+      "\u0627\u0644\u0646\u0641\u0637|" +
+      "\u0627\u0644\u0646\u0641\u0637\\s+\u0627\u0644\u062e\u0627\u0645|" +
+      "\u0627\u0647\u0645\u064a\u0629\\s+\u0627\u0644\u0628\u062a\u0631\u0648\u0644|" +
+      "\u0628\u062a\u0631\u0648\u0644|" +
+      "\u062a\u0627\u0631\u064a\u062e\\s+\u0635\u0646\u0627\u0639\u0629\\s+\u0628\u062a\u0631\u0648\u0644|" +
+      "\u0646\u0634\u0627\u0629\\s+\u0627\u0644\u0628\u062a\u0631\u0648\u0644|" +
+      "\u0646\u0641\u0637\u064a|" +
+      "\u0648\u0642\u0648\u062f\\s+\u0623\u062d\u0641\u0648\u0631\u064a|" +
+      // <<< generated
       "coal|lignite|fossil|oil|petroleum|charbon|fossile|p\u00e9trole|" +
         "\u03ac\u03bd\u03b8\u03c1\u03b1\u03ba\u03b1?\u03c2?|\u03bb\u03b9\u03b3\u03bd\u03af\u03c4\u03b7?\u03c2?|\u03c0\u03b5\u03c4\u03c1\u03ad\u03bb\u03b1\u03b9\u03bf|\u03bf\u03c1\u03c5\u03ba\u03c4\u03ac|" +
         "\u0627\u0644\u0641\u062d\u0645|\u0641\u062d\u0645|\u0627\u0644\u0646\u0641\u0637|\u0646\u0641\u0637|\u0623\u062d\u0641\u0648\u0631\u064a|\u0627\u0644\u0628\u062a\u0631\u0648\u0644",
@@ -218,6 +450,176 @@ export const SUBJECT_CONVENTIONS = [
   {
     id: "water",
     match: edged(
+      // ROUND SIX, task LANG — generated from `skills/doctrine/references/concept-labels.json`,
+      // measured once from Wikidata's own labels and aliases and VENDORED; the hand-written four
+      // languages follow below and are unchanged. A phrase whose letters `scriptsWithNoConvention`
+      // can already flag is not here — that net names it, this table names what no character test
+      // can see.
+      // >>> generated: water — bun run scripts/concept-labels.mjs --write
+      "abhainn|" +
+      "acide\\s+hydroxique|" +
+      "acqua|" +
+      "acqua\\s+leggera|" +
+      "acqua\\s+meteorica|" +
+      "acque\\s+meteoriche|" +
+      "agua\\s+pura|" +
+      "aigua|" +
+      "alagamento|" +
+      "asolagamento|" +
+      "auga|" +
+      "blaues\\s+gold|" +
+      "cheia|" +
+      "csapad\u00e9k|" +
+      "deflusso|" +
+      "dihidrooxigen|" +
+      "dihydridooxygen|" +
+      "dihydrogen\\s+monoxide|" +
+      "dihydrogen\\s+oxide|" +
+      "dihydrogenmonoxid|" +
+      "dihydrooxig\u00e8ne|" +
+      "divetymonoksidi|" +
+      "divetyoksidi|" +
+      "divodikov\\s+monoksid|" +
+      "div\u00e4teoxid|" +
+      "droogte|" +
+      "droughts|" +
+      "drouth|" +
+      "d\u00fcrre|" +
+      "estiagem|" +
+      "fiume|" +
+      "fiumi|" +
+      "flaum|" +
+      "fleuve|" +
+      "flod|" +
+      "flom|" +
+      "flooding|" +
+      "floodwater|" +
+      "fluss|" +
+      "folyam|" +
+      "hochwasser|" +
+      "hydrogen\\s+hydroxide|" +
+      "hydrogen\\s+oxide|" +
+      "hydroksyylihappo|" +
+      "ibai|" +
+      "ibaia|" +
+      "ibaiak|" +
+      "inondazione|" +
+      "inondazioni|" +
+      "inundacion|" +
+      "joki|" +
+      "krituliai|" +
+      "kuivuus|" +
+      "kuivuuskausi|" +
+      "lehorte|" +
+      "lumi|" +
+      "nedburd|" +
+      "nederb\u00f6rd|" +
+      "neerslag|" +
+      "nehir|" +
+      "niederschlag|" +
+      "oborina|" +
+      "oksidaani|" +
+      "oksidan|" +
+      "oksydan|" +
+      "opad\\s+atmosferyczny|" +
+      "ossidano|" +
+      "overstroming|" +
+      "oxidan|" +
+      "oxidane|" +
+      "padavina|" +
+      "padavine|" +
+      "poplava|" +
+      "potvynis|" +
+      "povodenj|" +
+      "precipitacion|" +
+      "precipitazione|" +
+      "precipitazione\\s+atmosferica|" +
+      "precipitazione\\s+meteorologica|" +
+      "precipitazioni|" +
+      "precipitazioni\\s+atmosferiche|" +
+      "precipitazioni\\s+meteorologiche|" +
+      "prezipitazio|" +
+      "pr\u00e9cipitations|" +
+      "pure\\s+water|" +
+      "pures\\s+wasser|" +
+      "p\u00ebrmbytja|" +
+      "reka|" +
+      "reshja|" +
+      "rieka|" +
+      "rijeka|" +
+      "rios|" +
+      "rivier|" +
+      "rzeka|" +
+      "r\u00e2uri|" +
+      "sadanta|" +
+      "sademed|" +
+      "sadem\u00e4\u00e4r\u00e4|" +
+      "sausra|" +
+      "sausums|" +
+      "seca|" +
+      "secada|" +
+      "secas|" +
+      "seceta|" +
+      "secete|" +
+      "sequedad|" +
+      "sequera|" +
+      "sequia|" +
+      "sequias|" +
+      "siccit\u00e0|" +
+      "sucho|" +
+      "susza|" +
+      "s\u00e9cheresses|" +
+      "that\u00ebsira|" +
+      "tlenek\\s+wodoru|" +
+      "torka|" +
+      "triomach|" +
+      "tulva|" +
+      "uholde|" +
+      "uisce|" +
+      "vand|" +
+      "vanddamp|" +
+      "vandis|" +
+      "vanduo|" +
+      "vann|" +
+      "vatn|" +
+      "vatten|" +
+      "vesi|" +
+      "voda|" +
+      "vodikov\\s+hidroksid|" +
+      "v\u00e4tehydroxid|" +
+      "wasser|" +
+      "watersnood|" +
+      "woda|" +
+      "\u00f6versv\u00e4mning|" +
+      "\u00fcberflutung|" +
+      "\u00fcleujutus|" +
+      "\u03b1\u03bd\u03bf\u03bc\u03b2\u03c1\u03af\u03b1|" +
+      "\u03b4\u03b9\u03c5\u03b4\u03c1\u03bf\u03be\u03c5\u03b3\u03cc\u03bd\u03bf|" +
+      "\u03bd\u03b5\u03c1\u03cc|" +
+      "\u03be\u03b7\u03c1\u03b1\u03c3\u03af\u03b1|" +
+      "\u03c0\u03bb\u03b7\u03bc\u03bc\u03cd\u03c1\u03b1|" +
+      "\u03c0\u03bf\u03c4\u03ac\u03bc\u03b9|" +
+      "\u03c0\u03bf\u03c4\u03b1\u03bc\u03cc\u03c2|" +
+      "\u03c5\u03b5\u03c4\u03cc\u03c2|" +
+      "\u03cd\u03b4\u03c9\u03c1|" +
+      "\u0623\u0645\u0637\u0627\u0631|" +
+      "\u0623\u0646\u0647\u0627\u0631|" +
+      "\u0623\u0646\u0647\u0631|" +
+      "\u0627\u0644\u0623\u0646\u0647\u0627\u0631|" +
+      "\u0627\u0644\u0627\u0646\u0647\u0627\u0631|" +
+      "\u0627\u0644\u062c\u0641\u0627\u0641|" +
+      "\u0627\u0644\u0645\u0627\u0621|" +
+      "\u0627\u0644\u0645\u064a\u0627\u0647|" +
+      "\u0627\u0644\u0646\u0647\u0631|" +
+      "\u0627\u0646\u0647\u0627\u0631|" +
+      "\u062c\u0641\u0627\u0641|" +
+      "\u062c\u0641\u0627\u0641\\s+\u0645\u0637\u0644\u0642|" +
+      "\u0641\u064a\u0636\u0627\u0646|" +
+      "\u0645\u064a\u0627\u0647|" +
+      "\u0646\u0648\u0628\u0629\\s+\u062c\u0627\u0641\u0629|" +
+      "\u0647\u0637\u0648\u0644|" +
+      "\u0647\u0637\u0648\u0644\\s+\u0627\u0644\u0623\u0645\u0637\u0627\u0631|" +
+      // <<< generated
       "water|river|rivers|rainfall|flood|precipitation|drought|" +
         "eau|rivi\u00e8res?|pluie|inondation|s\u00e9cheresse|" +
         "\u03bd\u03b5\u03c1\u03cc|\u03bd\u03b5\u03c1\u03bf\u03cd|\u03c0\u03bf\u03c4\u03b1\u03bc\u03cc\u03c2?|\u03c0\u03bf\u03c4\u03b1\u03bc\u03bf\u03cd|\u03b2\u03c1\u03bf\u03c7\u03ae|\u03c0\u03bb\u03b7\u03bc\u03bc\u03cd\u03c1\u03b1|\u03be\u03b7\u03c1\u03b1\u03c3\u03af\u03b1|" +
@@ -231,6 +633,96 @@ export const SUBJECT_CONVENTIONS = [
   {
     id: "heat",
     match: edged(
+      // ROUND SIX, task LANG — generated from `skills/doctrine/references/concept-labels.json`,
+      // measured once from Wikidata's own labels and aliases and VENDORED; the hand-written four
+      // languages follow below and are unchanged. A phrase whose letters `scriptsWithNoConvention`
+      // can already flag is not here — that net names it, this table names what no character test
+      // can see.
+      // >>> generated: heat — bun run scripts/concept-labels.mjs --write
+      "alt\u00e9ration\\s+climatique\\s+anthropique|" +
+      "anthropogenic\\s+global\\s+warming|" +
+      "aquecimento\\s+global|" +
+      "bero\\s+bolada|" +
+      "berotze\\s+globala|" +
+      "calentamiento\\s+global|" +
+      "calorada|" +
+      "caniculaire|" +
+      "changement\\s+climatique|" +
+      "changement\\s+climatique\\s+anthropique|" +
+      "chauffage\\s+global|" +
+      "climate\\s+warming|" +
+      "d\u00e9r\u00e8glement\\s+climatique|" +
+      "erderhitzung|" +
+      "erderw\u00e4rmung|" +
+      "escalfament\\s+global|" +
+      "extreme\\s+heat|" +
+      "extremhitzeereignis|" +
+      "globaalne\\s+soojenemine|" +
+      "global\\s+heating|" +
+      "global\\s+oppvarming|" +
+      "global\\s+opvarmning|" +
+      "global\\s+uppv\u00e4rmning|" +
+      "global\\s+warming|" +
+      "globale\\s+erderhitzung|" +
+      "globale\\s+erderw\u00e4rmung|" +
+      "globalne\\s+ocieplenie|" +
+      "globalno\\s+segrevanje|" +
+      "globalno\\s+zatopljenje|" +
+      "heat\\s+wave|" +
+      "helleaalto|" +
+      "hiti|" +
+      "hittegolf|" +
+      "hitzeanomalie|" +
+      "hitzeglocke|" +
+      "hitzekuppel|" +
+      "hitzewelle|" +
+      "ilmaston\\s+l\u00e4mpeneminen|" +
+      "kaitra|" +
+      "karstuma\\s+vilnis|" +
+      "klimawandel|" +
+      "kuumalaine|" +
+      "l\u00e4mp\u00f6aalto|" +
+      "l\u00e4mp\u00f6tila|" +
+      "ngrohja\\s+globale|" +
+      "ocieplenie\\s+klimatu|" +
+      "perturbation\\s+climatique|" +
+      "perturbation\\s+climatique\\s+anthropique|" +
+      "podnebna\\s+kriza|" +
+      "quecemento\\s+global|" +
+      "quentamento\\s+global|" +
+      "riscaldamento\\s+climatico|" +
+      "riscaldamento\\s+globale|" +
+      "r\u00e9chauffement\\s+climatique|" +
+      "segrevanje\\s+zemlje|" +
+      "skwar|" +
+      "spiekota|" +
+      "surriscaldamento\\s+climatico|" +
+      "surriscaldamento\\s+globale|" +
+      "temperatur|" +
+      "temperatura|" +
+      "temperaturen|" +
+      "temperatuur|" +
+      "tenperatura|" +
+      "teocht|" +
+      "teplota|" +
+      "tonn\\s+teasa|" +
+      "t\u00e9amh\\s+domhanda|" +
+      "vlna\\s+veder|" +
+      "v\u00e4rmeb\u00f6lja|" +
+      "zmiana\\s+klimatu|" +
+      "\u03b8\u03b5\u03c1\u03bc\u03bf\u03ba\u03c1\u03b1\u03c3\u03af\u03b1|" +
+      "\u03ba\u03b1\u03cd\u03c3\u03c9\u03bd\u03b1\u03c2|" +
+      "\u03ba\u03cd\u03bc\u03b1\\s+\u03ba\u03b1\u03cd\u03c3\u03c9\u03bd\u03b1|" +
+      "\u03c0\u03b1\u03b3\u03ba\u03cc\u03c3\u03bc\u03b9\u03b1\\s+\u03b8\u03ad\u03c1\u03bc\u03b1\u03bd\u03c3\u03b7|" +
+      "\u03c0\u03b1\u03b3\u03ba\u03cc\u03c3\u03bc\u03b9\u03b1\\s+\u03c5\u03c0\u03b5\u03c1\u03b8\u03ad\u03c1\u03bc\u03b1\u03bd\u03c3\u03b7|" +
+      "\u0627\u062d\u062a\u0628\u0627\u0633\\s+\u062d\u0631\u0627\u0631\u064a|" +
+      "\u0627\u0644\u0627\u062d\u062a\u0628\u0627\u0633\\s+\u0627\u0644\u062d\u0631\u0627\u0631\u064a|" +
+      "\u0627\u0644\u0627\u062d\u062a\u0631\u0627\u0631\\s+\u0627\u0644\u0639\u0627\u0644\u0645\u064a|" +
+      "\u062a\u063a\u064a\u064a\u0631\\s+\u0627\u0644\u0645\u0646\u0627\u062e|" +
+      "\u062f\u0631\u062c\u0629\\s+\u0627\u0644\u062d\u0631\u0627\u0631\u0629|" +
+      "\u062f\u0631\u062c\u0629\\s+\u062d\u0631\u0627\u0631\u0629|" +
+      "\u0645\u0648\u062c\u0629\\s+\u062d\u0627\u0631\u0629|" +
+      // <<< generated
       "heat|heatwave|temperature|warming|canicule|chaleur|temp\u00e9rature|r\u00e9chauffement|" +
         "\u03b8\u03b5\u03c1\u03bc\u03bf\u03ba\u03c1\u03b1\u03c3\u03af\u03b1|\u03ba\u03b1\u03cd\u03c3\u03c9\u03bd\u03b1?\u03c2?|\u03c5\u03c0\u03b5\u03c1\u03b8\u03ad\u03c1\u03bc\u03b1\u03bd\u03c3\u03b7|" +
         "\u0627\u0644\u062d\u0631\u0627\u0631\u0629|\u062d\u0631\u0627\u0631\u0629|\u0627\u0644\u0627\u062d\u062a\u0631\u0627\u0631|\u0627\u062d\u062a\u0631\u0627\u0631",

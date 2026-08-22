@@ -92,23 +92,45 @@ describe("the denominator check knows the limit of its own lexicon", () => {
     expect(resolved.verdict).toBe("supported");
   });
 
-  // …and says out loud, where the JOURNALIST reads it, that "no denominator here" is an answer
-  // given in four languages. `bevolking` is plain ASCII: no script net and no letter net can see it.
-  it("states the lexicon's limit on a supported raw count, naming the sibling it read", () => {
-    const profile = {
+  // ROUND SIX, task LANG — THE ASCII HALF OF THE HOLE, AND IT IS CLOSED BY DATA RATHER THAN BY A
+  // STATED LIMIT. `bevolking` is Dutch for population and is plain ASCII: no script net and no
+  // letter net can ever see it, and until the vendored label table landed this sentence came back
+  // `supported` — the round-four raw-count downgrade switched OFF by a word nobody had taught the
+  // list. It is now the SAME word as `population` as far as this check is concerned, which is the
+  // only acceptable answer: a check may not be more sure of itself because it read less.
+  function tripsTable(denominatorName: string) {
+    return {
       columns: [
         { name: "gemeente", type: "text", min: null, max: null, sum: null },
         { name: "trips", type: "number", min: 180, max: 416, sum: 596 },
-        { name: "bevolking", type: "number", min: 91000, max: 240000, sum: 331000 },
+        { name: denominatorName, type: "number", min: 91000, max: 240000, sum: 331000 },
       ],
       rows: [
-        { gemeente: "Amsterdam", trips: 416, bevolking: 240000 },
-        { gemeente: "Utrecht", trips: 180, bevolking: 91000 },
+        { gemeente: "Amsterdam", trips: 416, [denominatorName]: 240000 },
+        { gemeente: "Utrecht", trips: 180, [denominatorName]: 91000 },
       ],
     };
-    const resolved = resolveGrounding("Amsterdam has the most trips of the two.", profile);
+  }
+
+  it("reads a Dutch denominator, so the raw-count downgrade fires on it too", () => {
+    const resolved = resolveGrounding("Amsterdam has the most trips of the two.", tripsTable("bevolking"));
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(resolved.detail).toContain("\"bevolking\" sits beside \"trips\"");
+  });
+
+  it("answers Dutch and English identically, which is the whole point of measuring the table", () => {
+    const dutch = resolveGrounding("Amsterdam has the most trips of the two.", tripsTable("bevolking"));
+    const english = resolveGrounding("Amsterdam has the most trips of the two.", tripsTable("population"));
+    expect(dutch.verdict).toBe(english.verdict);
+  });
+
+  // …and where the table STILL misses — a language outside the 39 the vendored extract declares,
+  // written in the declared repertoire — the limit is said out loud instead. Swahili `wakazi` is
+  // that case, and there will always be one, which is why the stated limit is not retired.
+  it("states the lexicon's limit on a supported raw count it could not classify", () => {
+    const resolved = resolveGrounding("Amsterdam has the most trips of the two.", tripsTable("wakazi"));
     expect(resolved.verdict).toBe("supported");
-    expect(resolved.detail).toContain("bevolking");
+    expect(resolved.detail).toContain("wakazi");
     expect(resolved.detail).toContain("English, French, Greek and Arabic");
   });
 });
