@@ -353,3 +353,75 @@ describe("persisted producer state", () => {
     expect(checkStoryboard(meta).join(" ")).toContain("does not implement");
   });
 });
+
+// ROUND SEVEN, ITEM 5 — THE MEASUREMENT THAT COULD NOT REACH THE DECISION IT GOVERNS.
+//
+// On `stories/real-owid-life-expectancy`, a map/web beat on a dark-ground newsroom, `runPreflight`
+// had ALREADY measured `capabilities.datawrapper.surface = {ground: "#16191B", static: true,
+// web: false}` — a published Datawrapper embed follows the READER's colour scheme and defaults to
+// light, so it is the one form no request can steer. Round five moved that question early on
+// purpose. And then `formatProducerGate({treatment, match})` took no capabilities at all and
+// printed "The selected Choropleth treatment is available in Datawrapper … Datawrapper or custom?",
+// saying nothing about the surface. `surfaceGap`, the seam written to say it in words, was called
+// by NOTHING but its own test — a requirement that cannot fire, which is worse than a missing one.
+//
+// A journalist who answered "Datawrapper" there got a live PUBLISHED chart on the newsroom's
+// account and a refusal at export. So the gate takes the seam, says what was measured, and
+// `confirmProducerChoice` refuses the answer rather than recording it.
+describe("the producer gate reads the surface preflight already measured", () => {
+  const match = { treatment: "Choropleth", medium: "map", datawrapperTypes: ["d3-maps-choropleth"] };
+  const darkGround = { datawrapper: { surface: { ground: "#16191B", static: true, web: false } } };
+
+  it("still offers Datawrapper for a static beat, which CAN be asked for either side", () => {
+    const text = formatProducerGate({
+      treatment: "Choropleth",
+      match,
+      format: "static",
+      capabilities: darkGround,
+    });
+    expect(text).toContain("Datawrapper or custom?");
+    expect(text).not.toMatch(/unavailable/i);
+  });
+
+  it("withdraws Datawrapper for a web beat on a ground its embed cannot carry, naming the ground", () => {
+    const text = formatProducerGate({
+      treatment: "Choropleth",
+      match,
+      format: "web",
+      capabilities: darkGround,
+    });
+    expect(text).toContain("#16191B");
+    expect(text).toMatch(/embed/i);
+    expect(text).not.toContain("Datawrapper or custom?");
+  });
+
+  it("says nothing about a surface nobody measured", () => {
+    const text = formatProducerGate({ treatment: "Choropleth", match, format: "web" });
+    expect(text).toContain("Datawrapper or custom?");
+    expect(text).not.toMatch(/ground/i);
+  });
+
+  it("refuses to record the answer the measurement already rules out", () => {
+    expect(() =>
+      confirmProducerChoice({
+        medium: "map",
+        format: "web",
+        treatment: "Choropleth",
+        producer: "datawrapper",
+        capabilities: darkGround,
+      }),
+    ).toThrow(/#16191B/);
+  });
+
+  it("still records `custom` on that same ground, which is the answer that works", () => {
+    expect(
+      confirmProducerChoice({
+        medium: "map",
+        format: "web",
+        treatment: "Choropleth",
+        producer: "custom",
+        capabilities: darkGround,
+      }),
+    ).toEqual({ producer: "custom", datawrapperType: null });
+  });
+});

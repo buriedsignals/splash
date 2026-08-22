@@ -389,8 +389,13 @@ check it with `datawrapperMatch({medium, format, treatment})` from
 - No mapping, or a format Datawrapper cannot fulfil: ask nothing. The absence of producer fields is
   the canonical custom state for an unmapped treatment; continue because Datawrapper was never a
   faithful option for this chosen treatment.
-- A faithful mapping: render `formatProducerGate(...)`, ask whether the journalist prefers
-  Datawrapper or a custom build, and **end the turn**. Do not run production in the same turn.
+- A faithful mapping: render `formatProducerGate({treatment, match, format, capabilities})`, ask
+  whether the journalist prefers Datawrapper or a custom build, and **end the turn**. Do not run
+  production in the same turn.
+- A faithful mapping the newsroom's GROUND cannot carry in this format: the same call states what
+  preflight measured — the ground, and that a published Datawrapper embed follows the reader's own
+  colour scheme — and names custom as the path that remains. There is no question there, because
+  the Datawrapper answer to it is one `confirmProducerChoice` refuses.
 - On the next reply: persist `producer: custom`, or persist `producer: datawrapper` together with
   the catalogue's exact `datawrapperType`. Validate it through `confirmProducerChoice(...)`.
 

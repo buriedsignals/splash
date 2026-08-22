@@ -100,8 +100,40 @@ export function producerGap(slot) {
   return null;
 }
 
-export function confirmProducerChoice({ medium, format, treatment, producer, datawrapperType }) {
+/**
+ * WHAT PREFLIGHT ALREADY MEASURED ABOUT THE SURFACE A DELEGATED RENDER COMES BACK ON, read here
+ * rather than re-derived — `null` when nothing was measured, which is not the same as "it is fine".
+ *
+ * ROUND SEVEN, on `stories/real-owid-life-expectancy`. `runPreflight` returned
+ * `capabilities.datawrapper.surface = {ground: "#16191B", static: true, web: false}`: a published
+ * Datawrapper embed follows the READER's own colour scheme and defaults to light, so it is the one
+ * form no request can steer, while a static export can be asked for the matching side. Round five
+ * moved that question early precisely so a later phase could offer honestly. Then this gate — the
+ * phase that asks "Datawrapper or custom?" — took `{treatment, match}` and had no seam for
+ * capabilities at all, so it offered the embed anyway; and `surfaceGap`, the seam written to say it
+ * in words, was called by NOTHING but its own test. A journalist who answered "Datawrapper" got a
+ * live published chart on the newsroom's account and a refusal at export.
+ *
+ * This function does not re-decide anything. `surface[format]` is preflight's own boolean, read as
+ * it stands; only the sentence is this gate's, because a gate must say what it withdraws in the
+ * words of the question it is asking.
+ */
+function surfaceRefusal({ format, capabilities }) {
+  const surface = capabilities?.datawrapper?.surface;
+  if (!surface || !format || surface[format] !== false) return null;
+  return (
+    `Datawrapper cannot carry a ${format} beat on this newsroom's ground (${surface.ground}), which ` +
+    `preflight measured before this story existed: a published Datawrapper embed follows the ` +
+    `reader's own colour scheme and defaults to light, so it is the one form no request can steer. ` +
+    `A static Datawrapper beat still can — its export is requested on the matching surface — and so ` +
+    `can any producer that draws its own ground.`
+  );
+}
+
+export function confirmProducerChoice({ medium, format, treatment, producer, datawrapperType, capabilities }) {
   if (!PRODUCERS.has(producer)) throw new Error("producer must be custom or datawrapper");
+  const refusal = producer === "datawrapper" ? surfaceRefusal({ format, capabilities }) : null;
+  if (refusal) throw new Error(refusal);
   const match = datawrapperMatch({ medium, format, treatment });
   if (!match) {
     if (producer === "datawrapper") {
@@ -121,8 +153,21 @@ export function confirmProducerChoice({ medium, format, treatment, producer, dat
   return { producer, datawrapperType: resolvedType };
 }
 
-export function formatProducerGate({ treatment, match }) {
+export function formatProducerGate({ treatment, match, format, capabilities }) {
   if (!match) throw new Error("formatProducerGate needs a Datawrapper-supported treatment");
+  const refusal = surfaceRefusal({ format, capabilities });
+  if (refusal) {
+    // NOT A QUESTION. There is one production path left, so this states the measurement and says
+    // what it leaves — asking "Datawrapper or custom?" here would be offering an answer the next
+    // call refuses, which is the shape that put a live chart on a newsroom account.
+    return [
+      `The selected **${treatment}** treatment is available in Datawrapper, but not for this beat.`,
+      "",
+      `${refusal}`,
+      "",
+      "So this beat is **custom** — a bespoke Splash component with full control over geometry and interaction, drawn on the ground this newsroom recorded.",
+    ].join("\n");
+  }
   const providerLabels = match.datawrapperTypes
     .map((id) => DATAWRAPPER_CATALOG.visualizationTypes.find((row) => row.id === id)?.label ?? id)
     .join(" / ");

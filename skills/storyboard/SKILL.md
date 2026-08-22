@@ -410,10 +410,20 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    - **After ⑩, and only after the journalist chooses a treatment** —
      `datawrapperMatch({medium, format, treatment})` checks the pinned provider catalogue. No match
      means no extra question, no producer fields, and production remains custom. A match means
-     `formatProducerGate(...)` presents the Datawrapper-or-custom preference as the final action of
-     the turn. On the next reply, `confirmProducerChoice(...)` records either
-     `producer: custom`, or `producer: datawrapper` plus the exact `datawrapperType`. This is a
-     producer choice for the chosen treatment, never another treatment candidate.
+     `formatProducerGate({treatment, match, format, capabilities})` presents the
+     Datawrapper-or-custom preference as the final action of the turn. On the next reply,
+     `confirmProducerChoice({medium, format, treatment, producer, datawrapperType, capabilities})`
+     records either `producer: custom`, or `producer: datawrapper` plus the exact
+     `datawrapperType`. This is a producer choice for the chosen treatment, never another treatment
+     candidate.
+     **Pass `capabilities` — preflight's own report — to both.** `capabilities.datawrapper.surface`
+     was measured before this story existed and says which of the delegate's two forms this
+     newsroom's ground can carry: a static export can be requested on the matching side, a published
+     embed follows the READER's colour scheme and defaults to light. Where the surface rules the
+     chosen format out, the gate STATES the measurement and the ground instead of asking a question
+     whose Datawrapper answer `confirmProducerChoice` would then refuse. Omit `capabilities` and
+     nothing is claimed about a surface — which is the honest answer when nobody measured one, and
+     not the same as the surface being fine.
 
 ## Quick start
 
