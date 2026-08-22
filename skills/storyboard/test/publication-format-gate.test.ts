@@ -3,7 +3,12 @@ import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatPublicationFormatGate, treatmentFormatGap } from "../scripts/format-gate.mjs";
+import { readFileSync } from "node:fs";
+import {
+  TREATMENT_FORMAT_GAPS,
+  formatPublicationFormatGate,
+  treatmentFormatGap,
+} from "../scripts/format-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import { whereIs } from "../../splash/scripts/where.mjs";
 import { HOST_ACCEPTANCE } from "./fixtures/publication-format-host-acceptance.mjs";
@@ -418,5 +423,85 @@ describe("a treatment the toolchain cannot produce in a format", () => {
         options: OPTIONS,
       }),
     ).toBe(HOST_ACCEPTANCE.assistantTurn);
+  });
+});
+
+// ROUND SEVEN, ITEM 2. `TREATMENT_FORMAT_GAPS` was a HAND-TYPED list of one cell, and at least two
+// more were already unreachable: `treatmentFormatGap("Cartogram", "web")` and
+// `treatmentFormatGap("Contour / isoline", "web")` both returned null, so a slot could record
+// `reachable: yes` for a treatment with no producer anywhere — while `map-web`'s own SKILL.md says
+// in as many words that "what this skill can draw is what it has machinery for: proportional
+// symbols, choropleths, dot density, hex grids and locators".
+//
+// A POPULATION TYPED BY HAND WHERE IT COULD BE DERIVED is the shape this repository keeps being
+// burned by, and the previous version's own comment argued the derivation did not exist: the
+// catalogue's `treatments[].formats` carries all four formats for all forty-one treatments and
+// discriminates nothing, and proof coverage would withdraw twenty treatments nobody has rendered.
+// Both are true, and both look at the TREATMENT side. The declaration that discriminates is on the
+// PRODUCER side, where it was already written in prose: a format pair now declares the treatments
+// its producing skill holds machinery for, and the gaps are every treatment of that medium the
+// declaration does not name. One closed list of five covers three gaps and stays correct when a
+// forty-first sheet lands — the new sheet is a gap until a producer claims it, rather than a silent
+// pass.
+describe("the gaps are derived from what a producer can be found for", () => {
+  it("refuses every map treatment map-web has no machinery for, not just the one that was typed", () => {
+    for (const treatment of ["Cartogram", "Contour / isoline", "Flow map (route)"]) {
+      expect(treatmentFormatGap(treatment, "web")).toMatch(/no producer/);
+    }
+  });
+
+  it("keeps the five map-web does draw, in the format it draws them in", () => {
+    for (const treatment of [
+      "Proportional symbol (symbol / bubble map)",
+      "Choropleth",
+      "Dot density",
+      "Hex grid (spatial binning)",
+      "Locator",
+    ])
+      expect(treatmentFormatGap(treatment, "web")).toBe(null);
+  });
+
+  it("says nothing about the formats those same treatments ARE produced in", () => {
+    for (const format of ["static", "video", "scrolly"])
+      for (const treatment of ["Cartogram", "Contour / isoline", "Flow map (route)"])
+        expect(treatmentFormatGap(treatment, format)).toBe(null);
+  });
+
+  it("withdraws nothing from a medium whose producers draw whatever the beat needs", () => {
+    for (const format of ["static", "web", "video", "scrolly"])
+      for (const treatment of ["Beeswarm", "Treemap", "Sankey", "Line"])
+        expect(treatmentFormatGap(treatment, format)).toBe(null);
+  });
+
+  it("reads the treatment by the same name rule the producer gate does", () => {
+    for (const spelling of ["Contour / isoline", "isoline", "contour", "Contour map"])
+      expect(treatmentFormatGap(spelling, "web")).toMatch(/no producer/);
+  });
+
+  it("names what the producer DOES draw, and the sheet to read", () => {
+    const why = treatmentFormatGap("Cartogram", "web") ?? "";
+    expect(why).toContain("map-web");
+    expect(why).toContain("Choropleth");
+    expect(why).toContain("map-beat/references/types/cartogram.md");
+    // And the formats this treatment IS reachable in, named rather than left for the reader to work
+    // out: a refusal that does not say where to go next is half an answer.
+    expect(why).toContain("static");
+  });
+
+  // THE POPULATION IS THE SUBTRACTION, not a list. A forty-first map sheet lands as a GAP until a
+  // producer claims it, which is the direction that fails safe — the typed list failed the other
+  // way for two whole treatments.
+  it("names exactly the map treatments map-web does not claim, and nothing else", () => {
+    const catalogue = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "references", "visual-catalog.json"), "utf8"),
+    );
+    const mapTreatments = catalogue.treatments.filter((row: any) => row.medium === "map");
+    expect(mapTreatments).toHaveLength(8);
+    const gaps = Object.keys(TREATMENT_FORMAT_GAPS).sort();
+    expect(gaps).toEqual(["map.cartogram/web", "map.contour-isoline/web", "map.flow-map/web"]);
+    for (const treatment of mapTreatments) {
+      const gap = treatmentFormatGap(treatment.label, "web");
+      expect(gap === null).toBe(!gaps.includes(`${treatment.id}/web`));
+    }
   });
 });
