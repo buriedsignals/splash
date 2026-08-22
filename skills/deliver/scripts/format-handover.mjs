@@ -214,6 +214,44 @@ function refuseMaintainerText(field, value) {
   );
 }
 
+// A JOURNALIST NEVER TYPED AN HTML ENTITY, SO ONE ARRIVING HERE IS A SCRAPE — ROUND-SEVEN D16.
+//
+// `HANDOVER.md` is Markdown, pasted into a CMS. On a real story it came out reading
+// `marks the world&#x27;s own figure, 30.3%`, because nothing in this toolchain RECORDS a beat's
+// alt text: it exists inside the rendered artefact and nowhere a later phase can read it, so the
+// runner read it back out of the delivered page's own `<desc>` — where React had escaped it — and
+// handed that over. Neither this function nor `refuseMaintainerText` looked.
+//
+// DECODING IT WOULD BE THE WRONG FIX. The entity is not a typo to repair, it is the mark of text
+// lifted out of markup, and a function that quietly repaired it would leave the scrape in place and
+// silent — the shape of defect this project keeps finding. So it is refused, in the same shape as a
+// maintainer-facing sentence, and the refusal names the file the text should have been read from.
+//
+// The pattern is a real entity reference and nothing looser: `&` followed by a name or a numeric
+// reference and closed by `;`. "R&D spending" and "Ember & Our World in Data" are ordinary prose
+// and pass. The accepted cost, stated rather than discovered: a journalist writing about markup by
+// name cannot say so in a hand-over — the same trade already taken above for a caveat that happens
+// to name a filename, and no real alt text, placement, credit or caveat is about markup.
+const HTML_ENTITY = /&(#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});/;
+
+// WHERE A BEAT'S ALT TEXT IS RECORDED, named here because this is where its absence surfaces.
+// One file beside the beat's own `BRIEF.md`, holding the sentence and nothing else, written by the
+// producer at the moment it writes the artefact — so delivery reads a record rather than reopening
+// a render, and a correction to it is a change a later phase can SEE.
+export const ALT_TEXT_FILE = "ALT.md";
+
+function refuseMarkupEscapes(field, value) {
+  const found = String(value).match(HTML_ENTITY);
+  if (!found) return;
+  throw new Error(
+    `${field} carries the HTML entity ${JSON.stringify(found[0])}, which no journalist typed: ` +
+      `this text was read back out of a rendered artefact instead of out of the record that holds ` +
+      `it. A beat's alt text is recorded in beats/<outputId>/${ALT_TEXT_FILE} and its placement, ` +
+      `credit and caveat are hand fields in STORYBOARD.md — hand over what is written there, not ` +
+      `what the page escaped.`,
+  );
+}
+
 // What each delivered file is FOR, by extension. A journalist holding a PNG and an SVG needs to be
 // told which one goes to the CMS; "here are two files" is what the run said and it is not an answer.
 const ROLE_BY_EXTENSION = {
@@ -421,7 +459,9 @@ export function formatHandover({ files, placement, alt, credit, caveat, format, 
   // never printed whole — only their basenames reach the page — so nothing about where this
   // toolchain lives travels with them.
   for (const [field, value] of Object.entries({ placement, alt, credit, caveat })) {
-    if (value) refuseMaintainerText(field, value);
+    if (!value) continue;
+    refuseMaintainerText(field, value);
+    refuseMarkupEscapes(field, value);
   }
 
   const lines = [

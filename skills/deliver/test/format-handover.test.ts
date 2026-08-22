@@ -129,6 +129,63 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
     ).toThrow(/NOTES-FOR-MAINTAINER\.md/);
   });
 
+  // HTML ENTITIES REACHED A NEWSROOM — D16, measured on a real story.
+  //
+  // Nothing records a beat's alt text, so the runner read it back out of the delivered page's own
+  // `<desc>`, where React had escaped it. `HANDOVER.md` is MARKDOWN, pasted into a CMS, and it came
+  // out as:
+  //
+  //   > A single horizontal strip of 211 dots ... marks the world&#x27;s own figure, 30.3% ...
+  //
+  // `formatHandover` neither decoded nor refused them; nothing in this file looked. An entity in a
+  // journalist-facing field is never something a journalist typed — it is the mark of text lifted
+  // out of markup — so it is refused here, in the same shape as a maintainer-facing sentence, and
+  // the refusal names the recorded home the text should have come from instead.
+  //
+  // RED, before `refuseMarkupEscapes`: every case below returned a document.
+  const ESCAPED = {
+    "a named entity": "the world&amp;#x27;s own figure",
+    "an apostrophe": "the world&#39;s own figure",
+    "a hexadecimal reference": "the world&#x27;s own figure",
+    "an ampersand": "detections &amp; alerts, 2015 to 2025",
+    "an angle bracket": "values &lt; 60 years",
+  } as const;
+  for (const [name, value] of Object.entries(ESCAPED)) {
+    it(`should refuse ${name} escaped as an HTML entity in the alt text`, () => {
+      expect(() => formatHandover({ ...VALID, alt: value })).toThrow(
+        /HTML entit/,
+      );
+    });
+  }
+
+  it("should refuse an entity in every journalist-facing field, not only the alt", () => {
+    for (const field of ["placement", "alt", "credit", "caveat"]) {
+      expect(() =>
+        formatHandover({ ...VALID, [field]: "Ember &amp; others (2026)" }),
+      ).toThrow(new RegExp(`^${field} `));
+    }
+  });
+
+  it("should say where the text belongs instead, so the refusal is actionable", () => {
+    expect(() =>
+      formatHandover({ ...VALID, alt: "the world&#39;s own figure" }),
+    ).toThrow(/ALT\.md/);
+  });
+
+  // THE ACCEPTED COST, STATED. A journalist writing about markup by name loses the ability to say
+  // so in a hand-over. No real alt text, placement, credit or caveat does — every one of them is
+  // about the PICTURE or the DATA — and the same trade is already taken one function up for a
+  // caveat that happens to name a filename.
+  it("should leave an ordinary ampersand alone", () => {
+    const doc = formatHandover({
+      ...VALID,
+      credit: "Source: Ember & Our World in Data (2026)",
+      alt: "R&D spending against output, 2015 to 2025",
+    });
+    expect(doc).toContain("Source: Ember & Our World in Data (2026)");
+    expect(doc).toContain("R&D spending against output, 2015 to 2025");
+  });
+
   // THE PARAMETER SET IS THE FIRST HALF OF THE ANSWER, and nothing else guards it. The throw above
   // catches a maintainer-facing sentence arriving through a field that exists; it cannot catch
   // somebody ADDING a `notes` field and rendering whatever they like into it — which is the exact
