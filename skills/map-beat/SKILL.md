@@ -165,9 +165,15 @@ ramps, none with a bound the reveal cannot reach.**
 ## Quick start
 
 ```sh
+# the geography, first: NOTHING in this toolchain acquires country shapes, and the bake refuses
+# rather than reaching for a default that is not there. 1:50m, never 1:110m — measured, not
+# aesthetic: at 1:110m a world beat loses 64 readings to shapes that file does not carry, against 8.
+curl -sSo /tmp/map-twin/ne50.geojson \
+  https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson
+
 # the bake: one per drawn size, same bounds — the still draws 496, the video draws 620
-bun skills/map-beat/scripts/bake-plate.mjs --size 496 --out /tmp/map-twin/plate-496
-bun skills/map-beat/scripts/bake-plate.mjs --size 620 --out /tmp/map-twin/plate-620
+bun skills/map-beat/scripts/bake-plate.mjs --shapes /tmp/map-twin/ne50.geojson --size 496 --out /tmp/map-twin/plate-496
+bun skills/map-beat/scripts/bake-plate.mjs --shapes /tmp/map-twin/ne50.geojson --size 620 --out /tmp/map-twin/plate-620
 
 # rung 1: the still (~2 s). Then open it and look at it.
 bun skills/map-beat/scripts/render-map.mjs --still

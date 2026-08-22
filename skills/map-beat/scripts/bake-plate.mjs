@@ -13,9 +13,10 @@
 //  11. rings are culled by their projected box, and a ring several frames wide is a wrap, not a
 //      country.
 //
-// Usage:
-//   bun skills/map-beat/scripts/bake-plate.mjs --size 620 --out /tmp/map-twin/plate-620
-//   bun skills/map-beat/scripts/bake-plate.mjs --size 1080 --out /tmp/map-twin/plate-1080
+// Usage (the geography is NOT acquired by this toolchain — `--shapes` is required, and the refusal
+// below says how to get it):
+//   bun skills/map-beat/scripts/bake-plate.mjs --shapes ./countries.geojson --size 620 --out /tmp/map-twin/plate-620
+//   bun skills/map-beat/scripts/bake-plate.mjs --shapes ./countries.geojson --size 1080 --out /tmp/map-twin/plate-1080
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -70,7 +71,50 @@ const flag = (name, fallback) => {
 
 const size = Number(flag("--size", "620"));
 const outDir = flag("--out", `/tmp/map-twin/plate-${size}`);
-const shapesPath = flag("--shapes", "/tmp/map-twin/ne50.geojson");
+const shapesPath = flag("--shapes", null);
+
+/** WHERE THE COUNTRY SHAPES COME FROM — and the answer is "not from this tree", said out loud.
+ *
+ *  This flag used to default to `/tmp/map-twin/ne50.geojson`. No script in this tree writes that
+ *  file, and nothing in this toolchain acquires country geography at all, so the default was a path
+ *  that is never there: the bake failed at the wrong moment, with the wrong message — a bare
+ *  `ENOENT … open '/tmp/map-twin/ne50.geojson'` raised by `readFile` far below, AFTER the Splash
+ *  root had been resolved and the journalist's MapTiler key read, and on a machine that has a key,
+ *  after Chrome had been launched. That reads like a broken install. What is actually true is that
+ *  the geography has not been acquired yet, and a bake cannot acquire it: Natural Earth is ~20 MB of
+ *  public-domain GeoJSON that has no business being committed to a skill.
+ *
+ *  So the acquisition stays the producer's, and what the toolchain owes back is a REFUSAL IT CAN
+ *  ACT ON — what is missing, the command that gets it, and the flag to point at the result. Stated
+ *  HERE, beside the flag, so it costs no key and no browser; a refusal that arrives after a 15 s
+ *  settle is a refusal the producer pays for twice.
+ *
+ *  1:50m, not 1:110m, and the difference is measured: at 1:110m a world beat lost 64 readings to
+ *  shapes that do not exist in that file; at 1:50m it lost 8 (`map-web/SKILL.md`, "Producing a
+ *  choropleth", step 1). */
+const NATURAL_EARTH_50M =
+  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson";
+
+function refuseTheMissingGeography(path) {
+  const acquire =
+    `Acquire it once, beside the beat, and freeze it there:\n` +
+    `  curl -sSo ./countries.geojson \\\n    ${NATURAL_EARTH_50M}\n` +
+    `then re-run this bake with --shapes ./countries.geojson (1:50m, never 1:110m: at 1:110m a ` +
+    `world beat loses 64 readings to shapes that file does not carry, against 8 at 1:50m). Trim it ` +
+    `to the shapes the beat declares and simplify it before baking.`;
+  if (path == null)
+    throw new Error(
+      `this bake needs country shapes and nothing in this toolchain acquires them: pass --shapes ` +
+        `<file.geojson>. There is no default, because the default used to be ` +
+        `/tmp/map-twin/ne50.geojson and no script in this tree has ever written it.\n${acquire}`,
+    );
+  if (!existsSync(path))
+    throw new Error(
+      `--shapes ${path} is not there, so there is no geography to bake.\n${acquire}`,
+    );
+}
+
+refuseTheMissingGeography(shapesPath);
 const settleMs = Number(flag("--settle", "15000"));
 const sealedBrowserPath = flag("--browser", null);
 const sealedMaplibreJsPath = flag("--maplibre-js", null);
