@@ -75,6 +75,22 @@ describe("a baked plate under a declared ground", () => {
     expect(surfaceLuminance(groundFromPalette(""))).toBe(null);
     expect(plateFollowsGround({ ground: null, plate: 0.83 })).toBe(true);
   });
+
+  /**
+   * A VALUE THAT WAS NOT READ MUST NOT TRAVEL AS A VALUE THAT WAS — `surfaceLuminance`'s own doc
+   * comment says exactly this, and the consumer one screen below it used to do the opposite.
+   * Measured: `plateFollowsGround({ ground: 0.009, plate: NaN })` returned TRUE, because `side(NaN)`
+   * is neither `< DARK_SIDE` nor `> LIGHT_SIDE` and therefore resolved to "middle", the band this
+   * guard deliberately says nothing about. `null` is a caller SAYING it could not read; `NaN` is an
+   * arithmetic that failed on the way in, and no caller in this tree filters for it.
+   */
+  it("refuses to decide on a number that is not one, rather than reading it as the middle band", () => {
+    expect(() => plateFollowsGround({ ground: 0.009, plate: NaN })).toThrow(/not a measurement/);
+    expect(() => plateFollowsGround({ ground: NaN, plate: 0.83 })).toThrow(/not a measurement/);
+    expect(() => plateFollowsGround({ ground: 0.009, plate: Infinity })).toThrow(/not a measurement/);
+    // The genuine middle band still says nothing, and that is a different answer from "unreadable".
+    expect(plateFollowsGround({ ground: 0.009, plate: 0.4 })).toBe(true);
+  });
 });
 
 describe("what the shipped page carries", () => {

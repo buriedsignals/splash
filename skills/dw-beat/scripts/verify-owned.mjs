@@ -124,10 +124,28 @@ const LIGHT_SIDE = 0.6;
  *  halo — right for that ground — over a basemap baked in `dataviz-light`. The furniture was correct
  *  and unreadable, which is what correct furniture looks like over the wrong ground. Both sides are
  *  numbers, so a machine can settle it; what it must not do is prescribe a direction, since a dark
- *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused. */
+ *  beat and a light one are equally legitimate. Only the two-sided disagreement is refused.
+ *
+ *  A VALUE THAT WAS NOT READ MUST NOT TRAVEL AS A VALUE THAT WAS, which is `surfaceLuminance`'s own
+ *  rule one screen above and which this function used to break. Measured 2026-08-22:
+ *  `plateFollowsGround({ ground: 0.009, plate: NaN })` returned TRUE — `side(NaN)` is neither
+ *  `< DARK_SIDE` nor `> LIGHT_SIDE`, so it resolved to the middle band this guard deliberately says
+ *  nothing about, and an unmeasurable plate read back as a pass. `null` is a CALLER saying it could
+ *  not read the value and is still answered with silence; a non-finite number is an arithmetic that
+ *  failed on the way in, which no caller in this tree filters for, so it THROWS naming the side it
+ *  could not measure. A guard that cannot decide says so. */
 
 export function plateFollowsGround({ ground, plate }) {
   if (plate == null || ground == null) return true;
+  for (const [what, value] of [
+    ["ground", ground],
+    ["plate", plate],
+  ])
+    if (!Number.isFinite(value))
+      throw new Error(
+        `plateFollowsGround was handed ${value} for the ${what} — that is not a measurement, and a ` +
+          `value which was not read must not travel as one that was. Pass null to say it could not be read.`,
+      );
   const side = (value) => (value < DARK_SIDE ? "dark" : value > LIGHT_SIDE ? "light" : "middle");
   const one = side(ground);
   const two = side(plate);
