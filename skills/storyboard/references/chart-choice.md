@@ -254,7 +254,7 @@ generic preference such as "more engaging" is not a reason.
 |---:|---|---|---|
 | 1 | [Hex grid](../../map-beat/references/types/hex-grid.md) | Many real point events should be aggregated into comparable spatial cells. | Recognised boundaries matter, the point count is small, or aggregate mode cannot be stated. |
 | 2 | [Dot density](../../map-beat/references/types/dot-density.md) | A quantity's within-region concentration and texture matter, with each dot representing a stated unit. | Individual dot locations would be mistaken for real addresses, or a single regional rate is the claim. |
-| 3 | [Contour and isoline](../../map-beat/references/types/contour-isoline.md) | Dense samples support a continuous field and threshold lines or gradient shape are the claim. | Samples are sparse or the source values belong to discrete regions. This type has no shipped implementation here, so every render needs fresh verification. |
+| 3 | [Contour / isoline](../../map-beat/references/types/contour-isoline.md) | Dense samples support a continuous field and threshold lines or gradient shape are the claim. | Samples are sparse or the source values belong to discrete regions. This type has no shipped implementation here, so every render needs fresh verification. |
 | 4 | [Choropleth](../../map-beat/references/types/choropleth.md) | The quantity is already a rate attached to named regions. | Interpolation or within-region variation is the finding. |
 
 ## Intent: show a geographic journey

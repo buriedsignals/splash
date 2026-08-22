@@ -30,6 +30,7 @@ import { groundTakeaway, findYearColumn, measureColumns, LEXICON_LANGUAGES_SAID 
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
+import { normalizeTreatment } from "./producer-gate.mjs";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import visualCatalog from "../references/visual-catalog.json" with { type: "json" };
@@ -830,9 +831,73 @@ export function confirmFormatReachable({ medium, format, capabilities = {} }) {
  * along. It now counts IDEAS: a type resolves to whatever type its own sheet says it already is
  * (`sameIdeaAs`, generated into the survey from the sheet), and only then are they counted.
  */
+/**
+ * ONE SKILL, ONE ANSWER TO "IS THIS THE SAME TREATMENT NAME" (round six).
+ *
+ * `producer-gate.mjs` has normalised treatment names since it was written — case, accents, `&`,
+ * punctuation, and the parenthetical a sheet's title carries — and the menu compared the sheet's
+ * full title character for character instead. Measured on
+ * `references/datawrapper-chart-types.json`, the file the producer gate reads: FIVE of its fifteen
+ * treatment names matched no survey row. "Waterfall" is `Waterfall (bridge)`'s sheet, "Slope" is
+ * `Slope (slopegraph)`'s, "Scatter and bubble" is `Scatter (and bubble)`'s — every one of them a
+ * name a producer legitimately writes, and every one of them arriving at the menu with the sheet's
+ * refusal and its row limit silently detached.
+ *
+ * Two keys per name, which is what the survey generator's own `aliasesFor` derives: the head
+ * ("waterfall", the parenthetical dropped) and the whole title flattened ("scatter and bubble", the
+ * brackets removed and their words kept). Measured across the forty sheets, no two rows of one
+ * medium share a key.
+ */
+function treatmentKeys(name) {
+  const text = String(name ?? "");
+  return [...new Set([normalizeTreatment(text), normalizeTreatment(text.replace(/[()]/g, " "))])].filter(Boolean);
+}
+
+function findSurveyRow(survey, medium, type) {
+  const keys = treatmentKeys(type);
+  return survey.find((row) => row.medium === medium && treatmentKeys(row.type).some((key) => keys.includes(key))) ?? null;
+}
+
+/**
+ * ONE CANDIDATE SHAPE (round five, V14; reported again in round six as AB5). `formatCandidates`
+ * took an object and `assertDistinctWays` took an object OR a bare string, and the loose one
+ * checked nothing at all: a type held by no sheet and no catalogue became its own "idea" and
+ * passed, which is how a treatment this toolchain does not hold reaches a menu in the first place.
+ * Both read a candidate through this function now, and a bare string is refused by naming the
+ * shape to write instead.
+ */
+function candidateType(candidate) {
+  if (typeof candidate === "string") {
+    throw new Error(
+      `candidate "${candidate}" was written as a bare string; a candidate is an object shape — { type, why, format } — because a type with no reason beside it is a name in a list`,
+    );
+  }
+  if (!candidate || typeof candidate.type !== "string" || !candidate.type.trim()) {
+    throw new Error("every candidate must name the type it would be");
+  }
+  return candidate.type.trim();
+}
+
+/**
+ * A name this toolchain HOLDS somewhere — a type sheet, or the visual catalogue. The catalogue is
+ * the second half on purpose: `image.photograph-sequence` is a catalogued treatment and no medium
+ * `image` sheet exists anywhere, so a sheet-only test would refuse the one beat kind that has
+ * never had sheets.
+ */
+function knownTreatment(type, survey) {
+  const keys = treatmentKeys(type);
+  const holds = (name) => treatmentKeys(name).some((key) => keys.includes(key));
+  return survey.some((row) => holds(row.type)) || visualCatalog.treatments.some((treatment) => holds(treatment.label));
+}
+
 export function assertDistinctWays(candidates, { min = 2, survey = typeSurvey() } = {}) {
-  const types = candidates.map((c) => (typeof c === "string" ? c : c.type));
-  if (types.some((t) => !t)) throw new Error("every candidate must name the type it would be");
+  const types = candidates.map((candidate) => candidateType(candidate));
+  for (const type of types) {
+    if (knownTreatment(type, survey)) continue;
+    throw new Error(
+      `"${type}" is a treatment this toolchain holds nowhere — no type sheet and no catalogue entry names it. Offer a type somebody can read the sheet of and a producer can build, or write the sheet first.`,
+    );
+  }
   const ideas = new Map();
   for (const type of types) ideas.set(type, ideaOf(type, survey));
   const distinct = new Set(ideas.values());
@@ -863,7 +928,7 @@ function ideaOf(type, survey) {
     const key = name.toLowerCase();
     if (seen.has(key)) return key;
     seen.add(key);
-    const row = survey.find((r) => r.type.toLowerCase() === key);
+    const row = survey.find((r) => treatmentKeys(r.type).some((k) => treatmentKeys(name).includes(k)));
     if (!row?.sameIdeaAs) return key;
     name = row.sameIdeaAs;
   }
@@ -896,10 +961,11 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
   assertDistinctWays(candidates, { survey });
   const rowCount = Number.isSafeInteger(profile?.rowCount) ? profile.rowCount : null;
   const lines = candidates.map((candidate) => {
-    const { type, why, format } = candidate;
+    const type = candidateType(candidate);
+    const { why, format } = candidate;
     if (!why || !why.trim()) throw new Error(`candidate "${type}" carries no reason — say why this way of seeing would be interesting`);
     if (format) confirmFormatReachable({ medium, format, capabilities });
-    const row = survey.find((r) => r.medium === medium && r.type.toLowerCase() === type.trim().toLowerCase());
+    const row = findSurveyRow(survey, medium, type);
     // A NAME NOTHING RESOLVES TAKES THE SHEET'S REFUSAL AND ITS ROW LIMIT WITH IT, SILENTLY
     // (round six). A candidate whose type matched no survey row used to render as a bare line —
     // no purpose, no refusal, no stated limit — and said nothing about any of the three, which

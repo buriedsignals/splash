@@ -666,6 +666,114 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     expect(photographs).toMatch(/no type sheet/i);
   });
 
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX — FIVE OF FIFTEEN DATAWRAPPER TREATMENT NAMES MATCHED NO SURVEY ROW.
+  //
+  // Measured on `references/datawrapper-chart-types.json`, the file the producer gate reads:
+  // "Area and stacked area", "Dumbbell", "Scatter and bubble", "Slope" and "Waterfall" resolve
+  // through `normalizeTreatment` at the producer gate and matched NOTHING at the menu, because the
+  // menu compared the sheet's full title character for character — "Area (and stacked area)",
+  // "Dumbbell (range plot)", "Scatter (and bubble)", "Slope (slopegraph)", "Waterfall (bridge)".
+  // A name the survey cannot resolve takes the sheet's refusal and its row limit with it, and the
+  // row limit is the only one this menu mechanically enforces.
+  //
+  // One skill, one answer to "is this the same treatment name": `normalizeTreatment`, which the
+  // producer gate has used all along.
+  // -------------------------------------------------------------------------------------------
+  it("should resolve every treatment name the Datawrapper gate accepts to its own sheet", () => {
+    const catalogue = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "references", "datawrapper-chart-types.json"),
+        "utf8",
+      ),
+    );
+    expect(catalogue.splashTreatments.length).toBe(15);
+    const unresolved: string[] = [];
+    for (const mapping of catalogue.splashTreatments) {
+      const line = (() => {
+        try {
+          return formatCandidates({
+            medium: mapping.medium,
+            profile: { rowCount: 12, columns: [] },
+            candidates: [{ type: mapping.treatment, why: "the delegated producer's own name for it" }],
+          });
+        } catch (error) {
+          unresolved.push(`${mapping.treatment}: ${(error as Error).message}`);
+          return "";
+        }
+      })();
+      if (line && !line.includes("Not for:")) unresolved.push(`${mapping.treatment}: rendered with no refusal`);
+    }
+    expect(unresolved).toEqual([]);
+  });
+
+  it("should enforce a sheet's row limit through the delegated producer's spelling of the type", () => {
+    // `stress-p-transport-ridership`, six rows — the story whose slot once closed on a scatter.
+    // Under the Datawrapper spelling, "Scatter and bubble", the refusal used to be unreachable.
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: frozenProfile("stress-p-transport-ridership"),
+        candidates: [
+          { type: "Scatter and bubble", format: "static", why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/refuses 6 row\(s\)/);
+  });
+
+  // The other file an agent reads a treatment NAME out of. Its ranking tables spell types the
+  // editorial way — "Waterfall", "Slope", "Scatter and bubble" — and a name it offers that the
+  // survey cannot resolve is the same silent detachment one file over.
+  it("should resolve every treatment the chart chooser names to its own sheet", () => {
+    const text = readFileSync(
+      join(import.meta.dirname, "..", "references", "chart-choice.md"),
+      "utf8",
+    );
+    const named = [
+      ...text.matchAll(
+        /^\|\s*\d+\s*\|\s*\[([^\]]+)\]\(\.\.\/\.\.\/(chart-beat|map-beat)\//gm,
+      ),
+    ].map((match) => [match[1], match[2] === "chart-beat" ? "chart" : "map"] as const);
+    expect(named.length).toBeGreaterThan(30);
+    const unresolved = [
+      ...new Map(named.map((row) => [row.join("|"), row])).values(),
+    ].filter(([name, medium]) => {
+      try {
+        return !formatCandidates({
+          medium,
+          profile: { rowCount: 12, columns: [] },
+          candidates: [{ type: name, why: "the chooser's own name for it" }],
+        }).includes("Not for:");
+      } catch {
+        return true;
+      }
+    });
+    expect(unresolved).toEqual([]);
+  });
+
+  // ROUND FIVE, V14, reported again in round six as AB5. The two functions took two different
+  // candidate shapes — `formatCandidates` an object, `assertDistinctWays` an object OR a bare
+  // string — and the loose one checked nothing: a type in no sheet and no catalogue became its own
+  // "idea" and passed, which is how a treatment nobody holds reaches a menu in the first place.
+  it("should take one candidate shape, and refuse a bare string", () => {
+    expect(() =>
+      assertDistinctWays(["Bar and column", "Dot strip"] as any),
+    ).toThrow(/shape|object/i);
+  });
+
+  it("should refuse a candidate naming a treatment no sheet and no catalogue holds", () => {
+    expect(() =>
+      assertDistinctWays([{ type: "OD flow diagram" }, { type: "Choropleth" }]),
+    ).toThrow(/OD flow diagram/);
+  });
+
+  it("should still accept a catalogued treatment whose medium holds no sheets", () => {
+    expect(
+      assertDistinctWays([{ type: "Photograph sequence" }, { type: "Bar and column" }]),
+    ).toBe(true);
+  });
+
   it("should refuse two labels for one idea, because the sheet says they are one idea", () => {
     expect(() =>
       assertDistinctWays([
