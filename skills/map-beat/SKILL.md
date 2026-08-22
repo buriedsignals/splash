@@ -168,6 +168,7 @@ ramps, none with a bound the reveal cannot reach.**
 # the geography, first: NOTHING in this toolchain acquires country shapes, and the bake refuses
 # rather than reaching for a default that is not there. 1:50m, never 1:110m — measured, not
 # aesthetic: at 1:110m a world beat loses 64 readings to shapes that file does not carry, against 8.
+mkdir -p /tmp/map-twin
 curl -sSo /tmp/map-twin/ne50.geojson \
   https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson
 

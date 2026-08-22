@@ -274,10 +274,13 @@ light ground) and a real 241-region world beat driven live with a real key.
 1. **Get the geography, and know what it costs you.** *Nothing in this toolchain acquires country
    shapes, and that is a limit rather than an oversight — Natural Earth is 20 MB of public-domain
    GeoJSON that has no business being committed to a skill.* What the toolchain owes you is a
-   REFUSAL YOU CAN ACT ON rather than a default path that silently is not there:
-   `map-beat/scripts/bake-plate.mjs` defaults `--shapes` to `/tmp/map-twin/ne50.geojson`, which no
-   script in this tree writes, and every `countries.geojson` on disk is a hand-curated 8-, 16- or
-   42-feature European subset. So acquire it explicitly, beside the beat, and freeze it there:
+   REFUSAL YOU CAN ACT ON rather than a default path that silently is not there, and as of
+   2026-08-22 that is what it gives you: `map-beat/scripts/bake-plate.mjs` used to default
+   `--shapes` to `/tmp/map-twin/ne50.geojson`, which no script in this tree writes, so the bake
+   failed with a bare `ENOENT` after it had already spent the journalist's key and a browser. There
+   is no default now — the bake refuses at the flag, before either, and prints the `curl` below.
+   Every `countries.geojson` on disk is a hand-curated 8-, 16- or 42-feature European subset, so
+   acquire the world explicitly, beside the beat, and freeze it there:
 
    ```sh
    curl -sSo /tmp/ne50.geojson \
