@@ -58,11 +58,17 @@ the ground should say so; the change is one line in `PALETTE.md` and no line of 
 
 - `bun skills/chart-web/scripts/verify-web.mjs --file .../where-your-country-sits.html --shots`
   — 63 passed, 0 failed, 5 skipped (every skip is the filter, which this beat does not have).
-- `bun check-guards.mjs` — every cargo guard clean; 211 marks, 211 accessible-table rows, 0
-  missing; 85,819 bytes against a 155,502-byte ceiling.
-- `bun check-driven-capabilities.mjs` — 211 of 211 marks reached by a real Tab with an accessible
-  name on each; 211 marks with scripting on and 211 with it off; 0 moved frames of 150 under both
-  `no-preference` and `reduce`.
+- Every cargo guard clean; 211 marks, 211 accessible-table rows, 0 missing; 85,819 bytes against a
+  155,502-byte ceiling.
+- 211 of 211 marks reached by a real Tab with an accessible name on each; 211 marks with scripting
+  on and 211 with it off; 0 moved frames of 150 under both `no-preference` and `reduce`.
+
+  Those two measurements were taken with a pair of runners this beat carried, `check-guards.mjs` and
+  `check-driven-capabilities.mjs`, and the runners have since been removed: they imported the
+  format's own detectors out of `skills/chart-web/scripts/`, and a beat in a journalist's installed
+  root has no `skills/` to reach into — only the vendored `#shared/chart-web/`, which carries the
+  renderers and not the verification. Running a format's guards is the format's job, and the command
+  above is how a journalist does it. The numbers stand; the way they were taken does not generalise.
 - The search box driven with real clicks and real keystrokes: `Norway`, `norway`, `costa rica`,
   `Cote dIvoire` and `Cote d'Ivoire` each resolve to one country and light it; `united` and `saint`
   answer with the list rather than picking one quietly; `Atlantis` says no such country; Enter moves

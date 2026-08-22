@@ -26,8 +26,8 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { renderWeb } from "../../../../skills/chart-web/scripts/render-web.mjs";
-import { framingMeasurement } from "../../../../skills/chart-web/scripts/render-still.mjs";
+import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
+import { framingMeasurement } from "#shared/chart-web/scripts/render-still.mjs";
 import { readPalette } from "../../../../skills/palette/scripts/palette.mjs";
 import { parseStoryboard } from "../../../../skills/storyboard/scripts/storyboard.mjs";
 import { RenewablesStripWeb, FRAME } from "./RenewablesStripWeb.tsx";
