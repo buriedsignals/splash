@@ -565,6 +565,45 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/detect-guard-wiring.mjs",
     "scrolly/scripts/detect-guard-wiring.mjs",
   ],
+  // 2026-08-23, THE RULING ON WHY A NAME IS NOT WIRED. A recorded name now carries a REASON, and
+  // two of the three reasons excuse it from the ratchet: only a beat can call this decision, or
+  // this format's own suite drives it on purpose. An excuse nobody checks is a permission slip, so
+  // each names a caller and these three functions go and read that file. They are walked here for
+  // the sharpest version of the reason every entry is: a copy that weakened `fileReaches` — counted
+  // an import, a comment or a quoted name as a call — would let one format back its excuses with
+  // exactly the three things `guard-wired-to-run` refuses, while its seven neighbours still had to
+  // produce a real caller. That is not a drift between formats, it is a format writing its own
+  // permission slip.
+  fileReaches: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
+  beatSubstrateWithoutACaller: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
+  ownSuiteWithoutACaller: [
+    "chart-beat/scripts/detect-guard-wiring.mjs",
+    "chart-web/scripts/detect-guard-wiring.mjs",
+    "chart-video/scripts/detect-guard-wiring.mjs",
+    "dw-beat/scripts/detect-guard-wiring.mjs",
+    "map-beat/scripts/detect-guard-wiring.mjs",
+    "map-web/scripts/detect-guard-wiring.mjs",
+    "image-beat/scripts/detect-guard-wiring.mjs",
+    "scrolly/scripts/detect-guard-wiring.mjs",
+  ],
   // ROUND-FOUR FINDING 5: a beat drawn from a count with a denominator beside it says which
   // reading it draws. `materialises-a-beat` reaches all eight, and the decision is entirely about
   // a story's own frozen table and a BRIEF.md — nothing in it is skill-specific. Six of the eight
