@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatPublicationFormatGate } from "../scripts/format-gate.mjs";
+import { formatPublicationFormatGate, treatmentFormatGap } from "../scripts/format-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import { whereIs } from "../../splash/scripts/where.mjs";
 import { HOST_ACCEPTANCE } from "./fixtures/publication-format-host-acceptance.mjs";
@@ -314,5 +314,109 @@ describe("the two independent persisted-state readers", () => {
     expect(() => parseStoryboard(conflict)).toThrow(message);
     await writeFile(storyboardPath, conflict);
     await expect(whereIs(storyDir)).rejects.toThrow(message);
+  });
+});
+
+/**
+ * THE CELL THE GATE OFFERED AND NOTHING COULD DRAW.
+ *
+ * Measured in round six on `stories/stress-ab-emigration-flows`, the highest defect count of any
+ * beat in six rounds (29). Its slot records `medium: map`, `format: web`, `reachable: yes`,
+ * `chosen: "Flow map (route)"` — and `map-web` holds no flow machinery at all: its seed, its pure
+ * geometry core, its live-plan builder and its interaction model are every one of them
+ * proportional-symbol. Five silent failures came out of the gap, every one found by driving the
+ * page and none by a test.
+ *
+ * `confirmFormatReachable` was not wrong. It answers about a MEDIUM and a FORMAT, and `map/web` is
+ * true at that grain: choropleth, dot density, hex grid, locator and proportional symbol all render
+ * and deliver on the web, five of them with committed proof pages. What has no producer is one
+ * TREATMENT in one format, and nothing between the format gate and the render ever asked that
+ * question. The verdict was a true answer to a question one level too coarse.
+ */
+describe("a treatment the toolchain cannot produce in a format", () => {
+  const MAP_OPTIONS = [
+    { format: "static", reachable: true },
+    { format: "web", reachable: true },
+    { format: "video", reachable: true },
+    { format: "scrolly", reachable: true },
+  ];
+
+  it("should report no gap for a treatment and format this toolchain does produce", () => {
+    expect(treatmentFormatGap("Proportional symbol (symbol / bubble map)", "web")).toBe(null);
+    expect(treatmentFormatGap("Flow map (route)", "static")).toBe(null);
+    expect(treatmentFormatGap("Flow map (route)", "video")).toBe(null);
+  });
+
+  it("should name the one measured gap, whichever way the treatment is spelled", () => {
+    for (const spelling of [
+      "Flow map (route)",
+      "flow map",
+      "Flow / route map",
+      "route map",
+    ])
+      expect(treatmentFormatGap(spelling, "web")).toMatch(/no producer/);
+  });
+
+  it("should say nothing when no treatment has been chosen yet", () => {
+    expect(treatmentFormatGap(undefined, "web")).toBe(null);
+    expect(treatmentFormatGap("", "web")).toBe(null);
+  });
+
+  it("should render the format unavailable, with the reason, once the treatment is known", () => {
+    const turn = formatPublicationFormatGate({
+      recommended: "static",
+      rationale: "the eight corridors read as one fan at rest.",
+      options: MAP_OPTIONS,
+      treatment: "Flow map (route)",
+    });
+    expect(turn).toContain("Interactive web:** unavailable —");
+    expect(turn).toContain("no producer");
+    // The formats this treatment IS produced in stay on the menu, unchanged.
+    expect(turn).toContain("Static / print:** one fixed graphic");
+    expect(turn).toContain("Video:** a timed build");
+  });
+
+  it("should refuse to recommend the format it has just called unavailable", () => {
+    expect(() =>
+      formatPublicationFormatGate({
+        recommended: "web",
+        rationale: "the reader should be able to hover each corridor.",
+        options: MAP_OPTIONS,
+        treatment: "Flow map (route)",
+      }),
+    ).toThrow(/not reachable/);
+  });
+
+  it("should refuse the cell the frozen story actually recorded, read off its own STORYBOARD.md", async () => {
+    // REAL MATERIAL, not a fixture built to fail. This is the slot as committed, and the reason
+    // this branch exists at all.
+    const frozen = await readFile(
+      join(import.meta.dirname, "..", "..", "..", "stories", "stress-ab-emigration-flows", "STORYBOARD.md"),
+      "utf8",
+    );
+    const slot = parseStoryboard(frozen).meta.slots[0];
+    expect({ medium: slot.medium, format: slot.format, chosen: slot.chosen }).toEqual({
+      medium: "map",
+      format: "web",
+      chosen: "Flow map (route)",
+    });
+    expect(treatmentFormatGap(slot.chosen, slot.format)).toMatch(/no producer/);
+    // And the pair itself is still reachable, which is the half this narrowing must not break:
+    // every other map treatment keeps the web.
+    expect(treatmentFormatGap("Choropleth", "web")).toBe(null);
+    expect(treatmentFormatGap("Locator", "web")).toBe(null);
+    expect(treatmentFormatGap("Dot density", "web")).toBe(null);
+    expect(treatmentFormatGap("Hex grid (spatial binning)", "web")).toBe(null);
+  });
+
+  it("should leave the pinned turn untouched when no treatment is passed", () => {
+    expect(
+      formatPublicationFormatGate({
+        recommended: "web",
+        rationale:
+          "the article calls for a full-width web treatment and exact country values can remain available on interaction.",
+        options: OPTIONS,
+      }),
+    ).toBe(HOST_ACCEPTANCE.assistantTurn);
   });
 });
