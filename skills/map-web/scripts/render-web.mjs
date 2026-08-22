@@ -33,6 +33,14 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
+import {
+  READING_WIDTHS,
+  drawnRegionsOf,
+  drawnWidthAt,
+  marksStrandedWithNoChannel,
+  strandedRefusal,
+  strandedVerdict,
+} from "./detect-stranded-marks.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { groupsOf, markLayers, maxZoomForStudySet, radiusScale, slugOf } from "../assets/geo-symbol.ts";
 
@@ -400,6 +408,27 @@ ${liveBlock}
 </body>
 </html>
 `;
+
+  // ── THE MARKS THIS CAMERA DRAWS SMALLER THAN A PIXEL, SAID BEFORE THE FILE IS WRITTEN ────────
+  //
+  // A limit this format cannot remove, so it is stated where the producer reads it — this project's
+  // own rule for exactly that case, and the same shape the colliding-target verdict already takes.
+  // Measured on the committed 241-region world beat, driven live with a real key: at 1600x900 the
+  // map draws 896px for 360° of longitude, one pixel is about 26 km, and Monaco is about a
+  // thirteenth of one. 90 of its 241 marks have no pixel a pointer can be sent to, and 149 at
+  // 375x667. No hit target creates one — see `detect-stranded-marks.mjs`'s own header.
+  //
+  // AND IT REFUSES, which the colliding verdict does not, because the two cases are not the same.
+  // A covered button still has a keyboard path and a row. A sub-pixel mark has ONLY those two, so a
+  // beat that strands one and then drops one of them has drawn a fact no reader can reach by any
+  // means. That page is not written.
+  const drawn = drawnRegionsOf(html);
+  if (drawn && drawn.shapes.length > 0) {
+    for (const width of READING_WIDTHS)
+      console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame))));
+    const refusal = strandedRefusal(html);
+    if (refusal) throw new Error(refusal);
+  }
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);

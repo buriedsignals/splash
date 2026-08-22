@@ -655,6 +655,119 @@ export function collidingPointerTargets(
   return covered;
 }
 
+// ── The marks this camera draws SMALLER THAN A PIXEL, which no pointer can reach at all ────────
+
+/**
+ * EVERY MARK THIS CAMERA DRAWS NO PIXEL OF ITS OWN FOR, at a given drawn width.
+ *
+ * THE MEASUREMENT THIS EXISTS FOR, and it overturned the decision above rather than extending it.
+ * `collidingPointerTargets` answers "whose 28px button is buried under a neighbour's", and a ruling
+ * was written to replace it with a live invariant about `queryRenderedFeatures`. Driven with a real
+ * key against the committed 241-region world beat, that invariant was red for 90 of 241 marks at
+ * 1600x900 and 149 of 241 at 375x667, and no layout, bake or camera change this format can make
+ * turns it green. The reason is not collision:
+ *
+ *     at 1600x900 the live map draws 896px for 360° of longitude, so ONE PIXEL IS ABOUT 26 KM AND
+ *     MONACO IS ABOUT A THIRTEENTH OF ONE.
+ *
+ * A mark smaller than a pixel has NO pointer path and no target engineering creates one — not a
+ * colliding path, none. Of the 105 marks a neighbour's button covers on that beat, 46 are not served
+ * by the live pointer either. So the collision was never the problem, and this is the fact the beat
+ * is owed instead: a count, and the names, at the widths it will be read at.
+ *
+ * THE READING IS THE LIVE PROBE'S OWN, done in arithmetic instead of in a browser. A mark is
+ * reachable when the map draws it a pixel it OWNS WITH A PIXEL TO SPARE — that pixel plus its four
+ * neighbours — which is exactly the discipline `scripts/verify-live-map.mjs` walks its own grid
+ * under, and for the same reason: a probe whose own rounding decides the verdict measures rounding,
+ * not the map. The scan is a scanline over integer pixel rows, even-odd across the rings, which is
+ * the rule the delivered `<path class="region" fill-rule="evenodd">` is painted under.
+ *
+ * MEASURED AGAINST THE LIVE PROBE, on that beat, at the three canvas widths the browser actually
+ * gave it (896 / 640 / 263 px, from containers of 1600x900, 1024x768 and 375x667):
+ *
+ *     this function   85    96   147
+ *     the live map    90    99   149
+ *
+ * — 6, 5 and 3 marks apart out of 241. What it cannot see is DRAW ORDER: `queryRenderedFeatures`
+ * answers with the TOPMOST feature, so the Netherlands and New Zealand read as reachable here and as
+ * unreachable live. The live probe is the authority; this is the same answer without a browser, so a
+ * producer gets it at render time rather than after a run they may never make.
+ *
+ * IT REPORTS, IT DOES NOT FILTER, for the reason `collidingPointerTargets` gives above and one more:
+ * the marks it names are exactly the ones whose only remaining paths are the KEYBOARD and the
+ * ACCESSIBLE TABLE. `scripts/detect-stranded-marks.mjs` is where that becomes a refusal.
+ *
+ * `rings` are FRAME units; `drawnWidthPx` is what the map is actually drawn at, because the same map
+ * at 375px and at 1600px is not the same question.
+ */
+export function marksWithNoPointerPath(
+  shapes: { key: string; rings: Ring[] }[],
+  frame: Frame,
+  drawnWidthPx: number,
+): string[] {
+  if (!(drawnWidthPx > 0) || !(frame.width > 0)) return [];
+  const scale = drawnWidthPx / frame.width;
+  return shapes.filter((shape) => !ownsAPixelWithASpare(shape.rings, scale)).map((shape) => shape.key);
+}
+
+/** The x-coordinates, in drawn pixels, where a scanline at `y` crosses this shape's rings, paired
+ *  into the spans that are INSIDE it under the even-odd rule. A half-open vertical test
+ *  (`y >= from`, `y < to`) so a vertex shared by two edges is counted once, not twice. */
+function spansAcross(rings: Ring[], y: number, scale: number): [number, number][] {
+  const crossings: number[] = [];
+  for (const ring of rings)
+    for (let i = 0; i < ring.length; i++) {
+      const from = ring[i]!;
+      const to = ring[(i + 1) % ring.length]!;
+      const fromY = from[1] * scale;
+      const toY = to[1] * scale;
+      if (fromY === toY) continue;
+      if (y < Math.min(fromY, toY) || y >= Math.max(fromY, toY)) continue;
+      const along = (y - fromY) / (toY - fromY);
+      crossings.push(from[0] * scale + along * (to[0] * scale - from[0] * scale));
+    }
+  crossings.sort((one, other) => one - other);
+  const spans: [number, number][] = [];
+  for (let i = 0; i + 1 < crossings.length; i += 2) spans.push([crossings[i]!, crossings[i + 1]!]);
+  return spans;
+}
+
+/** Does this shape own one whole pixel AND its four neighbours? Walked row by row over the shape's
+ *  own bounding box, one row further out on every side so a shape that rounds outward is not cut
+ *  off by the box that describes it. */
+function ownsAPixelWithASpare(rings: Ring[], scale: number): boolean {
+  const box = boundingBoxOf(rings);
+  if (!Number.isFinite(box.minX)) return false;
+  const rows = new Map<number, [number, number][]>();
+  const rowAt = (y: number): [number, number][] => {
+    let spans = rows.get(y);
+    if (!spans) {
+      spans = spansAcross(rings, y, scale);
+      rows.set(y, spans);
+    }
+    return spans;
+  };
+  const inside = (spans: [number, number][], x: number) =>
+    spans.some(([from, to]) => x >= from && x <= to);
+  const firstX = Math.floor(box.minX * scale) - 1;
+  const lastX = Math.ceil(box.maxX * scale) + 1;
+  for (let y = Math.floor(box.minY * scale) - 1; y <= Math.ceil(box.maxY * scale) + 1; y++) {
+    const row = rowAt(y);
+    if (row.length === 0) continue;
+    for (let x = firstX; x <= lastX; x++) {
+      if (!inside(row, x)) continue;
+      if (
+        inside(row, x - 1) &&
+        inside(row, x + 1) &&
+        inside(rowAt(y - 1), x) &&
+        inside(rowAt(y + 1), x)
+      )
+        return true;
+    }
+  }
+  return false;
+}
+
 /** A label's own box, centred on `(x, y)` — the same anchor convention every seed and beat in this
  *  format already draws a `textAnchor="middle"` value label with. */
 function boxOf(x: number, y: number, width: number, height: number): LabelBox {

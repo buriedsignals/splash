@@ -25,6 +25,7 @@ written out below the tables.
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
 | csv-split-by-hand |  |  | **R** | **R** | **R** | **R** |  | **R** |
 | unmatched-value-hides |  |  |  |  | **R** | **R** |  |  |
+| sub-pixel-marks-keep-a-channel |  |  |  |  |  | **R** |  |  |
 | value-labels-collide-or-clip |  |  |  |  | **R** | **R** |  |  |
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
@@ -247,6 +248,12 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Refuses:** a source's own value with no shape to receive it, unless the beat declared its source out of scope
 
 **Earned by:** joinValues (map-beat/assets/geo.ts) already refused a shape with no value, naming it — the mirror case rendered nothing at all instead: the stress csv carried a reading for "Atlantis", a country that does not exist, and the join said nothing. The doctrine's own argument for the loud join calls a bad join that renders as no-data and looks legitimate the worse defect; a value with no shape is worse still, because there is no mark anywhere to be wrong
+
+### sub-pixel-marks-keep-a-channel — `marksStrandedWithNoChannel`
+
+**Refuses:** a mark the beat's own camera draws smaller than a pixel — so no pointer, tap or hover reaches it and no hit target can be built that does — shipped without a row in the accessible table or without a keyboard target of its own, which is a fact drawn on the page that no reader can reach by any means
+
+**Earned by:** a ruling asked map-web to replace its colliding-target invariant with a live one about queryRenderedFeatures, and the live measurement refuted it and found something larger. Driven with a real MapTiler key against the committed 241-region world beat (stories/real-owid-life-expectancy), queryRenderedFeatures at each mark's own centre answered own 140, a neighbour 15, NOTHING 86; widened to the fairest reading — any pixel anywhere the map attributes to that mark, on a 23x23 grid — 63 marks have no pixel at all at 1600x900 and 82 at 375x667. At that camera the map draws 896px for 360 degrees of longitude, so one pixel is about 26 km and Monaco is about a thirteenth of one, and of the 105 marks a neighbour's button covers, 46 are not served by the live pointer either. So the collision was never the problem: a mark smaller than a pixel has NO pointer path and no target engineering creates one. The pointer is therefore not a channel every mark has, and the two this format calls channels a reader PICKS BETWEEN are, for those marks, the only path there is — which turns the table's opt-out and the per-mark keyboard target from preferences into a refusal
 
 ### value-labels-collide-or-clip — `labelPlacementIssues`
 

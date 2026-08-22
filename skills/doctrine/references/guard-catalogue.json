@@ -314,6 +314,18 @@
       "exceptions": {}
     },
     {
+      "id": "sub-pixel-marks-keep-a-channel",
+      "kind": "guard",
+      "requires": ["joins-values-to-shapes", "ships-standalone-html"],
+      "decidedBy": "marksStrandedWithNoChannel",
+      "refuses": "a mark the beat's own camera draws smaller than a pixel — so no pointer, tap or hover reaches it and no hit target can be built that does — shipped without a row in the accessible table or without a keyboard target of its own, which is a fact drawn on the page that no reader can reach by any means",
+      "earnedBy": "a ruling asked map-web to replace its colliding-target invariant with a live one about queryRenderedFeatures, and the live measurement refuted it and found something larger. Driven with a real MapTiler key against the committed 241-region world beat (stories/real-owid-life-expectancy), queryRenderedFeatures at each mark's own centre answered own 140, a neighbour 15, NOTHING 86; widened to the fairest reading — any pixel anywhere the map attributes to that mark, on a 23x23 grid — 63 marks have no pixel at all at 1600x900 and 82 at 375x667. At that camera the map draws 896px for 360 degrees of longitude, so one pixel is about 26 km and Monaco is about a thirteenth of one, and of the 105 marks a neighbour's button covers, 46 are not served by the live pointer either. So the collision was never the problem: a mark smaller than a pixel has NO pointer path and no target engineering creates one. The pointer is therefore not a channel every mark has, and the two this format calls channels a reader PICKS BETWEEN are, for those marks, the only path there is — which turns the table's opt-out and the per-mark keyboard target from preferences into a refusal",
+      "states": {
+        "map-web": "carried"
+      },
+      "exceptions": {}
+    },
+    {
       "id": "value-labels-collide-or-clip",
       "kind": "guard",
       "requires": ["joins-values-to-shapes"],
