@@ -33,8 +33,9 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *    1 279 070  mapgen-hexgrid-web/hex-grid.html
  *    1 370 772  mapgen-choropleth-web/choropleth.html
  *    1 586 699  map-web/output-proof/population.html
- *    1 810 572  mapgen-dot-web/dot-population.html   (1 809 942 before its country outlines
- *                gained the `data-key` `marksStrandedWithNoChannel` needs to see them, 2026-08-23)
+ *    1 814 762  mapgen-dot-web/dot-population.html   (1 809 942 before its country outlines
+ *                gained the `data-key`/`class="region"` its own fallback pointer path and
+ *                `marksStrandedWithNoChannel` both needed, 2026-08-23)
  *    1 998 902  real-owid-life-expectancy/life-expectancy-2023.html   ← MEASURED_MAX_BYTES
  *
  *  an order of magnitude above `chart-web`'s own ceiling, because the baked basemap plate this
@@ -46,12 +47,12 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  that the next delivered beat one byte heavier than `MEASURED_MAX_BYTES` would have tripped this
  *  guard, in every one of the five formats that carry it. `MARGIN_BYTES` is not a percentage picked
  *  because it felt right: it is the largest jump this population has ALREADY taken between two
- *  delivered pages sitting next to each other by size — 223 873 bytes, the step from
+ *  delivered pages sitting next to each other by size — 228 063 bytes, the step from
  *  `output-proof/population.html` to `mapgen-dot-web/dot-population.html`. The overall range is a
  *  narrow 1.82x, but the ten pages do not weigh evenly, and the margin matches the biggest jump
  *  already on disk between two of them rather than a smooth percentage of the max. */
 export const MEASURED_MAX_BYTES = 1998902;
-export const MARGIN_BYTES = 223873;
+export const MARGIN_BYTES = 228063;
 export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;
 
 /** THE TWO NUMBERS ABOVE, DERIVED FROM THE POPULATION THEY DESCRIBE — because until 2026-08-22

@@ -815,10 +815,19 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     measurable: true,
     probed: 3,
   },
-  // ── the beat the owner reported. Its hit elements sit at a country's anchor and the country's
-  //    own polygon carries no key, so "a probe 60px inside France answers nothing" is measured by
-  //    nobody. Closing it is ruling R1's `queryRenderedFeatures` rewrite of that layer.
-  "proof/mapgen-dot-web/dot-population.html": { measurable: false, probed: 3 },
+  // ── the beat the owner reported, and the row this table said would "turn red when it lands".
+  //    It did, on the first run after the country outlines gained a `data-key` (2026-08-23, while
+  //    map-web was earning `marksStrandedWithNoChannel`, which could not see this beat either).
+  //    It landed as a finding, not as a clean flip: with the key in place assertion 4b immediately
+  //    reported "Germany — drawn 90px across, target 28px, silent at right" — the exact B6.14a gap
+  //    this beat's own live layer closes and its FALLBACK never did, invisible for as long as the
+  //    polygon was anonymous. Two things were wrong and both are fixed in that beat:
+  //    `interaction.mjs` now forwards a pointer on `.region[data-key]` to the button of the same
+  //    key (only the nine countries too small to point at keep a pointer-active disc), and the
+  //    decorative dots and the baked plate are pointer-transparent — measured with
+  //    `elementFromPoint`, a DOT was the topmost element at two of Germany's four probe points and
+  //    the plate at a third, so the forwarding alone was wired and still silent.
+  "proof/mapgen-dot-web/dot-population.html": { measurable: true, probed: 3 },
   // ── chart × web: the format emits NO `data-key` anywhere — 0 occurrences in every one of these
   //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
   //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"

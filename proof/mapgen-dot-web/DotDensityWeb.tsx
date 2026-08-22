@@ -71,6 +71,34 @@ export const DOT_RADIUS_FRACTION = 0.002;
 /** The per-country hit target's diameter, in real CSS pixels — an HTML `<button>`, never an SVG
  *  shape sized in frame units, which would shrink to a few physical pixels at 375px wide. */
 const HIT_TARGET_PX = 28;
+/** A country under this FRACTION OF THE FRAME'S OWN WIDTH on its longer side cannot be landed on by
+ *  pointing at its own shape, so it keeps a pointer-active `.pt` button in the FALLBACK layer. A
+ *  fraction rather than an absolute number of frame units, for the reason
+ *  `mapgen-choropleth-web`'s own `SMALL_REGION_FRAME_FRACTION` records: an absolute threshold
+ *  survives a fluid container and not a different CAMERA, which is the thing a beat actually
+ *  changes. Same value as that beat's, and it is not shared code — a beat carries its own. */
+const SMALL_REGION_FRAME_FRACTION = 26 / 496;
+
+/** Is this country too small to land a pointer on by its own painted shape? */
+function needsPointerTarget(
+  parts: [number, number][][][],
+  frame: { width: number },
+): boolean {
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  for (const part of parts)
+    for (const ring of part)
+      for (const [x, y] of ring) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+  if (!Number.isFinite(minX)) return true;
+  return Math.max(maxX - minX, maxY - minY) < frame.width * SMALL_REGION_FRAME_FRACTION;
+}
 /* THE BOUNDED ZOOM STEP IS GONE. `ZOOM_SCALE = 2.2` grew a raster plate inside a scrollable box and
    put an out-of-map checkbox above the beat reading "Zoom in (2,2×, bounded) — then scroll or use the
    arrow keys to pan". Ruling R1 (2026-08-10) replaced it with MapTiler's own zoom and pan, leashed to
@@ -199,12 +227,22 @@ export function DotDensityWeb({
                 {countries.map((c) => (
                   <path
                     key={c.key}
-                    // NAMED IN THE ARTEFACT, so a reader of the delivered file can tell WHICH
-                    // country this outline is. Without it `marksStrandedWithNoChannel` could not see
-                    // this beat at all and reported zero marks with no pointer path on a page where
-                    // Liechtenstein and Malta are drawn under a pixel — a guard confirming a beat it
-                    // could not read. This outline is also the LIVE hover target (`mw-countries`,
-                    // `hover: true`), so its size IS the pointer question here.
+                    // THE FALLBACK'S OWN POINTER TARGET, and named in the artefact so both a reader
+                    // of the delivered file and this format's own guards can tell WHICH country it
+                    // is. Two things were closed by these two attributes, 2026-08-23:
+                    //
+                    //  · B6.14a IN THE FALLBACK. Live, the country FILL answers a pointer anywhere
+                    //    inside it; with no key and no `region` class the fallback's only target was
+                    //    the 28px disc at the anchor. Measured by `splash/test/interaction-promises-
+                    //    are-kept.test.ts` the moment the key landed: Germany is drawn 90px across
+                    //    against a 28px target and went SILENT at its own right edge. That test's
+                    //    own census had recorded this beat as un-measurable and said the row would
+                    //    "turn red when it lands" — it did, on its first run. `interaction.mjs` now
+                    //    forwards a pointer on this path to the button of the same key.
+                    //  · `marksStrandedWithNoChannel` could not see this beat at all and reported
+                    //    zero marks with no pointer path on a page where Liechtenstein and Malta are
+                    //    drawn under a pixel.
+                    className="region"
                     data-key={c.key}
                     d={ringPath(c.parts)}
                     fill={landFill}
@@ -276,7 +314,10 @@ export function DotDensityWeb({
               <button
                 key={c.key}
                 type="button"
-                className="pt"
+                // `pt-small` is what the CSS leaves pointer-active. Every other country is pointed
+                // at through its own painted outline above — a fairer target than a disc at its
+                // cloud's anchor, and the same arrangement `mapgen-choropleth-web` already ships.
+                className={needsPointerTarget(c.parts, frame) ? "pt pt-small" : "pt"}
                 style={{
                   left: `${(c.anchor[0] / frame.width) * 100}%`,
                   top: `${(c.anchor[1] / frame.height) * 100}%`,

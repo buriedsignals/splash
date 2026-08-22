@@ -23,14 +23,33 @@
  *  the same native behaviour that makes this file need no filter-awareness of its own. */
 export function initPoints(points, tooltip) {
   if (points.length === 0) return;
+  // THE COUNTRY'S OWN PAINTED OUTLINE IS THE FALLBACK'S POINTER TARGET, added 2026-08-23. B6.14a
+  // was closed in the LIVE layer by the `mw-countries` fill and left open here: with the script
+  // running but no key, no network or a failed style, the only thing a pointer could talk to was a
+  // 28px disc at each country's cloud anchor. Measured the day those outlines gained a `data-key`,
+  // by `splash/test/interaction-promises-are-kept.test.ts`: Germany is drawn 90px across against a
+  // 28px target and went silent at its own right edge. Same arrangement `mapgen-choropleth-web`
+  // ships — one reading, forwarded, never a second target competing with the country it stands for.
+  const byKey = {};
+  points.forEach(function (point) {
+    byKey[point.getAttribute("data-key")] = point;
+  });
+  const shapes = Array.prototype.slice.call(
+    document.querySelectorAll(".region[data-key]"),
+  );
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
+    shapes.forEach((s) => s.classList.remove("pt-active"));
     tooltip.hidden = true;
   }
 
   function show(point, clientX, clientY) {
     points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    const key = point.getAttribute("data-key");
+    shapes.forEach((s) =>
+      s.classList.toggle("pt-active", s.getAttribute("data-key") === key),
+    );
     tooltip.textContent = point.getAttribute("data-detail");
     tooltip.hidden = false;
     const tw = tooltip.offsetWidth || 160;
@@ -83,8 +102,28 @@ export function initPoints(points, tooltip) {
     });
   });
 
+  // The country paths: the fair pointer target for every country big enough to be one, forwarding to
+  // the SAME button — never its own tab stop (a path is not focusable and carries no `data-detail`),
+  // never a second target competing with the country it stands for.
+  shapes.forEach(function (shape) {
+    const button = byKey[shape.getAttribute("data-key")];
+    if (!button) return;
+    shape.addEventListener("pointerenter", function (evt) {
+      show(button, evt.clientX, evt.clientY);
+    });
+    shape.addEventListener("pointermove", function (evt) {
+      show(button, evt.clientX, evt.clientY);
+    });
+    shape.addEventListener("pointerleave", clear);
+  });
+
   document.addEventListener("pointerdown", function (evt) {
-    if (points.some((p) => p.contains(evt.target)) || tooltip.contains(evt.target)) return;
+    if (
+      points.some((p) => p.contains(evt.target)) ||
+      shapes.some((s) => s.contains(evt.target)) ||
+      tooltip.contains(evt.target)
+    )
+      return;
     clear();
   });
 }

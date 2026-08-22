@@ -566,7 +566,25 @@ body {
    path away at the moment the live map arrives. Found by looking at the live page, not by an
    assertion. */
 .mw-overlay { z-index: 2; pointer-events: none; }
-.mw-overlay .pt { pointer-events: auto; }
+/* B6.14a IN THE FALLBACK TOO, ruled 2026-08-23. This line used to give .pt pointer-events auto, so
+   with the script running but the live layer absent the ONLY thing a pointer could talk to was a
+   28px disc at each country's cloud anchor — the very target the live layer exists to replace.
+   Measured the day the country outlines gained their data-key: Germany is drawn 90px across and
+   answered nothing at its own right edge. Now the outline is the target (interaction.mjs forwards a
+   pointer on .region[data-key] to the button of the same key) and only the countries too small to
+   land a pointer on by their own shape keep a pointer-active disc — needsPointerTarget in
+   DotDensityWeb.tsx, which is the arrangement mapgen-choropleth-web already ships. */
+.mw-overlay .pt { pointer-events: none; }
+.mw-overlay .pt-small { pointer-events: auto; }
+/* The country a pointer is on, marked on the plate itself rather than only by a disc over it. */
+.region.pt-active { filter: brightness(0.9); }
+/* AND THE DECORATION DOES NOT ANSWER FOR THE COUNTRY. Measured with elementFromPoint on the
+   delivered page, 2026-08-23: at four points inset from Germany's own drawn edges the topmost
+   element was a dot at two of them and the baked plate at a third, so forwarding the country's own
+   outline was wired and still silent — the outline was never the thing a pointer reached. A dot
+   stands for a number of people, carries no reading of its own and is not a target; the plate is a
+   picture. Both are now transparent to a pointer and the country underneath answers. */
+svg.map image, svg.map circle { pointer-events: none; }
 /* Live, the canvas is what a pointer talks to, and the country's own polygon is what answers — a
    fill layer fires anywhere inside the country rather than over a 28px disc at its anchor, which is
    what B6.14a asked for. The buttons stay in the DOM, still Tab-reachable and still carrying their
