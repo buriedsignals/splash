@@ -682,3 +682,59 @@ describe("a beat with no filter dimension", () => {
     );
   });
 });
+
+/**
+ * THE MAP'S HEIGHT BELONGS TO THE FORMAT, NOT TO THE FILE A BEAT REPLACES.
+ *
+ * The viewport's WIDTH has always been the format's — `buildCss` computes it from the plate's own
+ * frame. Its HEIGHT came from an inline `aspect-ratio` written inside `MapWebSeed.tsx`, which is
+ * exactly the file a beat is told to replace with its own component. A beat that wrote its own and
+ * did not carry that one style got a box with no height: measured in round six on
+ * `stress-ab-emigration-flows`, a 451x2 px map, found by driving the page and by nobody's test.
+ *
+ * The rule is now emitted beside the width, from the same `frame`, so the two can never be asked
+ * for two different shapes, and it is `!important` for the one reason `!important` is ever right
+ * here: an inline style on the component's own element would otherwise outrank the format, which is
+ * the defect. The live rule keeps its own override — a live MapLibre canvas has no plate aspect to
+ * preserve — and wins on specificity, as it always did.
+ */
+describe("the viewport's shape", () => {
+  async function buildFrame(frame: unknown) {
+    const outDir = mkdtempSync(join(tmpdir(), "map-web-frame-"));
+    try {
+      await renderMapWeb({
+        component: MapWebSeed,
+        table: RegionTable,
+        props: { ...BASE, geometry: { frame, points: POINTS } } as any,
+        outDir,
+        name: "beat.html",
+        tableRowNoun: "metro areas",
+      });
+      return readFileSync(join(outDir, "beat.html"), "utf8");
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+
+  it("should state the height in the format's own stylesheet, from the plate's own frame", async () => {
+    const html = await buildFrame({ width: 1000, height: 600 });
+    expect(html).toContain("aspect-ratio: 1000 / 600 !important;");
+  });
+
+  it("should not leave the shape to an inline style a replacement component can drop", async () => {
+    const html = await buildFrame({ width: 1000, height: 600 });
+    expect(html).not.toMatch(/style="[^"]*aspect-ratio/);
+  });
+
+  it("should refuse a frame that is not a shape, rather than draw a strip", async () => {
+    // The 451x2 defect's own shape, arrived at from the data side: a frame with no height cannot
+    // produce a map, and the throw names the prop rather than leaving a 2px box on the page.
+    await expect(buildFrame({ width: 1000, height: 0 })).rejects.toThrow(
+      /geometry\.frame/,
+    );
+    await expect(buildFrame({ width: 0, height: 600 })).rejects.toThrow(
+      /geometry\.frame/,
+    );
+    await expect(buildFrame(undefined)).rejects.toThrow(/geometry\.frame/);
+  });
+});

@@ -338,6 +338,14 @@ function assertRecordedLanguage(language) {
 }
 
 async function renderMapWeb({ component, table, props, outDir, name, regionTable = true, tableRowNoun = null, live = false, plan = null }) {
+  // A FRAME IS A SHAPE, and a beat that hands over half of one is told so here rather than shipping
+  // a strip. Both the viewport's width and its height are computed from these two numbers.
+  const declaredFrame = props?.geometry?.frame;
+  if (!declaredFrame || !(declaredFrame.width > 0) || !(declaredFrame.height > 0))
+    throw new Error(
+      "geometry.frame must carry a positive width and height — the plate's own, in its own pixels; " +
+        `this beat handed over ${JSON.stringify(declaredFrame ?? null)}`,
+    );
   const language = assertRecordedLanguage(props.language);
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
@@ -647,6 +655,16 @@ ${filterStyling}/* The stage: the leftover height, and the container the map is 
      below takes over and this becomes 'auto' — a pannable box must clip. */
   overflow: visible;
   border: 1px solid var(--muted);
+  /* THE HEIGHT, AND IT BELONGS TO THE FORMAT. It used to come from an inline 'aspect-ratio' written
+     inside MapWebSeed.tsx — the one file a beat is told to REPLACE with its own component — so a
+     beat that wrote its own and did not carry that style got a box with no height. Measured in
+     round six on stress-ab-emigration-flows: a 451x2 px map, found by driving the page and by
+     nobody's test. It is emitted here now, from the same frame the width above is computed from,
+     so the box can never be asked to be two shapes at once.
+     '!important' for the one reason it is ever right here: an inline style on the component's own
+     element outranks any stylesheet rule, and that outranking IS the defect. The live rule below
+     still wins — a live canvas has no plate aspect to keep — on selector specificity, as before. */
+  aspect-ratio: ${frame.width} / ${frame.height} !important;
 }
 .mw-viewport[tabindex] { outline-offset: 2px; }
 .mw-viewport[tabindex]:focus-visible { outline: 2px solid var(--ink); }

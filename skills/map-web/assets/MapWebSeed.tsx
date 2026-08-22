@@ -205,10 +205,12 @@ export function MapWebSeed({
           centres it rather than pushing it past the fold, and a stretched plate (a lie about
           distance and shape) is never one of the outcomes. */}
       <div className="mw-stage">
-        <div
-          className="mw-viewport"
-          style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
-        >
+        {/* NO INLINE SHAPE HERE. The viewport's width AND its height are the FORMAT's, emitted by
+            `render-web.mjs`'s own `buildCss` from this same plate's frame. This element used to
+            carry an inline `aspect-ratio`, which meant the height travelled in the file a beat is
+            told to replace: a beat that wrote its own component and did not copy that one style got
+            a box with no height at all (round six, `stress-ab-emigration-flows`: a 451x2 px map). */}
+        <div className="mw-viewport">
           {/* LAYER 2 — the live MapTiler map (R1). Empty and hidden until `live-map.mjs` gets a
               `map.on("load")`; a style failure, a dead key, no network or no JavaScript at all
               leaves layer 1 below exactly where it is. Its own container, not a wrapper around the

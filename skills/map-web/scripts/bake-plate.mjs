@@ -50,7 +50,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * study set. Chosen from the geography, not a default (`geo-discipline.md` rule 12): the study
  * set's own lon/lat extent is roughly -9.1..23.7 / 38.0..59.3, padded ~5° on every side.
  */
-const BEAT = {
+const SEED_BEAT = {
   bounds: [
     [-14, 34],
     [28, 64],
@@ -70,6 +70,51 @@ const flag = (name, fallback) => {
 const size = Number(flag("--size", "1000"));
 const outDir = flag("--out", `/tmp/map-twin-web/plate-${size}`);
 const dataPath = flag("--data", join(HERE, "../assets/sample-data/regions.json"));
+/**
+ * THE CAMERA AND THE BASEMAP ARE THE BEAT'S, NOT THE SKILL'S.
+ *
+ * Both used to be constants in this file and nothing else: `--size`, `--out` and `--data` were
+ * flags, while the two decisions that are most obviously per-story — WHICH GROUND this map covers
+ * and WHICH BASEMAP it is drawn over — could only be changed by editing a file inside the skill.
+ * The consequence was measured twice in round six: `bake-plate.mjs` hard-codes `dataviz-light` with
+ * no flag, and a beat that needed another camera copied the whole script into its own directory to
+ * change two lines, which is how a beat's bake drifts from the canonical one
+ * (`splash/test/bake-parity.test.ts` found exactly that, in two functions, this round).
+ *
+ * `--bounds` takes the same `[[west, south], [east, north]]` the camera has always been written as,
+ * as JSON; `--style` takes a MapTiler style id. Both default to the seed's own, so every existing
+ * caller — the example runners, the sealed-bake path, the install check — runs unchanged. The
+ * camera is still CHOSEN FROM THE GEOGRAPHY and never defaulted into (geo-discipline.md rule 12):
+ * what changes is only that a beat can now say so on the command line instead of in a fork.
+ */
+function beatCamera() {
+  const declared = flag("--bounds", null);
+  const style = flag("--style", SEED_BEAT.style);
+  if (!declared) return { bounds: SEED_BEAT.bounds, style };
+  let bounds;
+  try {
+    bounds = JSON.parse(declared);
+  } catch {
+    throw new Error(`--bounds is not JSON: ${declared}`);
+  }
+  const shaped =
+    Array.isArray(bounds) &&
+    bounds.length === 2 &&
+    bounds.every((corner) => Array.isArray(corner) && corner.length === 2 && corner.every(Number.isFinite));
+  if (!shaped)
+    throw new Error(
+      `--bounds must be [[west, south], [east, north]] with four finite numbers; got ${declared}`,
+    );
+  const [[west, south], [east, north]] = bounds;
+  if (!(east > west) || !(north > south))
+    throw new Error(
+      `--bounds must run west to east and south to north; got ${declared} — a box with no area ` +
+        "bakes a plate with no ground in it",
+    );
+  return { bounds, style };
+}
+
+const BEAT = beatCamera();
 const settleMs = Number(flag("--settle", "15000"));
 const sealedBrowserPath = flag("--browser", null);
 const sealedMaplibreJsPath = flag("--maplibre-js", null);
