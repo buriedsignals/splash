@@ -192,3 +192,105 @@ export function inkThatReadsOver(fills, floor) {
   }
   return best.pole;
 }
+
+/**
+ * THE ANSWER `inkThatReadsOver`'S REFUSAL ASKS FOR, when moving the annotation is not the fix.
+ *
+ * That function throws when no single ink reads over every background an annotation crosses, and
+ * says "move it onto one of them". For a LABEL that is the right instruction — a word lying half
+ * on the page and half on a bar is in the wrong place. For a RULE it is not: a median rule on a
+ * histogram, a reference line on a bar chart, a target line on a column chart all cross the plot
+ * by definition, and there is nowhere else for them to be.
+ *
+ * ROUND SIX, `stress-aa-salary-spread`, measured. That newsroom's ground is dark (`#16191B`) and
+ * its accent is a light gold (`#D4A853`, 8.01:1 on it). Both legitimate, and 8:1 apart:
+ *
+ *     inkThatReadsOver(["#16191B", "#D4A853"], 3)
+ *     -> no ink reads at 3:1 over all of #16191B, #D4A853 — #000000 reaches only 1.19:1 against
+ *        #16191B; #FFFFFF reaches only 2.20:1 against #D4A853. … move it onto one of them.
+ *
+ * The refusal was right and it is the ORDINARY case for any newsroom whose ground is dark and
+ * whose accent is legible on it. That beat wrote the answer by hand — the rule drawn as two
+ * segments, each inked against the one background it actually has, computed off `marksUnder` — and
+ * nothing here offered it, so the earlier carbon histogram had solved the same problem by dropping
+ * its accent entirely, which is a different beat rather than a reusable answer.
+ *
+ * This is that answer: the refusal's own instruction, applied per run. It returns the segments to
+ * DRAW, each with the fill it lies on and the ink that reads there, covering the box exactly —
+ * no gap, no overlap, and adjacent runs of the same fill merged so a histogram's touching bins do
+ * not produce a seam per bin.
+ *
+ * SPLITTING IS NOT A WAY PAST THE FLOOR. Each run is inked by `inkThatReadsOver` against its own
+ * single background, so a run over a mid-tone no pole reads on still throws — and the message now
+ * names one background instead of two, which is the more useful refusal.
+ *
+ * A RULE HAS A LONG AXIS and its runs lie along it: a vertical rule is cut in y, a horizontal one
+ * in x. A box with no long axis is refused rather than guessed at — that shape is a label, and a
+ * label's answer is `inkThatReadsOver` plus a position, not a split.
+ *
+ * PAINTER'S ORDER decides a run two marks both cover: the LAST one in `marks` is the one on top,
+ * which is the order the beat drew them in and the only order that matches what a reader sees.
+ */
+export function segmentsByBackground(box, marks, { ground, floor } = {}) {
+  if (!Number.isFinite(floor)) {
+    throw new Error(
+      `segmentsByBackground needs an explicit floor — ${NON_TEXT_CONTRAST_FLOOR} for a rule or any ` +
+        `other non-text mark (SC 1.4.11), textContrastFloor(font) for a label. Got ${JSON.stringify(floor)}`,
+    );
+  }
+  if (typeof ground !== "string" || !ground) {
+    throw new Error(
+      `segmentsByBackground needs the page ground — it is the fill of every run no mark covers, and ` +
+        `leaving it out would ink those runs against nothing. Got ${JSON.stringify(ground)}`,
+    );
+  }
+  if (box.width === box.height) {
+    throw new Error(
+      `segmentsByBackground was given a ${box.width}x${box.height} box, which has no long axis to ` +
+        `split along. This is for a RULE — a line whose runs lie along its own length. A label that ` +
+        `crosses two backgrounds is a POSITION problem: ink it with inkThatReadsOver and move it ` +
+        `onto one background, which is what that function's refusal says.`,
+    );
+  }
+  const vertical = box.height > box.width;
+  const start = vertical ? box.y : box.x;
+  const end = start + (vertical ? box.height : box.width);
+  const crossing = marksUnder(box, marks);
+
+  // The cut points: every edge, along the long axis, where the background can change.
+  const cuts = new Set([start, end]);
+  for (const mark of crossing) {
+    const from = vertical ? mark.y : mark.x;
+    const to = from + (vertical ? mark.height : mark.width);
+    if (from > start && from < end) cuts.add(from);
+    if (to > start && to < end) cuts.add(to);
+  }
+  const edges = [...cuts].sort((a, b) => a - b);
+
+  const runs = [];
+  for (let i = 0; i < edges.length - 1; i++) {
+    const from = edges[i];
+    const to = edges[i + 1];
+    if (to <= from) continue;
+    const middle = (from + to) / 2;
+    // LAST wins: painter's order.
+    let fill = ground;
+    for (const mark of crossing) {
+      const markFrom = vertical ? mark.y : mark.x;
+      const markTo = markFrom + (vertical ? mark.height : mark.width);
+      if (middle > markFrom && middle < markTo) fill = mark.fill;
+    }
+    const previous = runs[runs.length - 1];
+    if (previous && previous.fill === fill) previous.to = to;
+    else runs.push({ from, to, fill });
+  }
+
+  return runs.map((run) => ({
+    x: vertical ? box.x : run.from,
+    y: vertical ? run.from : box.y,
+    width: vertical ? box.width : run.to - run.from,
+    height: vertical ? run.to - run.from : box.height,
+    fill: run.fill,
+    ink: inkThatReadsOver([run.fill], floor),
+  }));
+}

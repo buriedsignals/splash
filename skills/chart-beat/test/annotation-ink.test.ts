@@ -51,6 +51,7 @@ import {
   worstContrast,
   assertAnnotationReadsOverMarks,
   inkThatReadsOver,
+  segmentsByBackground,
 } from "../scripts/annotation-ink.mjs";
 
 describe("the two floors are the two the spec names, not one applied twice", () => {
@@ -204,5 +205,116 @@ describe("inkThatReadsOver — the deriving half", () => {
     expect(() => inkThatReadsOver([], NON_TEXT_CONTRAST_FLOOR)).toThrow(
       "no backgrounds",
     );
+  });
+});
+
+// THE CASE `inkThatReadsOver` IS RIGHT TO REFUSE, AND HAD NO ANSWER FOR.
+//
+// Round six, `stress-aa-salary-spread`. This newsroom's ground is dark (`#16191B`) and its accent
+// is a light gold (`#D4A853`, 8.01:1 against it). Both are legitimate; a full-height rule crosses
+// both, and no single ink reads over the pair:
+//
+//     inkThatReadsOver(["#16191B", "#D4A853"], 3)
+//     -> no ink reads at 3:1 over all of #16191B, #D4A853 — #000000 reaches only 1.19:1 against
+//        #16191B; #FFFFFF reaches only 2.20:1 against #D4A853. … move it onto one of them.
+//
+// Correct, and it is the ORDINARY case for any newsroom whose ground is dark and whose accent is
+// legible on it — a median rule on a histogram, a reference line on a bar chart. That beat wrote
+// the answer by hand: the rule drawn as two segments, each inked against the one background it
+// actually has. The refusal's own instruction, applied twice. Nothing here offered it, so the
+// carbon histogram had solved the same problem by dropping its accent entirely, which is a
+// different beat rather than a reusable answer.
+describe("segmentsByBackground — the answer the refusal asks for", () => {
+  const GROUND = "#16191B";
+  const ACCENT = "#D4A853";
+  // A vertical rule falling through the plot, crossing one accent bar that starts halfway down.
+  const RULE = { x: 200, y: 40, width: 2, height: 200 };
+  const BAR = { x: 180, y: 140, width: 60, height: 100, fill: ACCENT };
+
+  it("should split the rule where the background changes and ink each part against its own", () => {
+    const parts = segmentsByBackground(RULE, [BAR], {
+      ground: GROUND,
+      floor: NON_TEXT_CONTRAST_FLOOR,
+    });
+    expect(parts).toHaveLength(2);
+    expect(parts[0]).toMatchObject({ y: 40, height: 100, fill: GROUND, ink: "#FFFFFF" });
+    expect(parts[1]).toMatchObject({ y: 140, height: 100, fill: ACCENT, ink: "#000000" });
+  });
+
+  it("should cover the rule exactly — no gap, no overlap, nothing drawn twice", () => {
+    const parts = segmentsByBackground(RULE, [BAR], {
+      ground: GROUND,
+      floor: NON_TEXT_CONTRAST_FLOOR,
+    });
+    expect(parts[0].y).toBe(RULE.y);
+    expect(parts[parts.length - 1].y + parts[parts.length - 1].height).toBe(RULE.y + RULE.height);
+    for (let i = 1; i < parts.length; i++) {
+      expect(parts[i].y).toBe(parts[i - 1].y + parts[i - 1].height);
+    }
+    for (const part of parts) {
+      expect(part.x).toBe(RULE.x);
+      expect(part.width).toBe(RULE.width);
+    }
+  });
+
+  it("should give ONE segment when the rule never leaves the ground", () => {
+    const parts = segmentsByBackground(RULE, [], { ground: GROUND, floor: NON_TEXT_CONTRAST_FLOOR });
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toMatchObject({ ...RULE, fill: GROUND, ink: "#FFFFFF" });
+  });
+
+  it("should split a HORIZONTAL rule along x, because a rule's runs lie on its own long axis", () => {
+    const across = { x: 100, y: 300, width: 200, height: 2 };
+    const block = { x: 200, y: 280, width: 100, height: 60, fill: ACCENT };
+    const parts = segmentsByBackground(across, [block], {
+      ground: GROUND,
+      floor: NON_TEXT_CONTRAST_FLOOR,
+    });
+    expect(parts).toHaveLength(2);
+    expect(parts[0]).toMatchObject({ x: 100, width: 100, fill: GROUND });
+    expect(parts[1]).toMatchObject({ x: 200, width: 100, fill: ACCENT });
+    for (const part of parts) expect(part.y).toBe(across.y);
+  });
+
+  it("should merge runs the eye would see as one, rather than emit a seam per bar", () => {
+    // Two touching bars of the same fill — a histogram's bins touch by definition. One segment.
+    const binA = { x: 180, y: 125, width: 30, height: 100, fill: ACCENT };
+    const binB = { x: 210, y: 120, width: 30, height: 120, fill: ACCENT };
+    const parts = segmentsByBackground({ x: 100, y: 130, width: 200, height: 2 }, [binA, binB], {
+      ground: GROUND,
+      floor: NON_TEXT_CONTRAST_FLOOR,
+    });
+    expect(parts.map((p) => p.fill)).toEqual([GROUND, ACCENT, GROUND]);
+  });
+
+  it("should give the TOPMOST mark to a run two marks both cover — painter's order, not array luck", () => {
+    const under = { x: 180, y: 140, width: 60, height: 100, fill: ACCENT };
+    const over = { x: 180, y: 140, width: 60, height: 100, fill: "#5B8A8A" };
+    const parts = segmentsByBackground(RULE, [under, over], {
+      ground: GROUND,
+      floor: NON_TEXT_CONTRAST_FLOOR,
+    });
+    expect(parts[1].fill).toBe("#5B8A8A");
+  });
+
+  it("should refuse a box with no long axis, because a square is not a rule", () => {
+    expect(() =>
+      segmentsByBackground({ x: 0, y: 0, width: 20, height: 20 }, [], {
+        ground: GROUND,
+        floor: NON_TEXT_CONTRAST_FLOOR,
+      }),
+    ).toThrow(/long axis/);
+  });
+
+  // SPLITTING IS NOT A WAY PAST THE FLOOR, and the floor is the CALLER's. Measured across all 256
+  // greys: at 4.5:1 every one of them still has a passing pole (`#757575` is the hardest, at
+  // 4.61:1 to white), which is the same sweep `adjustToContrast` records — so the property is shown
+  // at the first floor where a background genuinely has no ink at all, rather than at a number
+  // chosen to make the test easy.
+  it("should still refuse when ONE background has no ink of its own — splitting is not a way past the floor", () => {
+    const midGrey = { x: 180, y: 140, width: 60, height: 100, fill: "#757575" };
+    expect(() =>
+      segmentsByBackground(RULE, [midGrey], { ground: GROUND, floor: 5 }),
+    ).toThrow(/no ink reads at 5:1/);
   });
 });
