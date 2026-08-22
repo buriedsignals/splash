@@ -676,11 +676,107 @@ const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
     name: "scrolly with no size — a scroll has no single exported frame",
     slot: without(SLOT, "size", { format: "scrolly" }),
   },
+  // ONE SLOT, SEVERAL FRAMES — round six, beat V. Its journalist asked for portrait for stories
+  // AND square for the feed: one argument, two frames. The only shape the contract offered was two
+  // slots, which is two beats, two briefs, two approvals and two deliveries for one visual, so the
+  // producer pinned one size on the slot and registered two compositions inside the beat — the
+  // record saying one thing and the delivery doing another.
+  {
+    name: "static + [portrait, square] — one argument, two frames",
+    slot: { ...SLOT, size: "[portrait, square]" },
+  },
+  {
+    name: "video + [landscape, portrait, square] — all three",
+    slot: { ...SLOT, format: "video", size: "[landscape, portrait, square]" },
+  },
+  {
+    name: "the same size twice",
+    slot: { ...SLOT, size: "[portrait, portrait]" },
+  },
+  {
+    name: "a list with one size nobody exports in it",
+    slot: { ...SLOT, size: "[portrait, billboard]" },
+  },
+  {
+    name: "an EMPTY size list — the truthy-[] hole",
+    slot: { ...SLOT, size: "[]" },
+  },
+  {
+    name: "web with a size LIST — still not a fourth size",
+    slot: { ...SLOT, format: "web", size: "[landscape, portrait]" },
+  },
 ];
+
+// ── The other half of the same decision: one slot carrying several MEDIA ──────────────────────
+//
+// Round six, beat AC: a scrolly that is a chart, then two photographs, then a locator map. Its
+// storyboard recorded `medium: chart` and said so in its own prose — *"that is a compromise, not a
+// reading"* — because a slot carried exactly one medium and the contract could not say what the
+// beat IS. `assembles` is that sentence, machine-checked: the order the reader meets the media,
+// opening on the one the slot dispatches on, and only on a format that carries several behind one
+// narrative.
+const ASSEMBLY_FIXTURES: Array<{ name: string; slot: Record<string, string> }> =
+  [
+    {
+      name: "a scrolly that assembles chart, photographs and a map — beat AC's real shape",
+      slot: without(SLOT, "size", {
+        format: "scrolly",
+        assembles: "[chart, image, map]",
+      }),
+    },
+    {
+      name: "a scrolly with no assembles at all — still legal, it draws one medium",
+      slot: without(SLOT, "size", { format: "scrolly" }),
+    },
+    {
+      name: "assembles on a STATIC slot — a static beat draws one medium",
+      slot: { ...SLOT, assembles: "[chart, image]" },
+    },
+    {
+      name: "assembles listing one medium — says nothing the medium field does not",
+      slot: without(SLOT, "size", {
+        format: "scrolly",
+        assembles: "[chart]",
+      }),
+    },
+    {
+      name: "assembles repeating a medium",
+      slot: without(SLOT, "size", {
+        format: "scrolly",
+        assembles: "[chart, map, chart]",
+      }),
+    },
+    {
+      name: "assembles opening on a medium that is not the slot's own",
+      slot: without(SLOT, "size", {
+        format: "scrolly",
+        assembles: "[image, chart, map]",
+      }),
+    },
+    {
+      name: "an EMPTY assembles list",
+      slot: without(SLOT, "size", { format: "scrolly", assembles: "[]" }),
+    },
+    {
+      name: "medium recorded as a LIST — the shape this contract does NOT take",
+      slot: { ...SLOT, medium: "[chart, image, map]" },
+    },
+    {
+      name: "an EMPTY medium list — the truthy-[] hole, one field over",
+      slot: { ...SLOT, medium: "[]" },
+    },
+  ];
 
 const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
   { name: "complete: every scalar, every slot field", text: build() },
   { name: "no slots", text: build(SCALARS, null) },
+  // The two list-carrying shapes, as CLOSED-OR-NOT as well as word for word. The verbatim block
+  // below compares the size and assembles lines; this compares the verdict a journalist actually
+  // experiences, which is the phase.
+  ...[...SIZE_FIXTURES, ...ASSEMBLY_FIXTURES].map(({ name, slot }) => ({
+    name: `slot shape: ${name}`,
+    text: build(SCALARS, slot),
+  })),
 ];
 
 for (const field of SCALAR_FIELDS) {
@@ -808,9 +904,9 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
 // A7/A14 with better manners, and only a string comparison sees it.
 describe("gate 2c: both readings of R2's format × size rule, string for string", () => {
   const sizeLines = (gaps: string[]) =>
-    gaps.filter((g) => /\bsize\b/.test(g)).sort();
+    gaps.filter((g) => /\bsize\b|\bassembles\b|records a list/.test(g)).sort();
 
-  for (const { name, slot } of SIZE_FIXTURES) {
+  for (const { name, slot } of [...SIZE_FIXTURES, ...ASSEMBLY_FIXTURES]) {
     it(`should agree, verbatim, on: ${name}`, async () => {
       const text = build(SCALARS, slot);
       await writeFile(join(dir, "source", "article.md"), "text");
@@ -838,6 +934,34 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     expect(await closes({ ...SLOT, format: "web", size: "landscape" })).toBe(
       false,
     );
+  });
+
+  it("should let ONE slot carry several frames of one argument, and refuse a repeat", async () => {
+    // Beat V, as a phase rather than as a message: portrait for stories AND square for the feed is
+    // one claim, one beat, one brief, one approval, one delivery — several exported frames.
+    const closes = async (slot: Record<string, string>) => {
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
+      return (await whereIs(dir)).phase !== "storyboard";
+    };
+    expect(await closes({ ...SLOT, size: "[portrait, square]" })).toBe(true);
+    expect(await closes({ ...SLOT, size: "[portrait, portrait]" })).toBe(false);
+    expect(await closes({ ...SLOT, size: "[]" })).toBe(false);
+  });
+
+  it("should let ONE scrolly slot say which media it assembles, in the order the reader meets them", async () => {
+    const closes = async (slot: Record<string, string>) => {
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
+      return (await whereIs(dir)).phase !== "storyboard";
+    };
+    const scrolly = (assembles: string) =>
+      without(SLOT, "size", { format: "scrolly", assembles });
+    expect(await closes(scrolly("[chart, image, map]"))).toBe(true);
+    expect(await closes(scrolly("[image, chart, map]"))).toBe(false);
+    expect(await closes({ ...SLOT, assembles: "[chart, image]" })).toBe(false);
   });
 
   it("should name all three sizes when refusing one it does not export", () => {

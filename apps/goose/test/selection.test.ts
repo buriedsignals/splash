@@ -89,6 +89,10 @@ beforeEach(async () => {
   await writeFile(join(storyPath, "source", "article.md"), "Article\n");
   await writeFile(join(storyPath, "source", "profile.json"), "{}\n");
   await writeFile(join(storyPath, "STORYBOARD.md"), formatGate());
+  // Gate 2 closes into TWO files. `SUBJECTS.md` is the survey of the article's other angles,
+  // written at movement 10 of the storyboard exchange; recorded here as the empty survey so these
+  // cases stay about the selection gates. Its own rule is asserted in `splash/test/where.test.ts`.
+  await writeFile(join(storyPath, "SUBJECTS.md"), "---\nsubjects:\n---\n");
   const randomValues = [
     "binding-challenge-123456789",
     "binding-capability-123456789",

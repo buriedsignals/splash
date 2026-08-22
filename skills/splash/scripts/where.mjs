@@ -92,6 +92,10 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 // recorded and that it looks like one; what a code MEANS is `deliver`'s `resolveScaffoldLanguage`,
 // and stays there.
 export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
+// `assembles` is deliberately NOT here: it is the optional list a vehicle format records, not a
+// field every slot owes, and `assemblyGapFor` owns it entirely. Its fixtures are written out in
+// `splash/test/where.test.ts`'s own ASSEMBLY_FIXTURES and compared string for string against
+// storyboard's copy, because a field no constant implies is a field no generator can reach.
 export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
 
 // Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
@@ -119,12 +123,61 @@ const DELIVERY_MANIFEST_SCHEMA_VERSION = 1;
 // the same storyboard for two different-sounding reasons.
 function sizeGapFor(format, size, label) {
   const takesASize = SIZED_FORMATS.includes(format);
-  if (!takesASize && size)
+  const sizes = recorded(size);
+  if (!takesASize && sizes.length > 0)
     return `slot ${label}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
   if (!takesASize) return null;
-  if (!size) return `slot ${label}: size is missing — gate 2c never closed`;
-  if (!EXPORT_SIZES.includes(size))
-    return `slot ${label}: size ${JSON.stringify(size)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  if (sizes.length === 0) return `slot ${label}: size is missing — gate 2c never closed`;
+  const unknown = sizes.find((one) => !EXPORT_SIZES.includes(one));
+  if (unknown !== undefined)
+    return `slot ${label}: size ${JSON.stringify(unknown)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  if (new Set(sizes).size !== sizes.length)
+    return `slot ${label}: the same size is recorded twice — a slot exports each frame once`;
+  return null;
+}
+
+// THE FORMATS THAT CARRY SEVERAL MEDIA BEHIND ONE NARRATIVE, and therefore the only ones a slot may
+// record an `assembles` list on. Spelled here independently of storyboard's own copy, exactly as
+// `SIZED_FORMATS` is, and cross-checked by the same string-for-string fixtures.
+//
+// `scrolly` is the whole list today, and that is the point of the field: a scroll-driven piece is a
+// VEHICLE, not a fourth chart format — its own skill's words — and beat AC was a chart, then two
+// photographs, then a locator map, in that order, in one beat. Its storyboard recorded
+// `medium: chart` and wrote underneath that this "is a compromise, not a reading", because the slot
+// could carry exactly one medium and the record could not say what the beat IS.
+const ASSEMBLING_FORMATS = ["scrolly"];
+
+// A recorded field as the LIST it stands for: one answer is a list of one, an absent field is
+// empty, and an inline `[]` is empty rather than TRUTHY — which is what it used to be, so
+// `medium: []` and `size: []` both satisfied a presence check that reads `if (!value)`.
+function recorded(value) {
+  if (Array.isArray(value)) return value;
+  return value === null || value === undefined || value === "" ? [] : [value];
+}
+
+/**
+ * ONE SLOT CARRYING SEVERAL MEDIA — `null` when this slot's `assembles` list agrees with its
+ * `medium` and its format, otherwise the one line the gate refuses in. Worded VERBATIM as
+ * storyboard/scripts/storyboard.mjs words it, and compared string for string by
+ * `splash/test/where.test.ts` for the same reason the size refusals are.
+ *
+ * The list is the ORDER THE READER MEETS THE MEDIA, and it opens on the slot's own `medium` — so
+ * `medium` stays the single key production dispatches on and stops being a compromise, while the
+ * record finally says what a mixed-media beat is. A slot is still ONE claim, ONE beat directory,
+ * ONE brief, ONE approval and ONE delivery; splitting beat AC into three slots would have been
+ * three of each for one visual.
+ */
+function assemblyGapFor(medium, format, assembles, label) {
+  const media = recorded(assembles);
+  if (media.length === 0) return null;
+  if (!ASSEMBLING_FORMATS.includes(format))
+    return `slot ${label}: a ${format} beat draws ONE medium — assembles belongs to a format that carries several behind one narrative (${ASSEMBLING_FORMATS.join(", ")}); anything else is one slot per medium`;
+  if (media.length < 2)
+    return `slot ${label}: assembles lists one medium, which says nothing the medium field does not — list every medium the reader meets, or leave the field out`;
+  if (new Set(media).size !== media.length)
+    return `slot ${label}: the same medium is recorded twice in assembles — the list is the order the reader meets them, not a tally`;
+  if (media[0] !== medium)
+    return `slot ${label}: assembles opens on ${JSON.stringify(media[0])} and this slot's medium is ${JSON.stringify(medium)} — the list is the order the reader meets them, so its first entry is the medium this beat is produced as`;
   return null;
 }
 
@@ -429,8 +482,19 @@ function missingForGate2(frontmatter) {
       // it is required at all depends on the format.
       if (field === "size") continue;
       const value = slot[field];
-      if (!value) {
+      // An inline `[]` parses to an EMPTY ARRAY, and an empty array is truthy — so `medium: []`
+      // and `format: []` both walked through a bare `if (!value)` as answered. `recorded` is the
+      // one reading of "what did this field actually record", and it is the same one `sizeGapFor`
+      // and `assemblyGapFor` use.
+      if (recorded(value).length === 0) {
         gaps.push(slotGap(field, label));
+        continue;
+      }
+      // Every required field but `size` takes ONE answer. `size` is the exception on purpose — one
+      // argument can ship as several frames — and `assembles` is the other list this contract
+      // knows; a list anywhere else is a slot trying to be two slots.
+      if (Array.isArray(value)) {
+        gaps.push(`slot ${label}: ${field} records a list where this contract takes one answer`);
         continue;
       }
       const vocabulary = SLOT_VOCABULARY[field];
@@ -439,6 +503,9 @@ function missingForGate2(frontmatter) {
 
     const sizeGap = sizeGapFor(slot.format, slot.size, label);
     if (sizeGap) gaps.push(sizeGap);
+
+    const assemblyGap = assemblyGapFor(slot.medium, slot.format, slot.assembles, label);
+    if (assemblyGap) gaps.push(assemblyGap);
 
     if (!slot.chosen) return;
     if (candidates.length === 0) {
@@ -466,13 +533,17 @@ function orderedStoryboardGate(frontmatter, slots) {
     if (!slot.medium) return { gate: "G2a", awaiting: "medium", slotId };
     if (!slot.format) return { gate: "G2b", awaiting: "format", slotId };
     if (slot.reachable !== "yes") return { gate: "G2b", awaiting: "reachability", slotId };
-    if (SIZED_FORMATS.includes(slot.format) && !slot.size) {
+    if (assemblyGapFor(slot.medium, slot.format, slot.assembles, slotId)) {
+      return { gate: "G2a", awaiting: "assembly", slotId };
+    }
+    const sizes = recorded(slot.size);
+    if (SIZED_FORMATS.includes(slot.format) && sizes.length === 0) {
       return { gate: "G2c", awaiting: "size", slotId };
     }
-    if (!SIZED_FORMATS.includes(slot.format) && slot.size) {
+    if (!SIZED_FORMATS.includes(slot.format) && sizes.length > 0) {
       return { gate: "G2c", awaiting: "size-removal", slotId };
     }
-    if (slot.size && !EXPORT_SIZES.includes(slot.size)) {
+    if (sizeGapFor(slot.format, slot.size, slotId)) {
       return { gate: "G2c", awaiting: "size", slotId };
     }
   }

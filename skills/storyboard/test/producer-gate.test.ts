@@ -238,6 +238,10 @@ describe("persisted producer state", () => {
     for (const child of ["source", "beats", "export"]) await mkdir(join(storyDir, child));
     await writeFile(join(storyDir, "source", "article.md"), "article");
     await writeFile(join(storyDir, "source", "profile.json"), "{}");
+    // Gate 2's SECOND file, recorded here so these cases stay about the producer sub-gate. The
+    // survey of the article's other angles is what movement 10 writes; a story without it never
+    // leaves the storyboard phase, which is asserted in `splash/test/where.test.ts`.
+    await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n---\n");
   });
 
   afterEach(async () => {

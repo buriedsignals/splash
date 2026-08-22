@@ -164,6 +164,30 @@ independent stress runs found the two ends of it on real stories.**
   A three-beat story reported `done` with all six halves still pending. `whereIs` carries
   `deliver`'s own `deliveryClosed`, byte for byte, walked by `test/guard-copies-parity.test.ts`.
 
+### One slot, several — the contract's own answer, decided at round six
+
+A slot carried exactly one `medium` and one `size`, and two beats hit the wall from opposite sides.
+A mixed-media scrolly — a chart, then two photographs, then a locator map, one beat — recorded
+`medium: chart` and wrote in its own prose that this "is a compromise, not a reading". A journalist
+who wanted portrait for stories AND square for the feed was offered one shape: a second slot, which
+is a second beat, a second brief, a second approval and a second delivery for one argument.
+
+**The answer is ONE slot carrying several, never several slots**, because a slot is one claim, one
+beat directory, one brief, one approval and one delivery, and neither journalist asked for two of
+any of those. Two fields carry the multiplicity, each in its own gate:
+
+| Field | Takes several when | Refused when |
+| --- | --- | --- |
+| `size:` | one argument ships as several frames — `size: [portrait, square]` | the same frame twice; any entry outside `landscape, square, portrait`; any size at all on `web` or `scrolly` |
+| `assembles:` | a VEHICLE format carries several media behind one narrative — `assembles: [chart, image, map]` | on a format that is not in `ASSEMBLING_FORMATS` (`scrolly` today); a list of one; a repeat; a first entry that is not the slot's own `medium` |
+
+`assembles` is the ORDER the reader meets the media and opens on `medium:`, so `medium` remains the
+single key production dispatches on. It is not in `REQUIRED_SLOT_FIELDS` — it is optional, and
+`assemblyGapFor` owns it entirely — so no constant generates its fixtures and `where.test.ts` writes
+them out and compares both gates' refusals string for string. Every other required slot field takes
+ONE answer: a list anywhere else is a slot trying to be two slots, and an inline `[]` is now read as
+an EMPTY field rather than as the truthy value it used to be.
+
 ### And the same class at G2 itself, on a SECOND file — open until round six
 
 **`SUBJECTS.md` was required at G4, produced at G2, and required by no gate in between.** Six

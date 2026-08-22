@@ -181,6 +181,30 @@ it — the sentence saying so.
 
 Lands in the slot's `medium:`.
 
+**And when the answer is "several" — one slot, not several slots.** A scroll-driven piece is a
+VEHICLE: it assembles different media behind one narrative, and round six ran one that was a chart,
+then two photographs, then a locator map, in that order, as one beat. Its slot recorded
+`medium: chart` and said underneath, in its own prose, that this "is a compromise, not a reading",
+because a slot carried exactly one medium and the record had no way to say what the beat IS.
+
+So a slot on an assembling format also records **`assembles:`** — the media in the order the reader
+meets them, opening on the slot's own `medium`:
+
+    medium: chart
+    format: scrolly
+    assembles: [chart, image, map]
+
+The list is the ORDER, not a set, and its first entry IS `medium:` — which stays the single key
+production dispatches on, and stops being a compromise. It is recorded **only** on a format that
+carries several behind one narrative (`scrolly` today); a static or a video beat draws one medium,
+and a static slot listing two is refused with the answer: that is one slot per medium. A scrolly
+that genuinely draws one medium records no `assembles:` at all, and a list of ONE is refused,
+because it says nothing the `medium:` field does not.
+
+**It does NOT become several slots.** A slot is one claim, one beat directory, one brief, one
+approval and one delivery. Splitting that beat into three would have been three of each for one
+visual — which is exactly what the journalist did not ask for.
+
 ## ⑥ The format — G2b
 
 This movement is a hard turn boundary. Present one recommendation and the complete publication-
@@ -221,6 +245,21 @@ compares this line against both, so it cannot drift into naming a value the gate
     video: landscape, square, portrait
     web: none
     scrolly: none
+
+**And a journalist may want more than one of them, for one argument.** Round six: *portrait for the
+stories, and square for the feed* — one claim, one beat, two frames. The record held one size, so
+the only shape the contract offered was a second slot, which is a second beat, a second brief, a
+second approval and a second delivery for one visual; the producer pinned one size on the slot and
+registered two compositions inside the beat, leaving the record saying one thing and the delivery
+doing another.
+
+So `size:` takes a LIST when they ask for more than one:
+
+    size: [portrait, square]
+
+Ask the question once, and record every frame they name. Both Gate-2 readings check each entry
+against the set above and refuse the same frame recorded twice (*"a slot exports each frame once"*).
+A format that takes no size takes no list either.
 
 `proposeSizes(format)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
 state it and say so** — "this ships landscape; portrait and square are not built yet" — rather than

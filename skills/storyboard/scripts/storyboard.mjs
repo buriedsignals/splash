@@ -246,6 +246,12 @@ export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", 
 // Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
 // EXPORT_SIZES / SIZED_FORMATS below — but it stays in this list because the list is what the parity
 // test generates its fixtures from, and a field removed from it is a field nobody tests.
+//
+// `assembles` is deliberately NOT here: it is the optional list a VEHICLE format records — which
+// media, in which order, behind one narrative — not a field every slot owes, and `assemblyGap` owns
+// it entirely. Its fixtures are written out in `splash/test/where.test.ts` and compared string for
+// string against `where.mjs`'s copy, because a field no constant implies is a field no generator
+// can reach.
 export const REQUIRED_SLOT_FIELDS = [
   "id",
   "proves",
@@ -285,12 +291,61 @@ export const SIZED_FORMATS = ["static", "video"];
  */
 export function sizeGap(format, size, id) {
   const takesASize = SIZED_FORMATS.includes(format);
-  if (!takesASize && size)
+  const sizes = recorded(size);
+  if (!takesASize && sizes.length > 0)
     return `slot ${id}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
   if (!takesASize) return null;
-  if (!size) return `slot ${id}: size is missing — gate 2c never closed`;
-  if (!EXPORT_SIZES.includes(size))
-    return `slot ${id}: size ${JSON.stringify(size)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  if (sizes.length === 0) return `slot ${id}: size is missing — gate 2c never closed`;
+  const unknown = sizes.find((one) => !EXPORT_SIZES.includes(one));
+  if (unknown !== undefined)
+    return `slot ${id}: size ${JSON.stringify(unknown)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  if (new Set(sizes).size !== sizes.length)
+    return `slot ${id}: the same size is recorded twice — a slot exports each frame once`;
+  return null;
+}
+
+// The formats that carry SEVERAL MEDIA behind one narrative, and therefore the only ones a slot may
+// record an `assembles` list on. `where.mjs` spells this out independently, exactly as it does
+// `SIZED_FORMATS`, and the two readings are compared string for string.
+//
+// `scrolly` is the whole list, and that is the point: a scroll-driven piece is a VEHICLE, not a
+// fourth chart format. Round six, beat AC — a chart, then two photographs, then a locator map, one
+// beat — recorded `medium: chart` and wrote underneath that this "is a compromise, not a reading",
+// because a slot carried exactly one medium and the record could not say what the beat IS.
+export const ASSEMBLING_FORMATS = ["scrolly"];
+
+/**
+ * A recorded field as the LIST it stands for: one answer is a list of one, an absent field is
+ * empty, and an inline `[]` is empty rather than truthy — which is what it used to be, so
+ * `medium: []` satisfied a presence check written as `if (!value)`.
+ */
+function recorded(value) {
+  if (Array.isArray(value)) return value;
+  return value === null || value === undefined || value === "" ? [] : [value];
+}
+
+/**
+ * ONE SLOT CARRYING SEVERAL MEDIA — `null` when this slot's `assembles` agrees with its `medium`
+ * and its format, otherwise the one line the gate refuses in. The message text is duplicated
+ * VERBATIM in `splash/scripts/where.mjs` and cross-checked by `splash/test/where.test.ts`, for the
+ * same reason `sizeGap`'s is.
+ *
+ * The list is the ORDER THE READER MEETS THE MEDIA and it opens on the slot's own `medium`, so
+ * `medium` stays the single key production dispatches on and stops being a compromise. A slot is
+ * still ONE claim, ONE beat directory, ONE brief, ONE approval and ONE delivery: splitting beat AC
+ * into three slots would have been three of each for one visual.
+ */
+export function assemblyGap(medium, format, assembles, id) {
+  const media = recorded(assembles);
+  if (media.length === 0) return null;
+  if (!ASSEMBLING_FORMATS.includes(format))
+    return `slot ${id}: a ${format} beat draws ONE medium — assembles belongs to a format that carries several behind one narrative (${ASSEMBLING_FORMATS.join(", ")}); anything else is one slot per medium`;
+  if (media.length < 2)
+    return `slot ${id}: assembles lists one medium, which says nothing the medium field does not — list every medium the reader meets, or leave the field out`;
+  if (new Set(media).size !== media.length)
+    return `slot ${id}: the same medium is recorded twice in assembles — the list is the order the reader meets them, not a tally`;
+  if (media[0] !== medium)
+    return `slot ${id}: assembles opens on ${JSON.stringify(media[0])} and this slot's medium is ${JSON.stringify(medium)} — the list is the order the reader meets them, so its first entry is the medium this beat is produced as`;
   return null;
 }
 
@@ -870,8 +925,18 @@ export function checkStoryboard(meta) {
       // required at all depends on the format.
       if (field === "size") continue;
       const value = slot[field];
-      if (!value) {
+      // An inline `[]` parses to an EMPTY ARRAY, and an empty array is truthy — so `medium: []`
+      // walked through a bare `if (!value)` as an answered field. `recorded` is the one reading of
+      // what a field actually recorded, shared with `sizeGap` and `assemblyGap`.
+      if (recorded(value).length === 0) {
         errors.push(slotGap(field, slot.id));
+        continue;
+      }
+      // Every required field but `size` takes ONE answer. `size` is the exception on purpose — one
+      // argument can ship as several frames — and `assembles` is the other list this contract
+      // knows; a list anywhere else is a slot trying to be two slots.
+      if (Array.isArray(value)) {
+        errors.push(`slot ${slot.id}: ${field} records a list where this contract takes one answer`);
         continue;
       }
       const vocabulary = SLOT_VOCABULARY[field];
@@ -881,6 +946,9 @@ export function checkStoryboard(meta) {
 
     const gap = sizeGap(slot.format, slot.size, slot.id);
     if (gap) errors.push(gap);
+
+    const assembly = assemblyGap(slot.medium, slot.format, slot.assembles, slot.id);
+    if (assembly) errors.push(assembly);
 
     // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
     // that is what stops the exchange from being disguised parameter collection (references/

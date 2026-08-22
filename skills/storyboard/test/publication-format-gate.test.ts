@@ -194,21 +194,18 @@ describe("active fixture migration", () => {
     const parsed = parseStoryboard(await readFile(join(activeStory, "STORYBOARD.md"), "utf8"));
     expect(parsed.meta.slots[0].proves).toContain("Every sampled country increased adoption");
     expect(checkStoryboard(parsed.meta)).toEqual([]);
-    // NOT `done` any more, and the change is a correction rather than a regression. This story was
-    // delivered before anything read the closing-offer receipts, and both of its own still say
-    // `pending` on disk: the journalist was never asked whether they wanted this beat in another
-    // format, or the article's other subjects drawn. Round-four finding 8 is `whereIs` calling a
-    // story finished over exactly that silence. The assertion that matters here is the one this
-    // test is named for — the storyboard still parses and still closes gate 2 under the
-    // provisional-slot schema — and the phase is now asserted as what the directory truthfully
-    // says, rather than answered on the journalist's behalf by editing their export receipts.
-    expect(await whereIs(activeStory)).toEqual({
-      phase: "delivery",
-      missing: [
-        "beat 1-the-gap-that-persists: this beat was delivered and never offered in another format",
-        "beat 1-the-gap-that-persists: this beat was delivered and the article's other subjects were never offered",
-      ],
-    });
+    // NOT `done`, and NOT `delivery` either any more — and each demotion is a correction rather
+    // than a regression, asserted as what the directory truthfully says rather than answered on the
+    // journalist's behalf. This story was delivered before anything read the closing-offer receipts
+    // (round-four finding 8, both of its own still `pending` on disk) and before anything asked for
+    // gate 2's SECOND file: it holds no `SUBJECTS.md`, so the survey of its article's other angles
+    // was never written down. The assertion this test is named for is unchanged and is the one
+    // above — the storyboard still parses and `checkStoryboard` still closes on it under the
+    // provisional-slot schema. `whereIs` sees one thing more than the front matter, and says so.
+    const state = await whereIs(activeStory);
+    expect(state.phase).toBe("storyboard");
+    expect(state.gate).toBe("G2-subjects");
+    expect(state.missing.join("\n")).toContain("SUBJECTS.md");
   });
 });
 
