@@ -901,13 +901,60 @@ const ASSEMBLY_FIXTURES: Array<{ name: string; slot: Record<string, string> }> =
     },
   ];
 
+// ── Gate 2c's OTHER question: where a static beat is actually published ───────────────────────
+//
+// Round seven, defect D11. "Static / print" is one option at gate 2b and TWO publications, and
+// nothing recorded which — so `stress-ad-polish-hospital-beds` shipped an accent measured for a
+// screen onto a printed page. The field is optional on purpose (six frozen static slots predate it
+// and must keep closing), which is exactly why both gates have to agree about it word for word: an
+// optional field one gate refuses and the other tolerates is the A7/A14 divergence with a smaller
+// blast radius, not a smaller class of defect.
+const DESTINATION_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
+  {
+    name: "static published on screen",
+    slot: { ...SLOT, destination: "screen" },
+  },
+  {
+    name: "static published in print",
+    slot: { ...SLOT, destination: "print" },
+  },
+  {
+    name: "static with NO destination — the six frozen slots' own shape, and still valid",
+    slot: { ...SLOT },
+  },
+  {
+    name: "a destination nobody publishes to",
+    slot: { ...SLOT, destination: "billboard" },
+  },
+  {
+    name: "a destination LIST — one beat, two grounds, which is two records",
+    slot: { ...SLOT, destination: "[screen, print]" },
+  },
+  {
+    name: "an EMPTY destination list — the truthy-[] hole, one field over again",
+    slot: { ...SLOT, destination: "[]" },
+  },
+  {
+    name: "a web slot carrying a destination — a page is read on a display",
+    slot: without(SLOT, "size", { format: "web", destination: "print" }),
+  },
+  {
+    name: "a scrolly slot carrying a destination",
+    slot: without(SLOT, "size", { format: "scrolly", destination: "screen" }),
+  },
+  {
+    name: "a video slot carrying a destination",
+    slot: { ...SLOT, format: "video", destination: "screen" },
+  },
+];
+
 const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
   { name: "complete: every scalar, every slot field", text: build() },
   { name: "no slots", text: build(SCALARS, null) },
   // The two list-carrying shapes, as CLOSED-OR-NOT as well as word for word. The verbatim block
   // below compares the size and assembles lines; this compares the verdict a journalist actually
   // experiences, which is the phase.
-  ...[...SIZE_FIXTURES, ...ASSEMBLY_FIXTURES].map(({ name, slot }) => ({
+  ...[...SIZE_FIXTURES, ...ASSEMBLY_FIXTURES, ...DESTINATION_FIXTURES].map(({ name, slot }) => ({
     name: `slot shape: ${name}`,
     text: build(SCALARS, slot),
   })),
@@ -1038,9 +1085,15 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
 // A7/A14 with better manners, and only a string comparison sees it.
 describe("gate 2c: both readings of R2's format × size rule, string for string", () => {
   const sizeLines = (gaps: string[]) =>
-    gaps.filter((g) => /\bsize\b|\bassembles\b|records a list/.test(g)).sort();
+    gaps
+      .filter((g) => /\bsize\b|\bassembles\b|\bdestination\b|records a list/.test(g))
+      .sort();
 
-  for (const { name, slot } of [...SIZE_FIXTURES, ...ASSEMBLY_FIXTURES]) {
+  for (const { name, slot } of [
+    ...SIZE_FIXTURES,
+    ...ASSEMBLY_FIXTURES,
+    ...DESTINATION_FIXTURES,
+  ]) {
     it(`should agree, verbatim, on: ${name}`, async () => {
       const text = build(SCALARS, slot);
       await writeFile(join(dir, "source", "article.md"), "text");

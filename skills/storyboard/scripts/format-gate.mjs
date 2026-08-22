@@ -1,6 +1,7 @@
 import visualCatalog from "../references/visual-catalog.json" with { type: "json" };
 import { FORMAT_CATALOG, formatsFor } from "./format-catalog.mjs";
 import { treatmentNames } from "./producer-gate.mjs";
+import { DESTINED_FORMATS, PUBLICATION_DESTINATIONS } from "./storyboard.mjs";
 
 const FORMAT_COPY = {
   static: {
@@ -202,5 +203,55 @@ export function formatPublicationFormatGate({ recommended, rationale, options, t
     }
   }
   lines.push("", "Which should I produce first?");
+  return lines.join("\n");
+}
+
+const DESTINATION_COPY = {
+  screen: {
+    label: "On screen",
+    describes: "the article page, an embed, a social post — the reader's own display",
+  },
+  print: {
+    label: "In print",
+    describes: "the printed edition, a poster, a PDF somebody runs off — paper",
+  },
+};
+
+/**
+ * THE G2c DESTINATION TURN — where a static beat is actually published, asked once, at the movement
+ * where it is already being asked what size it exports.
+ *
+ * ROUND SEVEN, defect D11, and the placement is the whole of it. This question cannot live in the
+ * G2b turn: `publication-format-gate.test.ts` pins that turn byte for byte against a recorded host
+ * acceptance and asserts it stops before every later movement, and an attempt to fold the question
+ * into the static option's own copy went three red, two of them pinned turns. It belongs one
+ * movement later, beside the other question a static beat is asked about how it ships — and it is
+ * asked in the format gate's own subject, PUBLICATION, which is half gate 2b's own label. What
+ * follows from the answer is not this turn's business and is not mentioned in it.
+ *
+ * Only a format with two destinations is asked. A `web`, `video` or `scrolly` beat is read on a
+ * display whatever else is true of it, so asking would be staging a question with one answer —
+ * `proposeSizes`' own rule, one field over.
+ */
+export function formatPublicationDestinationGate({ format } = {}) {
+  if (!DESTINED_FORMATS.includes(format)) {
+    throw new Error(
+      `no destination is asked for a ${JSON.stringify(format)} beat: only ` +
+        `${DESTINED_FORMATS.join(", ")} lands in more than one place, and every other format this ` +
+        `gate records is read on a display`,
+    );
+  }
+  const lines = [`Where does this ${format} graphic land?`, ""];
+  for (const destination of PUBLICATION_DESTINATIONS) {
+    const copy = DESTINATION_COPY[destination];
+    lines.push(`- **${copy.label}:** ${copy.describes}. Recorded as \`destination: ${destination}\`.`);
+  }
+  lines.push(
+    "",
+    `"${FORMAT_COPY[format].label}" is one option at gate 2b and two publications here, and the ` +
+      `toolchain treats them differently from this point on — so it is asked rather than assumed.`,
+    "",
+    "Which is it?",
+  );
   return lines.join("\n");
 }

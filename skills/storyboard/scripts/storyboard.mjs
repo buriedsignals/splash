@@ -375,6 +375,53 @@ export function sizeGap(format, size, id) {
   return null;
 }
 
+// WHERE A PUBLISHED GRAPHIC LANDS — the two answers gate 2c takes for a static beat, and the one
+// format that has to be asked. `where.mjs` spells both out independently, exactly as it does
+// `SIZED_FORMATS`, and `destinationGap` below is walked byte for byte across the two files.
+//
+// `static` is the whole of `DESTINED_FORMATS`, and that is a measurement rather than a shortlist: a
+// web page, a video and a scrollytelling page are read on a display and cannot be run off on a
+// sheet, so their destination follows from the format alone. Only "Static / print" — half gate 2b's
+// own label — is two places.
+const PUBLICATION_DESTINATIONS = ["screen", "print"];
+const DESTINED_FORMATS = ["static"];
+export { PUBLICATION_DESTINATIONS, DESTINED_FORMATS };
+
+/**
+ * WHERE THIS STATIC BEAT IS PUBLISHED — `null` when the slot's `destination` agrees with its
+ * format, otherwise the one line the gate refuses in.
+ *
+ * ROUND SEVEN, defect D11. Gate 2b's own label is "Static / print", and that slash is a QUESTION
+ * nothing in this toolchain ever asked: a static graphic lands on a screen (an embedded image in
+ * the article) or on paper (the printed edition), and the two are not the same delivery.
+ * `stories/stress-ad-polish-hospital-beds` is the beat that paid for the guess — its own gate turn
+ * says "because the destination is a printed page", in prose nothing reads, and what it shipped
+ * was measured for a screen.
+ *
+ * ABSENCE IS AN ANSWER, NOT A GAP, and this is the half that makes the field usable at all. Six
+ * `format: static` slots across five frozen stories were recorded before this field existed;
+ * requiring it would redden all six and teach nothing. A slot that never recorded the fact stays
+ * valid here and says it does not know it downstream, where the fact is actually needed — a
+ * default in this file would be a guess written into the record, which is the defect itself.
+ *
+ * A `web`, `video` or `scrolly` beat has no second destination, so the field is refused there
+ * rather than tolerated as decoration — the same shape `sizeGap` holds for a format with no
+ * exported frame.
+ */
+export function destinationGap(format, destination, id) {
+  const takesADestination = DESTINED_FORMATS.includes(format);
+  const destinations = recorded(destination);
+  if (destinations.length === 0) return null;
+  if (!takesADestination)
+    return `slot ${id}: a ${format} beat is read on a display, so it records no destination — leave the field out`;
+  if (destinations.length > 1)
+    return `slot ${id}: destination records a list where this contract takes one answer — a beat published in two places is measured twice, which is two records and not one field holding both`;
+  const [only] = destinations;
+  if (!PUBLICATION_DESTINATIONS.includes(only))
+    return `slot ${id}: destination ${JSON.stringify(only)} is not one this toolchain publishes to — ${PUBLICATION_DESTINATIONS.join(", ")}`;
+  return null;
+}
+
 // The formats that carry SEVERAL MEDIA behind one narrative, and therefore the only ones a slot may
 // record an `assembles` list on. `where.mjs` spells this out independently, exactly as it does
 // `SIZED_FORMATS`, and the two readings are compared string for string.
@@ -1095,6 +1142,9 @@ export function checkStoryboard(meta) {
 
     const gap = sizeGap(slot.format, slot.size, slot.id);
     if (gap) errors.push(gap);
+
+    const destination = destinationGap(slot.format, slot.destination, slot.id);
+    if (destination) errors.push(destination);
 
     const assembly = assemblyGap(slot.medium, slot.format, slot.assembles, slot.id);
     if (assembly) errors.push(assembly);
