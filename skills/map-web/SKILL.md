@@ -53,6 +53,17 @@ accessible answer to that fact.
   skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
 - **Not** to re-draw a map that already exists as a still or a video build — bake once, reuse the
   plate the same way `map-beat` reuses one camera across its own two formats.
+- **Not for a route or flow map, and this is a producer fact rather than a taste one.** What this
+  skill can draw is what it has machinery for: proportional symbols, choropleths, dot density, hex
+  grids and locators. There is no flow path here — no seed, no pure core, no live-plan builder and
+  no interaction model — so a route asked for as an interactive page is a route somebody writes
+  from nothing, off doctrine, inside a story. Measured once, in round six: 29 defects, the highest
+  of any beat in six rounds, and five silent failures every one of which was found by driving the
+  page and none by a test. A route belongs on `map-beat`'s still or its video, where the journey is
+  revealed rather than interrogated; an origin-destination table is not a route map at all and is
+  carried by one of the readings above (`map-beat/references/types/flow-map.md`). The format gate
+  refuses the cell rather than offering it (`storyboard/scripts/format-gate.mjs`,
+  `TREATMENT_FORMAT_GAPS`).
 - **REVERSED 2026-08-10 (ruling R1).** This bullet used to read *"Not for pan/zoom on a LIVE tile
   source… the shipped HTML makes zero external request once the plate is inlined as a data URI."*
   The owner overturned it: *a web map you cannot move through is a picture.* The map IS a live
