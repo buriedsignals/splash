@@ -10,13 +10,13 @@
  * exactly as loudly as no table at all.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { tableCarriesTheMarks } from "../scripts/detect-accessible-table.mjs";
+import { deliveredPages } from "../scripts/delivered-pages.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
-const PROOF = join(TWIN, "proof");
 
 describe("an accessible table carries the marks' own values", () => {
   const page = (table: string) =>
@@ -152,67 +152,62 @@ describe("an accessible table carries the marks' own values", () => {
   });
 });
 
-/** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path —
- *  told apart from its `map-web` sibling (both live under `proof/`, both ship self-contained HTML
- *  with `data-detail` marks) by the one thing that cannot drift silently: which format's own
- *  `renderWeb` actually wrote the file. Checked against the page's OWN directory and its PARENT:
- *  a runner usually sits beside its own output (`proof/co2-suisse/render-web.mjs` next to
- *  `co2.html`) but not always — `proof/web-co2-ranking/render-web.mjs` writes one directory down,
- *  into `dist/co2-ranking.html` — and a same-directory-only check silently skipped that page
- *  (measured 2026-08-20, reproduced standalone: 17 files found, not 18). */
-function importsChartWebRenderer(dir: string): boolean {
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".mjs"))
-    .some((name) =>
-      readFileSync(join(dir, name), "utf8").includes(
-        "skills/chart-web/scripts/render-web.mjs",
-      ),
-    );
-}
-
+/** Every delivered `chart-web` page on disk, from EVERY root a beat can live in — not only
+ *  `proof/`.
+ *
+ *  This walk used to start at `PROOF` and go no further, so the population it measured was the
+ *  beats the SKILL wrote for itself and never a beat a journalist made. Six chart-web beats live
+ *  under `stories/` today and not one of them had ever been put to any of these four capabilities.
+ *  The very first run of the widened walk found one: a delivered page with no accessible table at
+ *  all, 10 marks and 10 missing, which `proof/` could not see by construction.
+ *
+ *  `deliveredPages` (`scripts/delivered-pages.mjs`) is the derivation, shared by all four walks so
+ *  a fifth cannot disagree with them about what a chart-web beat is. */
 function chartWebArtifacts(): string[] {
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith(".html")) {
-        const source = readFileSync(path, "utf8");
-        if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
-      }
-    }
-  };
-  if (existsSync(PROOF) && statSync(PROOF).isDirectory()) walk(PROOF);
-  return found;
+  return deliveredPages(TWIN);
 }
 
 describe("every chart-web page on disk", () => {
   it("carries every mark's own fact in its accessible table", () => {
     const files = chartWebArtifacts();
-    // Measured 2026-08-20 (recount after fixing the parent-directory lookup above): 18
-    // delivered pages, from 3 marks (germany-bridge) to 300 (small-multiples-co2-per-capita). A
-    // count under this floor means the walk stopped finding beats, not that the beats got better —
-    // the same shape as `verify-guards.test.ts`'s own floor. Asserted exactly, not just a floor:
-    // `webArtifacts()`-style walks are exactly the kind of check that silently drops a page (this
-    // one did, on `web-co2-ranking`, until the parent-directory lookup was added), so a count that
-    // creeps back down to 17 must fail loudly rather than still clear a `>= 17` floor. A 19th
-    // delivered beat SHOULD turn this red — bump the number here (and its three siblings:
-    // `keyboard-reach.test.ts`, `reduced-motion.test.ts`, `degrades-without-javascript.test.ts`)
-    // rather than loosen it back to a floor.
-    expect(files.length).toBe(18);
+    // Measured 2026-08-22, after the walk was widened from `proof/` alone to every root a beat
+    // lives in: 24 delivered pages — the 18 under `proof/` this used to see, plus 6 under
+    // `stories/`. Asserted exactly, not as a floor: a walk of this shape is exactly the kind of
+    // check that silently drops a page (this one did, on `web-co2-ranking`, until the
+    // parent-directory lookup that `deliveredPages` replaced), so a count that creeps back down
+    // must fail loudly. A 25th delivered beat SHOULD turn this red — bump the number here and in
+    // its four siblings rather than loosen it back to a floor.
+    expect(files.length).toBe(24);
     const offenders: string[] = [];
     for (const file of files) {
+      const shown = file.slice(TWIN.length + 1);
       const found = tableCarriesTheMarks(readFileSync(file, "utf8"));
       // A zero-mark page passes vacuously otherwise — `found.missing` is empty because there is
       // nothing to be missing FROM, not because the table carries anything. Its sibling
       // `degrades-without-javascript.test.ts` already refuses `marksWithJs === 0` the same way.
-      if (found.marks === 0)
-        offenders.push(`${file.slice(TWIN.length + 1)}: 0 marks`);
-      for (const value of found.missing)
-        offenders.push(`${file.slice(TWIN.length + 1)}: missing "${value}"`);
+      if (found.marks === 0) offenders.push(`${shown}: 0 marks`);
+      if (found.missing.length > 0)
+        offenders.push(`${shown}: ${found.missing.length} of ${found.marks} marks missing from the table`);
     }
-    expect(offenders).toEqual([]);
+    expect(offenders).toEqual(WITHOUT_A_TABLE);
   });
 });
+
+/** THE ONE DELIVERED PAGE THIS WALK FOUND THE DAY IT WAS WIDENED PAST `proof/`, recorded by name
+ *  rather than forgiven — a RATCHET, the same shape `detect-guard-wiring.mjs`'s own
+ *  `RECORDED_UNWIRED` uses: a line may LEAVE this list, and a page that turns up failing and is not
+ *  on it is a red.
+ *
+ *  Measured 2026-08-22 on the delivered page of `stories/heat-pump-adoption-across-europe`: 10
+ *  marks carry a `data-detail`, the page contains no `<caption>` and no `<td>` at all, and all ten
+ *  readings are missing. `same-facts-without-the-picture` is `carried` for chart-web, so a reader
+ *  who cannot see that slopegraph gets none of its numbers. It shipped because this walk started at
+ *  `proof/` and that beat is in `stories/` — the exact blindness this widening closes, caught on
+ *  its first run.
+ *
+ *  It is RECORDED and not FIXED here because that story is not this task's to edit; the beat's own
+ *  runner has to call `accessibleTable` the way every page under `proof/` does. Fixing it is one
+ *  line in that runner and one line off this list. */
+const WITHOUT_A_TABLE = [
+  "stories/heat-pump-adoption-across-europe/beats/1-the-gap-that-persists/renders/slope.html: 10 of 10 marks missing from the table",
+];

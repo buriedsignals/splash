@@ -9,15 +9,15 @@
  * removed.
  */
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import puppeteer from "puppeteer";
 import { staticFrameSurvives } from "../scripts/detect-degrades-without-javascript.mjs";
+import { deliveredPages } from "../scripts/delivered-pages.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
-const PROOF = join(TWIN, "proof");
 
 setDefaultTimeout(600000);
 
@@ -95,44 +95,32 @@ describe("the mark population, before and after scripting is removed", () => {
   });
 });
 
-/** Every delivered `chart-web` page on disk — the same discovery `accessible-table.test.ts` and
- *  `keyboard-reach.test.ts` use. */
-function importsChartWebRenderer(dir: string): boolean {
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".mjs"))
-    .some((name) =>
-      readFileSync(join(dir, name), "utf8").includes("skills/chart-web/scripts/render-web.mjs"),
-    );
-}
-
+/** Every delivered `chart-web` page on disk, from EVERY root a beat can live in — not only
+ *  `proof/`.
+ *
+ *  This walk used to start at `PROOF` and go no further, so the population it measured was the
+ *  beats the SKILL wrote for itself and never a beat a journalist made. Six chart-web beats live
+ *  under `stories/` today and not one of them had ever been put to any of these four capabilities.
+ *  The very first run of the widened walk found one: a delivered page with no accessible table at
+ *  all, 10 marks and 10 missing, which `proof/` could not see by construction.
+ *
+ *  `deliveredPages` (`scripts/delivered-pages.mjs`) is the derivation, shared by all four walks so
+ *  a fifth cannot disagree with them about what a chart-web beat is. */
 function chartWebArtifacts(): string[] {
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith(".html")) {
-        const source = readFileSync(path, "utf8");
-        if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
-      }
-    }
-  };
-  if (existsSync(PROOF) && statSync(PROOF).isDirectory()) walk(PROOF);
-  return found;
+  return deliveredPages(TWIN);
 }
 
 describe("every chart-web page on disk", () => {
   it("keeps every mark when scripting is taken away", async () => {
     const files = chartWebArtifacts();
-    // Same exact count as `accessible-table.test.ts` and `keyboard-reach.test.ts`, for the same
-    // reason: a `>= 17` floor still clears when the walk silently drops back to 17, which is
-    // exactly the defect the parent-directory fallback above was written to fix. Asserted exactly.
-    // A 19th delivered beat SHOULD turn this red — bump the number here (and its three siblings:
-    // `accessible-table.test.ts`, `keyboard-reach.test.ts`, `reduced-motion.test.ts`) rather than
-    // loosen it back to a floor.
-    expect(files.length).toBe(18);
+    // Measured 2026-08-22, after the walk was widened from `proof/` alone to every root a beat
+    // lives in: 24 delivered pages — the 18 under `proof/` this used to see, plus 6 under
+    // `stories/`. Asserted exactly, not as a floor: a walk of this shape is exactly the kind of
+    // check that silently drops a page (this one did, on `web-co2-ranking`, until the
+    // parent-directory lookup that `deliveredPages` replaced), so a count that creeps back down
+    // must fail loudly. A 25th delivered beat SHOULD turn this red — bump the number here and in
+    // its four siblings rather than loosen it back to a floor.
+    expect(files.length).toBe(24);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {

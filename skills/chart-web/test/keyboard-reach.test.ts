@@ -8,15 +8,15 @@
  * that each carries an accessible name a reader who cannot see the picture would hear or read.
  */
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import puppeteer from "puppeteer";
+import { deliveredPages } from "../scripts/delivered-pages.mjs";
 import { keyboardReachesEveryMark } from "../scripts/detect-reachable-by-keyboard.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
-const PROOF = join(TWIN, "proof");
 
 setDefaultTimeout(600000);
 
@@ -101,55 +101,33 @@ describe("Tab reaches every mark and each one names itself", () => {
   });
 });
 
-/** Whether SOME `.mjs` directly inside `dir` imports chart-web's own `render-web.mjs` by path —
- *  told apart from its `map-web` sibling (both live under `proof/`, both ship self-contained HTML
- *  with `data-detail` marks) by the one thing that cannot drift silently: which format's own
- *  `renderWeb` actually wrote the file. Checked against the page's OWN directory and its PARENT:
- *  a runner usually sits beside its own output (`proof/co2-suisse/render-web.mjs` next to
- *  `co2.html`) but not always — `proof/web-co2-ranking/render-web.mjs` writes one directory down,
- *  into `dist/co2-ranking.html` — and a same-directory-only check silently skipped that page
- *  (measured 2026-08-20, reproduced standalone: 17 files found, not 18). */
-function importsChartWebRenderer(dir: string): boolean {
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) return false;
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".mjs"))
-    .some((name) =>
-      readFileSync(join(dir, name), "utf8").includes(
-        "skills/chart-web/scripts/render-web.mjs",
-      ),
-    );
-}
-
 /** Every delivered `chart-web` page on disk — the same discovery `accessible-table.test.ts` uses. */
+/** Every delivered `chart-web` page on disk, from EVERY root a beat can live in — not only
+ *  `proof/`.
+ *
+ *  This walk used to start at `PROOF` and go no further, so the population it measured was the
+ *  beats the SKILL wrote for itself and never a beat a journalist made. Six chart-web beats live
+ *  under `stories/` today and not one of them had ever been put to any of these four capabilities.
+ *  The very first run of the widened walk found one: a delivered page with no accessible table at
+ *  all, 10 marks and 10 missing, which `proof/` could not see by construction.
+ *
+ *  `deliveredPages` (`scripts/delivered-pages.mjs`) is the derivation, shared by all four walks so
+ *  a fifth cannot disagree with them about what a chart-web beat is. */
 function chartWebArtifacts(): string[] {
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith(".html")) {
-        const source = readFileSync(path, "utf8");
-        if (/data-step|step-panel/.test(source)) continue; // scrolly, not this format
-        if (importsChartWebRenderer(dir) || importsChartWebRenderer(dirname(dir))) found.push(path);
-      }
-    }
-  };
-  if (existsSync(PROOF) && statSync(PROOF).isDirectory()) walk(PROOF);
-  return found;
+  return deliveredPages(TWIN);
 }
 
 describe("every chart-web page on disk", () => {
   it("is reachable by Tab and names every one of its marks", async () => {
     const files = chartWebArtifacts();
-    // Same exact count as `accessible-table.test.ts`, for the same reason: this walker used to be
-    // the same-directory-only version (measured 2026-08-20: 17 files, silently missing
-    // `web-co2-ranking/dist/co2-ranking.html`, whose runner writes one directory down from its own
-    // output) until fix round 1 gave it the parent-directory fallback above. Asserted exactly, not
-    // just a floor, so a count that creeps back down to 17 fails loudly. A 19th delivered beat
-    // SHOULD turn this red — bump the number here (and its three siblings: `accessible-table
-    // .test.ts`, `reduced-motion.test.ts`, `degrades-without-javascript.test.ts`) rather than
-    // loosen it back to a floor.
-    expect(files.length).toBe(18);
+    // Measured 2026-08-22, after the walk was widened from `proof/` alone to every root a beat
+    // lives in: 24 delivered pages — the 18 under `proof/` this used to see, plus 6 under
+    // `stories/`. Asserted exactly, not as a floor: a walk of this shape is exactly the kind of
+    // check that silently drops a page (this one did, on `web-co2-ranking`, until the
+    // parent-directory lookup that `deliveredPages` replaced), so a count that creeps back down
+    // must fail loudly. A 25th delivered beat SHOULD turn this red — bump the number here and in
+    // its four siblings rather than loosen it back to a floor.
+    expect(files.length).toBe(24);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {
