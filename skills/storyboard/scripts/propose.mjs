@@ -29,6 +29,7 @@
 import { groundTakeaway, findYearColumn, measureColumns, LEXICON_LANGUAGES_SAID } from "./ground-claim.mjs";
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
+import { treatmentFormatGap } from "./format-gate.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
 import { normalizeTreatment } from "./producer-gate.mjs";
 import { createHash } from "node:crypto";
@@ -777,10 +778,16 @@ export function proposeMediums({ capabilities = {}, survey = typeSurvey() } = {}
  * pair: "image reaches static and scrolly; it has no web or video producer" is a sentence the
  * journalist hears at the format gate.
  */
-export function proposeFormats({ medium, capabilities = {} }) {
+export function proposeFormats({ medium, treatment, capabilities = {} }) {
   const closed = capabilityGap(capabilities, medium);
   return knownFormats().map((format) => {
-    const gap = closed ?? formatGap(medium, format);
+    // Same three questions `confirmFormatReachable` asks, in the same order, so movement ⑥'s rows
+    // and the answer recorded at G2b cannot disagree: is the MEDIUM open, does the PAIR exist, and
+    // — once a treatment is chosen — does THIS treatment have a producer in THIS format. Before a
+    // treatment is chosen `treatment` is undefined and the third question is skipped, which is
+    // exactly the state ⑥ is usually read in; a caller that already knows the treatment gets rows
+    // that no longer offer a format the chosen type cannot be drawn in.
+    const gap = closed ?? formatGap(medium, format) ?? treatmentFormatGap(treatment, format);
     return { format, reachable: gap === null, why: gap, producer: FORMAT_CATALOG[`${medium}/${format}`]?.producerSkill ?? null };
   });
 }
@@ -801,11 +808,22 @@ export function proposeSizes(format) {
  * `capabilityGap` both return `null`, and throws the refusal, verbatim and journalist-facing,
  * otherwise. Before this existed both gates read a field nobody computed.
  */
-export function confirmFormatReachable({ medium, format, capabilities = {} }) {
+export function confirmFormatReachable({ medium, format, treatment, capabilities = {} }) {
   const closed = capabilityGap(capabilities, medium);
   if (closed) throw new Error(closed);
   const gap = formatGap(medium, format);
   if (gap) throw new Error(gap);
+  // THE PAIR IS NOT THE WHOLE ANSWER, and round six is what proved it. `map/web` is genuinely
+  // producible — five treatments, five proof pages — so the coarse verdict above says yes, and
+  // `stress-ab-emigration-flows` read that as permission to draw an origin-destination table as
+  // routes on the web. There is no web producer for a route map, and 29 defects followed, the most
+  // of any beat in six rounds. The unreachable cell was never `map × web`; it was
+  // TREATMENT x FORMAT, one level below where this function was asking. `treatmentFormatGap` is
+  // that row, and it is consulted here so the `reachable:` a slot RECORDS is the narrow verdict
+  // rather than the coarse one. `treatment` is the slot's own `chosen`; a caller that has not
+  // chosen yet passes nothing and gets the pair-level answer it used to get.
+  const narrow = treatmentFormatGap(treatment, format);
+  if (narrow) throw new Error(narrow);
   return "yes";
 }
 
