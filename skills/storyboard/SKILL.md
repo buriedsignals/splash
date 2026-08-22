@@ -364,6 +364,19 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
      `consistent` and can never make the verdict `supported` on its own, and neither can a
      takeaway one of whose sentences produced no claim at all — the detail names both, and that
      half is said out loud, because an unverifiable claim is information, not a refusal.
+
+     **Ask the second G1 question too** — is the claim a maximum, a minimum, a comparison between
+     two named things, a total, or none of those, and about which column (`references/exchange.md`
+     ②). A superlative is grammar, not vocabulary, so no lexicon will ever read
+     `najwięcej` or `أكثر من غيرها` reliably, and `stress-ad-polish-hospital-beds` produced no
+     claim at all for its own. The answer is recorded as `claimShape` / `claimColumn` /
+     `claimEntity` / `claimVersus` / `claimDirection` and passed as
+     `resolveGrounding(takeaway, profile, { csv, recorded })`, or read back later as
+     `{ csv, storyboard: meta }`. **The guess stays as the default** — nothing recorded, nothing
+     changes — **the recorded shape wins**, and where the check's own patterns disagree with it,
+     the overruled reading is printed in `resolved.detail` and must be said out loud: it is the
+     only way a defect in those patterns is ever seen. `recordedClaimGaps` refuses a HALF-recorded
+     answer at gate 2, because nobody can tell that state from never having been asked.
    - **④ ⑤** — `typeSurvey()` reads the generated survey back. The exchange reads
      `references/chart-choice.md`, removes types whose hard data requirements fail, and ranks the
      survivors by the confirmed intent before reachability is considered. The ranking is advisory:
@@ -458,6 +471,7 @@ if (errors.length > 0) {
 | What makes a numeric column a COORDINATE rather than a measure | its own name token is a coordinate word (`lat`/`lon`/`lng`/`long`/`latitude`/`longitude` and their Latin spellings) **and** its values stay inside that word's range (±90 / ±180) — `tunnel_long_m [900, 5400]` is a length and stays a measure | `scripts/ground-claim.mjs`'s `isCoordinateColumn` |
 | What settles a comma-grouped numeral the token reader calls ambiguous | the frozen table: exactly ONE of "238530" and "238.53" being a number some numeric column holds (as a cell, a min, a max or a sum). Two readings held, or none, and it stays ambiguous — which is what keeps a French decimal comma from being read as a grouping | `scripts/ground-claim.mjs`'s `settleGroupedNumeral` |
 | Which languages EVERY name-based lexicon in the grounding check is read in | `4` — English, French, Greek, Arabic (`LEXICON_LANGUAGES`); a script outside them is NAMED in `coverage.unreadable` rather than answered in silence | `scripts/ground-claim.mjs` |
+| The shapes G1 may record for a claim | `5` — maximum, minimum, comparison, total, none (`RECORDED_CLAIM_SHAPES`); a comparison also records its two entities and its direction, and gate 2 refuses a half-recorded answer | `scripts/ground-claim.mjs`, `scripts/storyboard.mjs` |
 | Where the two WORD lists those lexicons match against come from | `doctrine/references/concept-labels.json` — Wikidata's own labels and aliases for the concepts, measured once and VENDORED into the generated region of each file that decides with them. Regenerate with `scripts/concept-labels.mjs --write`; nothing reaches a network at runtime | `scripts/ground-claim.mjs` |
 | What a LETTER outside those four's own repertoire does | NAMED in `coverage.unreadableLetters` (`lettersNotRead`), and a numeric column whose name carries one WITHHOLDS `supported` from a raw-count superlative — an undeclared language may not raise the verdict | `scripts/ground-claim.mjs` |
 | Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer, and above `min` EVERY candidate must be its own idea) | `scripts/propose.mjs` |

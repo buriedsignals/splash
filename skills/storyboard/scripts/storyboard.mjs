@@ -1,7 +1,7 @@
 // STORYBOARD.md is YAML front matter (a narrow, dependency-free subset) plus free prose. Only the
 // front matter is machine-checked; the prose beneath it is what the journalist actually reads.
 
-import { groundTakeaway } from "./ground-claim.mjs";
+import { groundTakeaway, RECORDED_CLAIM_SHAPES } from "./ground-claim.mjs";
 import { formatGap } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { producerGap } from "./producer-gate.mjs";
@@ -897,6 +897,82 @@ export async function surveyGap(storyDir) {
   );
 }
 
+/**
+ * THE ONE QUESTION THAT MAKES A CLAIM'S SHAPE RECORDED RATHER THAN GUESSED — round six, task LANG.
+ *
+ * Every superlative pattern in `ground-claim.mjs` is a regex written by hand against one language
+ * at a time, because a superlative is GRAMMAR — `أكثر من غيرها`, `the most`, `le plus`,
+ * `najwięcej`, `το περισσότερο` — and no label table gives morphology and word order. So G1 asks
+ * the journalist one more question about the takeaway they just confirmed: is this a maximum, a
+ * minimum, a comparison between two named things, a total, or none of those — and about which
+ * column. A human reading their own sentence is language-independent by construction.
+ *
+ * FIVE OPTIONAL SCALARS, flat, in the shape every other field in this front matter already takes:
+ *
+ *     claimShape: "maximum"                  one of RECORDED_CLAIM_SHAPES
+ *     claimColumn: "łóżka_szpitalne"          required by every shape but "none"
+ *     claimEntity: "Mazowieckie"              required by maximum, minimum and comparison
+ *     claimVersus: "Śląskie"                  required by comparison only
+ *     claimDirection: "greater"               required by comparison only — "greater" or "less"
+ *
+ * ABSENT IS A COMPLETE ANSWER, and it is the default: a storyboard that records none of these
+ * closes gate 2 exactly as it did before, and `groundTakeaway` behaves exactly as it did before.
+ * What is refused is a HALF-recorded answer — a shape with no column, a comparison with only one
+ * side — because that is the one state in which a reader cannot tell whether the journalist was
+ * asked and declined or was never asked at all, which is the silence this whole round is about.
+ */
+export function recordedClaimGaps(meta) {
+  const fields = ["claimShape", "claimColumn", "claimEntity", "claimVersus", "claimDirection"];
+  const given = fields.filter((f) => recorded(meta[f]).length > 0);
+  if (given.length === 0) return [];
+
+  const errors = [];
+  const shape = String(meta.claimShape ?? "").trim().toLowerCase();
+  if (!RECORDED_CLAIM_SHAPES.includes(shape)) {
+    errors.push(
+      `claimShape ${JSON.stringify(meta.claimShape ?? null)} is not one of the shapes G1 offers — expected ${RECORDED_CLAIM_SHAPES.join(", ")}`,
+    );
+    return errors;
+  }
+  if (shape === "none") {
+    // "None of those" is an answer about the whole takeaway, so a column or an entity beside it is
+    // a half-erased earlier answer, not a narrower one.
+    const extra = given.filter((f) => f !== "claimShape");
+    if (extra.length > 0)
+      errors.push(`claimShape "none" records no claim, so ${extra.join(", ")} should be left out`);
+    return errors;
+  }
+  if (recorded(meta.claimColumn).length === 0)
+    errors.push(`claimShape "${shape}" was recorded without claimColumn — which column the claim is about is half the answer`);
+  if (shape !== "total" && recorded(meta.claimEntity).length === 0)
+    errors.push(`claimShape "${shape}" was recorded without claimEntity — which row the claim is about is half the answer`);
+  if (shape === "comparison") {
+    if (recorded(meta.claimVersus).length === 0)
+      errors.push('claimShape "comparison" was recorded without claimVersus — a comparison between two named things needs the second one');
+    const direction = String(meta.claimDirection ?? "").trim().toLowerCase();
+    if (direction !== "greater" && direction !== "less")
+      errors.push(`claimDirection ${JSON.stringify(meta.claimDirection ?? null)} is not "greater" or "less" — which of the two the takeaway puts ahead is the journalist's sentence, not a guess this toolchain makes`);
+  } else {
+    const stray = ["claimVersus", "claimDirection"].filter((f) => recorded(meta[f]).length > 0);
+    if (stray.length > 0)
+      errors.push(`claimShape "${shape}" is not a comparison, so ${stray.join(", ")} should be left out`);
+  }
+  return errors;
+}
+
+/** The recorded answer as `groundTakeaway` takes it — `null` when the journalist recorded nothing,
+ *  which is what keeps the guess the default. */
+export function recordedClaimOf(meta) {
+  if (recorded(meta?.claimShape).length === 0) return null;
+  return {
+    shape: String(meta.claimShape).trim().toLowerCase(),
+    column: meta.claimColumn ?? null,
+    entity: meta.claimEntity ?? null,
+    versus: meta.claimVersus ?? null,
+    direction: meta.claimDirection ?? null,
+  };
+}
+
 export function checkStoryboard(meta) {
   const errors = [];
 
@@ -913,6 +989,8 @@ export function checkStoryboard(meta) {
     if (vocabulary && !vocabulary(value))
       errors.push(SCALAR_VOCABULARY_GAP[field](value));
   }
+
+  errors.push(...recordedClaimGaps(meta));
 
   const slots = meta.slots ?? [];
   if (slots.length === 0) errors.push("no slot: nothing would be produced");

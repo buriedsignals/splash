@@ -57,6 +57,51 @@ Whichever verdict lands, say what the check could and could not see — `resolve
 both halves, including WHY each unplaced claim could not be placed. An `unverifiable` claim is information, not a refusal, and it must not be presented as
 one.
 
+### The second question at G1 — what SHAPE is this claim? (round six, task LANG)
+
+Every superlative pattern behind `resolveGrounding` is a regex written by hand, one language at a
+time, because a superlative is **grammar, not vocabulary**: `أكثر من غيرها`, `the most`, `le plus`,
+`najwięcej`, `το περισσότερο`. No table of labels gives morphology and word order, so this hole
+cannot be closed by data at all — `stress-ad-polish-hospital-beds` asserts a Polish superlative and
+the check produced **no claim at all**, which reads exactly like a takeaway with nothing in it.
+
+So ask the journalist, about the sentence they have just confirmed:
+
+> **Is this a maximum, a minimum, a comparison between two named things, a total, or none of those
+> — and about which column?** (If it is a comparison: which two, and which of them is ahead.)
+
+They are reading their own sentence, so the question is language-independent by construction.
+Record the answer in `STORYBOARD.md`'s own front matter, beside `grounding:`:
+
+    claimShape: "maximum"                 maximum · minimum · comparison · total · none
+    claimColumn: "łóżka_szpitalne"
+    claimEntity: "Mazowieckie"
+    claimVersus: "Śląskie"                comparison only
+    claimDirection: "greater"             comparison only — greater · less
+
+and pass it to the grounding call: `resolveGrounding(takeaway, profile, { csv, recorded })` at G1,
+or `{ csv, storyboard: meta }` on any later re-grounding, which reads it back out of the file.
+
+Three rules govern what the answer then does, and the third is the one that matters:
+
+1. **The guess stays as the default.** A journalist who answers nothing gets exactly the behaviour
+   this check had before. Never invent an answer on their behalf; `claimShape` absent is a complete
+   and ordinary state.
+2. **The recorded shape wins.** A journalist who answers is not second-guessed by a regex.
+3. **The disagreement is REPORTED.** Where the check's own patterns read a different shape for the
+   same sentence and the same entity, that reading is taken out of the claims it may decide with and
+   printed in `resolved.detail` — *"N reading(s) by this check's own patterns disagreed and were set
+   aside — each one is a defect in those patterns, not in the takeaway"*. **Say that sentence out
+   loud to the journalist.** It is the only way a defect in those patterns will ever surface: a
+   parser silently overruled is a parser nobody can audit. Measured on
+   `stress-u-rhone-glacier`, whose "the lowest since 1990" the patterns read as a comparison and
+   confirmed — true here, and the next one will not be.
+
+A half-recorded answer is refused by gate 2 rather than half-used: a shape with no column, a
+comparison with only one side or no direction. That state is the one in which nobody can tell
+whether the journalist was asked and declined or was never asked at all, which is the silence the
+whole of this movement exists to remove.
+
 ## ③ The journalist's hand — five questions, each with a destination
 
 Every one of these harvests something the data cannot supply on its own, and every answer has a

@@ -2948,6 +2948,210 @@ function computeCoverage(text, claims) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// ROUND SIX, task LANG, half two — THE CLAIM'S SHAPE IS RECORDED, NOT GUESSED.
+//
+// Half one taught three WORD lexicons a measured multilingual table. This half cannot be closed
+// that way and it is worth being exact about why: superlatives and comparatives are GRAMMAR, not
+// vocabulary. `أكثر من غيرها`, `the most`, `le plus`, `najwięcej`, `το περισσότερο` — morphology
+// and word order, in five languages, none of which a label table gives. Every pattern in
+// `extractComparisons` above is a regex written by hand against one language at a time, and the
+// hole it leaves is unbounded by construction: `stress-ad-polish-hospital-beds` asserts a Polish
+// superlative and produced NO CLAIM AT ALL, and `stress-x-tunisian-water` needed a hand-written
+// Arabic elative pattern before its own single assertion could be read.
+//
+// So the shape is ASKED instead. The storyboard already asks the journalist for the takeaway at
+// G1; one more question — is this a maximum, a minimum, a comparison between two named things, a
+// total, or none of those, and about which column — makes the shape RECORDED. It is
+// language-independent by construction, because a human is reading their own sentence.
+//
+// THREE RULES, and the third is the one that matters:
+//
+//   1. THE GUESS STAYS AS THE DEFAULT. A journalist who answers nothing gets exactly the behaviour
+//      this file had before: `options.recorded` absent means every line below is skipped.
+//   2. THE RECORDED SHAPE WINS. A journalist who answers is not second-guessed by a regex.
+//   3. THE DISAGREEMENT IS REPORTED. Where the parser found a shape the journalist did not record,
+//      the parser's claim is REMOVED from `claims` — it cannot decide anything — and moved, whole,
+//      into `coverage.disagreements`. That is the only way anyone will ever see a defect in these
+//      patterns: a parser that is silently overruled is a parser nobody can audit. Neither side is
+//      preferred in silence.
+//
+// The disagreement is read at the level of SHAPE, which is the level the question records. A parsed
+// claim that agrees on the shape is left standing beside the recorded one, whatever column or entity
+// it picked — that is two readings of one shape, not two shapes, and the recorded verdict is the one
+// that decides.
+export const RECORDED_CLAIM_SHAPES = ["maximum", "minimum", "comparison", "total", "none"];
+
+/** The shape a PARSED comparison asserts, in the recorded vocabulary — `null` where the parser's
+ *  own kind is not one of the five (a bare "first time", a numeral). A shape of `null` is never a
+ *  disagreement: the question was never about it. */
+function shapeOfComparison(item) {
+  if (item.kind === "superlative")
+    return item.extreme === "max" ? "maximum" : item.extreme === "min" ? "minimum" : null;
+  if (item.kind === "totality") return "total";
+  if (["since", "pair", "trend", "trend-unlinked", "combined", "ever", "ever-unanchored"].includes(item.kind))
+    return "comparison";
+  return null;
+}
+
+/** WHICH SENTENCE THE RECORDED ANSWER IS ABOUT, so `computeCoverage` can count it.
+ *
+ *  A recorded claim carries no offset into the takeaway — the journalist answered a question, they
+ *  did not point at a span — and `computeCoverage` matches a claim to a sentence by containment. So
+ *  the sentence is the first one naming anything the answer names (the entity, the thing it is
+ *  compared to, the column), and the takeaway's first sentence otherwise. Deterministic, and named
+ *  in the detail the journalist reads, rather than left as a silent pick. */
+function recordedSentence(takeaway, recorded) {
+  const sentences = splitIntoSentences(String(takeaway ?? ""));
+  if (sentences.length === 0) return String(takeaway ?? "");
+  const named = [recorded.entity, recorded.versus, recorded.column]
+    .filter((n) => typeof n === "string" && n.trim() !== "")
+    .map((n) => n.trim().toLowerCase());
+  return sentences.find((s) => named.some((n) => s.toLowerCase().includes(n))) ?? sentences[0];
+}
+
+/**
+ * THE JOURNALIST'S OWN ANSWER, decided against the frozen table.
+ *
+ * Returns one claim in the same `{ claim, verdict, detail }` shape every other resolver here
+ * returns, plus `shape` and `recorded: true` so a reader can tell which of the two settled the
+ * sentence. Returns `null` for `none` — the journalist saying there is no such claim is not itself
+ * a claim, it is the statement that every shape the parser found is one it invented.
+ *
+ * IT REFUSES BY NAME. A column that is not in the profile, a column the profiler refused to type, a
+ * comparison with no direction recorded, an entity matching no row or several — each comes back
+ * `unverifiable` naming what is missing, never a silent negative. That is the same discipline every
+ * refusal in this file follows, and it matters more here: this answer OVERRIDES a parser, so a
+ * refusal it gives without a reason would be a check made worse by being asked.
+ */
+export function resolveRecordedClaim(recorded, profile, takeaway) {
+  const columns = Array.isArray(profile?.columns) ? profile.columns : [];
+  const rows = Array.isArray(profile?.rows) ? profile.rows : null;
+  const shape = String(recorded?.shape ?? "").trim().toLowerCase();
+  const sentence = recordedSentence(takeaway, recorded ?? {});
+  const say = (verdict, detail) => ({
+    claim: sentence,
+    verdict,
+    detail: `the journalist recorded this sentence's shape as "${shape}": ${detail}`,
+    shape,
+    recorded: true,
+  });
+
+  if (!RECORDED_CLAIM_SHAPES.includes(shape))
+    return {
+      claim: sentence,
+      verdict: "unverifiable",
+      detail: `"${recorded?.shape}" is not one of the shapes this question offers (${RECORDED_CLAIM_SHAPES.join(", ")}), so the recorded answer decides nothing and the parser's own reading stands`,
+      shape: null,
+      recorded: true,
+    };
+  if (shape === "none") return null;
+
+  const column = columns.find((c) => c.name === recorded.column);
+  if (!column)
+    return say(
+      "unverifiable",
+      `the profile carries no column named "${recorded.column}" — it carries ${columns.length === 0 ? "no columns at all" : columns.map((c) => `"${c.name}"`).join(", ")}`,
+    );
+  if (column.type !== "number")
+    return say(
+      "unverifiable",
+      `column "${column.name}" is typed "${column.type}"${typeof column.reason === "string" && column.reason.trim() !== "" ? ` — ${column.reason}` : ""}, so no maximum, minimum, comparison or total can be read off it`,
+    );
+
+  if (shape === "total") {
+    if (column.sum === null || column.sum === undefined)
+      return say("unverifiable", `column "${column.name}" carries no sum in the frozen profile`);
+    const totals = columnTotals(column, rows);
+    const holds = Math.abs(column.sum - TOTALITY_WHOLE_VALUE) <= TOTALITY_TOLERANCE;
+    // The SAME asymmetry `resolveComparison`'s own totality branch applies, and for the same
+    // reason: a confirmation requires non-negative parts, a refutation does not. Recording the
+    // shape names the column; it does not make parts that cancel into parts of a whole.
+    if (holds && Number.isFinite(column.min) && column.min < 0)
+      return say(
+        "unverifiable",
+        `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE}) — but it reaches that total by CANCELLATION, not by addition${cancellationNote(column, totals)}. Parts that cancel are not parts of a whole`,
+      );
+    return say(
+      holds ? "supported" : "contradicted",
+      (holds
+        ? `column "${column.name}" sums to ${column.sum}, which is the whole (${TOTALITY_WHOLE_VALUE})`
+        : `column "${column.name}" sums to ${column.sum}, not ${TOTALITY_WHOLE_VALUE}`) + cancellationNote(column, totals),
+    );
+  }
+
+  if (!rows || rows.length === 0)
+    return say(
+      "unverifiable",
+      `no frozen table was handed to this check, and no profile in this tree carries rows — pass the story's own source/data.csv as \`{ csv }\` and this claim becomes decidable`,
+    );
+
+  // THE ROW THE RECORDED ANSWER NAMES. `resolveEntityRows` matches TEXT-typed cells only, which is
+  // right for a name lifted out of a sentence by capitalisation — but a journalist answering "which
+  // row" can perfectly well answer with a year, and `stress-u-rhone-glacier` is keyed on one. So a
+  // recorded name that finds no text cell is tried again against every cell as written. Only the
+  // RECORDED path widens: the parser's own entity resolution is untouched, because widening it
+  // would let a capitalised phrase resolve to a number nobody meant.
+  const rowsNamed = (who) => {
+    const byText = resolveEntityRows(rows, who);
+    if (byText.length > 0) return byText;
+    const keys = entityKeys(who);
+    return rows.filter((row) => Object.values(row).some((v) => keys.includes(String(v).trim().toLowerCase())));
+  };
+
+  const read = (who, role) => {
+    if (typeof who !== "string" || who.trim() === "")
+      return { refusal: `the recorded answer names no ${role}` };
+    const found = rowsNamed(who);
+    if (found.length === 0) return { refusal: `"${who}" matches no row in the frozen table` };
+    if (found.length > 1)
+      return {
+        refusal: `"${who}" matches ${found.length} rows in the frozen table — a claim about one entity cannot be decided from several of its rows`,
+      };
+    const value = Number(found[0][column.name]);
+    if (Number.isNaN(value))
+      return { refusal: `the row for "${who}" holds no numeric value in column "${column.name}"` };
+    return { value };
+  };
+
+  if (shape === "maximum" || shape === "minimum") {
+    const got = read(recorded.entity, "entity");
+    if (got.refusal) return say("unverifiable", got.refusal);
+    const extreme = shape === "minimum" ? column.min : column.max;
+    const holds = got.value === extreme;
+    return say(
+      holds ? "supported" : "contradicted",
+      holds
+        ? `"${recorded.entity}"'s own value in "${column.name}" (${got.value}) is the column's ${shape} (${extreme})`
+        : `"${recorded.entity}"'s own value in "${column.name}" is ${got.value}, not the column's ${shape} (${extreme})`,
+    );
+  }
+
+  // A COMPARISON NEEDS ITS DIRECTION, and this check will not manufacture one. "A comparison
+  // between two named things" says which two; which of them the takeaway puts ahead is the
+  // journalist's own sentence, and guessing it here would be this whole half's premise undone.
+  const direction = String(recorded.direction ?? "").trim().toLowerCase();
+  if (direction !== "greater" && direction !== "less")
+    return say(
+      "unverifiable",
+      `a comparison between two named things needs its direction recorded too — "greater" or "less" — and "${recorded.direction ?? ""}" is neither`,
+    );
+  const first = read(recorded.entity, "entity");
+  if (first.refusal) return say("unverifiable", first.refusal);
+  const second = read(recorded.versus, "entity to compare against");
+  if (second.refusal) return say("unverifiable", second.refusal);
+  if (first.value === second.value)
+    return say(
+      "contradicted",
+      `"${recorded.entity}" and "${recorded.versus}" hold the same value in "${column.name}" (${first.value}), so neither is ${direction === "greater" ? "greater" : "less"} than the other`,
+    );
+  const holds = direction === "greater" ? first.value > second.value : first.value < second.value;
+  return say(
+    holds ? "supported" : "contradicted",
+    `"${recorded.entity}" holds ${first.value} in "${column.name}" and "${recorded.versus}" holds ${second.value}${holds ? "" : `, which is the opposite of the recorded direction "${direction}"`}`,
+  );
+}
+
 // Returns `{ claims, coverage }` — see `computeCoverage` above for what `coverage` reports and
 // who reads it. `claims` keeps its own established shape (one `{ claim, verdict, detail }` entry
 // per recognised claim); this wraps it rather than changing it, so every existing reader of the
@@ -2972,10 +3176,69 @@ export function groundTakeaway(takeaway, profile, options = {}) {
   const p = rows ? { ...base, rows } : base;
 
   const comparisons = extractComparisons(takeaway);
-  const claims = comparisons.map((item) => resolveComparison(item, p, takeaway));
+  // The shape each parsed claim asserts travels WITH it, so the recorded answer below has something
+  // to disagree with. `null` for a kind the recorded vocabulary has no word for.
+  const parsed = comparisons.map((item) => ({
+    ...resolveComparison(item, p, takeaway),
+    shape: shapeOfComparison(item),
+    // The entity the PARSER thought the claim was about, before any row resolution. Carried so the
+    // disagreement below can tell "the parser read MY sentence as another shape" apart from "the
+    // parser found a second, different claim in the same sentence" — `stress-t-europe-recycling`
+    // asserts a maximum AND a minimum in one sentence, and reporting the second as a defect
+    // because the journalist answered about the first would be this mechanism lying.
+    entity: item.entity ?? null,
+  }));
 
   const consumedSpans = comparisons.map((c) => [c.start, c.end]);
-  claims.push(...checkNumericRanges(takeaway, columns, consumedSpans, { rows, rowCount: base.rowCount }));
+  const numerals = checkNumericRanges(takeaway, columns, consumedSpans, { rows, rowCount: base.rowCount });
 
-  return { claims, coverage: computeCoverage(takeaway, claims) };
+  // THE GUESS STAYS AS THE DEFAULT. No recorded answer, no change of any kind — this is the line
+  // that makes "a journalist who answers nothing gets exactly today's behaviour" a fact rather
+  // than an intention.
+  if (!options.recorded) {
+    const claims = [...parsed, ...numerals];
+    return { claims, coverage: computeCoverage(takeaway, claims) };
+  }
+
+  const recordedShape = String(options.recorded.shape ?? "").trim().toLowerCase();
+  const recordedClaim = resolveRecordedClaim(options.recorded, p, takeaway);
+  // A parsed claim asserting a DIFFERENT shape from the one the journalist recorded is a defect in
+  // the patterns above. It is removed from `claims` — it may not decide anything — and reported
+  // whole, so it can be read, argued with and fixed. Silence in either direction would be the
+  // failure this task exists to close.
+  //
+  // THREE CONDITIONS, and each of them exists because dropping it made this mechanism report a
+  // defect that was not one, measured on a frozen story:
+  //
+  //   a different SHAPE, or there is nothing to disagree about;
+  //   inside the SENTENCE the answer is about — `stress-ac-alcanede-kilns` carries three trend
+  //     comparisons across two sentences, and an answer about one of them says nothing about the
+  //     others. `none` is the exception: it is an answer about the whole takeaway;
+  //   about the same ENTITY, or about none this parser could name — `stress-t-europe-recycling`
+  //     says "Germany has the highest … and Macedonia has the lowest" in ONE sentence, and an
+  //     answer about Germany's maximum is not a verdict on Macedonia's minimum.
+  const recordedSentenceText = recordedSentence(takeaway, options.recorded);
+  const recordedEntity = String(options.recorded.entity ?? "").trim().toLowerCase();
+  const superseded = parsed.filter(
+    (c) =>
+      c.shape !== null &&
+      c.shape !== recordedShape &&
+      (recordedShape === "none" || recordedSentenceText.includes(c.claim)) &&
+      (recordedEntity === "" || !c.entity || entityKeys(c.entity).includes(recordedEntity)),
+  );
+  const claims = [
+    ...(recordedClaim ? [recordedClaim] : []),
+    ...parsed.filter((c) => !superseded.includes(c)),
+    ...numerals,
+  ];
+  const coverage = computeCoverage(takeaway, claims);
+  coverage.recorded = { shape: recordedShape, column: options.recorded.column ?? null };
+  coverage.disagreements = superseded.map((c) => ({
+    claim: c.claim,
+    parsedShape: c.shape,
+    recordedShape,
+    verdict: c.verdict,
+    detail: c.detail,
+  }));
+  return { claims, coverage };
 }

@@ -30,7 +30,7 @@ import { groundTakeaway, findYearColumn, measureColumns, LEXICON_LANGUAGES_SAID 
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { treatmentFormatGap } from "./format-gate.mjs";
-import { EXPORT_SIZES, SIZED_FORMATS } from "./storyboard.mjs";
+import { EXPORT_SIZES, SIZED_FORMATS, recordedClaimOf } from "./storyboard.mjs";
 import { normalizeTreatment } from "./producer-gate.mjs";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -95,7 +95,12 @@ import visualCatalog from "../references/visual-catalog.json" with { type: "json
 // reading, and a fourth word would have to be added in both or the gates would disagree. What
 // changed is which of the three this function is allowed to reach, not how many there are.
 export function resolveGrounding(takeaway, profile, options = {}) {
-  const { claims, coverage } = groundTakeaway(takeaway, profile, options);
+  // ROUND SIX, task LANG, half two. Two ways in, one behaviour: `{ recorded }` for the call at G1,
+  // where the journalist's answer is in hand and no file exists yet, and `{ storyboard }` for every
+  // later re-grounding, which reads the answer back out of the front matter it was written to. A
+  // caller that passes neither gets the guess, unchanged — that is the default and it is this line.
+  const recorded = options.recorded ?? (options.storyboard ? recordedClaimOf(options.storyboard) : null);
+  const { claims, coverage } = groundTakeaway(takeaway, profile, recorded ? { ...options, recorded } : options);
   const contradicted = claims.filter((c) => c.verdict === "contradicted");
   const supported = claims.filter((c) => c.verdict === "supported");
   const consistent = claims.filter((c) => c.verdict === "consistent");
@@ -133,6 +138,22 @@ export function resolveGrounding(takeaway, profile, options = {}) {
       ? ` "supported" is WITHHELD: ${coverage.unevaluated.length} sentence(s) of this takeaway produced no claim at all, so the check did not read the whole of it.`
       : "";
 
+  // ROUND SIX, task LANG, half two — WHERE THE JOURNALIST'S OWN ANSWER AND THE PARSER DISAGREE.
+  //
+  // Superlatives and comparatives are grammar, not vocabulary, so no label table can close the
+  // hole `stress-ad`'s Polish `najwięcej` fell into. The shape is RECORDED instead, and the
+  // recorded shape wins. What must never happen is that it wins in silence: a parser overruled
+  // without a word is a parser nobody can audit, and every pattern in `ground-claim.mjs` was
+  // written by hand against one language at a time. So the overruled claim is printed here, in the
+  // string the journalist reads, with the shape it thought it had found — because THIS IS THE ONLY
+  // PLACE a defect in those patterns will ever surface.
+  const disagreementNote =
+    (coverage.disagreements ?? []).length > 0
+      ? ` The journalist recorded this claim's shape as "${coverage.recorded?.shape}"${coverage.recorded?.column ? ` on column "${coverage.recorded.column}"` : ""}, and the recorded shape DECIDES it. ${coverage.disagreements.length} reading(s) by this check's own patterns disagreed and were set aside — each one is a defect in those patterns, not in the takeaway: ${coverage.disagreements.map((d) => `"${d.claim}" was read as a ${d.parsedShape} (${d.verdict}: ${d.detail})`).join("; ")}.`
+      : (coverage.recorded
+          ? ` The journalist recorded this claim's shape as "${coverage.recorded.shape}"${coverage.recorded.column ? ` on column "${coverage.recorded.column}"` : ""}, and this check's own patterns read nothing that disagreed with it.`
+          : "");
+
   const coverageNote = ` (${coverage.decided} of ${coverage.sentences} sentence(s) carry a claim the frozen data could decide; ${coverage.evaluated} produced a claim of any kind${
     coverage.unevaluated.length > 0
       ? `; ${coverage.unevaluated.length} produced none: ${coverage.unevaluated.map((s) => `"${s}"`).join("; ")}`
@@ -159,7 +180,7 @@ export function resolveGrounding(takeaway, profile, options = {}) {
 
   return {
     verdict,
-    detail: `${detail}${placedNote}${withheldNote}${coverageNote}`,
+    detail: `${detail}${placedNote}${withheldNote}${disagreementNote}${coverageNote}`,
     claims,
     contradicted,
     supported,
