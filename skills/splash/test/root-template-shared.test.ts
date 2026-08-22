@@ -178,6 +178,12 @@ describe("twin/shared/chart-web — the vendored web format, so a story imports 
   for (const relative of [
     "scripts/render-web.mjs",
     "scripts/render-still.mjs",
+    // Added round six. `stress-z-budget-parts`'s web beat imported
+    // `../../../../skills/chart-web/scripts/storyboard-gate.mjs` — four levels up, into a skill —
+    // for the same reason every beat did before this directory existed: the thing it needed was
+    // not here. A beat reaches into `skills/` when vendoring is incomplete, so the offender list
+    // this file keeps is really a list of files that still owe a copy.
+    "scripts/storyboard-gate.mjs",
     "assets/ChartWebSeed.tsx",
     "assets/entrance.ts",
     "assets/filter.ts",

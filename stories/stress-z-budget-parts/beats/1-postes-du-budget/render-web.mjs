@@ -19,7 +19,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette, framingMeasurement } from "#shared/chart-beat/render-still.mjs";
 import { renderWeb } from "#shared/chart-web/scripts/render-web.mjs";
-import { storyboardGateStatus } from "../../../../skills/chart-web/scripts/storyboard-gate.mjs";
+import { storyboardGateStatus } from "#shared/chart-web/scripts/storyboard-gate.mjs";
 import { BudgetPartsWeb, FRAME } from "./BudgetPartsWeb.tsx";
 import { fr } from "./budget-geometry.ts";
 

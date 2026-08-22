@@ -47,16 +47,45 @@ const SOURCE_LINE = "Source: not stated — company payroll extract, as of 21 Au
 const eur = new Intl.NumberFormat("en-GB");
 const money = (v) => eur.format(Math.round(v));
 
+/** RFC 4180 rows, tokenised once. Never `.split(",")`: a quoted cell may legally hold a comma or a
+ *  newline, and a hand split cuts it in half without ever saying so. The project walks for that
+ *  pair of shapes (`skills/splash/test/csv-hand-split.test.ts`, catalogue guard `csv-split-by-hand`)
+ *  because the pattern beat shipped it once. Inlined, not imported: a story workspace is not a
+ *  skill, and this file has to stay readable on its own. */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 function readSalaries(csv) {
-  const lines = csv.trim().split(/\r?\n/);
-  const head = lines[0].split(",");
+  const lines = parseCsvRows(csv.trim());
+  const head = lines[0];
   const iSalary = head.indexOf("annual_salary_eur");
   const iDept = head.indexOf("department");
   const iId = head.indexOf("employee_id");
   if (iSalary < 0 || iDept < 0 || iId < 0)
     throw new Error(`source/data.csv does not carry the columns this beat reads: ${head.join(", ")}`);
-  return lines.slice(1).map((line) => {
-    const cell = line.split(",");
+  return lines.slice(1).map((cell) => {
     const raw = (cell[iSalary] ?? "").trim();
     return {
       id: cell[iId],
