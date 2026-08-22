@@ -19,7 +19,11 @@ import {
 } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
-import { FORMAT_OFFER_RECEIPT, PENDING } from "./another-format.mjs";
+import {
+  FORMAT_OFFER_RECEIPT,
+  LEGACY_FORMAT_OFFER_RECEIPT,
+  PENDING,
+} from "./another-format.mjs";
 import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 import { requireApprovedOutput } from "./output-review.mjs";
 import {
@@ -885,6 +889,59 @@ export function embedCodeFor(url, title, options = {}) {
   );
 }
 
+/**
+ * THE ANSWERS A JOURNALIST ALREADY GAVE, READ OFF THE DELIVERY ABOUT TO BE REPLACED.
+ *
+ * A delivery is published by wiping `export/<beat>/` and putting a freshly staged directory in its
+ * place, which is what keeps the chosen form internally exact — nothing from a previous form can
+ * survive into a new one. The two closing-offer receipts are not part of the form. They are the
+ * journalist's own words, and re-materialising the same beat took them with the files: measured on
+ * a real story, a re-delivery to correct the hand-over silently dropped `.another-format` and
+ * `.other-subjects`, and the story went back to reporting that neither question had ever been
+ * asked (D17). Silent data loss in the one place a journalist's answer lives.
+ *
+ * `pending` is not an answer — it is the mark of a question nobody has put yet — so it is not
+ * carried; a beat re-delivered before anyone was asked is still a beat nobody was asked.
+ *
+ * The legacy `.another-genre` name is carried UNDER ITS OWN NAME. `deliveryClosed` reads either
+ * one, and rewriting a legacy receipt as the canonical one here would be a migration this function
+ * was not asked to perform — and, if the two ever disagreed, one that quietly picked a winner.
+ */
+async function carriedOfferAnswers(exportDir) {
+  const carried = new Map();
+  for (const name of [FORMAT_OFFER_RECEIPT, LEGACY_FORMAT_OFFER_RECEIPT, SUBJECT_OFFER_RECEIPT]) {
+    const text = await optionalFile(join(exportDir, name));
+    if (text === null || text.trim() === "" || text.trim() === PENDING) continue;
+    carried.set(name, text);
+  }
+  return carried;
+}
+
+/**
+ * Both halves of the closing offer, written into the staging directory: the carried answer where
+ * there is one, `pending` where there is not.
+ *
+ * The one asymmetry is the legacy format receipt. When it alone carries the answer, no canonical
+ * receipt is written at all — a `pending` beside a real legacy answer is exactly the pair
+ * `deliveryClosed` refuses as conflicting, so writing one would turn a re-delivery into a throw.
+ */
+async function writeOfferReceipts(exportDir, carried) {
+  const format = carried.get(FORMAT_OFFER_RECEIPT);
+  const legacyFormat = carried.get(LEGACY_FORMAT_OFFER_RECEIPT);
+  if (legacyFormat !== undefined) await writeFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), legacyFormat);
+  if (format !== undefined) {
+    await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), format);
+  } else if (legacyFormat === undefined) {
+    await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), `${PENDING}\n`);
+  }
+  // The other half of the same closing offer: the article's own other subjects. Pending for the
+  // same reason and answered the same way — including `none`, when the article carried nothing else.
+  await writeFile(
+    join(exportDir, SUBJECT_OFFER_RECEIPT),
+    carried.get(SUBJECT_OFFER_RECEIPT) ?? `${PENDING}\n`,
+  );
+}
+
 async function materialiseInto({
   form,
   format,
@@ -901,6 +958,7 @@ async function materialiseInto({
   outputId,
   planVersion,
   findingIds,
+  carried = new Map(),
 }) {
   // Validate the {form, format} PAIR, not the form id in isolation — a form id that exists for
   // some other format must not be accepted here just because it happens to share a name. Reading
@@ -926,10 +984,10 @@ async function materialiseInto({
   // `pending` here, at the moment the delivery lands, so "the run never made the offer" is a state
   // on disk rather than a habit that can be forgotten. `deliveryClosed` reads it; `recordFormatAnswer`
   // replaces it with the answer. A dotfile, for the same reason as the receipt above.
-  await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), `${PENDING}\n`);
-  // The other half of the same closing offer: the article's own other subjects. Pending for the
-  // same reason and answered the same way — including `none`, when the article carried nothing else.
-  await writeFile(join(exportDir, SUBJECT_OFFER_RECEIPT), `${PENDING}\n`);
+  //
+  // `pending` ONLY WHEN NOBODY HAS ANSWERED YET — D17. `carried` holds whatever answers the
+  // delivery being replaced already had; see `carriedOfferAnswers`.
+  await writeOfferReceipts(exportDir, carried);
   const written = [];
   // One `mapKeyState` per HTML file this delivery writes — read for the hand-over, never for a
   // verdict. Nothing in this function refuses over a key.
@@ -1199,6 +1257,7 @@ export async function materialise(options) {
         planVersion,
         findingIds,
       });
+      const carried = await carriedOfferAnswers(paths.exportDir);
       const operationId = randomUUID();
       const { stagingDir } = replacementArtifacts(paths.exportDir, operationId);
       const hostedOperation =
@@ -1218,6 +1277,7 @@ export async function materialise(options) {
       try {
         const stagedWritten = await materialiseInto({
           ...options,
+          carried,
           beatDir: paths.beatDir,
           exportDir: stagingDir,
           projectName: hostedProjectName,

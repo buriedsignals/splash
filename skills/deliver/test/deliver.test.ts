@@ -19,12 +19,25 @@ import {
   mapKeyState,
   embedCodeFor,
 } from "../scripts/deliver.mjs";
-import { cloudflareProjectName, cloudflareScrollerUrl } from "../scripts/deploy-embed.mjs";
+import {
+  cloudflareProjectName,
+  cloudflareScrollerUrl,
+} from "../scripts/deploy-embed.mjs";
 import {
   offerFormsLegacyV1,
   materialiseLegacyV1,
 } from "../scripts/delivery-compat-v1.mjs";
 import { OUTPUT_REVIEW_FILE } from "../scripts/output-review.mjs";
+import {
+  FORMAT_OFFER_RECEIPT,
+  LEGACY_FORMAT_OFFER_RECEIPT,
+  PENDING,
+  recordFormatAnswer,
+} from "../scripts/another-format.mjs";
+import {
+  SUBJECT_OFFER_RECEIPT,
+  recordSubjectAnswer,
+} from "../scripts/other-subjects.mjs";
 import { readFileSync } from "node:fs";
 import { replacementArtifacts } from "../scripts/delivery-replacement.mjs";
 import {
@@ -682,6 +695,146 @@ describe("materialise", () => {
     );
   });
 
+  // THE ONE PLACE A JOURNALIST'S OWN WORDS LIVE, and a routine re-delivery threw them away — D17.
+  //
+  // Measured on a real story (real-ember-renewables-share): both closing answers were recorded and
+  // `whereIs` reported `done`; `materialise` was run again for the SAME form to correct the
+  // hand-over, and the wipe-then-stage that keeps a delivery internally exact took `.another-format`
+  // and `.other-subjects` with it. Nothing said so. `whereIs` went back to reporting that neither
+  // question had ever been asked, which on a real desk is a journalist asked the same two questions
+  // again with no explanation — or, if nobody notices, a finished story reporting itself unfinished.
+  //
+  // An answer is a FACT the journalist gave, not a by-product of the run that collected it. The
+  // files a delivery writes are replaced; the answers are carried across.
+  //
+  // RED, before `carriedOfferAnswers`:
+  //   expect(received).toBe(expected)   Expected: "declined\n"   Received: "pending\n"
+  it("should keep the closing-offer answers when the same form is materialised again", async () => {
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe(
+      `${PENDING}\n`,
+    );
+
+    await recordFormatAnswer({ exportDir, answer: "declined" });
+    await recordSubjectAnswer({ exportDir, answer: "none" });
+
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe(
+      "declined\n",
+    );
+    expect(await readFile(join(exportDir, SUBJECT_OFFER_RECEIPT), "utf8")).toBe(
+      "none\n",
+    );
+  });
+
+  // The legacy receipt is an answer too, and it is carried under its own name: `deliveryClosed`
+  // reads either, and rewriting it as the canonical one here would make a re-delivery silently
+  // migrate a file this function was not asked to migrate.
+  it("should carry a legacy .another-genre answer across a re-delivery", async () => {
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+    await rm(join(exportDir, FORMAT_OFFER_RECEIPT));
+    await writeFile(
+      join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT),
+      "taken video\n",
+    );
+    await recordSubjectAnswer({ exportDir, answer: "declined" });
+
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(
+      await readFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "utf8"),
+    ).toBe("taken video\n");
+    expect(await readdir(exportDir)).not.toContain(FORMAT_OFFER_RECEIPT);
+    expect(await readFile(join(exportDir, SUBJECT_OFFER_RECEIPT), "utf8")).toBe(
+      "declined\n",
+    );
+  });
+
+  // AND ONLY AN ANSWER IS CARRIED. A receipt that is blank says nothing about what a journalist
+  // wanted; carried forward as itself it would keep saying nothing, in a file whose whole job is to
+  // make "nobody has been asked" visible. A re-delivery restores it to the state it names.
+  it("should restore an empty receipt to pending rather than carry the blank", async () => {
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+    await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), "");
+    await writeFile(join(exportDir, SUBJECT_OFFER_RECEIPT), "   \n");
+
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe(
+      `${PENDING}\n`,
+    );
+    expect(await readFile(join(exportDir, SUBJECT_OFFER_RECEIPT), "utf8")).toBe(
+      `${PENDING}\n`,
+    );
+  });
+
+  // A delivery of a DIFFERENT form is still the same beat and the same two questions: "would you
+  // like this finding in another format" does not become unanswered because the file it ships as
+  // changed.
+  it("should keep the answers when the form itself changes", async () => {
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+    await recordFormatAnswer({ exportDir, answer: "taken", format: "video" });
+    await recordSubjectAnswer({ exportDir, answer: "declined" });
+
+    await materialise({
+      form: "source-bundle",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe(
+      "taken video\n",
+    );
+    expect(await readFile(join(exportDir, SUBJECT_OFFER_RECEIPT), "utf8")).toBe(
+      "declined\n",
+    );
+  });
+
   it("should write only the owned file when that form is chosen", async () => {
     const written = await materialise({
       form: "owned-file",
@@ -882,9 +1035,15 @@ describe("materialise", () => {
   // ships the beat's internals" defect written down as an expectation. What the loop is FOR is
   // unchanged: neither format may throw "not an offered form".
   const ownedFileFixture = {
-    web: { renders: { "chart.html": "<html></html>" }, delivers: ["chart.html"] },
+    web: {
+      renders: { "chart.html": "<html></html>" },
+      delivers: ["chart.html"],
+    },
     video: {
-      renders: { "chart.mp4": "mp4-bytes", "chart-final-frame.png": "png-bytes" },
+      renders: {
+        "chart.mp4": "mp4-bytes",
+        "chart-final-frame.png": "png-bytes",
+      },
       delivers: ["chart-final-frame.png", "chart.mp4"],
     },
   };
@@ -1206,13 +1365,16 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     expect(recordNames).toHaveLength(2);
     const remoteRecords = await Promise.all(
       recordNames.map(async (name) =>
-        JSON.parse(await readFile(join(exportRoot, name), "utf8"))),
+        JSON.parse(await readFile(join(exportRoot, name), "utf8")),
+      ),
     );
     expect(remoteRecords.map((record) => record.outputId).sort()).toEqual([
       "1-rainfall-web",
       "splash-iframe-scroller",
     ]);
-    expect(remoteRecords.every((record) => record.state === "remote-complete")).toBe(true);
+    expect(
+      remoteRecords.every((record) => record.state === "remote-complete"),
+    ).toBe(true);
 
     await materialise({
       form: "embed",
@@ -1238,9 +1400,12 @@ describe("materialise — hosted embed and CMS insertion (web format)", () => {
     );
     const completedRecords = await Promise.all(
       recordNames.map(async (name) =>
-        JSON.parse(await readFile(join(exportRoot, name), "utf8"))),
+        JSON.parse(await readFile(join(exportRoot, name), "utf8")),
+      ),
     );
-    expect(completedRecords.every((record) => record.state === "local-complete")).toBe(true);
+    expect(
+      completedRecords.every((record) => record.state === "local-complete"),
+    ).toBe(true);
   });
 
   it("should refuse to materialise embed when renders/ holds more than one file", async () => {

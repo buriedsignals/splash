@@ -308,6 +308,15 @@ draft is a fact — and the approval is refused over it, as before.
    `deliveryClosed` byte for byte (`splash/test/guard-copies-parity.test.ts` walks the pair) and
    holds the story in `delivery`, naming the beat and the half, until both have an answer.
 
+   **And an answer survives a re-delivery.** A delivery is published by replacing `export/<beat>/`
+   wholesale, which is what keeps the chosen form internally exact — and it took both receipts with
+   it. Running `materialise` a second time on a beat that had already answered dropped
+   `.another-format` and `.other-subjects`, silently, so the story reported itself unfinished after
+   a routine re-delivery and the journalist was asked the same two questions again with no
+   explanation. `carriedOfferAnswers` reads them off the delivery being replaced and
+   `writeOfferReceipts` puts them back; `pending` and a blank receipt are not answers and are not
+   carried, and the legacy `.another-genre` name is carried under its own name rather than migrated.
+
 7. **`otherSubjectsFor({storyDir, capabilities})` — the other half of the same closing offer.** The
    owner, after the format offer: *"Ou même le relancer sur des sous-sujets de son article qui
    seraient intéressants à transformer en visuel."* One article carries several things worth drawing.
