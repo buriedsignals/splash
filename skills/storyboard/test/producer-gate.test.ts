@@ -15,6 +15,9 @@ import {
   datawrapperTypesForTreatment,
   whereIs,
 } from "../../splash/scripts/where.mjs";
+import { buildData } from "../../analyst/scripts/build-data.mjs";
+import { parseCsv } from "../../analyst/scripts/csv.mjs";
+import { profileTable } from "../../analyst/scripts/profile.mjs";
 
 const TYPES = [
   "column-chart",
@@ -215,9 +218,24 @@ describe("persisted producer state", () => {
     storyDir = await mkdtemp(join(tmpdir(), "producer-gate-"));
     path = join(storyDir, "STORYBOARD.md");
     for (const child of ["source", "beats", "export"]) await mkdir(join(storyDir, child));
+    // S5 parity: `whereIs` leaves intake only when all three frozen files exist.
     await writeFile(join(storyDir, "source", "article.md"), "article");
+    await writeFile(join(storyDir, "source", "data.csv"), "country,value\nFrance,1\n");
     await writeFile(join(storyDir, "source", "profile.json"), "{}");
   });
+
+  // The analyst pre-step of production: a chosen chart slot does not leave for craft until
+  // `beats/<id>/data.json` exists, so a story that has genuinely advanced to production has
+  // already run it. Seeded with the real builder over a frozen source pair.
+  async function runAnalyst() {
+    const csv = ["country,value", "France,1", "Germany,2"].join("\n");
+    await writeFile(join(storyDir, "source", "data.csv"), csv);
+    await writeFile(
+      join(storyDir, "source", "profile.json"),
+      JSON.stringify(profileTable(parseCsv(csv))),
+    );
+    await buildData({ storyDir, slotId: "1" });
+  }
 
   afterEach(async () => {
     await rm(storyDir, { recursive: true, force: true });
@@ -276,8 +294,10 @@ describe("persisted producer state", () => {
     await mutateStoryboard(path, { slot: { id: 1, fields } });
     const slot = parseStoryboard(await readFile(path, "utf8")).meta.slots[0];
     expect(slot).toMatchObject({ producer: "datawrapper", datawrapperType: "d3-lines" });
+    await runAnalyst();
     expect(await whereIs(storyDir)).toMatchObject({ phase: "production", missing: [] });
   });
+
 
   for (const existing of [
     { producer: "custom" },
@@ -318,6 +338,7 @@ describe("persisted producer state", () => {
       storyboard({ treatment: "Histogram", candidates: ["Histogram", "Box plot"] }),
     );
     expect(checkStoryboard(parseStoryboard(await readFile(path, "utf8")).meta)).toEqual([]);
+    await runAnalyst();
     expect(await whereIs(storyDir)).toMatchObject({ phase: "production", missing: [] });
   });
 

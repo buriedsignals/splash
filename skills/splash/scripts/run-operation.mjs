@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
-import { lstat, realpath } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { lstat, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { runPreflight } from "./preflight.mjs";
 import { probeCloudflare, probeDatawrapper, probeMapTiler } from "./keys.mjs";
@@ -186,6 +187,130 @@ async function existingStoryFile(story, relativePath, label) {
   return canonical;
 }
 
+const PRODUCTION_ATTEMPTS_FILE = "PRODUCTION-ATTEMPTS.json";
+const PRODUCTION_ATTEMPTS_SCHEMA_VERSION = 1;
+const MAX_PRODUCTION_ATTEMPTS = 3;
+
+function productionInputDigest(bytes) {
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+function validateProductionAttempts(record, path) {
+  if (
+    !record ||
+    typeof record !== "object" ||
+    Array.isArray(record) ||
+    record.schemaVersion !== PRODUCTION_ATTEMPTS_SCHEMA_VERSION ||
+    !["map-bake", "datawrapper-produce"].includes(record.operation) ||
+    typeof record.outputId !== "string" ||
+    typeof record.inputPath !== "string" ||
+    typeof record.inputDigest !== "string" ||
+    !Number.isSafeInteger(record.attempts) ||
+    record.attempts < 1 ||
+    record.attempts > MAX_PRODUCTION_ATTEMPTS ||
+    !["failed", "blocked"].includes(record.status) ||
+    typeof record.reason !== "string" ||
+    record.reason.length === 0
+  ) {
+    throw new Error(`production attempt receipt is invalid at ${path}`);
+  }
+  if (
+    (record.status === "blocked") !==
+      (record.attempts === MAX_PRODUCTION_ATTEMPTS)
+  ) {
+    throw new Error(`production attempt receipt has inconsistent status at ${path}`);
+  }
+  return record;
+}
+
+async function readProductionAttempts(path) {
+  try {
+    return validateProductionAttempts(
+      JSON.parse(await readFile(path, "utf8")),
+      path,
+    );
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    if (error instanceof SyntaxError) {
+      throw new Error(`production attempt receipt is not valid JSON at ${path}`, {
+        cause: error,
+      });
+    }
+    throw error;
+  }
+}
+
+async function writeProductionAttempts(path, record) {
+  validateProductionAttempts(record, path);
+  const temporary = join(
+    dirname(path),
+    `.${PRODUCTION_ATTEMPTS_FILE}.tmp-${randomUUID()}`,
+  );
+  try {
+    await writeFile(temporary, `${JSON.stringify(record, null, 2)}\n`, {
+      flag: "wx",
+    });
+    await rename(temporary, path);
+  } catch (error) {
+    await rm(temporary, { force: true });
+    throw error;
+  }
+}
+
+function blockedProductionResult(record) {
+  return {
+    operation: record.operation,
+    outputId: record.outputId,
+    status: "blocked",
+    reason: record.reason,
+    attempts: record.attempts,
+  };
+}
+
+async function runManagedProductionAttempt({
+  operation,
+  beatDir,
+  outputId,
+  inputPath,
+  inputDigest,
+  run,
+}) {
+  const receiptPath = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
+  const previousReceipt = await readProductionAttempts(receiptPath);
+  const currentReceipt =
+    previousReceipt?.operation === operation &&
+    previousReceipt.outputId === outputId &&
+    previousReceipt.inputPath === inputPath &&
+    previousReceipt.inputDigest === inputDigest
+      ? previousReceipt
+      : null;
+  if (currentReceipt?.status === "blocked") {
+    return blockedProductionResult(currentReceipt);
+  }
+
+  try {
+    const result = await run();
+    await rm(receiptPath, { force: true });
+    return result;
+  } catch (error) {
+    const attempts = (currentReceipt?.attempts ?? 0) + 1;
+    const receipt = {
+      schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+      operation,
+      outputId,
+      inputPath,
+      inputDigest,
+      attempts,
+      status:
+        attempts === MAX_PRODUCTION_ATTEMPTS ? "blocked" : "failed",
+      reason: error instanceof Error ? error.message : String(error),
+    };
+    await writeProductionAttempts(receiptPath, receipt);
+    if (receipt.status === "blocked") return blockedProductionResult(receipt);
+    throw error;
+  }
+}
+
 async function boundedChildText(stream, label, child) {
   const reader = stream.getReader();
   const chunks = [];
@@ -319,12 +444,25 @@ export async function runOperation(
       const parameters = requireParameters(request, ["contractDigest"]);
       const { story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
-      return mapBakeFn({
-        story,
+      const inputPath = "MAP-BAKE.json";
+      const beatDir = await realDirectory(
+        join(story, "beats", outputId),
+        "map beat",
+      );
+      return runManagedProductionAttempt({
+        operation,
+        beatDir,
         outputId,
-        contractDigest: parameters.contractDigest,
-        browserPath: process.env.SPLASH_BROWSER_PATH,
-        mapTilerKey: process.env.MAPTILER_KEY,
+        inputPath,
+        inputDigest: parameters.contractDigest,
+        run: () =>
+          mapBakeFn({
+            story,
+            outputId,
+            contractDigest: parameters.contractDigest,
+            browserPath: process.env.SPLASH_BROWSER_PATH,
+            mapTilerKey: process.env.MAPTILER_KEY,
+          }),
       });
     }
     case "datawrapper-produce": {
@@ -335,32 +473,42 @@ export async function runOperation(
         throw new Error("Datawrapper format must be static or web");
       if (!["landscape", "square", "portrait"].includes(parameters.size))
         throw new Error("Datawrapper size is unsupported");
-      await existingStoryFile(
+      const inputPath = "spec.json";
+      const specPath = await existingStoryFile(
         story,
-        join("beats", outputId, "spec.json"),
+        join("beats", outputId, inputPath),
         "Datawrapper spec",
       );
-      const result = await runSkillEntrypointFn(
-        runtimeEntrypoint(
-          "datawrapper",
-          "skills/dw-beat/scripts/sealed-produce.mjs",
-        ),
-        [],
-        {
-          storiesRoot,
-          storyId: request.storyId,
-          outputId,
-          format: parameters.format,
-          size: parameters.size,
-        },
-      );
-      return {
+      return runManagedProductionAttempt({
         operation,
+        beatDir: dirname(specPath),
         outputId,
-        format: result.format,
-        chartId: result.chartId,
-        publicUrl: result.publicUrl,
-      };
+        inputPath,
+        inputDigest: productionInputDigest(await readFile(specPath)),
+        run: async () => {
+          const result = await runSkillEntrypointFn(
+            runtimeEntrypoint(
+              "datawrapper",
+              "skills/dw-beat/scripts/sealed-produce.mjs",
+            ),
+            [],
+            {
+              storiesRoot,
+              storyId: request.storyId,
+              outputId,
+              format: parameters.format,
+              size: parameters.size,
+            },
+          );
+          return {
+            operation,
+            outputId,
+            format: result.format,
+            chartId: result.chartId,
+            publicUrl: result.publicUrl,
+          };
+        },
+      });
     }
     case "maptiler-delivery": {
       const parameters = requireParameters(request, [

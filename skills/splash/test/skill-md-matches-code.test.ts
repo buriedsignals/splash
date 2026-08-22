@@ -581,3 +581,96 @@ describe("every SKILL.md's structural claims about code hold true", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("the splash dispatcher conforms to the orchestration spine", () => {
+  // ORCHESTRATION-SPINE.md §1: one thin dispatcher per system, fixed section order, same headings
+  // everywhere, ≤ ~250 lines. The bound below is the mechanical reading of "~250": a dispatcher
+  // drifting past 260 lines is growing child-skill bodies back into itself.
+  const DISPATCHER = join(SKILLS, "splash", "SKILL.md");
+  const SPINE_SECTIONS = [
+    "When to use",
+    "Operating contract",
+    "Dispatch table",
+    "Gates",
+    "Verbs",
+    "Never-list",
+    "Tuning knobs",
+  ];
+  const AGENTS = join(TWIN, "agents");
+  const PERSONAS = ["analyst", "archivist", "courier", "designer", "editor"];
+  const VERB_REGISTRY = [
+    "read-file",
+    "write-file",
+    "execute-shell",
+    "fetch",
+    "search",
+    "invoke-skill",
+    "spawn-agent",
+    "wait-agent",
+  ];
+
+  it("should carry the spine's seven sections in order, within the dispatcher line budget", async () => {
+    const text = await readFile(DISPATCHER, "utf8");
+    let cursor = -1;
+    for (const heading of SPINE_SECTIONS) {
+      const at = text.indexOf(`\n## ${heading}\n`);
+      expect(at, `missing or out-of-order section: ${heading}`).toBeGreaterThan(
+        cursor,
+      );
+      cursor = at;
+    }
+    expect(text.split("\n").length).toBeLessThanOrEqual(260);
+  });
+
+  it("should brief every pipeline persona with the shared spine §3 frontmatter contract", async () => {
+    const files = (await readdir(AGENTS)).filter((f) => f.endsWith(".md")).sort();
+    expect(files).toEqual(PERSONAS.map((p) => `${p}.md`));
+
+    for (const file of files) {
+      const raw = await readFile(join(AGENTS, file), "utf8");
+      const m = /^---\n([\s\S]*?)\n---\n/.exec(raw);
+      expect(m, `${file}: no frontmatter block`).toBeTruthy();
+      const fm = m![1];
+
+      // Minimal frontmatter reader: top-level `key: value` scalars and `key:` + `  - item` lists.
+      const scalar = (key: string) =>
+        new RegExp(`^${key}: (.*)$`, "m").exec(fm)?.[1].trim() ?? null;
+      const list = (key: string) => {
+        const block = new RegExp(`^${key}:\\n((?:  - .*(?:\\n|$))*)`, "m").exec(fm);
+        if (!block) return null;
+        return [...block[1].matchAll(/^  - (.*)$/gm)].map((v) => v[1].trim());
+      };
+
+      expect(scalar("name"), file).toBe(file.replace(/\.md$/, ""));
+      expect(scalar("description"), file).toBeTruthy();
+      const limit = scalar("iteration_limit");
+      expect(limit, `${file}: iteration_limit`).toMatch(/^[1-9][0-9]*$/);
+      expect(Number.isSafeInteger(Number(limit)), file).toBe(true);
+
+      const allowed = list("allowed_verbs");
+      const disallowed = list("disallowed_verbs");
+      expect(allowed!.length, `${file}: allowed_verbs`).toBeGreaterThan(0);
+      expect(disallowed!.length, `${file}: disallowed_verbs`).toBeGreaterThan(0);
+      for (const verb of allowed!) {
+        expect(VERB_REGISTRY, `${file}: ${verb} not in the spine registry`).toContain(verb);
+      }
+      for (const verb of disallowed!) {
+        expect(VERB_REGISTRY, `${file}: ${verb} not in the spine registry`).toContain(verb);
+      }
+      for (const verb of allowed!) {
+        expect(disallowed!, `${file}: ${verb} allowed and disallowed`).not.toContain(verb);
+      }
+      // Only the dispatcher spawns; no persona spawns personas.
+      expect(allowed!, `${file}: personas never spawn agents`).not.toContain("spawn-agent");
+
+      expect(scalar("return_contract"), file).toBeTruthy();
+
+      // Body contract: role method, refusal conditions, and the exact return JSON — the three
+      // elements spine §3 requires below the frontmatter.
+      for (const section of ["## Method", "## Refusal conditions", "## Return"]) {
+        expect(raw.includes(section), `${file}: missing ${section}`).toBe(true);
+      }
+      expect(/```json[\s\S]*```/.test(raw), `${file}: no return JSON`).toBe(true);
+    }
+  });
+});

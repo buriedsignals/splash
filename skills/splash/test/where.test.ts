@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import {
   whereIs,
   REQUIRED_SCALARS as WHERE_SCALARS,
@@ -97,32 +98,90 @@ async function deliver(storyDir: string, beat: string, fileName: string) {
   );
 }
 
+// What the analyst pre-step leaves behind: `beats/<beat>/data.json`, the chart-ready file
+// artifact every craft skill reads instead of the frozen CSV. Any fixture that walks past the
+// analyst precondition needs one, exactly as it needs a render before approval.
+async function analyse(storyDir: string, beat: string) {
+  await mkdir(join(storyDir, "beats", beat), { recursive: true });
+  await writeFile(
+    join(storyDir, "beats", beat, "data.json"),
+    JSON.stringify({ schemaVersion: 1 }),
+  );
+}
+
+// What a STALE artifact looks like on disk: data.json whose recorded meta.hashes name inputs
+// that no longer match the frozen files. The analyst records sha256 of STORYBOARD.md,
+// source/profile.json and source/data.csv; fixtures write real hashes over real files so drift
+// is produced by moving an input, not by faking a malformed record.
+function sha256(bytes: Buffer | string): string {
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+async function analyseBound(storyDir: string, beat: string) {
+  const hashes = {
+    storyboard: sha256(await readFile(join(storyDir, "STORYBOARD.md"))),
+    profile: sha256(await readFile(join(storyDir, "source", "profile.json"))),
+    sourceData: sha256(await readFile(join(storyDir, "source", "data.csv"))),
+  };
+  await mkdir(join(storyDir, "beats", beat), { recursive: true });
+  await writeFile(
+    join(storyDir, "beats", beat, "data.json"),
+    JSON.stringify({ schemaVersion: 1, meta: { hashes } }),
+  );
+}
+
+// A second slot, for the two-beat fixtures. Beat directories must answer to the storyboard —
+// orphan detection walks dirs→slots (S6) — so a fixture that creates `beats/2-snowpack` writes
+// a real slot 2 and analyses it, rather than leaving a directory no slot claims.
+function secondSlot(): string {
+  return (
+    "  - id: 2\n" +
+    '    proves: "Snowpack persisted longer than rain."\n' +
+    "    medium: chart\n" +
+    "    format: static\n" +
+    "    size: landscape\n" +
+    "    reachable: yes\n" +
+    "    chosen: comparison\n" +
+    "    candidates: [comparison, dumbbell]"
+  );
+}
+
+function twoSlotStoryboard(): string {
+  return build().replace(/\n---\n$/, `\n${secondSlot()}\n---\n`);
+}
+
 describe("whereIs", () => {
   it("should report intake when the source is empty", async () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("intake");
-    expect(state.missing).toContain("source/article.md");
-    expect(state.missing).toContain("source/profile.json");
+    // S5 parity: intake freezes THREE files, so all three are named when none exist.
+    expect(state.missing).toEqual([
+      "source/article.md",
+      "source/data.csv",
+      "source/profile.json",
+    ]);
   });
 
-  it("should report intake with only article.md missing", async () => {
+  it("should report intake with only article.md and data.csv missing", async () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     const state = await whereIs(dir);
     expect(state.phase).toBe("intake");
     expect(state.missing).toContain("source/article.md");
+    expect(state.missing).toContain("source/data.csv");
     expect(state.missing).not.toContain("source/profile.json");
   });
 
-  it("should report intake with only profile.json missing", async () => {
+  it("should report intake with only data.csv missing — article plus profile is not frozen", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
     const state = await whereIs(dir);
     expect(state.phase).toBe("intake");
-    expect(state.missing).toContain("source/profile.json");
-    expect(state.missing).not.toContain("source/article.md");
+    expect(state.missing).toEqual(["source/data.csv"]);
   });
 
   it("should report framing once the source is frozen but no storyboard exists", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     const state = await whereIs(dir);
     expect(state.phase).toBe("framing");
@@ -131,14 +190,49 @@ describe("whereIs", () => {
 
   it("should report production once every Gate-2 scalar and every slot field is resolved", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
+    // The analyst pre-step is the first gap production carries: no craft skill runs before
+    expect(state.missing).toContain("beat 1: run analyst (data.json)");
+  });
+
+  // An image beat carries no data contract, so the analyst pre-step never holds it.
+  it("should not demand data.json from an image slot", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build(SCALARS, { ...SLOT, medium: "image" }),
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual([]);
+  });
+
+  // The analyst gap must not MASK an approval gap once something has rendered: both are
+  // reported, and the approval entry keeps its exact wording.
+  it("should report the analyst gap beside, never instead of, an unapproved render", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
+    await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual([
+      "beat 1: run analyst (data.json)",
+      "beat 1-rainfall: rendered but not approved",
+    ]);
   });
 
   it("should stay in storyboard when the takeaway and hand fields are confirmed but no slot exists — the resumed-session case", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, null));
     const state = await whereIs(dir);
@@ -148,6 +242,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when a slot has nothing chosen", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -160,6 +255,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when a slot's chosen has no candidates key at all", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -174,6 +270,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when a slot's chosen is not among its candidates", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -188,6 +285,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when a hand-of-the-journalist field is missing — the resumed-session case", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -207,6 +305,7 @@ describe("whereIs", () => {
   // rather than as a field name — this gate's `missing` list is read aloud to somebody resuming.
   it("should stay in storyboard when the takeaway was never grounded at G1", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -219,6 +318,7 @@ describe("whereIs", () => {
 
   it("should refuse a grounding verdict of 'contradicted' — a refuted takeaway is corrected or overridden, never left standing", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -229,6 +329,7 @@ describe("whereIs", () => {
 
   it("should accept an override that carries a reason, and refuse one that does not", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
 
     await writeFile(
@@ -249,6 +350,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when the reference loop never closed into a field", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -261,6 +363,7 @@ describe("whereIs", () => {
 
   it("should treat 'none — both rejected' as a real answer to the reference loop", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -271,6 +374,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when a slot never recorded its medium, format or size", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     // `size` refuses in storyboard's OWN words rather than this file's generic ones, because
     // W4 Task 9 makes it the one slot field the two gates word identically on purpose — a
@@ -294,6 +398,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when the medium and format were never confirmed reachable", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -308,6 +413,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when STORYBOARD.md exists but has no takeaway", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), "---\nslots: []\n---\n");
     const state = await whereIs(dir);
@@ -323,6 +429,7 @@ describe("whereIs", () => {
   ]) {
     it(`should stay in storyboard when takeaway is ${name}`, async () => {
       await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
       await writeFile(
         join(dir, "STORYBOARD.md"),
@@ -336,6 +443,7 @@ describe("whereIs", () => {
 
   it("should stay in storyboard when takeaway: appears in prose below frontmatter", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -352,6 +460,7 @@ describe("whereIs", () => {
   // front of anyone to open.
   it("should stay in production when a beat has rendered but nobody has approved it", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
@@ -371,8 +480,10 @@ describe("whereIs", () => {
 
   it("should report delivery once a rendered beat has been approved", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
       recursive: true,
     });
@@ -390,8 +501,12 @@ describe("whereIs", () => {
 
   it("should name every rendered beat still waiting, not only the first", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
+    await analyse(dir, "1-rainfall");
+    await analyse(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
@@ -406,8 +521,10 @@ describe("whereIs", () => {
 
   it("should report done once the beat has been delivered into its own export directory", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
       recursive: true,
     });
@@ -423,8 +540,10 @@ describe("whereIs", () => {
 
   it("should reopen production and delivery from a durable editor-feedback receipt", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
     await mkdir(join(beatDir, "renders"), { recursive: true });
     await writeFile(join(beatDir, "renders", "still.png"), "old render");
@@ -474,8 +593,10 @@ describe("whereIs", () => {
 
   it("should fail closed on malformed review state during feedback recovery", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
     await mkdir(join(beatDir, "renders"), { recursive: true });
     await writeFile(join(beatDir, "renders", "still.png"), "render");
@@ -504,8 +625,11 @@ describe("whereIs", () => {
   //   (fail) should not call a story done while an approved beat has not been delivered
   it("should stay in production when one beat is delivered and another is not approved", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
+    await analyse(dir, "1-rainfall");
+    await analyse(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
@@ -525,8 +649,11 @@ describe("whereIs", () => {
   // one delivered beat closed the story for every beat. Delivery is per beat now, like approval.
   it("should not call a story done while an approved beat has not been delivered", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
+    await analyse(dir, "1-rainfall");
+    await analyse(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
@@ -551,8 +678,10 @@ describe("whereIs", () => {
   //   (fail) should stay in delivery when the files are there and nothing hands them over
   it("should stay in delivery when the files are there and nothing hands them over", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
     await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
     await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
@@ -571,12 +700,85 @@ describe("whereIs", () => {
 
   it("should report inconsistency when export holds a file but no render exists", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
     await writeFile(join(dir, "export", "rainfall.png"), "x");
     const state = await whereIs(dir);
-    expect(state.phase).toBe("production");
     expect(state.missing).toContain("no renders exist in any beat");
+    expect(state.phase).toBe("production");
+  });
+
+  // S4: an unterminated frontmatter block is ONE diagnosable fact about the file, not nine
+  // missing decisions — the resumed-session reader is sent to fix the file, not to re-take
+  // every gate.
+  it("should name an unterminated frontmatter block instead of every scalar missing", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), '---\ntakeaway: "Rainfall fell."\n');
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toEqual(["STORYBOARD.md frontmatter unterminated"]);
+  });
+
+  // S1: after data.json exists nothing downstream used to re-validate meta.hashes, so a source
+  // edited under a rendered chart left whereIs at production/missing:[]. The recorded hashes are
+  // now checked against the CURRENT frozen inputs, and drift is named as a rebuild.
+  it("should report a stale analyst artifact once a frozen input moved under it", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyseBound(dir, "1-rainfall");
+    await writeFile(join(dir, "source", "data.csv"), "col\n2");
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toContain("beat 1-rainfall: analyst data stale — rebuild");
+
+    // and the entry tracks the drift, not the artifact: restoring the frozen bytes closes it
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    expect((await whereIs(dir)).missing).not.toContain(
+      "beat 1-rainfall: analyst data stale — rebuild",
+    );
+  });
+
+  it("should report a stale artifact beside, never instead of, an unapproved render", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyseBound(dir, "1-rainfall");
+    await writeFile(join(dir, "STORYBOARD.md"), build({ ...SCALARS, credit: '"Data: MeteoSwiss, revised"' }));
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
+    await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual([
+      "beat 1-rainfall: analyst data stale — rebuild",
+      "beat 1-rainfall: rendered but not approved",
+    ]);
+  });
+
+  // S6: the walk that demanded data.json ran slots→dirs; its inverse now walks dirs→slots so a
+  // beat directory whose slot left the storyboard is named rather than silently ignored.
+  it("should report an orphaned beat directory whose slot no longer exists", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyse(dir, "1-rainfall");
+    await mkdir(join(dir, "beats", "9-ghost"), { recursive: true });
+    await writeFile(join(dir, "beats", "9-ghost", "data.json"), "{}");
+
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual([
+      "beat 9-ghost: orphaned — slot removed from storyboard",
+    ]);
   });
 });
 
@@ -743,6 +945,7 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
   for (const { name, text } of GATE2_FIXTURES) {
     it(`should agree on: ${name}`, async () => {
       await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
       await writeFile(join(dir, "STORYBOARD.md"), text);
 
@@ -789,6 +992,7 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     it(`should agree, verbatim, on: ${name}`, async () => {
       const text = build(SCALARS, slot);
       await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
       await writeFile(join(dir, "STORYBOARD.md"), text);
 
@@ -805,6 +1009,7 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     // than as a message — this is the fact a journalist actually experiences.
     const closes = async (slot: Record<string, string>) => {
       await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
       await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
       return (await whereIs(dir)).phase !== "storyboard";

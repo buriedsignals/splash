@@ -432,17 +432,8 @@ function orderedStoryboardGate(frontmatter, slots) {
   return null;
 }
 
-// G3 CLOSES INTO A FILE, like every other gate. A beat leaves `production` only when the beat
-// directory that holds renders also holds `APPROVED.md` — the journalist having been shown the
-// artifact and having said yes.
-//
-// It used to leave on the mere EXISTENCE of a render, so nobody was ever asked. In the run the
-// renders were read into the model's context and the journalist received prose; the Gate-3
-// question — "the beat, as you see it. Do you validate?" — presupposed sight in a turn where
-// nothing had been put in front of anyone to open.
-//
-// Returns the beats that have rendered and not been approved, so `missing` names them. A directory
-// read, which is all this file has ever done, and it needs no slot-to-beat mapping.
+// A render makes the beat eligible for Gate 3. Completion is established below by the bound
+// OutputReview and delivery manifest, never by the presence of their human-readable companion files.
 async function renderedBeats(storyDir) {
   const rendered = [];
   for (const beat of await list(join(storyDir, "beats"))) {
@@ -451,30 +442,90 @@ async function renderedBeats(storyDir) {
   return rendered;
 }
 
-async function beatsAwaitingApproval(storyDir) {
+// The analyst pre-step of production. A chosen chart or map slot has no chart-ready data until
+// `analyst` has written `beats/<id>/data.json` beside the beat — the file artifact every craft
+// skill reads instead of the frozen CSV. Image slots carry no data contract, so they never
+// appear here. Beat directories are `<id>-<slug>` (`new-story`/craft convention), so the lookup
+// accepts the bare id or the prefixed form, exactly the way a human scans `beats/`.
+//
+// This sits ABOVE `beatsAwaitingApproval` in `whereIs`, which changes nothing about that gate's
+// primacy: the approval rule stays the first thing consulted once anything has rendered, and
+// nothing about `export/` may shorten the walk past it (see that comment). The analyst check can
+// only fire while a beat has nothing produced yet — the moment `data.json` exists the question
+// closes and the walk proceeds exactly as before.
+const ANALYST_MEDIUMS = new Set(["chart", "map"]);
+
+async function beatsAwaitingData(storyDir, slots) {
   const waiting = [];
-  for (const beat of await renderedBeats(storyDir)) {
-    if ((await read(join(storyDir, "beats", beat, "APPROVED.md"))) === null) waiting.push(beat);
+  const dirs = await list(join(storyDir, "beats"));
+  for (const [index, slot] of slots.entries()) {
+    if (!slot.chosen || !ANALYST_MEDIUMS.has(slot.medium)) continue;
+    const id = String(slot.id ?? index + 1);
+    const dir = dirs.find((name) => name === id || name.startsWith(`${id}-`));
+    const files = dir ? await list(join(storyDir, "beats", dir)) : [];
+    if (!files.includes("data.json")) waiting.push(id);
   }
   return waiting;
 }
 
-// G4 CLOSES INTO A FILE, exactly as G3 does one phase earlier, and the file is the hand-over:
-// `export/<beat>/HANDOVER.md`. `deliver`'s `exportDirFor` writes that directory — one per beat,
-// because a story-level one made each delivery destroy the last — and `materialise` refuses a
-// delivery with no hand-over payload rather than writing files nobody was told what to do with.
+// S1: the analyst's artifact records the sha256 of its three inputs (`meta.hashes` — see
+// build-data.mjs). Until now nothing downstream re-validated them, so a source edited after the
+// build left `whereIs` reporting a clean production phase while craft skills rendered data that
+// no longer matched its own source line. Each recorded hash is checked against the CURRENT
+// frozen bytes; drift names the beat for a rebuild rather than silently passing.
 //
-// The weaker rule this replaces was "any file exists anywhere under `export/`", which is how a
-// two-beat story reported itself finished while its second beat sat rendered and unapproved, and how
-// a delivery of two filenames and two sizes — no placement, no alt text, no credit line — counted as
-// a closed gate. A11 is the item that names that delivery.
-async function beatsAwaitingDelivery(storyDir, beats) {
-  const waiting = [];
-  for (const beat of beats) {
-    const handover = await read(join(storyDir, "export", beat, "HANDOVER.md"));
-    if (handover === null) waiting.push(beat);
+// A data.json with no parseable `meta.hashes` has nothing recorded to re-validate and is not
+// called stale here — the same presence rule `beatsAwaitingData` applies in reverse.
+const ANALYST_HASH_INPUTS = [
+  ["storyboard", "STORYBOARD.md"],
+  ["profile", "source/profile.json"],
+  ["sourceData", "source/data.csv"],
+];
+
+async function fileDigest(path) {
+  try {
+    return `sha256:${createHash("sha256").update(await readFile(path)).digest("hex")}`;
+  } catch {
+    return null;
   }
-  return waiting;
+}
+
+async function staleDataBeats(storyDir) {
+  const stale = [];
+  for (const beat of await list(join(storyDir, "beats"))) {
+    let recorded = null;
+    try {
+      recorded = JSON.parse(await readFile(join(storyDir, "beats", beat, "data.json"), "utf8"))
+        ?.meta?.hashes ?? null;
+    } catch {
+      recorded = null;
+    }
+    if (!recorded || typeof recorded !== "object") continue;
+    for (const [key, relative] of ANALYST_HASH_INPUTS) {
+      if (typeof recorded[key] !== "string") continue;
+      const current = await fileDigest(join(storyDir, relative));
+      if (current !== null && current !== recorded[key]) {
+        stale.push(beat);
+        break;
+      }
+    }
+  }
+  return stale;
+}
+
+// S6: the inverse walk of `beatsAwaitingData`, which goes slots→dirs. A directory under
+// `beats/` that no longer matches any slot id in STORYBOARD.md is an orphan — its slot was
+// removed from the storyboard while the beat directory stayed behind. It is reported, not
+// silently walked past, because a producer dispatched by directory listing would otherwise
+// render work the storyboard no longer asks for.
+async function orphanedBeats(storyDir, slots) {
+  const ids = slots.map((slot, index) => String(slot.id ?? index + 1));
+  const orphans = [];
+  for (const beat of await list(join(storyDir, "beats"))) {
+    const matched = ids.some((id) => beat === id || beat.startsWith(`${id}-`));
+    if (!matched) orphans.push(beat);
+  }
+  return orphans;
 }
 
 function nonEmptyText(value) {
@@ -589,6 +640,30 @@ function validateRevisionReview(review, beat, path) {
   return { findingIds, passingBoundQa };
 }
 
+function manifestArtifacts(value, path) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`delivery manifest artifacts are invalid at ${path}`);
+  }
+  const artifacts = [];
+  const paths = new Set();
+  for (const artifact of value) {
+    const relativePath = artifact?.path;
+    if (
+      !nonEmptyText(relativePath) ||
+      relativePath.includes("\\") ||
+      relativePath.startsWith("/") ||
+      relativePath.split("/").some((segment) => segment === "" || segment === "." || segment === "..") ||
+      !SHA256.test(artifact?.digest ?? "") ||
+      paths.has(relativePath)
+    ) {
+      throw new Error(`delivery manifest artifact binding is invalid at ${path}`);
+    }
+    paths.add(relativePath);
+    artifacts.push({ path: relativePath, digest: artifact.digest });
+  }
+  return artifacts;
+}
+
 function validateRevisionManifest(manifest, beat, path) {
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) throw new Error(`delivery manifest must be an object: ${path}`);
   if (manifest.schemaVersion !== DELIVERY_MANIFEST_SCHEMA_VERSION || manifest.state !== "complete") {
@@ -606,64 +681,140 @@ function validateRevisionManifest(manifest, beat, path) {
   if (manifest.feedbackDigest !== undefined && !SHA256.test(manifest.feedbackDigest)) {
     throw new Error(`delivery manifest feedbackDigest is invalid at ${path}`);
   }
-  return { findingIds };
+  return { artifacts: manifestArtifacts(manifest.artifacts, path), findingIds };
 }
 
-// A durable editor-feedback trigger. FEEDBACK.md remains as the editorial record; its content
-// digest opens a revision until a valid current OutputReview binds that exact request. The delivery
-// manifest then proves that review, render, findings, and feedback digest were rematerialised.
-async function feedbackRevisionState(storyDir, beats) {
+async function artifactsAreCurrent(exportDir, artifacts) {
+  for (const artifact of artifacts) {
+    const path = join(exportDir, artifact.path);
+    if (!(await regularFileStat(path)) || (await fileDigest(path)) !== artifact.digest) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Every rendered beat follows the same review and delivery walk. FEEDBACK.md only adds the
+// revision label and digest; it never selects a stronger validation path.
+async function completionState(storyDir, beats) {
   const production = [];
   const delivery = [];
+  const feedbackProduction = [];
+  const feedbackDelivery = [];
   for (const beat of beats) {
     const beatDir = join(storyDir, "beats", beat);
     const feedbackDigest = await currentFeedbackDigest(beatDir);
-    if (!feedbackDigest) continue;
     const reviewPath = join(beatDir, "OUTPUT-REVIEW.json");
     const reviewStat = await regularFileStat(reviewPath);
-    const review = reviewStat ? await json(reviewPath) : null;
     if (!reviewStat) {
       production.push(beat);
+      if (feedbackDigest) feedbackProduction.push(beat);
       continue;
     }
+    const review = await json(reviewPath);
     const reviewBinding = validateRevisionReview(review, beat, reviewPath);
     const renderDigest = await currentRenderDigest(beatDir);
     if (
-      review.decision !== "approve" || review.draftDigest !== renderDigest ||
-      review.feedbackDigest !== feedbackDigest || !reviewBinding.passingBoundQa
+      review.decision !== "approve" ||
+      review.draftDigest !== renderDigest ||
+      (review.feedbackDigest ?? null) !== feedbackDigest ||
+      !reviewBinding.passingBoundQa
     ) {
       production.push(beat);
+      if (feedbackDigest) feedbackProduction.push(beat);
       continue;
     }
-    const manifestPath = join(storyDir, "export", beat, ".delivery-manifest.json");
+
+    const exportDir = join(storyDir, "export", beat);
+    const manifestPath = join(exportDir, ".delivery-manifest.json");
     const manifestStat = await regularFileStat(manifestPath);
-    if (!manifestStat) {
+    const handoverStat = await regularFileStat(join(exportDir, "HANDOVER.md"));
+    if (!manifestStat || !handoverStat) {
       delivery.push(beat);
+      if (feedbackDigest) feedbackDelivery.push(beat);
       continue;
     }
     const manifest = await json(manifestPath);
     const manifestBinding = validateRevisionManifest(manifest, beat, manifestPath);
     if (
-      manifest.reviewId !== review.id || manifest.planVersion !== review.planVersion ||
-      manifest.draftDigest !== review.draftDigest || manifest.feedbackDigest !== feedbackDigest ||
-      !sameStrings(manifestBinding.findingIds, reviewBinding.findingIds)
+      manifest.reviewId !== review.id ||
+      manifest.planVersion !== review.planVersion ||
+      manifest.draftDigest !== review.draftDigest ||
+      (manifest.feedbackDigest ?? null) !== feedbackDigest ||
+      !sameStrings(manifestBinding.findingIds, reviewBinding.findingIds) ||
+      !(await artifactsAreCurrent(exportDir, manifestBinding.artifacts))
     ) {
       delivery.push(beat);
+      if (feedbackDigest) feedbackDelivery.push(beat);
     }
   }
-  return { production, delivery };
+  return { production, delivery, feedbackProduction, feedbackDelivery };
+}
+
+const PRODUCTION_ATTEMPTS_FILE = "PRODUCTION-ATTEMPTS.json";
+const PRODUCTION_ATTEMPTS_SCHEMA_VERSION = 1;
+const MAX_PRODUCTION_ATTEMPTS = 3;
+
+async function blockedProductionState(storyDir) {
+  for (const beat of (await list(join(storyDir, "beats"))).sort()) {
+    const beatDir = join(storyDir, "beats", beat);
+    const path = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
+    if (!(await regularFileStat(path))) continue;
+    const receipt = await json(path);
+    const expectedInputPath = receipt?.operation === "map-bake"
+      ? "MAP-BAKE.json"
+      : receipt?.operation === "datawrapper-produce"
+      ? "spec.json"
+      : null;
+    if (
+      receipt?.schemaVersion !== PRODUCTION_ATTEMPTS_SCHEMA_VERSION ||
+      receipt.outputId !== beat ||
+      receipt.inputPath !== expectedInputPath ||
+      !SHA256.test(receipt.inputDigest ?? "") ||
+      !Number.isSafeInteger(receipt.attempts) ||
+      receipt.attempts < 1 ||
+      receipt.attempts > MAX_PRODUCTION_ATTEMPTS ||
+      !["failed", "blocked"].includes(receipt.status) ||
+      !nonEmptyText(receipt.reason) ||
+      (receipt.status === "blocked") !== (receipt.attempts === MAX_PRODUCTION_ATTEMPTS)
+    ) {
+      throw new Error(`production attempt receipt is invalid at ${path}`);
+    }
+    if (receipt.status !== "blocked") continue;
+    if ((await fileDigest(join(beatDir, receipt.inputPath))) !== receipt.inputDigest) continue;
+    return {
+      phase: "production",
+      status: "blocked",
+      reason: receipt.reason,
+      attempts: receipt.attempts,
+      beat,
+      missing: [],
+    };
+  }
+  return null;
 }
 
 export async function whereIs(storyDir) {
   const source = await list(join(storyDir, "source"));
-  if (!source.includes("article.md") || !source.includes("profile.json")) {
-    return { phase: "intake", missing: ["source/article.md", "source/profile.json"].filter((f) => !source.includes(f.split("/")[1])) };
-  }
+  // S5 parity: `intake` freezes THREE artifacts (article.md, data.csv, profile.json — see that
+  // skill's own SKILL.md), so the gate refuses to leave `intake` until all three exist. Two of
+  // three used to pass, which let a story reach production whose craft work would read a CSV
+  // that was never frozen.
+  const FROZEN = ["article.md", "data.csv", "profile.json"];
+  const unfrozen = FROZEN.filter((f) => !source.includes(f));
+  if (unfrozen.length > 0)
+    return { phase: "intake", missing: unfrozen.map((f) => `source/${f}`) };
 
   const storyboard = await read(join(storyDir, "STORYBOARD.md"));
   if (storyboard === null) return { phase: "framing", missing: ["STORYBOARD.md"] };
 
   const frontmatter = extractFrontmatter(storyboard);
+  // S4: a file that opens a `---` block and never closes it is ONE diagnosable fact. Reporting
+  // every scalar as missing instead would send a resumed session back through nine gates to fix
+  // one truncated write.
+  if (frontmatter === null && storyboard.startsWith("---")) {
+    return { phase: "storyboard", missing: ["STORYBOARD.md frontmatter unterminated"] };
+  }
   const gateState = missingForGate2(frontmatter);
   const legacyState = gateState.legacy ? { legacy: true } : {};
   if (gateState.gaps.length > 0) {
@@ -675,57 +826,71 @@ export async function whereIs(storyDir) {
     };
   }
 
+  // Analyst/source drift is earlier than review or delivery, so it always reopens production even
+  // when the story once reached done.
+  const unanalysed = await beatsAwaitingData(storyDir, gateState.slots);
+  const dataMissing = unanalysed.map((id) => `beat ${id}: run analyst (data.json)`);
+  const staleMissing = (await staleDataBeats(storyDir)).map(
+    (beat) => `beat ${beat}: analyst data stale — rebuild`,
+  );
+  const orphanMissing = (await orphanedBeats(storyDir, gateState.slots)).map(
+    (beat) => `beat ${beat}: orphaned — slot removed from storyboard`,
+  );
+  const analystMissing = [...dataMissing, ...staleMissing, ...orphanMissing];
+  if (analystMissing.length > 0) {
+    return { phase: "production", ...legacyState, missing: analystMissing };
+  }
+
+  const blocked = await blockedProductionState(storyDir);
+  if (blocked) return { ...blocked, ...legacyState };
+
   const rendered = await renderedBeats(storyDir);
   const exported = await list(join(storyDir, "export"));
-
   if (rendered.length === 0) {
     // A file in `export/` with nothing rendered anywhere is not a finished story, it is an
     // inconsistent one — something was delivered that no producer in this directory made.
-    if (exported.length > 0) return { phase: "production", ...legacyState, missing: ["no renders exist in any beat"] };
-    return { phase: "production", ...legacyState, missing: [] };
-  }
-
-  // APPROVAL IS ASKED FIRST, and nothing about `export/` may shorten the walk past it.
-  //
-  // It used to be the other way round: `if (exported.length > 0) return {phase:"done"}` sat ABOVE
-  // this check, so ANY file under `export/` ended the story. A two-beat story that delivered beat 1
-  // therefore reported `{"phase":"done","missing":[]}` while beat 2 sat rendered and unapproved —
-  // one reading announcing a later phase than the check that owns the question, which is the exact
-  // class (twin/FEEDBACK-2026-08-10.md, A14) this whole file was rewritten to make impossible. The
-  // approval gate was real; it was simply placed downstream of a story-level short-circuit that
-  // predated it, and every test exercised it with `export/` empty.
-  const waiting = await beatsAwaitingApproval(storyDir);
-  if (waiting.length > 0) {
     return {
       phase: "production",
       ...legacyState,
-      missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
+      missing: exported.length > 0 ? ["no renders exist in any beat"] : [],
     };
   }
 
-  const revisions = await feedbackRevisionState(storyDir, rendered);
-  if (revisions.production.length > 0) {
+  const completion = await completionState(storyDir, rendered);
+  if (completion.production.length > 0) {
+    const feedback = new Set(completion.feedbackProduction);
+    const missing = completion.production
+      .filter((beat) => !feedback.has(beat))
+      .map((beat) => `beat ${beat}: rendered but not currently approved`);
     return {
       phase: "production",
       ...legacyState,
-      revision: { reason: "editor-feedback", beats: revisions.production },
-      missing: [],
+      ...(completion.feedbackProduction.length > 0
+        ? {
+            revision: {
+              reason: "editor-feedback",
+              beats: completion.feedbackProduction,
+            },
+          }
+        : {}),
+      missing,
     };
   }
-  if (revisions.delivery.length > 0) {
+  if (completion.delivery.length > 0) {
     return {
       phase: "delivery",
       ...legacyState,
-      revision: { reason: "editor-feedback", beats: revisions.delivery },
+      ...(completion.feedbackDelivery.length > 0
+        ? {
+            revision: {
+              reason: "editor-feedback",
+              beats: completion.feedbackDelivery,
+            },
+          }
+        : {}),
       missing: [],
     };
   }
-
-  // Every rendered beat has been approved. The story is done only when every one of them has also
-  // been DELIVERED — per beat, into its own `export/<beat>/`. `missing` stays empty because
-  // `delivery` is a phase with work left to dispatch, not a blocked state to report and stop on.
-  const undelivered = await beatsAwaitingDelivery(storyDir, rendered);
-  if (undelivered.length > 0) return { phase: "delivery", ...legacyState, missing: [] };
 
   return { phase: "done", ...legacyState, missing: [] };
 }

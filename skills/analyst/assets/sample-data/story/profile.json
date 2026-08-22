@@ -1,0 +1,41 @@
+{
+  "rowCount": 11,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 11,
+      "min": 2015,
+      "max": 2025,
+      "sum": 22220
+    },
+    {
+      "name": "station",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "rainfall_mm",
+      "type": "number",
+      "missing": 0,
+      "distinct": 11,
+      "min": 604,
+      "max": 912,
+      "sum": 8424
+    },
+    {
+      "name": "days_of_rain",
+      "type": "number",
+      "missing": 1,
+      "distinct": 10,
+      "min": 109,
+      "max": 152,
+      "sum": 1336
+    }
+  ]
+}

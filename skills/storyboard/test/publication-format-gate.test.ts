@@ -72,6 +72,10 @@ beforeEach(async () => {
   await mkdir(join(storyDir, "beats"));
   await mkdir(join(storyDir, "export"));
   await writeFile(join(storyDir, "source", "article.md"), "Heat-pump article");
+  await writeFile(
+    join(storyDir, "source", "data.csv"),
+    "country,adoption_2021,adoption_2025\nFrance,38.2,71.4\nGermany,41.0,74.9\n",
+  );
   await writeFile(join(storyDir, "source", "profile.json"), "{}");
   await writeFile(
     join(storyDir, "source", "context.md"),

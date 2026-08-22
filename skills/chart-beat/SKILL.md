@@ -111,6 +111,12 @@ and exposes `getBBox()`, which is what makes a **measured** gutter possible at a
    it will actually ship at**. `output-proof/sizes/` is the seed at all three, and producing them is
    what caught a gap note whose `fontSize` stayed at 12 while everything around it grew — nothing
    collided, nothing clipped, and it was obvious the moment the file was opened.
+  Before the beat is surfaced for approval (G3), apply
+  `doctrine`'s design rubric (`doctrine/references/design-rubric.md`) to the pixels: mark
+  contrast at 3:1, text at 4.5:1, zero-baseline honesty for length-encoded marks, annotation ink
+  measured over what it crosses, one accent carrying the subject. Each criterion is PASS or FAIL
+  with its measurement named — a FAIL is fixed before the journalist is asked, never presented
+  as a question.
 
 ## Quick start
 

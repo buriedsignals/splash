@@ -78,6 +78,7 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   observed.add((await whereIs(storyDir)).phase); // intake: nothing frozen yet
 
   await writeFile(join(storyDir, "source", "article.md"), "text");
+  await writeFile(join(storyDir, "source", "data.csv"), "col\n1");
   await writeFile(join(storyDir, "source", "profile.json"), "{}");
   observed.add((await whereIs(storyDir)).phase); // framing: source frozen, no STORYBOARD.md yet
 
@@ -90,6 +91,9 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   await mkdir(join(storyDir, "beats", "1-rainfall", "renders"), {
     recursive: true,
   });
+  // The analyst pre-step runs before any craft skill, so the beat's chart-ready data.json
+  // exists by the time anything renders.
+  await writeFile(join(storyDir, "beats", "1-rainfall", "data.json"), "{}");
   await writeFile(
     join(storyDir, "beats", "1-rainfall", "renders", "still.png"),
     "x",
