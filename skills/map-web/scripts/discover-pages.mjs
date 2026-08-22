@@ -17,8 +17,8 @@
 // Usage: discoverMapWebPages() -> [{ rel, abs, html }], sorted by `rel` for a deterministic order.
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 
 const SKILL = resolve(import.meta.dirname, "..");
 export const TWIN = resolve(SKILL, "..", "..");
@@ -54,4 +54,96 @@ export function discoverMapWebPages() {
     if (isMapWebPath(rel) || html.includes('class="map-web-page"')) pages.push({ rel, abs, html });
   }
   return pages.sort((a, b) => a.rel.localeCompare(b.rel));
+}
+
+// ── THE BEAT POPULATION, DERIVED FROM WHERE BEATS ACTUALLY LIVE ────────────────────────────────
+//
+// THE DEFECT THIS CLOSES, measured on a real story (2026-08-22): the two bake-side guards this
+// format declares — `plateMatchesGeometry` and `plateFollowsGround` — were walked by a test whose
+// own beat enumeration read `proof/` and nothing else, and which then looked for `PALETTE.md`
+// INSIDE the beat directory. A real beat lives at `stories/<slug>/beats/<id>/` and records its
+// palette at the STORY root, so it was invisible twice over: wrong root, wrong palette path. A
+// 241-region world choropleth was produced, rendered and approved with both guards never once
+// looking at it, while the suite stayed green on a ">= 4" floor the proof beats already met.
+//
+// So the population is DERIVED here, once, and every sweep in this format reads it: a beat is a
+// directory holding a `BRIEF.md` that declares `map / web`, found under either root this tree
+// actually puts beats in. Adding a third root is a change here, not in five tests.
+
+/** Where a beat directory can live, relative to the Splash root. `proof/<name>` is a worked example
+ *  this skill ships; `stories/<slug>/beats/<id>` is where every beat a journalist commissions
+ *  lands. Both are DEPTHS as well as paths — the second is four levels under the root, which is the
+ *  depth that broke every hard-coded `../../` in the beat copied into it. */
+export const BEAT_ROOTS = [
+  { under: "proof", depth: 1 },
+  { under: "stories", depth: 3, via: ["beats"] },
+];
+
+/** The `**Medium/format:**` line of a `BRIEF.md`, lower-cased with its emphasis markers stripped —
+ *  `map / **web** — one self-contained …` and `map / web` have to read the same. */
+export function mediumFormatOf(brief) {
+  return (/\*\*Medium\s*\/\s*format:\*\*\s*([^.\n]+)/.exec(brief)?.[1] ?? "").toLowerCase().replace(/\*/g, "");
+}
+
+/** Does this brief declare the map × web cell? */
+export function declaresMapWeb(brief) {
+  const medium = mediumFormatOf(brief);
+  return /map/.test(medium) && /web/.test(medium);
+}
+
+/** The directory holding the `PALETTE.md` that governs `beatDir` — the beat's own, or the nearest
+ *  ancestor's, up to and including the Splash root.
+ *
+ *  This is `readPalette`'s own walk, and it is here for the reason `readPalette` has it: the
+ *  palette phase records ONE answer for a story and every beat under it renders in it. A guard that
+ *  reads `join(beatDir, "PALETTE.md")` is not reading a beat with no palette — it is failing to
+ *  find the palette the beat actually rendered in, and it then SKIPS the beat rather than judging
+ *  it, which is the silent direction. Returns null when there is genuinely none. */
+export function paletteDirFor(beatDir, root = TWIN) {
+  let current = resolve(beatDir);
+  const stop = resolve(root);
+  for (;;) {
+    if (existsSync(join(current, "PALETTE.md"))) return current;
+    if (current === stop) return null;
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+/** Every `map / web` beat directory in this tree, from both roots, each paired with the directory
+ *  its own `PALETTE.md` actually lives in. Sorted by `rel` for a deterministic order. */
+export function discoverMapWebBeats(root = TWIN) {
+  const found = [];
+  const consider = (dir) => {
+    const brief = join(dir, "BRIEF.md");
+    if (!existsSync(brief)) return;
+    if (!declaresMapWeb(readFileSync(brief, "utf8"))) return;
+    found.push({
+      name: relative(root, dir),
+      rel: relative(root, dir),
+      dir,
+      paletteDir: paletteDirFor(dir, root),
+    });
+  };
+  const directories = (at) => {
+    if (!existsSync(at)) return [];
+    return readdirSync(at, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => join(at, entry.name));
+  };
+  for (const { under, via = [] } of BEAT_ROOTS) {
+    for (const first of directories(join(root, under))) {
+      if (via.length === 0) {
+        consider(first);
+        continue;
+      }
+      // One `via` segment today (`stories/<slug>/beats/<id>`); the loop is written for the general
+      // shape so a third root with a different nesting is a data change here rather than a fork.
+      let level = [first];
+      for (const segment of via) level = level.map((dir) => join(dir, segment));
+      for (const container of level) for (const beat of directories(container)) consider(beat);
+    }
+  }
+  return found.sort((a, b) => a.rel.localeCompare(b.rel));
 }

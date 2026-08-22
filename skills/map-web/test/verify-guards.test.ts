@@ -45,6 +45,7 @@ import {
   surfaceLuminance,
 } from "../scripts/verify-guards.mjs";
 import { DEFAULT_DATA_PATH, DEFAULT_PLATE_DIR, assertRecordedLanguage, render, SEED } from "../scripts/render-web.mjs";
+import { discoverMapWebBeats } from "../scripts/discover-pages.mjs";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
@@ -107,36 +108,40 @@ describe("what the shipped page carries", () => {
   });
 });
 
-/** Every beat declaring `map / web` in its own brief. Read from `BRIEF.md` rather than imported from
- *  `scripts/matrix.mjs`, which computes the same thing: a skill whose test reaches into a
- *  repository-level script is a skill that no longer travels on its own. */
-function mapWebBeats(): { name: string; dir: string }[] {
-  const found = [];
-  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const dir = join(PROOF, entry.name);
-    const brief = join(dir, "BRIEF.md");
-    if (!existsSync(brief)) continue;
-    const medium = (/\*\*Medium\s*\/\s*format:\*\*\s*([^.\n]+)/.exec(readFileSync(brief, "utf8"))?.[1] ?? "")
-      .toLowerCase()
-      .replace(/\*/g, "");
-    if (/map/.test(medium) && /web/.test(medium)) found.push({ name: entry.name, dir });
-  }
-  return found;
+/** Every beat declaring `map / web` in its own brief, from EVERY root this tree puts beats under —
+ *  `scripts/discover-pages.mjs`'s own derivation, not a second walk written here.
+ *
+ *  THE DEFECT THIS REPLACES, measured on a real story (2026-08-22): the walk that used to live here
+ *  read `proof/` and nothing else, and looked for `PALETTE.md` INSIDE the beat directory. A beat a
+ *  journalist commissions lives at `stories/<slug>/beats/<id>/` and records its palette at the
+ *  STORY root, so a 241-region world choropleth was produced, rendered, driven live and approved
+ *  with both of this format's bake-side guards never once looking at it — while this file stayed
+ *  green on a ">= 4" floor the proof beats already met. Population TYPED rather than DERIVED,
+ *  twice over. `test/beat-population.test.ts` holds the derivation to both story beats by name. */
+function mapWebBeats(): { name: string; dir: string; paletteDir: string | null }[] {
+  return discoverMapWebBeats();
 }
 
 describe("every map web beat on disk", () => {
   it("bakes a plate that describes the frame its own marks were projected into", () => {
     const beats = mapWebBeats();
-    expect(beats.length).toBeGreaterThanOrEqual(4);
     const offenders: string[] = [];
     let checked = 0;
     for (const { name, dir } of beats) {
       const geometryPath = join(dir, "plate", "geometry.json");
       const platePath = join(dir, "plate", "plate.png");
-      if (!existsSync(geometryPath) || !existsSync(platePath)) continue;
+      // A `map / web` beat with no bake is not a beat this guard has nothing to say about — it is a
+      // beat whose plate cannot be judged, and the old `continue` made that indistinguishable from
+      // a pass. Named as an offender instead, so the count below can be the population itself.
+      if (!existsSync(geometryPath) || !existsSync(platePath)) {
+        offenders.push(`${name}: declares map / web and has no plate/plate.png + plate/geometry.json to judge`);
+        continue;
+      }
       const geometry = JSON.parse(readFileSync(geometryPath, "utf8"));
-      if (!geometry.frame) continue;
+      if (!geometry.frame) {
+        offenders.push(`${name}: plate/geometry.json records no frame, so the pairing cannot be measured`);
+        continue;
+      }
       checked++;
       const png = decodePng(readFileSync(platePath));
       const verdict = plateMatchesGeometry({
@@ -150,33 +155,64 @@ describe("every map web beat on disk", () => {
             `${(verdict.drift * 100).toFixed(3)}% apart`,
         );
     }
-    expect(checked).toBeGreaterThanOrEqual(4);
+    // DERIVED, never a floor: every beat the walk finds is a beat this guard judged. ">= 4" is
+    // what let five beats stand in for seven while two real ones were invisible.
+    expect(checked).toBe(beats.length);
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * THE ONE BEAT THAT FAILS `plateFollowsGround` TODAY, named with its measurement.
+   *
+   * Found the moment the population above stopped being `proof/`-only — which is the whole point of
+   * deriving it. `stories/stress-f-housing-pressure` records ground `#16191B` (relative luminance
+   * 0.009, dark) and its bake asks MapTiler for `dataviz-light`, producing a plate at 0.709: the
+   * exact disagreement this guard exists to refuse, sitting in the tree unseen because nothing ever
+   * walked `stories/`. The real OWID beat hit the same wall and fixed it by baking `dataviz-dark`.
+   *
+   * It is RECORDED rather than skipped, and the assertion runs in BOTH directions: this beat must
+   * still fail (so re-baking it forces this entry to be deleted rather than leaving a stale
+   * exemption behind), and nothing else may. The list can only shrink. Re-baking a story beat that
+   * belongs to another package is not this skill's to do silently; naming it is.
+   */
+  const RECORDED_PLATE_DEBT = ["stories/stress-f-housing-pressure/beats/housing-pressure-choropleth"];
+
   it("bakes it on the side of the ground it declares", () => {
+    const beats = mapWebBeats();
     const offenders: string[] = [];
     let checked = 0;
-    for (const { name, dir } of mapWebBeats()) {
-      const palette = join(dir, "PALETTE.md");
+    for (const { name, dir, paletteDir } of beats) {
+      // The palette the beat ACTUALLY rendered in — its own, or the story's, whichever the walk
+      // found. `join(dir, "PALETTE.md")`, which used to stand here, is not "this beat has no
+      // palette": it is failing to find the one it rendered in, and then SKIPPING the beat.
+      const palette = paletteDir ? join(paletteDir, "PALETTE.md") : join(dir, "PALETTE.md");
       const platePath = join(dir, "plate", "plate.png");
-      if (!existsSync(palette) || !existsSync(platePath)) continue;
+      if (!existsSync(palette) || !existsSync(platePath)) {
+        offenders.push(`${name}: no PALETTE.md at or above the beat, or no plate — nothing to measure the plate against`);
+        continue;
+      }
       const ground = surfaceLuminance(groundFromPalette(readFileSync(palette, "utf8")));
-      if (ground == null) continue;
+      if (ground == null) {
+        offenders.push(`${name}: ${palette} records a ground this reader cannot measure`);
+        continue;
+      }
       checked++;
       const plate = plateLuminance(decodePng(readFileSync(platePath)));
       if (!plateFollowsGround({ ground, plate }))
         offenders.push(`${name}: ground luminance ${ground.toFixed(3)}, plate ${plate.toFixed(3)} — opposite sides`);
     }
-    expect(checked).toBeGreaterThanOrEqual(4);
-    expect(offenders).toEqual([]);
+    expect(checked).toBe(beats.length);
+    const failing = offenders.map((line) => line.split(":")[0]).sort();
+    expect(failing).toEqual([...RECORDED_PLATE_DEBT].sort());
   });
 
   it("ships a page that inlines each asset once and dashes in the path's own units", () => {
+    const beats = mapWebBeats();
     const offenders: string[] = [];
     let pages = 0;
     let marks = 0;
-    for (const { name, dir } of mapWebBeats()) {
+    const pageless: string[] = [];
+    for (const { name, dir } of beats) {
       const walk = (at: string): string[] =>
         readdirSync(at, { withFileTypes: true }).flatMap((entry) =>
           entry.isDirectory()
@@ -185,6 +221,7 @@ describe("every map web beat on disk", () => {
               ? [join(at, entry.name)]
               : [],
         );
+      let beatPages = 0;
       for (const file of walk(dir)) {
         const html = readFileSync(file, "utf8");
         if (/data-step|step-panel/.test(html)) continue;
@@ -197,9 +234,14 @@ describe("every map web beat on disk", () => {
         const found = marksFromSource(html, file.slice(TWIN.length + 1));
         marks += found.length;
         offenders.push(...revealDashInScreenSpace(found));
+        beatPages++;
       }
+      if (beatPages === 0) pageless.push(name);
     }
-    expect(pages).toBeGreaterThanOrEqual(4);
+    // Every beat the walk finds ships at least one page, and the page COUNT is derived from that
+    // rather than floored at a number the proof beats already met.
+    expect(pageless).toEqual([]);
+    expect(pages).toBeGreaterThanOrEqual(beats.length);
     // NO FLOOR ON `marks`, and the reason is measured: this format's five pages carry ZERO dashed
     // elements. The five `stroke-dashoffset:0` strings a text search finds in them are URL-encoded
     // inside a `data:image/svg+xml,` attribution icon (`vector-effect:none;...;fill:%23000`), not
