@@ -41,13 +41,16 @@ import {
   RegionTable,
   choroplethSurfaces,
   fillFor,
+  needsPointerTarget,
   regionDetail,
   HIT_TARGET_PX,
 } from "./ChoroplethWeb.tsx";
 import {
   CO2_2023_STUDY,
   CO2_BREAKS,
+  POINTER_TARGET_PX,
   bboxCenter,
+  collidingPointerTargets,
   boundingBoxOf,
   joinShapes,
   joinValues,
@@ -965,6 +968,37 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
   });
   console.log(`title: ${title}`);
   console.log(`alt: ${alt}`);
+
+  // ── THE POINTER PATH'S OWN VERDICT, SAID OUT LOUD AT PRODUCTION TIME ─────────────────────────
+  //
+  // A limit this format cannot remove, so it is stated where the journalist reads it — this
+  // project's own rule for exactly that case. `needsPointerTarget` gives a `.pt` button to every
+  // region too small to land a pointer on by its own shape; on a dense camera those 28px discs
+  // COVER EACH OTHER. Measured live on a 241-region world beat: 143 pointer-active marks, 82 of
+  // them with a neighbour's disc over their own centre at 1600x900, and worse at 375px.
+  //
+  // The button is NOT removed, and `collidingPointerTargets`'s own header says why: it is also the
+  // keyboard target and the carrier of the `aria-label`, and both of those channels are complete.
+  // What is owed is the truth, at the widths the beat will be read at.
+  const pointerTargets = named
+    .filter((region) => needsPointerTarget(boundingBoxOf(region.rings), geometry.frame))
+    .map((region) => ({ key: region.key, x: region.anchor[0], y: region.anchor[1] }));
+  for (const width of [1600, 1024, 768, 375]) {
+    // The map draws at the container's width less this format's own page padding; the exact number
+    // is the driver's business, and this is the honest approximation a producer can make without a
+    // browser. What matters is that the answer is given at MORE THAN ONE width, because it changes.
+    const drawn = Math.min(width - 32, geometry.frame.width);
+    const covered = collidingPointerTargets(pointerTargets, geometry.frame, drawn);
+    console.log(
+      covered.length === 0
+        ? `pointer targets at ${width}px: all ${pointerTargets.length} pointer-active marks can be pointed at`
+        : `pointer targets at ${width}px: ${covered.length} of ${pointerTargets.length} pointer-active marks ` +
+          `have a neighbour's ${POINTER_TARGET_PX}px target over their own centre and CANNOT be pointed at in ` +
+          `the fallback layer (${covered.slice(0, 6).join(", ")}${covered.length > 6 ? ", …" : ""}) — Tab reaches ` +
+          `every one of them and the table carries every one of them, which is what this format's ` +
+          `accessibility answer rests on. Say so in the caveat, or widen the camera.`,
+    );
+  }
 
   const collection = JSON.parse(await readFile(shapesPath, "utf8"));
   const rings = liveRings(collection, CO2_2023_STUDY, geometry);

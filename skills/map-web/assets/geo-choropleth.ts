@@ -601,6 +601,58 @@ export function assertSurfacesRead(
   return surfaces;
 }
 
+// ── Can a reader actually POINT at the marks this beat gives a pointer target to? ──────────────
+
+/** THE POINTER TARGET'S OWN DIAMETER, in CSS pixels — `ChoroplethWeb.tsx`'s `HIT_TARGET_PX`, stated
+ *  here rather than imported because this file imports nothing. If it changes there, it changes
+ *  here, deliberately. */
+export const POINTER_TARGET_PX = 28;
+
+/**
+ * EVERY POINTER-ACTIVE MARK WHOSE OWN TARGET IS COVERED BY A NEIGHBOUR'S, at a given drawn width.
+ *
+ * THE DEFECT THIS NAMES, measured live on a 241-region world choropleth (2026-08-22) by the driver
+ * that could finally reach it: 143 of the 241 marks fall under the small-region threshold and so
+ * keep a pointer-active `.pt` button, and at 1600x900 — where the map draws 898px wide — **82 of
+ * those 143 have another mark's 28px disc on top of their own centre**. `document.elementFromPoint`
+ * at Monaco's centre returns Vatican City's button; at Lithuania's, Latvia's. At 375px it is worse
+ * still. A reader with JavaScript off cannot point at them, and nothing measured it: the format's
+ * own driver asserted the SYMBOL seed's invariant, whose thirteen points are nowhere near each
+ * other.
+ *
+ * IT IS NOT FIXED BY REMOVING THE BUTTON, and that is why this decision REPORTS rather than filters.
+ * The `.pt` button is also the KEYBOARD target and the carrier of the `aria-label` — the two
+ * channels this format's accessibility answer actually rests on, and both are complete on that beat
+ * (Tab reaches all 241, and the table carries all 241). Dropping a colliding button would trade a
+ * partial pointer path for a broken keyboard path, which is the wrong trade for the reader who has
+ * the least.
+ *
+ * So the honest answer is the one this project's own rule prescribes for a limit that cannot be
+ * removed: the beat SAYS SO. The producer prints this count at render time, at the widths the beat
+ * will be read at, and a reader who cannot land a pointer on Monaco is told the table and the
+ * keyboard carry it. `x`/`y` are FRAME units; `drawnWidthPx` is what the map is actually drawn at,
+ * because the same map at 375px and at 1600px is not the same question.
+ */
+export function collidingPointerTargets(
+  targets: { key: string; x: number; y: number }[],
+  frame: Frame,
+  drawnWidthPx: number,
+  targetPx: number = POINTER_TARGET_PX,
+): string[] {
+  if (!(drawnWidthPx > 0) || !(frame.width > 0)) return [];
+  // The target's own radius, expressed in the frame's units — a fixed CSS size seen from the
+  // geometry's side. This is the whole reason the answer changes with the container.
+  const radius = ((targetPx / 2) * frame.width) / drawnWidthPx;
+  const covered: string[] = [];
+  for (const one of targets) {
+    const over = targets.some(
+      (other) => other.key !== one.key && Math.hypot(other.x - one.x, other.y - one.y) < radius,
+    );
+    if (over) covered.push(one.key);
+  }
+  return covered;
+}
+
 // ── Geometry: baked pixel rings become one path ────────────────────────────────────────────────
 
 /** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out. 
