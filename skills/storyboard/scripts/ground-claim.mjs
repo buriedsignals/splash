@@ -1428,7 +1428,11 @@ export function panelShapeOf(columns, rows) {
       }
       const lower = written.toLowerCase();
       values.add(lower);
-      const pair = `${row[periodColumn.name]} ${lower}`;
+      // A separator written as an ESCAPE, not as the byte itself. A raw NUL in the source makes
+      // every text tool treat this 200 KB file as binary — `grep -rn` skips it in silence, which
+      // is a worse defect than the collision it prevents. `\u0000` cannot appear in a CSV cell,
+      // so "2025" + "a" and "2025a" + "" still key apart.
+      const pair = `${row[periodColumn.name]}\u0000${lower}`;
       if (seen.has(pair)) {
         collides = true;
         break;
