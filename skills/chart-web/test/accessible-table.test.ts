@@ -205,9 +205,10 @@ describe("every chart-web page on disk", () => {
  *  `proof/` and that beat is in `stories/` — the exact blindness this widening closes, caught on
  *  its first run.
  *
- *  It is RECORDED and not FIXED here because that story is not this task's to edit; the beat's own
- *  runner has to call `accessibleTable` the way every page under `proof/` does. Fixing it is one
- *  line in that runner and one line off this list. */
-const WITHOUT_A_TABLE = [
-  "stories/heat-pump-adoption-across-europe/beats/1-the-gap-that-persists/renders/slope.html: 10 of 10 marks missing from the table",
-];
+ *  It was recorded rather than forgiven, and then FIXED the same day (commit `22857ece`): that
+ *  runner ended `main().catch(console.error)`, so when `renderWeb` grew its required `language`
+ *  argument the runner threw, printed the throw and exited 0 — which is also why
+ *  `deadExampleRunners` called it alive. Re-rendered, the page carries its table and declares the
+ *  language its storyboard records, so the list is empty. It stays here as the ratchet: a page that
+ *  turns up failing and is not on it is a red, and the empty list is the strongest form of that. */
+const WITHOUT_A_TABLE: string[] = [];
