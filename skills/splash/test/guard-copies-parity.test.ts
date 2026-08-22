@@ -72,11 +72,24 @@ const COPIES: Record<string, string[]> = {
   // years, for a sentence about the world. A profiler that says panel while the check that decides
   // a gate says flat table is worse than neither saying it, so it is one decision, walked here.
   //
-  // Its dependency `findYearColumn` is copied byte-identically beside it in `intake` and is NOT yet
-  // walked: `declaration()` anchors on the doc comment immediately above a function and
-  // `ground-claim.mjs`'s copy carries none, so registering it would fail on the missing anchor
-  // rather than on a drift. A doc comment on the storyboard copy is all it needs.
   panelShapeOf: ["storyboard/scripts/ground-claim.mjs", "intake/scripts/profile.mjs"],
+  // `panelShapeOf`'s own dependency, registered once the storyboard copy earned the doc comment
+  // `declaration()` anchors on. It is the decision that says which column a table's periods live in,
+  // and the two skills answering it differently is how a TENURE column named in years came to be
+  // read as a salary table's own axis.
+  findYearColumn: ["storyboard/scripts/ground-claim.mjs", "intake/scripts/profile.mjs"],
+  // THREE SKILLS, TWO ANSWERS, AND NOT ON THIS LIST UNTIL NOW. `storyboard/SKILL.md` says in so many
+  // words that its copy is "a carried copy of `splash`'s own function", and the registry that holds
+  // carried copies together did not know about it — so the copies drifted: `deliver`'s read
+  // `capabilities?.[medium]` and the other two read `capabilities[medium]`, and
+  // `capabilityGap(undefined, "map")` answered `null` in one skill and threw in the other two.
+  // Found by measuring which decisions the seven non-producing skills share, not by a test going red,
+  // which is the whole argument for a registry over a habit.
+  capabilityGap: [
+    "splash/scripts/preflight.mjs",
+    "storyboard/scripts/capability-gap.mjs",
+    "deliver/scripts/another-format.mjs",
+  ],
   // ROUND SIX, task GATE: gate 2's SECOND file. `SUBJECTS.md` was required at G4, produced at G2 by
   // `recordSurveyedSubjects`, and required by no gate in between — reported independently by six
   // formats across two rounds, the most-reported defect in this project's history. Both gate-2

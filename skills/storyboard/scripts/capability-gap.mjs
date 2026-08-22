@@ -17,8 +17,28 @@
 // through untouched: no capability row is tracked for it); otherwise the exact line to surface to
 // the journalist, phrased as an unavailable CAPABILITY ("map beats are unavailable: …"), never as
 // an environment failure — the distinction the preflight rebuild exists to preserve.
+/**
+ * THE CAPABILITY SEAM, CARRIED BY THREE SKILLS AND REGISTERED AS ONE DECISION.
+ *
+ * `capabilities` is the `{map, datawrapper, hostedEmbed}` shape `runPreflight` returns, each row
+ * `{id, opens, available, reason}`. Returns `null` when `medium` is open — or unrecognised, because
+ * this is declarative and not a gate on mediums it has no opinion about; otherwise the exact line to
+ * surface to the journalist, phrased as an unavailable CAPABILITY ("map beats are unavailable: …")
+ * and never as an environment failure.
+ *
+ * `?.` rather than a bare index, and the three copies now agree on it. They did not:
+ * `deliver`'s read `capabilities?.[medium]` while `splash`'s and `storyboard`'s read
+ * `capabilities[medium]`, so `capabilityGap(undefined, "map")` answered `null` in one skill and
+ * THREW in the other two. `storyboard/SKILL.md` had said in so many words that its copy was a
+ * carried copy of `splash`'s, and the registry that holds carried copies together did not know.
+ *
+ * ITS STATED LIMIT, since this is the sentence a later phase acts on: an ABSENT row reads as no gap.
+ * That is right when a preflight ran and found the medium fine, and it is an assumption when no
+ * preflight ran at all — the two are indistinguishable here, and telling them apart would need the
+ * caller to say whether it measured, which no caller does today.
+ */
 export function capabilityGap(capabilities, medium) {
-  const row = capabilities[medium];
+  const row = capabilities?.[medium];
   if (!row || row.available) return null;
   return `${row.opens} are unavailable: ${row.reason}`;
 }
