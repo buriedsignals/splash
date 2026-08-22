@@ -57,6 +57,7 @@ import {
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 import {
   FLOOR_FRACTION,
+  bindingAxisFraction,
   graphicFillsItsFrame,
 } from "./detect-fills-its-frame.mjs";
 
@@ -447,14 +448,26 @@ try {
     // and 14.8% against this same floor on its first render — had to write its own runner by hand
     // against this skill's decision because nothing here ever asked it. This is the call. The
     // box and the window are already measured above; only the question was missing.
+    //
+    // WHAT IS FED TO IT CHANGED ON 2026-08-23, and the decision itself did not. It was the box's
+    // AREA against the window's, which is a function of the reader's window aspect as much as of the
+    // producer's work: re-baking `stress-f-housing-pressure` to its camera's own shape moved its
+    // readings from 30.3/27.8/38.6% to 16.3/15.0/22.5% while the drawing got better. It is now
+    // `bindingAxisFraction` — how much of the axis the box is bound on it actually took — which is
+    // aspect-independent and red exactly when the box failed to grow into the room it had. The full
+    // measurement is in `detect-fills-its-frame.mjs`'s own header, including the half it still
+    // cannot see: a box that dumps its leftover room on one side moves neither fraction by 0.01 pt.
     const filled = graphicFillsItsFrame(
-      (fit.mapWidth * fit.mapHeight) / (fit.windowWidth * fit.windowHeight),
+      bindingAxisFraction(
+        { width: fit.mapWidth, height: fit.mapHeight },
+        { width: fit.windowWidth, height: fit.windowHeight },
+      ),
       FLOOR_FRACTION,
     );
     check(
-      `fit ${w}x${h}: the map fills a real share of the window`,
+      `fit ${w}x${h}: the map takes the axis it is bound on`,
       !filled.under,
-      `${(filled.fraction * 100).toFixed(1)}% of the window against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
+      `box ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} covers ${(filled.fraction * 100).toFixed(1)}% of the axis it is bound on, against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
     );
     check(
       `fit ${w}x${h}: the whole beat is inside the window`,
