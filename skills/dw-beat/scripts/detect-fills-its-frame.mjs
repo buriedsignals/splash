@@ -12,7 +12,8 @@ export const GUARDS = ["graphicFillsItsFrame"];
  *  constant this function reads by name: the achievable floor differs by format for a structural
  *  reason — chart-web's own frame IS its viewBox, fluid by construction, and clears 60%+ at every
  *  measured width; a map-web beat is bound by its baked plate's own true aspect against the window's,
- *  and the measured population's worst case is 22.9% (that skill's own seed, 1280x800) — each
+ *  and the measured population's worst case is 15.0% (`stress-f-housing-pressure`, 1280x800 — a
+ *  PORTRAIT camera in a landscape window) — each
  *  copy's own caller supplies the floor its OWN measured population earned. `under` is strictly `<`,
  *  not `<=`, the same reasoning `weightAgainstCeiling` states for `over`: a page sitting exactly on
  *  the floor is the measurement the floor was taken FROM, not yet a violation of it. */
