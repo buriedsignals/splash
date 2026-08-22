@@ -178,20 +178,21 @@ describe("every map web beat on disk", () => {
   });
 
   /**
-   * THE ONE BEAT THAT FAILS `plateFollowsGround` TODAY, named with its measurement.
+   * THE BEATS THAT FAIL `plateFollowsGround` TODAY, named with their measurement.
    *
-   * Found the moment the population above stopped being `proof/`-only — which is the whole point of
-   * deriving it. `stories/stress-f-housing-pressure` records ground `#16191B` (relative luminance
-   * 0.009, dark) and its bake asks MapTiler for `dataviz-light`, producing a plate at 0.709: the
-   * exact disagreement this guard exists to refuse, sitting in the tree unseen because nothing ever
-   * walked `stories/`. The real OWID beat hit the same wall and fixed it by baking `dataviz-dark`.
+   * EMPTY, as of 2026-08-22. One entry stood here: `stories/stress-f-housing-pressure` recorded
+   * ground `#16191B` (relative luminance 0.009, dark) while its bake asked MapTiler for
+   * `dataviz-light`, producing a plate at 0.709 — the exact disagreement this guard exists to
+   * refuse, sitting in the tree unseen until the population above stopped being `proof/`-only.
+   * That beat's bake now DERIVES the basemap from the ground it was handed (`basemapStyleFor`)
+   * rather than carrying a literal copied from the light-ground beat it was cloned from, and the
+   * re-baked plate measures 0.033 against a ground of 0.009.
    *
-   * It is RECORDED rather than skipped, and the assertion runs in BOTH directions: this beat must
-   * still fail (so re-baking it forces this entry to be deleted rather than leaving a stale
-   * exemption behind), and nothing else may. The list can only shrink. Re-baking a story beat that
-   * belongs to another package is not this skill's to do silently; naming it is.
+   * The assertion runs in BOTH directions — a failing beat must be named here, and a named beat must
+   * still fail — so the re-bake FORCED this entry out rather than leaving a stale exemption behind.
+   * The list can only shrink.
    */
-  const RECORDED_PLATE_DEBT = ["stories/stress-f-housing-pressure/beats/housing-pressure-choropleth"];
+  const RECORDED_PLATE_DEBT: string[] = [];
 
   it("bakes it on the side of the ground it declares", () => {
     const beats = mapWebBeats();

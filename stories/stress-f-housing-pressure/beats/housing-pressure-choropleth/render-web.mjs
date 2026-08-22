@@ -38,7 +38,7 @@ import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
-  choroplethRamp,
+  choroplethSurfaces,
   fillFor,
   regionDetail,
   HIT_TARGET_PX,
@@ -46,11 +46,11 @@ import {
 import {
   HOUSING_STUDY,
   PRESSURE_BREAKS,
-  WATER_FILL,
   bboxCenter,
   boundingBoxOf,
   joinShapes,
   joinValues,
+  luminanceOf,
   keepRing,
   valuesFromCsv,
 } from "./geo-choropleth.ts";
@@ -214,8 +214,20 @@ export function checkClaim(values) {
  * the subject's own reading is drawn from a different survey (the caveat says so), so a ratio
  * against it would state a precision the two numbers do not share.
  */
-export function claimSentences({ count, breaks, claim, names }) {
+export function claimSentences({ count, breaks, claim, names, ramp }) {
   const nameOf = (key) => names.get(key) ?? key;
+  // WHICH END OF THE RAMP IS DARK IS A FACT ABOUT THE PALETTE, not a word to be typed.
+  //
+  // The alt text used to say the top class was "the darkest" and the bottom "the lightest". That is
+  // true of a ramp drawn on a WHITE ground, which is what this file was copied from; this story
+  // records `#16191B` (relative luminance 0.009), and its ramp CLIMBS — measured on the rendered
+  // page, the top class is 0.381 against a first class of 0.071, so the sentence a screen-reader
+  // read out named the wrong end of the legend for every reading on the map. Read off the ramp
+  // that is actually painted, the words cannot disagree with it again.
+  const climbs = luminanceOf(ramp[ramp.length - 1]) > luminanceOf(ramp[0]);
+  const [topShade, bottomShade] = climbs
+    ? ["lightest", "darkest"]
+    : ["darkest", "lightest"];
   const pct = (v) => v.toFixed(0);
   const subjectName = nameOf(claim.subject.key);
   const comparisonName = nameOf(claim.comparison.key);
@@ -226,9 +238,9 @@ export function claimSentences({ count, breaks, claim, names }) {
   const alt =
     `A choropleth of ${count} European countries shaded by the share of households spending over ` +
     `40% of income on housing, in ${breaks.length + 1} classes from under ${breaks[0]}% to ` +
-    `${breaks[breaks.length - 1]}% and over. ${subjectName} sits alone in the darkest, top class, ` +
+    `${breaks[breaks.length - 1]}% and over. ${subjectName} sits alone in the ${topShade}, top class, ` +
     `outlined in this map's accent colour, at ${pct(claim.subject.value)}% — a figure the caveat ` +
-    `below states is not comparable with the rest. The lightest class holds ${comparisonName}, ` +
+    `below states is not comparable with the rest. The ${bottomShade} class holds ${comparisonName}, ` +
     `outlined in ink, at ${pct(claim.comparison.value)}% — the lowest, fully comparable reading here.`;
   return { title, legendCaption, alt };
 }
@@ -400,9 +412,9 @@ export function liveRings(collection, keys, geometry) {
  * beat's own minimum pointer target, `HIT_TARGET_PX`. Derived from the plate's own geometry, so a
  * beat with no tiny region gets a correspondingly shorter leash.
  */
-export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent, waterFill }) {
+export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent }) {
   const camera = cameraOf(geometry);
-  const ramp = choroplethRamp(ground, accent, breaks);
+  const { ramp, noData, water } = choroplethSurfaces(ground, accent, breaks);
 
   const features = [];
   const anchors = {};
@@ -432,7 +444,7 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
         // A region with no joined value is painted the beat's own no-data grey, explicitly — never
         // dropped from the map and never allowed to fall through to the ramp's first class, which
         // would read as a legitimate low value (`geo-discipline.md` rule 5's own failure mode).
-        color: fillFor(region.value, ramp, breaks),
+        color: fillFor(region.value, ramp, breaks, noData),
       },
     });
     if (region.value === null) continue;
@@ -480,7 +492,10 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
 
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    // THE SAME `water` THE BAKE PAINTED AND THE SSR'd PAGE DREW, derived here from the same
+    // palette rather than passed in. It used to be a parameter carrying a module constant, which is
+    // how the live layer and the plate could have disagreed about the colour of the sea.
+    waterFill: water,
     frame: geometry.frame,
     degreesPerPixel: geometry.degreesPerPixel,
     metresPerPixel: geometry.metresPerPixel,
@@ -1008,6 +1023,7 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
     breaks: PRESSURE_BREAKS,
     claim,
     names,
+    ramp: choroplethSurfaces(SEED.ground, SEED.accent, PRESSURE_BREAKS).ramp,
   });
   console.log(`title: ${title}`);
   console.log(`alt: ${alt}`);
@@ -1024,7 +1040,6 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
         ground: SEED.ground,
         ink: furniture.ink,
         accent: SEED.accent,
-        waterFill: WATER_FILL,
       })
     : null;
 

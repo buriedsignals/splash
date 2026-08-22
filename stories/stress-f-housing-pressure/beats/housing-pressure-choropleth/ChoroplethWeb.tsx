@@ -65,7 +65,9 @@ import {
   assertRampReads,
   dataRampEnd,
   sequentialRamp,
-  NO_DATA_FILL,
+  assertSurfacesRead,
+  noDataFor,
+  waterFor,
   type BakedShape,
 } from "./geo-choropleth";
 
@@ -97,14 +99,29 @@ const NO_DATA_LABEL = "No data";
  *  `needsPointerTarget` selects are pointer-active in the fallback; every other region is pointed at
  *  through its own painted `<path>`, which is a fairer target than a disc at its centroid. */
 export const HIT_TARGET_PX = 28;
-/** A region under this many FRAME UNITS on its longer side cannot be landed on reliably by pointing
- *  at its own shape. 26 is not a new number: the two-rung layout this beat used to ship tested
- *  `max(w, h) * scale < 22` real pixels at its desktop `mapSize / frame.width` scale of 420/496, and
- *  26 frame units is that same threshold with the scale divided out. It selects the SAME six regions
- *  it always did — Andorra, Liechtenstein, Malta, Luxembourg, Montenegro and the Faroe Islands — and
- *  it now survives the map becoming fluid, where there is no single "this layout's scale" left to
- *  measure against. */
-const SMALL_REGION_FRAME_UNITS = 26;
+/** A region under this FRACTION OF THE FRAME'S OWN WIDTH on its longer side cannot be landed on
+ *  reliably by pointing at its own shape, so it gets a `.pt` button of its own in the FALLBACK
+ *  layer.
+ *
+ *  A FRACTION, and that is the fix. It was `26` ABSOLUTE frame units, and the comment claimed the
+ *  number "survives the map becoming fluid". It survives a fluid CONTAINER; it does not survive a
+ *  different CAMERA, which is the thing a beat actually changes. 26 was measured against this beat's
+ *  own 496px European plate; at the 1200px frame a world map needs, the same 26 units is 7.8° of
+ *  longitude and selects most of the world for a 28px pointer disc — an unmeasured set of regions
+ *  chosen by a constant nobody re-derived. Measured on a real 241-region beat, 2026-08-22.
+ *
+ *  26/496 is that same threshold divided by the frame it was measured against, so this beat selects
+ *  exactly the six regions it always did — Andorra, Liechtenstein, Malta, Luxembourg, Montenegro and
+ *  the Faroe Islands — and a beat at any other frame width selects regions of the same VISUAL size
+ *  rather than of the same coordinate size. `the-frame-is-the-cameras-shape.test.ts` measures the
+ *  derived value at more than one frame width, which is the only way a frame-relative constant can
+ *  be checked at all. */
+export const SMALL_REGION_FRAME_FRACTION = 26 / 496;
+
+/** The threshold in this frame's own units. */
+export function smallRegionFrameUnits(frame: { width: number }): number {
+  return frame.width * SMALL_REGION_FRAME_FRACTION;
+}
 // =======================================================
 
 /** One region's own detail string — the single implementation the SSR'd `aria-label`/`data-detail`
@@ -142,12 +159,50 @@ export function choroplethRamp(
       ground,
       dataRampEnd(accent, ground),
       breaks.length + 1,
-      0.1,
+      // THE LOW END LEAVES ROOM FOR THE TWO SURFACES THAT ARE NOT THE DATA — and on a DARK ground
+      // that room is scarce, because the ramp climbs AWAY from the ground rather than down toward
+      // an ink pole, so the whole band between the ground and the first class is what "no reading"
+      // has to fit inside.
+      //
+      // Measured on this beat's own recorded ground `#16191B` (relative luminance 0.009) with its
+      // six breaks, `assertSurfacesRead` refusing every value below 0.24:
+      //   0.10  first class 0.0122 — the ramp starts ON the ground
+      //   0.20  first class 0.0464, off-ramp 0.0279 — inside `SURFACE_CLEARANCE` of class 1, so a
+      //         country with no reading is painted at a real class's luminance (the refusal fired)
+      //   0.24  first class 0.0581, off-ramp 0.0338 — clears by 0.0043 either side; the bare minimum
+      //   0.28  first class 0.0709, off-ramp 0.0402 — clears by 0.011 either side, symmetrically
+      // 0.28 is taken rather than 0.24 because the two clearances are then equal: the no-data
+      // surface sits the same distance from the ground it must not be mistaken for as from the class
+      // it must not be mistaken for. The top class is unmoved, so nothing about the argument's own
+      // colour changes.
+      0.28,
       0.78,
     ),
     ground,
-    "the per-capita CO2 choropleth ramp",
+    "the housing-pressure choropleth ramp",
   );
+}
+
+/** THE THREE COLOUR DECISIONS OF A CHOROPLETH, MADE TOGETHER AND MEASURED TOGETHER: the ramp that
+ *  carries the data, the fill for a region with no reading, and the tint the sea is painted in.
+ *
+ *  Together, because the last two are only correct RELATIVE to the first — see `assertSurfacesRead`
+ *  in `geo-choropleth.ts` for the measurement that used to be missing and what it cost on both of
+ *  this format's shipped grounds. Every call site comes through here, so the bake, the SSR'd page
+ *  and the live plan cannot disagree about what colour the ocean is. */
+export function choroplethSurfaces(
+  ground: string,
+  accent: string,
+  breaks: number[],
+): { ramp: string[]; noData: string; water: string } {
+  const ramp = choroplethRamp(ground, accent, breaks);
+  const { noData, water } = assertSurfacesRead(
+    ramp,
+    ground,
+    { noData: noDataFor(ramp, ground), water: waterFor(ramp, ground) },
+    "the housing-pressure choropleth",
+  );
+  return { ramp, noData, water };
 }
 
 /** The exact colour one value is painted in — no-data included, explicitly, never by falling through
@@ -156,23 +211,27 @@ export function fillFor(
   value: number | null,
   ramp: string[],
   breaks: number[],
+  noData: string,
 ): string {
   return value === null
-    ? NO_DATA_FILL
+    ? noData
     : ramp[binIndexLowerInclusive(value, breaks)]!;
 }
 
 /** Whether a region needs a pointer-active button of its own in the FALLBACK state — see
  *  `SMALL_REGION_FRAME_UNITS`. Live, nothing needs one: the canvas hit-tests the rendered fill. */
-export function needsPointerTarget(box: {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-}): boolean {
+export function needsPointerTarget(
+  box: {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+  },
+  frame: { width: number },
+): boolean {
   return (
     Math.max(box.maxX - box.minX, box.maxY - box.minY) <
-    SMALL_REGION_FRAME_UNITS
+    smallRegionFrameUnits(frame)
   );
 }
 
@@ -235,7 +294,7 @@ export function ChoroplethWeb({
       `a choropleth needs at least two shapes, got ${shapes.length}`,
     );
 
-  const ramp = choroplethRamp(ground, accent, breaks);
+  const { ramp, noData } = choroplethSurfaces(ground, accent, breaks);
   const anyNoData = shapes.some((r) => r.value === null);
 
   const subject = shapes.find((r) => r.key === SUBJECT_KEY);
@@ -317,7 +376,7 @@ export function ChoroplethWeb({
                     key={region.key}
                     className="region"
                     d={pathFromRings(region.rings)}
-                    fill={fillFor(region.value, ramp, breaks)}
+                    fill={fillFor(region.value, ramp, breaks, noData)}
                     fillRule="evenodd"
                     stroke={ground}
                     strokeWidth={0.8}
@@ -378,15 +437,23 @@ export function ChoroplethWeb({
             {drawn.map((region) => {
               const detail = regionDetail(region);
               const [ax, ay] = region.anchor;
-              const small = needsPointerTarget(boxOf(region.rings));
+              const small = needsPointerTarget(boxOf(region.rings), frame);
               return (
                 <button
                   key={region.key}
                   type="button"
                   className={`pt${small ? " pt-small" : ""}`}
                   style={{
-                    left: `${(ax / frame.width) * 100}%`,
-                    top: `${(ay / frame.height) * 100}%`,
+                    // CLAMPED TO ITS OWN HALF-WIDTH at each edge, exactly the way the legend's own
+                    // markers already are. A region hard against the frame — New Zealand at 174°E,
+                    // Kiribati either side of the antimeridian — gets a target centred on it that
+                    // hangs half of itself outside the viewport. Measured on a real world beat
+                    // before this line: 869px of content inside an 857px box at 1600x900, which
+                    // turned "nothing scrolls inside the visual" red at all four widths. The
+                    // European beat this file is the seed for has no region within half a target of
+                    // an edge, which is why nothing here ever exercised it.
+                    left: `clamp(${HIT_TARGET_PX / 2}px, ${(ax / frame.width) * 100}%, calc(100% - ${HIT_TARGET_PX / 2}px))`,
+                    top: `clamp(${HIT_TARGET_PX / 2}px, ${(ay / frame.height) * 100}%, calc(100% - ${HIT_TARGET_PX / 2}px))`,
                     // ONE dimension; the height comes from `.pt { aspect-ratio: 1 }` (B6.20). This
                     // beat was never anisotropic — both numbers were already fixed pixels — but the
                     // rule is stated once for the format, so nothing here can drift back into two
@@ -452,7 +519,7 @@ export function ChoroplethWeb({
           <p className="mw-legend-nodata">
             <span
               className="mw-legend-swatch"
-              style={{ background: NO_DATA_FILL, borderColor: muted }}
+              style={{ background: noData, borderColor: muted }}
             />
             {NO_DATA_LABEL}
           </p>
