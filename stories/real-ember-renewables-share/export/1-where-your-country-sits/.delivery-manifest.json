@@ -1,0 +1,16 @@
+{
+  "operationId": "50b1b442-1079-4c22-91ca-ab8865c38f7a",
+  "reviewId": "review-1-where-your-country-sits-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:703b99b7bbd2e9982a372e2891fcf4b65bc2b1011823fa34eab593785568eac1",
+  "findingIds": [
+    "ember-1-the-world-figure-is-nobodys",
+    "ember-2-three-bodies-disagree-on-europe"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-22T14:45:10.676Z",
+  "schemaVersion": 1,
+  "outputId": "1-where-your-country-sits",
+  "state": "complete"
+}

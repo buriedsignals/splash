@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Renewables were 30.3% of the world's electricity in 2023. Almost no country was.</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #16191B;
+  --accent: #1B7F4B;
+  --ink: #FFFFFF;
+  --muted: #a6a8a8;
+  --grid: #404244;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+</style>
+<style>
+
+.pt {
+  position: absolute;
+  display: block;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  fill: none;
+}
+.pt:hover, .pt:focus, .pt.pt-active, .pt.pt-held {
+  fill: none;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--ink);
+  z-index: 2;
+}
+.pt:focus { outline: none; }
+.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.note.rule-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+/* Both rule labels run RIGHTWARDS from their own rule rather than being centred on it, and they
+   sit in opposite margins. Centred, at 375px, "World 30.3%" and the "15 at 0%" count came within a
+   few pixels of each other and "median 26.5%" ran straight through the count. */
+.note.rule-label.world { transform: translate(2px, -100%) translateY(-4px); }
+.note.rule-label.median { color: var(--muted); font-weight: 400; transform: translate(2px, 0) translateY(4px); }
+.end-label {
+  color: var(--muted);
+  font-weight: var(--label-weight);
+  font-size: var(--note-size);
+}
+.end-label.at-floor { left: 0; transform: translateY(-100%) translateY(-4px); }
+.end-label.at-ceiling { right: 0; left: auto; transform: translateY(-100%) translateY(-4px); }
+
+/* The outermost value labels are anchored at the frame's own edges: a centred "0%" would hang half
+   of itself outside the plot, which is the clipping this format has shipped once before. */
+.axis-label.x.first { transform: none; }
+.axis-label.x.last { transform: translateX(-100%); }
+
+.chart-find {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 12px 0 0;
+  font-size: var(--filter-size);
+  color: var(--muted);
+}
+.chart-find label { font-weight: 600; color: var(--ink); }
+.chart-find input {
+  font: inherit;
+  color: var(--ink);
+  background: var(--ground);
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  padding: 5px 10px;
+  min-width: 14em;
+  min-height: 28px;
+}
+.chart-find input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.chart-find .find-answer { margin: 0; color: var(--muted); }
+
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#16191B;--accent:#1B7F4B;--ink:#FFFFFF;--muted:#a6a8a8;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:14px;--label-weight:600;--note-size:12px;--filter-size:13px;--dot-size:9px"><div class="chart-header"><h2 class="chart-title">Renewables were 30.3% of the world&#x27;s electricity in 2023. Almost no country was.</h2><p class="chart-caveat">One dot per country or territory with a 2023 figure: 211 of the 214 in this file. Height carries no meaning. 112 sit below the world&#x27;s own figure, which is weighted by how much electricity each country generates.</p><p class="chart-caveat">6 of the 7 regional aggregates in this file are published by two or three bodies at once that disagree — Europe reads 46.6% (EI), 39.7% (Ember), 40.0% (Our World in Data) — so no region is drawn here.</p><p class="chart-caveat">2023, not the file&#x27;s last year: 2025 carries 91 of the 214 countries and 2024 carries 196.</p></div><div class="chart-find" hidden=""><label for="find-country">Find a country</label><input id="find-country" type="search" autoComplete="off" spellCheck="false" placeholder="start typing a name" list="country-names"/><datalist id="country-names"><option value="American Samoa"></option><option value="British Virgin Islands"></option><option value="Brunei"></option><option value="Comoros"></option><option value="East Timor"></option><option value="Falkland Islands"></option><option value="Gambia"></option><option value="Gibraltar"></option><option value="Grenada"></option><option value="Guinea-Bissau"></option><option value="Montserrat"></option><option value="Nauru"></option><option value="Saint Helena"></option><option value="Saint Pierre and Miquelon"></option><option value="Turks and Caicos Islands"></option><option value="Libya"></option><option value="Turkmenistan"></option><option value="Trinidad and Tobago"></option><option value="Bahrain"></option><option value="Botswana"></option><option value="Bahamas"></option><option value="Algeria"></option><option value="Hong Kong"></option><option value="Saudi Arabia"></option><option value="Iraq"></option><option value="Bermuda"></option><option value="Bangladesh"></option><option value="South Sudan"></option><option value="Niger"></option><option value="Kuwait"></option><option value="Saint Lucia"></option><option value="Cayman Islands"></option><option value="Guyana"></option><option value="United States Virgin Islands"></option><option value="Benin"></option><option value="Belarus"></option><option value="Syria"></option><option value="Qatar"></option><option value="Cuba"></option><option value="Tunisia"></option><option value="Singapore"></option><option value="Saint Kitts and Nevis"></option><option value="Oman"></option><option value="Puerto Rico"></option><option value="Antigua and Barbuda"></option><option value="Chad"></option><option value="Iran"></option><option value="Azerbaijan"></option><option value="Maldives"></option><option value="Guam"></option><option value="Barbados"></option><option value="United Arab Emirates"></option><option value="Taiwan"></option><option value="Solomon Islands"></option><option value="Mongolia"></option><option value="South Korea"></option><option value="Moldova"></option><option value="Uzbekistan"></option><option value="Yemen"></option><option value="Eritrea"></option><option value="Sao Tome and Principe"></option><option value="Egypt"></option><option value="Israel"></option><option value="Jamaica"></option><option value="South Africa"></option><option value="Kosovo"></option><option value="Kazakhstan"></option><option value="Dominica"></option><option value="Saint Vincent and the Grenadines"></option><option value="Malta"></option><option value="Tonga"></option><option value="Seychelles"></option><option value="Czechia"></option><option value="Thailand"></option><option value="Burkina Faso"></option><option value="Senegal"></option><option value="Aruba"></option><option value="Dominican Republic"></option><option value="Mauritius"></option><option value="Russia"></option><option value="Indonesia"></option><option value="Somalia"></option><option value="Malaysia"></option><option value="India"></option><option value="Mali"></option><option value="Mexico"></option><option value="Cyprus"></option><option value="Philippines"></option><option value="Mauritania"></option><option value="Morocco"></option><option value="Jordan"></option><option value="Japan"></option><option value="Haiti"></option><option value="Nigeria"></option><option value="United States"></option><option value="Slovakia"></option><option value="Congo"></option><option value="Papua New Guinea"></option><option value="Equatorial Guinea"></option><option value="Kiribati"></option><option value="Vanuatu"></option><option value="Bulgaria"></option><option value="Martinique"></option><option value="New Caledonia"></option><option value="Hungary"></option><option value="Tanzania"></option><option value="Togo"></option><option value="France"></option><option value="Poland"></option><option value="Armenia"></option><option value="Cape Verde"></option><option value="Cote d&#x27;Ivoire"></option><option value="China"></option><option value="North Macedonia"></option><option value="Pakistan"></option><option value="Bolivia"></option><option value="Macao"></option><option value="Belgium"></option><option value="French Polynesia"></option><option value="Lebanon"></option><option value="Argentina"></option><option value="Australia"></option><option value="Serbia"></option><option value="Djibouti"></option><option value="Guadeloupe"></option><option value="Gabon"></option><option value="Ghana"></option><option value="Samoa"></option><option value="Palestine"></option><option value="Slovenia"></option><option value="Turkey"></option><option value="Cambodia"></option><option value="Vietnam"></option><option value="Bosnia and Herzegovina"></option><option value="Madagascar"></option><option value="Italy"></option><option value="Ireland"></option><option value="United Kingdom"></option><option value="Myanmar"></option><option value="Faroe Islands"></option><option value="Netherlands"></option><option value="Sri Lanka"></option><option value="Estonia"></option><option value="Rwanda"></option><option value="Romania"></option><option value="Greece"></option><option value="Cook Islands"></option><option value="Spain"></option><option value="Finland"></option><option value="Suriname"></option><option value="Honduras"></option><option value="Peru"></option><option value="Germany"></option><option value="Zimbabwe"></option><option value="Reunion"></option><option value="Liberia"></option><option value="Panama"></option><option value="Montenegro"></option><option value="Nicaragua"></option><option value="North Korea"></option><option value="Chile"></option><option value="Switzerland"></option><option value="Fiji"></option><option value="French Guiana"></option><option value="Canada"></option><option value="Colombia"></option><option value="Guatemala"></option><option value="Sweden"></option><option value="Croatia"></option><option value="Cameroon"></option><option value="Ecuador"></option><option value="Angola"></option><option value="Portugal"></option><option value="Guinea"></option><option value="Burundi"></option><option value="Georgia"></option><option value="Laos"></option><option value="Latvia"></option><option value="Sudan"></option><option value="Greenland"></option><option value="Mozambique"></option><option value="Lithuania"></option><option value="Austria"></option><option value="Denmark"></option><option value="Kyrgyzstan"></option><option value="Afghanistan"></option><option value="El Salvador"></option><option value="Belize"></option><option value="Brazil"></option><option value="Zambia"></option><option value="Luxembourg"></option><option value="New Zealand"></option><option value="Kenya"></option><option value="Venezuela"></option><option value="Uruguay"></option><option value="Tajikistan"></option><option value="Sierra Leone"></option><option value="Malawi"></option><option value="Eswatini"></option><option value="Uganda"></option><option value="Namibia"></option><option value="Norway"></option><option value="Costa Rica"></option><option value="Albania"></option><option value="Bhutan"></option><option value="Central African Republic"></option><option value="Democratic Republic of Congo"></option><option value="Ethiopia"></option><option value="Iceland"></option><option value="Nepal"></option><option value="Paraguay"></option></datalist><p class="find-answer" role="status" aria-live="polite"></p></div><div class="chart-plot strip-plot" style="--y-gutter:0px;--x-axis-h:28px;aspect-ratio:820 / 328"><div class="y-axis"></div><svg role="group" aria-label="Renewables were 30.3% of the world&#x27;s electricity in 2023. Almost no country was." xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 820 300" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>A single horizontal strip of 211 dots, one per country or territory, each placed by the share of its electricity that came from renewable sources in 2023 on an axis running from 0% at the left to 100% at the right. A heavy vertical rule marks the world&#x27;s own figure, 30.3%; a lighter one marks the middle country, 26.5%. The dots are spread across the entire axis rather than gathered near the world&#x27;s figure: 15 sit at exactly 0% (American Samoa, British Virgin Islands, Brunei, Comoros, East Timor, Falkland Islands, Gambia, Gibraltar, Grenada, Guinea-Bissau, Montserrat, Nauru, Saint Helena, Saint Pierre and Miquelon, Turks and Caicos Islands) and 8 at exactly 100% (Albania, Bhutan, Central African Republic, Democratic Republic of Congo, Ethiopia, Iceland, Nepal, Paraguay). 112 of the 211 sit below the world&#x27;s figure. Every dot&#x27;s own country and share is available on hover, on tap, and to a keyboard, and the table below this chart prints all of them in the same order.</desc><rect x="0" y="0" width="820" height="300" fill="#16191B"></rect><line x1="0" y1="0" x2="0" y2="300" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="205" y1="0" x2="205" y2="300" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="410" y1="0" x2="410" y2="300" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="615" y1="0" x2="615" y2="300" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="820" y1="0" x2="820" y2="300" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="217.2185494" y1="63.00000000000001" x2="217.2185494" y2="237" stroke="#a6a8a8" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="248.64942000000002" y1="0" x2="248.64942000000002" y2="300" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><rect class="hit-area" x="0" y="0" width="820" height="300" fill="transparent" pointer-events="all"></rect></svg><div class="overlay"><span class="pt" style="left:0%;top:40.637882709503174%" tabindex="0" role="img" aria-label="American Samoa: 0.0% of electricity from renewables" data-country="American Samoa" data-detail="American Samoa · 0.0%"></span><span class="pt" style="left:0%;top:78.3338813893497%" tabindex="0" role="img" aria-label="British Virgin Islands: 0.0% of electricity from renewables" data-country="British Virgin Islands" data-detail="British Virgin Islands · 0.0%"></span><span class="pt" style="left:0%;top:21.364976225886494%" tabindex="0" role="img" aria-label="Brunei: 0.0% of electricity from renewables" data-country="Brunei" data-detail="Brunei · 0.0%"></span><span class="pt" style="left:0%;top:32.87321493308991%" tabindex="0" role="img" aria-label="Comoros: 0.0% of electricity from renewables" data-country="Comoros" data-detail="Comoros · 0.0%"></span><span class="pt" style="left:0%;top:78.16807799134403%" tabindex="0" role="img" aria-label="East Timor: 0.0% of electricity from renewables" data-country="East Timor" data-detail="East Timor · 0.0%"></span><span class="pt" style="left:0%;top:32.05532911233604%" tabindex="0" role="img" aria-label="Falkland Islands: 0.0% of electricity from renewables" data-country="Falkland Islands" data-detail="Falkland Islands · 0.0%"></span><span class="pt" style="left:0%;top:69.25308248633519%" tabindex="0" role="img" aria-label="Gambia: 0.0% of electricity from renewables" data-country="Gambia" data-detail="Gambia · 0.0%"></span><span class="pt" style="left:0%;top:74.70005188556388%" tabindex="0" role="img" aria-label="Gibraltar: 0.0% of electricity from renewables" data-country="Gibraltar" data-detail="Gibraltar · 0.0%"></span><span class="pt" style="left:0%;top:58.398485232144594%" tabindex="0" role="img" aria-label="Grenada: 0.0% of electricity from renewables" data-country="Grenada" data-detail="Grenada · 0.0%"></span><span class="pt" style="left:0%;top:72.41907448600978%" tabindex="0" role="img" aria-label="Guinea-Bissau: 0.0% of electricity from renewables" data-country="Guinea-Bissau" data-detail="Guinea-Bissau · 0.0%"></span><span class="pt" style="left:0%;top:25.126746858004477%" tabindex="0" role="img" aria-label="Montserrat: 0.0% of electricity from renewables" data-country="Montserrat" data-detail="Montserrat · 0.0%"></span><span class="pt" style="left:0%;top:59.2141582313925%" tabindex="0" role="img" aria-label="Nauru: 0.0% of electricity from renewables" data-country="Nauru" data-detail="Nauru · 0.0%"></span><span class="pt" style="left:0%;top:28.483641497790813%" tabindex="0" role="img" aria-label="Saint Helena: 0.0% of electricity from renewables" data-country="Saint Helena" data-detail="Saint Helena · 0.0%"></span><span class="pt" style="left:0%;top:43.68097799876705%" tabindex="0" role="img" aria-label="Saint Pierre and Miquelon: 0.0% of electricity from renewables" data-country="Saint Pierre and Miquelon" data-detail="Saint Pierre and Miquelon · 0.0%"></span><span class="pt" style="left:0%;top:68.61964206723496%" tabindex="0" role="img" aria-label="Turks and Caicos Islands: 0.0% of electricity from renewables" data-country="Turks and Caicos Islands" data-detail="Turks and Caicos Islands · 0.0%"></span><span class="pt" style="left:0.029629630000000004%;top:51.862274318002164%" tabindex="0" role="img" aria-label="Libya: 0.0% of electricity from renewables" data-country="Libya" data-detail="Libya · 0.0%"></span><span class="pt" style="left:0.030674846999999998%;top:78.60591589799151%" tabindex="0" role="img" aria-label="Turkmenistan: 0.0% of electricity from renewables" data-country="Turkmenistan" data-detail="Turkmenistan · 0.0%"></span><span class="pt" style="left:0.10504201%;top:35.591982434503734%" tabindex="0" role="img" aria-label="Trinidad and Tobago: 0.1% of electricity from renewables" data-country="Trinidad and Tobago" data-detail="Trinidad and Tobago · 0.1%"></span><span class="pt" style="left:0.24019216%;top:74.81236021360382%" tabindex="0" role="img" aria-label="Bahrain: 0.2% of electricity from renewables" data-country="Bahrain" data-detail="Bahrain · 0.2%"></span><span class="pt" style="left:0.30959752%;top:64.17499211477116%" tabindex="0" role="img" aria-label="Botswana: 0.3% of electricity from renewables" data-country="Botswana" data-detail="Botswana · 0.3%"></span><span class="pt" style="left:0.9049773000000001%;top:74.58579227142036%" tabindex="0" role="img" aria-label="Bahamas: 0.9% of electricity from renewables" data-country="Bahamas" data-detail="Bahamas · 0.9%"></span><span class="pt" style="left:0.9491031000000001%;top:41.14880858641118%" tabindex="0" role="img" aria-label="Algeria: 0.9% of electricity from renewables" data-country="Algeria" data-detail="Algeria · 0.9%"></span><span class="pt" style="left:0.9536424%;top:51.054166885558516%" tabindex="0" role="img" aria-label="Hong Kong: 1.0% of electricity from renewables" data-country="Hong Kong" data-detail="Hong Kong · 1.0%"></span><span class="pt" style="left:1.0995922000000002%;top:26.429232040420175%" tabindex="0" role="img" aria-label="Saudi Arabia: 1.1% of electricity from renewables" data-country="Saudi Arabia" data-detail="Saudi Arabia · 1.1%"></span><span class="pt" style="left:1.2137095%;top:65.83242596918717%" tabindex="0" role="img" aria-label="Iraq: 1.2% of electricity from renewables" data-country="Iraq" data-detail="Iraq · 1.2%"></span><span class="pt" style="left:1.5625%;top:62.339798209723085%" tabindex="0" role="img" aria-label="Bermuda: 1.6% of electricity from renewables" data-country="Bermuda" data-detail="Bermuda · 1.6%"></span><span class="pt" style="left:1.7075349%;top:70.25636460538954%" tabindex="0" role="img" aria-label="Bangladesh: 1.7% of electricity from renewables" data-country="Bangladesh" data-detail="Bangladesh · 1.7%"></span><span class="pt" style="left:1.7857143%;top:34.84284185664728%" tabindex="0" role="img" aria-label="South Sudan: 1.8% of electricity from renewables" data-country="South Sudan" data-detail="South Sudan · 1.8%"></span><span class="pt" style="left:2.0618556%;top:60.383553088642664%" tabindex="0" role="img" aria-label="Niger: 2.1% of electricity from renewables" data-country="Niger" data-detail="Niger · 2.1%"></span><span class="pt" style="left:2.1278965%;top:73.09328159922734%" tabindex="0" role="img" aria-label="Kuwait: 2.1% of electricity from renewables" data-country="Kuwait" data-detail="Kuwait · 2.1%"></span><span class="pt" style="left:2.5%;top:70.89199506444857%" tabindex="0" role="img" aria-label="Saint Lucia: 2.5% of electricity from renewables" data-country="Saint Lucia" data-detail="Saint Lucia · 2.5%"></span><span class="pt" style="left:2.857143%;top:53.677530871704214%" tabindex="0" role="img" aria-label="Cayman Islands: 2.9% of electricity from renewables" data-country="Cayman Islands" data-detail="Cayman Islands · 2.9%"></span><span class="pt" style="left:2.8985507%;top:52.279164396226406%" tabindex="0" role="img" aria-label="Guyana: 2.9% of electricity from renewables" data-country="Guyana" data-detail="Guyana · 2.9%"></span><span class="pt" style="left:2.9411764%;top:78.30328543391079%" tabindex="0" role="img" aria-label="United States Virgin Islands: 2.9% of electricity from renewables" data-country="United States Virgin Islands" data-detail="United States Virgin Islands · 2.9%"></span><span class="pt" style="left:3%;top:57.11145116481931%" tabindex="0" role="img" aria-label="Benin: 3.0% of electricity from renewables" data-country="Benin" data-detail="Benin · 3.0%"></span><span class="pt" style="left:3.2103498%;top:76.615564964246%" tabindex="0" role="img" aria-label="Belarus: 3.2% of electricity from renewables" data-country="Belarus" data-detail="Belarus · 3.2%"></span><span class="pt" style="left:3.5171862%;top:37.131171646062285%" tabindex="0" role="img" aria-label="Syria: 3.5% of electricity from renewables" data-country="Syria" data-detail="Syria · 3.5%"></span><span class="pt" style="left:3.5650939999999998%;top:32.3113034539856%" tabindex="0" role="img" aria-label="Qatar: 3.6% of electricity from renewables" data-country="Qatar" data-detail="Qatar · 3.6%"></span><span class="pt" style="left:3.6474166%;top:46.191449992824346%" tabindex="0" role="img" aria-label="Cuba: 3.6% of electricity from renewables" data-country="Cuba" data-detail="Cuba · 3.6%"></span><span class="pt" style="left:3.9473681%;top:28.113253945484757%" tabindex="0" role="img" aria-label="Tunisia: 3.9% of electricity from renewables" data-country="Tunisia" data-detail="Tunisia · 3.9%"></span><span class="pt" style="left:4.5359383%;top:42.97266461374238%" tabindex="0" role="img" aria-label="Singapore: 4.5% of electricity from renewables" data-country="Singapore" data-detail="Singapore · 4.5%"></span><span class="pt" style="left:4.545454500000001%;top:58.312525836285204%" tabindex="0" role="img" aria-label="Saint Kitts and Nevis: 4.5% of electricity from renewables" data-country="Saint Kitts and Nevis" data-detail="Saint Kitts and Nevis · 4.5%"></span><span class="pt" style="left:4.888889%;top:73.57079271273687%" tabindex="0" role="img" aria-label="Oman: 4.9% of electricity from renewables" data-country="Oman" data-detail="Oman · 4.9%"></span><span class="pt" style="left:5.376885%;top:70.65993040893227%" tabindex="0" role="img" aria-label="Puerto Rico: 5.4% of electricity from renewables" data-country="Puerto Rico" data-detail="Puerto Rico · 5.4%"></span><span class="pt" style="left:5.5555553%;top:42.888264153618366%" tabindex="0" role="img" aria-label="Antigua and Barbuda: 5.6% of electricity from renewables" data-country="Antigua and Barbuda" data-detail="Antigua and Barbuda · 5.6%"></span><span class="pt" style="left:5.5555553%;top:69.29934589378536%" tabindex="0" role="img" aria-label="Chad: 5.6% of electricity from renewables" data-country="Chad" data-detail="Chad · 5.6%"></span><span class="pt" style="left:6.473482999999999%;top:64.24645037390292%" tabindex="0" role="img" aria-label="Iran: 6.5% of electricity from renewables" data-country="Iran" data-detail="Iran · 6.5%"></span><span class="pt" style="left:6.531454%;top:54.212688468862325%" tabindex="0" role="img" aria-label="Azerbaijan: 6.5% of electricity from renewables" data-country="Azerbaijan" data-detail="Azerbaijan · 6.5%"></span><span class="pt" style="left:7.058823%;top:25.61643788870424%" tabindex="0" role="img" aria-label="Maldives: 7.1% of electricity from renewables" data-country="Maldives" data-detail="Maldives · 7.1%"></span><span class="pt" style="left:7.777777999999999%;top:49.56034909002483%" tabindex="0" role="img" aria-label="Guam: 7.8% of electricity from renewables" data-country="Guam" data-detail="Guam · 7.8%"></span><span class="pt" style="left:8.181818%;top:78.45870445715263%" tabindex="0" role="img" aria-label="Barbados: 8.2% of electricity from renewables" data-country="Barbados" data-detail="Barbados · 8.2%"></span><span class="pt" style="left:8.75664%;top:65.10523406835273%" tabindex="0" role="img" aria-label="United Arab Emirates: 8.8% of electricity from renewables" data-country="United Arab Emirates" data-detail="United Arab Emirates · 8.8%"></span><span class="pt" style="left:8.898966%;top:35.35806210245937%" tabindex="0" role="img" aria-label="Taiwan: 8.9% of electricity from renewables" data-country="Taiwan" data-detail="Taiwan · 8.9%"></span><span class="pt" style="left:9.090909000000002%;top:36.64942620322108%" tabindex="0" role="img" aria-label="Solomon Islands: 9.1% of electricity from renewables" data-country="Solomon Islands" data-detail="Solomon Islands · 9.1%"></span><span class="pt" style="left:9.167672%;top:36.7049554749392%" tabindex="0" role="img" aria-label="Mongolia: 9.2% of electricity from renewables" data-country="Mongolia" data-detail="Mongolia · 9.2%"></span><span class="pt" style="left:9.566147%;top:62.619303134735674%" tabindex="0" role="img" aria-label="South Korea: 9.6% of electricity from renewables" data-country="South Korea" data-detail="South Korea · 9.6%"></span><span class="pt" style="left:9.606299%;top:29.921228790190067%" tabindex="0" role="img" aria-label="Moldova: 9.6% of electricity from renewables" data-country="Moldova" data-detail="Moldova · 9.6%"></span><span class="pt" style="left:9.895833%;top:57.134219558909535%" tabindex="0" role="img" aria-label="Uzbekistan: 9.9% of electricity from renewables" data-country="Uzbekistan" data-detail="Uzbekistan · 9.9%"></span><span class="pt" style="left:10.15625%;top:53.92756889853626%" tabindex="0" role="img" aria-label="Yemen: 10.2% of electricity from renewables" data-country="Yemen" data-detail="Yemen · 10.2%"></span><span class="pt" style="left:10.204082%;top:67.28804713161662%" tabindex="0" role="img" aria-label="Eritrea: 10.2% of electricity from renewables" data-country="Eritrea" data-detail="Eritrea · 10.2%"></span><span class="pt" style="left:11.111111%;top:22.619498162530363%" tabindex="0" role="img" aria-label="Sao Tome and Principe: 11.1% of electricity from renewables" data-country="Sao Tome and Principe" data-detail="Sao Tome and Principe · 11.1%"></span><span class="pt" style="left:11.702415%;top:62.73205152340233%" tabindex="0" role="img" aria-label="Egypt: 11.7% of electricity from renewables" data-country="Egypt" data-detail="Egypt · 11.7%"></span><span class="pt" style="left:11.791295%;top:67.42038796143606%" tabindex="0" role="img" aria-label="Israel: 11.8% of electricity from renewables" data-country="Israel" data-detail="Israel · 11.8%"></span><span class="pt" style="left:12.159328%;top:29.526989079546183%" tabindex="0" role="img" aria-label="Jamaica: 12.2% of electricity from renewables" data-country="Jamaica" data-detail="Jamaica · 12.2%"></span><span class="pt" style="left:12.39751%;top:23.677037081681192%" tabindex="0" role="img" aria-label="South Africa: 12.4% of electricity from renewables" data-country="South Africa" data-detail="South Africa · 12.4%"></span><span class="pt" style="left:12.618297%;top:50.42313873115927%" tabindex="0" role="img" aria-label="Kosovo: 12.6% of electricity from renewables" data-country="Kosovo" data-detail="Kosovo · 12.6%"></span><span class="pt" style="left:12.729994%;top:59.007527640555054%" tabindex="0" role="img" aria-label="Kazakhstan: 12.7% of electricity from renewables" data-country="Kazakhstan" data-detail="Kazakhstan · 12.7%"></span><span class="pt" style="left:13.333332%;top:48.44487666944042%" tabindex="0" role="img" aria-label="Dominica: 13.3% of electricity from renewables" data-country="Dominica" data-detail="Dominica · 13.3%"></span><span class="pt" style="left:13.333332%;top:68.81008222978562%" tabindex="0" role="img" aria-label="Saint Vincent and the Grenadines: 13.3% of electricity from renewables" data-country="Saint Vincent and the Grenadines" data-detail="Saint Vincent and the Grenadines · 13.3%"></span><span class="pt" style="left:13.617022%;top:43.2714530043304%" tabindex="0" role="img" aria-label="Malta: 13.6% of electricity from renewables" data-country="Malta" data-detail="Malta · 13.6%"></span><span class="pt" style="left:14.285713999999999%;top:28.090603577904403%" tabindex="0" role="img" aria-label="Tonga: 14.3% of electricity from renewables" data-country="Tonga" data-detail="Tonga · 14.3%"></span><span class="pt" style="left:14.5161295%;top:33.279516628943384%" tabindex="0" role="img" aria-label="Seychelles: 14.5% of electricity from renewables" data-country="Seychelles" data-detail="Seychelles · 14.5%"></span><span class="pt" style="left:14.696569%;top:55.48272201931104%" tabindex="0" role="img" aria-label="Czechia: 14.7% of electricity from renewables" data-country="Czechia" data-detail="Czechia · 14.7%"></span><span class="pt" style="left:15.623688%;top:75.89305978268385%" tabindex="0" role="img" aria-label="Thailand: 15.6% of electricity from renewables" data-country="Thailand" data-detail="Thailand · 15.6%"></span><span class="pt" style="left:15.976332000000001%;top:21.54763663187623%" tabindex="0" role="img" aria-label="Burkina Faso: 16.0% of electricity from renewables" data-country="Burkina Faso" data-detail="Burkina Faso · 16.0%"></span><span class="pt" style="left:16.951219999999996%;top:36.1809923411347%" tabindex="0" role="img" aria-label="Senegal: 17.0% of electricity from renewables" data-country="Senegal" data-detail="Senegal · 17.0%"></span><span class="pt" style="left:17%;top:46.49209405994043%" tabindex="0" role="img" aria-label="Aruba: 17.0% of electricity from renewables" data-country="Aruba" data-detail="Aruba · 17.0%"></span><span class="pt" style="left:17.263844%;top:32.12801203830168%" tabindex="0" role="img" aria-label="Dominican Republic: 17.3% of electricity from renewables" data-country="Dominican Republic" data-detail="Dominican Republic · 17.3%"></span><span class="pt" style="left:17.431192%;top:41.21704354695976%" tabindex="0" role="img" aria-label="Mauritius: 17.4% of electricity from renewables" data-country="Mauritius" data-detail="Mauritius · 17.4%"></span><span class="pt" style="left:17.746658%;top:61.47664946550503%" tabindex="0" role="img" aria-label="Russia: 17.7% of electricity from renewables" data-country="Russia" data-detail="Russia · 17.7%"></span><span class="pt" style="left:18.596691%;top:78.69752514455467%" tabindex="0" role="img" aria-label="Indonesia: 18.6% of electricity from renewables" data-country="Indonesia" data-detail="Indonesia · 18.6%"></span><span class="pt" style="left:19.047618999999997%;top:29.170697714202102%" tabindex="0" role="img" aria-label="Somalia: 19.0% of electricity from renewables" data-country="Somalia" data-detail="Somalia · 19.0%"></span><span class="pt" style="left:19.158678%;top:24.87752854824066%" tabindex="0" role="img" aria-label="Malaysia: 19.2% of electricity from renewables" data-country="Malaysia" data-detail="Malaysia · 19.2%"></span><span class="pt" style="left:19.286749%;top:73.7356807840988%" tabindex="0" role="img" aria-label="India: 19.3% of electricity from renewables" data-country="India" data-detail="India · 19.3%"></span><span class="pt" style="left:19.800333%;top:46.21683625271544%" tabindex="0" role="img" aria-label="Mali: 19.8% of electricity from renewables" data-country="Mali" data-detail="Mali · 19.8%"></span><span class="pt" style="left:20.267273%;top:43.74385966034606%" tabindex="0" role="img" aria-label="Mexico: 20.3% of electricity from renewables" data-country="Mexico" data-detail="Mexico · 20.3%"></span><span class="pt" style="left:20.450283%;top:47.56019643275067%" tabindex="0" role="img" aria-label="Cyprus: 20.5% of electricity from renewables" data-country="Cyprus" data-detail="Cyprus · 20.5%"></span><span class="pt" style="left:21.425512%;top:54.52572618378326%" tabindex="0" role="img" aria-label="Philippines: 21.4% of electricity from renewables" data-country="Philippines" data-detail="Philippines · 21.4%"></span><span class="pt" style="left:21.531101000000003%;top:44.1550744054839%" tabindex="0" role="img" aria-label="Mauritania: 21.5% of electricity from renewables" data-country="Mauritania" data-detail="Mauritania · 21.5%"></span><span class="pt" style="left:21.714556%;top:28.78242988837883%" tabindex="0" role="img" aria-label="Morocco: 21.7% of electricity from renewables" data-country="Morocco" data-detail="Morocco · 21.7%"></span><span class="pt" style="left:21.960453%;top:25.200941009446982%" tabindex="0" role="img" aria-label="Jordan: 22.0% of electricity from renewables" data-country="Jordan" data-detail="Jordan · 22.0%"></span><span class="pt" style="left:22.137018%;top:44.67445885343477%" tabindex="0" role="img" aria-label="Japan: 22.1% of electricity from renewables" data-country="Japan" data-detail="Japan · 22.1%"></span><span class="pt" style="left:22.35294%;top:36.953114949166775%" tabindex="0" role="img" aria-label="Haiti: 22.4% of electricity from renewables" data-country="Haiti" data-detail="Haiti · 22.4%"></span><span class="pt" style="left:22.678398%;top:52.00590522075071%" tabindex="0" role="img" aria-label="Nigeria: 22.7% of electricity from renewables" data-country="Nigeria" data-detail="Nigeria · 22.7%"></span><span class="pt" style="left:22.678899999999995%;top:55.0798101015389%" tabindex="0" role="img" aria-label="United States: 22.7% of electricity from renewables" data-country="United States" data-detail="United States · 22.7%"></span><span class="pt" style="left:22.722654%;top:29.63913157628849%" tabindex="0" role="img" aria-label="Slovakia: 22.7% of electricity from renewables" data-country="Slovakia" data-detail="Slovakia · 22.7%"></span><span class="pt" style="left:23.507462%;top:30.607535511255264%" tabindex="0" role="img" aria-label="Congo: 23.5% of electricity from renewables" data-country="Congo" data-detail="Congo · 23.5%"></span><span class="pt" style="left:23.678646%;top:60.176613157615066%" tabindex="0" role="img" aria-label="Papua New Guinea: 23.7% of electricity from renewables" data-country="Papua New Guinea" data-detail="Papua New Guinea · 23.7%"></span><span class="pt" style="left:24.475525%;top:68.56741946889088%" tabindex="0" role="img" aria-label="Equatorial Guinea: 24.5% of electricity from renewables" data-country="Equatorial Guinea" data-detail="Equatorial Guinea · 24.5%"></span><span class="pt" style="left:25%;top:75.30174190411344%" tabindex="0" role="img" aria-label="Kiribati: 25.0% of electricity from renewables" data-country="Kiribati" data-detail="Kiribati · 25.0%"></span><span class="pt" style="left:25%;top:78.81761322915554%" tabindex="0" role="img" aria-label="Vanuatu: 25.0% of electricity from renewables" data-country="Vanuatu" data-detail="Vanuatu · 25.0%"></span><span class="pt" style="left:25.074850000000005%;top:74.3345875646919%" tabindex="0" role="img" aria-label="Bulgaria: 25.1% of electricity from renewables" data-country="Bulgaria" data-detail="Bulgaria · 25.1%"></span><span class="pt" style="left:25.827814%;top:40.76192126562819%" tabindex="0" role="img" aria-label="Martinique: 25.8% of electricity from renewables" data-country="Martinique" data-detail="Martinique · 25.8%"></span><span class="pt" style="left:26.213593000000003%;top:47.23863964807242%" tabindex="0" role="img" aria-label="New Caledonia: 26.2% of electricity from renewables" data-country="New Caledonia" data-detail="New Caledonia · 26.2%"></span><span class="pt" style="left:26.392796%;top:30.833794113248587%" tabindex="0" role="img" aria-label="Hungary: 26.4% of electricity from renewables" data-country="Hungary" data-detail="Hungary · 26.4%"></span><span class="pt" style="left:26.490067%;top:22.455014581792057%" tabindex="0" role="img" aria-label="Tanzania: 26.5% of electricity from renewables" data-country="Tanzania" data-detail="Tanzania · 26.5%"></span><span class="pt" style="left:26.760564999999996%;top:71.79953884566203%" tabindex="0" role="img" aria-label="Togo: 26.8% of electricity from renewables" data-country="Togo" data-detail="Togo · 26.8%"></span><span class="pt" style="left:26.889639%;top:35.20462993532419%" tabindex="0" role="img" aria-label="France: 26.9% of electricity from renewables" data-country="France" data-detail="France · 26.9%"></span><span class="pt" style="left:27.706621%;top:54.057292321696885%" tabindex="0" role="img" aria-label="Poland: 27.7% of electricity from renewables" data-country="Poland" data-detail="Poland · 27.7%"></span><span class="pt" style="left:27.976881%;top:63.29269053088501%" tabindex="0" role="img" aria-label="Armenia: 28.0% of electricity from renewables" data-country="Armenia" data-detail="Armenia · 28.0%"></span><span class="pt" style="left:28.000000000000004%;top:33.94684913009405%" tabindex="0" role="img" aria-label="Cape Verde: 28.0% of electricity from renewables" data-country="Cape Verde" data-detail="Cape Verde · 28.0%"></span><span class="pt" style="left:30.145719999999997%;top:48.95417283521965%" tabindex="0" role="img" aria-label="Cote d&#x27;Ivoire: 30.1% of electricity from renewables" data-country="Cote d&#x27;Ivoire" data-detail="Cote d&#x27;Ivoire · 30.1%"></span><span class="pt" style="left:30.605776000000002%;top:32.18615871667862%" tabindex="0" role="img" aria-label="China: 30.6% of electricity from renewables" data-country="China" data-detail="China · 30.6%"></span><span class="pt" style="left:32.07547399999999%;top:40.09751541679725%" tabindex="0" role="img" aria-label="North Macedonia: 32.1% of electricity from renewables" data-country="North Macedonia" data-detail="North Macedonia · 32.1%"></span><span class="pt" style="left:33.18602%;top:53.861320334952325%" tabindex="0" role="img" aria-label="Pakistan: 33.2% of electricity from renewables" data-country="Pakistan" data-detail="Pakistan · 33.2%"></span><span class="pt" style="left:33.30677%;top:21.33636666741222%" tabindex="0" role="img" aria-label="Bolivia: 33.3% of electricity from renewables" data-country="Bolivia" data-detail="Bolivia · 33.3%"></span><span class="pt" style="left:33.333332%;top:32.1809490211308%" tabindex="0" role="img" aria-label="Macao: 33.3% of electricity from renewables" data-country="Macao" data-detail="Macao · 33.3%"></span><span class="pt" style="left:33.4348%;top:56.65831528045238%" tabindex="0" role="img" aria-label="Belgium: 33.4% of electricity from renewables" data-country="Belgium" data-detail="Belgium · 33.4%"></span><span class="pt" style="left:33.80282%;top:67.24611329846084%" tabindex="0" role="img" aria-label="French Polynesia: 33.8% of electricity from renewables" data-country="French Polynesia" data-detail="French Polynesia · 33.8%"></span><span class="pt" style="left:34.076435%;top:48.91689106961712%" tabindex="0" role="img" aria-label="Lebanon: 34.1% of electricity from renewables" data-country="Lebanon" data-detail="Lebanon · 34.1%"></span><span class="pt" style="left:34.767097%;top:64.6520981839858%" tabindex="0" role="img" aria-label="Argentina: 34.8% of electricity from renewables" data-country="Argentina" data-detail="Argentina · 34.8%"></span><span class="pt" style="left:34.81015%;top:45.60906585678458%" tabindex="0" role="img" aria-label="Australia: 34.8% of electricity from renewables" data-country="Australia" data-detail="Australia · 34.8%"></span><span class="pt" style="left:34.960587000000004%;top:25.77813777234405%" tabindex="0" role="img" aria-label="Serbia: 35.0% of electricity from renewables" data-country="Serbia" data-detail="Serbia · 35.0%"></span><span class="pt" style="left:35%;top:32.12205284740776%" tabindex="0" role="img" aria-label="Djibouti: 35.0% of electricity from renewables" data-country="Djibouti" data-detail="Djibouti · 35.0%"></span><span class="pt" style="left:35.32934%;top:56.56329132709652%" tabindex="0" role="img" aria-label="Guadeloupe: 35.3% of electricity from renewables" data-country="Guadeloupe" data-detail="Guadeloupe · 35.3%"></span><span class="pt" style="left:35.521236%;top:63.807506286073476%" tabindex="0" role="img" aria-label="Gabon: 35.5% of electricity from renewables" data-country="Gabon" data-detail="Gabon · 35.5%"></span><span class="pt" style="left:38.518517%;top:65.86191574344411%" tabindex="0" role="img" aria-label="Ghana: 38.5% of electricity from renewables" data-country="Ghana" data-detail="Ghana · 38.5%"></span><span class="pt" style="left:39.999996%;top:46.13608655240387%" tabindex="0" role="img" aria-label="Samoa: 40.0% of electricity from renewables" data-country="Samoa" data-detail="Samoa · 40.0%"></span><span class="pt" style="left:40%;top:59.78268278716132%" tabindex="0" role="img" aria-label="Palestine: 40.0% of electricity from renewables" data-country="Palestine" data-detail="Palestine · 40.0%"></span><span class="pt" style="left:40.51447%;top:28.506291865371168%" tabindex="0" role="img" aria-label="Slovenia: 40.5% of electricity from renewables" data-country="Slovenia" data-detail="Slovenia · 40.5%"></span><span class="pt" style="left:42.008816%;top:29.01952571421862%" tabindex="0" role="img" aria-label="Turkey: 42.0% of electricity from renewables" data-country="Turkey" data-detail="Turkey · 42.0%"></span><span class="pt" style="left:42.13235%;top:70.99496460566297%" tabindex="0" role="img" aria-label="Cambodia: 42.1% of electricity from renewables" data-country="Cambodia" data-detail="Cambodia · 42.1%"></span><span class="pt" style="left:42.94081500000001%;top:77.18574370071292%" tabindex="0" role="img" aria-label="Vietnam: 42.9% of electricity from renewables" data-country="Vietnam" data-detail="Vietnam · 42.9%"></span><span class="pt" style="left:43.07334%;top:72.09155851043761%" tabindex="0" role="img" aria-label="Bosnia and Herzegovina: 43.1% of electricity from renewables" data-country="Bosnia and Herzegovina" data-detail="Bosnia and Herzegovina · 43.1%"></span><span class="pt" style="left:43.951614%;top:29.46809290582314%" tabindex="0" role="img" aria-label="Madagascar: 44.0% of electricity from renewables" data-country="Madagascar" data-detail="Madagascar · 44.0%"></span><span class="pt" style="left:44.5498%;top:68.53792969463393%" tabindex="0" role="img" aria-label="Italy: 44.5% of electricity from renewables" data-country="Italy" data-detail="Italy · 44.5%"></span><span class="pt" style="left:45.26149%;top:64.69958625826985%" tabindex="0" role="img" aria-label="Ireland: 45.3% of electricity from renewables" data-country="Ireland" data-detail="Ireland · 45.3%"></span><span class="pt" style="left:46.378147000000006%;top:70.59719216171652%" tabindex="0" role="img" aria-label="United Kingdom: 46.4% of electricity from renewables" data-country="United Kingdom" data-detail="United Kingdom · 46.4%"></span><span class="pt" style="left:46.492893%;top:30.58563463902101%" tabindex="0" role="img" aria-label="Myanmar: 46.5% of electricity from renewables" data-country="Myanmar" data-detail="Myanmar · 46.5%"></span><span class="pt" style="left:46.938774%;top:38.3765811258927%" tabindex="0" role="img" aria-label="Faroe Islands: 46.9% of electricity from renewables" data-country="Faroe Islands" data-detail="Faroe Islands · 46.9%"></span><span class="pt" style="left:47.38246%;top:53.1540429093875%" tabindex="0" role="img" aria-label="Netherlands: 47.4% of electricity from renewables" data-country="Netherlands" data-detail="Netherlands · 47.4%"></span><span class="pt" style="left:48.56620000000001%;top:59.99944946495817%" tabindex="0" role="img" aria-label="Sri Lanka: 48.6% of electricity from renewables" data-country="Sri Lanka" data-detail="Sri Lanka · 48.6%"></span><span class="pt" style="left:48.780487%;top:78.39186269557104%" tabindex="0" role="img" aria-label="Estonia: 48.8% of electricity from renewables" data-country="Estonia" data-detail="Estonia · 48.8%"></span><span class="pt" style="left:49.09091%;top:45.62086630659178%" tabindex="0" role="img" aria-label="Rwanda: 49.1% of electricity from renewables" data-country="Rwanda" data-detail="Rwanda · 49.1%"></span><span class="pt" style="left:49.79807%;top:52.01801501074805%" tabindex="0" role="img" aria-label="Romania: 49.8% of electricity from renewables" data-country="Romania" data-detail="Romania · 49.8%"></span><span class="pt" style="left:49.82628%;top:59.98446082742884%" tabindex="0" role="img" aria-label="Greece: 49.8% of electricity from renewables" data-country="Greece" data-detail="Greece · 49.8%"></span><span class="pt" style="left:50%;top:33.32635081745684%" tabindex="0" role="img" aria-label="Cook Islands: 50.0% of electricity from renewables" data-country="Cook Islands" data-detail="Cook Islands · 50.0%"></span><span class="pt" style="left:51.51374%;top:77.48559092683718%" tabindex="0" role="img" aria-label="Spain: 51.5% of electricity from renewables" data-country="Spain" data-detail="Spain · 51.5%"></span><span class="pt" style="left:51.889107%;top:23.660990067757666%" tabindex="0" role="img" aria-label="Finland: 51.9% of electricity from renewables" data-country="Finland" data-detail="Finland · 51.9%"></span><span class="pt" style="left:53.17919%;top:24.43402809696272%" tabindex="0" role="img" aria-label="Suriname: 53.2% of electricity from renewables" data-country="Suriname" data-detail="Suriname · 53.2%"></span><span class="pt" style="left:54.363490000000006%;top:55.35299859615043%" tabindex="0" role="img" aria-label="Honduras: 54.4% of electricity from renewables" data-country="Honduras" data-detail="Honduras · 54.4%"></span><span class="pt" style="left:54.37818%;top:75.37593605555594%" tabindex="0" role="img" aria-label="Peru: 54.4% of electricity from renewables" data-country="Peru" data-detail="Peru · 54.4%"></span><span class="pt" style="left:54.685036%;top:42.08368991361931%" tabindex="0" role="img" aria-label="Germany: 54.7% of electricity from renewables" data-country="Germany" data-detail="Germany · 54.7%"></span><span class="pt" style="left:56.15616%;top:28.012423938605934%" tabindex="0" role="img" aria-label="Zimbabwe: 56.2% of electricity from renewables" data-country="Zimbabwe" data-detail="Zimbabwe · 56.2%"></span><span class="pt" style="left:56.677525%;top:47.46400579949841%" tabindex="0" role="img" aria-label="Reunion: 56.7% of electricity from renewables" data-country="Reunion" data-detail="Reunion · 56.7%"></span><span class="pt" style="left:57.37705%;top:53.44824991328642%" tabindex="0" role="img" aria-label="Liberia: 57.4% of electricity from renewables" data-country="Liberia" data-detail="Liberia · 57.4%"></span><span class="pt" style="left:60.64073%;top:54.54102416150272%" tabindex="0" role="img" aria-label="Panama: 60.6% of electricity from renewables" data-country="Panama" data-detail="Panama · 60.6%"></span><span class="pt" style="left:60.85918800000001%;top:37.15809135930613%" tabindex="0" role="img" aria-label="Montenegro: 60.9% of electricity from renewables" data-country="Montenegro" data-detail="Montenegro · 60.9%"></span><span class="pt" style="left:62.389377999999994%;top:40.68148090550676%" tabindex="0" role="img" aria-label="Nicaragua: 62.4% of electricity from renewables" data-country="Nicaragua" data-detail="Nicaragua · 62.4%"></span><span class="pt" style="left:62.68712600000001%;top:70.20679452456534%" tabindex="0" role="img" aria-label="North Korea: 62.7% of electricity from renewables" data-country="North Korea" data-detail="North Korea · 62.7%"></span><span class="pt" style="left:63.140198000000005%;top:32.63929460104555%" tabindex="0" role="img" aria-label="Chile: 63.1% of electricity from renewables" data-country="Chile" data-detail="Chile · 63.1%"></span><span class="pt" style="left:63.165405%;top:34.67840608069673%" tabindex="0" role="img" aria-label="Switzerland: 63.2% of electricity from renewables" data-country="Switzerland" data-detail="Switzerland · 63.2%"></span><span class="pt" style="left:63.47826400000001%;top:73.28532859683037%" tabindex="0" role="img" aria-label="Fiji: 63.5% of electricity from renewables" data-country="Fiji" data-detail="Fiji · 63.5%"></span><span class="pt" style="left:65.30612%;top:52.05259645404294%" tabindex="0" role="img" aria-label="French Guiana: 65.3% of electricity from renewables" data-country="French Guiana" data-detail="French Guiana · 65.3%"></span><span class="pt" style="left:65.397026%;top:32.62399662332609%" tabindex="0" role="img" aria-label="Canada: 65.4% of electricity from renewables" data-country="Canada" data-detail="Canada · 65.4%"></span><span class="pt" style="left:66.99007%;top:33.09978287527338%" tabindex="0" role="img" aria-label="Colombia: 67.0% of electricity from renewables" data-country="Colombia" data-detail="Colombia · 67.0%"></span><span class="pt" style="left:67.27028999999999%;top:72.21376371243969%" tabindex="0" role="img" aria-label="Guatemala: 67.3% of electricity from renewables" data-country="Guatemala" data-detail="Guatemala · 67.3%"></span><span class="pt" style="left:69.40681000000001%;top:38.25069977622479%" tabindex="0" role="img" aria-label="Sweden: 69.4% of electricity from renewables" data-country="Sweden" data-detail="Sweden · 69.4%"></span><span class="pt" style="left:70.126144%;top:51.230868100654334%" tabindex="0" role="img" aria-label="Croatia: 70.1% of electricity from renewables" data-country="Croatia" data-detail="Croatia · 70.1%"></span><span class="pt" style="left:73.26869999999998%;top:53.494870465714484%" tabindex="0" role="img" aria-label="Cameroon: 73.3% of electricity from renewables" data-country="Cameroon" data-detail="Cameroon · 73.3%"></span><span class="pt" style="left:73.618095%;top:78.1293328050524%" tabindex="0" role="img" aria-label="Ecuador: 73.6% of electricity from renewables" data-country="Ecuador" data-detail="Ecuador · 73.6%"></span><span class="pt" style="left:74.031746%;top:48.29728520754725%" tabindex="0" role="img" aria-label="Angola: 74.0% of electricity from renewables" data-country="Angola" data-detail="Angola · 74.0%"></span><span class="pt" style="left:74.46901%;top:71.79277011984959%" tabindex="0" role="img" aria-label="Portugal: 74.5% of electricity from renewables" data-country="Portugal" data-detail="Portugal · 74.5%"></span><span class="pt" style="left:74.5%;top:71.9812365793623%" tabindex="0" role="img" aria-label="Guinea: 74.5% of electricity from renewables" data-country="Guinea" data-detail="Guinea · 74.5%"></span><span class="pt" style="left:76%;top:64.13704376947135%" tabindex="0" role="img" aria-label="Burundi: 76.0% of electricity from renewables" data-country="Burundi" data-detail="Burundi · 76.0%"></span><span class="pt" style="left:76.09147%;top:57.22769717592746%" tabindex="0" role="img" aria-label="Georgia: 76.1% of electricity from renewables" data-country="Georgia" data-detail="Georgia · 76.1%"></span><span class="pt" style="left:76.71128%;top:55.94248367426917%" tabindex="0" role="img" aria-label="Laos: 76.7% of electricity from renewables" data-country="Laos" data-detail="Laos · 76.7%"></span><span class="pt" style="left:77.74294%;top:48.28109477926046%" tabindex="0" role="img" aria-label="Latvia: 77.7% of electricity from renewables" data-country="Latvia" data-detail="Latvia · 77.7%"></span><span class="pt" style="left:80.97864%;top:28.47569590993226%" tabindex="0" role="img" aria-label="Sudan: 81.0% of electricity from renewables" data-country="Sudan" data-detail="Sudan · 81.0%"></span><span class="pt" style="left:81.96721%;top:56.585941694676876%" tabindex="0" role="img" aria-label="Greenland: 82.0% of electricity from renewables" data-country="Greenland" data-detail="Greenland · 82.0%"></span><span class="pt" style="left:83.56714%;top:43.277412195224315%" tabindex="0" role="img" aria-label="Mozambique: 83.6% of electricity from renewables" data-country="Mozambique" data-detail="Mozambique · 83.6%"></span><span class="pt" style="left:83.77357999999998%;top:68.22304648533463%" tabindex="0" role="img" aria-label="Lithuania: 83.8% of electricity from renewables" data-country="Lithuania" data-detail="Lithuania · 83.8%"></span><span class="pt" style="left:84.75626%;top:47.195041452068835%" tabindex="0" role="img" aria-label="Austria: 84.8% of electricity from renewables" data-country="Austria" data-detail="Austria · 84.8%"></span><span class="pt" style="left:86.39717000000002%;top:40.73958023823798%" tabindex="0" role="img" aria-label="Denmark: 86.4% of electricity from renewables" data-country="Denmark" data-detail="Denmark · 86.4%"></span><span class="pt" style="left:86.47059%;top:75.3243922716938%" tabindex="0" role="img" aria-label="Kyrgyzstan: 86.5% of electricity from renewables" data-country="Kyrgyzstan" data-detail="Kyrgyzstan · 86.5%"></span><span class="pt" style="left:86.59793%;top:64.60819064779207%" tabindex="0" role="img" aria-label="Afghanistan: 86.6% of electricity from renewables" data-country="Afghanistan" data-detail="Afghanistan · 86.6%"></span><span class="pt" style="left:87.79264%;top:41.18078504689038%" tabindex="0" role="img" aria-label="El Salvador: 87.8% of electricity from renewables" data-country="El Salvador" data-detail="El Salvador · 87.8%"></span><span class="pt" style="left:88.88889%;top:74.80302142677829%" tabindex="0" role="img" aria-label="Belize: 88.9% of electricity from renewables" data-country="Belize" data-detail="Belize · 88.9%"></span><span class="pt" style="left:88.994804%;top:77.77900063060224%" tabindex="0" role="img" aria-label="Brazil: 89.0% of electricity from renewables" data-country="Brazil" data-detail="Brazil · 89.0%"></span><span class="pt" style="left:89.00308%;top:66.24518705066293%" tabindex="0" role="img" aria-label="Zambia: 89.0% of electricity from renewables" data-country="Zambia" data-detail="Zambia · 89.0%"></span><span class="pt" style="left:89.3617%;top:51.681600308977075%" tabindex="0" role="img" aria-label="Luxembourg: 89.4% of electricity from renewables" data-country="Luxembourg" data-detail="Luxembourg · 89.4%"></span><span class="pt" style="left:89.62462%;top:46.770205785986036%" tabindex="0" role="img" aria-label="New Zealand: 89.6% of electricity from renewables" data-country="New Zealand" data-detail="New Zealand · 89.6%"></span><span class="pt" style="left:89.765625%;top:63.54683207208291%" tabindex="0" role="img" aria-label="Kenya: 89.8% of electricity from renewables" data-country="Kenya" data-detail="Kenya · 89.8%"></span><span class="pt" style="left:90.34186%;top:62.92328852694482%" tabindex="0" role="img" aria-label="Venezuela: 90.3% of electricity from renewables" data-country="Venezuela" data-detail="Venezuela · 90.3%"></span><span class="pt" style="left:92.4337%;top:52.35900839837267%" tabindex="0" role="img" aria-label="Uruguay: 92.4% of electricity from renewables" data-country="Uruguay" data-detail="Uruguay · 92.4%"></span><span class="pt" style="left:94.206314%;top:27.40494056046009%" tabindex="0" role="img" aria-label="Tajikistan: 94.2% of electricity from renewables" data-country="Tajikistan" data-detail="Tajikistan · 94.2%"></span><span class="pt" style="left:95.23810000000002%;top:38.235401798505336%" tabindex="0" role="img" aria-label="Sierra Leone: 95.2% of electricity from renewables" data-country="Sierra Leone" data-detail="Sierra Leone · 95.2%"></span><span class="pt" style="left:95.62841%;top:31.705162769183517%" tabindex="0" role="img" aria-label="Malawi: 95.6% of electricity from renewables" data-country="Malawi" data-detail="Malawi · 95.6%"></span><span class="pt" style="left:96.96969%;top:40.742947140242904%" tabindex="0" role="img" aria-label="Eswatini: 97.0% of electricity from renewables" data-country="Eswatini" data-detail="Eswatini · 97.0%"></span><span class="pt" style="left:97.05373%;top:53.3111741002649%" tabindex="0" role="img" aria-label="Uganda: 97.1% of electricity from renewables" data-country="Uganda" data-detail="Uganda · 97.1%"></span><span class="pt" style="left:97.8836%;top:61.05531132733449%" tabindex="0" role="img" aria-label="Namibia: 97.9% of electricity from renewables" data-country="Namibia" data-detail="Namibia · 97.9%"></span><span class="pt" style="left:98.470345%;top:58.59365991875529%" tabindex="0" role="img" aria-label="Norway: 98.5% of electricity from renewables" data-country="Norway" data-detail="Norway · 98.5%"></span><span class="pt" style="left:99.91467%;top:45.496448188554496%" tabindex="0" role="img" aria-label="Costa Rica: 99.9% of electricity from renewables" data-country="Costa Rica" data-detail="Costa Rica · 99.9%"></span><span class="pt" style="left:100%;top:38.07848424371332%" tabindex="0" role="img" aria-label="Albania: 100.0% of electricity from renewables" data-country="Albania" data-detail="Albania · 100.0%"></span><span class="pt" style="left:100%;top:57.60253539448604%" tabindex="0" role="img" aria-label="Bhutan: 100.0% of electricity from renewables" data-country="Bhutan" data-detail="Bhutan · 100.0%"></span><span class="pt" style="left:100%;top:34.43654016079381%" tabindex="0" role="img" aria-label="Central African Republic: 100.0% of electricity from renewables" data-country="Central African Republic" data-detail="Central African Republic · 100.0%"></span><span class="pt" style="left:100%;top:31.287239337805662%" tabindex="0" role="img" aria-label="Democratic Republic of Congo: 100.0% of electricity from renewables" data-country="Democratic Republic of Congo" data-detail="Democratic Republic of Congo · 100.0%"></span><span class="pt" style="left:100%;top:22.659528514370322%" tabindex="0" role="img" aria-label="Ethiopia: 100.0% of electricity from renewables" data-country="Ethiopia" data-detail="Ethiopia · 100.0%"></span><span class="pt" style="left:100%;top:71.49861092073843%" tabindex="0" role="img" aria-label="Iceland: 100.0% of electricity from renewables" data-country="Iceland" data-detail="Iceland · 100.0%"></span><span class="pt" style="left:100%;top:47.65522038610652%" tabindex="0" role="img" aria-label="Nepal: 100.0% of electricity from renewables" data-country="Nepal" data-detail="Nepal · 100.0%"></span><span class="pt" style="left:100%;top:74.2850174838677%" tabindex="0" role="img" aria-label="Paraguay: 100.0% of electricity from renewables" data-country="Paraguay" data-detail="Paraguay · 100.0%"></span><span class="note rule-label world" style="left:30.323100000000004%;top:21.000000000000004%">World 30.3%</span><span class="note rule-label median" style="left:26.490067%;top:79%">median 26.5%</span><span class="end-label at-floor" style="top:21.000000000000004%">15 at 0%</span><span class="end-label at-ceiling" style="top:21.000000000000004%">8 at 100%</span></div><div class="x-axis"><span class="axis-label x first" style="left:0%;color:#a6a8a8">0%</span><span class="axis-label x" style="left:25%;color:#a6a8a8">25%</span><span class="axis-label x" style="left:50%;color:#a6a8a8">50%</span><span class="axis-label x" style="left:75%;color:#a6a8a8">75%</span><span class="axis-label x last" style="left:100%;color:#a6a8a8">100%</span></div></div><p class="chart-source">Source: Ember (2026) and other sources, with major processing by Our World in Data</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>American Samoa · 0.0%</td></tr><tr><td>British Virgin Islands · 0.0%</td></tr><tr><td>Brunei · 0.0%</td></tr><tr><td>Comoros · 0.0%</td></tr><tr><td>East Timor · 0.0%</td></tr><tr><td>Falkland Islands · 0.0%</td></tr><tr><td>Gambia · 0.0%</td></tr><tr><td>Gibraltar · 0.0%</td></tr><tr><td>Grenada · 0.0%</td></tr><tr><td>Guinea-Bissau · 0.0%</td></tr><tr><td>Montserrat · 0.0%</td></tr><tr><td>Nauru · 0.0%</td></tr><tr><td>Saint Helena · 0.0%</td></tr><tr><td>Saint Pierre and Miquelon · 0.0%</td></tr><tr><td>Turks and Caicos Islands · 0.0%</td></tr><tr><td>Libya · 0.0%</td></tr><tr><td>Turkmenistan · 0.0%</td></tr><tr><td>Trinidad and Tobago · 0.1%</td></tr><tr><td>Bahrain · 0.2%</td></tr><tr><td>Botswana · 0.3%</td></tr><tr><td>Bahamas · 0.9%</td></tr><tr><td>Algeria · 0.9%</td></tr><tr><td>Hong Kong · 1.0%</td></tr><tr><td>Saudi Arabia · 1.1%</td></tr><tr><td>Iraq · 1.2%</td></tr><tr><td>Bermuda · 1.6%</td></tr><tr><td>Bangladesh · 1.7%</td></tr><tr><td>South Sudan · 1.8%</td></tr><tr><td>Niger · 2.1%</td></tr><tr><td>Kuwait · 2.1%</td></tr><tr><td>Saint Lucia · 2.5%</td></tr><tr><td>Cayman Islands · 2.9%</td></tr><tr><td>Guyana · 2.9%</td></tr><tr><td>United States Virgin Islands · 2.9%</td></tr><tr><td>Benin · 3.0%</td></tr><tr><td>Belarus · 3.2%</td></tr><tr><td>Syria · 3.5%</td></tr><tr><td>Qatar · 3.6%</td></tr><tr><td>Cuba · 3.6%</td></tr><tr><td>Tunisia · 3.9%</td></tr><tr><td>Singapore · 4.5%</td></tr><tr><td>Saint Kitts and Nevis · 4.5%</td></tr><tr><td>Oman · 4.9%</td></tr><tr><td>Puerto Rico · 5.4%</td></tr><tr><td>Antigua and Barbuda · 5.6%</td></tr><tr><td>Chad · 5.6%</td></tr><tr><td>Iran · 6.5%</td></tr><tr><td>Azerbaijan · 6.5%</td></tr><tr><td>Maldives · 7.1%</td></tr><tr><td>Guam · 7.8%</td></tr><tr><td>Barbados · 8.2%</td></tr><tr><td>United Arab Emirates · 8.8%</td></tr><tr><td>Taiwan · 8.9%</td></tr><tr><td>Solomon Islands · 9.1%</td></tr><tr><td>Mongolia · 9.2%</td></tr><tr><td>South Korea · 9.6%</td></tr><tr><td>Moldova · 9.6%</td></tr><tr><td>Uzbekistan · 9.9%</td></tr><tr><td>Yemen · 10.2%</td></tr><tr><td>Eritrea · 10.2%</td></tr><tr><td>Sao Tome and Principe · 11.1%</td></tr><tr><td>Egypt · 11.7%</td></tr><tr><td>Israel · 11.8%</td></tr><tr><td>Jamaica · 12.2%</td></tr><tr><td>South Africa · 12.4%</td></tr><tr><td>Kosovo · 12.6%</td></tr><tr><td>Kazakhstan · 12.7%</td></tr><tr><td>Dominica · 13.3%</td></tr><tr><td>Saint Vincent and the Grenadines · 13.3%</td></tr><tr><td>Malta · 13.6%</td></tr><tr><td>Tonga · 14.3%</td></tr><tr><td>Seychelles · 14.5%</td></tr><tr><td>Czechia · 14.7%</td></tr><tr><td>Thailand · 15.6%</td></tr><tr><td>Burkina Faso · 16.0%</td></tr><tr><td>Senegal · 17.0%</td></tr><tr><td>Aruba · 17.0%</td></tr><tr><td>Dominican Republic · 17.3%</td></tr><tr><td>Mauritius · 17.4%</td></tr><tr><td>Russia · 17.7%</td></tr><tr><td>Indonesia · 18.6%</td></tr><tr><td>Somalia · 19.0%</td></tr><tr><td>Malaysia · 19.2%</td></tr><tr><td>India · 19.3%</td></tr><tr><td>Mali · 19.8%</td></tr><tr><td>Mexico · 20.3%</td></tr><tr><td>Cyprus · 20.5%</td></tr><tr><td>Philippines · 21.4%</td></tr><tr><td>Mauritania · 21.5%</td></tr><tr><td>Morocco · 21.7%</td></tr><tr><td>Jordan · 22.0%</td></tr><tr><td>Japan · 22.1%</td></tr><tr><td>Haiti · 22.4%</td></tr><tr><td>Nigeria · 22.7%</td></tr><tr><td>United States · 22.7%</td></tr><tr><td>Slovakia · 22.7%</td></tr><tr><td>Congo · 23.5%</td></tr><tr><td>Papua New Guinea · 23.7%</td></tr><tr><td>Equatorial Guinea · 24.5%</td></tr><tr><td>Kiribati · 25.0%</td></tr><tr><td>Vanuatu · 25.0%</td></tr><tr><td>Bulgaria · 25.1%</td></tr><tr><td>Martinique · 25.8%</td></tr><tr><td>New Caledonia · 26.2%</td></tr><tr><td>Hungary · 26.4%</td></tr><tr><td>Tanzania · 26.5%</td></tr><tr><td>Togo · 26.8%</td></tr><tr><td>France · 26.9%</td></tr><tr><td>Poland · 27.7%</td></tr><tr><td>Armenia · 28.0%</td></tr><tr><td>Cape Verde · 28.0%</td></tr><tr><td>Cote d&#x27;Ivoire · 30.1%</td></tr><tr><td>China · 30.6%</td></tr><tr><td>North Macedonia · 32.1%</td></tr><tr><td>Pakistan · 33.2%</td></tr><tr><td>Bolivia · 33.3%</td></tr><tr><td>Macao · 33.3%</td></tr><tr><td>Belgium · 33.4%</td></tr><tr><td>French Polynesia · 33.8%</td></tr><tr><td>Lebanon · 34.1%</td></tr><tr><td>Argentina · 34.8%</td></tr><tr><td>Australia · 34.8%</td></tr><tr><td>Serbia · 35.0%</td></tr><tr><td>Djibouti · 35.0%</td></tr><tr><td>Guadeloupe · 35.3%</td></tr><tr><td>Gabon · 35.5%</td></tr><tr><td>Ghana · 38.5%</td></tr><tr><td>Samoa · 40.0%</td></tr><tr><td>Palestine · 40.0%</td></tr><tr><td>Slovenia · 40.5%</td></tr><tr><td>Turkey · 42.0%</td></tr><tr><td>Cambodia · 42.1%</td></tr><tr><td>Vietnam · 42.9%</td></tr><tr><td>Bosnia and Herzegovina · 43.1%</td></tr><tr><td>Madagascar · 44.0%</td></tr><tr><td>Italy · 44.5%</td></tr><tr><td>Ireland · 45.3%</td></tr><tr><td>United Kingdom · 46.4%</td></tr><tr><td>Myanmar · 46.5%</td></tr><tr><td>Faroe Islands · 46.9%</td></tr><tr><td>Netherlands · 47.4%</td></tr><tr><td>Sri Lanka · 48.6%</td></tr><tr><td>Estonia · 48.8%</td></tr><tr><td>Rwanda · 49.1%</td></tr><tr><td>Romania · 49.8%</td></tr><tr><td>Greece · 49.8%</td></tr><tr><td>Cook Islands · 50.0%</td></tr><tr><td>Spain · 51.5%</td></tr><tr><td>Finland · 51.9%</td></tr><tr><td>Suriname · 53.2%</td></tr><tr><td>Honduras · 54.4%</td></tr><tr><td>Peru · 54.4%</td></tr><tr><td>Germany · 54.7%</td></tr><tr><td>Zimbabwe · 56.2%</td></tr><tr><td>Reunion · 56.7%</td></tr><tr><td>Liberia · 57.4%</td></tr><tr><td>Panama · 60.6%</td></tr><tr><td>Montenegro · 60.9%</td></tr><tr><td>Nicaragua · 62.4%</td></tr><tr><td>North Korea · 62.7%</td></tr><tr><td>Chile · 63.1%</td></tr><tr><td>Switzerland · 63.2%</td></tr><tr><td>Fiji · 63.5%</td></tr><tr><td>French Guiana · 65.3%</td></tr><tr><td>Canada · 65.4%</td></tr><tr><td>Colombia · 67.0%</td></tr><tr><td>Guatemala · 67.3%</td></tr><tr><td>Sweden · 69.4%</td></tr><tr><td>Croatia · 70.1%</td></tr><tr><td>Cameroon · 73.3%</td></tr><tr><td>Ecuador · 73.6%</td></tr><tr><td>Angola · 74.0%</td></tr><tr><td>Portugal · 74.5%</td></tr><tr><td>Guinea · 74.5%</td></tr><tr><td>Burundi · 76.0%</td></tr><tr><td>Georgia · 76.1%</td></tr><tr><td>Laos · 76.7%</td></tr><tr><td>Latvia · 77.7%</td></tr><tr><td>Sudan · 81.0%</td></tr><tr><td>Greenland · 82.0%</td></tr><tr><td>Mozambique · 83.6%</td></tr><tr><td>Lithuania · 83.8%</td></tr><tr><td>Austria · 84.8%</td></tr><tr><td>Denmark · 86.4%</td></tr><tr><td>Kyrgyzstan · 86.5%</td></tr><tr><td>Afghanistan · 86.6%</td></tr><tr><td>El Salvador · 87.8%</td></tr><tr><td>Belize · 88.9%</td></tr><tr><td>Brazil · 89.0%</td></tr><tr><td>Zambia · 89.0%</td></tr><tr><td>Luxembourg · 89.4%</td></tr><tr><td>New Zealand · 89.6%</td></tr><tr><td>Kenya · 89.8%</td></tr><tr><td>Venezuela · 90.3%</td></tr><tr><td>Uruguay · 92.4%</td></tr><tr><td>Tajikistan · 94.2%</td></tr><tr><td>Sierra Leone · 95.2%</td></tr><tr><td>Malawi · 95.6%</td></tr><tr><td>Eswatini · 97.0%</td></tr><tr><td>Uganda · 97.1%</td></tr><tr><td>Namibia · 97.9%</td></tr><tr><td>Norway · 98.5%</td></tr><tr><td>Costa Rica · 99.9%</td></tr><tr><td>Albania · 100.0%</td></tr><tr><td>Bhutan · 100.0%</td></tr><tr><td>Central African Republic · 100.0%</td></tr><tr><td>Democratic Republic of Congo · 100.0%</td></tr><tr><td>Ethiopia · 100.0%</td></tr><tr><td>Iceland · 100.0%</td></tr><tr><td>Nepal · 100.0%</td></tr><tr><td>Paraguay · 100.0%</td></tr></tbody></table></div>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// THIS BEAT'S OWN INTERACTION SCRIPT. The format's generic `renderWeb` inlines
+// `chart-web/assets/interaction.mjs`, which resolves a pointer to the nearest reading by its
+// x-coordinate ALONE — exactly right for a line, where x is the period and is unique per reading.
+// A dot strip has 211 marks sharing one value axis with a deterministic vertical jitter, so several
+// marks routinely sit within a pixel of each other in x and are metres apart on screen. Resolving
+// by x would answer with whichever of them happened to be marginally closer horizontally, which is
+// silently wrong and is precisely the class of defect a rendered PNG can never show. `nearestDot`
+// below measures real two-dimensional screen distance.
+//
+// The runner beside this file substitutes this script for the skill's own after `renderWeb` has
+// written the page, and fails loudly if the shape it expects to find has changed rather than
+// leaving the wrong script in place.
+//
+// Second difference from the skill's copy: this beat also wires a SEARCH box. The box is delivered
+// `hidden` and revealed here, so a reader with scripting off never meets a dead control. It hides
+// nothing and narrows nothing — the frame states everything the title claims with the box
+// untouched — it only moves focus to one named country and holds it lit, which is the reading 211
+// unlabelled marks cannot give any other way.
+
+/** Index of the dot in `pts` (each `{x, y}` in the same client-pixel space as the pointer) closest
+ *  to `(x, y)`. Squared distance is compared directly: the ordering a `sqrt` would produce is
+ *  identical, and this runs once per pointer move over 211 candidates. */
+function nearestDot(pts, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const dx = pts[i].x - x;
+    const dy = pts[i].y - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Case- and accent-insensitive, so a reader typing "cote d'ivoire" reaches "Cote d'Ivoire" and one
+ *  typing "COSTA RICA" reaches "Costa Rica". Nothing here rewrites a country's own name; this only
+ *  decides what counts as the same string when matching what was typed.
+ *
+ *  An apostrophe is REMOVED rather than treated as a separator, and that is not a detail: driving
+ *  the real page, "Cote dIvoire" typed without one folded to "cote divoire" while the country
+ *  itself folded to "cote d ivoire", and the search answered "no country in this chart is called
+ *  that" about a country that is in it. Every other punctuation mark stays a separator. */
+function foldName(text) {
+  return String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['\u2019\u02bc]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** The dot a typed string names: an exact folded match first, then the single dot whose folded name
+ *  STARTS with what was typed. Several candidates is not a match — "guinea" is the start of three
+ *  countries in this file, and silently picking one of them would be the same defect the pointer
+ *  resolution above exists to avoid. Returns `{ index }`, `{ ambiguous }` or `{ none: true }`. */
+function resolveTyped(names, typed) {
+  const q = foldName(typed);
+  if (q === "") return { none: true };
+  const folded = names.map(foldName);
+  const exact = folded.indexOf(q);
+  if (exact >= 0) return { index: exact };
+  const starts = [];
+  for (let i = 0; i < folded.length; i++) if (folded[i].startsWith(q)) starts.push(i);
+  if (starts.length === 1) return { index: starts[0] };
+  if (starts.length > 1) return { ambiguous: starts.map((i) => names[i]) };
+  return { none: true };
+}
+
+/** Wires one plot: its `.pt` dots, the `.hit-area` rectangle inside its `<svg>`, the shared tooltip,
+ *  and this beat's own search box. Every dot already carries its own `data-detail` and its own
+ *  `aria-label`, baked server-side; nothing here invents or recomputes either. */
+function initStrip(figure, tooltip) {
+  const plot = figure.querySelector(".chart-plot");
+  if (!plot) return;
+  const dots = Array.prototype.slice.call(plot.querySelectorAll(".pt"));
+  if (dots.length === 0) return;
+  const names = dots.map((d) => d.getAttribute("data-country") || "");
+  const hitArea = plot.querySelector(".hit-area");
+
+  // Measured in SCREEN pixels, once and again on resize, never per pointer move: the frame stretches
+  // with `preserveAspectRatio="none"`, so the geometry's own canonical units and the reader's
+  // screen do not share a scale, and "nearest" has to be asked in the space the pointer lives in.
+  let coords = [];
+  function measure() {
+    coords = dots.map((d) => {
+      const r = d.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+  }
+  measure();
+  window.addEventListener("resize", measure);
+
+  let held = null;
+  let hovered = null;
+
+  function paint() {
+    dots.forEach((d) => {
+      d.classList.toggle("pt-held", d === held);
+      d.classList.toggle("pt-active", d === hovered);
+    });
+  }
+
+  function clear() {
+    hovered = null;
+    paint();
+    tooltip.hidden = true;
+  }
+
+  function show(dot, clientX, clientY) {
+    hovered = dot;
+    paint();
+    tooltip.textContent = dot.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path — pointer events fire for mouse, pen and touch alike — and resolve
+  // over the whole plot rectangle, so a touch reader never has to land a tap on a 9px mark.
+  function fromPointer(evt) {
+    const i = nearestDot(coords, evt.clientX, evt.clientY);
+    show(dots[i], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard. Every dot is already `tabIndex=0` at build time and stays reachable with this script
+  // absent entirely; this layer adds the same detail box a hover shows, and arrow keys that walk the
+  // strip in the order it is drawn — which is by value, left to right, because the marks were sorted
+  // that way before they were placed.
+  dots.forEach((dot, i) => {
+    dot.addEventListener("focus", function () {
+      const r = dot.getBoundingClientRect();
+      show(dot, r.left + r.width / 2, r.top);
+    });
+    dot.addEventListener("blur", clear);
+    dot.addEventListener("keydown", function (evt) {
+      let next = null;
+      if (evt.key === "ArrowRight" || evt.key === "ArrowUp") next = Math.min(i + 1, dots.length - 1);
+      else if (evt.key === "ArrowLeft" || evt.key === "ArrowDown") next = Math.max(i - 1, 0);
+      else if (evt.key === "Home") next = 0;
+      else if (evt.key === "End") next = dots.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        dot.blur();
+        return;
+      }
+      if (next !== null && next !== i) {
+        evt.preventDefault();
+        dots[next].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+
+  // THE SEARCH. Revealed only now, because only now does it do anything.
+  const find = figure.querySelector(".chart-find");
+  if (!find) return;
+  const input = find.querySelector("input");
+  const answer = find.querySelector(".find-answer");
+  if (!input || !answer) return;
+  find.hidden = false;
+
+  function hold(index) {
+    held = dots[index];
+    paint();
+    const r = held.getBoundingClientRect();
+    show(held, r.left + r.width / 2, r.top);
+    answer.textContent = held.getAttribute("data-detail");
+  }
+
+  function release(text) {
+    held = null;
+    paint();
+    tooltip.hidden = true;
+    answer.textContent = text;
+  }
+
+  input.addEventListener("input", function () {
+    const typed = input.value;
+    if (typed.trim() === "") return release("");
+    const found = resolveTyped(names, typed);
+    if (found.index !== undefined) return hold(found.index);
+    if (found.ambiguous)
+      return release(
+        found.ambiguous.length + " countries start with that: " + found.ambiguous.join(", "),
+      );
+    return release("No country in this chart is called that.");
+  });
+
+  input.addEventListener("keydown", function (evt) {
+    if (evt.key !== "Enter" || !held) return;
+    evt.preventDefault();
+    held.focus();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll(".chart-figure").forEach(function (figure) {
+    initStrip(figure, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call, so this file can also be read in a context with no
+// `document` (inspecting `nearestDot` or `resolveTyped` directly). In a browser the guard is always
+// true and the inlined script self-starts the moment it is parsed.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

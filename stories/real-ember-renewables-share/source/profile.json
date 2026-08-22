@@ -1,0 +1,49 @@
+{
+  "rowCount": 7585,
+  "columns": [
+    {
+      "name": "entity",
+      "type": "text",
+      "missing": 0,
+      "distinct": 246,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 645,
+      "distinct": 226,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 126,
+      "min": 1900,
+      "max": 2025,
+      "sum": 15229112,
+      "gaps": []
+    },
+    {
+      "name": "renewable_share_of_electricity__pct",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5857,
+      "min": 0,
+      "max": 100,
+      "sum": 221735.85896005918,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

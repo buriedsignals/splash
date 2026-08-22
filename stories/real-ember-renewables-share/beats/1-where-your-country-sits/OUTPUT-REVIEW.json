@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "review-1-where-your-country-sits-1",
+  "outputId": "1-where-your-country-sits",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:703b99b7bbd2e9982a372e2891fcf4b65bc2b1011823fa34eab593785568eac1",
+  "findingIds": [
+    "ember-1-the-world-figure-is-nobodys",
+    "ember-2-three-bodies-disagree-on-europe"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-where-your-country-sits",
+      "planVersion": 1,
+      "draftDigest": "sha256:703b99b7bbd2e9982a372e2891fcf4b65bc2b1011823fa34eab593785568eac1",
+      "findingIds": [
+        "ember-1-the-world-figure-is-nobodys",
+        "ember-2-three-bodies-disagree-on-europe"
+      ],
+      "id": "qa-1-where-your-country-sits-1",
+      "status": "passed",
+      "completedAt": "2026-08-22T14:42:01.958Z"
+    }
+  ],
+  "angleEvidenceBrief": "The page draws 211 country dots on one 0-100% axis with the world own 30.3% as a heavy rule, so the spread from 0% to 100% around a single world figure is readable at rest, and it prints on its own face that six of the seven regional aggregates in this file are published by two or three bodies that disagree, Europe by more than six points, and that no region is drawn for that reason. Both are the storyboard slot own proves and the desk own explicit request.",
+  "decision": "approve",
+  "reviewer": "journalist (decision taken in this run, recorded in APPROVED.md)",
+  "decidedAt": "2026-08-22T14:42:01.958Z",
+  "notes": "Approved after looking at seven photographed viewports and driving the pointer, the keyboard and the search box. Three changes were made because of looking and are listed in APPROVED.md: two rule labels that fell out of the plot at 375px, two count labels whose chips covered the marks they counted, and a caveat that filled two thirds of a phone screen."
+}
