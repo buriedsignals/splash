@@ -249,17 +249,16 @@ const props = {
   // `renderMapWeb` reads `geometry.points` for the filter vocabulary and hands it to the table, so
   // for this beat those points ARE the routes: the table is a table of routes, and the ribbons are
   // what a filter would have narrowed. The PLACES travel on their own prop, joined by name.
-  // WORKAROUND, and it is a defect in the format, not a decision of this beat's. `renderMapWeb`
-  // calls `assertDistinctSlugs(groupsOf(points))` unconditionally, and `groupsOf` reads `p.group`
-  // off every row: with no `group` at all it returns `[undefined]` and `slugOf(undefined)` throws
-  // `TypeError: undefined is not an object`, naming nothing. The format's own SKILL.md says a beat
-  // with one group "renders no filter at all", so ONE group is the honest shape here — this beat's
-  // subsetting dimension would be the destination, and 1-to-3 routes per destination is well under
-  // the floor `map-web-discipline.md`'s "Filters" sets, so no filter is offered. The string is
-  // written once, here, so the page carries no control and the format's guard has a real string.
+  // NO FILTER DIMENSION, DECLARED BY LEAVING IT OFF. This beat's only subsetting dimension would
+  // be the destination, and 1-to-3 routes per destination is well under the floor
+  // `map-web-discipline.md`'s "Filters" sets, so no filter is offered and no point carries a group.
+  // This used to be impossible: the format read `.group` off every row unconditionally and threw a
+  // `TypeError` naming nothing, so the beat invented a group, `"recorded route"`, purely to render
+  // — and the invention shipped four dead `[data-group=…]` rules and a dead attribute on every
+  // table row of the delivered page, with no control anywhere to work them.
   geometry: {
     frame: geometry.frame,
-    points: routes.map((r) => ({ ...r, name: `${r.origin} to ${r.destination}`, group: "recorded route" })),
+    points: routes.map((r) => ({ ...r, name: `${r.origin} to ${r.destination}` })),
   },
   routes,
   destinations,

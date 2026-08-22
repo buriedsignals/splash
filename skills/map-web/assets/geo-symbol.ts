@@ -15,9 +15,12 @@ export type SymbolPoint = {
   lon: number;
   lat: number;
   value: number;
-  /** The filter dimension (`references/map-web-discipline.md`, "Filters") — every point declares
-   *  one, even a beat that never renders a filter UI (`groupsOf` would just report one group). */
-  group: string;
+  /** The filter dimension (`references/map-web-discipline.md`, "Filters"), when the beat HAS one.
+   *  It used to be required, on the premise that a beat with no dimension would "just report one
+   *  group" — which was false: `groupsOf` reported `[undefined]` and the first `slugOf` downstream
+   *  threw. A beat with nothing worth subsetting on leaves it off every point and ships no filter;
+   *  a beat with a dimension puts it on EVERY point, and `groupsOf` refuses the half-tagged set. */
+  group?: string;
 };
 
 /** A point once the bake has projected it into the plate's own pixel space. */
@@ -109,13 +112,56 @@ export function fr(value: number, decimals = 1): string {
 }
 
 /**
+ * The `data-group` an element drawn from this point carries — or `undefined`, which React renders
+ * as no attribute at all.
+ *
+ * ONE GROUP IS NOT A DIMENSION, so a beat with one (or none) ships no attribute, exactly as it
+ * ships no `<fieldset>` and no hiding rule. The three used to be decided in three places and
+ * disagreed: the seed drew the control only above one group while the stylesheet emitted a rule per
+ * group unconditionally and every element carried the attribute regardless. That is how a delivered
+ * page ended up with four hiding rules, a `data-group` on every table row, and no control anywhere
+ * to work them — the "whole filter or none of one" census's own defect, in this format.
+ */
+export function groupAttrOf(
+  point: { group?: string | null },
+  groups: string[],
+): string | undefined {
+  return groups.length > 1 ? slugOf(point.group as string) : undefined;
+}
+
+/**
  * The distinct filter groups a study set carries, in a stable order — the one place this is
  * computed, shared by `MapWebSeed.tsx` (which draws the `<fieldset>`) and `render-web.mjs` (which
  * has to generate the matching `:has()` CSS rule per group) so the two never drift out of sync.
+ *
+ * NO GROUP AT ALL IS AN ANSWER, and it used not to be. This read `p.group` off every row and
+ * sorted whatever came back, so a study set that declared no filter dimension returned
+ * `[undefined]` — one group, made of nothing — and the first `slugOf` downstream threw
+ * `TypeError: undefined is not an object`, naming neither the beat, the prop, nor the fix.
+ * Measured on `stories/stress-ab-emigration-flows`: the beat could not render without inventing a
+ * group it did not have, and the invented group put four dead `[data-group=…]` rules and a dead
+ * attribute on every table row of the delivered page, with no control anywhere to work them.
+ * An empty array is what a beat with no dimension gets, and every caller reads `length > 1` to
+ * decide whether there is a filter at all.
+ *
+ * A HALF-TAGGED STUDY SET IS REFUSED HERE rather than quietly narrowed. If some points carry a
+ * group and others do not, dropping the untagged ones from the vocabulary is exactly B6.18b — a
+ * filter that hides a mark and leaves something of it behind — so this names the points instead.
  
  *  @parity-exempt: groups by the field this beat's own points carry (`.arc` on a subduction catalogue, `.group` on the general seed). */
-export function groupsOf(points: { group: string }[]): string[] {
-  return Array.from(new Set(points.map((p) => p.group))).sort();
+export function groupsOf(points: { group?: string | null }[]): string[] {
+  const tagged = points.filter((p) => p.group !== undefined && p.group !== null && p.group !== "");
+  if (tagged.length > 0 && tagged.length < points.length) {
+    const untagged = points
+      .filter((p) => !tagged.includes(p))
+      .map((p) => JSON.stringify((p as { key?: string }).key ?? (p as { name?: string }).name ?? "?"));
+    throw new Error(
+      `${untagged.length} of ${points.length} points carry no group of their own: ${untagged.join(", ")} — ` +
+        `a filter built from the rest would hide their marks and leave everything else they drew behind. ` +
+        `Give every point a group, or give none of them one and ship no filter.`,
+    );
+  }
+  return Array.from(new Set(tagged.map((p) => p.group as string))).sort();
 }
 
 /**

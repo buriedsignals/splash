@@ -221,7 +221,10 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
         // A circle encodes a VALUE, so it is sized from the camera once at the fit and then held —
         // growing it with zoom would make the same number mean two things at two zooms.
         radius: "camera",
-        filterProperty: "group",
+        // The live half of the filter, present only when there IS a filter. `setFilter` on a
+        // property no feature carries would narrow the live layer to nothing the moment a control
+        // that does not exist was operated; a beat with no dimension declares none.
+        ...(groupsOf(geometry.points).length > 1 ? { filterProperty: "group" } : {}),
         hover: true,
       },
     ],
@@ -442,7 +445,15 @@ function buildCss({ ground, accent, ink, muted, groups, frame }) {
   // The plate's own aspect, the one number both the stage's width bound and the viewport's
   // `aspect-ratio` are computed from, so the box can never be asked to be two shapes at once.
   const aspect = frame.width / frame.height;
-  const filterRules = groups
+  // ONE FILTER OR NONE OF ONE. A single group narrows nothing — the seed already refuses to draw a
+  // control for it — so the rules and the chip styling are emitted on the same condition the control
+  // is, and `groupAttrOf` puts the attribute on the same condition again. They used to be three
+  // independent decisions: measured on `stories/stress-ab-emigration-flows`, the delivered page
+  // carried four `[data-group=…]` hiding rules and a `data-group` on every table row with no
+  // `<fieldset>` anywhere to work them, and the rules quoted the slug while the rows carried the raw
+  // name. `splash/test/filters-are-declared-or-absent.test.ts` is the census that reads this back.
+  const hasFilter = groups.length > 1;
+  const filterRules = (hasFilter ? groups : [])
     .map((g) => {
       const id = `mw-filter-${slugOf(g)}`;
       // The SLUG is what every mark, label, button and table row carries as `data-group`, and the
@@ -469,48 +480,12 @@ function buildCss({ ground, accent, ink, muted, groups, frame }) {
     })
     .join("\n");
 
-  return `
-:root {
-  --ground: ${ground};
-  --accent: ${accent};
-  --ink: ${ink};
-  --muted: ${muted};
-  /* One number, used by the body's own padding AND by the height the beat is asked to fit inside,
-     so the two can never disagree about how much room the page edge takes. */
-  --page-pad: 16px;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  padding: var(--page-pad);
-  background: var(--ground);
-  color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
-}
-.map-web-page { width: 100%; }
-/* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
-   window tall: every piece of furniture takes the height it needs, and .mw-stage is handed
-   whatever is left. Nothing scrolls inside the visual, at any width — before this, the map's own
-   aspect-locked height grew with the width, so a 1600px-wide window drew a 1568px-tall map and the
-   claim ("Paris is the largest") sat 800px below the fold, unseen.
-   'svh', not 'vh': on a phone with a retracting toolbar, 'vh' is the LARGE viewport, which is
-   exactly the height the beat must not assume it has. The 'vh' line above it is the fallback for a
-   browser without 'svh', and errs one toolbar too tall rather than clipping. */
-.map-web {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - var(--page-pad) * 2);
-  height: calc(100svh - var(--page-pad) * 2);
-}
-/* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
-   'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
-   inside it resolves to zero — the map collapsed to its 2px border and nothing was red. A definite
-   height is what makes the stage a real size container. */
-.map-web > *:not(.mw-stage) { flex: 0 0 auto; }
-.mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
-.mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
-/* THE FILTER, drawn as chips (map-web-discipline.md, "Filters"). Bare browser radios read as an
+  // The chip stylesheet travels with the control, not with the format: a page that draws no
+  // fieldset has no chips to style, and twenty-eight lines of dead CSS in every delivered file is
+  // the defect `filter.ts`'s own header records for `chart-web` ("21 of 21 pages ship 12 lines of
+  // `.chart-filter` CSS and NOT ONE contains a `<fieldset>`").
+  const filterStyling = hasFilter
+    ? `/* THE FILTER, drawn as chips (map-web-discipline.md, "Filters"). Bare browser radios read as an
    unfinished form, not as an editorial control — and a 15px-tall label row is a poor pointer target
    besides. Every input below is still a real radio in a real fieldset: it is moved out of sight,
    never replaced, so Tab still reaches the group, Arrow keys still move within it, the native
@@ -578,7 +553,51 @@ body {
   }
   .mw-chip:has(input:checked) { font-weight: 700; }
 }
-/* The stage: the leftover height, and the container the map is measured against. 'container-type:
+`
+    : "";
+
+  return `
+:root {
+  --ground: ${ground};
+  --accent: ${accent};
+  --ink: ${ink};
+  --muted: ${muted};
+  /* One number, used by the body's own padding AND by the height the beat is asked to fit inside,
+     so the two can never disagree about how much room the page edge takes. */
+  --page-pad: 16px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: var(--page-pad);
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+.map-web-page { width: 100%; }
+/* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
+   window tall: every piece of furniture takes the height it needs, and .mw-stage is handed
+   whatever is left. Nothing scrolls inside the visual, at any width — before this, the map's own
+   aspect-locked height grew with the width, so a 1600px-wide window drew a 1568px-tall map and the
+   claim ("Paris is the largest") sat 800px below the fold, unseen.
+   'svh', not 'vh': on a phone with a retracting toolbar, 'vh' is the LARGE viewport, which is
+   exactly the height the beat must not assume it has. The 'vh' line above it is the fallback for a
+   browser without 'svh', and errs one toolbar too tall rather than clipping. */
+.map-web {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--page-pad) * 2);
+  height: calc(100svh - var(--page-pad) * 2);
+}
+/* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
+   'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
+   inside it resolves to zero — the map collapsed to its 2px border and nothing was red. A definite
+   height is what makes the stage a real size container. */
+.map-web > *:not(.mw-stage) { flex: 0 0 auto; }
+.mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
+.mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+${filterStyling}/* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
    CSS has no other way to say "as wide as you like, but never taller than the room left". */
 .mw-stage {

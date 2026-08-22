@@ -45,74 +45,6 @@ body {
 .map-web > *:not(.mw-stage) { flex: 0 0 auto; }
 .mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
 .mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
-/* THE FILTER, drawn as chips (map-web-discipline.md, "Filters"). Bare browser radios read as an
-   unfinished form, not as an editorial control — and a 15px-tall label row is a poor pointer target
-   besides. Every input below is still a real radio in a real fieldset: it is moved out of sight,
-   never replaced, so Tab still reaches the group, Arrow keys still move within it, the native
-   <label> association still makes the whole chip clickable, and none of it needs JavaScript. */
-.mw-filter {
-  border: 0;
-  padding: 0;
-  margin: 0 0 14px;
-  min-width: 0;
-}
-.mw-filter legend {
-  padding: 0;
-  margin: 0 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.mw-filter-options { display: flex; flex-wrap: wrap; gap: 6px; }
-.mw-chip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 5px 14px;
-  border: 1px solid var(--muted);
-  border-radius: 999px;
-  font-size: 13px;
-  line-height: 1.2;
-  color: var(--ink);
-  background: var(--ground);
-  cursor: pointer;
-}
-/* Out of sight, still in the accessibility tree, still focusable, still keyboard-operable. NOT
-   'display: none' and NOT 'visibility: hidden' — either would take the radio out of the tab
-   order and out of the arrow-key group, which is the whole thing this treatment must not cost. */
-.mw-chip input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-.mw-chip:hover { border-color: var(--ink); }
-.mw-chip:has(input:checked) {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--ground);
-  font-weight: 600;
-}
-.mw-chip:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-/* In forced-colours mode the system paints its own background and text, so "the filled chip is the
-   checked one" stops being visible at all. Rather than invent a substitute, put the native control
-   back: the OS already draws a radio the reader recognises. */
-@media (forced-colors: active) {
-  .mw-chip input {
-    position: static;
-    width: auto;
-    height: auto;
-    opacity: 1;
-    pointer-events: auto;
-    margin-right: 6px;
-  }
-  .mw-chip:has(input:checked) { font-weight: 700; }
-}
 /* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
    CSS has no other way to say "as wide as you like, but never taller than the room left". */
@@ -238,10 +170,7 @@ svg.map { display: block; width: 100%; height: 100%; }
 .mw-legend-value { font-size: 12px; color: var(--muted); }
 .mw-subject { font-size: 12px; font-weight: 700; color: var(--accent); margin: 10px 0 4px; }
 .mw-caveat { font-size: 11.5px; color: var(--muted); margin: 0 0 16px; }
-.map-web-page:has(#mw-filter-recorded-route:checked) .pt:not([data-group="recorded-route"]) { display: none; }
-.map-web-page:has(#mw-filter-recorded-route:checked) .point-label:not([data-group="recorded-route"]) { display: none; }
-.map-web-page:has(#mw-filter-recorded-route:checked) svg.map circle[data-group]:not([data-group="recorded-route"]) { display: none; }
-.map-web-page:has(#mw-filter-recorded-route:checked) .region-table tbody tr:not([data-group="recorded-route"]) { display: none; }
+
 #tooltip {
   position: fixed;
   max-width: 220px;
@@ -417,7 +346,7 @@ svg.map circle.fm-hit { pointer-events: all; }
   else wire();
 })();</script>
 <details class="mw-table-disclosure"><summary>Table of values — 8 route</summary>
-<table class="region-table"><caption>Every recorded route, largest first</caption><thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">People</th><th scope="col">Share of the eight</th></tr></thead><tbody><tr data-group="recorded route"><th scope="row">Lisboa</th><td>London</td><td>18,400</td><td>34%</td></tr><tr data-group="recorded route"><th scope="row">Lisboa</th><td>Paris</td><td>12,100</td><td>22%</td></tr><tr data-group="recorded route"><th scope="row">Porto</th><td>Paris</td><td>9,600</td><td>18%</td></tr><tr data-group="recorded route"><th scope="row">Porto</th><td>Zurich</td><td>4,200</td><td>8%</td></tr><tr data-group="recorded route"><th scope="row">Braga</th><td>Luxembourg</td><td>3,100</td><td>6%</td></tr><tr data-group="recorded route"><th scope="row">Faro</th><td>London</td><td>2,800</td><td>5%</td></tr><tr data-group="recorded route"><th scope="row">Coimbra</th><td>Brussels</td><td>2,400</td><td>4%</td></tr><tr data-group="recorded route"><th scope="row">Aveiro</th><td>Paris</td><td>1,900</td><td>3%</td></tr></tbody></table>
+<table class="region-table"><caption>Every recorded route, largest first</caption><thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">People</th><th scope="col">Share of the eight</th></tr></thead><tbody><tr><th scope="row">Lisboa</th><td>London</td><td>18,400</td><td>34%</td></tr><tr><th scope="row">Lisboa</th><td>Paris</td><td>12,100</td><td>22%</td></tr><tr><th scope="row">Porto</th><td>Paris</td><td>9,600</td><td>18%</td></tr><tr><th scope="row">Porto</th><td>Zurich</td><td>4,200</td><td>8%</td></tr><tr><th scope="row">Braga</th><td>Luxembourg</td><td>3,100</td><td>6%</td></tr><tr><th scope="row">Faro</th><td>London</td><td>2,800</td><td>5%</td></tr><tr><th scope="row">Coimbra</th><td>Brussels</td><td>2,400</td><td>4%</td></tr><tr><th scope="row">Aveiro</th><td>Paris</td><td>1,900</td><td>3%</td></tr></tbody></table>
 </details>
 </div>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>

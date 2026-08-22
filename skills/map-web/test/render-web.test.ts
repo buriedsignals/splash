@@ -601,3 +601,84 @@ describe("separationHeadroom", () => {
     );
   });
 });
+
+/**
+ * NO FILTER DIMENSION IS A SHAPE, NOT AN ACCIDENT.
+ *
+ * Measured on `stories/stress-ab-emigration-flows` (round six): the beat had no dimension worth
+ * subsetting on — one to three routes per destination, well under the floor
+ * `map-web-discipline.md` sets — and it could not say so. `renderMapWeb` called
+ * `assertDistinctSlugs(groupsOf(points))` unconditionally and `groupsOf` read `p.group` off every
+ * row, so ungrouped points returned `[undefined]` and `slugOf(undefined)` threw
+ * `TypeError: undefined is not an object`, naming neither the beat, the prop, nor the fix. The
+ * beat's own `render-web.mjs` carries the workaround in a comment: it invented a group,
+ * `"recorded route"`, so that the format would render at all.
+ *
+ * That invented group is what put dead machinery on the delivered page — four `[data-group=…]`
+ * hiding rules and a `data-group` on every table row, with no control anywhere to operate them,
+ * and the rules quoting the SLUG while the rows carried the raw name. Precisely the defect
+ * `filter.ts`'s own header records for `chart-web` ("21 of 21 pages ship 12 lines of
+ * `.chart-filter` CSS and NOT ONE contains a `<fieldset>`"), reappearing in this format through a
+ * hole a beat had to work around.
+ *
+ * So: a beat with no filter dimension renders, with no control, no rules and no attributes; a beat
+ * that tags only SOME of its points is refused by a sentence that names them.
+ */
+describe("a beat with no filter dimension", () => {
+  const UNGROUPED = POINTS.map(({ group, ...rest }) => rest);
+
+  async function buildWith(points: unknown[]) {
+    const outDir = mkdtempSync(join(tmpdir(), "map-web-nofilter-"));
+    try {
+      await renderMapWeb({
+        component: MapWebSeed,
+        table: RegionTable,
+        props: { ...BASE, geometry: { ...GEOMETRY, points } } as any,
+        outDir,
+        name: "beat.html",
+        tableRowNoun: "metro areas",
+      });
+      return readFileSync(join(outDir, "beat.html"), "utf8");
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+
+  it("should report no groups at all when no point carries one", () => {
+    expect(groupsOf(UNGROUPED as any)).toEqual([]);
+  });
+
+  it("should render rather than throw a TypeError that names nothing", async () => {
+    const html = await buildWith(UNGROUPED);
+    expect(html).toContain('class="map-web-page"');
+  });
+
+  it("should ship no control, no hiding rule and no attribute — a whole filter or none of one", async () => {
+    const html = await buildWith(UNGROUPED);
+    expect({
+      control: html.includes('<fieldset class="mw-filter"'),
+      styling: html.includes(".mw-filter {"),
+      rules: html.includes("[data-group="),
+      attributes: / data-group="/.test(html),
+    }).toEqual({ control: false, styling: false, rules: false, attributes: false });
+  });
+
+  it("should ship no filter machinery for ONE group either, because one group narrows nothing", async () => {
+    // The seed already refuses to draw a control for a single group. The stylesheet did not agree
+    // with it, and the markup did not either, which is how a page carrying four dead rules passed
+    // every check this format had.
+    const html = await buildWith(POINTS.map((p) => ({ ...p, group: "recorded route" })));
+    expect({
+      control: html.includes('<fieldset class="mw-filter"'),
+      rules: html.includes("[data-group="),
+      attributes: / data-group="/.test(html),
+    }).toEqual({ control: false, rules: false, attributes: false });
+  });
+
+  it("should refuse a half-tagged beat by naming the points that carry no group", async () => {
+    const half = POINTS.map((p, i) => (i === 0 ? p : { ...p, group: undefined }));
+    await expect(buildWith(half)).rejects.toThrow(
+      /carry no group of their own: "b", "c"/,
+    );
+  });
+});

@@ -57,6 +57,7 @@ import {
   radiusScale,
   readingOrder,
   groupsOf,
+  groupAttrOf,
   slugOf,
   fr,
   type ProjectedPoint,
@@ -269,7 +270,7 @@ export function MapWebSeed({
                       // mark too, or a narrowed view still leaves every OTHER region's circle sitting
                       // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map. The
                       // SLUG, not the raw name: this value is quoted inside a generated CSS selector.
-                      data-group={slugOf(point.group)}
+                      data-group={groupAttrOf(point, groups)}
                       // The hit target below reads its own extent off this circle, and the guard
                       // that probes the target's edges pairs the two by this key.
                       data-key={point.key}
@@ -347,7 +348,7 @@ export function MapWebSeed({
                   data-side={side}
                   data-gap={gap}
                   data-dy={dy}
-                  data-group={slugOf(point.group)}
+                  data-group={groupAttrOf(point, groups)}
                   style={style}
                 >
                   {point.name}
@@ -409,7 +410,7 @@ export function MapWebSeed({
                   // the camera scale to size the painted halo, so the halo and the circle under it
                   // are one number seen once, not two that can drift.
                   data-r={markRadius}
-                  data-group={slugOf(point.group)}
+                  data-group={groupAttrOf(point, groups)}
                 />
               );
             })}
@@ -475,6 +476,10 @@ export function RegionTable({
   muted: string;
 }) {
   const rows = readingOrder(points);
+  // The table's own reading of the SAME dimension the map reads. One group (or none) is no
+  // dimension, so the rows carry no attribute — a row tagged for a filter nobody can operate is
+  // the dead half of the machinery this format shipped before.
+  const groups = groupsOf(points);
   return (
     <table className="region-table" style={{ color: ink, borderColor: muted }}>
       <caption>{`Every reading behind the map above, ${UNIT_WORD}, largest first.`}</caption>
@@ -488,7 +493,7 @@ export function RegionTable({
         {rows.map((point) => (
           <tr
             key={point.key}
-            data-group={slugOf(point.group)}
+            data-group={groupAttrOf(point, groups)}
             className={point.key === SUBJECT_KEY ? "subject" : undefined}
           >
             <th scope="row">{point.name}</th>
