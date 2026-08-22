@@ -3000,6 +3000,27 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
   // returned no salary" both came back "could not be placed").
   const rows = Array.isArray(table.rows) ? table.rows : null;
   const rowCount = Number.isFinite(table.rowCount) ? table.rowCount : null;
+  // A REPEATED ROW, WHICH THE PROFILER HAS ALWAYS COUNTED AND NOBODY HAS EVER READ (round five,
+  // finding T5). `intake` writes `duplicates: { count, rows }` on every profile it freezes, and a
+  // grep across this tree finds no reader outside the profiler's own tests and its own SKILL.md —
+  // a fact measured, published, and consulted by nothing. It matters exactly where a numeral rests
+  // on a figure computed from every row: a table carrying the same row twice has a sum, a count and
+  // a ranking that are all one row too many, and "equals the sum of column X" is then confirmation
+  // of an arithmetic nobody would stand behind. So a total or a row count is no longer CONFIRMED
+  // while a duplicate stands; it is placed, and the duplicate is named with the values that repeat.
+  const duplicated = Number.isFinite(table.duplicates?.count) && table.duplicates.count > 0
+    ? table.duplicates
+    : null;
+  const duplicateNote = duplicated
+    ? ` — but this profile records ${duplicated.count} repeated row${duplicated.count === 1 ? "" : "s"}` +
+      (Array.isArray(duplicated.rows) && duplicated.rows.length > 0
+        ? ` (${duplicated.rows
+            .slice(0, 3)
+            .map((r) => `${JSON.stringify((r.values ?? []).join(", "))} appears ${r.occurrences ?? 2} times`)
+            .join("; ")})`
+        : "") +
+      `, and a figure computed from every row counts each of them again. Whether the repetition is a real second reading or the same one twice is the journalist's to settle, and this check cannot confirm a total until it is`
+    : "";
   // The table's own shape, established once: on a panel a row is one subject's period, and a
   // numeral cannot be attributed to "the row that holds it" without saying whose row that is.
   const panel = panelShapeOf(columns, rows);
@@ -3108,7 +3129,10 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
       const totals = columnTotals(column, rows);
       const note = cancellationNote(column, totals);
       if (!relation) {
-        say("supported", `equals the sum of column "${column.name}" (${column.sum})${summed.reading.note}${note}`);
+        say(
+          duplicated ? "consistent" : "supported",
+          `equals the sum of column "${column.name}" (${column.sum})${summed.reading.note}${note}${duplicateNote}`,
+        );
         continue;
       }
       // The sentence asserts a RELATION about this total, so the total is put to that relation
@@ -3313,7 +3337,10 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
     // relation excludes them for the same reason it excludes an exact match above.
     if (!relation) {
       if (rowCount !== null && sameNumber(value, rowCount)) {
-        say("supported", `equals the number of rows the frozen table carries (${rowCount})`);
+        say(
+          duplicated ? "consistent" : "supported",
+          `equals the number of rows the frozen table carries (${rowCount})${duplicateNote}`,
+        );
         continue;
       }
       const blankIn = [target, ...columns].find(
@@ -3671,7 +3698,11 @@ export function groundTakeaway(takeaway, profile, options = {}) {
   const consumedSpans = comparisons
     .filter((_, i) => !parsed[i].releaseSpan)
     .map((c) => [c.start, c.end]);
-  const numerals = checkNumericRanges(takeaway, columns, consumedSpans, { rows, rowCount: base.rowCount });
+  const numerals = checkNumericRanges(takeaway, columns, consumedSpans, {
+    rows,
+    rowCount: base.rowCount,
+    duplicates: base.duplicates,
+  });
 
   // THE GUESS STAYS AS THE DEFAULT. No recorded answer, no change of any kind — this is the line
   // that makes "a journalist who answers nothing gets exactly today's behaviour" a fact rather
