@@ -22,10 +22,12 @@ import {
   selectedGroup,
 } from "../assets/live-map.mjs";
 import {
+  MAPTILER_KEY_ALIASES,
   POINTER_TOLERANCE_PX,
   SCALE_TOLERANCE,
   SHAPES,
   expectedRadiusPx,
+  mapTilerKeyFrom,
   parseEnvFile,
 } from "../scripts/verify-live-map.mjs";
 
@@ -34,8 +36,55 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
 function keyFromEnv(): string | null {
   const path = join(TWIN, ".env");
   if (!existsSync(path)) return null;
-  return parseEnvFile(readFileSync(path, "utf8")).MAPTILER_KEY ?? null;
+  // EVERY NAME THE KEY TRAVELS UNDER, through the ONE resolution `verify-live-map.mjs` owns.
+  //
+  // THE DEFECT THIS CLOSES, and it is the same one, one file up. Round two found the probe reading
+  // `process.env.MAPTILER_KEY` alone while the root's `.env` holds `REMOTION_MAPTILER_KEY` and
+  // `VITE_MAPTILER_KEY`, so it verified nothing and exited 0. The SCRIPT was fixed; this GATE, which
+  // decides whether the script is run at all, kept the single name — so on a machine holding a
+  // perfectly good key under an alias, the format's only live probe printed "live map not driven: no
+  // MAPTILER_KEY in twin/.env" and the suite stayed green having never once driven the live layer.
+  // A fix to a mechanism that leaves its own gate unfixed is a mechanism that still cannot run.
+  return mapTilerKeyFrom(parseEnvFile(readFileSync(path, "utf8")));
 }
+
+describe("the gate that decides whether the live layer is driven at all", () => {
+  it("finds the key under every name it is written under", () => {
+    for (const alias of ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES])
+      expect(`${alias}: ${mapTilerKeyFrom({ [alias]: "k-" + alias })}`).toBe(
+        `${alias}: k-${alias}`,
+      );
+  });
+
+  it("prefers the plain name when several are present, and says null when none is", () => {
+    expect(
+      mapTilerKeyFrom({ MAPTILER_KEY: "plain", VITE_MAPTILER_KEY: "vite" }),
+    ).toBe("plain");
+    expect(mapTilerKeyFrom({ DATAWRAPPER_API_TOKEN: "not-a-map-key" })).toBe(
+      null,
+    );
+    // An empty string is not a key. Left as `?? null` it would be returned as one and the probe
+    // would boot a map against `?key=`, which fails at the tile server rather than here.
+    expect(mapTilerKeyFrom({ MAPTILER_KEY: "", VITE_MAPTILER_KEY: "real" })).toBe(
+      "real",
+    );
+  });
+
+  it("reads the real .env the same way the runner does, on this machine", () => {
+    // NOT A TAUTOLOGY, and the reason it is here: this asserts the gate and the runner agree about
+    // the file that actually exists, which is precisely what came apart. It says nothing about the
+    // key's VALUE and never prints it.
+    const path = join(TWIN, ".env");
+    if (!existsSync(path)) return;
+    const env = parseEnvFile(readFileSync(path, "utf8"));
+    const named = Object.keys(env).filter((name) => name.includes("MAPTILER"));
+    expect(
+      `${named.length} MAPTILER name(s) present, gate resolves a key: ${keyFromEnv() !== null}`,
+    ).toBe(
+      `${named.length} MAPTILER name(s) present, gate resolves a key: ${named.length > 0}`,
+    );
+  });
+});
 
 /** A plate baked at zoom 3.879, which is the seed's own. */
 const PLAN = {

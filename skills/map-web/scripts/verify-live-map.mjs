@@ -161,6 +161,27 @@ export const LIVE_HOVER_SAMPLE = 40;
  *  key the whole time. */
 export const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
 
+/** THE ONE RESOLUTION OF "IS THERE A KEY, AND WHAT IS IT", over any bag of names — `process.env`, a
+ *  parsed `.env`, or a synthetic one in a test.
+ *
+ *  IT IS A FUNCTION RATHER THAN AN EXPRESSION BECAUSE THE EXPRESSION DRIFTED. Round two fixed the
+ *  probe to walk the alias list; `test/live-map.test.ts`'s own gate — the thing that decides whether
+ *  the probe is run at all — kept reading `MAPTILER_KEY` alone. On a machine holding a working key
+ *  under `REMOTION_MAPTILER_KEY`, the probe was therefore never invoked, the test printed "live map
+ *  not driven: no MAPTILER_KEY in twin/.env", and the suite stayed green having never driven the
+ *  live layer once. Fixing a mechanism and leaving its gate on the old reading leaves the mechanism
+ *  exactly as unreachable as before.
+ *
+ *  An EMPTY string is not a key: `?? null` would hand one back and the map would boot against
+ *  `?key=`, failing at the tile server with a network error instead of here with a sentence. */
+export function mapTilerKeyFrom(from) {
+  for (const name of ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES]) {
+    const value = from?.[name];
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return null;
+}
+
 export function resolveChrome() {
   const candidates = [];
   if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
@@ -691,9 +712,10 @@ if (import.meta.main) {
   const envPath = splashEnvPath(import.meta.dirname);
   const env = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, "utf8")) : {};
   // EVERY NAME THE KEY TRAVELS UNDER, the same list `bake-plate.mjs` in this skill has always
-  // declared. Read from the process environment first, then from the root's own `.env`.
-  const named = (from) => from.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => from[alias]).find(Boolean);
-  const key = flag("--key", named(process.env) ?? named(env));
+  // declared. Read from the process environment first, then from the root's own `.env` — through
+  // `mapTilerKeyFrom`, which is also what this skill's own test gate reads, so the gate and the
+  // runner cannot answer this question differently again.
+  const key = flag("--key", mapTilerKeyFrom(process.env) ?? mapTilerKeyFrom(env));
   if (!key) {
     // EXIT NON-ZERO. This used to print and `process.exit(0)`, which told every caller reading the
     // exit code that the live map had been verified when nothing had been driven at all — on a
