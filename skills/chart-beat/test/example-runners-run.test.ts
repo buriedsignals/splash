@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import {
   deadExampleRunners,
+  flakyExampleRunners,
   exampleRunnersFor,
   runExampleRunners,
   swallowedExampleRunners,
@@ -46,6 +47,11 @@ describe(`${SKILL} — every example runner committed beside a beat still runs`,
     console.log(
       `${SKILL}: ${answered.length} ran to completion, ${results.length - answered.length} still working at the deadline`,
     );
+    // A runner that failed in the crowd and passed alone is PRINTED, never swallowed. The sweep
+    // re-asks a non-zero exit once with nothing else in flight, because several of these runners
+    // start a browser or a rasteriser and one that loses that fight has not been left behind by a
+    // format change. Reporting it is what keeps the retry from being "run until green".
+    for (const flake of flakyExampleRunners(results)) console.log(`${SKILL}: ${flake}`);
     expect(deadExampleRunners(results)).toEqual([]);
     expect(swallowedExampleRunners(results)).toEqual([]);
   });
@@ -131,5 +137,74 @@ describe(`${SKILL} — a runner that fails without an exit code is still a dead 
         }),
       ]),
     ).toEqual([]);
+  });
+});
+
+// THE RETRY, AND WHY IT IS NOT "RUN UNTIL GREEN" — measured on the full corpus, 2026-08-22.
+//
+// `proof/vidy-waterfall-germany-electricity-mix/render.mjs` came back `exited 1: remotion still
+// exited with 1` in a sweep of 112 runners four at a time, and the same runner alone renders 314
+// frames and exits 0. Several of these runners start a browser or a rasteriser of their own, and one
+// that loses that fight has not been left behind by a format change — which is the only thing this
+// sweep claims to measure. A guard that goes red at random is a guard people learn to skip, which is
+// the same silence as no guard at all.
+//
+// So a non-zero exit is asked ONCE more, alone, and the first answer is kept. The two properties
+// that keep this honest are asserted here: a runner that fails twice stays dead, and a runner that
+// passed only on the second ask is NAMED.
+describe(`${SKILL} — a runner that failed in the crowd is asked again, alone`, () => {
+  const scratch = "/tmp/example-runner-retry-fixture";
+
+  /** A spawner whose answer depends on how many times it has been asked. */
+  const spawnerThat = (answers: Record<string, Array<{ exitCode: number | null }>>) => {
+    const asked: Record<string, number> = {};
+    return async (_root: string, runner: string) => {
+      const n = (asked[runner] = (asked[runner] ?? 0) + 1);
+      const answer = answers[runner][Math.min(n, answers[runner].length) - 1];
+      return { runner, timedOut: false, stderr: "", refusal: "error: remotion still exited with 1", ...answer };
+    };
+  };
+
+  it("re-asks a non-zero exit and takes the second answer", async () => {
+    const results = await runExampleRunners(
+      ".",
+      ["proof/flaky/render.mjs"],
+      scratch,
+      spawnerThat({ "proof/flaky/render.mjs": [{ exitCode: 1 }, { exitCode: 0 }] }),
+    );
+    expect(deadExampleRunners(results)).toEqual([]);
+    expect(results[0].firstAttempt.exitCode).toBe(1);
+  });
+
+  it("names the runner that only passed when asked alone", async () => {
+    const results = await runExampleRunners(
+      ".",
+      ["proof/flaky/render.mjs"],
+      scratch,
+      spawnerThat({ "proof/flaky/render.mjs": [{ exitCode: 1 }, { exitCode: 0 }] }),
+    );
+    expect(flakyExampleRunners(results)).toEqual([
+      "proof/flaky/render.mjs failed in the crowd (exited 1: error: remotion still exited with 1) and passed when asked alone",
+    ]);
+  });
+
+  it("leaves a runner that fails BOTH times dead, and calls it no flake", async () => {
+    const results = await runExampleRunners(
+      ".",
+      ["proof/broken/render.mjs"],
+      scratch,
+      spawnerThat({ "proof/broken/render.mjs": [{ exitCode: 1 }, { exitCode: 1 }] }),
+    );
+    expect(deadExampleRunners(results).length).toBe(1);
+    expect(flakyExampleRunners(results)).toEqual([]);
+  });
+
+  it("never asks twice about a runner that answered cleanly the first time", async () => {
+    let asks = 0;
+    await runExampleRunners(".", ["proof/fine/render.mjs"], scratch, async (_root, runner) => {
+      asks += 1;
+      return { runner, exitCode: 0, timedOut: false, stderr: "", refusal: "" };
+    });
+    expect(asks).toBe(1);
   });
 });

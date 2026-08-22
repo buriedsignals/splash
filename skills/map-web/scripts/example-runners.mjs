@@ -149,7 +149,47 @@ export async function runExampleRunners(root, runners, scratchDir, spawnOne = sp
       results.push(await spawnOne(root, next, join(scratchDir, next.replace(/[^a-zA-Z0-9]+/g, "_"))));
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+  // A RUNNER KILLED BY ITS NEIGHBOURS IS NOT A DEAD RUNNER (2026-08-22).
+  //
+  // Measured on the full corpus run: `proof/vidy-waterfall-germany-electricity-mix/render.mjs` came
+  // back `exited 1: remotion still exited with 1`, and the same runner alone renders 314 frames and
+  // exits 0. The sweep spawns 112 runners four at a time and several of them start a browser or a
+  // rasteriser of their own; a Remotion still that loses that fight has not been left behind by a
+  // format change, which is the only thing this sweep claims to measure.
+  //
+  // This is NOT "retry until green". The failing runner is asked ONCE more, alone, with nothing else
+  // in flight — the same question without the interference that may have answered it — and the first
+  // attempt is KEPT on the result as `firstAttempt`. A red that survives being asked alone is a real
+  // red; a red that does not is a flake, and a flake reported is a flake somebody can fix. A guard
+  // that goes red at random is a guard people learn to skip, which is the same silence as no guard.
+  for (let i = 0; i < results.length; i += 1) {
+    const first = results[i];
+    if (first.timedOut || first.exitCode === 0) continue;
+    const again = await spawnOne(
+      root,
+      first.runner,
+      join(scratchDir, `${first.runner.replace(/[^a-zA-Z0-9]+/g, "_")}_alone`),
+    );
+    results[i] = { ...again, firstAttempt: first };
+  }
   return results.sort((a, b) => a.runner.localeCompare(b.runner));
+}
+
+/**
+ * The runners that failed in the crowd and passed alone — the sweep's own flakes, named.
+ *
+ * Reported rather than swallowed: `runExampleRunners` keeps a re-asked runner's first answer, and
+ * this is what turns that record into something a reader sees. A sweep that quietly retried until it
+ * went green would be hiding the one fact worth knowing about itself.
+ */
+export function flakyExampleRunners(results) {
+  return results
+    .filter((result) => result.firstAttempt && (result.timedOut || result.exitCode === 0))
+    .map(
+      (result) =>
+        `${result.runner} failed in the crowd (exited ${result.firstAttempt.exitCode}: ${result.firstAttempt.refusal ?? result.firstAttempt.stderr ?? ""}) and passed when asked alone`,
+    );
 }
 
 /**

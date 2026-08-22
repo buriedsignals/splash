@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import {
   deadExampleRunners,
+  flakyExampleRunners,
   exampleRunnersFor,
   runExampleRunners,
   swallowedExampleRunners,
@@ -46,6 +47,11 @@ describe(`${SKILL} — every example runner committed beside a beat still runs`,
     console.log(
       `${SKILL}: ${answered.length} ran to completion, ${results.length - answered.length} still working at the deadline`,
     );
+    // A runner that failed in the crowd and passed alone is PRINTED, never swallowed. The sweep
+    // re-asks a non-zero exit once with nothing else in flight, because several of these runners
+    // start a browser or a rasteriser and one that loses that fight has not been left behind by a
+    // format change. Reporting it is what keeps the retry from being "run until green".
+    for (const flake of flakyExampleRunners(results)) console.log(`${SKILL}: ${flake}`);
     expect(deadExampleRunners(results)).toEqual([]);
     expect(swallowedExampleRunners(results)).toEqual([]);
   });
