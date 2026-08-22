@@ -118,7 +118,7 @@ the ID-based API. It never restores a caller-selected deletion target.
 | Delivery identity | `scripts/delivery-identity.mjs` — `resolveDeliveryIdentity`, `deliveryDestinations`, `stableDeliveryId` | Canonicalizes the declared stories root and every relevant source/export ancestor, validates stable story/output IDs, and derives the only legal source and replacement paths |
 | Legacy compatibility | `scripts/delivery-compat-v1.mjs` — `offerFormsLegacyV1`, `materialiseLegacyV1`, `LEGACY_DELIVERY_ADAPTER_VERSION` | Preserves the observed path-shaped v1 call contract while validating and discarding its paths before delegating to the canonical ID API |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_FORMAT`, `offerForms` | The forms one format allows, and what each honestly gives; validates the bound output review (Gate 3 before Gate 4) and keeps `embed` visible but disabled with a setup reason when no Cloudflare credential is present. The form is labelled **Deploy and receive embed code**; Cloudflare is its automatic mechanism, never a separate journalist question |
-| Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
+| Review gate | `scripts/output-review.mjs` — `writeOutputReview`, `requireApprovedOutput`, `currentPlanBinding`, `renderDigest` | Versioned `OUTPUT-REVIEW.json`; binds approval and passing QA to the output ID, exact rendered tree, plan version, and finding IDs |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Independently re-checks the same bound review before and after staging, re-runs the two beat-derived form checks the menu ran, derives the per-output export from the trusted identity, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per format, including static beats with both PNG and SVG |
 | Can this beat carry this form | `scripts/deliver.mjs` — `insertionMarkupVerdict`, `ownedFileForInsertionSync` | Read by the menu AND by the materialiser, so a disabled row and a refusal cannot say two different things. `insertionMarkupVerdict` decides on the BYTES — not on the extension, which would be one more typed population: a file is insertable if it decodes as UTF-8 under a decoder that refuses rather than substitutes, and carries an element |
 | Replacement | `scripts/delivery-replacement.mjs` — `withDeliveryLock`, `publishStagedDelivery`, `reconcileDeliveryReplacement` | Serializes same-output delivery, journals both publication renames, records the complete new export, and reconciles an interrupted replacement before another begins |
@@ -406,16 +406,23 @@ request through Engine for any key-bearing form; never populate `env` from a che
 
 ```js
 import { offerForms, materialise, exportDirFor } from "./scripts/deliver.mjs";
+import { currentPlanBinding } from "./scripts/output-review.mjs";
 
-// Read these from the current production plan. OUTPUT-REVIEW.json and its passing QA run must
-// match them and the exact current renders/ digest: Gate 3 closes before Gate 4 opens.
-const planVersion = 3;
-const findingIds = ["finding-rainfall-change"];
 const identity = {
   storiesRoot: "stories",
   storyId: "water-wars",
   outputId: "1-rainfall",
 };
+// READ THE BINDING OFF THE BEAT'S OWN REVIEW. This example used to say `const planVersion = 3;`
+// under the comment "read these from the current production plan" — and there is no production
+// plan in this toolchain: no file, no function and no gate produces either value. A caller who
+// invented a pair bound nothing and had its delivery refused for a reason it could not see.
+// `currentPlanBinding` returns exactly the pair `requireApprovedOutput` accepts, from the
+// OUTPUT-REVIEW.json Gate 3 wrote. The FIRST review is where the values are chosen, by whoever ran
+// production; everything downstream reads them back.
+const { planVersion, findingIds } = currentPlanBinding(
+  `${identity.storiesRoot}/${identity.storyId}/beats/${identity.outputId}`,
+);
 const forms = offerForms({
   ...identity,
   medium: "chart",

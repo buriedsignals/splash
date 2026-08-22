@@ -286,6 +286,31 @@ export function readOutputReview(beatDir) {
   }
 }
 
+/**
+ * THE PLAN BINDING THIS BEAT IS ALREADY UNDER — `{planVersion, findingIds}`, read off its own
+ * `OUTPUT-REVIEW.json`.
+ *
+ * `offerForms` and `materialise` both require those two values, and until round six the only
+ * documented way to obtain them was this skill's own worked example: `const planVersion = 3;` under
+ * the comment *read these from the current production plan*. There is no production plan in this
+ * toolchain — no file, no function and no gate produces either value — so a caller either invented
+ * a pair, which binds nothing, or went looking for the record that already holds it. That is the
+ * same shape as the round-four half of this defect, where a required record had no documented
+ * producer at all; this is its other half, where a required ARGUMENT has no documented source.
+ *
+ * The first review is written by whoever ran production, who chooses the plan version and names the
+ * findings that beat answers. Every consumer after that reads them back from here, and gets exactly
+ * the pair `requireApprovedOutput` will accept — which is the point: a caller that guesses is a
+ * caller whose delivery is refused for a reason it cannot see.
+ *
+ * It re-reads and re-validates the file on every call, so each caller gets its own object and a
+ * record that has changed on disk since the last call is the record answered with.
+ */
+export function currentPlanBinding(beatDir) {
+  const record = readOutputReview(beatDir);
+  return { planVersion: record.planVersion, findingIds: record.findingIds };
+}
+
 /** Fail closed unless the record and one passing QA run match the exact current output. */
 export function requireApprovedOutput({ beatDir, planVersion: version, findingIds: ids }) {
   return approvalAgainstCurrent(readOutputReview(beatDir), {

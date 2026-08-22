@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  currentPlanBinding,
   OUTPUT_REVIEW_FILE,
   QA_RUN_SCHEMA_VERSION,
   readOutputReview,
@@ -228,6 +229,41 @@ describe("OutputReview v1", () => {
       status: "passed",
       completedAt: TEST_COMPLETED_AT,
     });
+  });
+
+  // ROUND SIX: `offerForms` and `materialise` both require a `planVersion` and `findingIds`, and
+  // the only documented way to obtain them was this skill's own worked example -- `const
+  // planVersion = 3;` under the comment "read these from the current production plan". There is no
+  // production plan in this toolchain: no file, no function and no gate produces either value. A
+  // caller either invents a pair, and binds nothing, or reads it off the record that already holds
+  // it. This is the one path that exists, named.
+  it("hands a delivery caller the binding the beat's own review already holds", async () => {
+    const binding = currentPlanBinding(beatDir);
+    const record = readOutputReview(beatDir);
+    expect(binding).toEqual({
+      planVersion: record.planVersion,
+      findingIds: record.findingIds,
+    });
+    // And it is the pair `requireApprovedOutput` accepts, which is the whole reason to read it.
+    expect(() => requireApprovedOutput({ beatDir, ...binding })).not.toThrow();
+    // And it re-reads the file rather than answering from a cache: a review rewritten between two
+    // deliveries answers with what is on disk now. (Asserted rather than assumed — a memoised
+    // reader here would hand a redelivery the previous plan's binding and refuse it for a reason
+    // the caller could not see.)
+    await approveCurrentOutput(beatDir, {
+      planVersion: TEST_PLAN_VERSION + 1,
+      findingIds: ["finding-second-plan"],
+      reviewId: "review-second-plan",
+    });
+    expect(currentPlanBinding(beatDir)).toEqual({
+      planVersion: TEST_PLAN_VERSION + 1,
+      findingIds: ["finding-second-plan"],
+    });
+  });
+
+  it("refuses to invent a binding for a beat that has no review", async () => {
+    await rm(join(beatDir, OUTPUT_REVIEW_FILE));
+    expect(() => currentPlanBinding(beatDir)).toThrow(/no bound review/);
   });
 
   it("does not write an approval whose QA receipt is stale", async () => {
