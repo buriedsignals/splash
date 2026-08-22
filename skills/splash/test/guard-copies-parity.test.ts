@@ -72,6 +72,16 @@ const COPIES: Record<string, string[]> = {
   // `checkStoryboard`, which is pure over the frontmatter and structurally cannot see a file. One
   // reader learning the rule alone is the A7/A14 divergence class, so the copy is walked here.
   surveyGap: ["splash/scripts/where.mjs", "storyboard/scripts/storyboard.mjs"],
+  // ROUND SEVEN, D7: which names one treatment answers to. The two gate-2 readings each held their
+  // own hand-typed alias table, and both missed "Stacked area" — the natural name for the treatment
+  // and half of `chart-beat/references/types/area.md`'s own title — which silently removed the
+  // custom-or-Datawrapper human gate on a real story. Two tables were replaced by one derivation
+  // over the type sheet's own title; a copy of it that drifted would let the storyboard open a gate
+  // `whereIs` then refuses, or the reverse, which is the divergence the table shape already caused.
+  treatmentNames: [
+    "splash/scripts/where.mjs",
+    "storyboard/scripts/producer-gate.mjs",
+  ],
   // Task A (round-three stress redesign): the shared number reader. `ground-claim.mjs`'s free-text
   // numeral scanner and `profile.mjs`'s column-level numeric parsing both hand an isolated token
   // to this one decision — a thousands-grouped integer settles itself only with its own trailing
