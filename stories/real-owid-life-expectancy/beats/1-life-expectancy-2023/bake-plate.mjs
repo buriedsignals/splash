@@ -43,13 +43,33 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { splashEnvPath } from "./splash-root.mjs";
 import {
+  LIFE_EXPECTANCY_BREAKS,
   LIFE_EXPECTANCY_STUDY,
-  WATER_FILL,
   keepRing,
   simplifyRing,
 } from "./geo-choropleth.ts";
+import { choroplethSurfaces } from "./ChoroplethWeb.tsx";
+// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
+// story, not a skill, so it may reach out where a skill may not.
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { splashRoot } from "./splash-root.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** THE SEA FOLLOWS THE PALETTE, and it is read here rather than imported as a constant.
+ *
+ *  `#12293B` used to stand in `geo-choropleth.ts` as this beat's own override of the format's fixed
+ *  `#AAC9E0`, with the measurement that earned it written beside it — the right answer, arrived at
+ *  by hand, on one beat. `choroplethSurfaces` is that same reasoning made a mechanism: it derives the
+ *  ramp, the no-data fill and the water tint from ONE ground and ONE accent, refuses a pairing a
+ *  reader could not separate, and is the single place the bake, the SSR'd page and the live plan all
+ *  get their answer from, so the plate and the tiles cannot paint two different seas. On this
+ *  ground it lands within a hair of the hex this beat had chosen by measuring.
+ *
+ *  `PALETTE.md` is a STORY-level record, two levels above a beat, so the walk stops at the Splash
+ *  root rather than at a counted number of parents. */
+const PALETTE = readPalette(HERE, { stopAt: splashRoot(HERE) });
+const WATER_FILL = choroplethSurfaces(PALETTE.ground, PALETTE.accent, LIFE_EXPECTANCY_BREAKS).water;
 
 /** The beat's camera and its anchors.
  *

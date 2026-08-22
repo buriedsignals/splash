@@ -38,7 +38,7 @@ import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
-  choroplethRamp,
+  choroplethSurfaces,
   fillFor,
   regionDetail,
   HIT_TARGET_PX,
@@ -46,7 +46,6 @@ import {
 import {
   LIFE_EXPECTANCY_STUDY,
   LIFE_EXPECTANCY_BREAKS,
-  WATER_FILL,
   bboxCenter,
   boundingBoxOf,
   joinShapes,
@@ -512,9 +511,9 @@ export function liveRings(collection, keys, geometry) {
  * beat's own minimum pointer target, `HIT_TARGET_PX`. Derived from the plate's own geometry, so a
  * beat with no tiny region gets a correspondingly shorter leash.
  */
-export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent, waterFill }) {
+export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent }) {
   const camera = cameraOf(geometry);
-  const ramp = choroplethRamp(ground, accent, breaks);
+  const { ramp, noData, water } = choroplethSurfaces(ground, accent, breaks);
 
   const features = [];
   const anchors = {};
@@ -544,7 +543,7 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
         // A region with no joined value is painted the beat's own no-data grey, explicitly — never
         // dropped from the map and never allowed to fall through to the ramp's first class, which
         // would read as a legitimate low value (`geo-discipline.md` rule 5's own failure mode).
-        color: fillFor(region.value, ramp, breaks),
+        color: fillFor(region.value, ramp, breaks, noData),
       },
     });
     if (region.value === null) continue;
@@ -592,7 +591,10 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
 
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    // THE SAME `water` THE BAKE PAINTED AND THE SSR'd PAGE DREW, derived here from the same
+    // palette rather than passed in. It used to be a parameter carrying a module constant, which is
+    // how the live layer and the plate could have disagreed about the colour of the sea.
+    waterFill: water,
     frame: geometry.frame,
     degreesPerPixel: geometry.degreesPerPixel,
     metresPerPixel: geometry.metresPerPixel,
@@ -1141,7 +1143,6 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
         ground: SEED.ground,
         ink: furniture.ink,
         accent: SEED.accent,
-        waterFill: WATER_FILL,
       })
     : null;
 

@@ -211,15 +211,10 @@ export function initLiveMap(win) {
     ],
     // The constructor has no canvas to measure yet, so the FIRST fit takes the ceiling and
     // `map.on("load")`'s `fitToStudy` immediately re-fits with the padding this container earns.
-    fitBoundsOptions: { padding: MAX_FIT_PADDING_PX, animate: false },
-    // AT PLANET EXTENT, `renderWorldCopies: false` IS NOT THE ANSWER, and this comment is here so the
-    // next person does not try it again. Measured on this beat with a real key at 1600x900: with
-    // copies on, the fit leaves 800px of margin either side of the world and MapLibre paints a
-    // second and a third one into it — three Africas, three Japans, one set of hit targets. With
-    // copies off, MapLibre clamps the camera so one world fills the width and CROPS the claim: the
-    // view came back at -20.8°S, with Lesotho, one of the six countries the title names, off the
-    // screen. The fix is neither flag: it is holding the live viewport to the plate's own aspect, in
-    // `render-web.mjs`'s own CSS, so the fit is width-bound and one world fills one box.
+    // The constructor has no canvas to measure yet; `fitToStudy` re-fits with what this container
+    // earns. Zero at planet extent for the reason `spansTheWorld` gives — a first fit with padding
+    // paints the second world for as long as the first frame is on screen.
+    fitBoundsOptions: { padding: spansTheWorld(plan) ? 0 : MAX_FIT_PADDING_PX, animate: false },
     maxZoom: 22,
     attributionControl: false,
   });
@@ -320,11 +315,45 @@ export const MAX_FIT_PADDING_PX = 48;
  * 9% of the shorter side keeps every container this format has been driven at 1600 down to 768 at the
  * old 48 exactly, and hands a phone a padding proportional to what it has.
  */
-export function fitPadding(map) {
+export function fitPadding(map, plan) {
+  // AT PLANET EXTENT THERE IS NO ROOM AROUND THE STUDY SET, because the world has no outside — and
+  // any padding at all is filled with a SECOND PAINTED WORLD. See `spansTheWorld` below for the
+  // measurement.
+  if (spansTheWorld(plan)) return 0;
   const canvas = map.getCanvas();
   const shorter = Math.min(canvas.clientWidth || 0, canvas.clientHeight || 0);
   if (!(shorter > 0)) return MAX_FIT_PADDING_PX;
   return Math.min(MAX_FIT_PADDING_PX, Math.round(shorter * 0.09));
+}
+
+/** A study set at or past this many degrees of longitude is the whole world. One degree short of a
+ *  full turn, because a camera fitted to `[-180, 180]` comes back a hair under it. */
+export const FULL_TURN_DEG = 359;
+
+/**
+ * Does this beat's study set span the whole world?
+ *
+ * THE DEFECT THIS ANSWERS, measured live with a real key on a 241-region world choropleth: the fit
+ * leaves `fitPadding` px of room on every side, so at planet extent the world is drawn INSET inside
+ * the canvas and MapLibre fills the margin with the next copy of it — three Africas, three Japans,
+ * one set of hit targets, `bounds [[-355.77, …], [355.77, …]]` at 1600x900. Holding the live
+ * viewport to the plate's own aspect took that from 711° of visible longitude to 407°, which is
+ * still 104px of repeated world inside an 896px canvas: the padding alone accounts for it, because
+ * fitting 360° into `896 - 2 * 48` px and then showing all 896 shows 403°.
+ *
+ * `renderWorldCopies: false` is NOT the answer and this is where that is recorded: MapLibre then
+ * clamps the camera so one world fills the width and the view CROPS — the same beat came back cut
+ * at 20.8°S, with Lesotho, one of the six countries its own title names, off the screen.
+ *
+ * The bake refuses the same thing in the plate (`assertWorldFillsFrame`: the world must fill the
+ * frame's width). This is that rule in the layer that fits inside the READER's container, where the
+ * box is not ours to choose. `scripts/verify-live-map.mjs` measures the resulting span and fails
+ * past 361°.
+ */
+export function spansTheWorld(plan) {
+  const bounds = plan && plan.studyBounds;
+  if (!bounds || !Number.isFinite(bounds.east) || !Number.isFinite(bounds.west)) return false;
+  return bounds.east - bounds.west >= FULL_TURN_DEG;
 }
 
 /**
@@ -388,7 +417,7 @@ export function fitToStudy(map, plan) {
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
-    { padding: fitPadding(map), animate: false },
+    { padding: fitPadding(map, plan), animate: false },
   );
   leash(map, plan);
 }

@@ -20,9 +20,17 @@ own recommended option is what was recorded, and nothing was invented.
 thing on this map a reader reads a quantity off, so the accent reaches it through `dataRampEnd`,
 and both the baked plate and the live MapLibre layer come through that one function.
 
-**Two constants this format holds fixed are wrong on this ground, and this beat overrides them in
-its own copy rather than in the shared core.** `NO_DATA_FILL` (`#B9B9B9`) and `WATER_FILL`
-(`#AAC9E0`) are both LIGHT-ground values: measured here, `#B9B9B9` has relative luminance 0.485,
-which on this ground lands between the fourth and fifth class of the ramp, and `#AAC9E0` at 0.557
-is brighter than four of the five classes -- an ocean that outshines the data and a no-data country
-that reads as a high reading. See `NOTES-FOR-MAINTAINER.md`.
+**The two surfaces that are NOT the data are derived from this ground too, and that is the change of
+2026-08-22.** They used to be fixed hexes -- `NO_DATA_FILL` `#B9B9B9` and `WATER_FILL` `#AAC9E0`,
+both LIGHT-ground values. Measured here, `#B9B9B9` has relative luminance 0.485, which on this
+ground lands between the fourth and fifth class of the ramp, and `#AAC9E0` at 0.557 is brighter than
+four of the five classes -- an ocean that outshines the data and a no-data country that reads as a
+high reading. This beat overrode both by hand (`#2B3236` and `#12293B`, each with its measurement).
+
+`choroplethSurfaces` now makes that same reasoning a mechanism: `noDataFor`/`waterFor` place both in
+the band between this ground and the ramp's first class -- the one band that is not a reading -- and
+`assertSurfacesRead` REFUSES a surface a reader would take for a value, a surface indistinguishable
+from the ground, or a pair nobody could tell apart. On this ground it lands at 0.031, within a hair
+of the `#2B3236` this beat had chosen by measuring, and the bake, the rendered page and the live
+layer all read that one answer, so the plate and the tiles cannot paint two different seas. See
+`NOTES-FOR-MAINTAINER.md` for the defect as it was found.

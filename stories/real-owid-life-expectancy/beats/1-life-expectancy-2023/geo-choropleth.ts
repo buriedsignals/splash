@@ -662,27 +662,180 @@ export function assertRampReads(
   return ramp;
 }
 
-/** `geo-discipline.md` rule 7: no-data is its OWN colour, outside the ramp — never a shade the ramp
- *  itself could have produced, and never a texture (the rule's own account of why a hatch reads
- *  illegibly at the size a no-data region is actually drawn on a newsroom map).
- *
- *  THIS BEAT OVERRIDES THE SHARED VALUE, and the reason is measurable rather than a taste. The
- *  format ships `#B9B9B9`, whose relative luminance is 0.485, on the stated reasoning that it is
- *  "fixed, not derived from the ground … so a no-data reading stays recognisable across every
- *  newsroom's own ground colour". That holds on a LIGHT ground, where a mid-grey is darker than a
- *  ramp running toward the ink. On this story's recorded ground (`#16191B`) the ramp runs the other
- *  way — 0.052 up to 0.616 — and 0.485 lands between its fifth and sixth class: a country with NO
- *  reading would be painted as one of the highest readings on the map. Measured, not guessed.
- *  `#2B3236` sits at 0.031, below the whole ramp, and is cool where every class is warm. */
-export const NO_DATA_FILL = "#2B3236";
+// ── The two surfaces that are NOT the data, derived from the same palette the ramp is ──────────
+//
+// THE DEFECT THIS CLOSES, and it is the owner's own words: *"it has to adapt to the palette."*
+//
+// These two used to be fixed hexes, with a docstring arguing that fixing them is what makes a
+// no-data reading "stay recognisable across every newsroom's own ground colour". Measured on this
+// format's OWN two shipped grounds, that claim is false in both directions:
+//
+//   light ground `#FFFFFF`, accent `#B2182B` — ramp 0.815 0.598 0.421 0.283 0.177 0.101
+//     the fixed no-data grey `#B9B9B9` is 0.485 → between class 2 and class 3
+//     the fixed water tint  `#AAC9E0` is 0.557 → between class 2 and class 3
+//   dark ground `#16191B`, accent `#D4A853` — ramp 0.052 0.109 0.191 0.300 0.442 0.616
+//     `#B9B9B9` 0.485 → between class 5 and class 6
+//     `#AAC9E0` 0.557 → brighter than five of the six classes, on a map whose ocean is most of the
+//     picture, so the SEA was the loudest thing on a map about land
+//
+// A country with NO READING was therefore painted at the luminance of a real class, on every beat
+// this format has shipped. `assertRampReads` measures the ramp against the GROUND and has never
+// measured these two against the RAMP.
+//
+// THE TWO OLD CONSTANTS ARE NOT DELETED — they become the MIDPOINT of the axis each colour now
+// travels along, so the derivation passes through the value this family already used and the
+// palette decides where on that axis it lands. `greyAt(0.485)` is `#B9B9B9`; `blueAt(0.557)` is
+// `#AAC9E0`.
 
-/** `geo-discipline.md` rule 7: water is a blue tint, never grey.
+/** The neutral axis a no-data surface travels: black through this family's own mid-grey to white. */
+export const NO_DATA_AXIS = ["#000000", "#B9B9B9", "#FFFFFF"] as const;
+
+/** The blue axis a water tint travels: black through this family's own water blue to white. Rule 7
+ *  is a rule about HUE ("water is a blue tint, never grey"), and the hue is what stays fixed here
+ *  while the luminance is what the palette moves. */
+export const WATER_AXIS = ["#000000", "#AAC9E0", "#FFFFFF"] as const;
+
+/** How far a surface that is not part of the ramp must sit from the nearest class before a reader
+ *  can be sure it is not one. The SAME 0.02 relative luminance `assertRampReads` holds two adjacent
+ *  classes apart by — one number for one question, rather than a second one tuned here. */
+export const SURFACE_CLEARANCE = 0.02;
+
+/** The smallest channel spread that reads as a HUE rather than as a printing artefact. Measured on
+ *  the two colours this decision is about: this family's own water blue `#AAC9E0` carries 0.212, and
+ *  any neutral grey carries exactly 0. */
+export const MIN_CHROMA = 0.05;
+
+/** How far a colour's channels spread — 0 for any grey, 0.212 for `#AAC9E0`. The cheap, exact
+ *  measure of "does this read as a hue at all", which is the only question asked of it here. */
+export function chromaOf(hex: string): number {
+  const rgb = channels(hex);
+  return (Math.max(...rgb) - Math.min(...rgb)) / 255;
+}
+
+/** The colour on `axis` whose relative luminance is `target`, found by bisection.
  *
- *  OVERRIDDEN FOR THE SAME REASON, one colour over. The shared `#AAC9E0` is 0.557 — brighter than
- *  five of this ramp's six classes, so on a dark-ground world map the ocean, which is most of the
- *  picture, would be the brightest thing in it and would read as the top class. `#12293B` is 0.023:
- *  unmistakably blue, unmistakably not land, and below every class. */
-export const WATER_FILL = "#12293B";
+ *  Bisection rather than an inverse formula because the axis is a mix of two REAL colours and its
+ *  luminance is not linear in the mix ratio. Forty halvings is far past the precision of an 8-bit
+ *  channel. */
+export function alongAxis(axis: readonly string[], target: number): string {
+  const [dark, mid, light] = axis;
+  const [from, to] = target <= luminanceOf(mid!) ? [dark!, mid!] : [mid!, light!];
+  let low = 0;
+  let high = 1;
+  for (let i = 0; i < 40; i++) {
+    const at = (low + high) / 2;
+    if (luminanceOf(mixHex(from, to, at)) < target) low = at;
+    else high = at;
+  }
+  return mixHex(from, to, (low + high) / 2);
+}
+
+/** A neutral surface at this luminance. */
+export function greyAt(luminance: number): string {
+  return alongAxis(NO_DATA_AXIS, luminance);
+}
+
+/** A blue surface at this luminance. */
+export function blueAt(luminance: number): string {
+  return alongAxis(WATER_AXIS, luminance);
+}
+
+/**
+ * THE ONE PLACE A SURFACE THAT IS NOT THE DATA CAN SIT: between the ground and the ramp's first
+ * class.
+ *
+ * Everything from the first class to the last is the data, and a reader orders it. Everything past
+ * the last class is further from the ground than the argument's own colour, which reads as more
+ * than the maximum. What is left is the band the ramp deliberately does not start in — and that
+ * band is exactly where "this is not a reading" belongs, because a region with no value is nearer
+ * to bare ground than to any class.
+ *
+ * Both surfaces land at its MIDPOINT, which is the point furthest from both things they must not be
+ * confused with, and they are told apart from each other by HUE — the channel that still has room
+ * when the band is narrow. That is not a compromise: a grey country among tinted ones and a blue sea
+ * are different in KIND, which is what rule 7 asks for.
+ */
+export function offRampLuminance(ramp: string[], ground: string): number {
+  return (luminanceOf(ground) + luminanceOf(ramp[0]!)) / 2;
+}
+
+/** The no-data fill this ground and this ramp leave room for. */
+export function noDataFor(ramp: string[], ground: string): string {
+  return greyAt(offRampLuminance(ramp, ground));
+}
+
+/** The water tint this ground and this ramp leave room for. */
+export function waterFor(ramp: string[], ground: string): string {
+  return blueAt(offRampLuminance(ramp, ground));
+}
+
+/**
+ * CAN A READER TELL THESE TWO FROM THE DATA, AND FROM EACH OTHER? The sibling `assertRampReads`
+ * never had, and the reason it never had is that it measures the ramp against the GROUND while this
+ * measures two surfaces against the RAMP.
+ *
+ * Three refusals, each with the number that failed:
+ *   1. neither surface may sit inside the ramp's own luminance range, nor within `SURFACE_CLEARANCE`
+ *      of either end — a no-data country painted at a class's luminance is a country a reader reads
+ *      a value off, and that is worse than a bad join because nothing about it looks wrong;
+ *   2. neither may sit within `SURFACE_CLEARANCE` of the ground, or it is not a surface at all;
+ *   3. the two may not be confusable with each other: either `SURFACE_CLEARANCE` apart in luminance,
+ *      or one of them carrying a real hue while the other does not.
+ *
+ * The band between the ground and the first class is what all three depend on, so a beat whose ramp
+ * starts too close to its ground fails here and is told to raise the ramp's own low end — which is
+ * the fix, and it is the fix the one beat that hit this made by hand before there was a guard.
+ */
+export function assertSurfacesRead(
+  ramp: string[],
+  ground: string,
+  surfaces: { noData: string; water: string },
+  where = "this beat",
+): { noData: string; water: string } {
+  const classes = ramp.map(luminanceOf);
+  const low = Math.min(...classes);
+  const high = Math.max(...classes);
+  const groundLuminance = luminanceOf(ground);
+  const named: [string, string][] = [
+    ["the no-data fill", surfaces.noData],
+    ["the water tint", surfaces.water],
+  ];
+  for (const [name, hex] of named) {
+    const value = luminanceOf(hex);
+    if (value > low - SURFACE_CLEARANCE && value < high + SURFACE_CLEARANCE) {
+      const nearest = classes.reduce(
+        (best, at, index) => (Math.abs(at - value) < Math.abs(classes[best]! - value) ? index : best),
+        0,
+      );
+      throw new Error(
+        `${where}: ${name} ${hex} measures ${value.toFixed(3)} relative luminance, inside this ramp's ` +
+          `own range ${low.toFixed(3)}–${high.toFixed(3)} (nearest: class ${nearest + 1}, ${ramp[nearest]} ` +
+          `at ${classes[nearest]!.toFixed(3)}). A reader would read it as a value. Derive it from the ` +
+          `ground with noDataFor/waterFor, and if there is no room, raise the ramp's own low end so ` +
+          `there is.`,
+      );
+    }
+    if (Math.abs(value - groundLuminance) < SURFACE_CLEARANCE)
+      throw new Error(
+        `${where}: ${name} ${hex} is ${Math.abs(value - groundLuminance).toFixed(4)} from the ground ` +
+          `${ground} in relative luminance, under the ${SURFACE_CLEARANCE} this family holds two ` +
+          `surfaces apart by — it is not a surface, it is the ground. The band between this ground ` +
+          `and the first class is ${Math.abs(luminanceOf(ramp[0]!) - groundLuminance).toFixed(4)} wide; ` +
+          `it needs ${(SURFACE_CLEARANCE * 2).toFixed(2)}.`,
+      );
+  }
+  const apart = Math.abs(luminanceOf(surfaces.noData) - luminanceOf(surfaces.water));
+  const hues = named.map(([, hex]) => chromaOf(hex));
+  if (apart < SURFACE_CLEARANCE && Math.abs(hues[0]! - hues[1]!) < MIN_CHROMA)
+    throw new Error(
+      `${where}: the no-data fill ${surfaces.noData} and the water tint ${surfaces.water} are ` +
+        `${apart.toFixed(4)} apart in relative luminance and ${Math.abs(hues[0]! - hues[1]!).toFixed(3)} ` +
+        `apart in chroma — a reader cannot tell a country with no reading from the sea. One of them ` +
+        `has to carry a hue (rule 7: water is a blue tint, never grey).`,
+    );
+  return surfaces;
+}
+
 
 // ── Geometry: baked pixel rings become one path ────────────────────────────────────────────────
 
