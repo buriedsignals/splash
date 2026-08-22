@@ -532,6 +532,26 @@
       "exceptions": {}
     },
     {
+      "id": "runner-answer-can-be-believed",
+      "kind": "capability",
+      "requires": ["materialises-a-beat"],
+      "offers": "a runner's ANSWER is read from what it PRINTED as well as from the status it returned, so a committed example runner that threw, printed the throw and still exited 0 is NAMED by the sweep rather than counted alive — the reading that makes example-runners-are-called worth having, since a sweep that believes an exit code believes a runner that never checked its own",
+      "earnedBy": "the sweep this project wrote to catch a runner a format change left behind reads the exit code, and a runner can fail without one. Measured 2026-08-22: stories/heat-pump-adoption-across-europe/beats/1-the-gap-that-persists/render-web.mjs ended `main().catch(console.error)`, so when `renderWeb` grew its required `language` argument that runner threw, PRINTED the throw and exited 0 — deadExampleRunners called it alive for as long as the runner had existed, and the page it delivered shipped `<html lang=\"fr\">` against a storyboard recording `en`, with no accessible table at all on a format whose declared capability is same-facts-without-the-picture: 10 marks, 10 missing. A mechanism that cannot observe its own failure was this round's most repeated finding, and here it was inside the mechanism written to observe other people's. PROVED BY PUTTING THE DEFECT BACK rather than by argument: with the `language` argument removed from that runner and `main().catch(console.error)` restored, the sweep at HEAD answered [] and swallowedExampleRunners named it — and with spawnRunner summarising stderr down to its one `error:` line the way it used to, the new decision went blind too, which is why the raw TAIL of the stream is now what is kept (a stack is printed last, so a cap that kept the head kept the chatter and dropped the evidence). TWO MEASUREMENTS SHAPE IT: it reads the SHAPE of a printed throw — an indented stack frame whose location carries a path separator and ends the line at :line:col — and never the words \"error\" or \"catch\", which are legitimate output all over this tree; and over the whole population the same day (126 distinct runners, 67 answered, 59 still working at their deadline, none exited non-zero, and not one printed a single byte on stderr) it fires on 0 of 126, so every format's own sweep test walks the shape on results built by hand as well, because a decision whose only evidence is a clean population is a decision nobody has seen work. WHAT IT CANNOT SEE, recorded rather than hidden: a runner that catches its own failure and prints only error.message leaves no frame and stays invisible — as it is to a grep for `.catch(console.error)`, one spelling of one idiom, refused as the primary reading for exactly that reason",
+      "detectedBy": "swallowedExampleRunners",
+      "walkedBy": "test/example-runners-run.test.ts",
+      "states": {
+        "chart-beat": "carried",
+        "chart-web": "carried",
+        "chart-video": "carried",
+        "dw-beat": "carried",
+        "map-beat": "carried",
+        "map-web": "carried",
+        "image-beat": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {}
+    },
+    {
       "id": "labels-name-their-own-row",
       "kind": "guard",
       "requires": ["draws-own-geometry"],

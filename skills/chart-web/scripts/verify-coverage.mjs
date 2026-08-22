@@ -35,6 +35,10 @@ export const NOT_ABOUT_ONE_PAGE = {
   "deadExampleRunners":
     "its subject is this SKILL's own example runners, not a beat: it asks whether the commands " +
     "`SKILL.md` advertises still run. `scripts/example-runners.mjs` is its command",
+  "swallowedExampleRunners":
+    "the same subject read one notch tighter — whether one of those runners exited 0 while printing " +
+    "a thrown error, which is a fact about a spawned PROCESS and not about a page this command has " +
+    "in its hands. `scripts/example-runners.mjs` is its command too",
   "declarationsWithoutACaller":
     "its subject is this skill's own wiring — which of these decisions anything calls — so asking " +
     "it of a page would be a rule reading itself. `scripts/check-guard-wiring.mjs` is its command",

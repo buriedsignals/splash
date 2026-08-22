@@ -247,4 +247,14 @@ export function declarationsWithoutACaller(skillDir) {
  *  the DECISION above is one decision in all eight copies, and what differs is only what each
  *  format has actually paid off. A name may be REMOVED from this list, never added — adding one is
  *  how the defect that earned this rule would recur. */
-export const RECORDED_UNWIRED = ["deadExampleRunners", "framingMeasurement"];
+// THE RUNNER SWEEP'S PAIR, and the only addition this list has ever taken. Their subject is this
+// skill's OWN committed example runners, not a delivered beat, so there is no page and no run for
+// a command in `scripts/` to ask them about — `test/example-runners-run.test.ts` drives both, in
+// every one of the eight, which is the same standing `deadExampleRunners` has carried here since
+// the sweep was written. The alternative was to give `scripts/example-runners.mjs` an
+// `import.meta.main` nobody was told to run, and buy the wiring credit this rule exists to refuse.
+export const RECORDED_UNWIRED = [
+  "deadExampleRunners",
+  "swallowedExampleRunners",
+  "framingMeasurement",
+];

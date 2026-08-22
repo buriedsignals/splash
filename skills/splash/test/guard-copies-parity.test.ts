@@ -425,6 +425,21 @@ const COPIES: Record<string, string[]> = {
     "image-beat/scripts/example-runners.mjs",
     "scrolly/scripts/example-runners.mjs",
   ],
+  // Its sibling, and the one that has to stay identical for a different reason than the rest of this
+  // registry: a copy that narrowed STACK_FRAME would go on reading exit codes only, and the format
+  // carrying it would call a runner alive that its neighbour names — which is the defect
+  // `swallowedExampleRunners` was written for, one level down. The constant travels with the body,
+  // which is what `constantsBehind` is for.
+  swallowedExampleRunners: [
+    "chart-beat/scripts/example-runners.mjs",
+    "chart-web/scripts/example-runners.mjs",
+    "chart-video/scripts/example-runners.mjs",
+    "dw-beat/scripts/example-runners.mjs",
+    "map-beat/scripts/example-runners.mjs",
+    "map-web/scripts/example-runners.mjs",
+    "image-beat/scripts/example-runners.mjs",
+    "scrolly/scripts/example-runners.mjs",
+  ],
   spawnRunner: [
     "chart-beat/scripts/example-runners.mjs",
     "chart-web/scripts/example-runners.mjs",
