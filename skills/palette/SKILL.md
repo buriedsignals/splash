@@ -12,7 +12,7 @@ validates them, and **nothing threaded them into a render**. Every beat named it
 literals in its own source, with a `// from NEWSROOM.md` comment beside them — an instruction to
 copy by eye. A newsroom's identity was collected and then never used.
 
-This skill closes that. It does four things and refuses a fifth:
+This skill closes that. It does five things and refuses a sixth:
 
 1. **Proposes.** `proposePalette` returns the options — the newsroom's house colours, and the
    subject's own convention when one applies — each carrying where its values came from, why it is
@@ -33,13 +33,25 @@ This skill closes that. It does four things and refuses a fifth:
    it, because the floor lived only inside the proposal — and a `PALETTE.md` can be written by
    hand, copied from another story, or produced by `newsroom-charter`, which measures a
    newsroom's own site.
-4. **Carries more than one accent, when the newsroom has more than one.** `accents:` lists the
+4. **Answers a MULTI-PART beat, in the only distinction that changes the colours.** Declare the
+   beat's series — `series: { count, kind }`, `kind` being `equal` or `part-to-whole` — and the
+   proposal carries a `comparisonField`. Series of equal standing are pointed at `seriesInks`, and
+   so are parts the recorded accents already cover. Parts that OUTRUN the record get the ramp: one
+   accent on the subject, every other part a step from the ground toward its own ink, each clearing
+   the 3:1 mark floor and reading apart from the accent and from every other step, each measurement
+   printed. `real-gwis-wildfire-counts` drew six bands against two recorded accents and had to
+   write that walk inside its own chart component; six shades of the house gold would have been the
+   "accent colour on every mark" anti-pattern by name. On a ground with no room the ramp is REFUSED,
+   in a field on the proposal rather than a throw, so the journalist still gets the options and the
+   escape. The answer is recorded in `PALETTE.md`'s own `accents:` list, which is what `seriesInks`
+   reads first and in order — no second mechanism at the render.
+5. **Carries more than one accent, when the newsroom has more than one.** `accents:` lists the
    further house colours beside `accent:`, same shape `NEWSROOM.md` uses. A beat drawing several
    series takes them in order through `seriesInks` and derives further ones — shades of a recorded
    accent, each clearing the mark floor and reading apart from the others — instead of falling back
    to the furniture grey, which is what a three-series beat did until this landed.
 
-The fifth thing — **writing a colour anywhere** — it does not do. `scripts/palette.mjs` has no write
+The sixth thing — **writing a colour anywhere** — it does not do. `scripts/palette.mjs` has no write
 path, not a commented-out one, not a flag. `PALETTE.md` is authored from the journalist's answer,
 the same way `NEWSROOM.md` is — or, when no journalist is present, from the proposal's own
 measured recommendation, exactly as described below.
@@ -204,7 +216,10 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Conventions | `scripts/palette.mjs` | `SUBJECT_CONVENTIONS`, `matchConvention`, `CONVENTION_LANGUAGES`, `scriptsWithNoConvention` — a deliberately short table, one entry per association a reader already holds, read in English, French, Greek and Arabic |
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
 | Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject, about, surface, from, stopAt})` — the options, each with provenance, reasoning and measured contrast. `about` is what the story SAYS IT IS ABOUT (its takeaway): a subject line names the entity, and a convention is about the subject matter |
-| Surface | `scripts/palette.mjs` | `SURFACES`, `PAPER_GROUND`, `groundForSurface(newsroom, surface)` — where the beat LANDS, and the ground that follows from it. `print` measures on the sheet whatever ground `NEWSROOM.md` records for the screen; an unstated surface is NAMED in `surfaceLimit`, never read as an answer |
+| Surface | `scripts/palette.mjs` | `SURFACES`, `PAPER_GROUND`, `groundForSurface(newsroom, surface)`, `groundProvenance(newsroom, surface)` — where the beat LANDS, and the ground that follows from it, WITH where that ground came from (`newsroom`, `sheet`, `paper-default`). Every sentence about the ground branches on that origin, so none of them can name `NEWSROOM.md` without the ground having come out of it; `print` measures on the sheet whatever ground the profile records; an unstated surface is NAMED in `surfaceLimit`, never read as an answer |
+| The other vocabulary | `scripts/palette.mjs` | `FORMAT_SURFACES`, `resolveSurface(surface)` — gate 2b's own format words (`static`, `web`, `video`, `scrolly`) accepted and translated. `web`, `video` and `scrolly` are read on a display and resolve to `screen`, with the translation said out loud; `static` is both destinations at once and is refused by naming the fact it does not carry. The population is derived from the gate's `PUBLICATION_FORMATS` in `test/the-format-gate-vocabulary.test.ts` |
+| The profile's shape | `scripts/palette.mjs` | `assertNewsroomProfile(newsroom)` — refuses the raw TEXT of `NEWSROOM.md` (and any other non-profile) rather than measuring around it, and validates `brandColor` and `ground` whenever either is present |
+| Comparison field | `scripts/palette.mjs` | `comparisonRamp({ground, accent, count})`, `walkComparisonRamp`, `inkPole`, `readApart`, `hueDistance` — the part-to-whole answer: one accent on the subject, every other part a step from the ground toward its ink, each clearing the 3:1 mark floor and reading apart from the accent and from every other step. Refuses rather than defaults |
 | What was seen of the profile | `scripts/palette.mjs` | `lookUpNewsroom({newsroom, from, stopAt})` — reports whether a profile was passed, found unread, or genuinely absent from every directory it looked in. It never claims a file is missing without having looked |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
@@ -212,7 +227,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Typeface proposal | `scripts/typeface.mjs` | `proposeTypeface({newsroom, resolves, sample})` — every recorded face, in the newsroom's order, each measured on THIS machine against the story's OWN strings, plus the substrate stack as an option; throws rather than propose unmeasured, and names in `sampleLimit` the question the rasteriser gives no way to ask |
 | Typeface question | `scripts/typeface.mjs` | `formatTypefaceProposal(proposal)` — the question the journalist reads, with the escape and the install branch |
 | Typeface writer | `scripts/typeface.mjs` | `writeTypeface({dir, option, ...})`, `renderTypefaceRecord(option, ...)` — the answer on disk, refusing a face this machine cannot draw and refusing to overwrite one already recorded |
-| Series inks | `chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out |
+| Series inks | `chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out. A comparison ramp reaches a beat through this same path, because it is RECORDED in `accents:` |
 
 ## How it works (the shape)
 
@@ -232,12 +247,20 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    `surfaceLimit` says which ground was measured and what a print delivery would move, and
    `formatProposal` prints it where the journalist reads it — the same rule `sampleLimit` follows
    for the typeface. A surface this table holds no measurement for is refused rather than treated
-   as a screen.
-4. **Both options are scored.** Contrast is measured accent-against-ground and compared to
+   as a screen — and a FORMAT is not a surface: gate 2b's `web`, `video` and `scrolly` are read on
+   a display and are translated, out loud, while `static` (half of the gate's own "Static / print")
+   is refused because it is exactly the fact the surface exists to settle. Whichever ground is
+   measured, the sentence that reports it is branched on `groundOrigin`, so it cannot credit
+   `NEWSROOM.md` with a ground that came from nowhere near it.
+4. **The profile has to BE a profile.** `assertNewsroomProfile` refuses the raw text of
+   `NEWSROOM.md` — the shape a real run passed — rather than measuring around it and then
+   reporting that the newsroom's own values were measured. A real profile that records neither
+   colour is not refused; `newsroomLookup` says nothing of it reached the numbers.
+5. **Both options are scored.** Contrast is measured accent-against-ground and compared to
    `NON_TEXT_CONTRAST_MIN`. A failing option keeps its place in the list, marked failing, with
    `adjustToContrast`'s nearest passing variant attached as a `remedy` — or `null`, honestly, when
    the ground leaves no room on either side.
-5. **The SUBJECT option is recommended when it exists and passes; the house option second.** An
+6. **The SUBJECT option is recommended when it exists and passes; the house option second.** An
    earlier draft did the reverse, on the reasoning that a convention is a reason to *depart* from
    the newsroom's identity; the owner's ruling inverts it. Neither is ever applied over the
    journalist's head, and the recommendation never falls to a failing option.
@@ -245,13 +268,13 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    sentence and `formatProposal` prints it — because four conventions ship, so "none applies" is
    the common case, and a one-option proposal with no explanation reads as a tool with nothing to
    say rather than as a subject with no convention.
-6. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
+7. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
    escape branch — including when there is exactly one option, and including when every option
    fails. A proposal that cannot be refused is not a proposal, and the case where refusing matters
    most is the case where the house colours themselves do not measure up.
-7. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
+8. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
    with `origin:` naming who chose — `newsroom`, `subject` or `journalist`.
-8. **A render that reads it never defaults, and the reach is measured, not claimed.**
+9. **A render that reads it never defaults, and the reach is measured, not claimed.**
    `readPalette` walks from the beat's own directory up to `stopAt`, and a search that finds
    nothing **throws, naming every directory it looked in**. A render that fell back to
    black-on-white would publish in a colour nobody chose, and it would look deliberate.
@@ -277,7 +300,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    be able to change those is a judgement about what a basemap IS, so the script reports them rather
    than scoring them.
 
-8. **The reach is proved on the PIXELS, not on the source.** `scripts/two-palette-proof.mjs` renders
+10. **The reach is proved on the PIXELS, not on the source.** `scripts/two-palette-proof.mjs` renders
    every beat twice under two recorded answers that share a ground — so all the furniture is
    byte-identical and every pixel that moves is the accent's — and counts what moved. That is the
    measurement a static scan cannot make: the walking guard above proves a runner MENTIONS
@@ -291,10 +314,16 @@ import { proposePalette } from "./scripts/palette.mjs";
 import { formatProposal } from "./scripts/format-proposal.mjs";
 
 console.log(formatProposal(proposePalette({
-  newsroom: { name: "Heidi.news", brandColor: "#0B7A75", ground: "#FFFFFF" },
+  newsroom: { name: "Heidi.news", brandColor: "#0B7A75", ground: "#FFFFFF" },   // parseNewsroom's output, never the file's text
   subject: "La part du solaire dans le mix électrique suisse",
+  surface: "screen",              // or gate 2b's own word: "web", "video", "scrolly"
+  series: { count: 6, kind: "part-to-whole" },   // six bands, one of them the subject
 })));
 ```
+
+`surface` decides the ground; `series` decides whether the other parts get inks of their own
+(`equal` → `seriesInks`) or a comparison ramp (`part-to-whole`, once the parts outrun the recorded
+accents). Both are optional and both are NAMED when unstated rather than assumed.
 
 ```markdown
 # Colours for this beat

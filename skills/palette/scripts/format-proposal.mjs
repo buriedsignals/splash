@@ -55,9 +55,43 @@ function optionBlock(option, index, recommended) {
  * is not a proposal, and the one case where refusing matters most is the case where the house
  * colours themselves do not measure up.
  */
+/**
+ * THE COLOURS THE OTHER PARTS GET, in the document the journalist reads — the same rule
+ * `surfaceLimit` and `sampleLimit` follow: an answer nobody is shown is an answer nobody can act
+ * on, and a REFUSAL nobody is shown is worse, because the beat gets drawn anyway.
+ */
+function comparisonFieldBlock(field) {
+  if (!field) return [];
+  const lines = ["## The other parts of this beat", "", field.says];
+  if (field.refusal) lines.push("", `**No ramp is proposed.** ${field.refusal}`);
+  if (field.ramp) {
+    lines.push(
+      "",
+      `  - The subject keeps the accent \`${field.accent}\`.`,
+      ...field.measured.map(
+        (step) =>
+          `  - \`${step.ink}\` — ${step.contrast}:1 against the ground, clear of the ${step.floor}:1 ` +
+          `floor; nearest other ink \`${step.nearest.to}\` at ${step.nearest.contrast}:1 and ` +
+          `${step.nearest.distance} of hue apart.`,
+      ),
+      "",
+      `Recorded as \`accents: "${field.ramp.join(", ")}"\` beside \`accent: ${field.accent}\`.`,
+    );
+  }
+  return [...lines, ""];
+}
+
 export function formatProposal(proposal) {
-  const { options, recommended, subject, escape, noConventionReason, surfaceLimit, newsroomLookup } =
-    proposal;
+  const {
+    options,
+    recommended,
+    subject,
+    escape,
+    noConventionReason,
+    surfaceLimit,
+    newsroomLookup,
+    comparisonField,
+  } = proposal;
 
   const head = [
     "# Colours for this beat",
@@ -113,5 +147,14 @@ export function formatProposal(proposal) {
     "rather than pick a colour nobody chose.",
   );
 
-  return [...head, "", "## The options", "", body.join("\n\n"), "", ...tail].join("\n");
+  return [
+    ...head,
+    "",
+    "## The options",
+    "",
+    body.join("\n\n"),
+    "",
+    ...comparisonFieldBlock(comparisonField),
+    ...tail,
+  ].join("\n");
 }

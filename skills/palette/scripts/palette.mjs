@@ -94,6 +94,160 @@ export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
   return null;
 }
 
+/** A VERBATIM copy of `mix` in `chart-beat/scripts/render-still.mjs`, for the same reason the
+ *  colour maths above is one: a skill stays copy-pasteable on its own. Held in step by
+ *  `test/comparison-ramp.test.ts`, which measures both against the shared original. */
+function mix(ground, toward, ratio) {
+  const target = channels(toward);
+  return (
+    "#" +
+    channels(ground)
+      .map((v, i) => Math.round(v + (target[i] - v) * ratio).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+/**
+ * CAN A READER TELL THESE TWO MARKS APART? A VERBATIM copy of `readApart` in
+ * `chart-beat/scripts/render-still.mjs` — two measures, because one is not enough.
+ *
+ * The hue measure is the "redmean" approximation — a weighted Euclidean distance in sRGB that
+ * tracks perceived difference far better than a plain one and needs no colour-space conversion.
+ * Its range is 0 to about 765. Measured on this tree's own accents: `#0B7A75` and `#C1440E` sit at
+ * 1.01:1 against each other, so a lightness test alone would reject a newsroom's own two house
+ * colours as indistinguishable; conversely two shades of one hue differ only in lightness, and a
+ * hue test alone would let a stacked bar ship two bands nobody can tell apart. Neither number is a
+ * WCAG floor and neither is presented as one — the WCAG floor is the 3:1 against the GROUND.
+ */
+export function readApart(a, b) {
+  const [r1, g1, b1] = channels(a);
+  const [r2, g2, b2] = channels(b);
+  const redmean = (r1 + r2) / 2;
+  const distance = Math.sqrt(
+    (2 + redmean / 256) * (r1 - r2) ** 2 +
+      4 * (g1 - g2) ** 2 +
+      (2 + (255 - redmean) / 256) * (b1 - b2) ** 2,
+  );
+  return contrast(a, b) >= 1.5 || distance >= 100;
+}
+
+/** The redmean distance on its own, so a proposal can REPORT which of the two measures carried a
+ *  step rather than only that one of them did. */
+export function hueDistance(a, b) {
+  const [r1, g1, b1] = channels(a);
+  const [r2, g2, b2] = channels(b);
+  const redmean = (r1 + r2) / 2;
+  return Math.sqrt(
+    (2 + redmean / 256) * (r1 - r2) ** 2 +
+      4 * (g1 - g2) ** 2 +
+      (2 + (255 - redmean) / 256) * (b1 - b2) ** 2,
+  );
+}
+
+/**
+ * THE POLE A GROUND'S OWN INK SITS AT — the same rule `deriveFurniture` uses, measured on both
+ * poles rather than reasoned from lightness.
+ *
+ * The obvious "luminance > 0.5 means use black" rule picks white at 3.95:1 over black at 5.32:1 on
+ * `#808080`. So both are measured and the further one wins, which is what makes the ramp below run
+ * the right way on a light ground with no second table and no edit.
+ */
+export function inkPole(ground) {
+  if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
+  return contrast("#000000", ground) >= contrast("#FFFFFF", ground) ? "#000000" : "#FFFFFF";
+}
+
+/**
+ * THE COMPARISON FIELD OF A PART-TO-WHOLE BEAT — one accent on the subject, and every other part a
+ * step from the ground toward its own ink.
+ *
+ * ROUND SEVEN, real story `real-gwis-wildfire-counts`. The beat drew six bands and `NEWSROOM.md`
+ * records two accents. `seriesInks` answers that question — but only in shades of the RECORDED
+ * accents, which is right when every series is data of equal standing and wrong here: five of the
+ * six bands ARE the comparison field for the sixth, and six shades of the house gold is the
+ * "accent colour on every mark" anti-pattern by its own name in
+ * `doctrine/references/anti-patterns.md`. Doctrine's answer is one semantic accent, reserved for
+ * the subject, with everything that exists to be compared against it drawn as a step toward the
+ * ink (`doctrine/references/visual-system.md`). The story had to implement that INSIDE its own
+ * component, 25 lines of colour maths in a chart file, because nothing here offered it.
+ *
+ * Each step earns its place the way `seriesInks`'s derived inks earn theirs, and then one measure
+ * more:
+ *
+ *   - it clears the 3:1 non-text floor against the REAL ground (WCAG 2.2 SC 1.4.11);
+ *   - it READS APART from the accent and from EVERY step already taken, not only from the one
+ *     below it. The story's own version chained — each step against its predecessor — which is
+ *     sound for the lightness measure on a monotone walk and says nothing about the accent, which
+ *     is not on the walk. Measured on `#16191B`, `#FFFFFF`, `#747474`, `#808080` and a mid blue
+ *     `#123456`, the chained rule and the pairwise one select the IDENTICAL ramp, so nothing is
+ *     lost by taking the one that states what it checked.
+ *
+ * It walks in two-hundredths from the ground rather than taking hand-picked fractions, so a
+ * newsroom that records a light ground gets a ramp running the other way with no edit here.
+ *
+ * IT REFUSES RATHER THAN DEFAULTS. On a mid-grey ground the walk genuinely runs out — `#747474`
+ * yields two steps of five — and the throw says how many it got against how many were asked for.
+ * Falling back to the furniture grey would draw a band in a colour whose whole job is to recede.
+ *
+ * WHERE THE ANSWER GOES. `proposePalette` returns this as `comparisonField`, and the ramp is
+ * recorded in `PALETTE.md`'s own `accents:` list beside the accent. `seriesInks` returns recorded
+ * accents first and in the recorded order, so the render reads the field through the path every
+ * beat already uses and needs no second mechanism — which is why this lives beside the proposal
+ * rather than being copied into nine renderers.
+ */
+export function walkComparisonRamp({ ground, accent, count, ink = null, steps = 200 }) {
+  if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
+  if (!HEX.test(accent)) throw new Error(`accent must be #rrggbb, got ${JSON.stringify(accent)}`);
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(`count must be a positive whole number of comparison parts, got ${JSON.stringify(count)}`);
+  }
+  const pole = ink ?? inkPole(ground);
+  if (!HEX.test(pole)) throw new Error(`ink must be #rrggbb, got ${JSON.stringify(pole)}`);
+  const ramp = [];
+  const measured = [];
+  for (let step = 1; step <= steps && ramp.length < count; step++) {
+    const candidate = mix(ground, pole, step / steps);
+    if (contrast(candidate, ground) < NON_TEXT_CONTRAST_MIN) continue;
+    const taken = [accent, ...ramp];
+    if (!taken.every((other) => readApart(other, candidate))) continue;
+    // The TIGHTEST pair this step makes, so the record says what was measured rather than that
+    // something was.
+    const nearest = taken
+      .map((other) => ({
+        to: other,
+        contrast: Math.round(contrast(other, candidate) * 100) / 100,
+        distance: Math.round(hueDistance(other, candidate)),
+      }))
+      .sort((a, b) => a.contrast - b.contrast || a.distance - b.distance)[0];
+    ramp.push(candidate);
+    measured.push({
+      ink: candidate,
+      contrast: Math.round(contrast(candidate, ground) * 100) / 100,
+      floor: NON_TEXT_CONTRAST_MIN,
+      nearest,
+    });
+  }
+  return { ramp, measured, ink: pole, short: ramp.length < count ? count - ramp.length : 0 };
+}
+
+/** The same walk, refusing out loud — the shape a caller that cannot carry on wants. */
+export function comparisonRamp(options) {
+  const walk = walkComparisonRamp(options);
+  if (walk.short > 0) throw new Error(comparisonRampRefusal(options, walk));
+  return walk.ramp;
+}
+
+function comparisonRampRefusal({ ground, count }, walk) {
+  return (
+    `this beat draws ${count} comparison part${count === 1 ? "" : "s"} beside its accent, and the ` +
+    `walk from ${ground} toward ${walk.ink} ran out at ${walk.ramp.length}: the further steps ` +
+    `either fell under the ${NON_TEXT_CONTRAST_MIN}:1 mark floor against ${ground} or read as a ` +
+    `step already taken. Fewer parts — group the tail into an "other" band — or a ground with ` +
+    `more room between it and its ink pole. A mid-grey ground has the least room of any: ` +
+    `measured, #747474 yields two steps and no more.`
+  );
+}
+
 /**
  * THE SURFACE A BEAT ACTUALLY LANDS ON, and the ground each one puts under the marks.
  *
@@ -1071,6 +1225,128 @@ export function lookUpNewsroom({ newsroom, from, stopAt, measured } = {}) {
 }
 
 /**
+ * WHAT A MULTI-PART BEAT IS, in the only distinction that changes the colours.
+ *
+ * `equal` — every series is data of the same standing (male and female, increase and decrease,
+ * three fuels). Each gets an ink of its own: the recorded accents in the recorded order, then
+ * shades derived from them. That is `seriesInks`, and it has shipped since 2026-08-10.
+ *
+ * `part-to-whole` — the parts are the comparison FIELD for one of them. One accent goes on the
+ * subject and everything else is a step toward the ink, because six shades of the house colour is
+ * six accents and therefore none.
+ */
+export const SERIES_KINDS = {
+  equal: "every series is data of equal standing, so each gets an ink of its own",
+  "part-to-whole": "the other parts are the comparison field for one of them, which alone takes the accent",
+};
+
+/**
+ * THE COLOURS A DECLARED SET OF SERIES GETS — or the stated reason there is no ramp to give.
+ *
+ * Three answers, and the one that was missing is the third. It NEVER throws for a ground that
+ * leaves no room: the refusal is a field on the proposal, so the journalist still gets the
+ * options, the measurements and the escape rather than a stack trace instead of a question.
+ */
+function answerForSeries({ series, newsroom, options, recommended, ground }) {
+  if (series === null || series === undefined) return null;
+  if (typeof series !== "object" || Array.isArray(series)) {
+    throw new Error(`series must be {count, kind}, got ${JSON.stringify(series)}`);
+  }
+  const { count, kind } = series;
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(`series.count must be a positive whole number of series, got ${JSON.stringify(count)}`);
+  }
+  if (!SERIES_KINDS[kind]) {
+    throw new Error(
+      `series.kind must be one of ${Object.keys(SERIES_KINDS).join(", ")} — got ${JSON.stringify(kind)}. ` +
+        `It is the one distinction that changes the colours: ${Object.entries(SERIES_KINDS)
+          .map(([id, says]) => `${id}, where ${says}`)
+          .join("; ")}.`,
+    );
+  }
+  const chosen = options.find((o) => o.id === recommended) ?? null;
+  const accent = chosen ? chosen.accent : null;
+  // WHAT WOULD BE RECORDED IN `PALETTE.md` FOR THIS BEAT: the recommended accent, then the
+  // newsroom's further accents. That is the list `seriesInks` reads, so it is the list "outruns
+  // the recorded accents" has to be measured against — derived from the proposal, never a count
+  // typed here.
+  const recordable = accent
+    ? [accent, ...(newsroom && newsroom.brandColor && newsroom.ground ? houseAccents(newsroom) : [])].filter(
+        (hex, index, all) => all.indexOf(hex) === index,
+      )
+    : [];
+  const base = { asked: count, kind, accent, accents: recordable, recorded: recordable.length };
+
+  if (!accent) {
+    return {
+      ...base,
+      outrunsTheRecord: count > recordable.length,
+      ramp: null,
+      measured: [],
+      refusal: null,
+      says:
+        "Nothing in this proposal cleared the 3:1 mark floor, so there is no accent to build a " +
+        "comparison field around. Answer the proposal first; the colours for the parts follow " +
+        "from the one that carries the argument.",
+    };
+  }
+  if (kind === "equal" || count <= recordable.length) {
+    return {
+      ...base,
+      outrunsTheRecord: count > recordable.length,
+      ramp: null,
+      measured: [],
+      refusal: null,
+      says:
+        kind === "equal"
+          ? `These ${count} series are of equal standing, so each takes an ink of its own: pass the ` +
+            `recorded palette through seriesInks(palette, ${count}), which returns the recorded ` +
+            `accents in the recorded order and derives further ones from them. No comparison ramp ` +
+            `applies — a ramp says "one of these matters and the rest are context", which is not ` +
+            `what this beat draws.`
+          : `${count} part${count === 1 ? "" : "s"} against ${recordable.length} recorded accent` +
+            `${recordable.length === 1 ? "" : "s"} (${recordable.join(", ")}): the record already ` +
+            `answers this beat. seriesInks(palette, ${count}) returns them in the recorded order. ` +
+            `A derived ramp is what this skill proposes only once the parts outrun the record.`,
+    };
+  }
+
+  const walk = walkComparisonRamp({ ground, accent, count: count - 1 });
+  if (walk.short > 0) {
+    return {
+      ...base,
+      outrunsTheRecord: true,
+      ramp: null,
+      measured: walk.measured,
+      refusal: comparisonRampRefusal({ ground, count: count - 1 }, walk),
+      says:
+        `${count} parts against ${recordable.length} recorded accent` +
+        `${recordable.length === 1 ? "" : "s"}, so the other ${count - 1} would be steps from ` +
+        `${ground} toward ${walk.ink} — and this ground does not have room for that many. Nothing ` +
+        `is proposed for them rather than something nobody could see; the refusal above says how ` +
+        `far the walk got.`,
+    };
+  }
+  return {
+    ...base,
+    accents: [accent, ...walk.ramp],
+    outrunsTheRecord: true,
+    ramp: walk.ramp,
+    measured: walk.measured,
+    refusal: null,
+    says:
+      `${count} parts against ${recordable.length} recorded accent` +
+      `${recordable.length === 1 ? "" : "s"}. The subject keeps the accent ${accent}; the other ` +
+      `${count - 1} are steps from ${ground} toward ${walk.ink}, each clearing the ` +
+      `${NON_TEXT_CONTRAST_MIN}:1 mark floor against the ground and reading apart from the accent ` +
+      `and from every other step. Record them as accents: "${walk.ramp.join(", ")}" beside ` +
+      `accent: ${accent} — seriesInks returns recorded accents first and in the recorded order, so ` +
+      `the beat reads them through the path it already uses. Six shades of the house colour would ` +
+      `be six accents and therefore none, which is the anti-pattern this answer exists to avoid.`,
+  };
+}
+
+/**
  * The proposal. Two possible options, each carrying WHERE its values came from and WHY, plus the
  * measured contrast of each — and always the third branch, "something else".
  *
@@ -1079,7 +1355,7 @@ export function lookUpNewsroom({ newsroom, from, stopAt, measured } = {}) {
  * here has a write path, not a commented-out one, not a flag that turns it on — the same rule
  * `newsroom-charter` holds.
  */
-export function proposePalette({ newsroom, subject, about, surface = null, from, stopAt } = {}) {
+export function proposePalette({ newsroom, subject, about, surface = null, series = null, from, stopAt } = {}) {
   // THE SURFACE FIRST, because it decides the ground every ratio below is measured against — and
   // an unmeasured surface is refused here rather than quietly read as a screen. See `SURFACES`.
   // A format word from gate 2b is translated to the surface it lands on, or refused by name when
@@ -1175,6 +1451,12 @@ export function proposePalette({ newsroom, subject, about, surface = null, from,
     ...new Set([...scriptsWithNoConvention(subject), ...scriptsWithNoConvention(about)]),
   ];
 
+  const recommended =
+    options.find((o) => o.id === "subject" && o.contrast.passes)?.id ||
+    options.find((o) => o.id === "house" && o.contrast.passes)?.id ||
+    options.find((o) => o.contrast.passes)?.id ||
+    null;
+
   return {
     subject: subject || null,
     // WHERE THIS BEAT LANDS, and the ground that follows from it. `null` is the honest word for a
@@ -1237,11 +1519,10 @@ export function proposePalette({ newsroom, subject, about, surface = null, from,
     // which meant a brand colour measured at 1.61:1 was handed back marked "recommended" three
     // lines under the words "FAILS the 3:1 floor". Recommending a colour this skill has just
     // measured as unreadable is the one outcome worse than proposing nothing.
-    recommended:
-      options.find((o) => o.id === "subject" && o.contrast.passes)?.id ||
-      options.find((o) => o.id === "house" && o.contrast.passes)?.id ||
-      options.find((o) => o.contrast.passes)?.id ||
-      null,
+    recommended,
+    // THE ANSWER FOR A MULTI-PART BEAT — `null` when the caller declared no series, because a
+    // proposal that answered a question nobody asked would be the same lie in the other direction.
+    comparisonField: answerForSeries({ series, newsroom, options, recommended, ground }),
     escape: "Something else — give me the two hex codes and I will use those.",
   };
 }
