@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Europe's heat-pump gap is narrowing, but the Nordics still lead</title>
@@ -89,7 +89,7 @@ body {
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
      give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
      letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
      chart the reader has seen.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
@@ -166,31 +166,72 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
+
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
 </style>
 </head>
 <body>
 <figure class="chart-figure" style="--ground:#16191B;--accent:#D4A853;--ink:#FFFFFF;--muted:#a6a8a8;--grid:#404244;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:600;--note-size:12px;overflow:hidden"><div class="chart-header"><h2 class="chart-title">Europe&#x27;s heat-pump gap is narrowing, but the Nordics still lead</h2><p class="chart-caveat">Share of households with a heat pump. Synthetic test data.</p></div><div class="chart-plot" style="--y-gutter:33.56640625px;--x-axis-h:28px;aspect-ratio:793.56640625 / 488"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#a6a8a8">0%</span><span class="axis-label y" style="top:85.5%;color:#a6a8a8">10%</span><span class="axis-label y" style="top:71%;color:#a6a8a8">20%</span><span class="axis-label y" style="top:56.4%;color:#a6a8a8">30%</span><span class="axis-label y" style="top:41.9%;color:#a6a8a8">40%</span><span class="axis-label y" style="top:27.4%;color:#a6a8a8">50%</span><span class="axis-label y" style="top:12.9%;color:#a6a8a8">60%</span></div><svg role="group" aria-label="Europe&#x27;s heat-pump gap is narrowing, but the Nordics still lead" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 760 460" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Slope chart showing heat-pump adoption percentages for 10 European countries from 2021 to 2025. All countries increased, but the gap between Nordic leaders and the lowest values remains wide.</desc><rect x="0" y="0" width="760" height="460" fill="#16191B"></rect><line x1="0" x2="760" y1="460" y2="460" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="393.21718931475027" y2="393.21718931475027" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="326.43437862950054" y2="326.43437862950054" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="259.65156794425087" y2="259.65156794425087" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="192.86875725900117" y2="192.86875725900117" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="126.08594657375144" y2="126.08594657375144" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="59.303135888501714" y2="59.303135888501714" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="106" y1="0" x2="106" y2="460" stroke="#a6a8a8" stroke-width="1" opacity="0.3" vector-effect="non-scaling-stroke"></line><line x1="654" y1="0" x2="654" y2="460" stroke="#a6a8a8" stroke-width="1" opacity="0.3" vector-effect="non-scaling-stroke"></line><g><path d="M 106 59.303135888501714 L 654 32.590011614401845" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 59.303135888501714 L 654 32.590011614401845" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Norway: 60% to 64%, +4 percentage points" data-detail="Norway: 60% (2021) → 64% (2025) · +4 pp"></path><circle cx="106" cy="59.303135888501714" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="32.590011614401845" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 92.69454123112655 L 654 45.94657375145178" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 92.69454123112655 L 654 45.94657375145178" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Sweden: 55% to 62%, +7 percentage points" data-detail="Sweden: 55% (2021) → 62% (2025) · +7 pp"></path><circle cx="106" cy="92.69454123112655" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="45.94657375145178" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 179.51219512195124 L 654 106.05110336817654" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 179.51219512195124 L 654 106.05110336817654" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Finland: 42% to 53%, +11 percentage points" data-detail="Finland: 42% (2021) → 53% (2025) · +11 pp"></path><circle cx="106" cy="179.51219512195124" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="106.05110336817654" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 406.5737514518002 L 654 286.36469221835074" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 406.5737514518002 L 654 286.36469221835074" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Netherlands: 8% to 26%, +18 percentage points" data-detail="Netherlands: 8% (2021) → 26% (2025) · +18 pp"></path><circle cx="106" cy="406.5737514518002" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="286.36469221835074" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 379.86062717770034 L 654 306.39953542392567" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 379.86062717770034 L 654 306.39953542392567" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="France: 12% to 23%, +11 percentage points" data-detail="France: 12% (2021) → 23% (2025) · +11 pp"></path><circle cx="106" cy="379.86062717770034" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="306.39953542392567" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 426.6085946573752 L 654 346.4692218350755" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 426.6085946573752 L 654 346.4692218350755" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Poland: 5% to 17%, +12 percentage points" data-detail="Poland: 5% (2021) → 17% (2025) · +12 pp"></path><circle cx="106" cy="426.6085946573752" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="346.4692218350755" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 413.2520325203252 L 654 353.14750290360047" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 413.2520325203252 L 654 353.14750290360047" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Germany: 7% to 16%, +9 percentage points" data-detail="Germany: 7% (2021) → 16% (2025) · +9 pp"></path><circle cx="106" cy="413.2520325203252" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="353.14750290360047" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 399.89547038327527 L 654 353.14750290360047" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 399.89547038327527 L 654 353.14750290360047" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Italy: 9% to 16%, +7 percentage points" data-detail="Italy: 9% (2021) → 16% (2025) · +7 pp"></path><circle cx="106" cy="399.89547038327527" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="353.14750290360047" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 433.28687572590013 L 654 379.86062717770034" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 433.28687572590013 L 654 379.86062717770034" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="Spain: 4% to 12%, +8 percentage points" data-detail="Spain: 4% (2021) → 12% (2025) · +8 pp"></path><circle cx="106" cy="433.28687572590013" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="379.86062717770034" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g><g><path d="M 106 439.96515679442507 L 654 399.89547038327527" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"></path><path class="line-hit" d="M 106 439.96515679442507 L 654 399.89547038327527" fill="none" stroke="transparent" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" tabindex="0" role="img" aria-label="United Kingdom: 3% to 9%, +6 percentage points" data-detail="United Kingdom: 3% (2021) → 9% (2025) · +6 pp"></path><circle cx="106" cy="439.96515679442507" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle><circle cx="654" cy="399.89547038327527" r="3.5" fill="#D4A853" vector-effect="non-scaling-stroke"></circle></g></svg><div class="overlay" aria-hidden="true"><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:12.9%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Norway 60%</span><span class="end-label" style="left:86.1%;top:7.1%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Norway 64%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:20.2%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Sweden 55%</span><span class="end-label" style="left:86.1%;top:11.4%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Sweden 62%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:39%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Finland 42%</span><span class="end-label" style="left:86.1%;top:23.1%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Finland 53%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:91.3%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Netherlands 8%</span><span class="end-label" style="left:86.1%;top:62.3%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Netherlands 26%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:82.6%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">France 12%</span><span class="end-label" style="left:86.1%;top:66.6%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">France 23%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:100%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Poland 5%</span><span class="end-label" style="left:86.1%;top:75.3%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Poland 17%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:95.6%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Germany 7%</span><span class="end-label" style="left:86.1%;top:79.7%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Germany 16%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:86.9%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Italy 9%</span><span class="end-label" style="left:86.1%;top:84%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Italy 16%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:104.3%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Spain 4%</span><span class="end-label" style="left:86.1%;top:88.4%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">Spain 12%</span></span><span style="position:absolute;display:contents"><span class="end-label" style="left:13.9%;top:108.7%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(-100%, -50%) translateX(-8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">United Kingdom 3%</span><span class="end-label" style="left:86.1%;top:92.7%;color:#FFFFFF;font-size:var(--label-size);font-weight:var(--label-weight);transform:translate(0, -50%) translateX(8px);white-space:nowrap;background:#16191B;padding:1px 4px;border-radius:2px">United Kingdom 9%</span></span></div><div class="x-axis"><span class="axis-label x" style="left:13.9%;color:#a6a8a8">2021</span><span class="axis-label x" style="left:86.1%;color:#a6a8a8">2025</span></div></div><p class="chart-source">Source: Splash Test Desk synthetic dataset</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>Norway: 60% (2021) → 64% (2025) · +4 pp</td></tr><tr><td>Sweden: 55% (2021) → 62% (2025) · +7 pp</td></tr><tr><td>Finland: 42% (2021) → 53% (2025) · +11 pp</td></tr><tr><td>Netherlands: 8% (2021) → 26% (2025) · +18 pp</td></tr><tr><td>France: 12% (2021) → 23% (2025) · +11 pp</td></tr><tr><td>Poland: 5% (2021) → 17% (2025) · +12 pp</td></tr><tr><td>Germany: 7% (2021) → 16% (2025) · +9 pp</td></tr><tr><td>Italy: 9% (2021) → 16% (2025) · +7 pp</td></tr><tr><td>Spain: 4% (2021) → 12% (2025) · +8 pp</td></tr><tr><td>United Kingdom: 3% (2021) → 9% (2025) · +6 pp</td></tr></tbody></table></div>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
 //
-// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
-// per `doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").
 //
 // What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
 // `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
-// the static and video genres use, and baked into the SVG at build time. This script only reads
+// the static and video formats use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
 // beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
@@ -290,14 +331,14 @@ function initChart(svg, tooltip) {
  * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
  * component draws immediately after a visible path — to hover, tap and keyboard focus.
  *
- * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this genre is a point or a box, and
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
  * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
  * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
  * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
  * ends (both values, the change between them, the category), which is exactly the thing a
  * per-endpoint tooltip cannot say however many endpoints it answers.
  *
- * `pointer-events: stroke` is the load-bearing property, and it is set in the genre's stylesheet
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
  * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
  * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
  * aims at the line they can see and hits a target twice the touch-target floor.
@@ -412,7 +453,7 @@ function initLines(root, tooltip) {
 }
 
 /**
- * THE ENTRANCE TRIGGER — the whole of this genre's entrance that is script, and it is one class.
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
  *
  * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
  * number the entrance uses was computed server-side from the beat's own geometry and the entrance
@@ -420,7 +461,7 @@ function initLines(root, tooltip) {
  * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
  * This function's entire job is to say WHEN, once, per figure.
  *
- * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This genre's delivery model is an embed: a CMS drops
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
  * the file into an article and the figure may sit two screens below the fold. An entrance that
  * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
  * two-second build they never saw — strictly worse than never having animated it. So the trigger is

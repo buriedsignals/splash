@@ -80,6 +80,11 @@ async function main() {
       title: "Europe's heat-pump gap is narrowing, but the Nordics still lead",
       source: "Source: Splash Test Desk synthetic dataset",
       alt: "Slope chart showing heat-pump adoption percentages for 10 European countries from 2021 to 2025. All countries increased, but the gap between Nordic leaders and the lowest values remains wide.",
+      // The story's own recorded language (STORYBOARD.md `language: "en"`), never detected from the
+      // prose. Without it this page shipped `<html lang="fr">` — the default baked in for the
+      // format's first caller — and declared French to every screen reader and translation engine
+      // that read it.
+      language: "en",
       ground: "#16191B",
       accent: "#D4A853",
       frame: FRAME,
@@ -91,4 +96,13 @@ async function main() {
   console.log("web beat -> " + outPath + "  [" + slopes.length + " countries]");
 }
 
-main().catch(console.error);
+// A RUNNER THAT SWALLOWS ITS OWN FAILURE IS A RUNNER THE SWEEP CANNOT SEE.
+//
+// This was `main().catch(console.error)`, and it is how this beat stayed broken in silence: when
+// `renderWeb` grew its required `language` argument, this runner threw, printed the throw, and
+// EXITED 0. `deadExampleRunners` — the sweep written precisely to catch a runner a format change
+// left behind — reads the exit code, so it called this one alive for as long as it has existed.
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
