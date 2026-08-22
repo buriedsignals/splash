@@ -22,18 +22,20 @@ not a description of a chart.
 
 > recorded emigration register, 2025 extract
 
-## The live map in this file, and the key it carries
+## The live map in this file, and the key it needs
 
-This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is
-inside the file: anyone who opens the published article can read it, and it is your development
-key, which is not restricted to your own domains.
+This page draws its map live, so a reader can pan and zoom it. **The file you have does not carry
+a key.** Where the key goes, it carries the placeholder `__MAPTILER_KEY__`, once, and the key is
+put in when the page is served — never written into the file that is stored or committed. Open the
+file as it stands and you get the map's fallback picture, complete and correct, with no panning.
 
-What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by
-whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler
-switches off **every** key on it — including the maps in articles you published years ago.
+What that means when you publish it, plainly. The key that gets injected is billed to your MapTiler
+account, by whoever is using it, because a key inside a public page is readable by anyone who opens
+the article. And if that account ever reaches 100% of its spending limit, MapTiler switches off
+**every** key on it — including the maps in articles you published years ago.
 
 The way to close that, when you want to: create a second MapTiler key restricted to your own
-domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry
+domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that inject
 the restricted key, which is worth nothing to anyone who lifts it out of the page.
 
 ## The one thing this does not show
