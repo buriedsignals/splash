@@ -680,37 +680,100 @@ function findDuplicateRows(body) {
 const SEQUENCE_TOTAL_WITHHELD =
   "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything";
 
-/** THE PANEL KEY. A table is a panel when one of its own columns identifies the SUBJECT and every
- *  (subject, period) pair in it is unique — that is the arithmetic statement of "one row per entity
- *  per period", and it is checked against every row rather than inferred from a name.
+// ==================================================================================================
+// COPIED FROM `storyboard/scripts/ground-claim.mjs`, BYTE FOR BYTE (see COPIES in
+// `splash/test/guard-copies-parity.test.ts`). Two skills must not answer "is this a panel, and which
+// column names its subject" differently about the same frozen file: the profiler would say panel and
+// the grounding check would say flat table, and the second is the one that decides a gate.
+//
+// `findYearColumn` comes with it because `panelShapeOf` calls it and nothing else here does. It is
+// NOT yet walked by the copies test: that test anchors a declaration on the doc comment immediately
+// above it, and storyboard's copy carries none, so registering it would fail on the anchor rather
+// than on a drift. Its copy is byte-identical today and the two must move together.
+//
+// MEASURED WHERE IT AND THIS FILE'S OWN `isSequenceColumn` DISAGREE, over the 36 frozen tables:
+// `findYearColumn` picks a column by NAME with no test of its values, so on
+// `stress-t-europe-recycling` it names `survey_date` — a TEXT column holding "2025-03-01",
+// "01/03/2025" and "March 2025" — as the period, where `isSequenceColumn` refuses it and this
+// profile's own `gaps` is `null` for every column in that table. One skill with two answers to
+// "which column is the period" is the round-four defect `measureColumns` names in its own header, so
+// where the two disagree this profiler publishes the disagreement (`panel.periodNotASequence`)
+// rather than a period its own typing refuses. The fix belongs in the ONE decision, in both copies:
+// prefer a column the table's own values make a sequence, and fall back to the name.
+// ==================================================================================================
+/**
+ * THE SHAPE OF A PANEL, DERIVED FROM THE ROWS (three real stories, 2026-08-22).
  *
- *  A COLUMN WITH A BLANK IN IT IDENTIFIES NOTHING, which is why `missing === 0` is required: `code`
- *  also keys the wildfire table — the one entity with no code has exactly one row per year, so
- *  (code, year) is unique across all 3 900 rows — and naming `code` as the entity column would hand
- *  every later phase a subject nobody can read. `entity` has no blank and wins on that.
+ * Every fixture this file was built against holds ONE row per period, and every check below was
+ * written on that assumption. Real open data is not that shape: Our World in Data, the World Bank,
+ * Eurostat and Ember all publish one row per ENTITY per period, and on a 7,585-row file "higher in
+ * 2023 than in 2000" was answered from `ASEAN (Ember)`'s rows — the first rows of those years —
+ * for a sentence about the world, and came back `supported`. The same reading came back
+ * `contradicted`, the verdict that BLOCKS G1, on a true sentence about Ghana.
  *
- *  TEXT ONLY, and the limit is stated rather than guessed around: a panel keyed by a numeric id is a
- *  real shape this does not reach, and reaching it would mean letting a MEASURE column that happens
- *  to key the table be named as the subject. */
-function panelKeyOf(columns, rowCount) {
-  const period = columns.find((c) => c.gaps !== null);
-  if (!period || period.distinct < 2 || rowCount < 2) return null;
-  for (const c of columns) {
-    if (c === period || c.type !== "text" || c.missing !== 0) continue;
-    if (c.distinct < 2 || c.distinct >= rowCount) continue;
+ * So the shape is established before anything is read out of the table, and it is DERIVED, never
+ * named: a table is a panel when one period value carries more than one row, and the column that
+ * keys those rows apart is the text column whose value is unique WITHIN every period. That test is
+ * arithmetic on the table in hand; a list of column names ("entity", "country", "iso3") would have
+ * been a population typed rather than derived, which is the defect this repository keeps finding.
+ *
+ * Where several columns key the rows apart — the Ember file's `entity` and `code` both do — the one
+ * that is never blank wins, then the one carrying more distinct values, then the leftmost. `code`
+ * is blank on 645 of those rows, and a key that is sometimes absent cannot name a subject.
+ */
+export function panelShapeOf(columns, rows) {
+  const periodColumn = findYearColumn(Array.isArray(columns) ? columns : []);
+  if (!periodColumn || !Array.isArray(rows) || rows.length === 0) return { isPanel: false, periodColumn: periodColumn ?? null, entityColumn: null };
+  const perPeriod = new Map();
+  for (const row of rows) {
+    const key = String(row[periodColumn.name]);
+    perPeriod.set(key, (perPeriod.get(key) ?? 0) + 1);
+  }
+  const rowsPerPeriod = Math.max(...perPeriod.values());
+  if (rowsPerPeriod <= 1) return { isPanel: false, periodColumn, entityColumn: null };
+
+  const keyed = [];
+  for (const column of columns.filter((c) => c.type === "text")) {
     const seen = new Set();
-    let unique = true;
-    for (let i = 0; i < rowCount; i++) {
-      const key = `${c._values[i]}\u0000${period._values[i]}`;
-      if (seen.has(key)) {
-        unique = false;
+    const values = new Set();
+    let blank = 0;
+    let collides = false;
+    for (const row of rows) {
+      const raw = row[column.name];
+      const written = raw === null || raw === undefined ? "" : String(raw).trim();
+      if (written === "") {
+        blank += 1;
+        continue;
+      }
+      const lower = written.toLowerCase();
+      values.add(lower);
+      const pair = `${row[periodColumn.name]} ${lower}`;
+      if (seen.has(pair)) {
+        collides = true;
         break;
       }
-      seen.add(key);
+      seen.add(pair);
     }
-    if (unique) return { entity: c, period };
+    if (collides || values.size < 2) continue;
+    keyed.push({ column, blank, distinct: values.size, at: columns.indexOf(column) });
   }
-  return null;
+  keyed.sort((a, b) => a.blank - b.blank || b.distinct - a.distinct || a.at - b.at);
+  return {
+    isPanel: true,
+    periodColumn,
+    entityColumn: keyed[0]?.column ?? null,
+    rowsPerPeriod,
+    periods: perPeriod.size,
+  };
+}
+export function findYearColumn(columns) {
+  const byName = columns.find((c) => /year|date|ann[ée]e/i.test(c.name));
+  if (byName) return byName;
+  return (
+    columns.find(
+      (c) => c.type === "number" && Number.isInteger(c.min) && Number.isInteger(c.max) && c.min >= 1500 && c.max <= 2100,
+    ) ?? null
+  );
 }
 
 /** HOW MANY ENTITIES EACH PERIOD CARRIES. `findGaps` answers about the SEQUENCE — which steps are
@@ -723,8 +786,10 @@ function coverageOf(entity, period, rowCount) {
   const seen = new Map();
   for (let i = 0; i < rowCount; i++) {
     const p = period._values[i];
+    const subject = entity._values[i];
+    if (subject === "") continue;
     if (!seen.has(p)) seen.set(p, new Set());
-    seen.get(p).add(entity._values[i]);
+    seen.get(p).add(subject);
   }
   const byPeriod = [...seen]
     .map(([p, subjects]) => ({ period: Number(p), entities: subjects.size }))
@@ -782,6 +847,13 @@ function structurallyUnlikeRows(entity, period, columns, rowCount) {
       shapes.set(shape, (shapes.get(shape) ?? 0) + 1);
     }
     if (coded === 0) continue;
+    // A CODE NAMES EACH SUBJECT ONCE, and that is what tells a code column apart from a CATEGORY
+    // column that also happens to hold one value per entity. Measured on `stress-aa-salary-spread`:
+    // `department` is one value per employee, five values over 240 of them, and its majority shape
+    // covers about 60% of them — so without this it proposed 96 employees as aggregate candidates on
+    // a salary table. `code` in the three real panels is injective in every one: 259 codes for 259
+    // coded entities, 226 for 226, 247 for 247.
+    if (new Set([...byEntity.values()].filter((v) => v !== "")).size !== coded) continue;
     let dominant = null;
     let dominantCount = 0;
     for (const [shape, count] of shapes) {
@@ -827,6 +899,20 @@ function writtenDecimals(values) {
  *  no search at all. */
 const AGGREGATE_SEARCH_ENTITY_CEILING = 16;
 
+/** HOW MANY PERIODS A WITNESS HAS TO SURVIVE BEFORE IT IS EVIDENCE OF ANYTHING.
+ *
+ *  A subset that adds up ONCE is a coincidence, and on a small table it is a frequent one:
+ *  measured on `stress-b-piped-water` — nine countries, one row each, all of them 2022 — the search
+ *  returned `Bosnia & Herz.`, `Macedonia` and `Republic of Moldova` as aggregates, because with nine
+ *  numbers and a single period some subset adds up to almost any of them. `panelShapeOf` calls that
+ *  file a panel, correctly for its own question (a period carrying several rows is a period a claim
+ *  must name a subject in), and it carries no repetition at all for this one.
+ *
+ *  So a candidate present in fewer than two periods is not searched, and every decision carries the
+ *  number of periods its witness held across, so its weight is readable rather than assumed.
+ */
+const AGGREGATE_MIN_PERIODS = 2;
+
 /** A hard ceiling on the work, so a pathological table cannot hang a phase that is supposed to be
  *  silent. Exhausting it is REPORTED, never swallowed: "found none" and "stopped looking" are two
  *  different answers. */
@@ -853,11 +939,12 @@ const AGGREGATE_SEARCH_NODE_BUDGET = 200_000;
  *
  *  A witness of ONE row is refused: "A equals B in every period" is two identical series, which is
  *  worth knowing and is not an aggregate. */
-function aggregatesByArithmetic({ entity, period, columns, rowCount, over }) {
+function aggregatesByArithmetic({ entity, period, columns, rowCount, over, candidates }) {
   const periods = [...new Set(period._values)].map(Number).sort((a, b) => a - b);
   const periodIndex = new Map(periods.map((p, i) => [i, p].reverse()));
   const measures = columns.filter((c) => c.type === "number" && c.gaps === null && c.min !== null && c.min >= 0);
   const searchable = new Set(over);
+  const decidable = new Set(candidates);
   const budget = { nodes: 0, exhausted: false };
 
   for (const measure of measures) {
@@ -883,12 +970,12 @@ function aggregatesByArithmetic({ entity, period, columns, rowCount, over }) {
 
     const found = new Map();
     for (const candidate of names) {
-      if (!searchable.has(candidate)) continue;
+      if (!decidable.has(candidate)) continue;
       const target = vectors.get(candidate);
       const here = presence.get(candidate);
       const at = [];
       for (let i = 0; i < periods.length; i++) if (here[i]) at.push(i);
-      if (at.length === 0) continue;
+      if (at.length < AGGREGATE_MIN_PERIODS) continue;
       const project = (vector) => at.reduce((sum, i) => sum + vector[i], 0);
       const targetScalar = project(target);
       const items = names
@@ -1001,21 +1088,43 @@ function aggregatesOf(entity, period, columns, rowCount) {
   // proposal, a table small enough to enumerate is searched WHOLE — a fixture with a `Total` row
   // and no code column at all is still decided. Above that, nothing is searched, and the profile
   // says so rather than reporting "no aggregates" about a table it never looked at.
-  const proposed = structure && structure.proposed.length >= 2 ? structure.proposed.map((p) => p.entity) : null;
+  const proposed = (structure?.proposed ?? []).map((p) => p.entity);
   const small = entities <= AGGREGATE_SEARCH_ENTITY_CEILING;
-  const over = proposed ?? (small ? [...new Set(entity._values)] : null);
-  const reach = proposed
-    ? `the ${proposed.length} rows the "${structure.column}" column's own shape sets apart`
-    : `every one of the ${entities} entities`;
+  const over = proposed.length >= 2 ? proposed : small ? [...new Set(entity._values)] : null;
+  const reach =
+    proposed.length >= 2
+      ? `the ${proposed.length} rows the "${structure.column}" column's own shape sets apart`
+      : `every one of the ${entities} entities`;
   let arithmetic;
   let decided = [];
-  if (over === null) {
+  const periods = new Set(period._values.filter((v) => v !== "")).size;
+  if (periods < AGGREGATE_MIN_PERIODS) {
+    arithmetic = {
+      ran: false,
+      reason: `this table carries ${periods} period, and a set of rows that adds up once is a coincidence rather than an aggregate — see AGGREGATE_MIN_PERIODS`,
+    };
+  } else if (proposed.length === 0) {
+    // THE STRUCTURE PROPOSES AND THE ARITHMETIC DECIDES, in that order, and a candidate nothing set
+    // apart is not put to the arithmetic at all. Measured on `heat-pump-adoption-across-europe`:
+    // ten countries over five years, and Poland plus the United Kingdom add up to the Netherlands
+    // EXACTLY in all five — 5 + 3, 7 + 4, 10 + 5, 13 + 7, 17 + 9 — which is a coincidence between
+    // three independent percentages and would have been reported as an aggregate. Five periods over
+    // nine other rows is not enough repetition to rule that out; fifteen over eleven is, and the
+    // rows the code column sets apart are the ones worth spending it on.
+    //
+    // The limit this leaves, said rather than hidden: an aggregate whose code is shaped like every
+    // other row's is not reached here at all.
+    arithmetic = {
+      ran: false,
+      reason: `the structural test set no row of this table apart, so there was no candidate to put to the arithmetic — a set of rows that happens to add up to another is a coincidence until something else says that row is different`,
+    };
+  } else if (over === null) {
     arithmetic = {
       ran: false,
       reason: `no structural test proposed two rows or more on this table and it carries ${entities} entities, more than the ${AGGREGATE_SEARCH_ENTITY_CEILING} an exhaustive subset search can be run over — nothing here was checked by arithmetic`,
     };
   } else {
-    const result = aggregatesByArithmetic({ entity, period, columns, rowCount, over });
+    const result = aggregatesByArithmetic({ entity, period, columns, rowCount, over, candidates: proposed });
     decided = result.decided;
     arithmetic = {
       ran: true,
@@ -1288,7 +1397,14 @@ export function profileTable(rows, { prose } = {}) {
   // THE PANEL — see the block above `SEQUENCE_TOTAL_WITHHELD`. Decided after the columns, because
   // every question it puts is a question about columns this profiler has already typed: which one
   // is a sequence, which one has no blank in it, which ones are non-negative measures.
-  const key = panelKeyOf(columns, body.length);
+  // ONE DECISION, NOT TWO: `panelShapeOf` is `storyboard`'s, copied byte for byte, so the profile
+  // and the grounding check cannot disagree about whether a frozen file is a panel or about which
+  // column names its subject. What is added here is what a PROFILE owes and a check does not: how
+  // many entities each period carries, whether the panel is balanced, and which rows are sums of
+  // other rows.
+  const records = body.map((row) => Object.fromEntries(columns.map((c, i) => [c.name, (row[i] ?? "").trim()])));
+  const shape = panelShapeOf(columns, records);
+  const key = shape.isPanel && shape.entityColumn ? { entity: shape.entityColumn, period: shape.periodColumn } : null;
   let panel = null;
   if (key) {
     const coverage = coverageOf(key.entity, key.period, body.length);
@@ -1297,9 +1413,9 @@ export function profileTable(rows, { prose } = {}) {
       entity: key.entity.name,
       period: key.period.name,
       entities: key.entity.distinct,
-      periods: key.period.distinct,
+      periods: shape.periods,
       rowsPerPeriod: { min: Math.min(...rowsPerPeriod), max: Math.max(...rowsPerPeriod) },
-      balanced: key.entity.distinct * key.period.distinct === body.length,
+      balanced: key.entity.distinct * shape.periods === body.length,
       says: `one row per entity per period: every ("${key.entity.name}", "${key.period.name}") pair in this table is unique, so rowCount (${body.length}) counts readings, never subjects — there are ${key.entity.distinct} of those`,
       decidedBy: `every ("${key.entity.name}", "${key.period.name}") pair is unique across all ${body.length} rows, and "${key.entity.name}" holds no blank`,
       coverage: {
@@ -1307,12 +1423,28 @@ export function profileTable(rows, { prose } = {}) {
         says: `a period's own step being present is not the same as every entity being present in it: the fullest period here carries ${coverage.fullest.entities} entities and the thinnest carries ${coverage.thinnest.entities}`,
       },
       aggregates: aggregatesOf(key.entity, key.period, columns, body.length),
+      // WHERE THE SHARED DERIVATION AND THIS PROFILER'S OWN TYPING DISAGREE. `panelShapeOf` finds the
+      // period column by NAME (`findYearColumn`); `isSequenceColumn` finds it by the column's own
+      // VALUES and records the answer as `gaps`. Measured over the 36 frozen tables they part once:
+      // `stress-t-europe-recycling`'s `survey_date` holds "2025-03-01", "01/03/2025" and "March 2025",
+      // is named the period by the first and refused by the second. Said out loud rather than settled
+      // quietly in favour of either, because a profile that names a period its own typing will not
+      // stand behind has handed the next phase a guess.
+      ...(key.period.gaps === null
+        ? {
+            periodNotASequence: {
+              says: `"${key.period.name}" was read as the period from its NAME, and this profiler's own typing does not make it a sequence — its gaps are null, so nothing here can say which steps it skips`,
+              column: key.period.name,
+              type: key.period.type,
+            },
+          }
+        : {}),
     };
     // ON THE PERIOD COLUMN ITSELF, because `gaps: []` is where a reader looks and on the Ember file
     // it is true and misleading: every year from 1900 to 2025 is present, 2022 carries 245 entities
     // and 2025 carries 114. Absent — not false — when coverage really is flat, so the field only
     // ever appears where there is something to see.
-    if (coverage.fullest.entities !== coverage.thinnest.entities) {
+    if (key.period.gaps !== null && coverage.fullest.entities !== coverage.thinnest.entities) {
       key.period.gapsAreNotCoverage = {
         says: "every step of this sequence is present; that is not the same as every entity being present at every step, and this column's own coverage is not flat",
         fullest: coverage.fullest,

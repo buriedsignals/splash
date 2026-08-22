@@ -184,13 +184,31 @@ panel: {
 }
 ```
 
-**The key is checked, never named.** A table is a panel when one of its own columns identifies the
-subject and every (subject, period) pair in it is unique — that is the arithmetic statement of "one
-row per entity per period", and it is checked against every row. A key column with a BLANK in it is
-refused: `code` also keys the wildfire table (the one entity with no code has exactly one row per
-year, so `(code, year)` is unique across all 3 900 rows) and it identifies nothing for that row.
-Text columns only; a panel keyed by a numeric id is a real shape this does not reach, and saying so
-is better than letting a MEASURE column that happens to key the table be named as the subject.
+**ONE DECISION, NOT TWO.** The shape itself is `panelShapeOf`, `storyboard`'s own function, copied
+here **byte for byte** and walked by `COPIES` in `splash/test/guard-copies-parity.test.ts`. Both
+skills have to answer "is this a panel, and which column names its subject" about the same frozen
+file — the profiler to describe it, the grounding check before it reads a value out of it — and a
+profiler that says panel while the check that decides a gate says flat table is worse than neither
+saying it. Its dependency `findYearColumn` is copied byte-identically beside it; it is not yet
+walked, because that test anchors on a doc comment the storyboard copy does not carry.
+
+**The key is checked, never named.** A table is a panel when one period value carries more than one
+row, and the column that keys those rows apart is the text column whose value is unique WITHIN every
+period. A key column with a BLANK in it loses: `code` also keys the wildfire table (the one entity
+with no code has exactly one row per year, so `(code, year)` is unique across all 3 900 rows) and it
+identifies nothing for that row, so the never-blank column wins, then the one with more distinct
+values, then the leftmost.
+
+**Where the shared derivation and this profiler's own typing part, the profile says so.**
+`panelShapeOf` finds the period column by NAME (`findYearColumn`, no test of the values);
+`isSequenceColumn` finds it by the column's own VALUES and publishes the answer as `gaps`. Measured
+across the 36 frozen tables they part once: `stress-t-europe-recycling`'s `survey_date` holds
+`2025-03-01`, `01/03/2025` and `March 2025`, is named the period by the first and refused by the
+second. Where that happens the panel carries `periodNotASequence` rather than a period this
+profiler's own typing will not stand behind — and `gapsAreNotCoverage` is not written at all, because
+a column with no gaps has no full range to mistake for full coverage. **The fix belongs in the one
+decision, in both copies: prefer a column the table's own values make a sequence, and fall back to
+the name.**
 
 **A period column carries no total.** `sum` is `null` on any column `isSequenceColumn` recognised as
 a sequence, and `sumWithheld` says why, so the refusal does not read like a text column's empty
@@ -237,6 +255,15 @@ the same total in every period; the small set therefore stands in for the large 
 makes its MEMBERS aggregates too. That is how the six continents are decided, and it is an argument
 from the numbers, not from the names.
 
+**The structure proposes and the arithmetic decides, in that order.** A row nothing set apart is
+never put to the arithmetic at all, and the reason is a measurement:
+`heat-pump-adoption-across-europe` holds ten countries over five years, and Poland plus the United
+Kingdom add up to the Netherlands EXACTLY in all five — 5+3, 7+4, 10+5, 13+7, 17+9. Three
+independent percentages. Five periods over nine other rows is not enough repetition to rule a
+coincidence out; the wildfire file's fifteen over eleven is, and the rows the code column sets apart
+are the ones worth spending it on. The limit that leaves, said rather than hidden: **an aggregate
+whose code is shaped like every other row's is not reached here at all.**
+
 Its declared limits, each of them observable in the output rather than written here only:
 
 - **Non-negative columns only.** The pruning that makes the search finish is only valid while
@@ -246,6 +273,9 @@ Its declared limits, each of them observable in the output rather than written h
   is worth knowing and is not a sum.
 - **A share does not sum.** On the Ember percentage column no witness exists and none is invented:
   `byArithmetic` is empty and the 32 aggregates are still named, by structure.
+- **A table carrying one period is not searched.** With nine numbers and a single period some
+  subset adds up to almost any of them: `stress-b-piped-water` returned three countries as
+  aggregates of each other before `AGGREGATE_MIN_PERIODS` existed.
 - **The search is bounded** — `AGGREGATE_SEARCH_NODE_BUDGET`. Exhausting it sets `exhausted: true`,
   because "found none" and "stopped looking" are two different answers.
 - **A table with no structural proposal and more than `AGGREGATE_SEARCH_ENTITY_CEILING` entities is
@@ -255,7 +285,11 @@ Its declared limits, each of them observable in the output rather than written h
 **The structure proposes, and over-reaches by construction.** A published panel carries a code
 column beside its entity column, one code per entity, and the aggregates in it are the rows the
 publisher could not give a country code to. The code column is found by its RELATION to the entity
-column — one value per entity, blanks allowed — never by being named "code", the same
+column — one value per entity, blanks allowed, and **injective**: a code NAMES EACH SUBJECT ONCE, and
+that is what tells it apart from a CATEGORY column that also holds one value per entity.
+`stress-aa-salary-spread`'s `department` is five values over 240 employees with a majority shape
+covering about 60% of them, and without injectivity it proposed 96 employees as aggregate candidates
+on a salary table. Never by being named "code", the same
 identity-not-shape test `UNIT_COLUMN_NAME_RE` and `DENOMINATOR_NAME_TOKENS` make for their own
 questions. Values are then reduced to a SHAPE (letters to `A`/`a`, digits to `9`: `AFG` is `AAA`,
 `OWID_WRL` is `AAAA_AAA`) and a row whose shape is not the majority shape, or whose code is missing,

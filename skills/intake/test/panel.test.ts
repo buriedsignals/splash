@@ -304,7 +304,65 @@ describe("which entities are aggregates of the other rows", () => {
   });
 });
 
+describe("what stops the arithmetic reporting a coincidence", () => {
+  it("should refuse a set that adds up in every period of a table nothing set apart", () => {
+    // `heat-pump-adoption-across-europe`: ten countries, five years, and Poland plus the United
+    // Kingdom add up to the Netherlands EXACTLY in all five — 5+3, 7+4, 10+5, 13+7, 17+9. Three
+    // independent percentages, and before the structure had to propose first this was reported as
+    // an aggregate. Five periods over nine other rows is not enough repetition to rule out a
+    // coincidence; the wildfire file's fifteen over eleven is.
+    const { panel } = read("heat-pump-adoption-across-europe");
+    expect(panel.entities).toBe(10);
+    expect(panel.periods).toBe(5);
+    expect(panel.aggregates.byArithmetic).toEqual([]);
+    expect(panel.aggregates.arithmetic.ran).toBe(false);
+    expect(panel.aggregates.arithmetic.reason).toContain(
+      "structural test set no row",
+    );
+  });
+
+  it("should not search a table that carries one period, where nothing can repeat", () => {
+    // `stress-b-piped-water`: nine countries, one row each, all 2022. With nine numbers and a
+    // single period some subset adds up to almost any of them — it returned three countries as
+    // aggregates of each other before this floor existed.
+    const { panel } = read("stress-b-piped-water");
+    expect(panel.periods).toBe(1);
+    expect(panel.aggregates.byArithmetic).toEqual([]);
+    expect(panel.aggregates.arithmetic.ran).toBe(false);
+    expect(panel.aggregates.arithmetic.reason).toContain("coincidence");
+  });
+
+  it("should not read a CATEGORY column as the column of codes", () => {
+    // `stress-aa-salary-spread`: `department` holds one value per employee, five values over 240 of
+    // them, and its majority shape covers about 60% — so it proposed 96 employees as aggregate
+    // candidates on a salary table. A code NAMES EACH SUBJECT ONCE; a department does not.
+    const { panel } = read("stress-aa-salary-spread");
+    expect(panel.entity).toBe("employee_id");
+    expect(panel.aggregates.byStructure).toEqual([]);
+    expect(panel.aggregates.structure.answered).toBe(false);
+  });
+});
+
 describe("what a profiler cannot decide, said where the journalist reads it", () => {
+  it("should say when the period column is one its own typing will not call a sequence", () => {
+    // The shared derivation finds the period column by NAME; this profiler's `isSequenceColumn`
+    // finds it by the column's own VALUES. `stress-t-europe-recycling` carries `survey_date` as
+    // "2025-03-01", "01/03/2025" and "March 2025" — named a period by the first and refused by the
+    // second. A profile that names a period its own typing will not stand behind has handed the
+    // next phase a guess.
+    const { panel, columns } = profileTable([
+      ["country", "report_date", "value"],
+      ["France", "2024-01-01", "1"],
+      ["Spain", "2024-01-01", "2"],
+      ["France", "01/02/2024", "3"],
+      ["Spain", "01/02/2024", "4"],
+    ]);
+    expect(panel.period).toBe("report_date");
+    expect(columns.find((c) => c.name === "report_date").gaps).toBe(null);
+    expect(panel.periodNotASequence.column).toBe("report_date");
+    expect(panel.periodNotASequence.says).toContain("sequence");
+  });
+
   it("should carry a stated incompleteness out of the article's own prose onto the profile", () => {
     // The wildfire dataset states its own incompleteness in a description line intake freezes as
     // PROSE, never as a column: "Number of wildfires. The 2026 data is incomplete and was last
