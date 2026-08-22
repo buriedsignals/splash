@@ -4,7 +4,7 @@
 // dependencies, the same as every other render-still.mjs copy in this tree.
 //
 // Two passes, on purpose:
-//   1. The manifest exactly as intake froze it (source/data.csv) — tall.png's alt is empty,
+//   1. The manifest exactly as intake froze it (source/data.json) — tall.png's alt is empty,
 //      huge.png has no credit field at all. This pass is expected to THROW, and the thrown
 //      message is captured verbatim rather than swallowed.
 //   2. The same manifest with the two gaps named explicitly rather than invented — the "ship
@@ -30,7 +30,7 @@ const STORY = join(HERE, "..", "..");
 const TITLE = "Three photographs from the site";
 
 const RAW_MANIFEST = JSON.parse(
-  await readFile(join(STORY, "source", "data.csv"), "utf8"),
+  await readFile(join(STORY, "source", "data.json"), "utf8"),
 ).photos;
 
 async function resolvePhotos(manifest) {
@@ -56,7 +56,7 @@ async function resolvePhotos(manifest) {
 }
 
 // --- Pass 1: the manifest exactly as intake froze it ---
-console.log("PASS 1 — raw manifest, as frozen in source/data.csv:");
+console.log("PASS 1 — raw manifest, as frozen in source/data.json:");
 try {
   const rawPhotos = await resolvePhotos(RAW_MANIFEST);
   siteLayout(rawPhotos, TITLE); // throws before any pixel is drawn
