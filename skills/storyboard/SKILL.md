@@ -143,6 +143,16 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    this toolchain does not export, a sized format with none, and an unsized format carrying one.
    `splash/scripts/where.mjs` reads the same rule independently and words its refusals
    identically, and `splash/test/where.test.ts` compares the two string for string.
+
+   **A `static` beat is asked one thing more at G2c: WHERE IT IS PUBLISHED** — `destination: screen`
+   or `destination: print`. "Static / print" is one option at G2b and two publications, and a
+   graphic on a printed page is not a graphic on a display; guessing it put a 2.20:1 accent on paper
+   in `stories/stress-ad-polish-hospital-beds`. Render the turn with
+   `formatPublicationDestinationGate` (`scripts/format-gate.mjs`) and record what they say. The
+   field is OPTIONAL — six frozen static slots predate it and must keep closing — so absence is an
+   answer, never a default; the phase that needs the fact refuses and names it. Both gate-2 readings
+   run `destinationGap`, copied byte-identically, and refuse the field on a `web`, `video` or
+   `scrolly` beat, which is read on a display whatever else is true of it.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
    in use here — scalars (quoted or bare, with `null`/`~` resolved to a real missing value), and a
    list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside

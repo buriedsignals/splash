@@ -318,6 +318,30 @@ staging a question with one answer. Where it has more, ask. Where it is EMPTY th
 size at all and none is recorded. Either way widening the set later widens a set and re-plumbs
 nothing.
 
+**And a STATIC beat is asked one thing more here: where it is published.** Gate 2b's own label is
+*"Static / print"* — one option and two publications — and a static graphic lands either on a screen
+(an embedded image in the article) or on paper (the printed edition). Nothing in this toolchain ever
+asked which, so it was guessed: `stress-ad-polish-hospital-beds` shipped a 2.20:1 accent onto a
+printed page while its own gate turn recorded *"because the destination is a printed page"*, in
+prose nothing reads.
+
+Render that turn with `formatPublicationDestinationGate({format})`
+(`scripts/format-gate.mjs`), send it unchanged, and record the answer on the slot:
+
+    destination: screen
+    destination: print
+
+Ask it here, not at ⑥: the G2b turn is pinned byte for byte against a recorded host acceptance and
+must stop before every later movement. Ask it of a static beat only — a web, video or scrolly beat
+is read on a display whatever else is true of it, and both Gate-2 readings refuse the field on those
+formats (*"a web beat is read on a display, so it records no destination — leave the field out"*).
+
+The field is **optional**, and that is deliberate rather than lax: six `format: static` slots across
+five frozen stories were recorded before it existed, and requiring it would refuse all six for a
+question nobody asked them. Absence is an answer — *not recorded* — and it is never a default. What
+refuses is the phase that needs the fact: `palette`'s `proposePalette` cannot resolve a ground for a
+static beat without it and names this field, this movement and this question when it says so.
+
 ## ⑧ The reference loop, shown
 
 Find two or three real newsroom treatments of **the same argument structure** and show them: *"the
