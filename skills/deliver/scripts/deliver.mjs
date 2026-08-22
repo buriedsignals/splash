@@ -142,7 +142,8 @@ export const FORMS_BY_FORMAT = {
   video: {
     "owned-file": {
       label: "The file itself",
-      gives: "an mp4 the newsroom owns outright, nothing else to run",
+      gives:
+        "the mp4 the newsroom owns outright, with the video's own last frame as the poster image — nothing else to run, and none of the render ladder's working files",
     },
     "cms-insertion": {
       label: "CMS insertion",
@@ -248,6 +249,137 @@ export function offerForms(options) {
   );
 }
 
+/**
+ * WHAT `owned-file` ACTUALLY DELIVERS, per format — the files this beat DELIVERS, never the files
+ * it happened to write.
+ *
+ * ROUND-FIVE T10, V7 AND W9, reported independently by three formats. `owned-file` copied the whole
+ * of a beat's `renders/` directory, so a newsroom received the render ladder's own working set:
+ * `stories/stress-t-europe-recycling` delivered four intermediate frames and a 247 KB
+ * `video-props.json` beside the mp4 it asked for, and the hand-over described each of the four as
+ * "a raster copy, for a system that cannot take the vector" — a sentence about a vector that beat
+ * never rendered. `stories/stress-w-quay-photographs` worked around it in the other direction, by
+ * keeping its own portrait probe OUTSIDE `renders/` and writing down why.
+ *
+ * THIS IS NOT A NEW PROMISE. Every row of `FORMS_BY_FORMAT` above already says what its owned file
+ * is — "one self-contained HTML file", "an mp4 the newsroom owns outright, nothing else to run",
+ * "PNG, with SVG when the producer made one". The delivery simply never honoured it. What is
+ * written here is that sentence made mechanical, so the two cannot drift apart again.
+ *
+ * WHY THE POSTER FRAME IS DELIVERED AND THE QA FRAMES ARE NOT, since both are PNGs of one video.
+ * The render ladder's rung 2 is the video's LAST FRAME, rendered on its own so the end state can be
+ * looked at before the mp4 costs minutes; a newsroom publishing an mp4 needs exactly that image as
+ * its poster. The frames at 60, 100, 125 … are samples taken to check the BUILD, and a build is not
+ * a deliverable. They are told apart by the name the ladder itself writes — `final-frame.png`, or
+ * `<beat>-final-frame.png` — which is the convention every video beat in this tree already follows
+ * (measured: stress-ae, stress-m, stress-t, and stress-v twice over, at two sizes).
+ *
+ * WITHHELD IS NOT DELETED. Everything a producer wrote stays in the beat's own `renders/`, where a
+ * maintainer can still look at it. What changes is what crosses into `export/`.
+ */
+const DELIVERED_BY_FORMAT = {
+  // The row's own words: "PNG, with SVG when the producer made one".
+  static: (name) => /\.(png|svg)$/i.test(name),
+  // "one self-contained HTML file the newsroom owns outright".
+  web: (name) => /\.html$/i.test(name),
+  scrolly: (name) => /\.html$/i.test(name),
+  // "an mp4 the newsroom owns outright" — plus the poster the mp4 is published behind.
+  video: (name) => /\.mp4$/i.test(name) || /(^|[-_])final-frame\.png$/i.test(name),
+};
+
+/**
+ * `{ delivered, withheld }` for one `renders/` listing in one format, both in the order the
+ * directory gave them. THROWS on a format with no delivered set rather than falling back to
+ * "everything", which is the behaviour this function exists to remove: a format nobody has decided
+ * for must not deliver a working directory by default.
+ *
+ * Pure, and exported, so the decision can be driven over the tree's real beats
+ * (`test/owned-file-delivers-what-it-promises.test.ts`) rather than only over what `materialise`
+ * happens to stage.
+ */
+export function ownedFileDelivery(names, format) {
+  const delivers = DELIVERED_BY_FORMAT[format];
+  if (!delivers) {
+    throw new Error(
+      `no owned-file delivered set is declared for format ${JSON.stringify(format)} — ` +
+        `${Object.keys(DELIVERED_BY_FORMAT).join(", ")} each name what their own file is, and a ` +
+        `format that has not decided must not fall back to copying a beat's whole renders/ directory`,
+    );
+  }
+  const delivered = [];
+  const withheld = [];
+  for (const name of names) (delivers(name) ? delivered : withheld).push(name);
+  return { delivered, withheld };
+}
+
+// One file into the export, with the HTML path's key substitution and its `mapKeyState` reading.
+// Split out of `copyTree` so the owned-file branch can copy a CHOSEN set without re-implementing
+// either.
+async function copyDeliverable(srcPath, destPath, written, { env = process.env, states = [] } = {}) {
+  if (srcPath.endsWith(".html")) {
+    const html = await readFile(srcPath, "utf8");
+    states.push(mapKeyState(html, env));
+    await writeFile(destPath, substituteKeys(html, env));
+  } else {
+    await copyFile(srcPath, destPath);
+  }
+  written.push(destPath);
+}
+
+/**
+ * The owned-file form, materialised: the files this format delivers out of `renders/`, and nothing
+ * else. Refuses a beat whose `renders/` holds nothing this format delivers — a video beat with no
+ * mp4 used to deliver a folder of QA frames and report success.
+ *
+ * IT RECURSES, AND IT FILTERS AT EVERY DEPTH. A beat may render into a subdirectory (`renders/
+ * social/`), and dropping those wholesale would withhold a real deliverable; copying them wholesale
+ * is the same defect one level down. A directory is created in the export only when something
+ * inside it is actually delivered, so a working folder leaves no empty shell behind.
+ *
+ * The symbolic-link refusal is made over EVERY entry, delivered or not, so withholding a file
+ * cannot also withhold that refusal.
+ */
+async function copyOwnedFiles(rendersDir, destDir, written, format, { env = process.env, states = [] } = {}) {
+  const found = [];
+  const kept = [];
+  const withheld = [];
+
+  async function walk(srcDir, outDir, prefix) {
+    const entries = await readdir(srcDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = join(srcDir, entry.name);
+      const label = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isSymbolicLink()) {
+        throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
+      } else if (entry.isDirectory()) {
+        await walk(srcPath, join(outDir, entry.name), label);
+      } else {
+        found.push(label);
+        const { delivered } = ownedFileDelivery([entry.name], format);
+        if (delivered.length === 0) {
+          withheld.push(label);
+          continue;
+        }
+        await mkdir(outDir, { recursive: true });
+        await copyDeliverable(srcPath, join(outDir, entry.name), written, { env, states });
+        kept.push(label);
+      }
+    }
+  }
+
+  await mkdir(destDir, { recursive: true });
+  await walk(rendersDir, destDir, "");
+
+  if (kept.length === 0) {
+    throw new Error(
+      `${rendersDir} holds nothing a ${format} beat delivers — found ${
+        found.length ? found.join(", ") : "nothing"
+      }. The form is "the file itself", and this beat has not rendered one.`,
+    );
+  }
+  return { delivered: kept, withheld };
+}
+
 // Recursively copies one directory's contents into another, collecting every file path
 // written. Directories are walked, never handed to `copyFile` directly — a beat carrying a
 // subdirectory anywhere other than "renders" (an "assets" folder, say) must be copied whole,
@@ -263,14 +395,8 @@ async function copyTree(srcDir, destDir, written, { env = process.env, states = 
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
       await copyTree(srcPath, destPath, written, { env, states });
-    } else if (entry.name.endsWith(".html")) {
-      const html = await readFile(srcPath, "utf8");
-      states.push(mapKeyState(html, env));
-      await writeFile(destPath, substituteKeys(html, env));
-      written.push(destPath);
     } else {
-      await copyFile(srcPath, destPath);
-      written.push(destPath);
+      await copyDeliverable(srcPath, destPath, written, { env, states });
     }
   }
 }
@@ -810,7 +936,7 @@ async function materialiseInto({
   const states = [];
 
   if (form === "owned-file") {
-    await copyTree(join(beatDir, "renders"), exportDir, written, { env, states });
+    await copyOwnedFiles(join(beatDir, "renders"), exportDir, written, format, { env, states });
     return withHandover(written, { exportDir, format, handover, states });
   }
 

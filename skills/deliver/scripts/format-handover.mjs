@@ -284,6 +284,24 @@ const RASTER_ROLE = {
 const VECTOR_EXTENSION = ".svg";
 const RASTER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
 
+// THE ONE RASTER THAT IS NOT A COPY OF THE GRAPHIC — a video beat's poster.
+//
+// Round-five Y13 named the vector sentence ("a raster copy, for a system that cannot take the
+// vector") on a video beat's delivered frames, and the fix above answered it off the delivered set.
+// That left the OTHER wrong sentence in place: with no SVG beside it, a video's last frame fell to
+// the lone-raster role — "the image file — this is the one to give the CMS" — which tells an editor
+// to publish the still instead of the video.
+//
+// It is told apart by the name the render ladder itself writes, `final-frame.png` or
+// `<beat>-final-frame.png`, which is the same convention `deliver.mjs`'s own delivered set reads.
+// Matching on the NAME rather than on the format is deliberate: this function is handed a file
+// list, and a rule keyed on the format would say the same thing about every PNG in it.
+const POSTER_NAME = /(^|[-_])final-frame\.png$/i;
+const POSTER_ROLE = {
+  en: "the video's own last frame — the poster image the player shows before the video plays, not a second version of it",
+  fr: "la dernière image de la vidéo — l'image d'affiche que le lecteur montre avant la lecture, pas une seconde version du visuel",
+};
+
 function extensionOf(name) {
   const dot = name.lastIndexOf(".");
   return dot === -1 ? "" : name.slice(dot).toLowerCase();
@@ -292,6 +310,7 @@ function extensionOf(name) {
 function roleFor(name, written, { vectorDelivered = false } = {}) {
   const named = ROLE_BY_BASENAME[written][name];
   if (named) return named;
+  if (POSTER_NAME.test(name)) return POSTER_ROLE[written];
   const extension = extensionOf(name);
   if (RASTER_EXTENSIONS.includes(extension)) {
     return RASTER_ROLE[written][vectorDelivered ? "beside" : "alone"];

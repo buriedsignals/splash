@@ -875,8 +875,27 @@ describe("materialise", () => {
   // The generic materialise path (both branches) must honour "web" and "video" exactly as it
   // does "static" — this is the defect the format table fix closes: before it, both formats threw
   // "not an offered form" for every form id, however the renders/ directory was populated.
+  //
+  // EACH FORMAT'S FIXTURE RENDERS WHAT THAT FORMAT RENDERS, since round-six tier 1. This loop used
+  // to hand every format the same `still.png`/`still.svg` and assert both came out, which asserted
+  // that a web beat delivers a PNG and a video beat delivers a PNG and an SVG — the "owned-file
+  // ships the beat's internals" defect written down as an expectation. What the loop is FOR is
+  // unchanged: neither format may throw "not an offered form".
+  const ownedFileFixture = {
+    web: { renders: { "chart.html": "<html></html>" }, delivers: ["chart.html"] },
+    video: {
+      renders: { "chart.mp4": "mp4-bytes", "chart-final-frame.png": "png-bytes" },
+      delivers: ["chart-final-frame.png", "chart.mp4"],
+    },
+  };
   for (const format of ["web", "video"]) {
     it(`should write only the owned file for a ${format} beat when that form is chosen`, async () => {
+      const fixture = ownedFileFixture[format as "web" | "video"];
+      for (const [name, bytes] of Object.entries(fixture.renders)) {
+        await writeFile(join(beatDir, "renders", name), bytes);
+      }
+      await approveCurrentOutput(beatDir);
+
       const written = await materialise({
         form: "owned-file",
         format,
@@ -885,12 +904,15 @@ describe("materialise", () => {
         handover,
       });
       const files = await readdir(exportDir);
-      expect(files).toContain("still.png");
-      expect(files).toContain("still.svg");
+      for (const name of fixture.delivers) expect(files).toContain(name);
+      // The static render sitting in the same `renders/` is not this format's owned file, and a
+      // newsroom taking a video does not receive the beat's rung-one still.
+      expect(files).not.toContain("still.png");
+      expect(files).not.toContain("still.svg");
       expect(files).not.toContain("package.json");
-      // The beat's two rendered files, plus HANDOVER.md — G4 closes into that file.
+      // The beat's own delivered files, plus HANDOVER.md — G4 closes into that file.
       expect(files).toContain("HANDOVER.md");
-      expect(written).toHaveLength(3);
+      expect(written).toHaveLength(fixture.delivers.length + 1);
     });
 
     it(`should write a runnable bundle for a ${format} beat when the source form is chosen`, async () => {

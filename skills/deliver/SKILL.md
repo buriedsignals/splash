@@ -200,9 +200,16 @@ draft is a fact — and the approval is refused over it, as before.
    fails. Only a successful build and hand-over replace the previous export; ordinary failures
    remove staging and preserve the last good delivery. Inside staging it writes the beat's receipt
    and:
-   - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
-     subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
-     throws on it).
+   - `"owned-file"` copies **the files this format DELIVERS** out of `<beatDir>/renders/` into
+     `exportDir` — never every entry of it. Each format's own `gives` sentence already said what
+     its owned file is ("one self-contained HTML file", "an mp4 … nothing else to run", "PNG, with
+     SVG when the producer made one"); `ownedFileDelivery` is that sentence made mechanical, and
+     `DELIVERED_BY_FORMAT` is the one table it reads. A video beat delivers its mp4 and the render
+     ladder's own `*final-frame.png` poster; its intermediate frames and its `video-props.json`
+     stay with the beat. Withheld is not deleted — nothing leaves `renders/`, it simply does not
+     cross into `export/`. Subdirectories are walked and filtered at every depth, and a directory
+     is created in the export only when something inside it is delivered. A beat whose `renders/`
+     holds nothing this format delivers is REFUSED, naming what it found.
    - `"source-bundle"` copies every entry of `beatDir` *except* `renders/` (the raster output
      belongs to the other form, not this one) into `exportDir`, then writes a real `build.ts`
      — a script that finds the copied `.tsx` files and bundles them with `Bun.build`, the
@@ -477,6 +484,7 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 | What names the output a delivery came from | `1` file, `.delivered-from` — read before replacement, so a mismatched output is refused | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | What makes an interrupted replacement recoverable | A schema-v1 sibling journal plus `.delivery-manifest.json`; a per-output lock serializes calls and stale dead-process locks are reclaimed | `scripts/delivery-replacement.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
+| What `owned-file` delivers out of `renders/` | Per format: `.png`/`.svg` for static · `.html` for web and scrolly · `.mp4` plus the `*final-frame.png` poster for video. Everything else stays with the beat, and a format with no declared set is refused rather than defaulted to "everything" | `DELIVERED_BY_FORMAT`, `ownedFileDelivery`, `scripts/deliver.mjs` |
 | What binds Gate 3 to the artifact | `OUTPUT-REVIEW.json` schema v1 plus a matching QA run; both bind output ID, SHA-256 render-tree digest, plan version, and finding IDs | `scripts/output-review.mjs` |
 | Which Cloudflare Pages project a beat's embed lands in | One deterministic, length-bounded project derived from `{storyId, outputId}`; rerunning the same output retains its stable `*.pages.dev` URL | `cloudflareProjectName`, `scripts/deploy-embed.mjs` |
 | Which URL a newsroom may whitelist for scrollytelling assistance | One deterministic `https://splash-scroller-<account-hash>.pages.dev` URL per Cloudflare account; Splash publishes it automatically on hosted delivery | `cloudflareScrollerProjectName`, `cloudflareScrollerUrl`, `scripts/deploy-embed.mjs` |
@@ -538,6 +546,11 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 - `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace`, `CMS_KINDS`. No network
   code anywhere in this file.
 - `references/cms-insertion.md` — both CMS mechanics in prose, and what remains untested.
+- `test/owned-file-delivers-what-it-promises.test.ts` — `ownedFileDelivery` driven over the real
+  `renders/` listings of `stress-t-europe-recycling`, `stress-m-forest-loss`,
+  `stress-v-regional-migration` and `stress-w-quay-photographs`, plus the delivery end to end: what
+  reaches `export/`, what stays with the beat, and that the hand-over names the poster frame for
+  what it is rather than as the fallback for a vector the beat never rendered.
 - `test/deliver.test.ts` — `bun:test` coverage: what each form offers and describes, that
   `offerForms` itself refuses an unknown format, that only the chosen form's files land in
   `exportDir`, that a nested subdirectory (two levels deep for `source-bundle`, one level for
