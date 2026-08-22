@@ -94,6 +94,15 @@ const COPIES: Record<string, string[]> = {
     "splash/scripts/where.mjs",
     "storyboard/scripts/producer-gate.mjs",
   ],
+  // ROUND SEVEN, D11: WHERE A STATIC BEAT IS PUBLISHED. Gate 2b's own label is "Static / print",
+  // and until this field existed nothing recorded which of the two a static slot meant — so
+  // `stress-ad-polish-hospital-beds` shipped an accent measured for a screen onto a printed page.
+  // The field is OPTIONAL, which is precisely why the copy has to be walked: absence is legal on
+  // both sides, so the only thing separating "both gates tolerate a slot that never recorded it"
+  // from "one gate quietly stopped checking the values it does record" is this comparison. The
+  // divergence it forecloses is the A7/A14 one — a storyboard `whereIs` closes and
+  // `checkStoryboard` refuses.
+  destinationGap: ["splash/scripts/where.mjs", "storyboard/scripts/storyboard.mjs"],
   // Task A (round-three stress redesign): the shared number reader. `ground-claim.mjs`'s free-text
   // numeral scanner and `profile.mjs`'s column-level numeric parsing both hand an isolated token
   // to this one decision — a thousands-grouped integer settles itself only with its own trailing
