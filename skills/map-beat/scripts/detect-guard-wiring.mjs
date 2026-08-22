@@ -3,7 +3,7 @@
 export const GUARDS = ["declarationsWithoutACaller"];
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 /** Source with its COMMENTS removed, so a rule that is only TALKED ABOUT does not read as a rule
  *  that is called.
@@ -227,28 +227,163 @@ export function declarationsWithoutACaller(skillDir) {
     .map((decision) => decision.name);
 }
 
-/** THE NAMES THIS FORMAT IS STILL CARRYING UNWIRED, measured 2026-08-22 and recorded rather than
- *  forgiven — a RATCHET, the same shape `splash/test/delivered-size-matches-the-pin.test.ts` uses
- *  for a count that may only go down, with names instead of a number so that wiring one guard and
- *  unwiring another cannot look like standing still.
+
+/** WHETHER THE FILE AT `path` REACHES `name` — read in the same CALLER view `declaredDecisions`
+ *  reads a skill's own files in, and for the same reason.
  *
- *  The map's own debt, and the largest per-file concentration in the tree: ten of these live in
+ *  Comments are stripped, `import { … } from` lines are blanked and quoted bare names are blanked,
+ *  so a beat that only IMPORTS the decision, a runner that only mentions it in a comment and a test
+ *  that only names it in a string each fail to reach it. Those three are precisely what an author
+ *  writes INSTEAD of calling it — the finding that earned the caller view one level up — and the
+ *  whole point of the two categories below is that the excuse is checked rather than believed. A
+ *  weaker view here would let a claim be backed by the very thing this rule refuses. */
+export function fileReaches(path, name) {
+  if (!existsSync(path)) return false;
+  return new RegExp(`\\b${name}\\b`).test(withoutQuotedNames(readFileSync(path, "utf8")));
+}
+
+/** EVERY BEAT-SUBSTRATE CLAIM THIS FORMAT MAKES THAT NOTHING BACKS — the check that keeps
+ *  category 2 from being debt wearing an excuse.
+ *
+ *  The claim is: only a beat can call this decision, because it needs material a skill's own seed
+ *  does not have and MUST NOT INVENT — a declared study set joined against a frozen source, a
+ *  laid-out label stack with measured text boxes. Giving the seed one means inventing a fixture to
+ *  ask about, which is the thing `guard-wired-to-run` exists to refuse, so the claim is real. But a
+ *  claim nobody checks is a permission slip: it excuses the name from the ratchet and costs its
+ *  author nothing. So the entry NAMES a committed beat, under `stories/` or `proof/` where a beat
+ *  lives in this tree, and this goes and reads it.
+ *
+ *  A BEAT CALLS ITS OWN CARRIED COPY of the decision, never the skill's — that is what a beat is
+ *  here, and `splash/test/guard-copies-parity.test.ts` is what holds the copy to the skill's. So
+ *  the NAME is what is looked for in the beat's own runner, exactly as it is looked for in a
+ *  skill's own scripts one level up.
+ *
+ *  WHAT THIS CANNOT SEE, said out loud: whether the beat's call sits on the path its own render
+ *  takes or down a branch nothing reaches. It reads one edge, the same single edge
+ *  `declarationsWithoutACaller` reads, and a claim backed by a beat that never runs is weaker than
+ *  it looks. What it does foreclose is the empty claim — a name in this category with no real
+ *  caller ANYWHERE, which is worse than debt because it has stopped being counted as debt. */
+export function beatSubstrateWithoutACaller(skillDir, claims) {
+  const twin = resolve(skillDir, "..", "..");
+  const problems = [];
+  for (const claim of claims) {
+    const name = claim && claim.name ? claim.name : "an entry with no name";
+    const where = claim && typeof claim.calledBy === "string" ? claim.calledBy : "";
+    if (name === "an entry with no name" || where === "")
+      problems.push(`${name} is recorded as beat-substrate and names no beat that calls it`);
+    else if (!/^(stories|proof)\//.test(where))
+      problems.push(
+        `${name} is recorded as beat-substrate and names ${where}, which is not a committed beat — ` +
+          `a beat lives under stories/ or proof/`,
+      );
+    else if (!existsSync(join(twin, where)))
+      problems.push(`${name} is recorded as beat-substrate and names ${where}, which does not exist`);
+    else if (!fileReaches(join(twin, where), name))
+      problems.push(
+        `${name} is recorded as beat-substrate and ${where} does not call it — the excuse is ` +
+          `unbacked, which is worse than debt`,
+      );
+  }
+  return problems;
+}
+
+/** EVERY DRIVEN-BY-ITS-OWN-SUITE CLAIM THIS FORMAT MAKES THAT NOTHING BACKS — category 3's check,
+ *  under the same demand made of category 2.
+ *
+ *  The claim is: this decision's SUBJECT is the format's own committed files, so there is no
+ *  delivered artefact for a command in `scripts/` to be pointed at, and the format's own test is
+ *  where it is really driven. `deadExampleRunners` and `swallowedExampleRunners` are the two it was
+ *  written for: their subject is this skill's own example runners, and the alternative was to give
+ *  `scripts/example-runners.mjs` an `import.meta.main` nobody was told to run — buying eight
+ *  cleared debt entries with a command no `SKILL.md` mentions, which is the wiring credit this rule
+ *  exists to refuse.
+ *
+ *  The path is relative to THIS SKILL and has to start `test/`, so a format cannot back its own
+ *  claim with a neighbour's suite.
+ *
+ *  WHAT THIS CANNOT SEE, and the hole is in the CATEGORY rather than in the check: whether the
+ *  named test drives the decision over the skill's real population or feeds it a literal built to
+ *  be refused. Every guard in this tree has a unit test that calls it, so "a test calls it" is true
+ *  of the whole debt list — which is why this category is not a place to move a decision a
+ *  `scripts/` command could ask, and why the only names in it are the ones whose subject is the
+ *  skill's own files. A name arriving here whose subject is a delivered page is debt, and the
+ *  reader of this list is the check on that, not the code below. */
+export function ownSuiteWithoutACaller(skillDir, claims) {
+  const problems = [];
+  for (const claim of claims) {
+    const name = claim && claim.name ? claim.name : "an entry with no name";
+    const where = claim && typeof claim.calledBy === "string" ? claim.calledBy : "";
+    if (name === "an entry with no name" || where === "")
+      problems.push(`${name} is recorded as driven-by-its-own-suite and names no test that calls it`);
+    else if (!/^test\//.test(where))
+      problems.push(
+        `${name} is recorded as driven-by-its-own-suite and names ${where}, which is not this ` +
+          `format's own suite — the path is relative to this skill and starts test/`,
+      );
+    else if (!existsSync(join(skillDir, where)))
+      problems.push(
+        `${name} is recorded as driven-by-its-own-suite and names ${where}, which does not exist`,
+      );
+    else if (!fileReaches(join(skillDir, where), name))
+      problems.push(
+        `${name} is recorded as driven-by-its-own-suite and ${where} does not call it — the excuse ` +
+          `is unbacked, which is worse than debt`,
+      );
+  }
+  return problems;
+}
+
+/** THE THREE REASONS A DECLARED DECISION IS STILL NOT CALLED — one array in one voice until
+ *  2026-08-23, telling three different facts.
+ *
+ *  What was recorded here, measured 2026-08-22, was read as one thing: DEBT. Reading `map-web`'s
+ *  own list showed it was three. `credentialReadsWithoutAlias`, `pageLanguageMatchesStory` and
+ *  `weightAgainstCeiling` are debt — nobody has wired them and somebody could. `unmatchedValues` is
+ *  not: it needs a declared study set joined against a frozen source, which a skill's own seed does
+ *  not have and must not invent, and inventing a fixture to ask about is the thing this rule exists
+ *  to refuse. `deadExampleRunners` and `swallowedExampleRunners` are a third case again: their
+ *  subject is this skill's OWN committed example runners, so the format's own test drives them on
+ *  purpose, and the alternative was an `import.meta.main` on `scripts/example-runners.mjs` that no
+ *  `SKILL.md` tells anyone to run — eight cleared debt entries bought with a command nobody runs.
+ *
+ *  A reason that excuses a name from the ratchet has to be CHECKED or it is debt wearing an excuse,
+ *  so the list is three arrays and two of them are looked at:
+ *
+ *  1. `RECORDED_UNWIRED_DEBT` — MAY ONLY SHRINK. A name may leave it and may never join it; that is
+ *     the ratchet, unchanged, and it is what these names are still under.
+ *  2. `RECORDED_BEAT_SUBSTRATE` — MAY GROW, and every entry names a committed beat whose runner
+ *     really calls the decision. `beatSubstrateWithoutACaller` reads that file.
+ *  3. `RECORDED_DRIVEN_BY_ITS_OWN_SUITE` — MAY GROW, and every entry names a test in this format's
+ *     own suite that really calls it. `ownSuiteWithoutACaller` reads that file.
+ *
+ *  Saying it in the shape of the file rather than in a sentence is the point: the array that may
+ *  only shrink is a bare list of names with nothing to add to it, and the two that may grow cost an
+ *  author a real caller each.
+ *
+ *  All three are per-format and outside every compared span, for the same reason
+ *  `MEASURED_MIN_FRACTION` is: the DECISION above is one decision in all eight copies, and what
+ *  differs is only what each format has actually paid off. */
+
+/** CATEGORY 1 — THIS FORMAT'S DEBT, measured 2026-08-22 and recorded rather than forgiven. A
+ *  RATCHET, the same shape `splash/test/delivered-size-matches-the-pin.test.ts` uses for a count
+ *  that may only go down, with names instead of a number so that wiring one guard and unwiring
+ *  another cannot look like standing still. A name may be REMOVED from this array, NEVER ADDED —
+ *  adding one is how the defect that earned this rule would recur.
+ *
+ *  The map's own debt, and the largest per-file concentration in the tree: nine of these live in
  *  `verify-map.mjs`, which nothing in this skill imports and no command runs.
  *
- *  Per-format and outside every compared span, for the same reason `MEASURED_MIN_FRACTION` is:
- *  the DECISION above is one decision in all eight copies, and what differs is only what each
- *  format has actually paid off. A name may be REMOVED from this list, never added — adding one is
- *  how the defect that earned this rule would recur. */
-export const RECORDED_UNWIRED = [
+ *  `labelPlacementIssues` IS HERE ON PURPOSE, and it is this round's finding. It was recorded
+ *  beside `unmatchedValues` as a decision only a beat could call — it needs a laid-out label stack
+ *  with measured text boxes, which this skill's seed does not have. The claim was checked on
+ *  2026-08-23 and it has NO CALLER ANYWHERE: not one runner under `stories/` or `proof/` calls it,
+ *  only `test/geo.test.ts` with label stacks built by hand. `placeLabels` beside it in
+ *  `assets/geo.ts` REPAIRS a stack against the same two conditions without ever asking the
+ *  decision, which is how a beat comes to clear it without running it. Until a real beat calls it,
+ *  the excuse is unbacked and the name stays under the ratchet, where a reader can see it.
+ */
+export const RECORDED_UNWIRED_DEBT = [
   "creditTracesToRecord",
-  // THE RUNNER SWEEP'S PAIR, and the only addition this list has ever taken. Their subject is this
-  // skill's OWN committed example runners, not a delivered beat, so there is no page and no run for
-  // a command in `scripts/` to ask them about — `test/example-runners-run.test.ts` drives both, in
-  // every one of the eight, which is the same standing `deadExampleRunners` has carried here since
-  // the sweep was written. The alternative was to give `scripts/example-runners.mjs` an
-  // `import.meta.main` nobody was told to run, and buy the wiring credit this rule exists to refuse.
-  "deadExampleRunners",
-  "swallowedExampleRunners",
   "denominatorReadingStated",
   "doubleHyphenInDeliveredText",
   "labelPlacementIssues",
@@ -256,6 +391,51 @@ export const RECORDED_UNWIRED = [
   "neverArrives",
   "rtlRunsAreIsolated",
   "storyboardGateStatus",
-  "unmatchedValues",
   "weightAgainstCeiling",
 ];
+
+/** CATEGORY 2 — DECISIONS ONLY A BEAT CAN CALL, because the decision needs material a skill's own
+ *  seed does not have and MUST NOT INVENT.
+ *
+ *  `unmatchedValues` needs a declared study set joined against a frozen source: the set of regions
+ *  the beat says it is drawing, and the journalist's own table. A skill's seed has neither, and
+ *  giving it one means inventing a study set to ask about — a fixture, which is what
+ *  `guard-wired-to-run` refuses. `stress-t-europe-recycling`'s own video runner calls it for real,
+ *  on the names its downloaded file actually carries.
+ *
+ *  `calledBy` is a repository-relative path to a committed beat whose runner really calls the
+ *  decision, and `beatSubstrateWithoutACaller` goes and reads it in the same caller view this file
+ *  reads a skill's own scripts in — an import is not a call and a comment is not a call there
+ *  either. The beat calls its OWN carried copy, which is what a beat is in this tree;
+ *  `splash/test/guard-copies-parity.test.ts` is what holds that copy to this skill's. */
+export const RECORDED_BEAT_SUBSTRATE = [
+  { name: "unmatchedValues", calledBy: "stories/stress-t-europe-recycling/beats/europe-recycling-map/render-video.mjs" },
+];
+
+/** CATEGORY 3 — DECISIONS DRIVEN BY THIS FORMAT'S OWN SUITE, on purpose.
+ *
+ *  Their subject is this skill's OWN committed example runners, not a delivered beat, so there is
+ *  no page and no run for a command in `scripts/` to ask them about. `test/example-runners-run.
+ *  test.ts` drives both, in every one of the eight, which is the standing they have carried since
+ *  the sweep was written. The alternative was to give `scripts/example-runners.mjs` an
+ *  `import.meta.main` nobody was told to run, and buy the wiring credit this rule exists to refuse.
+ *
+ *  `calledBy` is relative to THIS SKILL and starts `test/`, so a format cannot back its own claim
+ *  with a neighbour's suite; `ownSuiteWithoutACaller` goes and reads it. What that check cannot see
+ *  is whether the test drives the decision over a real population or over a literal — every guard
+ *  in this tree has a unit test that calls it, which is why this is not a place to move a decision
+ *  a `scripts/` command could ask. */
+export const RECORDED_DRIVEN_BY_ITS_OWN_SUITE = [
+  { name: "deadExampleRunners", calledBy: "test/example-runners-run.test.ts" },
+  { name: "swallowedExampleRunners", calledBy: "test/example-runners-run.test.ts" },
+];
+
+/** EVERY NAME THIS FORMAT RECORDS AS UNWIRED, whatever the reason — DERIVED from the three arrays
+ *  above rather than typed beside them, so a name cannot be recorded under one reason and missing
+ *  from the list the ratchet reads. `check-guard-wiring.mjs` and `doctrine/test/guard-wiring.
+ *  test.ts` both read this. */
+export const RECORDED_UNWIRED = [
+  ...RECORDED_UNWIRED_DEBT,
+  ...RECORDED_BEAT_SUBSTRATE.map((claim) => claim.name),
+  ...RECORDED_DRIVEN_BY_ITS_OWN_SUITE.map((claim) => claim.name),
+].sort();
