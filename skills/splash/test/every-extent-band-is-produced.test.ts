@@ -117,7 +117,14 @@ const CAMERA_CENSUS: Record<
 > = {
   "map-quake-density": { band: "planet", km: 39599, bias: 24.0 },
   "mapvid-hexgrid-quakes": { band: "planet", km: 39600, bias: 24.1 },
-  "mapgen-hexgrid-web": { band: "planet", km: 39693, bias: 32.2 },
+  // 2026-08-22: this beat's camera moved when its frame stopped being a shape its camera never
+  // asked for. It baked 836x520 for a camera asking 1.759:1 (8.6% margin); `frameHeightFor` gives
+  // it 836x476, and a shorter frame at the same width reaches less far north and south, so the
+  // visible latitude range narrows. The band is unchanged and the AREA BIAS IMPROVED, 32.2 to 23.3
+  // — less Mercator distortion across the frame, which is what dropping the padding buys, exactly
+  // as it did for `mapgen-choropleth-web` below. Re-recorded rather than widened: a census with a
+  // tolerance stops being a census.
+  "mapgen-hexgrid-web": { band: "planet", km: 39562, bias: 23.3 },
   "mapscrolly-quakes-three-ways": { band: "planet", km: 39693, bias: 32.2 },
   "mapgen-symbol-web": { band: "hemisphere", km: 8839, bias: 2.8 },
   "mapgen-dot-web": { band: "hemisphere", km: 4501, bias: 6.7 },

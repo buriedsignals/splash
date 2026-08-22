@@ -16,8 +16,9 @@
  *   proof/mapgen-choropleth-web (re-baked here)          0.2% margin
  *   stories/real-owid-life-expectancy                    0.0%
  *   proof/mapgen-symbol-web / dot-web / locator-web      1.1% / 1.8% / 1.7% (near-square cameras)
- *   proof/mapgen-hexgrid-web                             8.6%
- *   stories/stress-f-housing-pressure                   46.2% — a 0.538 camera in a 1.000 frame
+ *   proof/mapgen-hexgrid-web                             8.6% → re-baked 836x476, 0.0%
+ *   stories/stress-f-housing-pressure                   46.2% → re-baked 496x923, 0.0%
+ *     (a 0.538 camera had been baked into a 1.000 frame)
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
@@ -141,15 +142,16 @@ describe("every baked plate in this format, against the camera it was asked for"
   /**
    * THE BEATS STILL ON A FRAME THEIR CAMERA DID NOT ASK FOR, named with the number that fails.
    *
-   * Both predate `frameHeightFor` and both would be fixed by a re-bake, which is a change to beats
-   * this package does not own. Asserted in BOTH directions — these must still fail, and nothing else
-   * may — so the list can only shrink and a re-bake forces the entry out rather than leaving a stale
-   * exemption behind.
+   * EMPTY, as of 2026-08-22, and that is the point of asserting it in BOTH directions: the two
+   * entries that stood here — `proof/mapgen-hexgrid-web` (8.6% margin, an 836x520 frame for a 1.759
+   * camera) and `stories/stress-f-housing-pressure` (46.2%, a 0.538 camera in a square frame) —
+   * predated `frameHeightFor` and belonged to packages this one does not own. Both were re-baked
+   * against their own cameras (836x476 and 496x923), and because the list is asserted in both
+   * directions the re-bake FORCED these entries out rather than leaving stale exemptions behind.
+   * The list can only shrink; a beat that regresses onto a frame its camera did not ask for turns
+   * this red rather than being quietly added back.
    */
-  const RECORDED_SQUARE_FRAMES = [
-    "proof/mapgen-hexgrid-web",
-    "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth",
-  ];
+  const RECORDED_SQUARE_FRAMES: string[] = [];
 
   it("is the shape its own bounds ask for, or is named above", () => {
     const beats = discoverMapWebBeats();
