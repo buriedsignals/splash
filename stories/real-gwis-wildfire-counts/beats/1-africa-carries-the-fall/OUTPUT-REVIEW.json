@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "1-africa-carries-the-fall-review-2026-08-22-2",
+  "outputId": "1-africa-carries-the-fall",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:5742f0b8dd77408caf0e0821a0305470ef6c03a6985916b7be290bac17876cb7",
+  "findingIds": [
+    "the-fall-since-2015",
+    "africa-is-two-thirds",
+    "2026-is-eight-months"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-africa-carries-the-fall",
+      "planVersion": 1,
+      "draftDigest": "sha256:5742f0b8dd77408caf0e0821a0305470ef6c03a6985916b7be290bac17876cb7",
+      "findingIds": [
+        "the-fall-since-2015",
+        "africa-is-two-thirds",
+        "2026-is-eight-months"
+      ],
+      "id": "1-africa-carries-the-fall-qa-2026-08-22-2",
+      "status": "passed",
+      "completedAt": "2026-08-22T00:00:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "All 3,900 frozen rows were read and 260 entities counted before anything was drawn. The nine aggregate rows in the entity column were identified by hand (World, six continents, European Union (27), Europe (excl. Russia)); nothing in the profile names them. The six continents were verified to sum EXACTLY to the file's own World row in all fifteen years, and build-data.mjs and render.mjs each throw on a mismatch, so the part-to-whole claim is tested rather than assumed. 2026 was dropped because the dataset's own description says the year is incomplete and was last updated 21 August 2026; the frozen profile carries no coverage column, so no guard in this toolchain refused it. The delivered PNG was opened at 1920x1080 and read: peak 1,148,499 in 2015 labelled at its own dot, 626,326 in 2025 labelled at the top edge's end, Africa 406,220 at 65% of that total on the flat baseline, and every comparison band named with its own 2025 value.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the decision was taken on their behalf — see the run report)",
+  "decidedAt": "2026-08-22T00:00:00Z",
+  "notes": "Approved with two limitations recorded. (1) A COUNT IS NOT HARM. Every value is a count of detected fire events; most of Africa's is seasonal savanna and agricultural burning, and the explainer the article quotes is about deaths, evacuations and burned area. The chart avoids 'worst', names the quantity in its own note, and the caveat travels with the hand-over. Nothing in this toolchain raised it. (2) NO DENOMINATOR EXISTS IN THIS TABLE. The grounding check's raw-count downgrade looks for a denominator-shaped column in the SAME table; for this dataset area and population are a different dataset, so the downgrade cannot fire and its silence means nothing."
+}

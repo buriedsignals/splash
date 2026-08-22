@@ -1,0 +1,17 @@
+{
+  "operationId": "ef595b65-aed4-470f-aabd-eff58a3af065",
+  "reviewId": "1-africa-carries-the-fall-review-2026-08-22-2",
+  "planVersion": 1,
+  "draftDigest": "sha256:5742f0b8dd77408caf0e0821a0305470ef6c03a6985916b7be290bac17876cb7",
+  "findingIds": [
+    "the-fall-since-2015",
+    "africa-is-two-thirds",
+    "2026-is-eight-months"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-22T13:47:27.203Z",
+  "schemaVersion": 1,
+  "outputId": "1-africa-carries-the-fall",
+  "state": "complete"
+}
