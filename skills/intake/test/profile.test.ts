@@ -71,6 +71,9 @@ describe("profileTable", () => {
       rowCount: 0,
       columns: [],
       duplicates: { count: 0, rows: [] },
+      // `null`, never absent: a downstream reader has to be able to tell "this table is not one row
+      // per entity per period" from a profile written before the question was asked at all.
+      panel: null,
     });
   });
 
@@ -92,11 +95,7 @@ describe("profileTable", () => {
   it("should type a column with a thousands separator as number, once the column settles the convention", () => {
     // "1,234.5" pairs a comma with a later decimal point — that ordering only
     // reads as thousands-then-decimal, so it settles the whole column.
-    const table = profileTable([
-      ["price"],
-      ["1,234.5"],
-      ["987.25"],
-    ]);
+    const table = profileTable([["price"], ["1,234.5"], ["987.25"]]);
     const price = table.columns.find((c) => c.name === "price");
     expect(price.type).toBe("number");
     expect(price.min).toBe(987.25);
@@ -107,11 +106,7 @@ describe("profileTable", () => {
   it("should keep an unsettled thousands-vs-decimal-comma column as text, with the reason recorded", () => {
     // Neither value pairs its comma with a decimal point, so nothing in the
     // column says whether the comma groups thousands or stands for a decimal.
-    const table = profileTable([
-      ["price"],
-      ["1,234"],
-      ["2,345"],
-    ]);
+    const table = profileTable([["price"], ["1,234"], ["2,345"]]);
     const price = table.columns.find((c) => c.name === "price");
     expect(price.type).toBe("text");
     expect(price.min).toBe(null);
@@ -119,7 +114,9 @@ describe("profileTable", () => {
   });
 
   it("should not attach a reason to a column that never looked numeric", () => {
-    const commune = profileTable(ROWS).columns.find((c) => c.name === "commune");
+    const commune = profileTable(ROWS).columns.find(
+      (c) => c.name === "commune",
+    );
     expect(commune.reason).toBeUndefined();
   });
 
@@ -148,13 +145,7 @@ describe("profileTable", () => {
   });
 
   it("should count a duplicate row exactly once in the report even with three copies", () => {
-    const table = profileTable([
-      ["a"],
-      ["x"],
-      ["x"],
-      ["x"],
-      ["y"],
-    ]);
+    const table = profileTable([["a"], ["x"], ["x"], ["x"], ["y"]]);
     expect(table.duplicates).toEqual({
       count: 1,
       rows: [{ values: ["x"], indices: [0, 1, 2], occurrences: 3 }],
@@ -164,12 +155,7 @@ describe("profileTable", () => {
   it("should read a uniform trailing unit as a number, recording the unit on the column", () => {
     // The stress-f housing-pressure shape: every cell carries the same trailing "%", so the
     // column is unambiguous and reading it (rather than refusing) is the legitimate call.
-    const table = profileTable([
-      ["pressure"],
-      ["12 %"],
-      ["9 %"],
-      ["143 %"],
-    ]);
+    const table = profileTable([["pressure"], ["12 %"], ["9 %"], ["143 %"]]);
     const pressure = table.columns.find((c) => c.name === "pressure");
     expect(pressure.type).toBe("number");
     expect(pressure.unit).toBe("%");
@@ -180,11 +166,7 @@ describe("profileTable", () => {
   });
 
   it("should refuse a column whose unit is not the same throughout, with the reason recorded", () => {
-    const table = profileTable([
-      ["mixed"],
-      ["12 %"],
-      ["9 kg"],
-    ]);
+    const table = profileTable([["mixed"], ["12 %"], ["9 kg"]]);
     const mixed = table.columns.find((c) => c.name === "mixed");
     expect(mixed.type).toBe("text");
     expect(mixed.min).toBe(null);
@@ -193,11 +175,7 @@ describe("profileTable", () => {
   });
 
   it("should still refuse with a reason when only some values carry a unit", () => {
-    const table = profileTable([
-      ["partial"],
-      ["12 %"],
-      ["9"],
-    ]);
+    const table = profileTable([["partial"], ["12 %"], ["9"]]);
     const partial = table.columns.find((c) => c.name === "partial");
     expect(partial.type).toBe("text");
     expect(partial.reason).toBeTruthy();
@@ -229,24 +207,14 @@ describe("profileTable", () => {
   });
 
   it("should report no gaps for a year column with none", () => {
-    const table = profileTable([
-      ["year"],
-      ["2020"],
-      ["2021"],
-      ["2022"],
-    ]);
+    const table = profileTable([["year"], ["2020"], ["2021"], ["2022"]]);
     expect(table.columns.find((c) => c.name === "year").gaps).toEqual([]);
   });
 
   it("should not report gaps for a plain measurement column, even one with integer values and an uneven spacing", () => {
     // A price column is not a sequence with holes — any two rows can legitimately sit any
     // distance apart, so "gaps" is meaningless here and must not be invented.
-    const table = profileTable([
-      ["price"],
-      ["10"],
-      ["25"],
-      ["4000"],
-    ]);
+    const table = profileTable([["price"], ["10"], ["25"], ["4000"]]);
     expect(table.columns.find((c) => c.name === "price").gaps).toBe(null);
   });
 
@@ -291,7 +259,10 @@ describe("profileTable", () => {
     expect(value.type).toBe("number");
     expect(value.min).toBe(17.2);
     expect(value.max).toBe(1880);
-    expect(value.mixedUnits).toEqual({ column: "unit", groups: ["clinics", "per 100k"] });
+    expect(value.mixedUnits).toEqual({
+      column: "unit",
+      groups: ["clinics", "per 100k"],
+    });
   });
 
   it("should not flag a numeric column beside a unit column that names only one unit throughout", () => {
@@ -367,7 +338,11 @@ describe("profileTable names a candidate denominator column", () => {
     expect(incidents.min).toBe(205);
     expect(incidents.max).toBe(412);
     expect(incidents.sum).toBe(617);
-    expect(table.columns.map((c) => c.name)).toEqual(["district", "incidents", "residents"]);
+    expect(table.columns.map((c) => c.name)).toEqual([
+      "district",
+      "incidents",
+      "residents",
+    ]);
   });
 
   it("should not name the denominator column against itself", () => {
@@ -419,7 +394,9 @@ describe("profileTable names a candidate denominator column", () => {
   });
 
   it("should say nothing at all when no column names a denominator", () => {
-    const rainfall = profileTable(ROWS).columns.find((c) => c.name === "rainfall");
+    const rainfall = profileTable(ROWS).columns.find(
+      (c) => c.name === "rainfall",
+    );
     expect(rainfall.denominator).toBeUndefined();
   });
 
@@ -462,9 +439,19 @@ describe("profileTable reads a unit only where the data states one", () => {
     // an OWID code, a tank designation, a disease name, a month. Each shape is checked with a
     // sibling that carries the SAME leading token, because a column with one value would be
     // refused for its length alone rather than for its shape.
-    for (const shape of ["COVID-19", "T-34", "OWID_EU27", "Q11924", "ci38457511", "March 2025"]) {
-      const column = profileTable([["v"], [shape], [shape.replace(/\d/, "7")]]).columns[0];
-      expect(`${shape} -> ${column.type}, unit ${column.unit}`).toBe(`${shape} -> text, unit undefined`);
+    for (const shape of [
+      "COVID-19",
+      "T-34",
+      "OWID_EU27",
+      "Q11924",
+      "ci38457511",
+      "March 2025",
+    ]) {
+      const column = profileTable([["v"], [shape], [shape.replace(/\d/, "7")]])
+        .columns[0];
+      expect(`${shape} -> ${column.type}, unit ${column.unit}`).toBe(
+        `${shape} -> text, unit undefined`,
+      );
     }
   });
 
@@ -479,7 +466,11 @@ describe("profileTable reads a unit only where the data states one", () => {
 
   it("should not read a parenthesised aside as a unit", () => {
     // stress-o-museum-visits' own `period` column: "2025 (Jan-Mar)" beside plain years.
-    const table = profileTable([["period"], ["2025 (Jan-Mar)"], ["2024 (Jan-Mar)"]]);
+    const table = profileTable([
+      ["period"],
+      ["2025 (Jan-Mar)"],
+      ["2024 (Jan-Mar)"],
+    ]);
     const period = table.columns.find((c) => c.name === "period");
     expect(period.type).toBe("text");
     expect(period.unit).toBeUndefined();

@@ -649,7 +649,530 @@ function findDuplicateRows(body) {
   return { count: rows.length, rows };
 }
 
-export function profileTable(rows) {
+// ==================================================================================================
+// THE PANEL — one row per entity per period, which is the shape of essentially all open data, and
+// the shape this profiler could not describe at all until three real Our World in Data stories were
+// run end to end against it.
+//
+// What the three frozen files carry, and what the profile said about it:
+//
+//   * 3 900 rows of `entity, code, year, events` (wildfires), 7 585 (renewable share), 21 565 (life
+//     expectancy). Every profile described four columns of a flat table. `rowCount` was read as a
+//     count of subjects; it is 260 entities x 15 periods.
+//   * NINE of the wildfire file's 260 "entities" are AGGREGATES of the other rows — `World`, six
+//     continents, `European Union (27)`, `Europe (excl. Russia)`. The article's own question was
+//     "where is the count heaviest"; taken off the file it answers *the World*, then *Africa*, then
+//     a country. The only signals in the profile were `entity.distinct 260` against
+//     `code.distinct 259`, which point at the ONE aggregate with no code, not at the nine.
+//   * `year.gaps: []` over `[1900, 2025]` reads as full coverage. The Ember file carries 245
+//     entities in 2022 and 114 in 2025 — a full RANGE is not full COVERAGE.
+//   * `duplicates: 0` is true (no repeated ROW) and reads as an answer to a question about repeated
+//     subjects that it never asked: there are 260 rows per year.
+//
+// Everything below is DERIVED from the table. There is no list of aggregate names anywhere in this
+// file, deliberately: a hand-typed "World, Africa, Asia…" is the exact shape this repository has
+// been burned by, and it would leave `ASEAN (Ember)` and `Europe (excl. Russia)` invisible.
+// ==================================================================================================
+
+/** A period column is an x axis, not a measure. `year.sum = 7 874 100` was the largest-looking
+ *  number in the wildfire profile and it is the total of a calendar. Withheld, and the withholding
+ *  is said rather than left to read like a text column's empty total. */
+const SEQUENCE_TOTAL_WITHHELD =
+  "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything";
+
+/** THE PANEL KEY. A table is a panel when one of its own columns identifies the SUBJECT and every
+ *  (subject, period) pair in it is unique — that is the arithmetic statement of "one row per entity
+ *  per period", and it is checked against every row rather than inferred from a name.
+ *
+ *  A COLUMN WITH A BLANK IN IT IDENTIFIES NOTHING, which is why `missing === 0` is required: `code`
+ *  also keys the wildfire table — the one entity with no code has exactly one row per year, so
+ *  (code, year) is unique across all 3 900 rows — and naming `code` as the entity column would hand
+ *  every later phase a subject nobody can read. `entity` has no blank and wins on that.
+ *
+ *  TEXT ONLY, and the limit is stated rather than guessed around: a panel keyed by a numeric id is a
+ *  real shape this does not reach, and reaching it would mean letting a MEASURE column that happens
+ *  to key the table be named as the subject. */
+function panelKeyOf(columns, rowCount) {
+  const period = columns.find((c) => c.gaps !== null);
+  if (!period || period.distinct < 2 || rowCount < 2) return null;
+  for (const c of columns) {
+    if (c === period || c.type !== "text" || c.missing !== 0) continue;
+    if (c.distinct < 2 || c.distinct >= rowCount) continue;
+    const seen = new Set();
+    let unique = true;
+    for (let i = 0; i < rowCount; i++) {
+      const key = `${c._values[i]}\u0000${period._values[i]}`;
+      if (seen.has(key)) {
+        unique = false;
+        break;
+      }
+      seen.add(key);
+    }
+    if (unique) return { entity: c, period };
+  }
+  return null;
+}
+
+/** HOW MANY ENTITIES EACH PERIOD CARRIES. `findGaps` answers about the SEQUENCE — which steps are
+ *  missing between the lowest and the highest — and a year present for 114 subjects and absent for
+ *  131 is not a missing step. Both numbers are true and only together are they a picture: Ember's
+ *  own article quotes the profile's "246 entities from 1900 to 2025" while 1900 holds two series and
+ *  2025 holds 114. A producer reaching for "the latest year" — the obvious move — silently drops
+ *  more than half the world. */
+function coverageOf(entity, period, rowCount) {
+  const seen = new Map();
+  for (let i = 0; i < rowCount; i++) {
+    const p = period._values[i];
+    if (!seen.has(p)) seen.set(p, new Set());
+    seen.get(p).add(entity._values[i]);
+  }
+  const byPeriod = [...seen]
+    .map(([p, subjects]) => ({ period: Number(p), entities: subjects.size }))
+    .sort((a, b) => a.period - b.period);
+  let fullest = byPeriod[0];
+  let thinnest = byPeriod[0];
+  for (const step of byPeriod) {
+    if (step.entities > fullest.entities) fullest = step;
+    if (step.entities < thinnest.entities) thinnest = step;
+  }
+  return { byPeriod, fullest: { ...fullest }, thinnest: { ...thinnest } };
+}
+
+/** A value's SHAPE, so a code unlike every other code can be seen without knowing what codes look
+ *  like. Letters collapse to `A`/`a` and digits to `9`, everything else stays: `AFG` is `AAA`,
+ *  `OWID_WRL` is `AAAA_AAA`, `OWID_EU27` is `AAAA_AA99`. */
+function shapeOf(value) {
+  return value.replace(/\p{Lu}/gu, "A").replace(/\p{Ll}/gu, "a").replace(/\p{Nd}/gu, "9");
+}
+
+/** THE TABLE'S OWN STRUCTURE, PROPOSING — never deciding. A published panel carries a code column
+ *  beside its entity column, one code per entity, and the aggregates in it are exactly the rows the
+ *  publisher could not give a country code to: `World` is `OWID_WRL` where 248 rows are `AAA`, and
+ *  `Europe (excl. Russia)` has no code at all.
+ *
+ *  This is a PROPOSAL and it over-reaches by construction: the same test sweeps in Kosovo, Northern
+ *  Cyprus and Akrotiri and Dhekelia, which are places, not sums. That is why what it returns is
+ *  never called an aggregate on its own — arithmetic decides where it can, and what is left is
+ *  reported as the weaker evidence it is.
+ *
+ *  The dominant shape has to be a MAJORITY of the coded entities, because "the shape the rest have"
+ *  is only a fact when there is a rest; a code column of many shapes answers nothing, and says so.
+ *
+ *  A code column is found by its RELATION to the entity column — one value per entity, blanks
+ *  allowed — never by being named "code", which is the same identity-not-shape test
+ *  `UNIT_COLUMN_NAME_RE` and `DENOMINATOR_NAME_TOKENS` make for their own questions. */
+function structurallyUnlikeRows(entity, period, columns, rowCount) {
+  for (const c of columns) {
+    if (c === entity || c === period || c.type !== "text") continue;
+    const byEntity = new Map();
+    let functional = true;
+    for (let i = 0; i < rowCount && functional; i++) {
+      const name = entity._values[i];
+      const value = c._values[i];
+      if (!byEntity.has(name)) byEntity.set(name, value);
+      else if (byEntity.get(name) !== value) functional = false;
+    }
+    if (!functional) continue;
+    const shapes = new Map();
+    let coded = 0;
+    for (const value of byEntity.values()) {
+      if (value === "") continue;
+      coded += 1;
+      const shape = shapeOf(value);
+      shapes.set(shape, (shapes.get(shape) ?? 0) + 1);
+    }
+    if (coded === 0) continue;
+    let dominant = null;
+    let dominantCount = 0;
+    for (const [shape, count] of shapes) {
+      if (count > dominantCount) {
+        dominant = shape;
+        dominantCount = count;
+      }
+    }
+    if (dominantCount * 2 <= coded) continue;
+    const proposed = [];
+    for (const [name, value] of byEntity) {
+      if (value === "") proposed.push({ entity: name, proposedBy: "code-missing", code: null });
+      else if (shapeOf(value) !== dominant)
+        proposed.push({ entity: name, proposedBy: "code-shape", code: value });
+    }
+    return {
+      column: c.name,
+      shape: dominant,
+      entitiesWithThatShape: dominantCount,
+      entitiesCoded: coded,
+      proposed,
+    };
+  }
+  return null;
+}
+
+/** How many decimal places the column's own values are WRITTEN with — the only honest source for
+ *  how close two sums have to be before they are the same number. A column of integers is compared
+ *  exactly; a column of rounded decimals is allowed the rounding it declares, and nothing more. */
+function writtenDecimals(values) {
+  let most = 0;
+  for (const value of values) {
+    const dot = value.indexOf(".");
+    if (dot >= 0) most = Math.max(most, value.length - dot - 1);
+  }
+  return most;
+}
+
+/** The exhaustive subset search runs over the rows the structure proposed. Where the structure
+ *  answers nothing, it can still run over EVERY entity — but only while the table is small enough
+ *  that "every subset" is a real number of subsets. Above this, the search is not run and says so;
+ *  a search that quietly answered "no aggregates" on a table it never looked at would be worse than
+ *  no search at all. */
+const AGGREGATE_SEARCH_ENTITY_CEILING = 16;
+
+/** A hard ceiling on the work, so a pathological table cannot hang a phase that is supposed to be
+ *  silent. Exhausting it is REPORTED, never swallowed: "found none" and "stopped looking" are two
+ *  different answers. */
+const AGGREGATE_SEARCH_NODE_BUDGET = 200_000;
+
+/** WHICH ROWS ARE SUMS OF OTHER ROWS, decided by arithmetic.
+ *
+ *  For each candidate row C, this looks for a set of OTHER rows whose values add up to C's in EVERY
+ *  period C appears in. One period proves nothing — with 260 numbers, some subset adds up to almost
+ *  anything — but the same set holding across fifteen periods is not a coincidence, and that is the
+ *  whole strength of the test.
+ *
+ *  TWO SEARCHES PER CANDIDATE, and the pair is what promotes the members:
+ *    1. over the proposed rows alone. For `World` this returns the six continents.
+ *    2. with every row the structure did NOT propose taken as one block. For `World` this returns
+ *       those 248 rows plus Kosovo, Northern Cyprus and Akrotiri and Dhekelia — the 251 real places.
+ *  When both exist and share no row, two disjoint sets of this table's own rows add up to the same
+ *  total in every period. The small set therefore stands in for the large one, which is what makes
+ *  its members aggregates too — and it is an argument from the numbers, not from the names.
+ *
+ *  Non-negative columns only. The pruning that makes the search finish ("a partial sum already past
+ *  the target cannot be completed") is only valid while nothing can bring a sum back down, and a
+ *  signed column is a different question this does not put.
+ *
+ *  A witness of ONE row is refused: "A equals B in every period" is two identical series, which is
+ *  worth knowing and is not an aggregate. */
+function aggregatesByArithmetic({ entity, period, columns, rowCount, over }) {
+  const periods = [...new Set(period._values)].map(Number).sort((a, b) => a - b);
+  const periodIndex = new Map(periods.map((p, i) => [i, p].reverse()));
+  const measures = columns.filter((c) => c.type === "number" && c.gaps === null && c.min !== null && c.min >= 0);
+  const searchable = new Set(over);
+  const budget = { nodes: 0, exhausted: false };
+
+  for (const measure of measures) {
+    const vectors = new Map();
+    const presence = new Map();
+    for (let i = 0; i < rowCount; i++) {
+      const name = entity._values[i];
+      const value = measure._rowNumbers[i];
+      if (value === null) continue;
+      if (!vectors.has(name)) {
+        vectors.set(name, new Float64Array(periods.length));
+        presence.set(name, new Uint8Array(periods.length));
+      }
+      const at = periodIndex.get(Number(period._values[i]));
+      vectors.get(name)[at] = value;
+      presence.get(name)[at] = 1;
+    }
+    const decimals = writtenDecimals(measure._values.filter((v) => v !== ""));
+    const exact = measure._rowNumbers.every((n) => n === null || Number.isInteger(n));
+    const unit = exact ? 0 : 0.5 * 10 ** -decimals;
+    const names = [...vectors.keys()];
+    const outside = names.filter((n) => !searchable.has(n));
+
+    const found = new Map();
+    for (const candidate of names) {
+      if (!searchable.has(candidate)) continue;
+      const target = vectors.get(candidate);
+      const here = presence.get(candidate);
+      const at = [];
+      for (let i = 0; i < periods.length; i++) if (here[i]) at.push(i);
+      if (at.length === 0) continue;
+      const project = (vector) => at.reduce((sum, i) => sum + vector[i], 0);
+      const targetScalar = project(target);
+      const items = names
+        .filter((n) => n !== candidate && searchable.has(n))
+        .map((n) => ({ name: n, vector: vectors.get(n), scalar: project(vectors.get(n)) }))
+        .sort((a, b) => b.scalar - a.scalar);
+      const block =
+        outside.length > 0
+          ? outside.reduce((sum, n) => {
+              const v = vectors.get(n);
+              for (let i = 0; i < at.length; i++) sum[at[i]] += v[at[i]];
+              return sum;
+            }, new Float64Array(periods.length))
+          : null;
+
+      const matches = (running, size) => {
+        const slack = unit * (size + 1) + 1e-9 * (1 + Math.abs(targetScalar));
+        for (const i of at) if (Math.abs(running[i] - target[i]) > slack) return false;
+        return true;
+      };
+
+      const search = (withBlock) => {
+        if (withBlock && block === null) return null;
+        const start = new Float64Array(periods.length);
+        let startScalar = 0;
+        let startSize = 0;
+        if (withBlock) {
+          for (const i of at) start[i] = block[i];
+          startScalar = project(block);
+          startSize = outside.length;
+        }
+        const suffix = new Float64Array(items.length + 1);
+        for (let i = items.length - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + items[i].scalar;
+        let best = null;
+        const walk = (index, running, scalar, chosen) => {
+          if (budget.nodes >= AGGREGATE_SEARCH_NODE_BUDGET) {
+            budget.exhausted = true;
+            return;
+          }
+          budget.nodes += 1;
+          const slack = unit * (chosen.length + startSize + 1) + 1e-9 * (1 + Math.abs(targetScalar));
+          if (scalar > targetScalar + slack) return;
+          if (chosen.length + startSize >= 2 && Math.abs(scalar - targetScalar) <= slack) {
+            if (matches(running, chosen.length + startSize) && (best === null || chosen.length < best.length)) {
+              best = [...chosen];
+            }
+          }
+          if (index >= items.length) return;
+          if (scalar + suffix[index] < targetScalar - slack) return;
+          const item = items[index];
+          const next = Float64Array.from(running);
+          for (const i of at) next[i] += item.vector[i];
+          chosen.push(item.name);
+          walk(index + 1, next, scalar + item.scalar, chosen);
+          chosen.pop();
+          walk(index + 1, running, scalar, chosen);
+        };
+        walk(0, start, startScalar, []);
+        return best;
+      };
+
+      const alone = search(false);
+      const withBlock = search(true);
+      if (alone === null && withBlock === null) continue;
+      const disjoint =
+        alone !== null && withBlock !== null && !alone.some((n) => withBlock.includes(n));
+      found.set(candidate, {
+        entity: candidate,
+        decidedBy: "arithmetic",
+        column: measure.name,
+        periods: at.length,
+        members: alone ?? [...outside, ...withBlock],
+        ...(disjoint
+          ? {
+              alsoSummedBy: withBlock.length + outside.length,
+              detail: `two sets of this table's own rows that share no row add up to "${candidate}" in all ${at.length} periods: the ${alone.length} named here, and ${withBlock.length + outside.length} rows the structural test did not propose`,
+            }
+          : {
+              detail: `these rows add up to "${candidate}" in all ${at.length} periods`,
+            }),
+      });
+      if (disjoint) {
+        for (const member of alone) {
+          if (found.has(member)) continue;
+          found.set(member, {
+            entity: member,
+            decidedBy: "arithmetic",
+            column: measure.name,
+            periods: at.length,
+            memberOf: candidate,
+            detail: `one of ${alone.length} rows that add up to "${candidate}" in all ${at.length} periods, a set sharing no row with the ${withBlock.length + outside.length} rows that also add up to it — so it stands in for a group of them`,
+          });
+        }
+      }
+    }
+    if (found.size > 0) {
+      return { decided: [...found.values()], column: measure.name, budget, measuresTried: measures.map((c) => c.name) };
+    }
+  }
+  return { decided: [], column: null, budget, measuresTried: measures.map((c) => c.name) };
+}
+
+/** WHICH ROWS ARE AGGREGATES OF THE OTHER ROWS — the arithmetic answer and the structural proposal,
+ *  reported apart, with which test answered on every row. */
+function aggregatesOf(entity, period, columns, rowCount) {
+  const structure = structurallyUnlikeRows(entity, period, columns, rowCount);
+  const entities = entity.distinct;
+  // WHAT THE SEARCH IS RUN OVER. A structural proposal of two rows or more narrows it to those
+  // rows, which is what makes an exhaustive subset search finish on a 260-entity table. With no
+  // proposal, a table small enough to enumerate is searched WHOLE — a fixture with a `Total` row
+  // and no code column at all is still decided. Above that, nothing is searched, and the profile
+  // says so rather than reporting "no aggregates" about a table it never looked at.
+  const proposed = structure && structure.proposed.length >= 2 ? structure.proposed.map((p) => p.entity) : null;
+  const small = entities <= AGGREGATE_SEARCH_ENTITY_CEILING;
+  const over = proposed ?? (small ? [...new Set(entity._values)] : null);
+  const reach = proposed
+    ? `the ${proposed.length} rows the "${structure.column}" column's own shape sets apart`
+    : `every one of the ${entities} entities`;
+  let arithmetic;
+  let decided = [];
+  if (over === null) {
+    arithmetic = {
+      ran: false,
+      reason: `no structural test proposed two rows or more on this table and it carries ${entities} entities, more than the ${AGGREGATE_SEARCH_ENTITY_CEILING} an exhaustive subset search can be run over — nothing here was checked by arithmetic`,
+    };
+  } else {
+    const result = aggregatesByArithmetic({ entity, period, columns, rowCount, over });
+    decided = result.decided;
+    arithmetic = {
+      ran: true,
+      over: reach,
+      column: result.column,
+      nodes: result.budget.nodes,
+      exhausted: result.budget.exhausted,
+      measuresTried: result.measuresTried,
+    };
+  }
+  const byArithmetic = decided;
+  const named = new Set(decided.map((d) => d.entity));
+  const byStructure = (structure?.proposed ?? []).filter((p) => !named.has(p.entity));
+  return {
+    says:
+      "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+    byArithmetic,
+    byStructure,
+    arithmetic,
+    structure: structure
+      ? {
+          column: structure.column,
+          shape: structure.shape,
+          entitiesWithThatShape: structure.entitiesWithThatShape,
+          entitiesCoded: structure.entitiesCoded,
+        }
+      : { answered: false, reason: "no column of this table holds one stable code per entity with a shape most of them share" },
+  };
+}
+
+// A STATED INCOMPLETENESS IS PROSE, AND THE GUARD DOWNSTREAM LOOKS FOR A COLUMN.
+//
+// The wildfire dataset states the single most dangerous fact about itself in its own description
+// line — "Number of wildfires. The 2026 data is incomplete and was last updated 21 August 2026." —
+// which `intake` freezes into `article.md` as prose and never as a column. `storyboard`'s partial-
+// period guard matches a COLUMN NAME (`^months?_covered$|^coverage$|^complete(ness)?$`), so eight
+// months of 2026 read as a full year beside fourteen complete ones, and its 370 394 world fires
+// read as a 41% collapse.
+//
+// This carries the claim onto the profile as a first-class field, with the sentence that made it,
+// so the guard has something to read. It is a CLAIM, not a fact: the profiler cannot check whether
+// a period really is short, only that the journalist's own frozen prose says so, and the sentence
+// travels with the claim for exactly that reason.
+//
+// THE REACH IS DECLARED, because a lexicon's silence must not read as a clean bill — the same
+// policy `denominatorUnread` states for the denominator list one section up. Two languages here,
+// not four: these are the words this author can write correctly, and a dataset stating its
+// incompleteness in Greek or Arabic is a gap named out loud rather than a guess made quietly.
+const INCOMPLETENESS_WORDS = [
+  "incomplete",
+  "partial",
+  "partially",
+  "preliminary",
+  "provisional",
+  "year to date",
+  "year-to-date",
+  "incomplet",
+  "incomplets",
+  "incomplète",
+  "incomplètes",
+  "partiel",
+  "partiels",
+  "partielle",
+  "partielles",
+  "préliminaire",
+  "préliminaires",
+  "provisoire",
+  "provisoires",
+];
+
+const INCOMPLETENESS_LANGUAGES_SAID = "English and French";
+
+/** The frozen prose as sentences.
+ *
+ *  A markdown draft is not one paragraph: a heading carries no full stop, so joining it to what
+ *  follows would hand back "# Fires The 2026 data is incomplete." as one sentence and put the
+ *  headline into a quotation the journalist never wrote. So a blank line ends a sentence the way a
+ *  full stop does, heading and blockquote markers are dropped, a sentence that wrapped across two
+ *  lines is rejoined, and the split takes a full stop even where a quotation closed over it
+ *  (`…incomplete."*` is exactly how the wildfire article quotes the line that earned this field).
+ *  The emphasis and quote marks are then trimmed off both ends of what is left. */
+function sentencesOf(prose) {
+  const blocks = prose.split(/\r?\n\s*\r?\n/);
+  const sentences = [];
+  for (const block of blocks) {
+    const flat = block
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^\s*>+\s?/, "").replace(/^\s*#{1,6}\s+/, ""))
+      .join(" ")
+      .replace(/\s+/g, " ");
+    for (const sentence of flat
+      .replace(/([.!?])(["'*_”»)\]]*)\s+/g, "$1$2\u0001")
+      .split("\u0001")) {
+      const trimmed = sentence.replace(/^[\s"'*_“”«»(]+/, "").replace(/[\s"'*_“”«»)]+$/, "");
+      if (trimmed !== "") sentences.push(trimmed);
+    }
+  }
+  return sentences;
+}
+
+/** A CLAIM OF INCOMPLETENESS ABOUT A PERIOD THIS TABLE HOLDS, read off the frozen prose. A sentence
+ *  qualifies when it carries one of the declared words AND a numeral that is one of the period
+ *  column's own values — the numeral is what ties the claim to a row of the table, and without it a
+ *  sentence about an incomplete argument would read as a sentence about an incomplete year. */
+function statedIncompletenessOf(prose, period) {
+  const words = INCOMPLETENESS_WORDS;
+  const base = { reads: INCOMPLETENESS_LANGUAGES_SAID, words, column: period.name };
+  if (typeof prose !== "string" || prose.trim() === "") {
+    return {
+      ...base,
+      readProse: false,
+      claims: [],
+      says: `no prose was handed to this profiler, so nothing was read: this is not a statement that the "${period.name}" column is complete`,
+    };
+  }
+  const held = new Set(period._values.filter((v) => v !== "").map(Number));
+  const claims = [];
+  const seen = new Set();
+  for (const sentence of sentencesOf(prose)) {
+    const lower = sentence.toLowerCase();
+    const said = words.find((word) =>
+      new RegExp(`(^|[^\\p{L}])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^\\p{L}]|$)`, "u").test(lower),
+    );
+    if (!said) continue;
+    for (const numeral of sentence.match(/\d+/g) ?? []) {
+      const value = Number(numeral);
+      if (!held.has(value)) continue;
+      const key = `${value}\u0000${sentence}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      claims.push({ period: value, column: period.name, word: said, sentence });
+    }
+  }
+  return {
+    ...base,
+    readProse: true,
+    claims,
+    says:
+      claims.length > 0
+        ? `the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote, carried here with the sentence that made it, never a fact this profiler checked`
+        : `the frozen prose states no incompleteness in ${INCOMPLETENESS_LANGUAGES_SAID}; a dataset that states one in another language is not read here`,
+  };
+}
+
+/** THE DENOMINATOR OF A PANEL IS A DIFFERENT FILE, so this table's silence about one is not an
+ *  answer. `findDenominatorColumn` looks in the same table; every country panel published one
+ *  indicator per file — Our World in Data, Eurostat, the World Bank — keeps its population and its
+ *  area somewhere else. "The Democratic Republic of Congo recorded more wildfires in 2025 than any
+ *  other country" is true of the raw column and is an artefact of savanna burning across 2.3
+ *  million km2, and nothing in the run said so.
+ *
+ *  The limit cannot be removed by a profiler: it cannot fetch the other file. What it can do is stop
+ *  its own silence from reading as "asked and answered", which is what this sentence is for. */
+const DENOMINATOR_NOT_IN_THIS_TABLE =
+  "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be";
+
+export function profileTable(rows, { prose } = {}) {
   const [rawHeader = [], ...body] = rows;
   // A header name is metadata, not data — trim it. A value's own leading or
   // trailing space stays exactly as written; the journalist's data is not ours
@@ -663,14 +1186,19 @@ export function profileTable(rows) {
     // ambiguity refusal only ever fires on a token with no sibling evidence to settle it, so a
     // value here falls back to the column-level settling `typeOf` already computed (this column
     // would not be typed "number" at all otherwise) rather than being re-refused one token late.
-    const numbers =
+    // Kept ROW BY ROW, blanks as null, because the panel below has to line a value up with the row
+    // it came from — an entity and a period — and a list of the present values alone cannot.
+    // `numbers` is the same list with the blanks dropped, exactly as it always was.
+    const rowNumbers =
       type === "number"
-        ? present.map((v) => {
+        ? values.map((v) => {
+            if (v === "") return null;
             if (unit) return Number(splitUnit(v).core);
             const read = readNumericToken(v);
             return read && !read.ambiguous ? read.value : Number(stripThousands(v));
           })
         : [];
+    const numbers = rowNumbers.filter((n) => n !== null);
     // A PERCENTAGE ABOVE 100 — reported, never repaired (finding Y5, stress round five).
     // `stress-y-rural-broadband` carries 104.2 in a column the article itself calls a percentage,
     // and nothing anywhere in this toolchain noticed. What this profiler can HONESTLY know is
@@ -702,7 +1230,11 @@ export function profileTable(rows) {
       // tonnes" against rows of 14, 11 and 9) cites a number that is by construction OUTSIDE the
       // range of the column it sums, so without this the only check that can see it reads it as a
       // number the data refutes — which is exactly what it did (storyboard's ground-claim.mjs).
-      sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
+      // A SEQUENCE HAS NO TOTAL. `year.sum = 7 874 100` was reported for a column `isSequenceColumn`
+      // had already recognised as a period, and it was the largest-looking number in the profile.
+      // See SEQUENCE_TOTAL_WITHHELD.
+      sum: gaps === null && numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
+      ...(gaps !== null && numbers.length ? { sumWithheld: SEQUENCE_TOTAL_WITHHELD } : {}),
       // Which values a percentage column states above 100 — see percentAboveHundred above. Absent,
       // not null, when the column is not a percentage the DATA declared or has no such value.
       ...(percentAboveHundred.length
@@ -712,8 +1244,10 @@ export function profileTable(rows) {
       // `null` for any column where "gaps" is not a meaningful question, not merely an unanswered one.
       gaps,
       // Values themselves, kept only long enough for mixedUnitsOf (below) to check this column
-      // against a sibling — never returned on the column itself.
+      // against a sibling, and for the panel to line a value up with its own row — never returned
+      // on the column itself.
       _values: values,
+      _rowNumbers: rowNumbers,
     };
   });
   // The denominator-shaped columns, named once for the whole table — see DENOMINATOR_NAME_TOKENS.
@@ -749,9 +1283,68 @@ export function profileTable(rows) {
             : { column: others[0].name, others: others.slice(1).map((c) => c.name) };
       }
     }
-    delete column._values;
   }
-  return { rowCount: body.length, columns, duplicates: findDuplicateRows(body) };
+
+  // THE PANEL — see the block above `SEQUENCE_TOTAL_WITHHELD`. Decided after the columns, because
+  // every question it puts is a question about columns this profiler has already typed: which one
+  // is a sequence, which one has no blank in it, which ones are non-negative measures.
+  const key = panelKeyOf(columns, body.length);
+  let panel = null;
+  if (key) {
+    const coverage = coverageOf(key.entity, key.period, body.length);
+    const rowsPerPeriod = coverage.byPeriod.map((p) => p.entities);
+    panel = {
+      entity: key.entity.name,
+      period: key.period.name,
+      entities: key.entity.distinct,
+      periods: key.period.distinct,
+      rowsPerPeriod: { min: Math.min(...rowsPerPeriod), max: Math.max(...rowsPerPeriod) },
+      balanced: key.entity.distinct * key.period.distinct === body.length,
+      says: `one row per entity per period: every ("${key.entity.name}", "${key.period.name}") pair in this table is unique, so rowCount (${body.length}) counts readings, never subjects — there are ${key.entity.distinct} of those`,
+      decidedBy: `every ("${key.entity.name}", "${key.period.name}") pair is unique across all ${body.length} rows, and "${key.entity.name}" holds no blank`,
+      coverage: {
+        ...coverage,
+        says: `a period's own step being present is not the same as every entity being present in it: the fullest period here carries ${coverage.fullest.entities} entities and the thinnest carries ${coverage.thinnest.entities}`,
+      },
+      aggregates: aggregatesOf(key.entity, key.period, columns, body.length),
+    };
+    // ON THE PERIOD COLUMN ITSELF, because `gaps: []` is where a reader looks and on the Ember file
+    // it is true and misleading: every year from 1900 to 2025 is present, 2022 carries 245 entities
+    // and 2025 carries 114. Absent — not false — when coverage really is flat, so the field only
+    // ever appears where there is something to see.
+    if (coverage.fullest.entities !== coverage.thinnest.entities) {
+      key.period.gapsAreNotCoverage = {
+        says: "every step of this sequence is present; that is not the same as every entity being present at every step, and this column's own coverage is not flat",
+        fullest: coverage.fullest,
+        thinnest: coverage.thinnest,
+      };
+    }
+    // THE DENOMINATOR OF A PANEL IS A DIFFERENT FILE — see DENOMINATOR_NOT_IN_THIS_TABLE. Said only
+    // on a measure column that got no denominator answer at all, so it never argues with one.
+    for (const column of columns) {
+      if (column.type !== "number" || column.gaps !== null) continue;
+      if (column.denominator || column.denominatorUnread || namesADenominator(column.name)) continue;
+      column.denominatorNotInThisTable = { says: DENOMINATOR_NOT_IN_THIS_TABLE, reads: LEXICON_LANGUAGES_SAID };
+    }
+  }
+
+  // A STATED INCOMPLETENESS — see statedIncompletenessOf. Emitted whenever this table HAS a period
+  // for a sentence to be about, claims or no claims: the empty answer is the one a downstream guard
+  // has to be able to tell apart from a field that was never written.
+  const period = columns.find((c) => c.gaps !== null);
+  const statedIncompleteness = period ? statedIncompletenessOf(prose, period) : null;
+
+  for (const column of columns) {
+    delete column._values;
+    delete column._rowNumbers;
+  }
+  return {
+    rowCount: body.length,
+    columns,
+    duplicates: findDuplicateRows(body),
+    panel,
+    ...(statedIncompleteness ? { statedIncompleteness } : {}),
+  };
 }
 
 // FINDING 8 (stress round three): `stress-l-mixed-unit-clinics`'s own `value` column reports a
