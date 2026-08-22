@@ -344,7 +344,7 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
 const CREDIT_NOT_AT_THE_BOTTOM: Record<string, string> = {
   // W2 §3.4.5 — the map × web seed renders `<p class="mw-source">` as the second child, under the
   // title. Five delivered pages inherit it.
-  "proof/mapgen-choropleth-web/render/choropleth.html": "map-web seed, §3.4.5",
+  "proof/mapgen-choropleth-web/renders/choropleth.html": "map-web seed, §3.4.5",
   "proof/mapgen-dot-web/dot-population.html": "map-web seed, §3.4.5",
   "proof/mapgen-hexgrid-web/hex-grid.html": "map-web seed, §3.4.5",
   "proof/mapgen-locator-web/locator.html": "map-web seed, §3.4.5",

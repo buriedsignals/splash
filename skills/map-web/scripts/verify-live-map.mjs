@@ -125,7 +125,7 @@ export const HALO_SIZE_TOLERANCE_PX = 1;
  *  THE DEFECT THIS CLOSES: this file used to read `map.getSource("mw-marks")._data.features` — the
  *  SYMBOL seed's layer id, typed in three places — so it crashed with
  *  `Cannot read properties of undefined (reading '_data')` on any beat that is not a symbol map,
- *  including the committed `proof/mapgen-choropleth-web/render/choropleth.html`. Four of the five
+ *  including the committed `proof/mapgen-choropleth-web/renders/choropleth.html`. Four of the five
  *  map types this format claims could not be driven by their own live probe.
  *
  *  The vocabulary is not invented here: `live-map.mjs`'s own `wireHover` selects the interrogable

@@ -108,7 +108,7 @@ describe("every committed map page keeps its value table collapsed", () => {
     // the next beat is expected to redden this list too, and whoever adds it is expected to bump it
     // deliberately, by name, rather than have the guard widen itself into a floor.
     expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
+      "proof/mapgen-choropleth-web/renders/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",
@@ -130,7 +130,7 @@ describe("every committed map page keeps its value table collapsed", () => {
     // TWO tables behind one disclosure (its eight routes and the five destinations they reach).
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
+      "proof/mapgen-choropleth-web/renders/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",

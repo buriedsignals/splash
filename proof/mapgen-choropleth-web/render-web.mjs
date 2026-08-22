@@ -35,6 +35,7 @@ import { deriveFurniture } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { splashRoot } from "./splash-root.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
@@ -106,7 +107,12 @@ const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 // `checkClaim` already refuses to render if either stops being the extreme it is named as.
 // The colours are READ, not typed — see `PALETTE.md` beside this file. The class shading is
 // this map's data, so the accent reaches the ramp and not only the subject outline.
-const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+// STOPS AT THE SPLASH ROOT, not at a counted number of parents. `PALETTE.md` is a STORY-level
+// record — one answer for a story's whole run — so a beat under `stories/<slug>/beats/<id>/` needs
+// the walk to climb two levels, and `stopAt: join(HERE, "..")` stopped it at `beats/` and threw "No
+// PALETTE.md found" with the file sitting one directory further up. Same defect as the `.env` line
+// above, same fix: the boundary is the root, and the root is found rather than counted.
+const PALETTE = readPalette(HERE, { stopAt: splashRoot(HERE) });
 console.log(
   `palette from ${PALETTE.source} — ground ${PALETTE.ground}, accent ${PALETTE.accent}, ` +
     `chosen by ${PALETTE.origin}`,
@@ -133,7 +139,12 @@ const PLATE_SIZE = 496;
 const DEFAULT_PLATE_DIR = join(HERE, "plate");
 const DEFAULT_VALUES_PATH = join(HERE, "co2-per-capita-2023.csv");
 const DEFAULT_SHAPES_PATH = join(HERE, "countries.geojson");
-const DEFAULT_OUT_DIR = join(HERE, "render");
+// `renders/`, PLURAL, and that is not a spelling preference. `whereIs` reads
+// `beats/<id>/renders/` and `writeOutputReview` refuses to bind an approval to anything else, so a
+// producer writing `render/` is invisible to the orchestrator: measured on a real story, with the
+// page fully rendered, `whereIs` answered {"phase":"production","missing":[]} — the same answer it
+// gives a beat nobody has started.
+const DEFAULT_OUT_DIR = join(HERE, "renders");
 const OUTPUT_NAME = "choropleth.html";
 const SUBJECT_KEY = "FRO";
 const COMPARISON_KEY = "ALB";

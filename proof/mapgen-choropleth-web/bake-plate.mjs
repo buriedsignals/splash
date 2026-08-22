@@ -49,6 +49,7 @@ import {
 } from "./geo-choropleth.ts";
 import { choroplethSurfaces } from "./ChoroplethWeb.tsx";
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { splashEnvPath, splashRoot } from "./splash-root.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -61,7 +62,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  *  accent the ramp comes from and refuses a pairing a reader could not separate, and it is the ONE
  *  place all three call sites — this bake, the SSR'd page and the live plan — get their answer, so
  *  the plate and the live tiles can never paint two different seas. */
-const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+// STOPS AT THE SPLASH ROOT, not at a counted number of parents. `PALETTE.md` is a STORY-level
+// record — one answer for a story's whole run — so a beat under `stories/<slug>/beats/<id>/` needs
+// the walk to climb two levels, and `stopAt: join(HERE, "..")` stopped it at `beats/` and threw "No
+// PALETTE.md found" with the file sitting one directory further up. Same defect as the `.env` line
+// above, same fix: the boundary is the root, and the root is found rather than counted.
+const PALETTE = readPalette(HERE, { stopAt: splashRoot(HERE) });
 const WATER_FILL = choroplethSurfaces(PALETTE.ground, PALETTE.accent, CO2_BREAKS).water;
 
 /** The beat's camera and its anchors — the same near-square European box
@@ -98,7 +104,14 @@ const outDir = flag("--out", join(HERE, "plate"));
 const frameHeight = Number(flag("--height", "0")) || frameHeightFor(BEAT.bounds, size);
 const shapesPath = flag("--shapes", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "15000"));
-const keyPath = flag("--env", join(HERE, "../../.env"));
+// THE KEY HAS ONE HOME, AND IT IS NOT A FIXED NUMBER OF `..` SEGMENTS. This was
+// `join(HERE, "../../.env")`, which is right for a beat living two levels under the repository root
+// — where this one lives — and wrong for one at `stories/<slug>/beats/<id>/`, four levels down,
+// which is where every beat a journalist commissions lives. Copied there, it resolved to the
+// STORY's own folder and threw `ENOENT … stories/<slug>/.env`, sending the reader hunting for a
+// missing key when what was missing was the root. `splashEnvPath` walks up to the nearest ancestor
+// declaring the `#shared/*` import, which is the root by definition wherever the beat sits.
+const keyPath = flag("--env", splashEnvPath(HERE));
 
 function resolveChrome() {
   const candidates = [];

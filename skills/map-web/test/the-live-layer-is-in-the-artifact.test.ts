@@ -43,7 +43,7 @@
  * 3. The committed half needs no mutation at all: on the day this file landed it read the tree as
  *    the audit did, and reddened on five of the six pages —
  *
- *      (fail) every committed map-web page is a live map > proof/mapgen-choropleth-web/render/choropleth.html is live
+ *      (fail) every committed map-web page is a live map > proof/mapgen-choropleth-web/renders/choropleth.html is live
  *      (fail) … proof/mapgen-dot-web/dot-population.html is live
  *      (fail) … proof/mapgen-hexgrid-web/hex-grid.html is live
  *      (fail) … proof/mapgen-locator-web/locator.html is live
@@ -292,7 +292,7 @@ describe("every committed map-web page is a live map", () => {
     // list is an exact ratchet on purpose — the next beat is expected to redden it too, bumped
     // deliberately by name rather than widened into a floor.
     expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
+      "proof/mapgen-choropleth-web/renders/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",

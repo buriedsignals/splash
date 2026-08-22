@@ -811,7 +811,7 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
   // One or two of its three probed countries are concave enough that fewer than two inset points
   // land on painted mark — Iceland's bounding box is mostly open sea. Which of the two it is moves
   // between checkouts, which is why this table records "measurable at all" and not the split.
-  "proof/mapgen-choropleth-web/render/choropleth.html": {
+  "proof/mapgen-choropleth-web/renders/choropleth.html": {
     measurable: true,
     probed: 3,
   },
