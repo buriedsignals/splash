@@ -9,6 +9,13 @@ type: diverging-bar
 **Medium/format:** chart / video. **Pinned size:** portrait, 1080 × 1920.
 **Second form:** square, 1080 × 1080 — the same composition, the same timing, the same props.
 
+**Reading**: raw — `population` sits beside `net_migration_2025` in the frozen table, and this beat
+draws the RAW balance on purpose: the article's claim is about how many people a region lost, and
+21 800 people leaving Centre is that number, not a rate. The per-capita reading is not discarded,
+it is printed in the subtitle where it changes the ranking — *"Per 1000 residents Sud, not Ouest,
+gained most"* (Sud 5.11 per 1000, Ouest 4.57) — so a reader who wants the rate has it and a reader
+who wants the count has the bars. Both are true; only one can be a bar length.
+
 ## What this beat proves
 
 Four of the seven regions had a negative net migration balance in 2025 and three positive, and
