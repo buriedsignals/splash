@@ -25,8 +25,11 @@
  * Both halves are measured here against the real page, never against a fixture alone.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createElement } from "react";
+import { renderMapWeb } from "../scripts/render-web.mjs";
 import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
 import {
   READING_WIDTHS,
@@ -464,5 +467,110 @@ describe("the producer is told, at production time", () => {
     );
     expect(drawnRegionsOf(seed)!.shapes).toEqual([]);
     expect(strandedRefusal(seed)).toBeNull();
+  });
+});
+
+/**
+ * AND THE PAGE IS ACTUALLY NOT WRITTEN — the format's own renderer, invoked for real.
+ *
+ * The assertions above prove the decision on delivered HTML and prove the renderer NAMES it. This
+ * one drives `renderMapWeb` itself with a beat that strands a mark, because a guard wired into a
+ * code path nothing exercises is the state this repository keeps finding: the seed is a symbol map
+ * with no areal geometry, so no render in this tree would otherwise reach the throw with anything
+ * but an empty set.
+ */
+describe("renderMapWeb refuses to write a page that strands a mark", () => {
+  const FRAME = { width: 100, height: 100 };
+  // One mark, drawn 0.2 frame units across — under a pixel at any width this format ships — plus one
+  // drawn 40 units across, so the beat is not degenerate and the refusal names only the speck.
+  const speck = 'M60 60L60.2 60L60.2 60.2L60 60.2Z';
+  const wide = 'M5 5L45 5L45 45L5 45Z';
+  const marks = [
+    { key: "SPECK", detail: "Monaco : 86.4 years", d: speck },
+    { key: "WIDE", detail: "France : 83.2 years", d: wide },
+  ];
+  const Beat = () =>
+    createElement("div", { className: "map-web-page" }, [
+      createElement(
+        "svg",
+        { key: "svg", className: "map", viewBox: `0 0 ${FRAME.width} ${FRAME.height}` },
+        marks.map((mark) =>
+          createElement("path", { key: mark.key, d: mark.d, fill: "#888", "data-key": mark.key }),
+        ),
+      ),
+      createElement(
+        "div",
+        { key: "overlay" },
+        marks.map((mark) =>
+          createElement("button", {
+            key: mark.key,
+            type: "button",
+            className: "pt",
+            "aria-label": mark.detail,
+            title: mark.detail,
+            "data-key": mark.key,
+            "data-detail": mark.detail,
+          }),
+        ),
+      ),
+    ]);
+  const Table = ({ rows }: { rows: { detail: string }[] }) =>
+    createElement(
+      "table",
+      null,
+      createElement(
+        "tbody",
+        null,
+        rows.map((row) =>
+          createElement("tr", { key: row.detail }, createElement("td", null, row.detail)),
+        ),
+      ),
+    );
+  const props = {
+    geometry: { frame: FRAME, points: [] },
+    language: "en",
+    ground: "#FFFFFF",
+    title: "A beat with one mark under a pixel",
+  };
+
+  /** Renders into a throwaway directory and reports whether the file exists, whatever happened. */
+  async function build(rows: { detail: string }[]) {
+    const outDir = mkdtempSync(join(tmpdir(), "map-web-stranded-"));
+    try {
+      let thrown: Error | null = null;
+      try {
+        await renderMapWeb({
+          component: Beat,
+          table: () => Table({ rows }),
+          props: props as any,
+          outDir,
+          name: "beat.html",
+          tableRowNoun: "marks",
+        });
+      } catch (error) {
+        thrown = error as Error;
+      }
+      return { thrown, written: existsSync(join(outDir, "beat.html")) };
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+
+  it("writes the page when every stranded mark still has its row and its target", async () => {
+    const { thrown, written } = await build(marks.map((mark) => ({ detail: mark.detail })));
+    expect(thrown).toBeNull();
+    expect(written).toBe(true);
+  });
+
+  it("throws, and leaves no file behind, when the stranded mark has no row", async () => {
+    const { thrown, written } = await build([{ detail: "France : 83.2 years" }]);
+    expect(thrown).not.toBeNull();
+    expect(thrown!.message).toContain("no row in the accessible table for SPECK");
+    expect(thrown!.message).toContain("marks smaller than a pixel");
+    // The WIDE mark is missing nothing and a reader can point at it, so it is not named.
+    expect(thrown!.message).not.toContain("WIDE");
+    // AND THE PAGE IS NOT ON DISK. "Must not ship" is a file that was never written, not a warning
+    // printed beside one that was.
+    expect(written).toBe(false);
   });
 });
