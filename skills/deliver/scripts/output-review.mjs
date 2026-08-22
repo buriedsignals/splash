@@ -20,16 +20,38 @@ function text(value, label) {
   return value;
 }
 
+// WHAT THIS NUMBER ACTUALLY IS, because until round seven nothing said and a clean beat could not
+// be reviewed at all.
+//
+// It reads like a pointer into a production plan. There is no production plan in this toolchain —
+// no file, no function and no gate produces the value — and the only documented way to obtain one
+// was this skill's own worked example, `const planVersion = 3;` under the comment *read these from
+// the current production plan*. The measurement that settles it: all twenty reviews committed under
+// `stories/` carry `planVersion: 1`. It is THIS BEAT'S OWN review revision, and its first value is
+// 1; `derivedPlanVersion` below reads it back rather than asking for it again.
+const PLAN_VERSION_MEANING =
+  "this beat's own review revision — not a pointer into a plan kept elsewhere, because there is no such plan in this toolchain. A beat's first review is version 1, and `writeOutputReview` derives it from the review already on disk when a caller names none; it moves only when the PLAN for the beat changes, never because the render did";
+
 function planVersion(value, label = "planVersion") {
   if (!Number.isSafeInteger(value) || value < 1) {
-    throw new Error(`${label} must be a positive integer`);
+    throw new Error(`${label} must be a positive integer: it is ${PLAN_VERSION_MEANING}`);
   }
   return value;
 }
 
+// A FINDING ID NAMES A CLAIM THE QA RUN CHECKED, and the floor of one is real rather than
+// bureaucratic: a review binds a decision to a set of claims, and a record binding the EMPTY set
+// binds nothing at all. A beat always carries at least one such claim — the takeaway confirmed at
+// Gate 1, which is the whole reason the beat exists.
+//
+// The refusal used to say only "must name at least one finding ID", naming neither what a finding
+// ID is nor where one comes from, so a real run invented five to make the record validate.
+const FINDING_ID_MEANING =
+  "a finding ID names one claim this beat makes that its QA run actually checked. A beat that seems to have none still has one: the takeaway confirmed at Gate 1 and recorded in STORYBOARD.md, which is what the beat exists to show. Name that, and anything else the render was checked against";
+
 function findingIds(value, label = "findingIds") {
   if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`${label} must name at least one finding ID`);
+    throw new Error(`${label} must name at least one finding ID — ${FINDING_ID_MEANING}`);
   }
   const ids = value.map((id, index) => text(id, `${label}[${index}]`));
   if (new Set(ids).size !== ids.length) {
@@ -320,11 +342,40 @@ export function requireApprovedOutput({ beatDir, planVersion: version, findingId
   });
 }
 
+/**
+ * The plan version this beat is already under, or 1 when nothing has reviewed it yet.
+ *
+ * A re-render is a new DRAFT, not a new plan — `draftDigest` is what moves when the picture is
+ * corrected — so a second review of the same beat stays on the same version unless its caller says
+ * otherwise. A review on disk that cannot be read is not silently replaced by 1: an unreadable
+ * record is a fact to report, not a default to fall back on.
+ */
+function derivedPlanVersion(beatDir) {
+  const path = join(text(beatDir, "beatDir"), OUTPUT_REVIEW_FILE);
+  let stat;
+  try {
+    stat = lstatSync(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") return 1;
+    throw new Error(`the output review could not be inspected at ${path}`, { cause: error });
+  }
+  if (stat.isSymbolicLink() || !stat.isFile()) {
+    throw new Error(`${OUTPUT_REVIEW_FILE} must be a regular file in ${beatDir}`);
+  }
+  let previous;
+  try {
+    previous = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`${OUTPUT_REVIEW_FILE} is not valid JSON`, { cause: error });
+  }
+  return planVersion(previous?.planVersion, `the plan version recorded in ${OUTPUT_REVIEW_FILE}`);
+}
+
 /** Atomically serialize a review. This records QA supplied by its caller; it never runs QA itself. */
 export async function writeOutputReview({
   beatDir,
   id,
-  planVersion: version,
+  planVersion: statedVersion,
   findingIds: ids,
   qaRuns,
   angleEvidenceBrief,
@@ -337,6 +388,9 @@ export async function writeOutputReview({
   const currentFeedbackDigest = feedbackDigest(beatDir);
   const outputId = currentOutputId(beatDir);
   const draftDigest = renderDigest(beatDir);
+  // DERIVED WHEN NOT STATED — see `PLAN_VERSION_MEANING`. A caller who really is moving the beat to
+  // a new plan states the number and keeps it.
+  const version = statedVersion === undefined ? derivedPlanVersion(beatDir) : statedVersion;
   // A QA RUN IS COMPLETED FROM THE RECORD IT BELONGS TO, not repeated by its caller.
   //
   // This function computes the draft digest, reads the output id, and is handed the plan version

@@ -294,4 +294,90 @@ describe("OutputReview v1", () => {
     ).rejects.toThrow(/no passing QA run/);
     expect(await readFile(join(beatDir, OUTPUT_REVIEW_FILE), "utf8")).toBe(previous);
   });
+
+  // `planVersion` HAD NO SOURCE, AND A CLEAN BEAT COULD NOT BE REVIEWED — round-seven finding 3.
+  //
+  // Measured: `writeOutputReview` refuses anything but a positive integer, and there is no
+  // production plan in this toolchain — no file, no function and no gate produces the number. The
+  // only documented way to obtain it was this skill's own worked example, `const planVersion = 3;`
+  // under the comment *read these from the current production plan*. Every one of the twenty
+  // reviews committed in `stories/` carries `planVersion: 1`, which is the measurement that says
+  // what the field actually is: not a pointer into a plan that exists elsewhere, but THIS BEAT'S
+  // OWN review revision, whose first value is 1.
+  //
+  // So it is derived, not demanded. A caller that states one keeps it.
+  describe("the plan version a review is written under", () => {
+    async function review(extra: Record<string, unknown> = {}) {
+      return writeOutputReview({
+        beatDir,
+        id: `review-${Math.random().toString(36).slice(2)}`,
+        findingIds: TEST_FINDING_IDS,
+        qaRuns: [{ id: "qa-1", status: "passed", completedAt: TEST_COMPLETED_AT }],
+        angleEvidenceBrief: "The output visualises the finding named here.",
+        decision: "approve",
+        ...extra,
+      });
+    }
+
+    it("should be 1 for a beat's first review, without the caller naming one", async () => {
+      await rm(join(beatDir, OUTPUT_REVIEW_FILE));
+      expect(await review()).toMatchObject({ planVersion: 1 });
+    });
+
+    it("should stay what the beat is already under when a later review names none", async () => {
+      await review({ planVersion: 4 });
+      // A re-render is a new DRAFT, not a new plan: the version the beat is under does not move
+      // because the picture was corrected.
+      await writeFile(join(beatDir, "renders", "still.svg"), "<svg><!-- corrected --></svg>");
+      expect(await review()).toMatchObject({ planVersion: 4 });
+    });
+
+    it("should keep a version the caller states", async () => {
+      expect(await review({ planVersion: 7 })).toMatchObject({ planVersion: 7 });
+    });
+
+    it("should refuse a version that is not one, and say where the value comes from", async () => {
+      await expect(review({ planVersion: "1" })).rejects.toThrow(
+        /planVersion.*this beat's own review revision/s,
+      );
+    });
+
+    it("should refuse to derive one from a review it cannot read", async () => {
+      await writeFile(join(beatDir, OUTPUT_REVIEW_FILE), "{ not json");
+      await expect(review()).rejects.toThrow(/not valid JSON/);
+    });
+
+    // A value read back off disk is checked exactly as one handed in is. Inheriting whatever a
+    // previous record happened to hold would carry a bad version forward under the name of a
+    // derivation, which is worse than asking for it.
+    it("should refuse to inherit a version that is not one", async () => {
+      await rewrite((record) => {
+        record.planVersion = "1";
+      });
+      await expect(review()).rejects.toThrow(
+        /plan version recorded in OUTPUT-REVIEW\.json must be a positive integer/,
+      );
+    });
+  });
+
+  // THE OTHER HALF OF THE SAME FINDING. `findingIds must name at least one finding ID` was refused
+  // on a beat whose reviewer had nothing they would have called a finding, and the refusal named
+  // neither what a finding ID is nor where one comes from — so five were invented to make the
+  // record validate. The floor of one is right and stays: a beat always carries at least one claim,
+  // the confirmed takeaway, and a record binding an empty set binds nothing. What changes is that
+  // the refusal says so.
+  it("should say what a finding ID is when a review names none", async () => {
+    await rm(join(beatDir, OUTPUT_REVIEW_FILE));
+    await expect(
+      writeOutputReview({
+        beatDir,
+        id: "review-no-findings",
+        planVersion: 1,
+        findingIds: [],
+        qaRuns: [{ id: "qa-1", status: "passed", completedAt: TEST_COMPLETED_AT }],
+        angleEvidenceBrief: "Nothing was named.",
+        decision: "approve",
+      }),
+    ).rejects.toThrow(/takeaway/);
+  });
 });

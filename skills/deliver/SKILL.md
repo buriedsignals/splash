@@ -450,6 +450,14 @@ const identity = {
 // `currentPlanBinding` returns exactly the pair `requireApprovedOutput` accepts, from the
 // OUTPUT-REVIEW.json Gate 3 wrote. The FIRST review is where the values are chosen, by whoever ran
 // production; everything downstream reads them back.
+//
+// AND THE FIRST REVIEW NEED NOT CHOOSE THE NUMBER EITHER. `writeOutputReview` DERIVES `planVersion`
+// when its caller names none: 1 for a beat nothing has reviewed, and otherwise whatever version the
+// beat is already under — a re-render is a new DRAFT, not a new plan. Every review committed under
+// `stories/` carries version 1, which is what the field is: this beat's own review revision, not a
+// pointer into a plan kept somewhere else. `findingIds` stays required, and a beat that seems to
+// have none still has one — the takeaway confirmed at Gate 1, which is what the beat exists to
+// show; the refusal now says so instead of being satisfied with invented IDs.
 const { planVersion, findingIds } = currentPlanBinding(
   `${identity.storiesRoot}/${identity.storyId}/beats/${identity.outputId}`,
 );
