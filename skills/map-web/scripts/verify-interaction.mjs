@@ -111,6 +111,14 @@ function probePoint(page, key) {
       x,
       y,
       inWindow: r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth,
+      // POINTER-ACTIVE OR NOT, read off the page rather than assumed. The symbol seed makes every
+      // mark a real 28px button. A choropleth does the opposite on purpose: only the regions too
+      // small to land a pointer on keep a pointer-active button, and every other region is pointed
+      // at through its own FILL — `ChoroplethWeb.tsx`'s `needsPointerTarget`, and live, the canvas
+      // answers for all of them. Asserting the seed's invariant over a choropleth's 241 buttons
+      // reported 180 false failures ("MCO covered by VAT"), which is what a check written against
+      // one beat's mechanism says about another's.
+      pointerActive: getComputedStyle(button).pointerEvents !== "none",
       hitIsOwnButton: hit === button,
       hitKey: hit ? (hit.getAttribute("data-key") ?? `${hit.tagName}.${hit.className}`) : "nothing",
       width: r.width,
@@ -153,6 +161,11 @@ function visibleState(page) {
 function chipCentre(page, radioId) {
   return page.evaluate((id) => {
     const input = document.getElementById(id);
+    // NULL, NOT A CRASH. A page with no filter (every choropleth in this tree) has no such input,
+    // and `input.closest` on null threw before the KEYBOARD and NO-JS sections — the two `SKILL.md`
+    // insists on most — had run at all. A driver that dies on a page it can partly check reports
+    // nothing about the parts it could have.
+    if (!input) return null;
     const chip = input.closest("label");
     const r = chip.getBoundingClientRect();
     const x = r.left + r.width / 2;
@@ -174,18 +187,69 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const points = JSON.parse(await readFile(DEFAULT_DATA_PATH, "utf8"));
+const seedPoints = JSON.parse(await readFile(DEFAULT_DATA_PATH, "utf8"));
 // The one place the expected strings are built, and they are built from the DATA — mirroring
 // `MapWebSeed.tsx`'s own `pointDetail`, deliberately re-stated here rather than imported, so a
 // change to that formatting has to be made in two places by someone who meant it.
 const UNIT_WORD = "million inhabitants";
-const expectedDetail = new Map(points.map((p) => [p.key, `${p.name} : ${fr(p.value)} ${UNIT_WORD}`]));
-const keysByGroup = new Map(
-  groupsOf(points).map((g) => [g, points.filter((p) => p.group === g).map((p) => p.key).sort()]),
-);
-const allKeys = points.map((p) => p.key).sort();
+
+/**
+ * WHOSE MARKS AM I DRIVING? Asked out loud, because for a whole chantier this file answered "the
+ * seed's" no matter what `--html` pointed at.
+ *
+ * THE DEFECT, measured on a real 241-region world choropleth (2026-08-22). Run with `--html <that
+ * beat>`, every expectation still came from `assets/sample-data/regions.json` — thirteen European
+ * metro areas. It reported:
+ *
+ *     FAIL hover 1600x900: every point's own hit target is the topmost thing at its own centre
+ *          — paris: no button; london: no button; … dublin: no button
+ *     ok   hover 1600x900: a real pointer move shows that point's own value — 13/13 matched
+ *     FAIL filter: the default state shows every point — 241/13 points, 0 circles, checked: none
+ *     TypeError: Cannot read properties of null (reading 'closest')
+ *
+ * Thirteen false failures; a VACUOUS PASS, because every point was `continue`d as "no button" before
+ * the comparison so `wrong` stayed empty and 13/13 of nothing matched; and a crash before the
+ * KEYBOARD and NO-JS sections — the two `SKILL.md` insists on most — ever ran.
+ *
+ * So the subject is READ FROM THE PAGE when a page is named, and the honest limit of that is stated
+ * rather than papered over: the seed's own run compares every tooltip against the SOURCE DATA (two
+ * independent paths for one fact), while a foreign page can only be held to its own SSR'd
+ * `data-detail` unless the caller supplies the source with `--data`. A weaker claim, said out loud,
+ * beats a strong claim about the wrong file.
+ */
+function subjectFromSeed(points) {
+  return {
+    source: "assets/sample-data/regions.json",
+    independent: true,
+    keys: drawOrder(points).map((point) => point.key),
+    expectedDetail: new Map(points.map((p) => [p.key, `${p.name} : ${fr(p.value)} ${UNIT_WORD}`])),
+    groups: groupsOf(points),
+    keysByGroup: new Map(
+      groupsOf(points).map((g) => [g, points.filter((p) => p.group === g).map((p) => p.key).sort()]),
+    ),
+    allKeys: points.map((p) => p.key).sort(),
+  };
+}
+
+/** The same shape, read out of a page this file did not render. `independent: false` is what every
+ *  verdict below reads to decide how loudly it may speak. */
+function subjectFromPage(read) {
+  const groups = [...new Set(Object.values(read.groupOf).filter(Boolean))].sort();
+  return {
+    source: "the page's own SSR'd data-detail attributes",
+    independent: false,
+    keys: read.keys,
+    expectedDetail: new Map(Object.entries(read.detailOf)),
+    groups,
+    keysByGroup: new Map(
+      groups.map((g) => [g, read.keys.filter((key) => read.groupOf[key] === g).sort()]),
+    ),
+    allKeys: [...read.keys].sort(),
+  };
+}
 
 let htmlPath = flag("--html", null);
+const drivingTheSeed = htmlPath === null;
 let tmpRoot = null;
 if (!htmlPath) {
   tmpRoot = await mkdtemp(join(tmpdir(), "map-web-verify-"));
@@ -280,6 +344,36 @@ try {
     `live plan present ${layer.hasLivePlan}, html.mw-live ${layer.live}, fallback shown ${layer.fallbackShown}`,
   );
 
+  // ── 0b. WHOSE MARKS? — see `subjectFromSeed`/`subjectFromPage` for what this replaced ─────────
+  const read = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".pt[data-key]")];
+    return {
+      keys: nodes.map((node) => node.getAttribute("data-key")),
+      detailOf: Object.fromEntries(nodes.map((node) => [node.getAttribute("data-key"), node.getAttribute("data-detail")])),
+      groupOf: Object.fromEntries(nodes.map((node) => [node.getAttribute("data-key"), node.getAttribute("data-group")])),
+      chips: [...document.querySelectorAll("input[name=mw-filter]")].map((input) => input.id),
+    };
+  });
+  const subject = drivingTheSeed ? subjectFromSeed(seedPoints) : subjectFromPage(read);
+  const points = subject.keys;
+  const expectedDetail = subject.expectedDetail;
+  const keysByGroup = subject.keysByGroup;
+  const allKeys = subject.allKeys;
+  const hasFilter = read.chips.length > 0;
+  check(
+    `subject: the marks driven below are this page's own — ${subject.keys.length} of them`,
+    subject.keys.length > 0 && read.keys.length === subject.keys.length,
+    `expected values from ${subject.source}${subject.independent ? " (independent of the page)" : ""}; ` +
+      `the page carries ${read.keys.length} marks and ${read.chips.length} filter chip(s)`,
+  );
+  if (!subject.independent)
+    console.log(
+      "      note: --html was given, so every expected string below is the page's own recorded\n" +
+        "            detail rather than a second, independent reading of the source. This proves the\n" +
+        "            WIRING — that pointing at mark X shows X and not its neighbour — and not the\n" +
+        "            arithmetic behind the number. Pass --data <the beat's own json> to check both.",
+    );
+
   // ── 1. FIT: the beat is one window tall, at every width, and the plate keeps its own shape ────
   for (const { w, h } of VIEWPORTS) {
     await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
@@ -368,14 +462,23 @@ try {
     const missed = [];
     const covered = [];
     const wrong = [];
-    for (const point of drawOrder(points)) {
-      const probe = await probePoint(page, point.key);
+    let compared = 0;
+    let passive = 0;
+    for (const key of points) {
+      const probe = await probePoint(page, key);
       if (!probe) {
-        missed.push(`${point.key}: no button`);
+        missed.push(`${key}: no button`);
+        continue;
+      }
+      if (!probe.pointerActive) {
+        // Pointed at through the map itself, not through a button. Counted and reported, never
+        // silently skipped: a beat where NONE of the marks is reachable either way is caught by the
+        // anti-vacuity below.
+        passive++;
         continue;
       }
       if (!probe.hitIsOwnButton) {
-        covered.push(`${point.key} covered by ${probe.hitKey}`);
+        covered.push(`${key} covered by ${probe.hitKey}`);
         continue;
       }
       // Park the pointer somewhere harmless first, so a tooltip left over from the previous point
@@ -383,20 +486,32 @@ try {
       await page.mouse.move(2, 2);
       await page.mouse.move(probe.x, probe.y);
       const tip = await readTooltip(page);
-      const want = expectedDetail.get(point.key);
+      const want = expectedDetail.get(key);
+      compared++;
       if (tip.hidden || tip.text !== want)
-        wrong.push(`${point.key}: wanted ${JSON.stringify(want)}, got ${tip.hidden ? "a hidden tooltip" : JSON.stringify(tip.text)}`);
-      else if (!tip.inWindow) wrong.push(`${point.key}: tooltip drawn outside the window`);
+        wrong.push(`${key}: wanted ${JSON.stringify(want)}, got ${tip.hidden ? "a hidden tooltip" : JSON.stringify(tip.text)}`);
+      else if (!tip.inWindow) wrong.push(`${key}: tooltip drawn outside the window`);
     }
     check(
-      `hover ${w}x${h}: every point's own hit target is the topmost thing at its own centre`,
+      `hover ${w}x${h}: every pointer-active mark's own hit target is the topmost thing at its own centre`,
       missed.length === 0 && covered.length === 0,
-      [...missed, ...covered].join("; ") || `${points.length}/${points.length} reachable by a real pointer`,
+      [...missed, ...covered].join("; ") ||
+        `${points.length - passive}/${points.length} carry a pointer-active button and every one of them is ` +
+          `the topmost thing at its own centre` +
+          (passive > 0 ? `; the other ${passive} are pointed at through the map's own fill` : ""),
     );
+    // ANTI-VACUITY, and it is the whole reason this is not just `wrong.length === 0`. On the world
+    // beat every point was skipped as "no button" before the comparison, so `wrong` stayed empty and
+    // this printed "13/13 matched the source data" about a page with 241 regions and no `paris`. A
+    // comparison that never ran is not a comparison that passed.
     check(
       `hover ${w}x${h}: a real pointer move shows that point's own value, in window`,
-      wrong.length === 0,
-      wrong.join("; ") || `${points.length}/${points.length} matched the source data`,
+      wrong.length === 0 && compared === points.length - passive && compared > 0,
+      wrong.join("; ") ||
+        (compared === points.length - passive && compared > 0
+          ? `${compared}/${points.length - passive} pointer-active marks checked against ${subject.source}`
+          : `only ${compared} of the ${points.length - passive} pointer-active marks were reached at all, so ` +
+            `this compared nothing for the other ${points.length - passive - compared}`),
     );
 
     // Leaving clears it — a tooltip that never hides is a tooltip that lies about the next point.
@@ -413,9 +528,14 @@ try {
   check(
     "filter: the default state shows every point — nothing argument-bearing behind the control",
     JSON.stringify(untouched.points) === JSON.stringify(allKeys) &&
-      untouched.circles === points.length &&
-      untouched.checked.join() === "mw-filter-all",
-    `${untouched.points.length}/${points.length} points, ${untouched.circles} circles, checked: ${untouched.checked.join() || "none"}`,
+      // A CHOROPLETH DRAWS NO CIRCLES, and a beat with one group renders no filter at all
+      // (`groupsOf(points).length <= 1`) — every choropleth in this tree is that beat. Demanding
+      // both of every page is what reported `241/13 points, 0 circles, checked: none` as a failure
+      // of a page that was correct. What is NOT relaxed is the claim itself: the unfiltered state
+      // shows every mark the page carries.
+      (untouched.circles === 0 || untouched.circles === points.length) &&
+      (!hasFilter || untouched.checked.join() === "mw-filter-all"),
+    `${untouched.points.length}/${points.length} points, ${untouched.circles} circles, checked: ${untouched.checked.join() || (hasFilter ? "none" : "no filter on this beat")}`,
   );
   const furniture = await page.evaluate(() =>
     [".mw-title", ".mw-source", ".mw-legend-caption", ".mw-subject", ".mw-caveat"].filter(
@@ -439,9 +559,19 @@ try {
   };
   const allShot = await mapShot();
 
-  for (const group of groupsOf(points)) {
+  // ONLY WHEN THE PAGE HAS ONE. `chipCentre` used to be called for a group the page had no radio
+  // for, and `document.getElementById(id).closest("label")` then threw `Cannot read properties of
+  // null (reading 'closest')` — which is what stopped the KEYBOARD and NO-JS sections below from
+  // ever running on the beat that found this.
+  if (!hasFilter)
+    console.log("      note: this beat renders no filter (one group), so the filter walk is skipped");
+  for (const group of hasFilter ? subject.groups : []) {
     const id = `mw-filter-${slugOf(group)}`;
     const chip = await chipCentre(page, id);
+    if (!chip) {
+      check(`filter "${group}": the chip is a real target`, false, `no input#${id} on this page`);
+      continue;
+    }
     check(
       `filter "${group}": the chip is a real target (${Math.round(chip.height)}px tall) and nothing covers it`,
       chip.hitInsideChip && chip.height >= 24,
@@ -466,25 +596,28 @@ try {
     );
     // Back to All, so each group is measured from the same start.
     const allChip = await chipCentre(page, "mw-filter-all");
-    await page.mouse.click(allChip.x, allChip.y);
+    if (allChip) await page.mouse.click(allChip.x, allChip.y);
   }
-  const restored = await visibleState(page);
-  check(
-    "filter: clicking back to 'All regions' restores every point",
-    JSON.stringify(restored.points) === JSON.stringify(allKeys),
-    `${restored.points.length}/${points.length}`,
-  );
+  if (hasFilter) {
+    const restored = await visibleState(page);
+    check(
+      "filter: clicking back to 'All regions' restores every point",
+      JSON.stringify(restored.points) === JSON.stringify(allKeys),
+      `${restored.points.length}/${points.length}`,
+    );
+  }
 
   // ── 4. KEYBOARD: real key presses, not `.focus()` ─────────────────────────────────────────────
   await page.goto(url, { waitUntil: "load" });
   let tabs = 0;
   let onRadio = false;
-  while (tabs < 12 && !onRadio) {
+  while (hasFilter && tabs < 12 && !onRadio) {
     await page.keyboard.press("Tab");
     tabs += 1;
     onRadio = await page.evaluate(() => document.activeElement?.matches(".mw-chip input") ?? false);
   }
-  check("keyboard: Tab reaches the filter group", onRadio, onRadio ? `after ${tabs} Tab press(es)` : "never focused a filter radio in 12 presses");
+  if (hasFilter)
+    check("keyboard: Tab reaches the filter group", onRadio, onRadio ? `after ${tabs} Tab press(es)` : "never focused a filter radio in 12 presses");
   if (onRadio) {
     const focusRing = await page.evaluate(() => {
       const chip = document.activeElement.closest(".mw-chip");
@@ -493,7 +626,7 @@ try {
     check("keyboard: the focused chip draws a visible focus ring", focusRing, focusRing ? "outline present on the chip" : "no outline — a keyboard reader cannot see where they are");
     await page.keyboard.press("ArrowRight");
     const moved = await visibleState(page);
-    const firstGroup = groupsOf(points)[0];
+    const firstGroup = subject.groups[0];
     check(
       "keyboard: Arrow moves within the group and narrows the map, with no JavaScript involved in the narrowing",
       moved.checked.join() === `mw-filter-${slugOf(firstGroup)}` &&
@@ -525,22 +658,25 @@ try {
   // ── 5. NO JAVASCRIPT: the filter is CSS, so it must still narrow the map ──────────────────────
   await page.setJavaScriptEnabled(false);
   await page.goto(url, { waitUntil: "load" });
-  const noJsGroup = groupsOf(points)[0];
-  const noJsId = `mw-filter-${slugOf(noJsGroup)}`;
+  const noJsGroup = subject.groups[0];
+  const noJsId = hasFilter ? `mw-filter-${slugOf(noJsGroup)}` : null;
   // Every measurement below runs in a SEPARATE page context that does have script — `page.evaluate`
   // is injected by the driver, not by the document — so the page itself stays script-free.
   const noJsBefore = await page.evaluate(() =>
     [...document.querySelectorAll(".pt")].filter((e) => e.getClientRects().length > 0).length,
   );
-  const noJsChip = await chipCentre(page, noJsId);
-  await page.mouse.click(noJsChip.x, noJsChip.y);
+  const noJsChip = noJsId ? await chipCentre(page, noJsId) : null;
+  if (noJsChip) await page.mouse.click(noJsChip.x, noJsChip.y);
   const noJsAfter = await page.evaluate(() =>
     [...document.querySelectorAll(".pt")].filter((e) => e.getClientRects().length > 0).length,
   );
+  const wantedAfter = noJsChip ? keysByGroup.get(noJsGroup).length : points.length;
   check(
     "no-JS: the map, its legend and the filter all still work with scripts disabled",
-    noJsBefore === points.length && noJsAfter === keysByGroup.get(noJsGroup).length,
-    `${noJsBefore} points unfiltered, ${noJsAfter} after a real click on "${noJsGroup}" (wanted ${keysByGroup.get(noJsGroup).length})`,
+    noJsBefore === points.length && noJsAfter === wantedAfter,
+    noJsChip
+      ? `${noJsBefore} points unfiltered, ${noJsAfter} after a real click on "${noJsGroup}" (wanted ${wantedAfter})`
+      : `${noJsBefore} of ${points.length} marks render with scripts disabled; this beat has no filter to click`,
   );
   await page.setJavaScriptEnabled(true);
 } finally {
