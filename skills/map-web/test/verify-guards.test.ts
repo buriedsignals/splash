@@ -362,4 +362,43 @@ describe("credentialReadsWithoutAlias", () => {
     }
     expect(credentialReadsWithoutAlias(combined)).toEqual([]);
   });
+
+  /**
+   * THE POPULATION ABOVE IS THE WRONG UNIT FOR THIS SKILL, and a real run measured what that cost.
+   *
+   * `scripts/verify-live-map.mjs` read `process.env.MAPTILER_KEY` with no alias list, while the
+   * root's `.env` holds the key as `REMOTION_MAPTILER_KEY` and `VITE_MAPTILER_KEY`. So the live
+   * probe printed "no MAPTILER_KEY", verified nothing, and exited 0 on a machine that had a working
+   * key the whole time. The check above could not see it twice over: it SKIPS every `verify-*` file,
+   * and even without that skip the alias list `bake-plate.mjs` declares one file over would have
+   * satisfied it — a guard whose population is the whole skill cannot refuse a single file that
+   * cannot resolve a key on its own.
+   *
+   * The combined reading stays, because it is argued for `dw-beat`, where `sealed-produce.mjs`
+   * genuinely imports its resolver from `produce.mjs`. This adds the reading that matters here:
+   * EVERY FILE, INCLUDING THE VERIFIERS, resolves the key it reads or does not read one. The only
+   * exemption is the file that DECLARES the decision, whose own doc comment names the credentials it
+   * exists to refuse — a rule cannot be its own subject.
+   */
+  it("every file of this skill that reads a credential resolves it on its own", () => {
+    const offenders: string[] = [];
+    let filesRead = 0;
+    let filesWithACredential = 0;
+    for (const dir of [join(SKILL, "scripts"), join(SKILL, "assets")]) {
+      if (!existsSync(dir)) continue;
+      for (const name of readdirSync(dir)) {
+        if (!/\.(mjs|ts|tsx)$/.test(name)) continue;
+        const source = readFileSync(join(dir, name), "utf8");
+        filesRead++;
+        if (source.includes("export function credentialReadsWithoutAlias")) continue;
+        if (credentialNamesRead(source).length > 0) filesWithACredential++;
+        for (const credential of credentialReadsWithoutAlias(source))
+          offenders.push(`${name}: reads ${credential} and declares no ${credential}_ALIASES of its own`);
+      }
+    }
+    // Anti-vacuity: the walk read the skill, and it found the two files that really do read a key.
+    expect(filesRead).toBeGreaterThan(20);
+    expect(filesWithACredential).toBe(2);
+    expect(offenders).toEqual([]);
+  });
 });
