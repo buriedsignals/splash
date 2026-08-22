@@ -50,7 +50,15 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
+import {
+  assertDrawnInActiveTypeface,
+  activeTypeface,
+  deriveFurniture,
+  measureText,
+  readPalette,
+  readTypeface,
+  useTypeface,
+} from "./render-still.mjs";
 import {
   assertOneVocabulary,
   buildFilterIndex,
@@ -80,6 +88,35 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // The colours are the one part of `SEED` that is not words: they are read back from this
 // skill's own `PALETTE.md` with `readPalette`, exactly as a beat reads its story's answer.
 const SEED_PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+/**
+ * THE RECORDED FACE, ON THE PATH THIS FORMAT ACTUALLY DELIVERS — round six, defect Z4.
+ *
+ * `typeface-is-recorded` excepted this format on the strength of its vendored
+ * `scripts/render-still.mjs`, which carries `readTypeface`, `useTypeface`'s resolution probe and
+ * `assertDrawnInActiveTypeface`. All true, and all of it about the STATIC PREVIEW. What this format
+ * delivers is the HTML page, and the page was set in a literal:
+ *
+ *     grep -c readTypeface .../scripts/render-web.mjs   -> 0
+ *     .../scripts/render-web.mjs:524                    -> font-family: Helvetica, Arial, sans-serif
+ *     NEWSROOM.md                                       -> typefaces: "Space Grotesk, Courier New"
+ *
+ * An exception argued on a path the format does not deliver is not an exception. So the delivered
+ * page reads the recorded answer, by the same upward walk `SEED_PALETTE` above already uses: this
+ * format's own `TYPEFACE.md` is what a beat inherits when nothing above it answers first, and a
+ * beat with its own story-level answer hands it in as `props.typeface` (already parsed, as
+ * `readTypeface` returns it). Either way the family in the delivered stylesheet is a value
+ * somebody RECORDED, with `origin` naming who — including `default`, which is the honest word for
+ * nobody and is itself a recorded answer rather than a literal.
+ *
+ * WHAT THIS DOES NOT SETTLE, named rather than implied: whether the READER's machine has the face.
+ * A self-contained page that guarantees it must embed a subsetted face, measured at +9.6 KB for an
+ * exact glyph set against +296 KB unsubsetted, with the OFL licence records that default subsetting
+ * strips — `survey/typeface-feasibility.md` §3, a separate step. A page that NAMES the recorded
+ * family, with the substrate's own stack behind it, has already stopped being a beat set in a face
+ * nobody chose; a reader-side fallback down a stack is a different fact from a renderer that never
+ * carried the answer at all.
+ */
+const FORMAT_TYPEFACE = readTypeface(HERE, { stopAt: join(HERE, "..") });
 /** The seed beat's own constants — the same words `scripts/render-preview.mjs` renders the seed's
  *  preview with, so the skill's two renders never disagree about what the chart says. Duplicated
  *  rather than imported from that script: importing it would also run its own top-level Remotion-free
@@ -144,6 +181,12 @@ function assertRecordedLanguage(language) {
 async function renderWeb({ component, props, outDir, name }) {
   const language = assertRecordedLanguage(props.language);
   const furniture = deriveFurniture(props.ground);
+  // THE RECORDED FACE, PUT IN FORCE BEFORE ANYTHING IS MEASURED — see `FORMAT_TYPEFACE` above.
+  // In force rather than merely read, because `measureText` below measures the one gutter this
+  // format still measures in whatever family is active: a stylesheet naming one face while the
+  // y-axis column was sized in another is the §4-B defect, one substrate over. `useTypeface`
+  // refuses a recorded family this machine cannot resolve rather than substituting one.
+  const typeface = useTypeface(props.typeface ?? FORMAT_TYPEFACE);
 
   // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
   // (`assets/filter.ts` — what may be narrowed and on what) and `props.filterKeys` is what the beat
@@ -156,6 +199,9 @@ async function renderWeb({ component, props, outDir, name }) {
     createElement(component, {
       ...props,
       ...furniture,
+      // Supplied here, once, exactly as the furniture colours and the measure are — a component
+      // never names a face any more than it names a hex.
+      fontFamily: typeface.family,
       measure: measureText,
       filterIndex,
       filterOptions: filterOptionsForMarkup(props.filter, FILTER_ID_PREFIX),
@@ -168,6 +214,11 @@ async function renderWeb({ component, props, outDir, name }) {
   // away (B6.18b). What this cannot see — an element carrying no attributes at all — is what the
   // driven guard walks a real browser for.
   assertOneVocabulary(markup, filterIndex);
+  // AND THE FACE IT WAS ACTUALLY DRAWN IN. A component that snapshotted a family of its own paints
+  // in one face while the gutter beside it was measured in another; here that also means a page
+  // whose stylesheet and whose own markup disagree about what it is set in. Refused rather than
+  // shipped — the same call this format's static path already makes on its own markup.
+  assertDrawnInActiveTypeface(markup, { where: "the delivered page's figure" });
 
   // THE ENTRANCE IS READ OFF THE MARKUP, never passed in. A beat declares an entrance the same way
   // it declares a filter — by DOING it, here by tagging its own layers with `data-entrance-motion`
@@ -188,7 +239,7 @@ async function renderWeb({ component, props, outDir, name }) {
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: props.filter ?? null, entrance: declaresEntrance })}
+${buildCss({ ground: props.ground, accent: props.accent, ...furniture, fontFamily: typeface.family, filter: props.filter ?? null, entrance: declaresEntrance })}
 </style>
 </head>
 <body>
@@ -493,7 +544,20 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = false }) {
+function buildCss({
+  ground,
+  accent,
+  ink,
+  muted,
+  grid,
+  // THE RECORDED FACE, never a literal. The default is the family CURRENTLY IN FORCE — which
+  // `renderWeb` has just set from a recorded `TYPEFACE.md` — rather than a stack typed here, so
+  // there is no path through this function that names a face nobody chose. Before round six this
+  // parameter did not exist and the rule below read `font-family: Helvetica, Arial, sans-serif`.
+  fontFamily = activeTypeface().family,
+  filter = null,
+  entrance = false,
+}) {
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -521,7 +585,7 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: ${fontFamily};
 }
 
 /* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside

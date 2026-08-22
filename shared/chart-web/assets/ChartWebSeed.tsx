@@ -467,6 +467,7 @@ export function ChartWebSeed({
   grid,
   measure,
   frame,
+  fontFamily,
   filterIndex = new Map<string, string[]>(),
   filterOptions = [],
   filterNotes = [],
@@ -485,6 +486,17 @@ export function ChartWebSeed({
   grid: string;
   measure: Measure;
   frame: WebFrame;
+  /** THE FACE THIS BEAT IS SET IN, supplied by the runner from a recorded `TYPEFACE.md` — never
+   *  named here, exactly as no hex is named here. Round six, defect Z4: this attribute used to
+   *  read `fontFamily="Helvetica, Arial, sans-serif"`, a literal no recorded answer could reach,
+   *  in the artefact this format actually delivers.
+   *
+   *  OPTIONAL, and undefined is a real answer rather than a missing one: React then writes no
+   *  `font-family` attribute at all and the figure inherits the face from the delivered page's own
+   *  stylesheet, which `render-web.mjs` sets from the same recorded record. One place names the
+   *  face, and a component rendered outside that runner (a unit test, a preview) inherits from
+   *  whatever it is mounted in instead of asserting a stack of its own. */
+  fontFamily?: string;
   /** THE FILTER, ALL THREE OF THEM DERIVED IN THE RUNNER FROM ONE DECLARATION (`./filter.ts`), never
    *  here. A beat that declares no filter is handed an empty index, no options and no notes, and
    *  every expression below collapses to nothing — no fieldset, no attribute, no sentence. That is
@@ -753,7 +765,7 @@ export function ChartWebSeed({
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
-          fontFamily="Helvetica, Arial, sans-serif"
+          fontFamily={fontFamily}
         >
           <desc>{alt}</desc>
           <rect
