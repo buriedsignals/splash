@@ -273,12 +273,15 @@ const componentProps = { ...props, geometry: { frame: geometry.frame, points: ge
 
 const { outPath } = await renderMapWeb({
   component: (p) => FlowMapWeb({ ...componentProps, ...p, geometry: componentProps.geometry }),
-  table: (p) => RouteTable({ points: routes, language, total, ...p }),
+  // BOTH READINGS, ONE TABLE. Each route's row also names the total arriving at its own
+  // destination — the number no single ribbon can carry — so the thirteen marks this beat draws
+  // (eight ribbons, five destination points) are all answered for by one disclosure.
+  table: (p) => RouteTable({ points: routes, language, total, destinations, ...p }),
   props,
   outDir: OUT_DIR,
   name: OUTPUT_NAME,
   regionTable: true,
-  tableRowNoun: "route",
+  tableRowNoun: "recorded routes",
   live: true,
   plan: livePlanForRibbons(),
 });

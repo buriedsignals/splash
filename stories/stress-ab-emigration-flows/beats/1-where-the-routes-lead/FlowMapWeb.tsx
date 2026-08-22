@@ -133,10 +133,9 @@ export function FlowMapWeb(props: FlowProps) {
   });
   const byKey = new Map(drawn.map((r) => [r.route.key, r]));
 
-  const detailOf = (route: Route) =>
-    `${route.origin} to ${route.destination}: ${people(route.value, props.language)} people, ${shareOf(route.value, props.total)}% of the eight recorded routes`;
+  const detailOf = (route: Route) => routeDetail(route, props.language, props.total);
   const destinationDetail = (d: { name: string; value: number; routes: number }) =>
-    `${d.name}: ${people(d.value, props.language)} people arriving on ${d.routes} of the eight recorded routes, ${shareOf(d.value, props.total)}% of them`;
+    arrivalDetail(d, props.language, props.total);
 
   const legendValues = niceWidthReferences(maxValue);
   const legendWidth = (value: number) => Math.max(1, (value / maxValue) * LEGEND_MAX_WIDTH_PX);
@@ -341,51 +340,67 @@ export function FlowMapWeb(props: FlowProps) {
 
       createElement("p", { className: "mw-subject" }, props.subject),
 
-      // THE SECOND READING, ALREADY ON THE PAGE. Paris against London is a number that exists only
-      // when ribbons are added together, so no single ribbon can carry it and no reader should have
-      // to hover to find it: this format forbids putting argument-bearing content behind an
-      // interaction, and the takeaway's second half IS argument-bearing content.
-      createElement("div", { className: "fm-arrivals" },
-        createElement("table", { className: "region-table" },
-          createElement("caption", null, `Where the eight routes arrive — ${people(props.total, props.language)} people in total`),
-          createElement("thead", null, createElement("tr", null,
-            createElement("th", { scope: "col" }, "Destination"),
-            createElement("th", { scope: "col" }, "People arriving"),
-            createElement("th", { scope: "col" }, "Routes"),
-            createElement("th", { scope: "col" }, "Share of the eight"))),
-          createElement("tbody", null, props.destinations.map((d) => createElement("tr", {
-            key: d.key, className: d.key === props.subjectKey ? "subject" : undefined,
-          },
-            createElement("th", { scope: "row" }, d.name),
-            createElement("td", null, people(d.value, props.language)),
-            createElement("td", null, String(d.routes)),
-            createElement("td", null, `${shareOf(d.value, props.total)}%`)))))),
-
       createElement("p", { className: "mw-caveat" }, props.caveat),
     ),
     createElement("script", { dangerouslySetInnerHTML: { __html: HIT_SCRIPT } }),
   );
 }
 
-/** The collapsed per-route table `renderMapWeb` wraps in its own disclosure — the complete set of
- *  route readings, in the same largest-first order the keyboard walks, for a reader with no spatial
- *  access to the ribbons. `renderMapWeb` hands it `points`, which for this beat ARE the routes. */
-export function RouteTable({ points, language = "en", total = 0 }: { points: any[]; language?: string; total?: number }) {
+/**
+ * ONE SENTENCE PER FACT, WRITTEN ONCE. The ribbon's own `data-detail` (what a reader gets on hover,
+ * on tap and on focus) and the table cell that has to carry the same fact are the same string built
+ * by the same function — never two phrasings of one number, which is how a table comes to disagree
+ * with the picture above it. `map-web`'s own `tableCarriesTheMarks` compares the two verbatim.
+ */
+export function routeDetail(route: any, language: string, total: number) {
+  return `${route.origin} to ${route.destination}: ${people(route.value, language)} people, ${shareOf(route.value, total)}% of the eight recorded routes`;
+}
+
+/** The same, for a destination: a number no single ribbon can carry, because it is a sum of them. */
+export function arrivalDetail(d: { name: string; value: number; routes: number }, language: string, total: number) {
+  return `${d.name}: ${people(d.value, language)} people arriving on ${d.routes} of the eight recorded routes, ${shareOf(d.value, total)}% of them`;
+}
+
+/**
+ * THE ONE TABLE THIS PAGE DISCLOSES, and it carries BOTH readings.
+ *
+ * Eight routes, one row each, and each row also names the total arriving at that route's own
+ * destination — a number no single ribbon can carry, because it is a sum of ribbons. The
+ * destination total repeats across the rows that share a destination, which is what the data is:
+ * three of these rows end in Paris and all three report the same 23,600.
+ *
+ * WHY ONE TABLE AND NOT TWO. The destination reading used to render as a SECOND table, expanded, in
+ * the composition. Two independent guards measured the same five rows: `fills-its-frame` failed at
+ * 16.6% and 14.8% against a 17.9% floor on the first render of this page (that table was the only
+ * fault), and `the-value-table-is-collapsed` counted it as a value table a reader meets before
+ * asking for it. The argument itself is not behind anything — the `mw-subject` line above the map
+ * states it in words, "Paris still takes more than London — 23,600 against 21,200 — because three
+ * routes end there". What is disclosed is the full breakdown, which is second-channel material.
+ *
+ * THE CELLS CARRY THE PICTURE'S OWN WORDS, not a paraphrase of them: `map-web`'s
+ * `tableCarriesTheMarks` compares each mark's `data-detail` against the table, and this beat draws
+ * THIRTEEN marks — eight ribbons and five destination points. One table has to answer for all
+ * thirteen, so each row spells out its route's share and its destination's whole sentence rather
+ * than leaving either to be inferred from a column header.
+ */
+export function RouteTable({ points, language = "en", total = 0, destinations = [] }: { points: any[]; language?: string; total?: number; destinations?: any[] }) {
   const rows = readingOrder(points as any);
+  const arrivalsByName = new Map(destinations.map((d: any) => [d.name, d]));
   return createElement("table", { className: "region-table" },
-    createElement("caption", null, "Every recorded route, largest first"),
+    createElement("caption", null, "Every recorded route, largest first, with the total arriving at each destination"),
     createElement("thead", null, createElement("tr", null,
-      createElement("th", { scope: "col" }, "From"),
-      createElement("th", { scope: "col" }, "To"),
+      createElement("th", { scope: "col" }, "Route"),
       createElement("th", { scope: "col" }, "People"),
-      createElement("th", { scope: "col" }, "Share of the eight"))),
-    createElement("tbody", null, rows.map((row: any) => createElement("tr", {
-      key: row.key, "data-group": row.group ?? undefined,
-    },
-      createElement("th", { scope: "row" }, row.origin),
-      createElement("td", null, row.destination),
-      createElement("td", null, people(row.value, language)),
-      createElement("td", null, total ? `${shareOf(row.value, total)}%` : "—")))));
+      createElement("th", { scope: "col" }, "Share"),
+      createElement("th", { scope: "col" }, "Everyone arriving at that destination"))),
+    createElement("tbody", null, rows.map((row: any) => {
+      const arrival = arrivalsByName.get(row.destination);
+      return createElement("tr", { key: row.key },
+        createElement("th", { scope: "row" }, `${row.origin} to ${row.destination}`),
+        createElement("td", null, `${people(row.value, language)} people`),
+        createElement("td", null, total ? `${shareOf(row.value, total)}% of the eight recorded routes` : "—"),
+        createElement("td", null, arrival ? arrivalDetail(arrival, language, total) : "—"));
+    })));
 }
 
 /** A triangle whose TIP is at the origin and which points along +x, so one `rotate()` by the
@@ -539,7 +554,8 @@ svg.map circle.fm-hit { pointer-events: all; }
    Below roughly 480 container pixels the eleven place names and the annotation stop fitting over a
    map that is itself only 180 px wide. Two things change and neither removes a reading from the
    PAGE: the type steps down, and each destination's arriving total leaves its map label — that
-   number is already in the arrivals table directly below, in full, unconditionally. The city names,
+   number is still in every one of that destination's tooltips, in the subject line for the two the
+   takeaway names, and in the arrivals table inside the page's own disclosure. The city names,
    the ribbons, the legend, the annotation and every tooltip are untouched.
    The stage declares container-type size, so this is the container's own width, not the window's. */
 @container (max-width: 480px) {
@@ -551,11 +567,10 @@ svg.map circle.fm-hit { pointer-events: all; }
 /* EVERY PIXEL OF FURNITURE COMES OFF THE MAP. The page column is a fixed height and the stage
    is its only child that gives up height, so each row of padding below the map shrinks the map
    itself. Measured with the format's own graphicFillsItsFrame against its own floor (17.9% of the
-   window): with the default table padding this beat covered 16.6% at 1600x900 and 14.8% at
-   1280x800 — UNDER, on a page where nothing was wrong except that the argument needed a five-row
-   table. Tightened here, and nothing is removed from the page to get there. */
-.fm-arrivals { margin: 0 0 4px; }
-.fm-arrivals .region-table th, .fm-arrivals .region-table td { padding: 2px 16px 2px 0; }
+   window): with the arrivals table expanded in the composition this beat covered 16.6% at 1600x900
+   and 14.8% at 1280x800 — UNDER, on a page where nothing was wrong except that the argument needed
+   a five-row table. That table now sits inside the page's own disclosure beside the eight routes
+   (ArrivalsTable), so the rows cost the map nothing until a reader asks for them. */
 .mw-legend { margin: 8px 0 2px; }
 .mw-legend-caption { margin-bottom: 5px; }
 .mw-subject { margin: 5px 0 2px; }
@@ -564,5 +579,4 @@ svg.map circle.fm-hit { pointer-events: all; }
 /* The caveat is one sentence on the page and the rest travels in the hand-over: four lines of 11px
    grey type under a map is a wall, and it pushed the map itself down to 451 px in a 900 px window. */
 .mw-caveat { max-width: 92ch; }
-.fm-arrivals .region-table caption { margin-bottom: 3px; }
 `.trim();

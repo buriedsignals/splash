@@ -283,6 +283,13 @@ export function separationHeadroom(points, radiusOf) {
  * The summary says WHAT it holds and HOW MANY rows, so a reader knows what opening it costs. The
  * count is read off the rendered table's own `<tbody>` rather than passed in beside it — a second
  * number for the same fact is how a caption comes to disagree with the rows under it.
+ *
+ * MORE THAN ONE TABLE MAY SIT BEHIND ONE DISCLOSURE — `stress-ab-emigration-flows` discloses its
+ * eight routes and its five destinations together, two readings of the same eight numbers. The
+ * count therefore reads every `<tbody>` in the fragment and nothing outside one. It used to slice
+ * from the FIRST `<tbody>` to the end of the string and match every `<tr>` left, so a second
+ * table's own HEADER row counted as a row of values and 8 + 5 was labelled 14. The summary is the
+ * one number a reader has before they open anything.
  */
 export function discloseTable(tableHtml, rowNoun) {
   if (!tableHtml) return "";
@@ -291,16 +298,17 @@ export function discloseTable(tableHtml, rowNoun) {
       "this beat renders a value table but named no `tableRowNoun`: the disclosure summary has to " +
         "say what it holds (\"41 countries\", \"156 cells\"), and nothing here can invent that word",
     );
-  const body = tableHtml.slice(tableHtml.indexOf("<tbody"));
-  const rows = (body.match(/<tr[\s>]/g) ?? []).length;
+  const bodies = tableHtml.match(/<tbody\b[\s\S]*?<\/tbody>/gi) ?? [];
+  const rows = bodies.reduce((n, body) => n + (body.match(/<tr[\s>]/g) ?? []).length, 0);
   if (rows === 0)
     throw new Error(
       "the value table rendered no <tbody> rows: refusing to label a disclosure with a count " +
         "nobody can check",
     );
+  const noun = (tableHtml.match(/<table\b/gi) ?? []).length > 1 ? "Tables" : "Table";
   return (
     `<details class="mw-table-disclosure">` +
-    `<summary>${escapeHtml(`Table of values — ${rows} ${rowNoun}`)}</summary>\n` +
+    `<summary>${escapeHtml(`${noun} of values — ${rows} ${rowNoun}`)}</summary>\n` +
     `${tableHtml}\n</details>`
   );
 }

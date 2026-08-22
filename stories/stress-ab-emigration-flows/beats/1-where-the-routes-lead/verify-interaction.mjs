@@ -165,7 +165,6 @@ try {
     buttons: document.querySelectorAll(".pt").length,
     titles: document.querySelectorAll(".pt[title]").length,
     legend: document.querySelectorAll(".fm-legend-key").length,
-    arrivalRows: document.querySelectorAll(".fm-arrivals tbody tr").length,
     routeRows: document.querySelectorAll(".mw-table-disclosure tbody tr").length,
     plate: document.querySelectorAll("svg.map image").length,
     text: document.querySelector(".map-web-page").innerText,
@@ -177,7 +176,9 @@ try {
   check(noJs.liveOnlyShown === 0, `no-JS: ${noJs.liveOnlyShown} live-only labels are visible with no live map`);
   check(noJs.buttons === 13 && noJs.titles === 13, `no-JS: ${noJs.titles}/${noJs.buttons} hit targets carry a native title`);
   check(noJs.legend === 3, `no-JS: ${noJs.legend} legend keys`);
-  check(noJs.arrivalRows === 5, `no-JS: ${noJs.arrivalRows} arrival rows`);
+  // ONE DISCLOSED TABLE, BOTH READINGS. Each route row also names the whole total arriving at its
+  // own destination, so eight rows answer for all thirteen marks. The arrivals table that used to
+  // render expanded in the composition is gone, and with it the check that counted its five rows.
   check(noJs.routeRows === 8, `no-JS: ${noJs.routeRows} route rows`);
   check(noJs.plate === 1, `no-JS: ${noJs.plate} plate images`);
   for (const needed of ["23,600", "21,200", "18,400", "54,500"])

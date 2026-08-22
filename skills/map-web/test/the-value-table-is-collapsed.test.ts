@@ -102,10 +102,11 @@ describe("every committed map page keeps its value table collapsed", () => {
     // Anti-vacuity, and the reason this is not a bare `for` loop: a sweep that finds no work to do
     // passes, which is exactly how a guard stops covering what was added after it.
     //
-    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
-    // genuinely new delivered map-web page, added 2026-08-20/21. A count this exact is a ratchet on
-    // purpose — the next beat is expected to redden this list too, and whoever adds it is expected
-    // to bump it deliberately, by name, rather than have the guard widen itself into a floor.
+    // NINE, not seven: `stress-ab-emigration-flows`'s `where-the-routes-lead` ships a delivered
+    // page and its export copy (round six), after `stress-f-housing-pressure`'s
+    // `housing-pressure-choropleth` (2026-08-20/21). A count this exact is a ratchet on purpose —
+    // the next beat is expected to redden this list too, and whoever adds it is expected to bump it
+    // deliberately, by name, rather than have the guard widen itself into a floor.
     expect(pages.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
@@ -113,6 +114,8 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
+      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
       "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
     ]);
   });
@@ -121,8 +124,9 @@ describe("every committed map page keeps its value table collapsed", () => {
     // The second anti-vacuity clause, and the one that matters most here: "no page renders an
     // expanded table" is trivially true of a tree with no tables in it. `regionTable` now defaults
     // to true (`same-facts-without-the-picture`, 2026-08-20), and the seed carries it like every
-    // other beat — the floor is all seven committed pages, including the housing-pressure
-    // choropleth's own 8-row table of every country it declares.
+    // other beat — the floor is all nine committed pages, including the housing-pressure
+    // choropleth's own 8-row table of every country it declares and the emigration flow beat's
+    // TWO tables behind one disclosure (its eight routes and the five destinations they reach).
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
@@ -131,6 +135,8 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
+      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
       "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
     ]);
   });
@@ -266,6 +272,22 @@ describe("the renderer collapses the table it renders", () => {
     // asserted from the fixture's own length twice.
     expect(html).toContain(
       "<summary>Table of values — 3 metro areas</summary>",
+    );
+  });
+
+  it("should count only the rows a reader would open the disclosure FOR, across every table in it", () => {
+    // A beat may put more than one reading behind one disclosure — `stress-ab-emigration-flows`
+    // discloses its eight routes and its five destinations together. The count used to be taken by
+    // slicing from the FIRST `<tbody>` to the end of the fragment and matching every `<tr>` in what
+    // was left, so a second table's own HEADER row was counted as a row of values: two tables of
+    // 8 and 5 were labelled 14. The summary is the one number a reader has before they open
+    // anything, and a summary that overcounts is exactly the "count nobody can check" this function
+    // already refuses elsewhere.
+    const two =
+      "<table><thead><tr><th>a</th></tr></thead><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>" +
+      "<table><thead><tr><th>b</th></tr></thead><tbody><tr><td>3</td></tr></tbody></table>";
+    expect(discloseTable(two, "rows")).toContain(
+      "<summary>Tables of values — 3 rows</summary>",
     );
   });
 

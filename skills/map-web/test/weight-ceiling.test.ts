@@ -57,12 +57,13 @@ describe("every map-web page on disk", () => {
     // DISCOVERED, not listed — see `scripts/discover-pages.mjs`'s own header note: this used to
     // walk 4 hardcoded directories and silently skip 2 of the format's 6 delivered pages.
     //
-    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
-    // genuinely new delivered map-web page (2026-08-20/21). This count is an exact ratchet on
-    // purpose — the next beat is expected to redden it too, bumped deliberately rather than widened
-    // into a floor.
+    // NINE, not seven: `stress-ab-emigration-flows`'s `where-the-routes-lead` beat ships a
+    // delivered page and its export copy, both genuinely new map-web pages (round six). The two
+    // before them were `stress-f-housing-pressure`'s `housing-pressure-choropleth` (2026-08-20/21).
+    // This count is an exact ratchet on purpose — the next beat is expected to redden it too,
+    // bumped deliberately rather than widened into a floor.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(7);
+    expect(files.length).toBe(9);
     const offenders: string[] = [];
     for (const file of files) {
       const bytes = statSync(file).size;

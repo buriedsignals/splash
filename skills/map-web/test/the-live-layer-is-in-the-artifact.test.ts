@@ -284,10 +284,11 @@ describe("every committed map-web page is a live map", () => {
     // Every map-web beat in the tree, named, so a beat that stops committing its own rendered file
     // reddens here rather than disappearing from the check.
     //
-    // SEVEN, not six: `stress-f-housing-pressure`'s `housing-pressure-choropleth` beat is a
-    // genuinely new delivered map-web page (2026-08-20/21). This list is an exact ratchet on
-    // purpose — the next beat is expected to redden it too, bumped deliberately by name rather than
-    // widened into a floor.
+    // NINE, not seven: `stress-ab-emigration-flows`'s `where-the-routes-lead` ships a delivered
+    // page and its export copy (round six), after `stress-f-housing-pressure`'s
+    // `housing-pressure-choropleth` (2026-08-20/21). This list is an exact ratchet on purpose — the
+    // next beat is expected to redden it too, bumped deliberately by name rather than widened into
+    // a floor.
     expect(pages.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
       "proof/mapgen-dot-web/dot-population.html",
@@ -295,6 +296,8 @@ describe("every committed map-web page is a live map", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
+      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
       "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
     ]);
   });
