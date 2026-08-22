@@ -199,3 +199,95 @@ describe("the attributing sentences a corpus actually contains", () => {
     );
   });
 });
+
+// ROUND SEVEN, D10 ON `stories/real-ember-renewables-share`. The article MARKS its source line —
+//
+//     Source line, verbatim from the file's metadata: *Ember (2026) and other sources – with major
+//     processing by Our World in Data.*
+//
+// — and the proposal recommended instead "Source: We have Ember's renewables share of electricity
+// generation, as published by Our World in Data, covering 246 entities from 1900 to 2025", a
+// narrative sentence with a newline in the middle of it, which is what would have printed under
+// the chart. The line the journalist marked as the credit was not among the options at all.
+//
+// TWO MECHANISMS WERE MISSING, and the second is why the first went unnoticed for six rounds.
+//
+//   1. `\b(…|source[s]?\s*:|…)\b` COULD NOT FIRE. The alternation is wrapped in word boundaries,
+//      and a `\b` after a colon needs a word character next — so `Source: Eurostat` never matched
+//      and `Source:Eurostat` did. The single most explicit way an article names its source, and
+//      the only one in the list that ends in punctuation, was dead on arrival. Measured on
+//      `stories/real-gwis-wildfire-counts`, whose last paragraph is literally
+//      `Source: Global Wildfire Information System (2026), with minor processing by Our World in
+//      Data.`: `attributionsIn` returned that sentence not at all, and offered the desk's aside
+//      "…the desk will ask where every number came from" instead.
+//
+//   2. A MARKED LINE'S VALUE IS WHAT FOLLOWS THE LABEL, not the sentence carrying it. The label is
+//      the journalist saying "this part is the credit"; keeping it in the value prints
+//      "Source: Source: …" under the graphic, and keeping the whole sentence prints the prose they
+//      wrapped it in.
+describe("a source line the article marked as one", () => {
+  const proposalFor = (article: string) => proposeCredit({ newsroom: { name: "Buried Signals" }, article });
+
+  it("reads a bare `Source:` line, which the cue list could not match at all", () => {
+    expect(
+      attributionsIn("Source: Global Wildfire Information System (2026), with minor processing by Our World in Data."),
+    ).toHaveLength(1);
+  });
+
+  it("proposes what follows the label, not the label with it", () => {
+    const proposal = proposalFor(
+      "Source: Global Wildfire Information System (2026), with minor processing by Our World in Data.",
+    );
+    expect(proposal.recommended).toBe("article-1");
+    const first = proposal.options.find((option) => option.id === "article-1");
+    expect(first?.value).toBe(
+      "Source: Global Wildfire Information System (2026), with minor processing by Our World in Data",
+    );
+    expect(first?.value).not.toContain("Source: Source:");
+  });
+
+  it("reads a label that qualifies itself before the colon — the ember article's own line", () => {
+    const proposal = proposalFor(
+      "We have Ember's renewables share of electricity generation, as published by Our World in Data,\ncovering 246 entities from 1900 to 2025.\n\nSource line, verbatim from the file's metadata: *Ember (2026) and other sources – with major\nprocessing by Our World in Data.*",
+    );
+    const recommended = proposal.options.find((option) => option.id === proposal.recommended);
+    expect(recommended?.value).toBe(
+      "Source: Ember (2026) and other sources – with major processing by Our World in Data",
+    );
+  });
+
+  it("prefers the marked line over a narrative sentence that merely carries a cue", () => {
+    const proposal = proposalFor(
+      "The figures come from the national water utility.\n\nSource: Office national de l'assainissement.",
+    );
+    const recommended = proposal.options.find((option) => option.id === proposal.recommended);
+    expect(recommended?.provenance).toMatch(/marked/i);
+    expect(recommended?.value).toContain("Office national");
+  });
+
+  it("never proposes a credit with a line break in it — a credit line prints on one line", () => {
+    const proposal = proposalFor(
+      "We have Ember's renewables share of electricity generation, as published by Our World in Data,\ncovering 246 entities from 1900 to 2025.",
+    );
+    for (const option of proposal.options) {
+      expect(option.value).not.toContain("\n");
+      expect(option.prints).not.toContain("\n");
+    }
+  });
+
+  // The repaired cue and the marked-line reader are NOT the same mechanism, and this is the
+  // sentence that tells them apart: a colon marker that is not at the head of its own line. The
+  // marked-line reader requires the label to OPEN the sentence, so only the cue list can see this
+  // one — and inside `\b(…)\b` it could not.
+  it("reads a colon marker that sits inside a sentence rather than opening one", () => {
+    expect(
+      attributionsIn("The series is reproduced in the appendix, sources: Eurostat and Ember."),
+    ).toHaveLength(1);
+  });
+
+  it("does not read a colon in ordinary prose as a marked source line", () => {
+    expect(
+      attributionsIn("The dataset's own description is plain about what the number is: a percentage."),
+    ).toEqual([]);
+  });
+});

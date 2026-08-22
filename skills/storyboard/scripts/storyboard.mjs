@@ -130,8 +130,63 @@ export function creditLine(credit) {
 // beside the Arabic one — and `test/credit-vocabulary.test.ts` says so where it drives them. They
 // are added ahead of the corpus on purpose: missing a cue is SILENT (the journalist is recommended
 // `unattributed` over their own words), and widening the reader is not.
+//
+// ROUND SEVEN, D10. `source[s]?\s*:` SAT IN THIS LIST FOR SIX ROUNDS AND COULD NOT FIRE. The
+// alternation is wrapped in `\b(…)\b`, and a word boundary after a COLON needs a word character
+// next — so `Source:Eurostat` matched and `Source: Eurostat`, which is how anybody writes it, did
+// not. Measured on `stories/real-gwis-wildfire-counts`, whose last paragraph is exactly
+// `Source: Global Wildfire Information System (2026), with minor processing by Our World in Data.`:
+// `attributionsIn` returned that sentence not at all. The one cue in the list that ends in
+// punctuation is the one the wrapper silently disabled, which is why the colon-terminated markers
+// now live OUTSIDE it — beside the Greek and Arabic ones, which were already outside and always
+// worked.
 const ATTRIBUTION_CUES =
-  /\b(according to|as reported by|released by|released to|obtained from|provided by|published by|supplied by|figures from|data from|source[s]?\s*:|selon|d'après|publi[ée]s? par|fourni[es]? par|transmis(?:es)? par)\b|(?:σύμφωνα με|κατά το|πηγή\s*:|στοιχεία (?:του|της|από))|(?:وفقاً? ل|وفقا ل|بحسب|حسب|صادر(?:ة)? عن|بيانات من|المصدر\s*:)/iu;
+  /\b(according to|as reported by|released by|released to|obtained from|provided by|published by|supplied by|figures from|data from|selon|d'après|publi[ée]s? par|fourni[es]? par|transmis(?:es)? par)\b|(?:source[s]?\s*:)|(?:σύμφωνα με|κατά το|πηγή\s*:|στοιχεία (?:του|της|από))|(?:وفقاً? ل|وفقا ل|بحسب|حسب|صادر(?:ة)? عن|بيانات من|المصدر\s*:)/iu;
+
+/**
+ * A SOURCE LINE THE ARTICLE MARKED AS ONE — the label, and what the label points at.
+ *
+ * `real-ember-renewables-share` writes it as
+ * `Source line, verbatim from the file's metadata: *Ember (2026) and other sources – with major
+ * processing by Our World in Data.*`, and `real-gwis-wildfire-counts` writes the bare form,
+ * `Source: Global Wildfire Information System (2026), with minor processing by Our World in Data.`
+ * Both are the journalist saying "this part is the credit", and the part they mean is what follows
+ * the colon: keeping the label in the value prints `Source: Source: …` under the graphic, and
+ * keeping the whole sentence prints the prose the line was wrapped in.
+ *
+ * THE LABEL HAS TO OPEN WITH THE SOURCE NOUN and stay short, deliberately. An article that writes
+ * "The dataset's own description is plain about what the number is: a percentage" has a colon and
+ * no credit behind it; a rule that read any colon-terminated clause as a marker would propose that
+ * sentence as the credit, which is this file's own named failure — inventing a cue — one level up.
+ * What the cap does not exclude is a heading like "Sources of error:", and that is the honest cost:
+ * an over-match costs the journalist one correction at a proposal step they answer anyway, while a
+ * miss is silent.
+ */
+const MARKED_SOURCE_LINE =
+  /^\s*(?:[-*>]\s+)?\**\s*((?:sources?|credits?|attribution|crédits?|πηγή|المصدر)\b[^:\n]{0,60}?)\s*:\s*(\S[\s\S]*)$/iu;
+
+/** One line, whatever shape the article wrapped it in: a credit prints on a single line under a
+ *  graphic, and a sentence broken across two source lines carried its newline all the way into the
+ *  recorded value. Words are untouched — only the whitespace between them is. */
+function oneLine(text) {
+  return String(text ?? "").replace(/\s+/gu, " ").trim();
+}
+
+/**
+ * What a marked source line POINTS AT, verbatim and on one line, or `null` when this sentence
+ * carries no marker. Markdown emphasis around the marked text is furniture, not credit, and the
+ * sentence's own terminal punctuation is dropped the same way a cued sentence's is.
+ */
+export function markedSourceIn(sentence) {
+  const marked = MARKED_SOURCE_LINE.exec(String(sentence ?? ""));
+  if (!marked) return null;
+  const value = oneLine(marked[2])
+    .replace(/^[*_]+/u, "")
+    .replace(/[*_]+$/u, "")
+    .replace(/[.!?]+$/u, "")
+    .trim();
+  return value || null;
+}
 
 // A data noun, then a form of "come from" — the attributing shape the corpus above showed and the
 // cue list did not hold. The gap between the two is capped so the pairing has to be one clause, not
@@ -155,7 +210,12 @@ export function attributionsIn(article) {
       (sentence) =>
         sentence &&
         !sentence.startsWith("#") &&
-        (ATTRIBUTION_CUES.test(sentence) || DATA_CAME_FROM.test(sentence)),
+        (ATTRIBUTION_CUES.test(sentence) ||
+          DATA_CAME_FROM.test(sentence) ||
+          // A LABEL IS AN ATTRIBUTION IN ITS OWN RIGHT. "Source line, verbatim from the file's
+          // metadata: …" carries no cue from either list above — the noun and the colon are three
+          // words apart — and it is the most explicit attribution the ember article makes.
+          MARKED_SOURCE_LINE.test(sentence)),
     );
 }
 
@@ -177,17 +237,28 @@ export function proposeCredit({ newsroom, article } = {}) {
   const attributions = attributionsIn(article);
   const options = [];
 
-  for (const [index, sentence] of attributions.entries()) {
-    const value = convention
-      ? convention.replace("{source}", sentence.replace(/[.!?]+$/u, ""))
-      : `Source: ${sentence.replace(/[.!?]+$/u, "")}`;
+  // A LINE THE ARTICLE MARKED BEATS A SENTENCE THAT MERELY CARRIES A CUE, and it is offered first
+  // so `article-1` — the recommendation — is the marked one wherever there is one. The ember run
+  // recommended "Source: We have Ember's renewables share of electricity generation, as published
+  // by Our World in Data, covering 246 entities from 1900 to 2025" while the article's own marked
+  // line sat two paragraphs below it and was not among the options at all.
+  const readings = attributions
+    .map((sentence) => ({ sentence, marked: markedSourceIn(sentence) }))
+    .sort((a, b) => (a.marked ? 0 : 1) - (b.marked ? 0 : 1));
+
+  for (const [index, reading] of readings.entries()) {
+    const source = reading.marked ?? oneLine(reading.sentence).replace(/[.!?]+$/u, "");
+    const value = convention ? convention.replace("{source}", source) : `Source: ${source}`;
     options.push({
       id: `article-${index + 1}`,
       origin: "journalist",
       value,
-      provenance: `the article's own words, attributing sentence ${index + 1} of ${attributions.length}`,
-      reasoning:
-        "The journalist already said where this came from, in their own copy. Handing it back for confirmation is the only proposal here that cannot invent a source, because there is nothing in it that was not already written.",
+      provenance: reading.marked
+        ? `the article's own marked source line, ${index + 1} of ${readings.length}`
+        : `the article's own words, attributing sentence ${index + 1} of ${readings.length}`,
+      reasoning: reading.marked
+        ? "The journalist marked this line as the source themselves, and what is offered is what the marker points at — the label they wrote it under is not part of the credit, and neither is the prose around it."
+        : "The journalist already said where this came from, in their own copy. Handing it back for confirmation is the only proposal here that cannot invent a source, because there is nothing in it that was not already written.",
     });
   }
 

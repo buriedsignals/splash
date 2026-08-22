@@ -166,7 +166,13 @@ Per question, on absence:
   attributing sentences back — verbatim, never rewritten — offers the newsroom's standing convention
   from `NEWSROOM.md` beside them, and always carries a third option whose recorded value is
   `unattributed` and whose printed line is `Source: not stated`. It recommends the article's own
-  words where the article has any, and `none` where it has none. It never recommends the house
+  words where the article has any, and `none` where it has none. **A line the article MARKED as its
+  source outranks a sentence that merely carries a cue**, and what is offered is what the marker
+  points at, not the label with it: `real-ember-renewables-share` writes *"Source line, verbatim
+  from the file's metadata: Ember (2026) and other sources – with major processing by Our World in
+  Data"*, and the proposal that missed it recommended the article's opening narrative sentence,
+  newline and all, as the line that would print under the chart. Every proposed value is one line —
+  a credit prints on one. It never recommends the house
   convention on its own, because that convention is a TEMPLATE with `{source}` where the story's
   source goes, and filling that hole from nothing is exactly the failure this rule was written for:
   `stress-p-transport-ridership` shipped three delivered beats reading *"Source: city network
