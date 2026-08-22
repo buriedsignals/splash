@@ -44,9 +44,9 @@
 // Exit code is 0 only when every check passed. Any failure prints the measurement that failed,
 // with both numbers, and exits 1.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
@@ -54,15 +54,35 @@ import { render } from "./render-web.mjs";
 import {
   duplicatedPayload,
   marksFromSource,
+  pageLanguageMatchesStory,
   revealDashInScreenSpace,
 } from "./verify-guards.mjs";
+import {
+  creditTracesToRecord,
+  doubleHyphenInDeliveredText,
+} from "./detect-delivered-text.mjs";
+import { denominatorReadingStated } from "./detect-denominator-reading.mjs";
+import { storyboardGateStatus } from "./storyboard-gate.mjs";
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 import {
   FLOOR_FRACTION,
   graphicFillsItsFrame,
 } from "./detect-fills-its-frame.mjs";
+import { keyboardReachesEveryMark } from "./detect-reachable-by-keyboard.mjs";
+import { staticFrameSurvives } from "./detect-degrades-without-javascript.mjs";
+import { motionUnderReduce } from "./detect-honours-reduced-motion.mjs";
+import {
+  CEILING_BYTES,
+  weightAgainstCeiling,
+} from "./detect-weight-has-a-ceiling.mjs";
+import { labelStacksFrom, mislabelledRows } from "./detect-label-rows.mjs";
+import { rtlRunsAreIsolated } from "./detect-rtl-isolation.mjs";
+import { inlineSvgOf, paintedLabelSvg, readPaintedGeometry } from "./painted-labels.mjs";
+import { decisionsNotAsked } from "./verify-coverage.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+/** This skill's own root — what `decisionsNotAsked` derives the declared population from. */
+const HERE_SKILL = resolve(HERE, "..");
 
 /** The widths this format claims to work at, each paired with a REAL window height rather than a
  *  generous one — the fit rule is about the height a reader actually has, and a laptop reports far
@@ -242,6 +262,7 @@ async function checkFit(page, vp) {
     (m.figure.w * m.figure.h) / (m.innerW * m.innerH),
     FLOOR_FRACTION,
   );
+  asked.push("graphicFillsItsFrame");
   check(
     !filled.under,
     `${vp.label} ${vp.w}x${vp.h}: the graphic fills a real share of the window`,
@@ -1020,20 +1041,93 @@ if (!filePath) {
 filePath = resolve(filePath);
 if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
 
+// THE DIRECTORY THE PAGE SITS IN, which is what a beat's own record is read from. Four of this
+// skill's decisions take a beat directory and walk UP it for the story that froze the data; handed
+// the page's own directory they answer about this beat, and handed a page outside any story they
+// say so in their own `reason` rather than failing. Passed as the page's directory, never as a
+// separate argument, so there is no second place for a caller to get it wrong.
+const beatDir = beatDirOf(filePath);
+
+/** The BEAT directory a delivered page belongs to, not merely the directory the file sits in.
+ *
+ *  The two are the same under `proof/`, where a runner writes its page beside itself, and they are
+ *  NOT the same in a story: `splash`'s own layout puts the editable render in
+ *  `stories/<story>/beats/<beat>/renders/<page>.html`, one level down. Handed `renders/`,
+ *  `creditTracesToRecord` and `doubleHyphenInDeliveredText` look for deliveries named after
+ *  `renders` and find none — measured on the real Ember beat, which HAD been delivered and came
+ *  back "nothing has been delivered from this beat". So the nearest ancestor that is a direct child
+ *  of a `beats/` directory wins, and the file's own directory is the fallback. */
+function beatDirOf(page) {
+  let dir = dirname(resolve(page));
+  for (let up = 0; up < 6; up++) {
+    if (basename(dirname(dir)) === "beats") return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return dirname(resolve(page));
+}
+
+/** The story language recorded at Gate 2, read the same way `storyboardGateStatus` reads the
+ *  takeaway: the nearest `STORYBOARD.md` above the beat, and one field out of its front matter.
+ *  `null` when there is no storyboard above this page — a seed render, a scratch file — and the
+ *  language check then says so instead of comparing against an empty string, which `<html lang>`
+ *  could never equal and which would read as a defect in the page.
+ *
+ *  A LOCAL READER, and the limit is named: `skills/storyboard` owns the format and nothing in a
+ *  skill may import out of another one, so this reads the one scalar it needs rather than
+ *  reaching for that parser. A storyboard that stops writing `language:` in front matter makes
+ *  this `null` and the check skip aloud — never silently pass. */
+function recordedLanguage(startDir) {
+  let dir = resolve(startDir);
+  for (let up = 0; up < 6; up++) {
+    const path = join(dir, "STORYBOARD.md");
+    if (existsSync(path)) {
+      const front = /^---\n([\s\S]*?)\n---/.exec(readFileSync(path, "utf8"));
+      const found = front ? /^language:[ \t]*([^\n]+)$/m.exec(front[1]) : null;
+      return found ? found[1].trim() : null;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/** Every declared decision this run actually asked, collected as it asks them and handed to
+ *  `decisionsNotAsked` at the end. A LIST BUILT BY THE ASKING, never a list typed beside it: a
+ *  name appended here without the call above it is the one mistake this whole section exists to
+ *  make impossible, and it would show up as a decision reported "asked" with no measurement
+ *  printed for it. */
+const asked = [];
+
 // ===== CARGO — what the shipped file CONTAINS, before anything is driven =====
 //
-// Three decisions this format reaches, run on the artifact itself rather than on the page a browser
-// renders from it: they need no browser, so making them wait behind one would only make them
-// skippable. Two live in `verify-guards.mjs`; the third, the accessible table
-// (`same-facts-without-the-picture`, `doctrine/references/guard-catalogue.json`), lives in
+// The decisions this format reaches that need no browser, run on the artifact itself rather than on
+// the page a browser renders from it: making them wait behind a browser would only make them
+// skippable. Two live in `verify-guards.mjs`; the accessible table
+// (`same-facts-without-the-picture`, `doctrine/references/guard-catalogue.json`) lives in
 // `detect-accessible-table.mjs` because it is a capability rather than a guard, and this is where
 // its declared `GUARDS` name is actually run against the file `render` just wrote.
+//
+// `weightAgainstCeiling` and `rtlRunsAreIsolated` JOINED THIS SECTION in the round that found the
+// command driving two of its own eighteen declarations. The weight one is a `statSync` and was
+// never anywhere but a test. The right-to-left one had a worse problem than being unwired: it walks
+// a beat directory for `.svg` FILES, and this format writes none — its geometry is an INLINE `<svg>`
+// in one HTML page — so on every chart-web beat it answered `{"applies":false,"reason":"this beat
+// drew no .svg"}`, a sentence that is false about a page that is mostly SVG and that a producer
+// reading it would take as a clean bill. The decision is not touched (it is byte-identical across
+// seven skills, `splash/test/guard-copies-parity.test.ts`); what it is HANDED is: the SVG this page
+// actually draws, written out with the extension it walks for.
 {
   const html = readFileSync(filePath, "utf8");
   const mb = (n) => (n / (1024 * 1024)).toFixed(2);
   const twice = duplicatedPayload(html);
+  asked.push("duplicatedPayload");
   const measuring = revealDashInScreenSpace(marksFromSource(html, basename(filePath)));
+  asked.push("revealDashInScreenSpace");
   const table = tableCarriesTheMarks(html);
+  asked.push("tableCarriesTheMarks");
   console.log(`\nCARGO — what the file carries`);
   for (const found of twice)
     console.log(
@@ -1048,6 +1142,122 @@ if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
       `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`,
     );
   else process.exitCode = 1;
+
+  const bytes = statSync(filePath).size;
+  const weight = weightAgainstCeiling(bytes, CEILING_BYTES);
+  asked.push("weightAgainstCeiling");
+  check(
+    !weight.over,
+    `weight-has-a-ceiling: the delivered file against this format's own ceiling`,
+    `${weight.bytes} B against a ${weight.ceiling} B ceiling`,
+  );
+
+  const svgs = inlineSvgOf(html);
+  const drawnSvg = mkdtempSync(join(tmpdir(), "chart-web-rtl-"));
+  svgs.forEach((svg, at) => writeFileSync(join(drawnSvg, `inline-${at}.svg`), svg));
+  const rtl = rtlRunsAreIsolated(drawnSvg);
+  asked.push("rtlRunsAreIsolated");
+  if (!rtl.applies)
+    skip(
+      `rtl-runs-carry-their-direction`,
+      `${rtl.reason} — read over the ${svgs.length} inline <svg> block(s) this page draws, written out as files for it`,
+    );
+  else {
+    for (const hit of rtl.hits) console.log(`  FAIL  ${hit}`);
+    check(
+      rtl.clean,
+      `rtl-runs-carry-their-direction: every right-to-left run carries its own direction`,
+      `${rtl.rtlRuns} right-to-left run(s) in ${svgs.length} inline <svg> block(s)`,
+    );
+  }
+  // THE HALF THIS RULE DOES NOT JUDGE, said out loud rather than left to be assumed away. Its
+  // subject is resvg's paragraph level inside an SVG; every WORD this format draws is an HTML
+  // element over the geometry, and nothing above looked at one. A page whose prose is Arabic or
+  // Hebrew is not cleared by the line above, and a producer has to know which half was read.
+  const htmlRtlLetters = (
+    html
+      .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<[^>]*>/g, " ")
+      .match(/[֐-׿؀-ۿ܀-ݏހ-޿ࡠ-ࣿיִ-﷿ﹰ-﻿]/g) ?? []
+  ).length;
+  skip(
+    `rtl-runs-carry-their-direction, outside the SVG`,
+    `this rule's subject is a run inside an SVG; the ${htmlRtlLetters} right-to-left letter(s) this page draws in HTML over the geometry are laid out by the reader's browser and were not read by it`,
+  );
+
+  const language = recordedLanguage(beatDir);
+  // ASKED EITHER WAY. A question this run PUT to the beat and could not answer because the beat has
+  // no storyboard above it is not the same thing as a declaration nothing wires, and the summary
+  // must not print them as the same thing: the skip line below already says which it is.
+  asked.push("pageLanguageMatchesStory");
+  if (language === null)
+    skip(
+      `page-declares-story-language`,
+      "no STORYBOARD.md above this page records a language, so there is nothing to declare it against",
+    );
+  else {
+    check(
+      pageLanguageMatchesStory(html, language),
+      `page-declares-story-language: <html lang> is the language the storyboard recorded`,
+      `storyboard says "${language}", page says "${/<html[^>]*\slang="([^"]*)"/i.exec(html)?.[1] ?? "nothing"}"`,
+    );
+  }
+}
+
+// ===== BEAT RECORD — the four decisions that read the beat's own directory =====
+//
+// Every one of these takes a beat directory and walks up it. None of them needed a browser and none
+// of them was ever called by anything a producer runs: `check-guard-wiring.mjs` recorded all four as
+// debt. Handed the page's own directory they answer about THIS beat; handed a page with no story
+// above it they return `{applies:false}` with their own reason, which is printed rather than
+// swallowed — a run that could not ask a question must not look like a run that asked and liked the
+// answer.
+{
+  console.log(`\nBEAT RECORD — what the directory around this page says`);
+  const report = (decision, rule, verdict, ok, detail) => {
+    asked.push(decision);
+    if (verdict.applies === false) skip(rule, verdict.reason);
+    else check(ok, rule, detail);
+  };
+
+  const gate = storyboardGateStatus(beatDir);
+  asked.push("storyboardGateStatus");
+  if (!gate.found)
+    skip("storyboard-gate-is-visible", "no STORYBOARD.md above this page");
+  else
+    check(
+      gate.closed,
+      `storyboard-gate-is-visible: Gate 2 is closed above this beat`,
+      `takeaway ${gate.closed ? "recorded" : "MISSING"} in ${gate.path ?? "STORYBOARD.md"}`,
+    );
+
+  const denominator = denominatorReadingStated(beatDir);
+  report(
+    "denominatorReadingStated",
+    "denominator-reading-is-stated",
+    denominator,
+    denominator.stated !== false,
+    JSON.stringify(denominator),
+  );
+
+  const credit = creditTracesToRecord(beatDir);
+  report(
+    "creditTracesToRecord",
+    "credit-traces-to-the-record",
+    credit,
+    (credit.unattested ?? []).length === 0,
+    (credit.unattested ?? []).join(" | ") || "every delivery states a credit the frozen record carries",
+  );
+
+  const hyphens = doubleHyphenInDeliveredText(beatDir);
+  report(
+    "doubleHyphenInDeliveredText",
+    "double-hyphen-reaches-a-reader",
+    hyphens,
+    (hyphens.hits ?? []).length === 0,
+    (hyphens.hits ?? []).join(" | ") || "no delivered text reaches a reader with a double hyphen in it",
+  );
 }
 if (wantShots) await mkdir(outDir, { recursive: true });
 
@@ -1171,8 +1381,129 @@ try {
     }
     await page.close();
   }
+
+  // ===== CAPABILITIES — what this format PROMISES a reader, driven against this page =====
+  //
+  // Three of them need a live browser, which is why they sat in `test/` for two rounds: that
+  // directory walks the skill's own beats under `proof/`, so a beat in `stories/` — every beat a
+  // journalist will ever make — was outside the walk and none of the three ever ran against one.
+  // Measured on the real Ember story: this command printed 63 green checks having asked neither
+  // whether a keyboard reaches a single one of the page's 211 marks, nor whether any of them
+  // survives with scripting off, nor whether the build stops for a reader who asked for less
+  // motion. Here they are asked of the file this run was given, whatever directory it lives in.
+  console.log(`\nCAPABILITIES — what this format promises a reader, on this page`);
+  {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1600, height: 800, deviceScaleFactor: 1 });
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    const reach = await keyboardReachesEveryMark(page);
+    asked.push("keyboardReachesEveryMark");
+    check(
+      reach.marks > 0 && reach.focusable === reach.marks && reach.detailShown === reach.marks,
+      `reachable-by-keyboard: Tab alone reaches every mark, and every one names itself`,
+      `${reach.focusable}/${reach.marks} reached by Tab, ${reach.detailShown}/${reach.marks} carrying an accessible name`,
+    );
+    await page.close();
+  }
+  {
+    // Its own page: `staticFrameSurvives` turns scripting off and reloads in place, so a page it
+    // has finished with is no longer the page the other checks measured.
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1600, height: 800, deviceScaleFactor: 1 });
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    const survives = await staticFrameSurvives(page);
+    asked.push("staticFrameSurvives");
+    check(
+      survives.marksWithJs > 0 && survives.marksWithout === survives.marksWithJs,
+      `degrades-without-javascript: the marks are there with the script gone`,
+      `${survives.marksWithJs} marks with scripting on, ${survives.marksWithout} with it off`,
+    );
+    await page.close();
+  }
+  {
+    // BOTH CONDITIONS, because one of them alone proves nothing. A page that never animates
+    // reports zero moved frames under `reduce` and would read as a page correctly holding still;
+    // the `no-preference` reading is what says whether there was any motion to suppress. When
+    // both are zero this beat has no build, and that is reported as a skip rather than a pass —
+    // the difference between "the promise was kept" and "the promise was never tested".
+    const moved = {};
+    for (const value of ["no-preference", "reduce"]) {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1600, height: 800, deviceScaleFactor: 1 });
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value }]);
+      await page.goto(`file://${filePath}`, { waitUntil: "load" });
+      moved[value] = await motionUnderReduce(page);
+      await page.close();
+    }
+    asked.push("motionUnderReduce");
+    if (moved["no-preference"].movedFrames === 0)
+      skip(
+        `honours-reduced-motion`,
+        `this beat animates nothing to suppress — 0 of ${moved["no-preference"].totalFrames} sampled frames moved under no-preference, so the reduce reading below (0) confirms nothing`,
+      );
+    else
+      check(
+        moved.reduce.movedFrames === 0,
+        `honours-reduced-motion: nothing interpolates for a reader who asked for less motion`,
+        `${moved["no-preference"].movedFrames}/${moved["no-preference"].totalFrames} frames moved under no-preference, ${moved.reduce.movedFrames}/${moved.reduce.totalFrames} under reduce`,
+      );
+  }
+  {
+    // THE LABELS THIS FORMAT ACTUALLY PAINTS, handed to a decision written for a rasterised still.
+    // `labelStacksFrom` reads SVG `<text>`; this format draws every word as HTML over the geometry,
+    // so on every chart-web beat it read zero labels and `mislabelledRows` could not fire — a
+    // requirement that cannot fire, which reads as coverage and is worse than a missing one.
+    // `painted-labels.mjs` measures the laid-out page and writes what it paints in the notation the
+    // decision reads; nothing about the decision changes. The two are composed HERE in the one
+    // order that type-checks — `labelStacksFrom` returns `{stacks, links}` and `mislabelledRows`
+    // takes them apart — because handing it the object throws `stacks.map is not a function` from
+    // inside this skill, which is what a story beat's own runner did.
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1600, height: 800, deviceScaleFactor: 1 });
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    const painted = await readPaintedGeometry(page);
+    await page.close();
+    const { stacks, links } = labelStacksFrom(paintedLabelSvg(painted));
+    const crossings = mislabelledRows(stacks, links);
+    asked.push("mislabelledRows");
+    for (const crossing of crossings) console.log(`  FAIL  ${crossing}`);
+    if (stacks.length === 0)
+      skip(
+        `labels-name-their-own-row`,
+        `no de-collided label stack on this page — ${painted.labels.length} painted label(s) and ${painted.lines.length} drawn line(s), none of them a leader running from a label to the mark it names, and this rule recognises a moved label only by its leader`,
+      );
+    else
+      check(
+        crossings.length === 0,
+        `labels-name-their-own-row: every de-collided label names its own row`,
+        `${stacks.length} stack(s), ${links.length} joining mark(s), ${crossings.length} crossing(s)`,
+      );
+  }
 } finally {
   await browser.close();
+}
+
+// ===== WHAT THIS RUN DID NOT ASK =====
+//
+// Derived from the `GUARDS` arrays this skill ships, never typed beside them: a decision added to
+// this skill and wired to nothing is reported here by name on the next run, and
+// `test/verify-coverage.test.ts` goes red. A name with no recorded reason is a failure rather than
+// a line of prose, because "not asked" with no argument attached is the false confirmation this
+// section exists to end.
+{
+  const notAsked = decisionsNotAsked(HERE_SKILL, asked);
+  console.log(`\nNOT ASKED — declarations this run could not put to one delivered page`);
+  for (const { name, reason } of notAsked) {
+    if (reason) console.log(`  n/a   ${name} — ${reason}`);
+    else
+      failures.push(
+        `${name} is declared by this skill, this command did not ask it, and no reason is recorded in verify-coverage.mjs. Wire it into this run, or record why one delivered page cannot answer it.`,
+      );
+  }
+  const distinct = new Set(asked).size;
+  console.log(
+    `  ${distinct} of ${distinct + notAsked.length} declared decisions asked of this page`,
+  );
 }
 
 console.log(

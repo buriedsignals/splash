@@ -232,26 +232,19 @@ export function declarationsWithoutACaller(skillDir) {
  *  for a count that may only go down, with names instead of a number so that wiring one guard and
  *  unwiring another cannot look like standing still.
  *
- *  The web chart's own debt. Its Puppeteer driver (`verify-web.mjs`) already calls three of this
- *  skill's decisions, which is why this list is shorter than its neighbours' by exactly those
- *  three.
+ *  The web chart's own debt, and it is now two names. It was thirteen: `verify-web.mjs` — the one
+ *  command `SKILL.md` tells a producer to run — asked three of this skill's eighteen declarations,
+ *  and the other fifteen were reachable only from `test/`, whose walk covers the skill's own beats
+ *  under `proof/` and has never seen a beat in `stories/`. Measured on the real 7 585-row Ember
+ *  story: 63 green checks, and not one of them about the keyboard, the no-script fallback, the
+ *  reduced-motion promise, the delivered weight, the story's own language or the beat's own record.
+ *  Eleven of those are wired into that command's own run as of this round, against the file it is
+ *  given rather than against a fixture. The two that remain are not about one delivered page at
+ *  all, and `scripts/verify-coverage.mjs` records the argument for each by name, printed on every
+ *  run so an unreachable decision stays visible instead of going quiet.
  *
  *  Per-format and outside every compared span, for the same reason `MEASURED_MIN_FRACTION` is:
  *  the DECISION above is one decision in all eight copies, and what differs is only what each
  *  format has actually paid off. A name may be REMOVED from this list, never added — adding one is
  *  how the defect that earned this rule would recur. */
-export const RECORDED_UNWIRED = [
-  "creditTracesToRecord",
-  "deadExampleRunners",
-  "denominatorReadingStated",
-  "doubleHyphenInDeliveredText",
-  "framingMeasurement",
-  "keyboardReachesEveryMark",
-  "mislabelledRows",
-  "motionUnderReduce",
-  "pageLanguageMatchesStory",
-  "rtlRunsAreIsolated",
-  "staticFrameSurvives",
-  "storyboardGateStatus",
-  "weightAgainstCeiling",
-];
+export const RECORDED_UNWIRED = ["deadExampleRunners", "framingMeasurement"];
