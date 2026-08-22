@@ -14,6 +14,9 @@
  * to catch.
  */
 import { describe, it, expect } from "bun:test";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   comparisonRamp,
   inkPole,
@@ -21,6 +24,7 @@ import {
   contrast,
   NON_TEXT_CONTRAST_MIN,
   proposePalette,
+  readPalette,
 } from "../scripts/palette.mjs";
 import {
   deriveFurniture,
@@ -202,5 +206,34 @@ describe("the comparison field in the document the journalist reads", () => {
     const { formatProposal } = await import("../scripts/format-proposal.mjs");
     const printed = formatProposal(proposePalette({ newsroom: HOUSE, subject: "wildfires", surface: "screen" }));
     expect(printed).not.toContain("The other parts of this beat");
+  });
+});
+
+// THE LOOP CLOSED ON DISK. The proposal is worth nothing if the ramp cannot survive being written
+// down and read back: `parsePalette` measures EVERY recorded accent against the recorded ground
+// again, and refuses one under the floor. A ramp that could not pass its own reader would be a
+// proposal this skill's own second measurement rejects.
+describe("the ramp, recorded and read back", () => {
+  it("should survive PALETTE.md and come back out of seriesInks in the recorded order", () => {
+    const p = proposePalette({
+      newsroom: HOUSE,
+      subject: "wildfires in Africa",
+      surface: "screen",
+      series: { count: 6, kind: "part-to-whole" },
+    });
+    const field = p.comparisonField!;
+    const dir = mkdtempSync(join(tmpdir(), "palette-ramp-"));
+    try {
+      writeFileSync(
+        join(dir, "PALETTE.md"),
+        `---\nground: "${p.ground}"\naccent: "${field.accent}"\n` +
+          `accents: "${field.ramp!.join(", ")}"\norigin: newsroom\n---\n`,
+      );
+      const read = readPalette(dir, { stopAt: dir });
+      expect(read.accents).toEqual([field.accent, ...field.ramp!]);
+      expect(seriesInks(read, 6)).toEqual([field.accent, ...field.ramp!]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
