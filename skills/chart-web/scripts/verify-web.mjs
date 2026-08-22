@@ -161,6 +161,28 @@ function skip(what, why) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Wait until the page has stopped MOVING, before measuring anything that a build would confound.
+ *
+ *  This format ships an entrance (`assets/entrance.ts`): layers fade, wipe and land under
+ *  `animation-fill-mode: backwards`, so until the last one has run an element that is perfectly
+ *  drawn reads back at `opacity: 0`. Measured on this skill's own seed while rewriting the filter
+ *  checks: the source line came back at 0.37 and four filterable elements at zero, and every one of
+ *  those was the CHECKER measuring a page mid-build — the same run with JavaScript disabled, and so
+ *  with no entrance at all, was clean. A fixed sleep would be a guess at a duration the contract is
+ *  free to change; `document.getAnimations()` is the page's own answer. The 4s ceiling is a
+ *  backstop against an animation that never ends (a looping decoration nothing in this format
+ *  ships), not the wait itself. */
+async function settled(page) {
+  await sleep(120); // the entrance is armed by an IntersectionObserver, so it may not have begun yet
+  await page.evaluate(async () => {
+    const running = document.getAnimations().map((animation) => animation.finished.catch(() => {}));
+    await Promise.race([
+      Promise.all(running),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
+  });
+}
+
 /** Every coordinate handed to `page.mouse.*` goes through here first.
  *
  *  PUPPETEER'S `mouse.move` SILENTLY DOES NOTHING AT FRACTIONAL COORDINATES. Measured by a
@@ -682,7 +704,7 @@ async function checkHover(page, vp) {
 async function checkFilter(page, vp, { scripting = true } = {}) {
   const tag = scripting ? vp.label : `${vp.label} (no JS)`;
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+  await settled(page);
 
   // MOST BEATS SHIP NO FILTER, AND THAT IS THE CORRECT OUTCOME OF THIS SKILL'S OWN THREE-PART
   // TEST (`SKILL.md`, "When to use" — "most beats should not have one"). Measured across the
@@ -693,11 +715,23 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
   const filter = await page.evaluate(() => {
     const fs = document.querySelector("fieldset.chart-filter");
     if (!fs) return null;
-    const radios = Array.prototype.map.call(
-      fs.querySelectorAll("input[type=radio]"),
-      (i) => i.id,
-    );
-    return { radios };
+    const options = Array.prototype.map.call(fs.querySelectorAll("input[type=radio]"), (input) => ({
+      id: input.id,
+      // The SLUG is the token the generated CSS matches `[data-filter~="…"]` on, and `filter.ts`
+      // writes it into the radio's own `value` — read from the page rather than sliced off the id,
+      // so an id convention that changes again does not silently empty this check.
+      slug: input.value,
+      label: (input.closest("label")?.textContent ?? "").trim(),
+    }));
+    // The UNFILTERED option is the one that is checked when the page loads, which is what
+    // `filter.ts` guarantees and what a no-JS reader lands on. Falling back to the first option
+    // rather than to a reserved id keeps this readable on a beat whose vocabulary changed again.
+    const checked = fs.querySelector("input[type=radio]:checked");
+    const all = checked?.id ?? options[0]?.id ?? null;
+    return {
+      all,
+      options: options.map((option) => ({ ...option, isAll: option.id === all })),
+    };
   });
   if (!filter) {
     skip(
@@ -742,77 +776,129 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
     return;
   }
   check(
-    filter.radios.length >= 2,
+    filter.options.length >= 2,
     `${tag}: the filter is a real radio group`,
-    `radios: ${filter.radios.join(", ") || "none"}`,
+    `radios: ${filter.options.map((o) => o.id).join(", ") || "none"}`,
   );
-  if (filter.radios.length < 2) return;
+  if (filter.options.length < 2) return;
 
+  // THE FILTER'S OWN VOCABULARY, READ OFF THE PAGE. This block used to name `#period-all`,
+  // `input[name=period]` and `.seg[data-period="early"]` — the ids ONE beat happened to use, in a
+  // filter mechanism this format has since replaced. `assets/filter.ts` now derives every option's
+  // id and token from the beat's own declaration (`chart-filter-<slug>`, `data-filter="<slug>"`,
+  // one generated CSS rule per option), and nothing here had followed it: run with no `--file` at
+  // all, against the format's OWN SEED, this script reported five false failures and then died on
+  // `document.querySelector("#period-all").closest(...)` returning null. The command `SKILL.md`
+  // tells a producer to run crashed on the one page this skill ships. So the option list, the
+  // group's name and the unfiltered default are all read from the fieldset, and what an option
+  // DOES is measured through the vocabulary the beat declared rather than through one beat's class
+  // names.
   const state = () =>
-    page.evaluate(() => {
-      const opacities = (sel) =>
-        Array.prototype.map.call(document.querySelectorAll(sel), (el) =>
-          Number(getComputedStyle(el).opacity),
-        );
-      const seen = (sel) => {
-        const el = document.querySelector(sel);
-        if (!el) return null;
-        const cs = getComputedStyle(el);
-        const r = el.getBoundingClientRect();
-        return {
-          text: el.textContent.trim(),
-          opacity: Number(cs.opacity),
-          display: cs.display,
-          visibility: cs.visibility,
-          w: Math.round(r.width),
-          h: Math.round(r.height),
+    page.evaluate(
+      (tokens) => {
+        // A STRAIGHT STROKE HAS A ZERO-WIDTH BOX AND IS PERFECTLY VISIBLE. Requiring extent in BOTH
+        // axes reported one element hidden on `proof/web-income-life-expectancy` at every viewport,
+        // with and without scripting: a vertical `<line data-key="CUB">`, 0 x 18.1, `display:
+        // inline`, `opacity: 1`, drawn on screen in the beat's own accent. The checker being wrong
+        // about a sound beat. A mark is off the picture when it has NO extent at all.
+        const drawn = (el) => {
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return (
+            cs.display !== "none" &&
+            cs.visibility !== "hidden" &&
+            Number(cs.opacity) > 0 &&
+            (r.width > 0 || r.height > 0)
+          );
         };
-      };
-      const byPeriod = (period) => ({
-        seg: opacities(`.seg[data-period="${period}"]`),
-        pt: opacities(`.pt[data-period="${period}"]`),
-      });
-      return {
-        checked: (document.querySelector("input[name=period]:checked") ?? {}).id ?? null,
-        early: byPeriod("early"),
-        late: byPeriod("late"),
-        furniture: {
-          title: seen(".chart-title"),
-          caveat: seen(".chart-caveat"),
-          source: seen(".chart-source"),
-          reference: seen(".note.reference-label"),
-          peak: seen(".note.peak-label"),
-          end: seen(".end-label"),
-        },
-      };
-    });
+        const marks = { shown: {}, hidden: {} };
+        for (const token of tokens) {
+          marks.shown[token] = 0;
+          marks.hidden[token] = 0;
+        }
+        for (const el of document.querySelectorAll("[data-filter]")) {
+          const mine = (el.getAttribute("data-filter") ?? "").split(/\s+/).filter(Boolean);
+          for (const token of mine)
+            if (tokens.includes(token)) marks[drawn(el) ? "shown" : "hidden"][token] += 1;
+        }
+        const seen = (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return {
+            text: el.textContent.trim(),
+            opacity: Number(cs.opacity),
+            display: cs.display,
+            visibility: cs.visibility,
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+          };
+        };
+        const notes = {};
+        for (const el of document.querySelectorAll("[data-filter-note]"))
+          notes[el.getAttribute("data-filter-note")] = drawn(el);
+        return {
+          checked: (document.querySelector("fieldset.chart-filter input[type=radio]:checked") ?? {}).id ?? null,
+          marks,
+          notes,
+          furniture: {
+            title: seen(".chart-title"),
+            caveat: seen(".chart-caveat"),
+            source: seen(".chart-source"),
+          },
+        };
+      },
+      filter.options.map((option) => option.slug),
+    );
 
-  const argumentIntact = (s, where) => {
-    for (const [name, f] of Object.entries(s.furniture)) {
+  // THE FURNITURE THAT MUST SURVIVE EVERY OPTION, and only what every beat has. The old list named
+  // `.note.reference-label`, `.note.peak-label` and `.end-label` — three annotations the seed
+  // happens to draw — and reported a beat that annotates differently as a beat that lost its
+  // argument. The title, the caveat and the source line are what `web-discipline.md` requires of
+  // every beat in this format, and a filter may never take one away.
+  const argumentIntact = (found, where) => {
+    for (const [name, box] of Object.entries(found.furniture)) {
       check(
-        f !== null && f.opacity === 1 && f.display !== "none" && f.visibility !== "hidden" && f.w > 0 && f.h > 0,
+        box !== null && box.opacity === 1 && box.display !== "none" && box.visibility !== "hidden" && box.w > 0 && box.h > 0,
         `${tag}: ${where} — the ${name} is still fully drawn`,
-        f ? `opacity ${f.opacity}, ${f.w}x${f.h}, "${f.text.slice(0, 40)}"` : "missing",
+        box ? `opacity ${box.opacity}, ${box.w}x${box.h}, "${box.text.slice(0, 40)}"` : "missing",
       );
     }
   };
 
   // DEFAULT — the only state a no-JS, no-CSS-override reader lands on. It must already carry the
-  // whole claim: every segment and every point at full opacity, nothing dimmed.
+  // whole claim: every mark the beat drew on screen, and no option's partial-view note showing.
   const initial = await state();
-  check(initial.checked === "period-all", `${tag}: default state is "All years"`, `checked: ${initial.checked}`);
-  const allFull = [...initial.early.seg, ...initial.late.seg, ...initial.early.pt, ...initial.late.pt];
   check(
-    allFull.length > 0 && allFull.every((o) => o === 1),
-    `${tag}: the default view dims nothing — the full claim is on screen`,
-    `${allFull.length} marks, opacities ${[...new Set(allFull)].join("/")}`,
+    initial.checked === filter.all,
+    `${tag}: the default state is the unfiltered option`,
+    `checked: ${initial.checked}, unfiltered option: ${filter.all}`,
+  );
+  const hiddenAtRest = filter.options
+    .filter((option) => !option.isAll)
+    .map((option) => initial.marks.hidden[option.slug])
+    .reduce((a, b) => a + b, 0);
+  const drawnAtRest = filter.options
+    .filter((option) => !option.isAll)
+    .map((option) => initial.marks.shown[option.slug])
+    .reduce((a, b) => a + b, 0);
+  check(
+    drawnAtRest > 0 && hiddenAtRest === 0,
+    `${tag}: the default view hides nothing — the full claim is on screen`,
+    `${drawnAtRest} filterable element(s) drawn, ${hiddenAtRest} hidden`,
+  );
+  check(
+    Object.values(initial.notes).every((shown) => shown === false),
+    `${tag}: no partial-view note is showing before a reader chooses one`,
+    `${Object.keys(initial.notes).length} note(s), ${Object.values(initial.notes).filter(Boolean).length} visible`,
   );
   argumentIntact(initial, "default");
 
-  const pillBox = async (id) => {
+  const optionBox = async (id) => {
     const r = await page.evaluate((sel) => {
       const input = document.querySelector(sel);
-      const label = input.closest("label");
+      const label = input.closest("label") ?? input;
       const b = label.getBoundingClientRect();
       return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: Math.round(b.width), h: Math.round(b.height) };
     }, `#${id}`);
@@ -821,49 +907,264 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
     return { ...r, ...probe(r.x, r.y) };
   };
 
-  for (const [id, dimmed, kept] of [
-    ["period-early", "late", "early"],
-    ["period-late", "early", "late"],
-  ]) {
-    const box = await pillBox(id);
-    // WCAG 2.2 SC 2.5.8 (minimum target size, 24x24 CSS px). Measured, because the pill treatment
-    // makes the LABEL the target and hides the native dot — a shrunken pill would silently be a
-    // worse target than the plain radio it replaced.
+  for (const option of filter.options) {
+    if (option.isAll) continue;
+    const box = await optionBox(option.id);
+    // WCAG 2.2 SC 2.5.8 (minimum target size, 24x24 CSS px). Measured, because a treatment that
+    // makes the LABEL the target and hides the native dot would silently be a worse target than the
+    // plain radio it replaced.
     check(
       box.w >= 24 && box.h >= 24,
-      `${tag}: the "${id}" control is a 24px+ target`,
+      `${tag}: the "${option.id}" control is a 24px+ target`,
       `${box.w}x${box.h}`,
     );
     await page.mouse.click(box.x, box.y);
-    await sleep(200); // past the 120ms opacity transition
+    // SETTLED, not a fixed 200ms. An element the previous option had at `display: none` never ran
+    // its entrance; brought back by this click it runs it NOW, and `animation-fill-mode: backwards`
+    // holds it at `opacity: 0` through a delay this format's contract runs out to 1760ms. Measured
+    // on the seed: four elements read as hidden 200ms after the click and as fully drawn once the
+    // page stopped moving. What this check is about is the picture a reader ends up with.
+    await settled(page);
     const after = await state();
-    check(after.checked === id, `${tag}: a real click at (${Math.round(box.x)}, ${Math.round(box.y)}) selects ${id}`, `checked: ${after.checked}`);
-    const dim = [...after[dimmed].seg, ...after[dimmed].pt];
-    const full = [...after[kept].seg, ...after[kept].pt];
     check(
-      dim.length > 0 && dim.every((o) => o > 0 && o < 0.5),
-      `${tag}: ${id} dims the ${dimmed} marks — the picture really changed`,
-      `${dim.length} marks at ${[...new Set(dim)].join("/")}`,
+      after.checked === option.id,
+      `${tag}: a real click at (${box.x}, ${box.y}) selects ${option.id}`,
+      `checked: ${after.checked}`,
     );
+    // THE PICTURE REALLY CHANGED, both ways round: what this option keeps is on screen, and what
+    // every OTHER option owns alone is gone. A filter that only ever adds is not a filter.
     check(
-      full.length > 0 && full.every((o) => o === 1),
-      `${tag}: ${id} leaves the ${kept} marks untouched`,
-      `${full.length} marks at ${[...new Set(full)].join("/")}`,
+      after.marks.shown[option.slug] > 0 && after.marks.hidden[option.slug] === 0,
+      `${tag}: ${option.id} keeps every element it declared`,
+      `${after.marks.shown[option.slug]} drawn, ${after.marks.hidden[option.slug]} hidden`,
     );
-    argumentIntact(after, id);
+    const elsewhere = filter.options
+      .filter((other) => !other.isAll && other.slug !== option.slug)
+      .map((other) => after.marks.shown[other.slug])
+      .reduce((a, b) => a + b, 0);
+    check(
+      elsewhere === 0,
+      `${tag}: ${option.id} takes the other options' elements off the picture`,
+      `${elsewhere} element(s) from another option still drawn`,
+    );
+    // AND THE READER IS TOLD THIS IS A PARTIAL VIEW. `filter.ts` derives one sentence per option
+    // for exactly this reason: a filtered view no longer states the whole claim the title makes.
+    check(
+      after.notes[option.slug] === true,
+      `${tag}: ${option.id} shows its own partial-view note`,
+      `note for "${option.slug}": ${after.notes[option.slug] === undefined ? "none declared" : after.notes[option.slug]}`,
+    );
+    argumentIntact(after, option.id);
   }
 
-  // Back to the default, by a real click, and the dimming must lift again.
-  const allBox = await pillBox("period-all");
+  // Back to the unfiltered view, by a real click, and everything must come back.
+  const allBox = await optionBox(filter.all);
   await page.mouse.click(allBox.x, allBox.y);
-  await sleep(200);
+  await settled(page);
   const restored = await state();
-  const restoredAll = [...restored.early.seg, ...restored.late.seg, ...restored.early.pt, ...restored.late.pt];
+  const restoredHidden = filter.options
+    .filter((option) => !option.isAll)
+    .map((option) => restored.marks.hidden[option.slug])
+    .reduce((a, b) => a + b, 0);
   check(
-    restored.checked === "period-all" && restoredAll.every((o) => o === 1),
-    `${tag}: clicking back to "All years" restores every mark`,
-    `${restoredAll.length} marks at ${[...new Set(restoredAll)].join("/")}`,
+    restored.checked === filter.all && restoredHidden === 0,
+    `${tag}: clicking back to the unfiltered option restores every element`,
+    `checked ${restored.checked}, ${restoredHidden} element(s) still hidden`,
   );
+}
+
+/** ITEM: EVERY CONTROL THIS BEAT SHIPS, whatever it is — not only the filter this skill happens to
+ *  build.
+ *
+ *  THE DEFECT THAT EARNED THIS. The real Ember beat ships a real, keyboard-operable control: a
+ *  search box that moves focus to a named country. It is correctly not a filter — it hides nothing,
+ *  narrows nothing, and the default frame already states everything the title claims — so it
+ *  declares no `props.filter`, and `checkControlAffordance` skipped ENTIRELY:
+ *
+ *      skip laptop-wide: the filter control's own affordance — this beat ships no filter, so there
+ *           is no control to reach or ring
+ *
+ *  Nothing checked that search box's Tab reach, its focus ring, its target size or its name. The
+ *  format's verification assumed the only control a beat can have is the one the format itself
+ *  builds — a population TYPED as `fieldset.chart-filter` rather than DERIVED from the page. A
+ *  toggle, a selector or a scrubber was verified as if the beat had no control at all.
+ *
+ *  So the population is read off the page: everything focusable inside the figure that is not one
+ *  of the graphic's own marks. Two exclusions, each with its reason. A `[data-detail]` element is a
+ *  MARK — `reachable-by-keyboard` already drives all of them and a beat draws hundreds, so counting
+ *  them here would bury the one control under 211 readings. The accessible table's own scroll
+ *  container is the table's affordance, owned by `same-facts-without-the-picture`, and it operates
+ *  no part of the graphic.
+ *
+ *  What is asked of each one is what a control OWES a reader who has no pointer: a name, a target
+ *  big enough to hit, a real `Tab` that reaches it, and a focus indicator that changes actual
+ *  pixels. The focused frame is taken DURING the Tab sweep, at the moment the keyboard lands on the
+ *  control, because `element.focus()` does not match `:focus-visible` on every element type and a
+ *  ring written for keyboard focus would read as missing. */
+async function checkControls(page, vp) {
+  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+  await settled(page);
+
+  const controls = await page.evaluate(() => {
+    const figure = document.querySelector(".chart-figure") ?? document.body;
+    const focusable =
+      "a[href], button, input, select, textarea, summary, [tabindex]";
+    const out = [];
+    for (const el of figure.querySelectorAll(focusable)) {
+      if (el.hasAttribute("data-detail")) continue;
+      if (el.closest(".chart-accessible-table")) continue;
+      if (el.getAttribute("tabindex") === "-1") continue;
+      const style = getComputedStyle(el);
+      const own = el.getBoundingClientRect();
+      // WHICH BOX IS THE TARGET, and getting this wrong invents a failure on a sound beat — it did,
+      // on the first run of this check: the real Ember beat's search box was reported 90x15 and
+      // ringless because the box measured was its `<label for>`, the words "Find a country" beside
+      // it, which is the control's NAME and not the thing a reader aims at or a ring is drawn on.
+      //   · a control the treatment HIDES behind its own label — this format's segmented pill, where
+      //     the native radio is `opacity: 0` — is aimed at through that label, so the label is the
+      //     target;
+      //   · a WRAPPING label contains the control, so its box is the control's own box or larger,
+      //     and it is clickable: it is the target whenever there is one;
+      //   · otherwise the control's own box is the target, and a `label[for]` sitting elsewhere on
+      //     the page names it without being it.
+      const associated = el.id
+        ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`)
+        : null;
+      const wrapping = el.closest("label");
+      const painted =
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        Number(style.opacity) > 0 &&
+        own.width > 0 &&
+        own.height > 0;
+      const target = wrapping ?? (painted ? el : (associated ?? el));
+      const box = target.getBoundingClientRect();
+      // A NAME IS WHAT A READER IS TOLD THE CONTROL IS FOR, and a placeholder is not one: it is
+      // painted inside the field and disappears the moment the reader types. `aria-label`, an
+      // `aria-labelledby` target, a `<label>`, or the control's own text — nothing else.
+      const labelled = el.getAttribute("aria-labelledby");
+      const name = (
+        el.getAttribute("aria-label") ||
+        (labelled ? (document.getElementById(labelled)?.textContent ?? "") : "") ||
+        (el.closest("label") ?? associated)?.textContent ||
+        el.textContent ||
+        el.getAttribute("title") ||
+        ""
+      ).trim();
+      out.push({
+        key: `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.getAttribute("type") ? `[${el.getAttribute("type")}]` : ""}`,
+        // A RADIO GROUP IS ONE TAB STOP, and that is the browser's own behaviour, not a laxity:
+        // Tab enters the group at its checked member and the arrow keys move within it (which
+        // `checkControlAffordance` drives separately). Demanding that Tab land on every radio
+        // reported this format's OWN seed as having two unreachable controls — the checker wrong
+        // about a sound beat, which is the failure mode that costs the most trust here.
+        stop: el.type === "radio" && el.name ? `radio:${el.name}` : null,
+        name,
+        w: Math.round(box.width),
+        h: Math.round(box.height),
+        painted,
+        clip: {
+          x: Math.max(0, box.left - 6),
+          y: Math.max(0, box.top - 6),
+          width: Math.min(box.width + 12, window.innerWidth),
+          height: Math.min(box.height + 12, window.innerHeight),
+        },
+      });
+    }
+    return out;
+  });
+
+  if (controls.length === 0) {
+    skip(
+      `${vp.label}: every control this beat ships`,
+      "this beat ships no control at all — no focusable element in the figure other than its own marks",
+    );
+    return;
+  }
+
+  // ONE Tab sweep, long enough to pass every focusable thing on the page: a beat draws hundreds of
+  // marks and they are in the tab order before or after the controls, so a sweep sized to the
+  // controls alone would report a control nobody can reach when the truth is that the sweep was
+  // too short.
+  const focusables = await page.evaluate(
+    () =>
+      (document.querySelector(".chart-figure") ?? document.body).querySelectorAll(
+        "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])",
+      ).length,
+  );
+  await page.mouse.move(2, 2); // park the pointer so :hover cannot confound a focus frame
+  await page.evaluate(() => {
+    document.body.setAttribute("tabindex", "-1");
+    document.body.focus();
+  });
+  const focusedShot = new Map();
+  for (let press = 0; press < focusables + 5 && focusedShot.size < controls.length; press++) {
+    await page.keyboard.press("Tab");
+    const at = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body) return null;
+      if (el.hasAttribute("data-detail")) return null;
+      if (el.closest(".chart-accessible-table")) return null;
+      return `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.getAttribute("type") ? `[${el.getAttribute("type")}]` : ""}`;
+    });
+    const landed = at ? controls.find((one) => one.key === at) : null;
+    if (!landed) continue;
+    const control = controls.find(
+      (one) => (landed.stop ? one.stop === landed.stop : one.key === landed.key) && !focusedShot.has(one.key),
+    );
+    if (!control) continue;
+    const shot = await page.screenshot({ clip: control.clip, encoding: "binary" });
+    // Every member of a group the keyboard has entered is reached; the frame is the one taken where
+    // the focus actually is, which is the member the group hands focus to.
+    for (const member of controls)
+      if (landed.stop ? member.stop === landed.stop : member.key === control.key)
+        focusedShot.set(member.key, member.key === landed.key ? shot : null);
+  }
+  await page.evaluate(() => {
+    if (document.activeElement && document.activeElement !== document.body)
+      document.activeElement.blur();
+  });
+  await sleep(80);
+
+  for (const control of controls) {
+    const named = `${control.key}${control.name ? ` "${control.name.slice(0, 40)}"` : ""}`;
+    check(
+      control.name.length > 0,
+      `${vp.label}: the ${control.key} control carries its own name`,
+      control.name ? `named "${control.name.slice(0, 60)}"` : "no aria-label, no label, no text — a placeholder is not a name",
+    );
+    // WCAG 2.2 SC 2.5.8, the same 24x24 the filter pill is measured against, asked of whatever this
+    // beat's control turned out to be.
+    check(
+      control.w >= 24 && control.h >= 24,
+      `${vp.label}: ${named} is a 24px+ target`,
+      `${control.w}x${control.h}`,
+    );
+    const shot = focusedShot.get(control.key);
+    check(
+      focusedShot.has(control.key),
+      `${vp.label}: Tab alone reaches ${named}`,
+      focusedShot.has(control.key)
+        ? control.stop
+          ? `the keyboard entered its group (${control.stop})`
+          : "the keyboard landed on it"
+        : `${focusables + 5} presses from the top of the figure never landed on it`,
+    );
+    // A group member the keyboard did not itself land on has no focused frame of its own; the ring
+    // is measured on the member focus actually went to, and on every standalone control.
+    if (!shot) continue;
+    const rest = await page.screenshot({ clip: control.clip, encoding: "binary" });
+    const differs = (() => {
+      if (shot.length !== rest.length) return true;
+      for (let i = 0; i < shot.length; i++) if (shot[i] !== rest[i]) return true;
+      return false;
+    })();
+    check(
+      differs,
+      `${vp.label}: keyboard focus on ${named} changes what is on screen`,
+      `focused frame ${shot.length}B vs unfocused ${rest.length}B over a ${Math.round(control.clip.width)}x${Math.round(control.clip.height)} clip — ${differs ? "different" : "IDENTICAL, so nothing is drawn for focus"}`,
+    );
+  }
 }
 
 /** ITEM: the filter controls must read as a considered treatment AND stay a keyboard-operable
@@ -871,7 +1172,7 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
  *  ring computes to, and what the checked pill's own contrast is. */
 async function checkControlAffordance(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+  await settled(page);
 
   const present = await page.evaluate(
     () => !!document.querySelector("fieldset.chart-filter"),
@@ -886,7 +1187,7 @@ async function checkControlAffordance(page, vp) {
 
   const structure = await page.evaluate(() => {
     const fs = document.querySelector("fieldset.chart-filter");
-    const inputs = Array.prototype.slice.call(document.querySelectorAll("input[name=period]"));
+    const inputs = Array.prototype.slice.call(fs.querySelectorAll("input[type=radio]"));
     return {
       isFieldset: !!fs,
       hasLegend: !!(fs && fs.querySelector("legend")),
@@ -903,7 +1204,11 @@ async function checkControlAffordance(page, vp) {
     };
   });
   check(structure.isFieldset && structure.hasLegend, `control: still a <fieldset> with a <legend>`, `legend "${structure.legendText}"`);
-  check(structure.radios === 3 && structure.allNativeRadios, `control: still three native radios`, `${structure.radios} found`);
+  // AT LEAST TWO, not exactly three. `filter.ts` derives the option list from the beat's own
+  // declaration and refuses fewer than two ("a beat that does not need a filter declares none"); a
+  // beat with four bands is as legitimate as one with three, and the hard 3 here was the seed's
+  // own option count read as the format's contract.
+  check(structure.radios >= 2 && structure.allNativeRadios, `control: still native radios, at least two`, `${structure.radios} found`);
   check(structure.removedFromTree === 0, `control: no radio is display:none / visibility:hidden`, `${structure.removedFromTree} removed`);
   check(
     structure.labelledBy.every((t) => t && t.length > 0),
@@ -921,7 +1226,7 @@ async function checkControlAffordance(page, vp) {
     await page.keyboard.press("Tab");
     reached = await page.evaluate(() => {
       const a = document.activeElement;
-      return a && a.name === "period" ? a.id : null;
+      return a && a.closest("fieldset.chart-filter") && a.type === "radio" ? a.id : null;
     });
   }
   check(!!reached, `control: Tab alone reaches the radio group`, `focus landed on ${reached}`);
@@ -962,9 +1267,11 @@ async function checkControlAffordance(page, vp) {
 
     // ...and the cause, named, so a failure above says WHERE to look. Only an indicator the
     // reader can actually see counts: an outline on a fully transparent input does not.
-    await page.evaluate(() => document.querySelector("#period-all").focus());
+    await page.evaluate(() =>
+      document.querySelector("fieldset.chart-filter input[type=radio]").focus(),
+    );
     const ring = await page.evaluate(() => {
-      const input = document.querySelector("#period-all");
+      const input = document.querySelector("fieldset.chart-filter input[type=radio]");
       const label = input.closest("label");
       const paints = (el) => {
         let o = 1;
@@ -995,17 +1302,21 @@ async function checkControlAffordance(page, vp) {
 
     // Arrow keys move the selection — the behaviour a reader expects from a radio group, and the
     // one a hand-rolled widget usually loses.
-    const before = await page.evaluate(() => document.querySelector("input[name=period]:checked").id);
+    const before = await page.evaluate(
+      () => document.querySelector("fieldset.chart-filter input[type=radio]:checked").id,
+    );
     await page.keyboard.press("ArrowRight");
     await sleep(120);
-    const after = await page.evaluate(() => document.querySelector("input[name=period]:checked").id);
+    const after = await page.evaluate(
+      () => document.querySelector("fieldset.chart-filter input[type=radio]:checked").id,
+    );
     check(after !== before, `control: ArrowRight moves the selection`, `${before} → ${after}`);
   }
 
   // The checked pill's own legibility. The treatment inverts to ink-on-ground; whatever ground a
   // newsroom brings, the pair must still clear WCAG 1.4.3 for body text.
   const contrast = await page.evaluate(() => {
-    const input = document.querySelector("input[name=period]:checked");
+    const input = document.querySelector("fieldset.chart-filter input[type=radio]:checked");
     const label = input.closest("label");
     const cs = getComputedStyle(label);
     return { fg: cs.color, bg: cs.backgroundColor };
@@ -1085,7 +1396,10 @@ function recordedLanguage(startDir) {
     if (existsSync(path)) {
       const front = /^---\n([\s\S]*?)\n---/.exec(readFileSync(path, "utf8"));
       const found = front ? /^language:[ \t]*([^\n]+)$/m.exec(front[1]) : null;
-      return found ? found[1].trim() : null;
+      // Front matter is free to quote a scalar, and this compares against `<html lang>` — measured
+      // on two story beats whose storyboards write `language: "en"`, where the unstripped value
+      // failed a page that says exactly `en`.
+      return found ? found[1].trim().replace(/^["']|["']$/g, "") : null;
     }
     const parent = dirname(dir);
     if (parent === dir) break;
@@ -1347,10 +1661,11 @@ try {
     await page.close();
   }
 
-  console.log(`\nCONTROL — the filter is still a keyboard-operable radio group`);
+  console.log(`\nCONTROL — every control this beat ships, and the filter's own radio-group contract`);
   for (const vp of POINTER_VIEWPORTS) {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    await checkControls(page, vp);
     await checkControlAffordance(page, vp);
     if (wantShots) {
       // One Tab from a blurred document lands on the group's own checked radio — so this frame is
