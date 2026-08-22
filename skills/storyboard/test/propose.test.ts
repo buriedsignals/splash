@@ -14,6 +14,9 @@ import {
   formatCandidates,
   recommendVisualChoice,
 } from "../scripts/propose.mjs";
+// The period rule itself, so this file measures the population the skill derives rather than
+// re-typing the rule and drifting from it.
+import { findYearColumn } from "../scripts/ground-claim.mjs";
 
 // The frozen profile shape `intake`'s `profileTable` produces, with the run's own numbers:
 // three components of a melt total, 14 + 11 + 9 = 34.
@@ -1057,8 +1060,14 @@ describe("row count is evidence, and a column type is not a story", () => {
     const claiming = stories.filter((story) => {
       const profile = frozenProfile(story);
       const numbers = (profile.columns ?? []).filter((c: any) => c.type === "number");
-      const years = numbers.filter((c: any) => /year|date|ann[ée]e/i.test(c.name));
-      if (years.length !== 1 || numbers.length !== 2) return false;
+      // THE POPULATION IS DERIVED, not re-typed here. This used to re-implement the period rule as
+      // `/year|date|ann[ée]e/` over the numeric columns — the rule `findYearColumn` had at the time
+      // — and it drifted the moment that rule learned that a numeric column named for a period must
+      // hold periods. `stress-aa-salary-spread`'s `years_service [0, 34]` is a tenure, one of the
+      // two things that table measures, and it is not this test's subject: a (period, value) table
+      // is.
+      const period = findYearColumn(profile.columns ?? []);
+      if (!period || period.type !== "number" || numbers.length !== 2) return false;
       const result = recommendVisualChoice({ model, profile });
       return result.ranking[0].unresolvedRequirements.length === 0;
     });
@@ -1183,8 +1192,27 @@ describe("a distribution is a count of observations, and five of them is not one
     const result = recommendVisualChoice({ model: everyTreatment(), profile });
     const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
     expect(histogram.unresolvedRequirements).toEqual([]);
-    // The count it reports is the observations, not the rows: 234, not 240.
-    expect(JSON.stringify(histogram.matchedEvidence)).toContain("234");
+    // WHAT THIS NUMBER IS, and why it moved. The evidence reports the observations of the
+    // best-observed measure. This table has TWO measures — a salary with six blanks and a tenure
+    // with none — and it took six rounds to see the second, because `years_service` was read as the
+    // table's own period by a rule that tested the column's NAME and never its values. So the
+    // count is 240, the tenure's, and the salary's own 234 is one measure down the same list.
+    expect(JSON.stringify(histogram.matchedEvidence)).toContain("240 observation(s)");
+
+    // The claim underneath it — a row is not an observation — measured where nothing coincides:
+    // every measure here carries blanks, so no reading of it can return the row count.
+    const allBlank = {
+      rowCount: 240,
+      columns: [
+        { name: "region", type: "text", missing: 0, distinct: 12, min: null, max: null, sum: null, gaps: null },
+        { name: "annual_salary_eur", type: "number", missing: 6, min: 14664, max: 238530, sum: 1, gaps: null },
+        { name: "monthly_hours", type: "number", missing: 11, min: 10, max: 190, sum: 1, gaps: null },
+      ],
+    };
+    const blanks = recommendVisualChoice({ model: everyTreatment(), profile: allBlank });
+    const evidence = JSON.stringify(blanks.ranking.find((row: any) => row.optionId === "chart.histogram")!.matchedEvidence);
+    expect(evidence).toContain("234 observation(s)");
+    expect(evidence).not.toContain("240 observation(s)");
   });
 
   it("should refuse to call five readings a distribution", () => {

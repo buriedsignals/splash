@@ -388,13 +388,38 @@ describe("what stops the arithmetic reporting a coincidence", () => {
   });
 
   it("should not read a CATEGORY column as the column of codes", () => {
-    // `stress-aa-salary-spread`: `department` holds one value per employee, five values over 240 of
-    // them, and its majority shape covers about 60% — so it proposed 96 employees as aggregate
-    // candidates on a salary table. A code NAMES EACH SUBJECT ONCE; a department does not.
-    const { panel } = read("stress-aa-salary-spread");
+    // `department` holds one value per employee, five values over 240 of them, and its majority
+    // shape covers about 60% — so on a salary table it proposed 96 employees as aggregate
+    // candidates. A code NAMES EACH SUBJECT ONCE; a department does not. The defence is kept here
+    // on a table built to have exactly that shape, because the frozen story it was found on is no
+    // longer read as a panel at all — see the test below for why, which is a second defect the
+    // same file was hiding.
+    const { panel } = profileTable([
+      ["employee_id", "department", "year", "annual_salary_eur"],
+      ["E1", "Sales", "2024", "40000"],
+      ["E2", "Sales", "2024", "41000"],
+      ["E3", "Support", "2024", "39000"],
+      ["E1", "Sales", "2025", "42000"],
+      ["E2", "Sales", "2025", "43000"],
+      ["E3", "Support", "2025", "40000"],
+    ]);
     expect(panel.entity).toBe("employee_id");
     expect(panel.aggregates.byStructure).toEqual([]);
     expect(panel.aggregates.structure.answered).toBe(false);
+  });
+
+  it("should not read a TENURE named in years as the table's own period", () => {
+    // `stress-aa-salary-spread` carries `years_service [0, 34]`, and the period rule tested the
+    // column's NAME and never its values. Two things followed from that, both wrong and both
+    // invisible for six rounds: a salary table of 240 employees was described as a PANEL — 240
+    // readings over 35 "periods" of tenure — and the table's second measure disappeared, struck out
+    // as "the table's own axis", so every requirement about several measures was answered about one.
+    const { panel, columns } = read("stress-aa-salary-spread");
+    expect(panel).toBe(null);
+    expect(columns.filter((c: any) => c.type === "number").map((c: any) => c.name)).toEqual([
+      "annual_salary_eur",
+      "years_service",
+    ]);
   });
 });
 

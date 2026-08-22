@@ -770,14 +770,33 @@ export function panelShapeOf(columns, rows) {
     periods: perPeriod.size,
   };
 }
+/**
+ * THE COLUMN A TABLE'S PERIODS LIVE IN — decided by NAME AND VALUE, never by name alone.
+ *
+ * This used to return the first column whose name carried "year", "date" or "année", with nothing
+ * asked about what it held, and two frozen stories show what that costs. `stress-aa-salary-spread`
+ * carries `years_service [0, 34]` — a TENURE, one of the things that table measures — and it was
+ * taken as the period column, so it was struck out of `measureColumns` and every panel question was
+ * asked about it. `stress-t-europe-recycling` carries a text `survey_date` written three different
+ * ways ("2025-03-01", "01/03/2025", "March 2025"), which is a period nothing can compare as a
+ * number, and `isSequenceColumn` in `intake/scripts/profile.mjs` already said so — two decisions in
+ * this tree disagreeing about the same column.
+ *
+ * So the same rule the coordinate test below already states applies here: the name proposes and the
+ * values decide. A column named for a period whose values are not period-shaped is not the period
+ * column; a column of period-shaped values is, whatever it is called. A table with neither has no
+ * period column, which is an answer — and a better one than a tenure.
+ */
 export function findYearColumn(columns) {
-  const byName = columns.find((c) => /year|date|ann[ée]e/i.test(c.name));
-  if (byName) return byName;
-  return (
-    columns.find(
-      (c) => c.type === "number" && Number.isInteger(c.min) && Number.isInteger(c.max) && c.min >= 1500 && c.max <= 2100,
-    ) ?? null
-  );
+  const holdsPeriods = (c) =>
+    c.type === "number" && Number.isInteger(c.min) && Number.isInteger(c.max) && c.min >= 1500 && c.max <= 2100;
+  const namesAPeriod = (c) => /year|date|ann[ée]e/i.test(c.name);
+  // A NUMERIC column named for a period has made a claim its own values can be held to, and
+  // `years_service [0, 34]` fails it. A TEXT one has made no such claim — "2025-03-01" is a period
+  // this file cannot compare as a number, which is a different fact and one `intake`'s
+  // `periodNotASequence` says out loud rather than settling here.
+  const named = columns.filter((c) => namesAPeriod(c) && (c.type !== "number" || holdsPeriods(c)));
+  return named.find(holdsPeriods) ?? named[0] ?? columns.find(holdsPeriods) ?? null;
 }
 
 /** HOW MANY ENTITIES EACH PERIOD CARRIES. `findGaps` answers about the SEQUENCE — which steps are
