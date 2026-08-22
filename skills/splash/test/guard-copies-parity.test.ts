@@ -65,6 +65,18 @@ function declaration(file: string, name: string): string {
 }
 
 const COPIES: Record<string, string[]> = {
+  // ROUND SEVEN, findings D3/D6 and the panel-grounding defects: IS THIS FILE A PANEL, AND WHICH
+  // COLUMN NAMES ITS SUBJECT. `intake` has to answer it to describe a frozen table at all, and
+  // `storyboard` has to answer it before it reads a value out of one — on a 7 585-row Ember file it
+  // answered "higher in 2023 than in 2000" from `ASEAN (Ember)`'s rows, the first rows of those
+  // years, for a sentence about the world. A profiler that says panel while the check that decides
+  // a gate says flat table is worse than neither saying it, so it is one decision, walked here.
+  //
+  // Its dependency `findYearColumn` is copied byte-identically beside it in `intake` and is NOT yet
+  // walked: `declaration()` anchors on the doc comment immediately above a function and
+  // `ground-claim.mjs`'s copy carries none, so registering it would fail on the missing anchor
+  // rather than on a drift. A doc comment on the storyboard copy is all it needs.
+  panelShapeOf: ["storyboard/scripts/ground-claim.mjs", "intake/scripts/profile.mjs"],
   // ROUND SIX, task GATE: gate 2's SECOND file. `SUBJECTS.md` was required at G4, produced at G2 by
   // `recordSurveyedSubjects`, and required by no gate in between — reported independently by six
   // formats across two rounds, the most-reported defect in this project's history. Both gate-2
