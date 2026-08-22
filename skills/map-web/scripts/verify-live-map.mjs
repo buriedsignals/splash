@@ -148,6 +148,16 @@ export function hoverLayerIds(plan) {
  *  under a degree is a repeated continent. */
 export const WORLD_SPAN_TOLERANCE_DEG = 1;
 
+/** HOW FINE THE GRID IS that asks the map for a pixel it attributes to a mark — `grid - 1` samples
+ *  on each axis inside the mark's own projected bounding box, so 12 is 11x11.
+ *
+ *  MEASURED RATHER THAN PICKED, on the committed 241-region world beat at 1600x900: this grid finds
+ *  65 marks with no pixel at all and 91 with none to spare; doubling it to 24 (a 23x23 grid, four
+ *  times the queries) finds 63 and 90. Two marks in 241 for four times the cost, so the finer grid
+ *  buys nothing a journalist would act on differently — and the direction of the error is the safe
+ *  one: a coarser grid can only OVER-report a mark as unreachable, never miss one that is. */
+export const PIXEL_PROBE_GRID = 12;
+
 /** How many marks the live pointer walk visits per container shape. Every mark when the beat has
  *  few; an even sample when it has many — a 241-region world choropleth at two shapes would
  *  otherwise be several thousand real pointer moves. The sample is stated in the output, because a
@@ -227,6 +237,19 @@ export function keyedCopy(htmlPath, key) {
 export function expectedRadiusPx(frameRadius, planDegreesPerPixel, liveZoom) {
   const liveDegreesPerPixel = 360 / (512 * Math.pow(2, liveZoom));
   return frameRadius * (planDegreesPerPixel / liveDegreesPerPixel);
+}
+
+/** EVERY MARK THE SCAN FOUND NO PIXEL FOR — the names, in the order the beat declares them.
+ *
+ *  Pulled out of `measureShape` so it can be driven without a browser and without a key: everything
+ *  else about this measurement needs a real camera, and a derivation nothing can red is how a count
+ *  comes to be reported off the SAMPLE while reading like the whole population — which is what this
+ *  replaced. `pixels` is the scan's own answer, keyed; a mark absent from it got no pixel it owns
+ *  with a pixel to spare, anywhere inside its own projected bounding box.
+ *
+ *  These marks have no pointer path at all: not a colliding one, none. No hit target creates one. */
+export function marksWithNoPixel(candidates, pixels) {
+  return candidates.filter((mark) => !pixels[mark.key]).map((mark) => mark.key);
 }
 
 /**
@@ -360,6 +383,14 @@ export async function measureShape(browser, keyedPath, shape, plan) {
   // That is `render-web.mjs`'s own join, checked where the join happens. And a mark the map gives NO
   // pixel to (Monaco on a world camera is under one) is REPORTED rather than failed: it is genuinely
   // unreachable by pointer, which is why this format carries a keyboard path and a table.
+  //
+  // THE PIXEL SCAN RUNS OVER EVERY MARK, NOT OVER THE SAMPLE, and that is a deliberate split. The
+  // HOVER walk is a real pointer sent from outside the page and costs a round trip per mark, so it
+  // stays sampled. Asking the map which pixel it gives a mark is one `page.evaluate`, so it is asked
+  // of ALL of them — because the number that matters to a journalist is how many of THEIR marks a
+  // reader cannot reach, and a count over 40 of 241 reported as if it were the whole is the kind of
+  // sample this file's own header was written about. Measured on the world beat at 1600x900: 91 of
+  // 241 get no pixel with a pixel to spare, of which 63 get no pixel whatever.
   const candidates = state.marks.filter((mark) => mark.detail || mark.name);
   const step = Math.max(1, Math.ceil(candidates.length / LIVE_HOVER_SAMPLE));
   const sampled = candidates.filter((_, at) => at % step === 0);
@@ -422,9 +453,17 @@ export async function measureShape(browser, keyedPath, shape, plan) {
       }
       return found;
     },
-    { layerIds: hoverLayerIds(plan), keys: sampled.map((mark) => mark.key), grid: 12 },
+    { layerIds: hoverLayerIds(plan), keys: candidates.map((mark) => mark.key), grid: PIXEL_PROBE_GRID },
   );
-  const liveHover = { sampled: sampled.length, of: candidates.length, driven: 0, wrong: [], unreachable: [] };
+  const noPointerPath = marksWithNoPixel(candidates, pixels);
+  const liveHover = {
+    sampled: sampled.length,
+    of: candidates.length,
+    driven: 0,
+    wrong: [],
+    unreachable: [],
+    noPointerPath,
+  };
   for (const mark of sampled) {
     const pixel = pixels[mark.key];
     if (!pixel) {
@@ -746,11 +785,28 @@ if (import.meta.main) {
         `(${result.liveHover.of} carry a name to check), ${result.liveHover.wrong.length} wrong · camera shows ` +
         `${result.lonSpan.toFixed(1)}° of longitude`,
     );
-    if (result.liveHover.unreachable.length > 0)
+    // THE COUNT THAT MATTERS TO A JOURNALIST, over EVERY mark rather than over the sample: how many
+    // of this beat's own marks this camera gives no pixel a pointer can be sent to.
+    //
+    // IT IS THE SAME READING THE SCAN ABOVE USES, SAID IN THE SAME WORDS — a pixel the mark owns
+    // WITH A PIXEL TO SPARE, because a probe whose own rounding decides the verdict measures
+    // rounding. The narrower reading, "no pixel at ALL", is a strict subset and is smaller: measured
+    // on the 241-region world beat, 63 of 241 have no pixel whatever at 1600x900 while 91 have none
+    // with a spare, and at 375x667 it is 82 against 149. Both are true; this prints the one a reader
+    // actually loses the mark at, and names it rather than leaving which one it is to be guessed.
+    //
+    // At that camera the map draws 896px for 360° of longitude, so one pixel is about 26 km and
+    // Monaco is about a thirteenth of one. No hit target creates a path to those marks; the keyboard
+    // and the accessible table ARE their path, and `detect-stranded-marks.mjs` refuses a beat that
+    // strands one and then drops either.
+    if (result.liveHover.noPointerPath.length > 0)
       console.log(
-        `   no pixel on screen belongs to ${result.liveHover.unreachable.length} sampled mark(s) — ` +
-          `${result.liveHover.unreachable.slice(0, 8).join(", ")}${result.liveHover.unreachable.length > 8 ? ", …" : ""}` +
-          ` — unreachable by pointer at this camera, which is what the keyboard path and the table are for`,
+        `   NO POINTER PATH: ${result.liveHover.noPointerPath.length} of ${result.liveHover.of} marks — ` +
+          `this camera gives them no pixel of their own with a pixel to spare (` +
+          `${result.liveHover.noPointerPath.slice(0, 8).join(", ")}${result.liveHover.noPointerPath.length > 8 ? ", …" : ""}` +
+          `). No pointer, tap or hover reaches them and no hit target can be made that does — they are ` +
+          `drawn smaller than a pixel. The keyboard and the accessible table ARE their path: tighten ` +
+          `the camera, add an inset, or accept it knowingly and say so in the caveat.`,
       );
     const sizedMarks = result.marks.filter((mark) => mark.frameRadius != null).length;
     if (sizedMarks === 0)

@@ -23,11 +23,13 @@ import {
 } from "../assets/live-map.mjs";
 import {
   MAPTILER_KEY_ALIASES,
+  PIXEL_PROBE_GRID,
   POINTER_TOLERANCE_PX,
   SCALE_TOLERANCE,
   SHAPES,
   expectedRadiusPx,
   mapTilerKeyFrom,
+  marksWithNoPixel,
   parseEnvFile,
 } from "../scripts/verify-live-map.mjs";
 
@@ -47,6 +49,46 @@ function keyFromEnv(): string | null {
   // A fix to a mechanism that leaves its own gate unfixed is a mechanism that still cannot run.
   return mapTilerKeyFrom(parseEnvFile(readFileSync(path, "utf8")));
 }
+
+describe("the marks this camera gives no pixel to", () => {
+  // A RULING WAS REFUTED HERE, and this is what the refutation earned. Driven with a real key
+  // against the committed 241-region world beat, `queryRenderedFeatures` at each mark's own centre
+  // answered own 140, a neighbour 15, NOTHING 86; widened to any pixel anywhere the map attributes
+  // to the mark, 63 of 241 have no pixel whatever at 1600x900 and 91 none with a pixel to spare —
+  // 82 and 149 at 375x667. At that camera the map draws 896px for 360° of longitude, so one pixel
+  // is about 26 km and Monaco is about a thirteenth of one. A mark smaller than a pixel has no
+  // pointer path and no target engineering creates one.
+  it("names every mark the scan found nothing for, and stays silent about the rest", () => {
+    const candidates = [{ key: "FRA" }, { key: "MCO" }, { key: "ITA" }, { key: "SMR" }];
+    expect(marksWithNoPixel(candidates, { FRA: [10, 10], ITA: [40, 40] })).toEqual(["MCO", "SMR"]);
+    expect(marksWithNoPixel(candidates, { FRA: [1, 1], MCO: [2, 2], ITA: [3, 3], SMR: [4, 4] })).toEqual([]);
+    expect(marksWithNoPixel([], {})).toEqual([]);
+  });
+
+  it("is asked of EVERY mark, never of the sample the pointer walk uses", () => {
+    // THE DEFECT THIS CLOSES: the scan used to be handed `sampled.map(...)` — 40 of 241 on the world
+    // beat — and its answer was printed as "N sampled mark(s)", a count nobody could weigh against
+    // the beat's own population. The pointer WALK is still sampled, because each of its marks costs
+    // a real round trip to the browser; the pixel scan is one `page.evaluate` and now covers all of
+    // them. Read from the source because the property is about which list is passed, and driving it
+    // proves only that the list that WAS passed came back.
+    const source = readFileSync(
+      join(TWIN, "skills/map-web/scripts/verify-live-map.mjs"),
+      "utf8",
+    );
+    expect(source).toContain("keys: candidates.map((mark) => mark.key)");
+    expect(source).not.toContain("keys: sampled.map((mark) => mark.key)");
+    expect(source).toContain("NO POINTER PATH:");
+    expect(source).toContain("The keyboard and the accessible table ARE their path");
+  });
+
+  it("keeps the probe grid at the resolution it was measured at", () => {
+    // 12 (an 11x11 grid inside each mark's own bounding box). Doubling it to 24 costs four times the
+    // queries and moved the world beat's count by two marks in 241 — 63/91 against 65/91 — and a
+    // coarser grid can only OVER-report a mark as unreachable, never miss one that is.
+    expect(PIXEL_PROBE_GRID).toBe(12);
+  });
+});
 
 describe("the gate that decides whether the live layer is driven at all", () => {
   it("finds the key under every name it is written under", () => {
