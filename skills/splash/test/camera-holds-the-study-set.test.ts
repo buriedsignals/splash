@@ -112,7 +112,12 @@ const CROP_CENSUS: Record<string, number> = {
   // catalogue, which is why a single number would have been wrong.
   "map-quake-density": 104,
   "mapvid-hexgrid-quakes": 102,
-  "mapgen-hexgrid-web": 118,
+  // 2026-08-22: re-measured after this beat's frame stopped being a shape its camera never asked
+  // for (836x520 for a 1.759:1 camera, 8.6% margin, reaching 64°S–80°N; `frameHeightFor` gives it
+  // 836x476, holding exactly the 60°S–78°N the bounds ask for). 83 more of the same catalogue now
+  // fall outside the same study set. `mapscrolly-quakes-three-ways` is a DIFFERENT plate at the old
+  // shape and keeps its own 118 — which is the whole reason this census is per beat.
+  "mapgen-hexgrid-web": 201,
   "mapscrolly-quakes-three-ways": 118,
 };
 

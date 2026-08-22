@@ -22,10 +22,18 @@ zone.
   magnitudes 4.0 → 7.5; every timestamp in 2024. Byte-identical to
   `proof/map-quake-density/quakes-density.csv` (copied, never imported — a beat does not reach into
   another beat's folder).
-- **118** of the 14,175 events fall outside the plate's own frame (poleward of it) and are dropped
-  before binning: the render logs `14057/14175 points on-frame`, and `plate/geometry.json` holds
-  exactly 14,057 points. The frame the plate settled on is **−64.478° to 79.847°**, which the caveat
-  now states as **64°S–80°N**, read off `frameCorners` at render time.
+- **201** of the 14,175 events fall outside the plate's own frame (poleward of it) and are dropped
+  before binning: the render logs `13974/14175 points on-frame`, and `plate/geometry.json` holds
+  exactly 13,974 points. The frame the plate settled on is **−60.082° to 78.034°**, which the caveat
+  now states as **60°S–78°N**, read off `frameCorners` at render time.
+
+  *Re-measured 2026-08-22, and the change is the frame's, not the catalogue's.* This beat baked
+  836×520 for a camera asking 1.759:1 — 8.6% of the plate was margin no reader could read anything
+  off, and the extra height reached 64°S–80°N rather than the 60°S–78°N the camera asked for. The
+  height is now derived from the bounds (`frameHeightFor`, 836×476), so the plate holds exactly the
+  camera, and the 83 events that used to sit in that surplus band are dropped with the other 118.
+  Every number a reader sees is still read off `frameCorners` at render time, so the caveat moved
+  with the frame without anybody retyping it.
 
   *Corrected 2026-08-09.* Both numbers in this bullet were wrong, and so was the sentence a reader
   saw: the caveat typed "60°S–78°N" — 4.5° short at the south, 1.8° short at the north — and said
