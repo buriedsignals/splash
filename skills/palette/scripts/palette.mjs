@@ -334,6 +334,13 @@ export const SURFACES = {
 export const FORMAT_SURFACES = {
   static: {
     surface: null,
+    // THE FIELD THAT SETTLES IT, named rather than left as an exercise. Round seven closed the
+    // other half of D11: a slot now carries an optional `destination` (screen or print), asked at
+    // gate 2c by `formatPublicationDestinationGate` (`storyboard/scripts/format-gate.mjs`), so the
+    // second fact this format needs has somewhere to live and something that asks for it. It stays
+    // OPTIONAL there — six frozen static slots predate it — which is why this refusal still fires,
+    // and why it now says which record would end it.
+    settledBy: "destination",
     because:
       "a static graphic lands on a screen (an embedded image in the article) or on paper (the " +
       "printed edition), and the two have different grounds — this is the one format whose " +
@@ -353,14 +360,49 @@ export const FORMAT_SURFACES = {
   },
 };
 
+/** The second fact a `static` format needs, refused by name when it is not one this skill can
+ *  measure — never read as a screen, which is the guess the whole mechanism exists to stop. */
+function unknownDestination(destination) {
+  return (
+    `destination must be one of ${Object.keys(SURFACES).join(", ")} — got ` +
+    `${JSON.stringify(destination)}. It is the slot's own record of WHERE a static beat is ` +
+    `published, asked at gate 2c ("Where does this static graphic land?"), and it decides the ` +
+    `ground every accent is measured against. A word this skill holds no measurement for is ` +
+    `refused rather than treated as a screen.`
+  );
+}
+
+/** A format and a destination that cannot both be true. Neither half is preferred: a caller who
+ *  says a beat is a web page and lands on paper has one of the two wrong, and guessing which is how
+ *  a measurement gets attributed to a surface nobody delivered to. */
+function contradictedSurface(statedAs, resolved, destination) {
+  return (
+    `${JSON.stringify(statedAs)} and destination ${JSON.stringify(destination)} disagree: ` +
+    `${JSON.stringify(statedAs)} is read on ${SURFACES[resolved].describes}, and ` +
+    `${JSON.stringify(destination)} is ${SURFACES[destination].describes}. One of the two is ` +
+    `wrong and nothing here guesses which — a slot recording both is refused by the storyboard ` +
+    `gate too (destinationGap, storyboard/scripts/storyboard.mjs), in its own words.`
+  );
+}
+
 function unknownSurface(surface) {
   const format = FORMAT_SURFACES[surface];
   if (format) {
     return (
       `${JSON.stringify(surface)} is a publication FORMAT (gate 2b's own vocabulary: ` +
       `${Object.keys(FORMAT_SURFACES).join(", ")}), not a surface. This one does not resolve to a ` +
-      `surface on its own — ${format.because}. Pass surface: "screen" or surface: "print" for ` +
-      `this beat. The two vocabularies share the word "print" and nothing else, which is what ` +
+      `surface on its own — ${format.because}. ` +
+      (format.settledBy
+        ? `The fact that settles it is the slot's own \`${format.settledBy}\` field, asked at ` +
+          `gate 2c ("Where does this static graphic land?" — ` +
+          `formatPublicationDestinationGate, storyboard/scripts/format-gate.mjs) and recorded as ` +
+          `${format.settledBy}: ${Object.keys(SURFACES).join(" or ")}. Pass it as ` +
+          `${format.settledBy}: "print" beside this format, or state the surface directly. It is ` +
+          `OPTIONAL on a slot, so a beat can genuinely reach here without it: that slot has not ` +
+          `been asked yet, and there is no default — #D4A853 measures 8.01:1 on #16191B and ` +
+          `2.20:1 on #FFFFFF, which is the accent a guess put on a printed page. `
+        : `Pass surface: "screen" or surface: "print" for this beat. `) +
+      `The two vocabularies share the word "print" and nothing else, which is what ` +
       `makes passing one for the other look right.`
     );
   }
@@ -379,13 +421,38 @@ function unknownSurface(surface) {
  *
  * `statedAs` keeps the word the caller used, so `surfaceLimit` can say which vocabulary the answer
  * came out of instead of silently renaming the journalist's own format.
+ *
+ * `destination` is the slot's own record of WHERE a static beat is published — gate 2c's question,
+ * `screen` or `print`. It is what lets `static` resolve at all, and it is checked against a format
+ * that already decides its own surface rather than being allowed to override one: a `web` beat that
+ * claims to land on paper is a contradiction, not a preference.
  */
-export function resolveSurface(surface) {
-  if (surface === null || surface === undefined) return { surface: null, statedAs: null, because: null };
-  if (SURFACES[surface]) return { surface, statedAs: surface, because: null };
+export function resolveSurface(surface, destination = null) {
+  const settled = destination === null || destination === undefined || destination === "" ? null : destination;
+  if (settled !== null && !SURFACES[settled]) throw new Error(unknownDestination(settled));
+  if (surface === null || surface === undefined) {
+    return settled === null
+      ? { surface: null, statedAs: null, because: null }
+      : { surface: settled, statedAs: settled, because: null };
+  }
+  if (SURFACES[surface]) {
+    if (settled !== null && settled !== surface) throw new Error(contradictedSurface(surface, surface, settled));
+    return { surface, statedAs: surface, because: null };
+  }
   const format = FORMAT_SURFACES[surface];
   if (format && format.surface) {
+    if (settled !== null && settled !== format.surface)
+      throw new Error(contradictedSurface(surface, format.surface, settled));
     return { surface: format.surface, statedAs: surface, because: format.because };
+  }
+  if (format && settled !== null) {
+    return {
+      surface: settled,
+      statedAs: surface,
+      because:
+        `${format.because}, and the slot records destination: ${settled} — the answer gate 2c ` +
+        `asks for, which is what settles it`,
+    };
   }
   throw new Error(unknownSurface(surface));
 }
@@ -452,10 +519,10 @@ function recordedColours(newsroom) {
  *     sheet, entirely different claim: this one is a fallback nobody chose, and the run that
  *     earned this distinction printed it as the newsroom's own record.
  */
-export function groundProvenance(newsroom, surface) {
+export function groundProvenance(newsroom, surface, destination = null) {
   assertNewsroomProfile(newsroom);
   const recorded = newsroom && HEX.test(String(newsroom.ground ?? "")) ? newsroom.ground : null;
-  if (resolveSurface(surface).surface === "print") return { ground: PAPER_GROUND, origin: "sheet", recorded };
+  if (resolveSurface(surface, destination).surface === "print") return { ground: PAPER_GROUND, origin: "sheet", recorded };
   if (recorded) return { ground: recorded, origin: "newsroom", recorded };
   return { ground: PAPER_GROUND, origin: "paper-default", recorded: null };
 }
@@ -468,9 +535,9 @@ export function groundProvenance(newsroom, surface) {
  * unstated case in `surfaceLimit` rather than letting it read as an answer, the same policy
  * `proposeTypeface`'s `sampleLimit` follows for a measurement it could not make.
  */
-export function groundForSurface(newsroom, surface) {
+export function groundForSurface(newsroom, surface, destination = null) {
   assertNewsroomProfile(newsroom);
-  const resolved = resolveSurface(surface);
+  const resolved = resolveSurface(surface, destination);
   if (resolved.surface === null) return groundProvenance(newsroom, null).ground;
   return SURFACES[resolved.surface].groundIs(newsroom);
 }
@@ -1355,13 +1422,22 @@ function answerForSeries({ series, newsroom, options, recommended, ground }) {
  * here has a write path, not a commented-out one, not a flag that turns it on — the same rule
  * `newsroom-charter` holds.
  */
-export function proposePalette({ newsroom, subject, about, surface = null, series = null, from, stopAt } = {}) {
+export function proposePalette({
+  newsroom,
+  subject,
+  about,
+  surface = null,
+  destination = null,
+  series = null,
+  from,
+  stopAt,
+} = {}) {
   // THE SURFACE FIRST, because it decides the ground every ratio below is measured against — and
   // an unmeasured surface is refused here rather than quietly read as a screen. See `SURFACES`.
   // A format word from gate 2b is translated to the surface it lands on, or refused by name when
   // it does not decide one — see `FORMAT_SURFACES`.
   assertNewsroomProfile(newsroom);
-  const stated = resolveSurface(surface);
+  const stated = resolveSurface(surface, destination);
   surface = stated.surface;
   // THE GROUND AND WHERE IT CAME FROM, together, so no sentence below can claim a provenance the
   // ratios did not have. See `groundProvenance`.
