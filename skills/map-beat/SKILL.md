@@ -223,6 +223,14 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   of its own and is not a beat: no claim, no BRIEF. Also drives the world-map-in-portrait decision
   at 1080x1920 both ways, so the rule is a picture and not a paragraph.
 - `scripts/render-map.mjs` — the render ladder, the join, the claim check, the beat's own words.
+- `scripts/sizes.mjs` — the three export sizes ruling R2 names, this skill's own carried copy.
+  Gate 2c pins one of `landscape`, `square`, `portrait` on the slot and the beat records it in its
+  `BRIEF.md` front matter; `readPinnedSize` reads it back, `assertDeliveredSize` measures the file
+  that was actually written, and `assertTypeFloor`/`assertWithinStage` measure the markup. The
+  landscape row carries the VIDEO reading distance (floor 30, not 26) because this skill produces
+  both genres from one table and takes the stricter of the two — the file's own header says why.
+  A beat reaches it at `#shared/map-beat/sizes.mjs`, never up into this directory; the copies are
+  walked by `splash/test/size-table-parity.test.ts`.
 - `scripts/verify-map.mjs` — `plateMatchesGeometry` (this format's own), plus `plateFollowsGround`,
   `surfaceLuminance`, `revealDashInScreenSpace`, `duplicatedPayload` and `neverArrives` carried from
   `scrolly`, `chart-web`/`map-web` and `chart-video` as byte-identical copies, walked by

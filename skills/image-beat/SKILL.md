@@ -257,6 +257,13 @@ const { svgPath, pngPath } = await renderStill({
   `renderStill`, plus `readImageMeta`, `readOrientation`/`checkOrientation`, `fitBox`, `toDataUri`,
   `WEIGHT_LIMIT_BYTES`/`checkWeight` — the format-specific additions with no sibling in
   `chart-beat`'s own copy.
+- `scripts/sizes.mjs` — the three export sizes ruling R2 names, this skill's own carried copy.
+  Gate 2c pins one of `landscape`, `square`, `portrait` on the slot and the beat records it in its
+  `BRIEF.md` front matter; `readPinnedSize` reads it back, `assertDeliveredSize` measures the file
+  that was actually written, and `assertTypeFloor`/`assertWithinStage` measure the markup. A beat
+  reaches it at `#shared/image-beat/sizes.mjs`, never up into this directory — before it existed a
+  story vendored `chart-beat`'s copy into its own beat folder by hand. The copies are walked by
+  `splash/test/size-table-parity.test.ts`.
 - `scripts/build-sample-photos.mjs` — generates this skill's three sample PNGs deterministically
   from flat shapes, the same move `scrolly/scripts/build-sample-photo.mjs` makes and for the
   same reason: nothing to credit, nothing licensed to worry about. Not run by any test; re-run only
