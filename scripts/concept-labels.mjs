@@ -293,7 +293,10 @@ if (import.meta.main) {
     const problems = drift();
     for (const p of problems) console.log(`DRIFT ${p}`);
     const hits = columnNameHits();
-    console.log(`${problems.length} region(s) adrift; ${hits.length} frozen column name(s) matched: ${hits.map((h) => `${h.story}/${h.name}→${h.group}`).join(", ")}`);
+    console.log(
+      `${problems.length} region(s) adrift; ${hits.length} frozen column name(s) matched by a VENDORED token` +
+        `${hits.length > 0 ? `: ${hits.map((h) => `${h.story}/${h.name}→${h.group}`).join(", ")}` : " (the hand-written floor's own matches — population, residents — are not counted here; this number is the new false positives)"}`,
+    );
     if (problems.length > 0) process.exitCode = 1;
   }
 }
