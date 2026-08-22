@@ -31,7 +31,7 @@ import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { treatmentFormatGap } from "./format-gate.mjs";
 import { EXPORT_SIZES, SIZED_FORMATS, recordedClaimOf } from "./storyboard.mjs";
-import { normalizeTreatment } from "./producer-gate.mjs";
+import { treatmentNames } from "./producer-gate.mjs";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import visualCatalog from "../references/visual-catalog.json" with { type: "json" };
@@ -882,15 +882,15 @@ export function confirmFormatReachable({ medium, format, treatment, capabilities
  * name a producer legitimately writes, and every one of them arriving at the menu with the sheet's
  * refusal and its row limit silently detached.
  *
- * Two keys per name, which is what the survey generator's own `aliasesFor` derives: the head
- * ("waterfall", the parenthetical dropped) and the whole title flattened ("scatter and bubble", the
- * brackets removed and their words kept). Measured across the forty sheets, no two rows of one
- * medium share a key.
+ * ROUND SEVEN, D7. Two keys per name was not enough either: the head and the flattened whole title
+ * are both derived from where the brackets sit, and "Stacked area" — the natural name for
+ * `Area (and stacked area)`, and half of that sheet's own title — is neither of them. A slot
+ * recording it reached the menu with the sheet's refusal and its row limit silently detached, and
+ * reached the producer gate as an unmapped treatment, which SKIPS the custom-or-Datawrapper human
+ * question altogether. The rule is `treatmentNames` in `producer-gate.mjs`, imported rather than
+ * spelled a third time: a title is a small grammar and each of its pieces is a name.
  */
-function treatmentKeys(name) {
-  const text = String(name ?? "");
-  return [...new Set([normalizeTreatment(text), normalizeTreatment(text.replace(/[()]/g, " "))])].filter(Boolean);
-}
+const treatmentKeys = treatmentNames;
 
 function findSurveyRow(survey, medium, type) {
   const keys = treatmentKeys(type);
