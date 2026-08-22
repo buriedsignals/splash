@@ -695,6 +695,117 @@ describe("materialise", () => {
     );
   });
 
+  // THERE WAS NO RECORDED HOME FOR A BEAT'S ALT TEXT — D16's first half.
+  //
+  // It existed inside the rendered artefact and nowhere a later phase could read it. Two things
+  // followed on a real story: the runner read it back out of the delivered page's own `<desc>` and
+  // handed over React's escaping (refused now in `format-handover.mjs`), and a CORRECTION to the alt
+  // text was invisible to delivery, because nothing outside the render had changed.
+  //
+  // The home is `beats/<outputId>/ALT.md` — one file, the sentence and nothing else, beside the
+  // beat's own `BRIEF.md`. Delivery reads it rather than reopening a render.
+  it("should hand over the alt text the beat recorded, when the caller supplies none", async () => {
+    await writeFile(
+      join(beatDir, "ALT.md"),
+      "Rainfall in Annemasse fell in three of the last four winters\n",
+    );
+    const { alt: _alt, ...withoutAlt } = handover;
+
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover: withoutAlt,
+    });
+
+    expect(await readFile(join(exportDir, "HANDOVER.md"), "utf8")).toContain(
+      "> Rainfall in Annemasse fell in three of the last four winters",
+    );
+  });
+
+  // AND THE RECORD IS THE AUTHORITY. A caller handing over a different sentence has read the alt
+  // text from somewhere other than the file that holds it — which is exactly what produced D16 —
+  // so the two disagreeing is a refusal rather than a silent choice between them.
+  it("should refuse a hand-over whose alt text is not the one the beat recorded", async () => {
+    await writeFile(join(beatDir, "ALT.md"), "The sentence the beat records\n");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        format: "static",
+        beatDir,
+        exportDir,
+        handover: { ...handover, alt: "a sentence read off the rendered page" },
+      }),
+    ).rejects.toThrow(/ALT\.md/);
+  });
+
+  it("should accept an alt text that differs only in how it is wrapped", async () => {
+    await writeFile(
+      join(beatDir, "ALT.md"),
+      "Rainfall in Annemasse fell\nin three of the last four winters\n",
+    );
+
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, "HANDOVER.md"), "utf8")).toContain(
+      handover.alt,
+    );
+  });
+
+  // An empty record is not "no record": it is a producer that wrote the file and put nothing in it,
+  // and reading past it would hand over whatever the caller happened to hold.
+  it("should refuse an ALT.md that records nothing", async () => {
+    await writeFile(join(beatDir, "ALT.md"), "\n\n");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        format: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/ALT\.md records no alt text/);
+  });
+
+  // THE LIMIT, SAID OUT LOUD. No producing skill writes `ALT.md` yet, so a beat without one is the
+  // ordinary case and delivery must still work: the caller's own alt is used, exactly as before.
+  it("should still deliver a beat that records no alt text at all", async () => {
+    await materialise({
+      form: "owned-file",
+      format: "static",
+      beatDir,
+      exportDir,
+      handover,
+    });
+
+    expect(await readFile(join(exportDir, "HANDOVER.md"), "utf8")).toContain(
+      handover.alt,
+    );
+  });
+
+  it("should refuse a delivery that has neither a recorded alt text nor one from its caller", async () => {
+    const { alt: _alt, ...withoutAlt } = handover;
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        format: "static",
+        beatDir,
+        exportDir,
+        handover: withoutAlt,
+      }),
+    ).rejects.toThrow(/alt/);
+  });
+
   // THE ONE PLACE A JOURNALIST'S OWN WORDS LIVE, and a routine re-delivery threw them away — D17.
   //
   // Measured on a real story (real-ember-renewables-share): both closing answers were recorded and

@@ -263,8 +263,22 @@ draft is a fact — and the approval is refused over it, as before.
    told what to do with. It used to return early instead, so every form worked without one and
    `whereIs` called the story done anyway — which is how the run delivered two filenames and two
    sizes, with no placement, no alt text and no credit line. Every input is already recorded during
-   the exchange: placement and credit are hand fields 4 and 5, the alt is in the component, the
-   caveat is `limits`. A caller with nothing to hand in has not read the storyboard back.
+   the exchange: placement and credit are hand fields 4 and 5, the caveat is `limits`, and the alt
+   text is recorded in `beats/<outputId>/ALT.md`. A caller with nothing to hand in has not read the
+   storyboard back.
+
+   **`beats/<outputId>/ALT.md` is where a beat's alt text lives, and it is new.** It used to live
+   only inside the rendered artefact, which cost two things on one real story: a runner read it back
+   out of the delivered page's own `<desc>` and handed over React's escaping, and a CORRECTION to
+   the alt text was invisible to delivery, because nothing outside the render had moved. The file
+   holds the sentence and nothing else, beside the beat's own `BRIEF.md`. `materialise` reads it
+   (`resolveRecordedAlt`): it supplies the alt when the caller hands none in, flattens the recorded
+   wrapping to the one line a Markdown blockquote prints, refuses an empty file, and **refuses a
+   caller whose alt text disagrees with it** — a hand-over that disagrees with the beat's own record
+   read the sentence somewhere else, which is the defect. **PRODUCING SIDE, NOT YET WIRED:** no
+   craft skill writes `ALT.md` today, so a beat that records nothing is the ordinary case and the
+   caller's own alt is used. A producer adopts it by writing the file at the moment it writes the
+   artefact — same sentence, one file, no front matter.
 
    **And it is written in the STORY's language, which is one of those recorded inputs.** The owner's
    own run delivered a French story — article, takeaway, hand fields, title, alt text, credit line —
@@ -512,7 +526,8 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
-  hand fields 4 and 5, the caveat is `limits`, the alt is in the component, the `language` is the
+  hand fields 4 and 5, the caveat is `limits`, the alt is `beats/<outputId>/ALT.md`
+  (`ALT_TEXT_FILE`), the `language` is the
   storyboard's own field. `creditLine` and `isUnattributedCredit` are byte-identical copies of
   `storyboard`'s own pair (walked by `splash/test/guard-copies-parity.test.ts`): a story whose
   journalist named no source records `credit: unattributed`, and the hand-over prints

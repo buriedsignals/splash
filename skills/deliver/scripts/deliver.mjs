@@ -18,7 +18,7 @@ import {
   resolveCloudflareCredentials,
 } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
-import { formatHandover } from "./format-handover.mjs";
+import { ALT_TEXT_FILE, formatHandover } from "./format-handover.mjs";
 import {
   FORMAT_OFFER_RECEIPT,
   LEGACY_FORMAT_OFFER_RECEIPT,
@@ -793,6 +793,56 @@ function validateHandover(handover, format) {
   formatHandover({ ...handover, format, files: ["pending-delivery"], liveTiles: "none" });
 }
 
+/**
+ * A BEAT'S ALT TEXT HAS A RECORDED HOME, AND THIS IS WHERE IT IS READ — round-seven D16.
+ *
+ * It used to have none. The sentence existed inside the rendered artefact and nowhere a later phase
+ * could reach it, which cost two things on one real story: the runner read it back out of the
+ * delivered page's own `<desc>` and handed over React's escaping, and a CORRECTION to the alt text
+ * was invisible to delivery, because nothing outside the render had moved.
+ *
+ * The home is `beats/<outputId>/ALT.md` — one file, the sentence and nothing else, beside the
+ * beat's own `BRIEF.md`, written by whichever producer writes the artefact. A file, like every
+ * other thing this journey records, for the same reason: it survives the turn that produced it and
+ * a later phase can read it without opening a render.
+ *
+ * WHAT THIS FUNCTION CAN AND CANNOT DO TODAY, stated rather than implied. No producing skill writes
+ * `ALT.md` yet — `chart-web` and `map-web` are owned elsewhere this round — so a beat that records
+ * nothing is the ordinary case and delivery proceeds on the caller's own alt. What it can do is
+ * make the record AUTHORITATIVE wherever it exists: absent an alt from the caller it supplies one,
+ * and a caller handing over a DIFFERENT sentence is refused, because a hand-over disagreeing with
+ * the beat's own record is a hand-over that read the sentence somewhere else — which is the defect.
+ */
+async function resolveRecordedAlt(beatDir, handover) {
+  const recorded = await optionalFile(join(beatDir, ALT_TEXT_FILE));
+  if (recorded === null) return handover;
+  // FLATTENED, because a hand-over prints the alt text as one Markdown blockquote line and a
+  // recorded file wraps where it likes. An alt text is one sentence; a second line in the middle of
+  // it would leave `> ` on the first line only and drop the rest out of the quote.
+  const alt = flattenSentence(recorded);
+  if (alt === "") {
+    throw new Error(
+      `${join(beatDir, ALT_TEXT_FILE)} records no alt text. It is where this beat's alt text lives — one sentence, the one a reader who cannot see the picture is given instead of it — and an empty file is a producer that opened it and wrote nothing, not a beat without alt text.`,
+    );
+  }
+  const given = handover?.alt;
+  if (!given || !String(given).trim()) return { ...handover, alt };
+  if (sameSentence(given, alt)) return { ...handover, alt };
+  throw new Error(
+    `this hand-over's alt text is not the one the beat recorded in ${ALT_TEXT_FILE}. Recorded: ${JSON.stringify(alt)}. Handed over: ${JSON.stringify(String(given).trim())}. The recorded sentence is the beat's own, and a hand-over that disagrees with it read the alt text somewhere else. ${join(beatDir, ALT_TEXT_FILE)} is the one place that answer is kept: put the sentence this beat needs there and hand over exactly that.`,
+  );
+}
+
+// Two sentences are the same sentence when only their line breaks differ: a recorded file is
+// written to be read by a person and wraps where it likes.
+function flattenSentence(value) {
+  return String(value).replace(/\s+/gu, " ").trim();
+}
+
+function sameSentence(left, right) {
+  return flattenSentence(left) === flattenSentence(right);
+}
+
 async function withHandover(written, { exportDir, format, handover, states = [] }) {
   if (!handover) throw new Error(HANDOVER_REQUIRED);
   const path = join(exportDir, "HANDOVER.md");
@@ -1220,7 +1270,10 @@ export async function materialise(options) {
 
   let paths = resolveDeliveryIdentity(options);
   requireApprovedOutput({ beatDir: paths.beatDir, planVersion, findingIds });
-  validateHandover(handover, format);
+  // The alt text is read out of the beat's own record before anything is validated, so what the
+  // hand-over is checked against is what will actually be written.
+  const recordedHandover = await resolveRecordedAlt(paths.beatDir, handover);
+  validateHandover(recordedHandover, format);
   // A FORM THIS BEAT CANNOT HONOUR IS REFUSED BEFORE ANYTHING IS STAGED, with the same sentence
   // `offerForms` would have shown for it — one function builds both, so a disabled row and a
   // refusal cannot say two different things about the same beat. Reaching this means a caller
@@ -1277,6 +1330,7 @@ export async function materialise(options) {
       try {
         const stagedWritten = await materialiseInto({
           ...options,
+          handover: recordedHandover,
           carried,
           beatDir: paths.beatDir,
           exportDir: stagingDir,
