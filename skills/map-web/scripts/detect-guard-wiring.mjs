@@ -241,6 +241,16 @@ export function declarationsWithoutACaller(skillDir) {
  *  how the defect that earned this rule would recur. */
 export const RECORDED_UNWIRED = [
   "credentialReadsWithoutAlias",
+  // THE TWO THE POLYGON CORE BROUGHT (2026-08-22), recorded with the same reason `map-beat` records
+  // its own copies of exactly these two: both need a substrate only the BEAT that drew them holds —
+  // `unmatchedValues` needs a declared study set joined against a frozen source, and
+  // `labelPlacementIssues` needs a laid-out label stack with measured text boxes. This skill's own
+  // seed is a symbol map with neither. `proof/mapgen-choropleth-web`'s runner calls the join for
+  // real; a skill-side caller would have to invent a study set to ask about, which is the fixture
+  // this rule exists to refuse. `csvSplitByHand` is NOT here: it reads source text, which this
+  // format's own driver already has in front of it, so it is wired rather than recorded.
+  "labelPlacementIssues",
+  "unmatchedValues",
   "creditTracesToRecord",
   "deadExampleRunners",
   "denominatorReadingStated",

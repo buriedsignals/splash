@@ -8,6 +8,8 @@
     "inlines-its-assets",
     "reads-a-palette",
     "reads-a-provider-credential",
-    "materialises-a-beat"
+    "materialises-a-beat",
+    "reads-a-journalists-csv",
+    "joins-values-to-shapes"
   ]
 }

@@ -41,14 +41,15 @@
 // Usage:  bun skills/map-web/scripts/verify-interaction.mjs [--html <file>] [--keep]
 //   no --html: renders this skill's own seed into a temp dir first, exactly as it ships.
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
 import {
+  csvSplitByHand,
   duplicatedPayload,
   marksFromSource,
   revealDashInScreenSpace,
@@ -299,7 +300,25 @@ const url = `file://${resolve(htmlPath)}`;
   else
     for (const value of table.missing)
       console.log(`  FAIL  the accessible table is missing a mark's own fact: ${value}`);
-  const tableBroken = table.missing.length > 0;
+  // csv-split-by-hand, on the SOURCE that produced the page being driven. A choropleth beat reads a
+  // journalist's csv and joins it to shapes, and a naive `split(",")` turns a quoted thousands
+  // separator or a country whose own name carries a comma into a shifted row that renders as a
+  // perfectly plausible map. Measured on a real world beat: two of its source's aggregate rows are
+  // quoted fields carrying their own comma. The subject is the beat's own runner, next to the page
+  // it wrote — this format's driver is the one place that has both in front of it.
+  const cutByHand = [];
+  const beatDir = dirname(dirname(resolve(htmlPath)));
+  for (const dir of [beatDir, dirname(resolve(htmlPath))]) {
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir)) {
+      if (!/\.(mjs|ts|tsx)$/.test(name)) continue;
+      for (const cut of csvSplitByHand(readFileSync(join(dir, name), "utf8")))
+        cutByHand.push(`${name}: ${cut}`);
+    }
+  }
+  for (const cut of cutByHand)
+    console.log(`  FAIL  a csv row cut by hand — ${cut} — a quoted field carrying its own comma becomes two fields`);
+  const tableBroken = table.missing.length > 0 || cutByHand.length > 0;
   if (!twice.length && !measuring.length && !tableBroken)
     console.log(
       `  ok    every asset inlined once; every dash drawn in the path's own units; the table carries all ${table.marks} marks`,

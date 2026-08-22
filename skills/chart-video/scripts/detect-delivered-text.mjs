@@ -124,6 +124,33 @@ function deliveriesOf(story, beatDir) {
     .sort();
 }
 
+/**
+ * THE BEAT'S OWN RENDERED DRAFT — the surface these two decisions could not reach, and the one where
+ * what they find can still be CORRECTED.
+ *
+ * THE DEFECT, measured on a real story: `creditTracesToRecord(beatDir)` and
+ * `doubleHyphenInDeliveredText(beatDir)` both answered
+ * `{"applies": false, "reason": "nothing has been delivered from this beat"}` — because they read
+ * `export/` only, and `export/` exists after G4. A wrong credit line and a `--` where an em dash
+ * belongs are both PRODUCTION defects: the phase where they are cheap to fix is the one where the
+ * page has been rendered and the journalist is looking at it, not the one where a newsroom has
+ * already pasted it into a CMS. A rule that can only fire after the last gate is a rule that fires
+ * too late to be worth anything, which is worse than one that does not fire at all — it looks like
+ * coverage.
+ *
+ * So the draft is a SURFACE alongside the deliveries. The `renders/` spelling is the one `whereIs`
+ * and `writeOutputReview` both use; `render/` is read too, because that is what the producer wrote
+ * before the same real story found it.
+ */
+function draftsOf(beatDir) {
+  const found = [];
+  for (const name of ["renders", "render"]) {
+    const dir = join(beatDir, name);
+    if (existsSync(dir) && statSync(dir).isDirectory()) found.push(dir);
+  }
+  return found;
+}
+
 /** Every text a READER of one delivered file receives, as separate runs.
  *
  *  Markup (`.svg`, `.html`) is stripped of comments, `<script>` and `<style>` FIRST — an HTML
@@ -284,10 +311,16 @@ export function doubleHyphenInDeliveredText(beatDir) {
   const story = storyAbove(beatDir);
   if (!story) return { applies: false, reason: "no frozen story above this beat" };
   const deliveries = deliveriesOf(story, beatDir);
-  if (deliveries.length === 0) return { applies: false, reason: "nothing has been delivered from this beat" };
+  // THE DRAFT COUNTS. See `draftsOf` — a `--` drawn into the page is a production defect, and
+  // reading `export/` alone made this decision unable to fire until the phase after the one where
+  // it is fixed.
+  const drafts = draftsOf(beatDir);
+  const surfaces = [...deliveries, ...drafts];
+  if (surfaces.length === 0)
+    return { applies: false, reason: "this beat has neither a rendered draft nor a delivery to read" };
 
   const hits = [];
-  for (const delivery of deliveries) {
+  for (const delivery of surfaces) {
     for (const file of readableFiles(delivery)) {
       for (const chunk of readerVisibleText(file)) {
         const at = chunk.search(DOUBLE_HYPHEN_RE);
@@ -298,7 +331,13 @@ export function doubleHyphenInDeliveredText(beatDir) {
       }
     }
   }
-  return { applies: true, deliveries: deliveries.map((dir) => basename(dir)), clean: hits.length === 0, hits };
+  return {
+    applies: true,
+    deliveries: deliveries.map((dir) => basename(dir)),
+    drafts: drafts.map((dir) => basename(dir)),
+    clean: hits.length === 0,
+    hits,
+  };
 }
 
 /** Every beat directory whose own committed runner calls the named skill. A runner CALLS a skill

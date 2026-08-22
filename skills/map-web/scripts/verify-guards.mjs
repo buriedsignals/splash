@@ -31,7 +31,20 @@ export const GUARDS = [
   "plateFollowsGround",
   "pageLanguageMatchesStory",
   "credentialReadsWithoutAlias",
+  // THE THREE THE POLYGON CORE BROUGHT WITH IT (2026-08-22). `assets/geo-choropleth.ts` gave this
+  // skill the join a choropleth needs, and with it the two traits `joins-values-to-shapes` and
+  // `reads-a-journalists-csv` — so three catalogue rules that never reached this format now do.
+  // Declared here rather than left for the next stress round to find: the mechanism is present, so
+  // the guard is owed the moment the mechanism is.
+  "csvSplitByHand",
+  "unmatchedValues",
+  "labelPlacementIssues",
 ];
+
+// `unmatchedValues` and `labelPlacementIssues` are the actual decisions and they live beside the
+// arithmetic they judge, in `assets/geo-choropleth.ts` — re-exported here only so `carriedBy` can
+// read the name, which is exactly the shape `map-beat/scripts/verify-map.mjs` uses for its own two.
+export { unmatchedValues, labelPlacementIssues } from "../assets/geo-choropleth.ts";
 
 /** Every credential name this skill's own scripts read straight off `env`/`process.env` by its
  *  literal CANONICAL property name — `MAPTILER_KEY`, `DATAWRAPPER_TOKEN` — never a name built at
@@ -344,4 +357,31 @@ export function plateLuminance(image) {
       seen++;
     }
   return sum / seen;
+}
+
+/** A `.csv` this script reads whose own row is cut on every literal comma instead of a parser that
+ *  understands a quoted field — the pattern beat `proof/more-line-swiss-life-expectancy/render.mjs`
+ *  shipped for months and every author since copied: `"1,234.5"` (a thousands separator) and
+ *  `"Netherlands, the"` (a name carrying its own comma) both tear in two under a bare
+ *  `row.split(",")`, silently — an extra field, every column after it one off, and nothing throws.
+ *
+ *  Reads SOURCE TEXT, not a delivered artifact: the defect lives in how a beat is WRITTEN, not in
+ *  what it renders, so there is no rendered signal to inspect after the fact.
+ *
+ *  Two shapes have to appear TOGETHER for a match. A newline split that tokenises rows by hand
+ *  (`.split(/\r?\n/)`, or the quoted `"\n"` / `"\r\n"` forms) is proof the source is walking a csv's
+ *  own rows itself; paired with a bare single-comma split (`.split(",")`, either quote style) that
+ *  cuts each one into fields. Either alone proves nothing — a comma split with no row split nearby
+ *  is cutting something else (`place.split(" of ").pop().split(",")[0]`, a sentence, not a row: the
+ *  false positive measured against `proof/mapgen-symbol-web/render-web.mjs`, which mentions "csv"
+ *  repeatedly and reads a real one through a proper parser elsewhere), and a row split with no
+ *  comma split nearby means the
+ *  fields are read some other, safe way. Returns every offending `.split(",")` snippet found; empty
+ *  means this source does not hand-cut a comma on its own csv rows. */
+export function csvSplitByHand(source) {
+  if (!/\bcsv\b/i.test(source)) return [];
+  const rowSplitByHand =
+    /\.split\(\s*(\/\\r\?\\n\/|["'`]\\r\\n["'`]|["'`]\\n["'`])\s*\)/.test(source);
+  if (!rowSplitByHand) return [];
+  return [...source.matchAll(/\.split\(\s*(["'`]),\1\s*\)/g)].map((m) => m[0]);
 }

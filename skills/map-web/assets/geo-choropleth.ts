@@ -178,7 +178,9 @@ export function unmatchedValues(
   if (expectedExtraValues === "any") return [];
   const reachable = new Set(keys.map((key) => alias[key] ?? key));
   const declared = new Set(expectedExtraValues);
-  return [...values.keys()].filter((key) => !reachable.has(key) && !declared.has(key));
+  return [...values.keys()].filter(
+    (key) => !reachable.has(key) && !declared.has(key),
+  );
 }
 
 /**
@@ -653,6 +655,86 @@ export function collidingPointerTargets(
   return covered;
 }
 
+/** A label's own box, centred on `(x, y)` — the same anchor convention every seed and beat in this
+ *  format already draws a `textAnchor="middle"` value label with. */
+function boxOf(x: number, y: number, width: number, height: number): LabelBox {
+  return {
+    minX: x - width / 2,
+    maxX: x + width / 2,
+    minY: y - height / 2,
+    maxY: y + height / 2,
+  };
+}
+function boxesOverlap(a: LabelBox, b: LabelBox, margin = 0): boolean {
+  return (
+    a.minX - margin < b.maxX &&
+    a.maxX + margin > b.minX &&
+    a.minY - margin < b.maxY &&
+    a.maxY + margin > b.minY
+  );
+}
+function ringsBox(rings: Ring[]): LabelBox | null {
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  for (const ring of rings)
+    for (const [x, y] of ring) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  return Number.isFinite(minX) ? { minX, maxX, minY, maxY } : null;
+}
+function boxWithin(inner: LabelBox, outer: LabelBox): boolean {
+  return (
+    inner.minX >= outer.minX &&
+    inner.maxX <= outer.maxX &&
+    inner.minY >= outer.minY &&
+    inner.maxY <= outer.maxY
+  );
+}
+export type LabelPlacement = {
+  key: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** The shape this label names, in the same coordinate space as `x`/`y` — when given, a label
+   *  whose own box spills outside it is reported as clipping that shape's own outline. */
+  rings?: Ring[];
+};
+
+
+/**
+ * DECIDES: does any of these labels' own measured box overlap another label's, or spill outside
+ * the shape it names? Pure — takes measurements the beat already has (a centroid, a measured text
+ * box, the shape's own rings), never a page. Refuses nothing on its own; returns one string per
+ * offending pair or shape, empty when every label clears both checks.
+ *
+ * @parity */
+export function labelPlacementIssues(labels: LabelPlacement[]): string[] {
+  const issues: string[] = [];
+  const boxes = labels.map((label) =>
+    boxOf(label.x, label.y, label.width, label.height),
+  );
+  for (let i = 0; i < labels.length; i++) {
+    for (let j = i + 1; j < labels.length; j++) {
+      if (boxesOverlap(boxes[i]!, boxes[j]!))
+        issues.push(
+          `${labels[i]!.key}/${labels[j]!.key}: value labels overlap`,
+        );
+    }
+  }
+  labels.forEach((label, i) => {
+    if (!label.rings) return;
+    const shapeBox = ringsBox(label.rings);
+    if (shapeBox && !boxWithin(boxes[i]!, shapeBox))
+      issues.push(`${label.key}: value label clips its own shape's outline`);
+  });
+  return issues;
+}
 // ── Geometry: baked pixel rings become one path ────────────────────────────────────────────────
 
 /** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out. 

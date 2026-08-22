@@ -23,9 +23,9 @@ written out below the tables.
 | scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
 | model-declared |  |  |  |  |  |  |  | **R** |
 | reveal-completes |  |  | **R** |  | **R** |  |  |  |
-| csv-split-by-hand |  |  | **R** | **R** | **R** |  |  | **R** |
-| unmatched-value-hides |  |  |  |  | **R** |  |  |  |
-| value-labels-collide-or-clip |  |  |  |  | **R** |  |  |  |
+| csv-split-by-hand |  |  | **R** | **R** | **R** | **R** |  | **R** |
+| unmatched-value-hides |  |  |  |  | **R** | **R** |  |  |
+| value-labels-collide-or-clip |  |  |  |  | **R** | **R** |  |  |
 | page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
 | credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
 | reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
@@ -113,7 +113,7 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 | chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  | ✓ |
 | dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ | ✓ |
 | map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  |  |  | ✓ | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
 | image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
 | scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |
 

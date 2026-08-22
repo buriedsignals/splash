@@ -185,11 +185,29 @@ const COPIES: Record<string, string[]> = {
     "chart-video/scripts/verify-video.mjs",
     "map-beat/scripts/verify-map.mjs",
   ],
+  // THE POLYGON JOIN'S OWN TWO, second copies as of 2026-08-22. `map-web` carries
+  // `assets/geo-choropleth.ts` now — the choropleth × web cell its own SKILL.md used to describe as
+  // unwritten while a worked beat had shipped in `proof/` for weeks — so the decisions that judge a
+  // join and a label stack exist in two skills and must not drift. Both live BESIDE the arithmetic
+  // they judge in each skill, and are re-exported from that skill's `verify-*.mjs` only so
+  // `carriedBy` can read the name.
+  unmatchedValues: [
+    "map-beat/assets/geo.ts",
+    "map-web/assets/geo-choropleth.ts",
+  ],
+  labelPlacementIssues: [
+    "map-beat/assets/geo.ts",
+    "map-web/assets/geo-choropleth.ts",
+  ],
   csvSplitByHand: [
     "chart-video/scripts/verify-video.mjs",
     "dw-beat/scripts/verify-owned.mjs",
     "map-beat/scripts/verify-map.mjs",
     "scrolly/scripts/verify-scrolly.mjs",
+    // The sixth copy: `map-web` gained a polygon core in 2026-08-22 and with it the trait
+    // `reads-a-journalists-csv`, so this rule reaches it. Its own driver calls it over the runner
+    // that produced the page being driven.
+    "map-web/scripts/verify-guards.mjs",
   ],
   // FINDING 1 (stress round two): a delivered page's own `<html lang>` used to be a literal baked
   // in for its first caller — every skill that ships a standalone page can carry the same defect,
