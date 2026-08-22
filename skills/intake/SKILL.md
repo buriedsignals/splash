@@ -24,14 +24,20 @@ Turns the article and CSV a journalist brought into a **frozen, immutable record
 | Layer | File | Role |
 | --- | --- | --- |
 | Reader | `scripts/csv.mjs` | `parseCsv(text)` — a real RFC 4180 reader: quoted fields, embedded commas/newlines, doubled quotes, CRLF **and** lone-CR line endings |
-| Profiler | `scripts/profile.mjs` | `profileTable(rows)` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `denominatorUnread`, `percentAboveHundred` |
-| Orchestrator | `scripts/freeze.mjs` | `freezeSource({storyDir, articlePath, dataPath})` — reads both source files once, profiles the data, writes the three frozen artifacts, refuses a second call |
+| Profiler | `scripts/profile.mjs` | `profileTable(rows, {prose})` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), describes the table's own SHAPE (`panel`, with its entity, its period, its per-period coverage and which rows are aggregates of the others), carries a stated incompleteness off the frozen prose (`statedIncompleteness`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `denominatorUnread`, `denominatorNotInThisTable`, `percentAboveHundred`, `sumWithheld`, `gapsAreNotCoverage` |
+| Orchestrator | `scripts/freeze.mjs` | `freezeSource({storyDir, articlePath, dataPath})` — reads both source files once, profiles the data **with the article's own prose in hand**, writes the three frozen artifacts, refuses a second call |
 
 ## How it works (the shape)
 
 1. **Parse** the CSV with a real state machine (quoted/unquoted, not a `.split(",")`) — `parseCsv` in `csv.mjs`.
-2. **Profile** the parsed rows: each column gets a strict-numeric-literal type check, a missing count (blank cells counted, never dropped), a distinct count, and — for numeric columns only — a `min`, a `max` and a `sum`, in `profileTable` in `profile.mjs`. The `sum` is there for one named downstream reader: `storyboard`'s grounding check, which cannot otherwise place a part-to-whole total, because a total is by construction outside the range of the column it sums.
-2b. **Report what only the journalist can settle.** A column carries `reason` when it looked numeric and was refused, `gaps` when a sequence's own grain skips a step, `mixedUnits` when a sibling `unit` column says the range is not one measure, `denominator` when a population-shaped column sits in the same table, `denominatorUnread` when a sibling numeric column is NAMED IN A LANGUAGE THIS PROFILER DOES NOT READ, and `percentAboveHundred` when a column whose own values carry `%` holds a share above 100 — see below. None of the six repairs anything.
+2. **Profile** the parsed rows: each column gets a strict-numeric-literal type check, a missing count (blank cells counted, never dropped), a distinct count, and — for numeric columns only — a `min`, a `max` and, except on a period column, a `sum`, in `profileTable` in `profile.mjs`. The `sum` is there for one named downstream reader: `storyboard`'s grounding check, which cannot otherwise place a part-to-whole total, because a total is by construction outside the range of the column it sums.
+2a. **Describe the table's own shape.** Almost all open data is a PANEL — one row per entity per
+period — and until this was added the profile described one as a flat table. `panel` names the
+entity column, the period column, how many of each, whether the panel is balanced, how many entities
+each period carries, and which rows are aggregates of the other rows. See "The panel" below.
+2b. **Report what only the journalist can settle.** A column carries `reason` when it looked numeric and was refused, `gaps` when a sequence's own grain skips a step, `mixedUnits` when a sibling `unit` column says the range is not one measure, `denominator` when a population-shaped column sits in the same table, `denominatorUnread` when a sibling numeric column is NAMED IN A LANGUAGE THIS PROFILER DOES NOT READ, `percentAboveHundred` when a column whose own values carry `%` holds a share above 100, `sumWithheld` when a total was refused because the column is a period, `gapsAreNotCoverage` when a full range is not full coverage, and `denominatorNotInThisTable` when a panel's denominator can only be in another file — see below. None of them repairs anything.
+2c. **Carry a stated incompleteness off the prose.** `statedIncompleteness` — see "What this
+profiler cannot decide" below.
 3. **Freeze**: `freezeSource` checks `source/article.md` doesn't already exist (refuses with `"already frozen"` if it does), then reads the article and CSV, runs the profiler, and writes all three files into `source/`. A read failure (missing file, permission denied, no `source/` directory to write into) surfaces its real error — it is never mislabelled as "already frozen" and never swallowed.
 
 ## A count is not a rate, and this profiler never divides
@@ -150,6 +156,178 @@ and `DENOMINATOR_NAME_TOKENS` both refuse to make about a sibling column, so `br
 no report here. A journalist who wants that value checked has to say the column is a percentage;
 the profiler will not decide it for them.
 
+## The panel — one row per entity per period
+
+Three real stories were run end to end against Our World in Data panels — 3 900, 7 585 and 21 565
+rows of `entity, code, year, value` — and every one of them was profiled as a flat table of four
+columns. The profile is what every later phase reasons from, so a shape it cannot describe is a
+shape the whole chain is blind to. What went wrong, measured:
+
+- `rowCount: 3900` was read as a count of subjects. It is 260 entities over 15 periods.
+- NINE of those 260 "entities" are AGGREGATES of the other rows — `World`, six continents,
+  `European Union (27)`, `Europe (excl. Russia)`. The article's own question was *"where the count
+  is heaviest"*; taken off the file it answers **the World**, then **Africa**, then a country.
+- `year.gaps: []` over `[1900, 2025]` reads as full coverage and is not: the Ember file carries 245
+  entities in 2022 and 114 in 2025.
+- `duplicates: 0` is TRUE (no repeated row) and reads as an answer to a question about repeated
+  subjects that it never asked — there are 260 rows per year.
+- `year.sum: 7874100` was the largest-looking number in the profile. It is the total of a calendar.
+
+```js
+panel: {
+  entity: "entity", period: "year", entities: 260, periods: 15,
+  rowsPerPeriod: { min: 260, max: 260 }, balanced: true,
+  says: "one row per entity per period: … rowCount (3900) counts readings, never subjects …",
+  decidedBy: 'every ("entity", "year") pair is unique across all 3900 rows, and "entity" holds no blank',
+  coverage: { byPeriod: [{ period: 2012, entities: 260 }, …], fullest: {…}, thinnest: {…}, says: "…" },
+  aggregates: { … see below … },
+}
+```
+
+**The key is checked, never named.** A table is a panel when one of its own columns identifies the
+subject and every (subject, period) pair in it is unique — that is the arithmetic statement of "one
+row per entity per period", and it is checked against every row. A key column with a BLANK in it is
+refused: `code` also keys the wildfire table (the one entity with no code has exactly one row per
+year, so `(code, year)` is unique across all 3 900 rows) and it identifies nothing for that row.
+Text columns only; a panel keyed by a numeric id is a real shape this does not reach, and saying so
+is better than letting a MEASURE column that happens to key the table be named as the subject.
+
+**A period column carries no total.** `sum` is `null` on any column `isSequenceColumn` recognised as
+a sequence, and `sumWithheld` says why, so the refusal does not read like a text column's empty
+total.
+
+**A full range is not full coverage.** `coverage.byPeriod` counts the entities each period carries,
+and where that count is not flat the PERIOD COLUMN itself carries `gapsAreNotCoverage` — because
+`gaps: []` is where a reader looks. A producer reaching for "the latest year", the obvious move,
+silently drops more than half the world on the Ember file, and until this nothing said a word.
+
+### Which rows are aggregates of the other rows
+
+```js
+aggregates: {
+  says: "an aggregate here is a row of this table that is the SUM of other rows of the same table …",
+  byArithmetic: [
+    { entity: "World", decidedBy: "arithmetic", column: "events", periods: 15,
+      members: ["Africa", "Asia", "Europe", "North America", "Oceania", "South America"],
+      alsoSummedBy: 251, detail: "two sets of this table's own rows that share no row add up to …" },
+    { entity: "Africa", decidedBy: "arithmetic", memberOf: "World", detail: "one of 6 rows that …" },
+    …
+  ],
+  byStructure: [ { entity: "European Union (27)", proposedBy: "code-shape", code: "OWID_EU27" },
+                 { entity: "Europe (excl. Russia)", proposedBy: "code-missing", code: null }, … ],
+  arithmetic: { ran: true, over: 'the 12 rows the "code" column\'s own shape sets apart',
+                column: "events", nodes: 246, exhausted: false, measuresTried: ["events"] },
+  structure: { column: "code", shape: "AAA", entitiesWithThatShape: 248, entitiesCoded: 259 },
+}
+```
+
+**There is no list of aggregate names in this file, deliberately.** A hand-typed "World, Africa,
+Asia…" is the shape this repository has been burned by, and it would leave `ASEAN (Ember)`,
+`Less developed regions, excluding China` and `Europe (excl. Russia)` invisible. Two tests answer
+instead, and every row says which one answered it.
+
+**The arithmetic decides.** For each candidate row, the profiler looks for a set of OTHER rows whose
+values add up to it in EVERY period it appears in. One period proves nothing — with 260 numbers some
+subset adds up to almost anything — and the same set holding across fifteen periods is not a
+coincidence. Two searches run per candidate: over the proposed rows alone (for `World` this returns
+the six continents), and with every row the structure did NOT propose taken as one block (for
+`World` this returns those 248 rows plus Kosovo, Northern Cyprus and Akrotiri and Dhekelia — the 251
+real places). When both exist and share no row, two disjoint sets of this table's own rows add up to
+the same total in every period; the small set therefore stands in for the large one, which is what
+makes its MEMBERS aggregates too. That is how the six continents are decided, and it is an argument
+from the numbers, not from the names.
+
+Its declared limits, each of them observable in the output rather than written here only:
+
+- **Non-negative columns only.** The pruning that makes the search finish is only valid while
+  nothing can bring a partial sum back down; a signed column is a different question this does not
+  put. `measuresTried` names the columns it looked at.
+- **A witness of one row is refused.** "A equals B in every period" is two identical series, which
+  is worth knowing and is not a sum.
+- **A share does not sum.** On the Ember percentage column no witness exists and none is invented:
+  `byArithmetic` is empty and the 32 aggregates are still named, by structure.
+- **The search is bounded** — `AGGREGATE_SEARCH_NODE_BUDGET`. Exhausting it sets `exhausted: true`,
+  because "found none" and "stopped looking" are two different answers.
+- **A table with no structural proposal and more than `AGGREGATE_SEARCH_ENTITY_CEILING` entities is
+  not searched at all**, and `arithmetic.ran` is `false` with the reason. A search that quietly
+  answered "no aggregates" about a table it never looked at would be worse than no search.
+
+**The structure proposes, and over-reaches by construction.** A published panel carries a code
+column beside its entity column, one code per entity, and the aggregates in it are the rows the
+publisher could not give a country code to. The code column is found by its RELATION to the entity
+column — one value per entity, blanks allowed — never by being named "code", the same
+identity-not-shape test `UNIT_COLUMN_NAME_RE` and `DENOMINATOR_NAME_TOKENS` make for their own
+questions. Values are then reduced to a SHAPE (letters to `A`/`a`, digits to `9`: `AFG` is `AAA`,
+`OWID_WRL` is `AAAA_AAA`) and a row whose shape is not the majority shape, or whose code is missing,
+is **proposed**. The same test sweeps in Kosovo, Northern Cyprus and Akrotiri and Dhekelia, which are
+places and not sums — which is exactly why `byStructure` is reported apart from `byArithmetic` and
+never called a decision. Where the code column carries no majority shape, `structure.answered` is
+`false` with a reason.
+
+## What this profiler cannot decide, said where the journalist reads it
+
+Two limits here cannot be removed by a profiler. The fix is that the tool SAYS SO.
+
+### A stated incompleteness is prose, and the guard downstream looks for a column
+
+The wildfire dataset states the single most dangerous fact about itself in its own description line:
+
+> *"Number of wildfires. The 2026 data is incomplete and was last updated 21 August 2026."*
+
+`intake` freezes that into `article.md` as prose and never as a column, and `storyboard`'s
+partial-period guard matches a COLUMN NAME (`^months?_covered$|^coverage$|^complete(ness)?$`). So
+eight months of 2026 read as a full year beside fourteen complete ones, and its 370 394 world fires
+read as a 41% collapse. The profile now carries the claim as a first-class field, and
+`freezeSource` hands the article to the profiler so it is populated in production:
+
+```js
+statedIncompleteness: {
+  reads: "English and French",
+  words: ["incomplete", "partial", …, "provisoire", "provisoires"],
+  column: "year",
+  readProse: true,
+  claims: [{ period: 2026, column: "year", word: "incomplete",
+             sentence: "The 2026 data is incomplete and was last updated 21 August 2026." }],
+  says: "the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote …",
+}
+```
+
+**It is a CLAIM, not a fact**, and the sentence travels with it for that reason: the profiler cannot
+check whether a period really is short, only that the journalist's own frozen prose says so. A
+sentence qualifies when it carries one of the declared words AND a numeral that is one of the period
+column's own values — the numeral is what ties the claim to a row of the table, and without it a
+sentence about an incomplete *argument* would read as a sentence about an incomplete *year*.
+
+**The reach is declared**, the same policy `denominatorUnread` states one section up: a lexicon's
+silence must not read as a clean bill. Two languages, not the four `LEXICON_LANGUAGES` declares —
+these are the words this list can spell correctly, and a dataset stating its incompleteness in Greek
+or Arabic is a gap named out loud rather than a guess made quietly. The field is emitted whenever the
+table HAS a period for a sentence to be about, claims or none, and `readProse: false` distinguishes
+"nothing was said" from "nothing was read".
+
+### A panel's denominator is a different file
+
+`findDenominatorColumn` looks in the same table. Every country panel published one indicator per
+file — Our World in Data, Eurostat, the World Bank — keeps its population and its area somewhere
+else, so the round-four downgrade cannot fire and its silence carried no information at all.
+*"The Democratic Republic of Congo recorded more wildfires in 2025 than any other country"* is true
+of the raw column and is a fire-count artefact of savanna burning across a 2.3 million km² country,
+and nothing in the run said so.
+
+A profiler cannot fetch the other file. What it can do is stop its own silence from reading as
+"asked and answered", so a measure column of a PANEL that got no denominator answer at all now
+carries:
+
+```js
+{ name: "events", type: "number", min: 0, max: 1148499, sum: 42410733,
+  denominatorNotInThisTable: {
+    says: "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; …",
+    reads: "English, French, Greek and Arabic" } }
+```
+
+Only on a panel, and only where `denominator` and `denominatorUnread` both said nothing, so it never
+argues with an answer that exists.
+
 ## Quick start
 
 ```js
@@ -178,3 +356,4 @@ const { article, data, profile } = await freezeSource({
 - `scripts/profile.mjs` — `profileTable`, the column profiler.
 - `scripts/freeze.mjs` — `freezeSource`, the orchestrator (depends on the two above).
 - `test/{csv,profile,freeze}.test.ts` — `bun:test` coverage, including regression tests for the hex/empty-table and lone-CR fixes made on top of the original design.
+- `test/panel.test.ts` — the panel shape, the aggregate tests, per-period coverage, the withheld period total, the stated incompleteness and the panel denominator sentence, measured against the three real Our World in Data files frozen under `stories/real-*`.
