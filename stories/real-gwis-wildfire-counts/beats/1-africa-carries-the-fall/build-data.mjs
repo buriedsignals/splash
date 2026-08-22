@@ -22,13 +22,41 @@ const OUT = join(import.meta.dirname, "data.json");
 const BANDS = ["Africa", "Asia", "South America", "Oceania", "North America", "Europe"];
 const LAST_COMPLETE_YEAR = 2025;
 
+/**
+ * RFC 4180, walked one character at a time. A split on "," reads a quoted entity name carrying its
+ * own comma as two fields — and this file's own table holds `Bonaire Sint Eustatius and Saba` and
+ * `European Union (27)` beside names that do not. `skills/splash/test/csv-hand-split.test.ts`
+ * refuses the naive reading everywhere in this tree, and it is right to: it was a real defect in a
+ * real beat before it was a rule.
+ */
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        quoted = false; i += 1; continue;
+      }
+      field += char; i += 1; continue;
+    }
+    if (char === '"') { quoted = true; i += 1; continue; }
+    if (char === ",") { row.push(field); field = ""; i += 1; continue; }
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
+    field += char; i += 1;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 const text = await readFile(SOURCE, "utf8");
-const [header, ...body] = text.trim().split(/\r?\n/);
-const columns = header.split(",");
-const rows = body.map((line) => {
-  const cells = line.split(",");
-  return Object.fromEntries(columns.map((name, i) => [name, cells[i]]));
-});
+const [columns, ...body] = parseCsvRows(text.trim());
+const rows = body.map((cells) => Object.fromEntries(columns.map((name, i) => [name, cells[i]])));
 
 const byEntityYear = new Map();
 for (const row of rows) byEntityYear.set(`${row.entity}|${row.year}`, Number(row.events));
