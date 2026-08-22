@@ -8,6 +8,7 @@ import {
   datawrapperMatch,
   formatProducerGate,
   normalizeTreatment,
+  treatmentNames,
 } from "../scripts/producer-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import {
@@ -90,41 +91,46 @@ describe("the Datawrapper catalogue", () => {
   it("matches selected Splash treatments only after medium and format are known", () => {
     expect(
       datawrapperMatch({ medium: "chart", format: "web", treatment: "Slope (slopegraph)" }),
-    ).toMatchObject({ treatment: "Slope", datawrapperTypes: ["d3-lines"] });
+    ).toMatchObject({ treatment: "Slope (slopegraph)", datawrapperTypes: ["d3-lines"] });
     expect(datawrapperMatch({ medium: "chart", format: "video", treatment: "Slope" })).toBeNull();
     expect(datawrapperMatch({ medium: "map", format: "web", treatment: "Slope" })).toBeNull();
     expect(datawrapperMatch({ medium: "chart", format: "web", treatment: "Histogram" })).toBeNull();
   });
 
-  it("keeps the state reader's carried mapping in parity with every catalogue alias", () => {
+  it("keeps the state reader's carried mapping in parity with the catalogue itself", () => {
     const expected = new Map(
-      DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) =>
-        mapping.aliases.map((alias) => [normalizeTreatment(alias), mapping.datawrapperTypes]),
-      ),
+      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.datawrapperTypes]),
     );
     expect([...DATAWRAPPER_TREATMENTS.entries()]).toEqual([...expected.entries()]);
-    // The medium travels with the alias, and must not drift either: a copy that knows the types but
-    // not which medium they answer for would hand a chart slot a locator map.
+    // The medium travels with the treatment, and must not drift either: a copy that knows the types
+    // but not which medium they answer for would hand a chart slot a locator map.
     const media = new Map(
-      DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) =>
-        mapping.aliases.map((alias) => [normalizeTreatment(alias), mapping.medium]),
-      ),
+      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.medium]),
     );
     expect([...DATAWRAPPER_TREATMENT_MEDIA.entries()]).toEqual([...media.entries()]);
-    // Each alias resolves for ITS OWN medium. This loop used to ask every alias as a chart, back
-    // when the gate hard-coded `medium !== "chart"` and the three map types the pinned inventory
-    // has always carried were unreachable. A treatment answers for one medium: "locator" is a map,
-    // and a chart slot must not be handed one because the word matched.
+    // EVERY NAME THE RULE DERIVES, not every alias somebody typed. Both copies run the same
+    // derivation, so both open on the same words — and each name resolves for ITS OWN medium only.
+    // This loop used to ask every alias as a chart, back when the gate hard-coded
+    // `medium !== "chart"` and the three map types the pinned inventory has always carried were
+    // unreachable. A treatment answers for one medium: "locator" is a map, and a chart slot must
+    // not be handed one because the word matched.
     for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
-      for (const alias of mapping.aliases) {
+      for (const name of [...treatmentNames(mapping.treatment), ...mapping.aliases]) {
         expect(
-          datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: alias }),
+          datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: name }),
         ).toEqual(mapping.datawrapperTypes);
+        expect(
+          datawrapperMatch({ medium: mapping.medium, format: "web", treatment: name }),
+        ).toMatchObject({ treatment: mapping.treatment });
+        // "bubble" is the ONE name two sheets of different media both answer to — a bubble chart is
+        // a scatter and a bubble map is a proportional-symbol map — so the opposite medium is only
+        // asserted null where no other mapping legitimately holds the word.
+        if (name === "bubble") continue;
         expect(
           datawrapperTypesForTreatment({
             medium: mapping.medium === "chart" ? "map" : "chart",
             format: "web",
-            treatment: alias,
+            treatment: name,
           }),
         ).toBeNull();
       }
@@ -423,5 +429,99 @@ describe("the producer gate reads the surface preflight already measured", () =>
         capabilities: darkGround,
       }),
     ).toEqual({ producer: "custom", datawrapperType: null });
+  });
+});
+
+// ROUND SEVEN, D7 ON `stories/real-gwis-wildfire-counts`. The slot's treatment was written as
+// "Stacked area" — the natural name for it, and literally half of `chart-beat/references/types/
+// area.md`'s own title, "Area (and stacked area)". Measured:
+//
+//     datawrapperMatch({medium:"chart", format:"static", treatment:"Area (and stacked area)"})
+//       -> {..., datawrapperTypes:["d3-area"]}
+//     datawrapperMatch({medium:"chart", format:"static", treatment:"area"})
+//       -> {..., datawrapperTypes:["d3-area"]}
+//     datawrapperMatch({medium:"chart", format:"static", treatment:"Stacked area"})
+//       -> null
+//
+// A MISSING MATCH IS NOT A NEUTRAL OUTCOME HERE, IT REMOVES A GATE. `null` is read as "not
+// delegated", so the custom-or-Datawrapper question is never asked and the beat goes custom with
+// nobody consulted — a human gate skipped by a spelling.
+//
+// The fix is the MATCHING RULE, not five renames in the provider catalogue. A treatment answers to
+// every name its own title yields: the head, the whole title with its brackets flattened, each
+// alternative inside a parenthetical, each alternative either side of a "/" or an "and", and each
+// of those again with a leading or trailing generic medium word dropped ("choropleth map" is
+// "Choropleth", "slope chart" is "Slope"). Measured across the forty type sheets, that derivation
+// produces NO two names shared by two sheets of one medium, and exactly one shared across media —
+// "bubble", which a bubble chart and a bubble map both legitimately answer to and which the medium
+// every caller already supplies tells apart.
+describe("a treatment answers to every name its own title yields", () => {
+  const asChart = (treatment: string) =>
+    datawrapperMatch({ medium: "chart", format: "static", treatment })?.datawrapperTypes ?? null;
+
+  it("opens the gate on the name the real story wrote", () => {
+    expect(asChart("Stacked area")).toEqual(["d3-area"]);
+    expect(asChart("stacked area")).toEqual(["d3-area"]);
+  });
+
+  it("still opens on the catalogue's own spelling and on the sheet's title", () => {
+    expect(asChart("Area (and stacked area)")).toEqual(["d3-area"]);
+    expect(asChart("Area and stacked area")).toEqual(["d3-area"]);
+    expect(asChart("area")).toEqual(["d3-area"]);
+  });
+
+  it("reads the parenthetical alternative of every title that carries one", () => {
+    expect(asChart("slopegraph")).toEqual(["d3-lines"]);
+    expect(asChart("range plot")).toEqual(["d3-range-plot"]);
+    expect(asChart("bridge")).toEqual(["waterfall"]);
+    expect(asChart("bubble")).toEqual(["d3-scatter-plot"]);
+  });
+
+  it("drops a generic medium word a journalist appends, at either end", () => {
+    expect(asChart("slope chart")).toEqual(["d3-lines"]);
+    expect(
+      datawrapperMatch({ medium: "map", format: "web", treatment: "choropleth map" })?.datawrapperTypes,
+    ).toEqual(["d3-maps-choropleth"]);
+    expect(
+      datawrapperMatch({ medium: "map", format: "web", treatment: "map.locator" })?.datawrapperTypes,
+    ).toEqual(["locator-map"]);
+  });
+
+  it("still refuses a treatment the delegate genuinely has no type for", () => {
+    expect(asChart("Histogram")).toBeNull();
+    expect(asChart("Treemap")).toBeNull();
+    expect(asChart("Beeswarm")).toBeNull();
+  });
+
+  it("does not let a bare medium word match anything", () => {
+    expect(asChart("chart")).toBeNull();
+    expect(datawrapperMatch({ medium: "map", format: "web", treatment: "map" })).toBeNull();
+  });
+
+  it("keeps the declared list to what no title can yield, and says why one is there", () => {
+    // A DECLARED ALIAS IS NOW A CLAIM ABOUT THE RULE: it is a spelling the derivation cannot reach.
+    // "Grouped bar" and "Stacked bar" are titles about ORIENTATION — the same treatment drawn
+    // sideways is a grouped or stacked COLUMN, and Datawrapper implements both — and no rule over
+    // the word "bar" produces the word "column". Everything else that used to sit in these arrays
+    // is derivable and was removed, so the list can no longer hide a rule that does not work.
+    const declared = DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) => mapping.aliases);
+    expect(declared).toEqual(["grouped column", "stacked column"]);
+    for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
+      const derived = new Set(treatmentNames(mapping.treatment));
+      for (const alias of mapping.aliases) {
+        expect(treatmentNames(alias).some((name) => derived.has(name))).toBe(false);
+      }
+    }
+  });
+
+  it("shares no name between two treatments of one medium", () => {
+    const seen = new Map<string, string>();
+    for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
+      for (const name of [...treatmentNames(mapping.treatment), ...mapping.aliases.flatMap(treatmentNames)]) {
+        const key = `${mapping.medium}::${name}`;
+        expect(seen.get(key) ?? mapping.treatment).toBe(mapping.treatment);
+        seen.set(key, mapping.treatment);
+      }
+    }
   });
 });

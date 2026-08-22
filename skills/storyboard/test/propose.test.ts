@@ -625,11 +625,30 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: { rowCount: 6, columns: [] },
         candidates: [
-          { type: "Pie chart", format: "static", why: "the shares of one whole" },
+          { type: "Sunburst", format: "static", why: "the shares of one whole, nested" },
           { type: "Bar and column", format: "static", why: "the same shares, ranked" },
         ],
       }),
-    ).toThrow(/Pie chart/);
+    ).toThrow(/Sunburst/);
+  });
+
+  // THIS CASE USED TO BE THE ONE ABOVE, and it changed sides on purpose (round seven, D7). "Pie
+  // chart" was read as a name resolving to nothing, so the menu refused it — although
+  // `chart-beat/references/types/pie-and-donut.md` is exactly the sheet a journalist writing those
+  // two words means, and the only thing standing between them was the word "chart". `treatmentNames`
+  // drops a generic medium word at either end, so the sheet's refusal and its stated slice ceiling
+  // now travel with the candidate instead of the candidate being thrown out.
+  it("should resolve a type named with a generic medium word appended to its sheet", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 6, columns: [] },
+      candidates: [
+        { type: "Pie chart", format: "static", why: "the shares of one whole" },
+        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+      ],
+    });
+    expect(text).toContain("**Pie chart**");
+    expect(text).toContain("slices > 5");
   });
 
   it("should resolve every catalogued treatment name to a sheet, for every medium that has sheets", () => {
