@@ -207,6 +207,68 @@ which would have made every in-file mention count as a caller and cleared eight 
 bought by inventing a command no `SKILL.md` tells anyone to run. That is exactly what the wiring rule
 refuses, so the ratchet was made to say something true rather than something tidy.
 
+## The three design questions, ruled on — and one of the rulings was wrong
+
+2026-08-23. Two of the three were built. The third was refused by the live measurement, and the
+refusal found something bigger than the question.
+
+### Ruled and built · the frame floor measures the axis the box is bound on
+
+The area fraction punished a correct bake and could not catch the defect it was written for. Each
+format now measures what suits its own frame: an area against the window where the frame is fluid,
+the fraction of the **bound axis** where the plate keeps its own true aspect. Over ten pages at three
+widths the reading's spread narrowed from 15.0-62.8% (4.2x) to 51.1-91.5% (1.8x), and the re-baked
+beat went from worst-in-format to mid-pack **without one pixel of its drawing changing**.
+
+And the limit is now written where a reader believes things without running them: **no copy of this
+rule can detect a box stranded at one edge.** Moving one from 622.6px to 16.0px from the left shifted
+both readings by 0.00 points. Both are about size; stranding is about position.
+
+### Ruled and built · the wiring rule learns three reasons
+
+`RECORDED_UNWIRED` was telling three stories in one voice. It is now derived from real debt (may only
+shrink), decisions only a beat can call, and decisions driven on purpose by the format's own suite —
+and the last two must **name a caller that a test can find**, so a claim cannot be asserted.
+82 recorded names became 64 debt + 2 beat-substrate + 16 own-suite; nothing joined or left.
+
+The check immediately refuted one of its own inputs. `labelPlacementIssues` was assumed to be
+beat-substrate and has **no caller anywhere** — and `placeLabels`, in the same file, *repairs* a stack
+against the same two conditions without ever asking the decision, so every beat clears it and none
+runs it. It stays as debt with the measurement written beside it.
+
+### REFUSED · pointer and keyboard as two channels
+
+**The ruling was that the invariant "every mark's hit target is topmost at its own centre" should be
+withdrawn and replaced by "the pointer is served by the layer that really serves it".** The premise
+held — all 241 `.pt` buttons really are `pointer-events: none` live, so the canvas does serve the
+pointer. The replacement did not.
+
+Driven with a real key against the committed 241-region beat at 1600x900, `queryRenderedFeatures` at
+each mark's own centre answered: **own 140, a neighbour 15, nothing 86.** Widened to the fairest
+possible reading — any pixel anywhere that the map attributes to the mark, on a 23x23 grid — it is
+151 reachable, 27 single-pixel, **63 with no pixel at all**; at 375x667, 92 / 67 / **82**. The
+proposed invariant would have been red for 90 of 241 and could never have gone green.
+
+**The failures are exactly the marks the ruling existed to protect**: Monaco answering France, San
+Marino and the Vatican answering Italy, Macao answering China, Singapore answering Malaysia, Andorra
+answering France; Liechtenstein, Malta and Hong Kong answering nothing at all. At that camera one
+pixel is about 26 km and **Monaco is about a thirteenth of a pixel**.
+
+So the collision was never the problem. **A mark smaller than a pixel has no pointer path, and no
+target engineering creates one** — of the 105 marks a neighbour covers, 46 are not served by the live
+pointer either. The honest consequence is not a better target: it is that the keyboard and the
+accessible table ARE the path for those marks, the format says so, and a beat is told how many of its
+marks have no pointer path at the camera and container it chose — which is a fact a journalist can
+act on, by tightening the camera or adding an inset.
+
+### The finding that made the refutation possible
+
+The live probe's own GATE read `MAPTILER_KEY` alone while the runner it gates resolved four aliases.
+So on this machine the format's only live probe had **never once run** — it printed "no MAPTILER_KEY"
+and exited while a working key sat in `.env`. It is the same defect this round already fixed one
+level down, in the probe itself, wearing the gate instead. Everything above was only measurable
+because it was fixed first.
+
 ## The one open thing that is the owner's, not mine
 
 Four of the seven packages independently declined to add a `guard-catalogue.json` rule, each with
