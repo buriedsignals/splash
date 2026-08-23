@@ -1,0 +1,16 @@
+{
+  "operationId": "0e874276-7b16-410c-a574-8d9bff7f57ab",
+  "reviewId": "review-1-distance-to-the-target-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:979c196d2c4e94fdf9c81a928240b87f11c7d54c965a48653307768a1ad633dd",
+  "findingIds": [
+    "organic-1-no-reporter-reaches-the-target",
+    "organic-2-the-only-crossing-stopped-publishing"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-23T08:58:03.223Z",
+  "schemaVersion": 1,
+  "outputId": "1-distance-to-the-target",
+  "state": "complete"
+}

@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>No EU country reporting for 2024 has reached the 25 % organic-farmland target</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #16191B;
+  --accent: #D4A853;
+  --ink: #FFFFFF;
+  --muted: #a6a8a8;
+  --grid: #404244;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+
+/* THE ACCESSIBLE TABLE -- see accessibleTable() above for what it carries. Hidden the same way a
+   "skip to content" link is hidden: off-screen by a 1px clip rather than display:none, so a
+   screen reader and a keyboard both still reach it, and restored to normal flow the moment it
+   holds focus. tabindex="0" is on the WRAPPING DIV rather than the table: a table under the auto
+   table layout algorithm refuses to shrink below its own content's minimum width -- measured on the
+   life-expectancy beat (74 rows), width:1px on the table element itself was silently ignored, the
+   table laid out at its natural 332x1648px, and the document's own scrollHeight grew by exactly
+   that much even though clip:rect(0,0,0,0) still painted none of it. A plain div carries no such
+   floor, so the same width:1px/height:1px/overflow:hidden trio that hides everything else in this
+   stylesheet hides it too. */
+.chart-accessible-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.chart-accessible-table:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 16px 0 0;
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.chart-accessible-table table {
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.chart-accessible-table caption { text-align: left; padding-bottom: 4px; }
+.chart-accessible-table td { border: 1px solid var(--muted); padding: 2px 6px; }
+</style>
+<style>
+
+.pt {
+  position: absolute;
+  display: block;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  fill: none;
+}
+/* A ROW WHOSE FIGURE IS NOT FROM THE NEWEST YEAR IS DRAWN HOLLOW, NOT DIMMED. It was dimmed in the
+   first build, and the format's own driven check refused it: the view a reader lands on must dim
+   nothing, because in this format a dimmed mark is a filtered-out mark. A hollow dot is the same
+   accent at full strength, says "not filled in yet" without a second hue, and keeps the mark at the
+   contrast the palette measured. */
+.pt.is-stale { background: var(--ground); box-shadow: inset 0 0 0 2px var(--accent); }
+.pt:hover, .pt:focus, .pt.pt-active {
+  fill: none;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--ink);
+  z-index: 3;
+}
+.pt:focus { outline: none; }
+.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* THE LABEL COLUMN. Two right-aligned columns in the gutter — the country's own name, then its own
+   value against the axis — so no word is ever drawn over a stem and nothing can be clipped off the
+   right edge of a narrow frame. Both carry the row's code, so lighting a dot lights the whole row:
+   on a wide screen the gutter is a long way from the mark, and a highlight that stops at the dot
+   leaves a reader hunting for their own place in the list. */
+.axis-label.y.country {
+  right: calc(10px + var(--value-col));
+  transform: translateY(-50%);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  white-space: nowrap;
+}
+.axis-label.y.value {
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: var(--label-size);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.axis-label.y.row-active { color: var(--ink); text-decoration: underline; }
+
+.note.target-label {
+  transform: translate(-8px, 0) translateX(-100%);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.note.divider-label {
+  transform: translateY(-100%) translateY(-7px);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* THE NARROW FRAME'S OWN AXIS. Below 640px the plot rectangle is under 200px wide and six tick
+   labels at this format's fixed type size cannot stand side by side — measured at 375x812, where
+   the first build printed "0 % 5 %10 %15 %20 %25 %" as one run. Every gridline stays; every other
+   NUMBER steps aside, and the one number the whole chart is read against is named in full by the
+   target rule's own label. */
+@media (max-width: 640px) {
+  .axis-label.x.minor { display: none; }
+}
+
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#16191B;--accent:#D4A853;--ink:#FFFFFF;--muted:#a6a8a8;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:600;--note-size:12px;--filter-size:13px;--dot-size:9px"><div class="chart-header"><h2 class="chart-title">No EU country reporting for 2024 has reached the 25 % organic-farmland target</h2><p class="chart-caveat">Land converted or under conversion to organic farming, as a share of utilised agricultural area. Each row is that country&#x27;s own most recent published figure.</p><p class="chart-caveat">Austria has published none since 2020, Greece has published none since 2021 — shown apart, not ranked. Austria was over the line in 2020.</p><p class="chart-caveat">No EU average is drawn: this table&#x27;s own aggregate stops at 2020, at 9.1 %.</p></div><div class="chart-plot lollipop-plot" style="--y-gutter:188px;--x-axis-h:26px;aspect-ratio:828 / 1248"><div class="y-axis" style="--value-col:92px"><span class="axis-label y country" data-row="EE" style="top:4.091653027823241%;color:#FFFFFF">Estonia</span><span class="axis-label y country" data-row="PT" style="top:7.3649754500818325%;color:#FFFFFF">Portugal</span><span class="axis-label y country" data-row="IT" style="top:10.638297872340425%;color:#FFFFFF">Italy</span><span class="axis-label y country" data-row="SE" style="top:13.911620294599016%;color:#FFFFFF">Sweden</span><span class="axis-label y country" data-row="CZ" style="top:17.18494271685761%;color:#FFFFFF">Czechia</span><span class="axis-label y country" data-row="LV" style="top:20.458265139116204%;color:#FFFFFF">Latvia</span><span class="axis-label y country" data-row="SK" style="top:23.731587561374795%;color:#FFFFFF">Slovakia</span><span class="axis-label y country" data-row="FI" style="top:27.00490998363339%;color:#FFFFFF">Finland</span><span class="axis-label y country" data-row="SI" style="top:30.27823240589198%;color:#FFFFFF">Slovenia</span><span class="axis-label y country" data-row="ES" style="top:33.55155482815057%;color:#FFFFFF">Spain</span><span class="axis-label y country" data-row="DE" style="top:36.824877250409166%;color:#FFFFFF">Germany</span><span class="axis-label y country" data-row="DK" style="top:40.098199672667754%;color:#FFFFFF">Denmark</span><span class="axis-label y country" data-row="FR" style="top:43.37152209492635%;color:#FFFFFF">France</span><span class="axis-label y country" data-row="HR" style="top:46.64484451718494%;color:#FFFFFF">Croatia</span><span class="axis-label y country" data-row="LT" style="top:49.91816693944354%;color:#FFFFFF">Lithuania</span><span class="axis-label y country" data-row="CY" style="top:53.191489361702125%;color:#FFFFFF">Cyprus</span><span class="axis-label y country" data-row="BE" style="top:56.46481178396072%;color:#FFFFFF">Belgium</span><span class="axis-label y country" data-row="LU" style="top:59.738134206219314%;color:#FFFFFF">Luxembourg</span><span class="axis-label y country" data-row="RO" style="top:63.0114566284779%;color:#FFFFFF">Romania</span><span class="axis-label y country" data-row="HU" style="top:66.2847790507365%;color:#FFFFFF">Hungary</span><span class="axis-label y country" data-row="NL" style="top:69.55810147299509%;color:#FFFFFF">Netherlands</span><span class="axis-label y country" data-row="IE" style="top:72.83142389525368%;color:#FFFFFF">Ireland</span><span class="axis-label y country" data-row="PL" style="top:76.10474631751228%;color:#FFFFFF">Poland</span><span class="axis-label y country" data-row="BG" style="top:79.37806873977087%;color:#FFFFFF">Bulgaria</span><span class="axis-label y country" data-row="MT" style="top:82.65139116202947%;color:#FFFFFF">Malta</span><span class="axis-label y country is-stale" data-row="AT" style="top:95.0900163666121%;color:#a6a8a8">Austria</span><span class="axis-label y country is-stale" data-row="EL" style="top:98.3633387888707%;color:#a6a8a8">Greece</span><span class="axis-label y value" data-row="EE" style="top:4.091653027823241%;color:#FFFFFF">22.6 %</span><span class="axis-label y value" data-row="PT" style="top:7.3649754500818325%;color:#FFFFFF">21.2 %</span><span class="axis-label y value" data-row="IT" style="top:10.638297872340425%;color:#FFFFFF">19.5 %</span><span class="axis-label y value" data-row="SE" style="top:13.911620294599016%;color:#FFFFFF">16.7 %</span><span class="axis-label y value" data-row="CZ" style="top:17.18494271685761%;color:#FFFFFF">16.0 %</span><span class="axis-label y value" data-row="LV" style="top:20.458265139116204%;color:#FFFFFF">15.6 %</span><span class="axis-label y value" data-row="SK" style="top:23.731587561374795%;color:#FFFFFF">14.8 %</span><span class="axis-label y value" data-row="FI" style="top:27.00490998363339%;color:#FFFFFF">13.5 %</span><span class="axis-label y value" data-row="SI" style="top:30.27823240589198%;color:#FFFFFF">11.9 %</span><span class="axis-label y value" data-row="ES" style="top:33.55155482815057%;color:#FFFFFF">11.9 %</span><span class="axis-label y value" data-row="DE" style="top:36.824877250409166%;color:#FFFFFF">11.1 %</span><span class="axis-label y value" data-row="DK" style="top:40.098199672667754%;color:#FFFFFF">11.1 %</span><span class="axis-label y value" data-row="FR" style="top:43.37152209492635%;color:#FFFFFF">9.5 %</span><span class="axis-label y value" data-row="HR" style="top:46.64484451718494%;color:#FFFFFF">9.0 %</span><span class="axis-label y value" data-row="LT" style="top:49.91816693944354%;color:#FFFFFF">8.8 %</span><span class="axis-label y value" data-row="CY" style="top:53.191489361702125%;color:#FFFFFF">8.8 %</span><span class="axis-label y value" data-row="BE" style="top:56.46481178396072%;color:#FFFFFF">7.4 %</span><span class="axis-label y value" data-row="LU" style="top:59.738134206219314%;color:#FFFFFF">7.2 %</span><span class="axis-label y value" data-row="RO" style="top:63.0114566284779%;color:#FFFFFF">6.2 %</span><span class="axis-label y value" data-row="HU" style="top:66.2847790507365%;color:#FFFFFF">6.1 %</span><span class="axis-label y value" data-row="NL" style="top:69.55810147299509%;color:#FFFFFF">5.1 %</span><span class="axis-label y value" data-row="IE" style="top:72.83142389525368%;color:#FFFFFF">5.0 %</span><span class="axis-label y value" data-row="PL" style="top:76.10474631751228%;color:#FFFFFF">4.9 %</span><span class="axis-label y value" data-row="BG" style="top:79.37806873977087%;color:#FFFFFF">4.0 %</span><span class="axis-label y value" data-row="MT" style="top:82.65139116202947%;color:#FFFFFF">0.8 %</span><span class="axis-label y value is-stale" data-row="AT" style="top:95.0900163666121%;color:#a6a8a8">25.7 % (2020)</span><span class="axis-label y value is-stale" data-row="EL" style="top:98.3633387888707%;color:#a6a8a8">12.2 % (2021)</span></div><svg role="group" aria-label="No EU country reporting for 2024 has reached the 25 % organic-farmland target" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 640 1222" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>A horizontal lollipop chart. One row per European Union member state, each drawn as a stem from zero to that country&#x27;s organic share of its utilised agricultural area, with a dot at the end. A vertical rule at 25 % marks the target the EU set for 2030. The top block holds the 25 member states that published a figure for 2024, ranked from Estonia at 22.6 % down to Malta at 0.8 %; not one of their stems reaches the rule. Below a dividing line sit the 2 member states with no figure for 2024: Austria, 25.7 % in 2020, Greece, 12.2 % in 2021. Austria&#x27;s stem is the only one on the chart that crosses the rule. Every row&#x27;s own year, Eurostat flag and change since 2015 are available on hover, on tap and to a keyboard, and the table below this chart prints all of them in the same order.</desc><rect x="0" y="0" width="640" height="1222" fill="#16191B"></rect><line x1="0" y1="0" x2="0" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="114.28571428571429" y1="0" x2="114.28571428571429" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="228.57142857142858" y1="0" x2="228.57142857142858" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="342.85714285714283" y1="0" x2="342.85714285714283" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="457.14285714285717" y1="0" x2="457.14285714285717" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="571.4285714285714" y1="0" x2="571.4285714285714" y2="1222" stroke="#404244" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" y1="1086" x2="640" y2="1086" stroke="#a6a8a8" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" y1="50" x2="516.1142857142856" y2="50" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="90" x2="485.25714285714287" y2="90" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="130" x2="445.48571428571427" y2="130" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="170" x2="380.79999999999995" y2="170" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="210" x2="364.80000000000007" y2="210" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="250" x2="356.34285714285716" y2="250" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="290" x2="338.0571428571428" y2="290" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="330" x2="308.34285714285716" y2="330" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="370" x2="272.9142857142857" y2="370" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="410" x2="272.22857142857146" y2="410" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="450" x2="253.94285714285712" y2="450" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="490" x2="253.7142857142857" y2="490" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="530" x2="217.37142857142857" y2="530" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="570" x2="205.94285714285715" y2="570" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="610" x2="200.45714285714286" y2="610" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="650" x2="200.2285714285714" y2="650" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="690" x2="169.82857142857142" y2="690" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="730" x2="164.34285714285716" y2="730" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="770" x2="140.8" y2="770" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="810" x2="138.74285714285716" y2="810" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="850" x2="115.65714285714284" y2="850" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="890" x2="113.6" y2="890" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="930" x2="111.54285714285714" y2="930" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="970" x2="90.28571428571428" y2="970" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="1010" x2="17.6" y2="1010" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="1162" x2="587.2" y2="1162" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="0" y1="1202" x2="279.31428571428575" y2="1202" stroke="#D4A853" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="571.4285714285714" y1="0" x2="571.4285714285714" y2="1222" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></line><rect class="hit-area" x="0" y="0" width="640" height="1222" fill="transparent" pointer-events="all"></rect></svg><div class="overlay"><span class="pt" style="left:80.64285714285712%;top:4.091653027823241%" tabindex="0" role="img" aria-label="Estonia · 22.6 % in 2024 · 15.7 % in 2015 · +6.9 points · 21 annual figures published" data-code="EE" data-detail="Estonia · 22.6 % in 2024 · 15.7 % in 2015 · +6.9 points · 21 annual figures published"></span><span class="pt" style="left:75.82142857142857%;top:7.3649754500818325%" tabindex="0" role="img" aria-label="Portugal · 21.2 % in 2024 · 6.5 % in 2015 · +14.7 points · 25 annual figures published · Eurostat: estimated" data-code="PT" data-detail="Portugal · 21.2 % in 2024 · 6.5 % in 2015 · +14.7 points · 25 annual figures published · Eurostat: estimated"></span><span class="pt" style="left:69.60714285714286%;top:10.638297872340425%" tabindex="0" role="img" aria-label="Italy · 19.5 % in 2024 · 11.8 % in 2015 · +7.7 points · 25 annual figures published" data-code="IT" data-detail="Italy · 19.5 % in 2024 · 11.8 % in 2015 · +7.7 points · 25 annual figures published"></span><span class="pt" style="left:59.5%;top:13.911620294599016%" tabindex="0" role="img" aria-label="Sweden · 16.7 % in 2024 · 17.1 % in 2015 · −0.5 points · 25 annual figures published" data-code="SE" data-detail="Sweden · 16.7 % in 2024 · 17.1 % in 2015 · −0.5 points · 25 annual figures published"></span><span class="pt" style="left:57.00000000000001%;top:17.18494271685761%" tabindex="0" role="img" aria-label="Czechia · 16.0 % in 2024 · 13.7 % in 2015 · +2.3 points · 22 annual figures published · Eurostat: estimated" data-code="CZ" data-detail="Czechia · 16.0 % in 2024 · 13.7 % in 2015 · +2.3 points · 22 annual figures published · Eurostat: estimated"></span><span class="pt" style="left:55.67857142857143%;top:20.458265139116204%" tabindex="0" role="img" aria-label="Latvia · 15.6 % in 2024 · 12.3 % in 2015 · +3.3 points · 21 annual figures published" data-code="LV" data-detail="Latvia · 15.6 % in 2024 · 12.3 % in 2015 · +3.3 points · 21 annual figures published"></span><span class="pt" style="left:52.82142857142856%;top:23.731587561374795%" tabindex="0" role="img" aria-label="Slovakia · 14.8 % in 2024 · 9.5 % in 2015 · +5.3 points · 22 annual figures published" data-code="SK" data-detail="Slovakia · 14.8 % in 2024 · 9.5 % in 2015 · +5.3 points · 22 annual figures published"></span><span class="pt" style="left:48.17857142857143%;top:27.00490998363339%" tabindex="0" role="img" aria-label="Finland · 13.5 % in 2024 · 9.9 % in 2015 · +3.6 points · 25 annual figures published · Eurostat: definition differs" data-code="FI" data-detail="Finland · 13.5 % in 2024 · 9.9 % in 2015 · +3.6 points · 25 annual figures published · Eurostat: definition differs"></span><span class="pt" style="left:42.642857142857146%;top:30.27823240589198%" tabindex="0" role="img" aria-label="Slovenia · 11.9 % in 2024 · 8.8 % in 2015 · +3.1 points · 21 annual figures published" data-code="SI" data-detail="Slovenia · 11.9 % in 2024 · 8.8 % in 2015 · +3.1 points · 21 annual figures published"></span><span class="pt" style="left:42.535714285714285%;top:33.55155482815057%" tabindex="0" role="img" aria-label="Spain · 11.9 % in 2024 · 8.2 % in 2015 · +3.7 points · 25 annual figures published" data-code="ES" data-detail="Spain · 11.9 % in 2024 · 8.2 % in 2015 · +3.7 points · 25 annual figures published"></span><span class="pt" style="left:39.67857142857142%;top:36.824877250409166%" tabindex="0" role="img" aria-label="Germany · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published" data-code="DE" data-detail="Germany · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published"></span><span class="pt" style="left:39.64285714285714%;top:40.098199672667754%" tabindex="0" role="img" aria-label="Denmark · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published" data-code="DK" data-detail="Denmark · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published"></span><span class="pt" style="left:33.964285714285715%;top:43.37152209492635%" tabindex="0" role="img" aria-label="France · 9.5 % in 2024 · 4.5 % in 2015 · +5.0 points · 25 annual figures published · Eurostat: estimated" data-code="FR" data-detail="France · 9.5 % in 2024 · 4.5 % in 2015 · +5.0 points · 25 annual figures published · Eurostat: estimated"></span><span class="pt" style="left:32.17857142857143%;top:46.64484451718494%" tabindex="0" role="img" aria-label="Croatia · 9.0 % in 2024 · 4.9 % in 2015 · +4.1 points · 13 annual figures published" data-code="HR" data-detail="Croatia · 9.0 % in 2024 · 4.9 % in 2015 · +4.1 points · 13 annual figures published"></span><span class="pt" style="left:31.321428571428573%;top:49.91816693944354%" tabindex="0" role="img" aria-label="Lithuania · 8.8 % in 2024 · 7.1 % in 2015 · +1.7 points · 21 annual figures published" data-code="LT" data-detail="Lithuania · 8.8 % in 2024 · 7.1 % in 2015 · +1.7 points · 21 annual figures published"></span><span class="pt" style="left:31.285714285714285%;top:53.191489361702125%" tabindex="0" role="img" aria-label="Cyprus · 8.8 % in 2024 · 3.7 % in 2015 · +5.0 points · 21 annual figures published · Eurostat: provisional" data-code="CY" data-detail="Cyprus · 8.8 % in 2024 · 3.7 % in 2015 · +5.0 points · 21 annual figures published · Eurostat: provisional"></span><span class="pt" style="left:26.535714285714285%;top:56.46481178396072%" tabindex="0" role="img" aria-label="Belgium · 7.4 % in 2024 · 5.2 % in 2015 · +2.3 points · 25 annual figures published" data-code="BE" data-detail="Belgium · 7.4 % in 2024 · 5.2 % in 2015 · +2.3 points · 25 annual figures published"></span><span class="pt" style="left:25.678571428571427%;top:59.738134206219314%" tabindex="0" role="img" aria-label="Luxembourg · 7.2 % in 2024 · 3.2 % in 2015 · +4.0 points · 25 annual figures published" data-code="LU" data-detail="Luxembourg · 7.2 % in 2024 · 3.2 % in 2015 · +4.0 points · 25 annual figures published"></span><span class="pt" style="left:22.000000000000004%;top:63.0114566284779%" tabindex="0" role="img" aria-label="Romania · 6.2 % in 2024 · 1.8 % in 2015 · +4.4 points · 20 annual figures published" data-code="RO" data-detail="Romania · 6.2 % in 2024 · 1.8 % in 2015 · +4.4 points · 20 annual figures published"></span><span class="pt" style="left:21.67857142857143%;top:66.2847790507365%" tabindex="0" role="img" aria-label="Hungary · 6.1 % in 2024 · 2.4 % in 2015 · +3.6 points · 23 annual figures published" data-code="HU" data-detail="Hungary · 6.1 % in 2024 · 2.4 % in 2015 · +3.6 points · 23 annual figures published"></span><span class="pt" style="left:18.07142857142857%;top:69.55810147299509%" tabindex="0" role="img" aria-label="Netherlands · 5.1 % in 2024 · 2.7 % in 2015 · +2.4 points · 25 annual figures published" data-code="NL" data-detail="Netherlands · 5.1 % in 2024 · 2.7 % in 2015 · +2.4 points · 25 annual figures published"></span><span class="pt" style="left:17.75%;top:72.83142389525368%" tabindex="0" role="img" aria-label="Ireland · 5.0 % in 2024 · 1.6 % in 2015 · +3.3 points · 25 annual figures published" data-code="IE" data-detail="Ireland · 5.0 % in 2024 · 1.6 % in 2015 · +3.3 points · 25 annual figures published"></span><span class="pt" style="left:17.42857142857143%;top:76.10474631751228%" tabindex="0" role="img" aria-label="Poland · 4.9 % in 2024 · 4.0 % in 2015 · +0.8 points · 22 annual figures published" data-code="PL" data-detail="Poland · 4.9 % in 2024 · 4.0 % in 2015 · +0.8 points · 22 annual figures published"></span><span class="pt" style="left:14.107142857142858%;top:79.37806873977087%" tabindex="0" role="img" aria-label="Bulgaria · 4.0 % in 2024 · 2.4 % in 2015 · +1.6 points · 20 annual figures published" data-code="BG" data-detail="Bulgaria · 4.0 % in 2024 · 2.4 % in 2015 · +1.6 points · 20 annual figures published"></span><span class="pt" style="left:2.7500000000000004%;top:82.65139116202947%" tabindex="0" role="img" aria-label="Malta · 0.8 % in 2024 · 0.3 % in 2015 · +0.5 points · 21 annual figures published" data-code="MT" data-detail="Malta · 0.8 % in 2024 · 0.3 % in 2015 · +0.5 points · 21 annual figures published"></span><span class="pt is-stale" style="left:91.75000000000001%;top:95.0900163666121%" tabindex="0" role="img" aria-label="Austria · 25.7 % in 2020 · its last published year — nothing since · 20.3 % in 2015 · +5.4 points · 21 annual figures published" data-code="AT" data-detail="Austria · 25.7 % in 2020 · its last published year — nothing since · 20.3 % in 2015 · +5.4 points · 21 annual figures published"></span><span class="pt is-stale" style="left:43.64285714285715%;top:98.3633387888707%" tabindex="0" role="img" aria-label="Greece · 12.2 % in 2021 · its last published year — nothing since · 7.7 % in 2015 · +4.5 points · 22 annual figures published · Eurostat: estimated" data-code="EL" data-detail="Greece · 12.2 % in 2021 · its last published year — nothing since · 7.7 % in 2015 · +4.5 points · 22 annual figures published · Eurostat: estimated"></span><span class="note target-label" style="left:89.28571428571429%;top:0">EU target for 2030 — 25 %</span><span class="note divider-label" style="left:0;top:88.8707037643208%">No figure published for 2024</span></div><div class="x-axis"><span class="axis-label x first" style="left:0%;color:#a6a8a8">0 %</span><span class="axis-label x minor" style="left:17.857142857142858%;color:#a6a8a8">5 %</span><span class="axis-label x" style="left:35.714285714285715%;color:#a6a8a8">10 %</span><span class="axis-label x minor" style="left:53.57142857142857%;color:#a6a8a8">15 %</span><span class="axis-label x" style="left:71.42857142857143%;color:#a6a8a8">20 %</span><span class="axis-label x last minor" style="left:89.28571428571429%;color:#a6a8a8">25 %</span></div></div><p class="chart-source">Data: Eurostat, Area under organic farming (sdg_02_40), downloaded 23 August 2026</p></figure>
+<div class="chart-accessible-table" tabindex="0"><table><caption>Every reading behind the chart above, in order.</caption><tbody><tr><td>Estonia · 22.6 % in 2024 · 15.7 % in 2015 · +6.9 points · 21 annual figures published</td></tr><tr><td>Portugal · 21.2 % in 2024 · 6.5 % in 2015 · +14.7 points · 25 annual figures published · Eurostat: estimated</td></tr><tr><td>Italy · 19.5 % in 2024 · 11.8 % in 2015 · +7.7 points · 25 annual figures published</td></tr><tr><td>Sweden · 16.7 % in 2024 · 17.1 % in 2015 · −0.5 points · 25 annual figures published</td></tr><tr><td>Czechia · 16.0 % in 2024 · 13.7 % in 2015 · +2.3 points · 22 annual figures published · Eurostat: estimated</td></tr><tr><td>Latvia · 15.6 % in 2024 · 12.3 % in 2015 · +3.3 points · 21 annual figures published</td></tr><tr><td>Slovakia · 14.8 % in 2024 · 9.5 % in 2015 · +5.3 points · 22 annual figures published</td></tr><tr><td>Finland · 13.5 % in 2024 · 9.9 % in 2015 · +3.6 points · 25 annual figures published · Eurostat: definition differs</td></tr><tr><td>Slovenia · 11.9 % in 2024 · 8.8 % in 2015 · +3.1 points · 21 annual figures published</td></tr><tr><td>Spain · 11.9 % in 2024 · 8.2 % in 2015 · +3.7 points · 25 annual figures published</td></tr><tr><td>Germany · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published</td></tr><tr><td>Denmark · 11.1 % in 2024 · 6.3 % in 2015 · +4.8 points · 25 annual figures published</td></tr><tr><td>France · 9.5 % in 2024 · 4.5 % in 2015 · +5.0 points · 25 annual figures published · Eurostat: estimated</td></tr><tr><td>Croatia · 9.0 % in 2024 · 4.9 % in 2015 · +4.1 points · 13 annual figures published</td></tr><tr><td>Lithuania · 8.8 % in 2024 · 7.1 % in 2015 · +1.7 points · 21 annual figures published</td></tr><tr><td>Cyprus · 8.8 % in 2024 · 3.7 % in 2015 · +5.0 points · 21 annual figures published · Eurostat: provisional</td></tr><tr><td>Belgium · 7.4 % in 2024 · 5.2 % in 2015 · +2.3 points · 25 annual figures published</td></tr><tr><td>Luxembourg · 7.2 % in 2024 · 3.2 % in 2015 · +4.0 points · 25 annual figures published</td></tr><tr><td>Romania · 6.2 % in 2024 · 1.8 % in 2015 · +4.4 points · 20 annual figures published</td></tr><tr><td>Hungary · 6.1 % in 2024 · 2.4 % in 2015 · +3.6 points · 23 annual figures published</td></tr><tr><td>Netherlands · 5.1 % in 2024 · 2.7 % in 2015 · +2.4 points · 25 annual figures published</td></tr><tr><td>Ireland · 5.0 % in 2024 · 1.6 % in 2015 · +3.3 points · 25 annual figures published</td></tr><tr><td>Poland · 4.9 % in 2024 · 4.0 % in 2015 · +0.8 points · 22 annual figures published</td></tr><tr><td>Bulgaria · 4.0 % in 2024 · 2.4 % in 2015 · +1.6 points · 20 annual figures published</td></tr><tr><td>Malta · 0.8 % in 2024 · 0.3 % in 2015 · +0.5 points · 21 annual figures published</td></tr><tr><td>Austria · 25.7 % in 2020 · its last published year — nothing since · 20.3 % in 2015 · +5.4 points · 21 annual figures published</td></tr><tr><td>Greece · 12.2 % in 2021 · its last published year — nothing since · 7.7 % in 2015 · +4.5 points · 22 annual figures published · Eurostat: estimated</td></tr></tbody></table></div>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// THIS BEAT'S OWN INTERACTION SCRIPT. The format's generic `renderWeb` inlines
+// `chart-web/assets/interaction.mjs`, which resolves a pointer to the nearest reading by its
+// x-coordinate ALONE — exactly right for a line, where x is the period and is unique per reading.
+// A horizontal lollipop is the opposite arrangement: twenty-seven rows share the same value axis
+// and are separated by y ALONE, and several of them sit within a pixel of each other in x. Resolving
+// by x would answer with whichever country happened to have a similar share, which is silently
+// wrong and is precisely the class of defect a rendered PNG can never show. `nearestRow` below
+// measures the row's own vertical band, so a pointer anywhere along a row answers with that row —
+// which is what a reader dragging down a ranking expects.
+//
+// The runner beside this file substitutes this script for the skill's own after `renderWeb` has
+// written the page, and fails loudly if the shape it expects to find has changed rather than
+// leaving the wrong script in place.
+
+/** Index of the row in `rows` (each `{y}` in the same client-pixel space as the pointer) whose
+ *  centre is closest to `y`. One dimension, deliberately: a lollipop row IS its y, and a pointer
+ *  out in the empty space to the right of a short stem is still unambiguously on that row. */
+function nearestRow(rows, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < rows.length; i++) {
+    const d = Math.abs(rows[i].y - y);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one plot: its `.pt` dots, the `.hit-area` rectangle inside its `<svg>` and the shared
+ *  tooltip. Every dot already carries its own `data-detail` and its own `aria-label`, baked
+ *  server-side; nothing here invents or recomputes either. */
+function initLollipop(figure, tooltip) {
+  const plot = figure.querySelector(".chart-plot");
+  if (!plot) return;
+  const dots = Array.prototype.slice.call(plot.querySelectorAll(".pt"));
+  if (dots.length === 0) return;
+  const hitArea = plot.querySelector(".hit-area");
+
+  // Measured in SCREEN pixels, once and again on resize, never per pointer move: the frame stretches
+  // with `preserveAspectRatio="none"`, so the geometry's own canonical units and the reader's
+  // screen do not share a scale, and "nearest" has to be asked in the space the pointer lives in.
+  let coords = [];
+  function measure() {
+    coords = dots.map((d) => {
+      const r = d.getBoundingClientRect();
+      return { y: r.top + r.height / 2 };
+    });
+  }
+  measure();
+  window.addEventListener("resize", measure);
+
+  let hovered = null;
+
+  function paint() {
+    dots.forEach((d) => d.classList.toggle("pt-active", d === hovered));
+    // The row's own name and value light with its dot: a ranking read across a wide screen is a
+    // long way from the mark to the label, and highlighting only the dot leaves the reader to find
+    // their own place in the gutter. `data-code` is the join, baked server-side.
+    const code = hovered ? hovered.getAttribute("data-code") : null;
+    plot.querySelectorAll("[data-row]").forEach((el) => {
+      el.classList.toggle("row-active", code !== null && el.getAttribute("data-row") === code);
+    });
+  }
+
+  function clear() {
+    hovered = null;
+    paint();
+    tooltip.hidden = true;
+  }
+
+  function show(dot, clientX, clientY) {
+    hovered = dot;
+    paint();
+    tooltip.textContent = dot.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path — pointer events fire for mouse, pen and touch alike — and resolve
+  // over the whole plot rectangle, so a touch reader never has to land a tap on a 9px dot.
+  function fromPointer(evt) {
+    const i = nearestRow(coords, evt.clientY);
+    show(dots[i], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard. Every dot is already `tabIndex=0` at build time and stays reachable with this script
+  // absent entirely; this layer adds the same detail box a hover shows, and arrow keys that walk the
+  // ranking in the order it is drawn — down the page is down the ranking, because the rows were
+  // sorted that way before they were placed.
+  dots.forEach((dot, i) => {
+    dot.addEventListener("focus", function () {
+      const r = dot.getBoundingClientRect();
+      show(dot, r.left + r.width / 2, r.top);
+    });
+    dot.addEventListener("blur", clear);
+    dot.addEventListener("keydown", function (evt) {
+      let next = null;
+      if (evt.key === "ArrowDown" || evt.key === "ArrowRight") next = Math.min(i + 1, dots.length - 1);
+      else if (evt.key === "ArrowUp" || evt.key === "ArrowLeft") next = Math.max(i - 1, 0);
+      else if (evt.key === "Home") next = 0;
+      else if (evt.key === "End") next = dots.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        dot.blur();
+        return;
+      }
+      if (next !== null && next !== i) {
+        evt.preventDefault();
+        dots[next].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll(".chart-figure").forEach(function (figure) {
+    initLollipop(figure, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call, so this file can also be read in a context with no
+// `document` (inspecting `nearestRow` directly). In a browser the guard is always true and the
+// inlined script self-starts the moment it is parsed.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>
