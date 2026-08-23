@@ -1,0 +1,142 @@
+{
+  "pinnedSize": "landscape",
+  "deliveredSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "photos": [
+    {
+      "file": "episode_1_vs_50.jpg",
+      "intrinsic": {
+        "width": 2115,
+        "height": 2400
+      },
+      "aspect": 0.881,
+      "exifOrientation": null,
+      "rawBytes": 1501922,
+      "box": {
+        "width": 536,
+        "height": 447
+      },
+      "drawn": {
+        "width": 394,
+        "height": 447
+      },
+      "letterbox": {
+        "x": 71,
+        "y": 0
+      }
+    },
+    {
+      "file": "multimediaFile-4684.jpg",
+      "intrinsic": {
+        "width": 2400,
+        "height": 1600
+      },
+      "aspect": 1.5,
+      "exifOrientation": 1,
+      "rawBytes": 1222214,
+      "box": {
+        "width": 536,
+        "height": 447
+      },
+      "drawn": {
+        "width": 536,
+        "height": 357
+      },
+      "letterbox": {
+        "x": 0,
+        "y": 45
+      }
+    },
+    {
+      "file": "multimediaFile-4699.jpg",
+      "intrinsic": {
+        "width": 2400,
+        "height": 884
+      },
+      "aspect": 2.715,
+      "exifOrientation": 1,
+      "rawBytes": 614239,
+      "box": {
+        "width": 536,
+        "height": 447
+      },
+      "drawn": {
+        "width": 536,
+        "height": 197
+      },
+      "letterbox": {
+        "x": 0,
+        "y": 125
+      }
+    }
+  ],
+  "photosDeclareAltAndCredit": {
+    "photos": 3,
+    "missingAlt": 0,
+    "missingCredit": 0,
+    "creditRecordedAbsent": 0
+  },
+  "weightAgainstCeiling": {
+    "bytes": 4455904,
+    "ceiling": 27962027,
+    "over": false
+  },
+  "duplicatedPayload": [],
+  "graphicFillsItsFrame": {
+    "fraction": 0.7612364969135802,
+    "floor": 0.6639999999999999,
+    "under": false
+  },
+  "runsOutsideTheirColumns": [],
+  "typeTokens": [
+    29,
+    33,
+    57
+  ],
+  "minTypePx": 26,
+  "frozenManifestRoundTrips": [
+    {
+      "attempt": 1,
+      "refusal": "photo 1 of 3 has no alt text — a photograph without alt text is unusable to a screen reader (image-beat/references/image-discipline.md, \"Alt text and credit\")",
+      "filled": {
+        "photo": 1,
+        "file": "episode_1_vs_50.jpg",
+        "field": "alt",
+        "answered": true
+      }
+    },
+    {
+      "attempt": 2,
+      "refusal": "photo 1 of 3 (\"Two frames from one fixed webcam, one above the other. In the upper frame, dated 23 December 2024, the crater is a deep bowl: a tall banded tan wall stands well above a dark sunken floor. In the lower frame, dated 27 June 2026, that floor has risen into a wide flat grey plain and the wall above it is far shorter. A small red lava fountain plays at the left edge of both frames.\") has no credit — a photograph without a credit is a rights problem (image-beat/references/image-discipline.md, \"Alt text and credit\")",
+      "filled": {
+        "photo": 1,
+        "file": "episode_1_vs_50.jpg",
+        "field": "credit",
+        "answered": true
+      }
+    },
+    {
+      "attempt": 3,
+      "refusal": null,
+      "filled": null
+    }
+  ],
+  "captionArithmetic": {
+    "boxBottom": 720,
+    "namedGapPx": 22,
+    "seed": {
+      "captionBaseline": 742,
+      "inkTop": 717.25,
+      "gapBelowBox": -2.75
+    },
+    "thisBeat": {
+      "captionBaseline": 775,
+      "inkTop": 750.25,
+      "gapBelowBox": 30.25
+    },
+    "says": "the seed's own rule puts the caption's ink -2.8px below the bottom of the letterbox bar, against the 22px its constant is named for; this beat adds the font size and lands at 30.3px"
+  },
+  "titleMeasuredPx": 1138
+}
