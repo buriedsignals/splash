@@ -364,6 +364,12 @@ real beat writes its own runner in that same shape — never editing this skill'
   the scene itself should change.
 - `scripts/verify-scrolly.mjs` — the continuous-scroll guard, runnable by hand on any rendered
   scrolly: `bun skills/scrolly/scripts/verify-scrolly.mjs <file.html> [--width=1600]`.
+- `scripts/detect-wraps-the-world.mjs` — a world camera fills its box by repeating the world east and
+  west, and every painted copy draws the marks the primary draws there. `verify-scrolly.mjs` asks it
+  at every step and every width; the population is derived from each plate's own longitude span, so
+  the eight beats in this vehicle that are not world cameras never see it. Read its header for why
+  `map-web`'s pointer census could not be carried here, and `references/scrolly-discipline.md` for
+  what wrapping cannot fix — 19.9% of this beat's own evidence, measured.
 - `scripts/render-still.mjs` — this skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`.
 - `output-proof/preview.png` — the drawn frame, rendered from this skill's own data.
 - `output-proof/track-1-image.png`, `output-proof/track-2-drawn.png`, `output-proof/track-3-map.png`,
@@ -382,6 +388,8 @@ real beat writes its own runner in that same shape — never editing this skill'
   and what the x-axis strip actually needs, the data layer, and the rendered beat's own claims
   recomputed from the frozen file.
 - `test/canon.test.ts` — the canon's shape, including that the seed still carries a map and a chart.
+- `test/wraps-the-world.test.ts` — the wrap's two decisions: how many copies a box needs, and whether
+  every visible one carries the marks, is registered on its tile, and reaches the box.
 
 ## A declared guard is wired to run
 

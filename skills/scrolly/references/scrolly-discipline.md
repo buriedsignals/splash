@@ -1427,6 +1427,83 @@ delivery. Two decisions are worth copying:
   Continuous-tone imagery is the one medium JPEG is built for; the drawn and chart frames stay
   vector, where the same trade would be a real loss.
 
+## A world camera fills its box by REPEATING the world, and the marks repeat with it (2026-08-23)
+
+The owner's ruling, given about `map-web` and extended when a second vehicle turned out to carry the
+same camera: **a world map wraps.** Repeating the world east and west is the normal behaviour of an
+interactive map, so a camera that already spans a full turn of longitude fills a box wider than one
+world by painting the world again beside itself, rather than sitting narrow in a letterbox.
+
+**This is about ONE beat today, and the population is derived rather than typed.** Measured across
+every plate in this tree: `proof/mapscrolly-quakes-three-ways` spans 359.8° and every other map in
+this vehicle spans 0.1° to 59°. `verify-scrolly.mjs` reads the span off the plate's own
+`frameCorners`, so the rule reaches whatever is baked next without anybody remembering to add it.
+
+**The defect was never the repeat.** Two days before the ruling, `map-web` had been fixed for
+painting three worlds — and what was wrong there was that ONE set of hit targets covered all three,
+so a reader pointing at the second Africa got nothing. This vehicle's version of that defect is
+photographed beside the beat (`drive/1600x900-worldcopies-bare.png`): the live map repeated
+Australia, New Zealand and the Americas' Pacific margin into the side bands with **none of the beat's
+14,057 dots on them**, beside a paragraph counting every one. The emptiest coasts in the picture are
+the most seismically active on earth.
+
+So: **every painted copy of the world draws the marks the primary draws on the part of the world it
+repeats.** `everyPaintedWorldCarriesTheMarks` decides it and `verify-scrolly.mjs` drives it at every
+step and every width, counting the points the compositor really answers for — never the elements,
+because this format's densest mark is a single `<path>` of 14,057 dots and an element census would
+read 1/1 on the exact frame the defect was photographed on.
+
+**What does NOT repeat, and this is the half a wrap ruling makes easy to forget.** The ANNOTATION —
+the one ring the step's own sentence names — stays singular. Repeating it put a second ringed hexagon
+1,296px away with nothing said about it, which is the picture contradicting its own paragraph in a
+new costume. The surface and the annotation are two groups for exactly this reason. The legend does
+not repeat either: it is HTML in the frame's own corner and belongs to the frame, not to a world.
+
+**The keyboard and the accessible table do not multiply — because in this vehicle they do not exist.**
+Measured across every delivered scrolly beat: zero marks on any of the four tracks carry
+`data-detail`, no beat renders a table, and the shared interaction census records every one of them
+as `measurable: false, probed: 0`. There is no per-mark hover reading, no Tab stop per mark and no
+table row to duplicate. That is a standing exception of this format (`same-facts-without-the-picture`,
+`reachable-by-keyboard`), not something the wrap changed — and it is why the pointer census
+`map-web` answers this ruling with cannot be carried here: it would report `{marks: 0}` on every page
+it ever ran on, which is a false confirmation and not a check.
+
+**BOTH substrates tile, and they hand over rather than overlap.** The live layer follows MapLibre,
+which paints the copies itself and translates the marks in screen pixels to match; the fallback tiles
+in plate units under the browser's own `preserveAspectRatio`. `html.qm-live` takes the fallback's
+copies to zero at the same moment it takes the plate to zero, so the two are never both painted.
+
+**The fallback tiles the PICTURE, not the world, and the half pixel is why.** A world plate pictures
+359.8° of the 360, so the world is about half a plate unit wider than the picture of it. Tiling at
+the world's width leaves that half unit of page ground at every seam — 0.8px at 1600x900, 1.6px on a
+2990x1718 screen, a hairline through the map. Tiling at the picture's own width closes it and skips
+0.2° of open Pacific either side of the antimeridian instead, and keeps plate and marks moving
+together under one fit so they cannot drift apart on any copy. The live layer has real tiles to
+register against and tiles at the world's true width; the fallback has only itself.
+
+**A `<use>` per COPY, not per mark, and it costs almost nothing here.** `map-web` needs a `<use>` per
+mark because each copy has to carry its own hit target. A scrolly copy carries no targets, so one
+reference redraws the whole surface: measured, the wrap cost this beat **231 bytes** on a 1.32 MB
+page — 0.018%, against the 7.5% the same ruling cost the equivalent `map-web` beat.
+
+### What wrapping CANNOT fix, measured rather than argued
+
+**Longitude repeats; latitude does not.** A box WIDER than the world is filled by repeating. A box
+TALLER than the plate is not, because there is no ground north of the pole — the only way to fill it
+is to scale the plate up until its height binds, and that crops longitude.
+
+On a wide box that is free: at 1600x900 the graphic's box is 1600x816.5 and at 2990x1718 it is
+2990x1649.5, and three tiles cover both **100% on both axes**, up from 82.0% and 88.7% of the width
+before. On a NARROW box it is not free, and this vehicle's graphic is the whole viewport, so a phone
+gives it a 0.643 box against a 1.608 plate. Filling that height means showing 143.8° of longitude
+centred on 0° — and this beat's own first sentence reads *"Every earthquake of magnitude 4.0 and
+above the USGS catalogued in 2024: 14,057 of them, one dot each."* Measured against the catalogue:
+that crop holds **2,809 of 14,130 on-frame events, 19.9%**. At 768x1024 it holds 4,435, 31.4%.
+
+So a narrow box keeps the letterbox — 100% of the width, 52.5% and 40.0% of the height — and that is
+the right answer, not a shortfall to be closed later. A picture that fills its box and contradicts
+the sentence over it is worse than one that leaves ground at the top and bottom and is true.
+
 ## What this format does not attempt
 
 **A moving camera.** The map track shows one baked plate. A scroll-driven `flyTo` between waypoints
