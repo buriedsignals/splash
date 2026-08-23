@@ -274,13 +274,15 @@ export function readNumericToken(raw) {
 // holds the two to one decision.
 //
 // WHAT WAS HERE UNTIL 2026-08-23 and why it had to go: `splitCsvLine`, a per-LINE quote-aware
-// splitter over `csvText.split("\n")`. It read a quoted comma correctly and a quoted NEWLINE not at
+// splitter over the text cut into lines first. It read a quoted comma correctly and a quoted
+// NEWLINE not at
 // all — measured on a three-row table whose note column held one wrapped sentence, it returned four
 // rows, the fourth being the sentence's tail read as an entity name with every other column empty.
 // `intake` froze that table with the parser below; this skill read it back with a different one.
 /** A csv's rows and fields, RFC 4180. THE READER EVERY OTHER ONE IN THIS TREE WAS WRITTEN INSTEAD
  *  OF, and the one the catalogue's own `csv-split-by-hand` cites as "already shipped and nobody
- *  used": a bare `row.split(",")` tears `"1,234.5"` into two fields and `"Netherlands, the"` in
+ *  used": a row cut on every literal comma tears `"1,234.5"` into two fields and `"Netherlands,
+ *  the"` in
  *  half, silently, with every column after it one off.
  *
  *  A QUOTED FIELD MAY CARRY A NEWLINE, and that is the clause a line-oriented reader cannot have.
@@ -288,7 +290,7 @@ export function readNumericToken(raw) {
  *  `readFrozenRows` carried until 2026-08-23: measured on a three-row table whose note column held
  *  one wrapped sentence, it returned FOUR rows, the fourth being the sentence's second half read as
  *  an entity name with every other column empty. `csvSplitByHand` cannot see that defect — there is
- *  no `.split(",")` in it — which is why the two skills that read a journalist's frozen table read
+ *  no bare comma split in it at all — which is why the two skills that read a journalist's table read
  *  it with one reader rather than with two that agree on the easy cases.
  *
  *  Every field comes back as TEXT. Deciding whether a cell is a number is `readNumericToken`'s job
