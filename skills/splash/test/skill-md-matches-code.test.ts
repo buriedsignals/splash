@@ -622,6 +622,25 @@ describe("the splash dispatcher conforms to the orchestration spine", () => {
     expect(text.split("\n").length).toBeLessThanOrEqual(260);
   });
 
+  it("should name the durable bound records everywhere G3 and G4 are described", async () => {
+    const text = await readFile(DISPATCHER, "utf8");
+    const gateRows = tableRows(getSection(text, "Gates") ?? "");
+    const g3 = gateRows.find(([gate]) => gate.startsWith("G3 "));
+    const g4 = gateRows.find(([gate]) => gate.startsWith("G4 "));
+    const neverList = getSection(text, "Never-list") ?? "";
+
+    expect(g3?.[1]).toContain("BRIEF.md");
+    expect(g3?.[1]).toContain("OUTPUT-REVIEW.json");
+    expect(g3?.[1]).toMatch(/current.*plan.*finding.*render.*QA/i);
+    expect(g4?.[1]).toContain("HANDOVER.md");
+    expect(g4?.[1]).toContain(".delivery-manifest.json");
+    expect(g4?.[1]).toMatch(/OUTPUT-REVIEW|review/);
+    expect(g4?.[1]).toMatch(/current.*export|artifact.*digest/i);
+    expect(neverList).not.toContain("APPROVED.md");
+    expect(neverList).toContain("OUTPUT-REVIEW.json");
+    expect(neverList).toContain(".delivery-manifest.json");
+  });
+
   it("should brief every pipeline persona with the shared spine §3 frontmatter contract", async () => {
     const files = (await readdir(AGENTS)).filter((f) => f.endsWith(".md")).sort();
     expect(files).toEqual(PERSONAS.map((p) => `${p}.md`));

@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { whereIs } from "../scripts/where.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import type { BoundReviewFixture } from "../../deliver/test/output-review-fixture";
 import {
   publishStagedDelivery,
   replacementArtifacts,
@@ -72,13 +73,6 @@ slots:
     candidates: [trajectory, comparison]
 ---
 `;
-interface BoundReviewFixture {
-  id: string;
-  planVersion: number;
-  draftDigest: string;
-  findingIds: string[];
-  feedbackDigest?: string | null;
-}
 
 function sha256(bytes: Buffer | string): string {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;

@@ -1,9 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, realpath, rm, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  symlink,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import {
+  approveCurrentOutput,
+  TEST_FINDING_IDS,
+  TEST_PLAN_VERSION,
+} from "../../deliver/test/output-review-fixture";
+import type { BoundReviewFixture } from "../../deliver/test/output-review-fixture";
+import {
+  publishStagedDelivery,
+  replacementArtifacts,
+} from "../../deliver/scripts/delivery-replacement.mjs";
 import { runOperation } from "../scripts/run-operation.mjs";
 import { whereIs } from "../scripts/where.mjs";
 
@@ -40,6 +59,49 @@ function sha256(value: string | Buffer) {
   return `sha256:${createHash("sha256").update(value).digest("hex")}`;
 }
 
+function currentBrief(
+  planVersion = TEST_PLAN_VERSION,
+  findingIds = TEST_FINDING_IDS,
+) {
+  return `---
+planVersion: ${planVersion}
+findingIds: [${findingIds.join(", ")}]
+---
+
+# Current beat plan
+`;
+}
+
+async function writeCurrentBrief(
+  targetBeatDir = beatDir,
+  planVersion = TEST_PLAN_VERSION,
+  findingIds = TEST_FINDING_IDS,
+) {
+  await writeFile(
+    join(targetBeatDir, "BRIEF.md"),
+    currentBrief(planVersion, findingIds),
+  );
+}
+
+async function currentAnalystHashes() {
+  return {
+    storyboard: sha256(await readFile(join(storyDir, "STORYBOARD.md"))),
+    profile: sha256(await readFile(join(storyDir, "source", "profile.json"))),
+    sourceData: sha256(await readFile(join(storyDir, "source", "data.csv"))),
+  };
+}
+
+async function writeCurrentAnalystData(targetBeatDir = beatDir) {
+  await writeFile(
+    join(targetBeatDir, "data.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      meta: { hashes: await currentAnalystHashes() },
+      rows: [{ year: 2026, rainfall: 67 }],
+    })}\n`,
+  );
+}
+
 beforeEach(async () => {
   workspace = await realpath(await mkdtemp(join(tmpdir(), "splash-conformance-")));
   storiesRoot = join(workspace, "stories");
@@ -59,15 +121,8 @@ async function freezeAndRender() {
   await writeFile(join(storyDir, "source", "data.csv"), "year,rainfall\n2025,100\n2026,67\n");
   await writeFile(join(storyDir, "source", "profile.json"), "{}\n");
   await writeFile(join(storyDir, "STORYBOARD.md"), STORYBOARD);
-  const hashes = {
-    storyboard: sha256(await readFile(join(storyDir, "STORYBOARD.md"))),
-    profile: sha256(await readFile(join(storyDir, "source", "profile.json"))),
-    sourceData: sha256(await readFile(join(storyDir, "source", "data.csv"))),
-  };
-  await writeFile(
-    join(beatDir, "data.json"),
-    `${JSON.stringify({ schemaVersion: 1, meta: { hashes }, rows: [{ year: 2026, rainfall: 67 }] })}\n`,
-  );
+  await writeCurrentBrief();
+  await writeCurrentAnalystData();
   await writeFile(join(beatDir, "renders", "rainfall.svg"), RENDER);
 }
 
@@ -77,27 +132,29 @@ async function bindApproval() {
   return review;
 }
 
-async function bindDelivery(review: Awaited<ReturnType<typeof bindApproval>>) {
+async function bindDelivery(review: BoundReviewFixture) {
   const exportDir = join(storyDir, "export", OUTPUT_ID);
-  await mkdir(exportDir, { recursive: true });
-  await writeFile(join(exportDir, "rainfall.svg"), RENDER);
-  await writeFile(join(exportDir, "HANDOVER.md"), "# Rainfall visualization\nPlace above the fold.\n");
+  const operationId = "delivery-demo-1";
+  const { stagingDir } = replacementArtifacts(exportDir, operationId);
+  await mkdir(stagingDir, { recursive: true });
+  await writeFile(join(stagingDir, "rainfall.svg"), RENDER);
   await writeFile(
-    join(exportDir, ".delivery-manifest.json"),
-    `${JSON.stringify({
-      schemaVersion: 1,
-      state: "complete",
-      operationId: "delivery-demo-1",
-      outputId: OUTPUT_ID,
+    join(stagingDir, "HANDOVER.md"),
+    "# Rainfall visualization\nPlace above the fold.\n",
+  );
+  await publishStagedDelivery({
+    stagingDir,
+    exportDir,
+    manifest: {
+      operationId,
       reviewId: review.id,
       planVersion: review.planVersion,
       draftDigest: review.draftDigest,
       findingIds: review.findingIds,
       form: "owned-file",
       format: "static",
-      artifacts: [{ path: "rainfall.svg", digest: sha256(RENDER) }],
-    })}\n`,
-  );
+    },
+  });
 }
 
 async function completeDemo() {
@@ -155,6 +212,166 @@ describe("authoritative Splash orchestration", () => {
       expect((await whereIs(storyDir)).phase).toBe(expectedPhase);
     });
   }
+
+  for (const [name, mutate] of [
+    ["missing current plan record", () => unlink(join(beatDir, "BRIEF.md"))],
+    [
+      "changed current plan version",
+      () => writeCurrentBrief(beatDir, TEST_PLAN_VERSION + 1),
+    ],
+    [
+      "changed current findings",
+      () => writeCurrentBrief(beatDir, TEST_PLAN_VERSION, ["finding-reframed"]),
+    ],
+  ] as const) {
+    it(`reopens G3 for a ${name}`, async () => {
+      await completeDemo();
+      await mutate();
+      expect((await whereIs(storyDir)).phase).toBe("production");
+    });
+  }
+
+  for (const [name, mutate] of [
+    [
+      "missing hash owner",
+      async (path: string) => {
+        const record = JSON.parse(await readFile(path, "utf8"));
+        delete record.meta.hashes;
+        await writeFile(path, `${JSON.stringify(record)}\n`);
+      },
+    ],
+    [
+      "malformed hash owner",
+      async (path: string) => {
+        const record = JSON.parse(await readFile(path, "utf8"));
+        record.meta.hashes = [];
+        await writeFile(path, `${JSON.stringify(record)}\n`);
+      },
+    ],
+    [
+      "missing storyboard hash",
+      async (path: string) => {
+        const record = JSON.parse(await readFile(path, "utf8"));
+        delete record.meta.hashes.storyboard;
+        await writeFile(path, `${JSON.stringify(record)}\n`);
+      },
+    ],
+    [
+      "missing profile hash",
+      async (path: string) => {
+        const record = JSON.parse(await readFile(path, "utf8"));
+        delete record.meta.hashes.profile;
+        await writeFile(path, `${JSON.stringify(record)}\n`);
+      },
+    ],
+    [
+      "missing source-data hash",
+      async (path: string) => {
+        const record = JSON.parse(await readFile(path, "utf8"));
+        delete record.meta.hashes.sourceData;
+        await writeFile(path, `${JSON.stringify(record)}\n`);
+      },
+    ],
+  ] as const) {
+    it(`reopens production for analyst data with a ${name}`, async () => {
+      await completeDemo();
+      await mutate(join(beatDir, "data.json"));
+      const state = await whereIs(storyDir);
+      expect(state.phase).toBe("production");
+      expect(state.missing).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/beat 1-rainfall: analyst .*rebuild/),
+        ]),
+      );
+    });
+  }
+
+  it("requires the current export tree to contain no unlisted regular file", async () => {
+    await completeDemo();
+    await writeFile(
+      join(storyDir, "export", OUTPUT_ID, "unlisted.txt"),
+      "not in the delivery manifest\n",
+    );
+    expect((await whereIs(storyDir)).phase).toBe("delivery");
+  });
+
+  it("binds HANDOVER.md bytes as part of the exact export tree", async () => {
+    await completeDemo();
+    await writeFile(
+      join(storyDir, "export", OUTPUT_ID, "HANDOVER.md"),
+      "# Drifted handover\n",
+    );
+    expect((await whereIs(storyDir)).phase).toBe("delivery");
+  });
+
+  it("rejects an added symbolic link in the current export tree", async () => {
+    await completeDemo();
+    const target = join(workspace, "outside-export-target.txt");
+    await writeFile(target, "outside\n");
+    await symlink(
+      target,
+      join(storyDir, "export", OUTPUT_ID, "unlisted-link"),
+    );
+    await expect(whereIs(storyDir)).rejects.toThrow(/symbolic link/);
+  });
+
+  it("rejects an added special file in the current export tree", async () => {
+    await completeDemo();
+    const specialPath = join(storyDir, "export", OUTPUT_ID, "unlisted-fifo");
+    const mkfifo = Bun.spawn(["mkfifo", specialPath], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const stderr = await new Response(mkfifo.stderr).text();
+    if ((await mkfifo.exited) !== 0) throw new Error(`mkfifo failed: ${stderr}`);
+    await expect(whereIs(storyDir)).rejects.toThrow(/special file/);
+  });
+
+  it("keeps production open when a current storyboard slot has no render", async () => {
+    await completeDemo();
+    const twoSlots = STORYBOARD.replace(
+      "    candidates: [trajectory, comparison]\n---",
+      `    candidates: [trajectory, comparison]
+  - id: 2
+    proves: "Snowfall fell too."
+    medium: chart
+    format: static
+    size: landscape
+    reachable: yes
+    chosen: trajectory
+    candidates: [trajectory, comparison]
+---`,
+    );
+    await writeFile(join(storyDir, "STORYBOARD.md"), twoSlots);
+    await writeCurrentAnalystData();
+    const secondBeat = join(storyDir, "beats", "2-snowfall");
+    await mkdir(join(secondBeat, "renders"), { recursive: true });
+    await writeCurrentBrief(secondBeat);
+    await writeCurrentAnalystData(secondBeat);
+
+    const state = await whereIs(storyDir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual(
+      expect.arrayContaining([expect.stringMatching(/beat 2.*render/)]),
+    );
+  });
+
+  it("rejects a symlinked beat ancestor outside the story root", async () => {
+    await completeDemo();
+    const outsideBeat = join(workspace, "outside-beat");
+    await rename(beatDir, outsideBeat);
+    await symlink(outsideBeat, beatDir, "dir");
+    await expect(whereIs(storyDir)).rejects.toThrow(/beat|ancestor|story/);
+  });
+
+  it("rejects a symlinked export ancestor outside the story root", async () => {
+    await completeDemo();
+    const exportDir = join(storyDir, "export", OUTPUT_ID);
+    const outsideExport = join(workspace, "outside-export");
+    await rename(exportDir, outsideExport);
+    await symlink(outsideExport, exportDir, "dir");
+    await expect(whereIs(storyDir)).rejects.toThrow(/export|ancestor|story/);
+  });
 
   it("blocks the real production dispatcher after exactly three failures and resumes blocked", async () => {
     await freezeAndRender();

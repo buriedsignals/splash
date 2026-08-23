@@ -19,6 +19,7 @@ import {
   REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../storyboard/scripts/storyboard.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import type { BoundReviewFixture } from "../../deliver/test/output-review-fixture";
 import {
   publishStagedDelivery,
   replacementArtifacts,
@@ -89,13 +90,6 @@ function without<T extends Record<string, string>>(
 
 const storyboard = build();
 
-interface BoundReviewFixture {
-  id: string;
-  planVersion: number;
-  draftDigest: string;
-  findingIds: string[];
-  feedbackDigest?: string | null;
-}
 
 // A completed delivery is the published form plus a manifest bound to the current approved review.
 // Build it through the production manifest writer so fixtures carry the same artifact digests as
@@ -131,16 +125,6 @@ async function deliver(
   });
 }
 
-// What the analyst pre-step leaves behind: `beats/<beat>/data.json`, the chart-ready file
-// artifact every craft skill reads instead of the frozen CSV. Any fixture that walks past the
-// analyst precondition needs one, exactly as it needs a render before approval.
-async function analyse(storyDir: string, beat: string) {
-  await mkdir(join(storyDir, "beats", beat), { recursive: true });
-  await writeFile(
-    join(storyDir, "beats", beat, "data.json"),
-    JSON.stringify({ schemaVersion: 1 }),
-  );
-}
 
 // What a STALE artifact looks like on disk: data.json whose recorded meta.hashes name inputs
 // that no longer match the frozen files. The analyst records sha256 of STORYBOARD.md,
@@ -720,7 +704,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     await writeFile(join(dir, "export", "rainfall.png"), "x");
     const state = await whereIs(dir);
     expect(state.missing).toContain("no renders exist in any beat");
@@ -786,7 +770,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "9-ghost"), { recursive: true });
     await writeFile(join(dir, "beats", "9-ghost", "data.json"), "{}");
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { createHash, randomUUID } from "node:crypto";
-import { lstat, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { runPreflight } from "./preflight.mjs";
 import { probeCloudflare, probeDatawrapper, probeMapTiler } from "./keys.mjs";
@@ -190,6 +190,8 @@ async function existingStoryFile(story, relativePath, label) {
 const PRODUCTION_ATTEMPTS_FILE = "PRODUCTION-ATTEMPTS.json";
 const PRODUCTION_ATTEMPTS_SCHEMA_VERSION = 1;
 const MAX_PRODUCTION_ATTEMPTS = 3;
+const SHA256 = /^sha256:[0-9a-f]{64}$/;
+const PRODUCTION_ATTEMPTS_LOCK = `.${PRODUCTION_ATTEMPTS_FILE}.lock`;
 
 function productionInputDigest(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
@@ -204,21 +206,19 @@ function validateProductionAttempts(record, path) {
     !["map-bake", "datawrapper-produce"].includes(record.operation) ||
     typeof record.outputId !== "string" ||
     typeof record.inputPath !== "string" ||
-    typeof record.inputDigest !== "string" ||
+    !SHA256.test(record.inputDigest ?? "") ||
     !Number.isSafeInteger(record.attempts) ||
     record.attempts < 1 ||
     record.attempts > MAX_PRODUCTION_ATTEMPTS ||
-    !["failed", "blocked"].includes(record.status) ||
+    !["failed", "blocked", "reserved"].includes(record.status) ||
     typeof record.reason !== "string" ||
-    record.reason.length === 0
+    record.reason.length === 0 ||
+    (record.status === "blocked" && record.attempts !== MAX_PRODUCTION_ATTEMPTS) ||
+    (record.status === "failed" && record.attempts === MAX_PRODUCTION_ATTEMPTS) ||
+    (record.status === "reserved" &&
+      (typeof record.reservationId !== "string" || record.reservationId.length === 0))
   ) {
     throw new Error(`production attempt receipt is invalid at ${path}`);
-  }
-  if (
-    (record.status === "blocked") !==
-      (record.attempts === MAX_PRODUCTION_ATTEMPTS)
-  ) {
-    throw new Error(`production attempt receipt has inconsistent status at ${path}`);
   }
   return record;
 }
@@ -256,6 +256,90 @@ async function writeProductionAttempts(path, record) {
     throw error;
   }
 }
+function wait(milliseconds) {
+  return new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
+}
+
+function processIsAlive(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+async function readLockOwner(path) {
+  try {
+    return JSON.parse(await readFile(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+async function acquireProductionLock(beatDir, waitMs = 30_000) {
+  const lockDir = join(beatDir, PRODUCTION_ATTEMPTS_LOCK);
+  const ownerPath = join(lockDir, "owner.json");
+  const ownerId = randomUUID();
+  const deadline = Date.now() + waitMs;
+  while (true) {
+    try {
+      await mkdir(lockDir);
+      try {
+        await writeFile(
+          ownerPath,
+          `${JSON.stringify({ ownerId, pid: process.pid })}\n`,
+          { flag: "wx" },
+        );
+      } catch (error) {
+        await rm(lockDir, { recursive: true, force: true });
+        throw error;
+      }
+      return async () => {
+        if ((await readLockOwner(ownerPath))?.ownerId !== ownerId) {
+          throw new Error(`production attempt lock ownership changed at ${lockDir}`);
+        }
+        await rm(lockDir, { recursive: true, force: true });
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+
+    const owner = await readLockOwner(ownerPath);
+    let lockStat = null;
+    try {
+      lockStat = await lstat(lockDir);
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    if ((owner && !processIsAlive(owner.pid)) || (!owner && Date.now() - lockStat.mtimeMs > 1_000)) {
+      const stale = `${lockDir}-stale-${randomUUID()}`;
+      try {
+        await rename(lockDir, stale);
+        await rm(stale, { recursive: true, force: true });
+        continue;
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`another production dispatcher holds the attempt lock at ${lockDir}`);
+    }
+    await wait(25);
+  }
+}
+
+async function withProductionLock(beatDir, task) {
+  const release = await acquireProductionLock(beatDir);
+  try {
+    return await task();
+  } finally {
+    await release();
+  }
+}
 
 function blockedProductionResult(record) {
   return {
@@ -276,37 +360,65 @@ async function runManagedProductionAttempt({
   run,
 }) {
   const receiptPath = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
-  const previousReceipt = await readProductionAttempts(receiptPath);
-  const currentReceipt =
-    previousReceipt?.operation === operation &&
-    previousReceipt.outputId === outputId &&
-    previousReceipt.inputPath === inputPath &&
-    previousReceipt.inputDigest === inputDigest
-      ? previousReceipt
-      : null;
-  if (currentReceipt?.status === "blocked") {
-    return blockedProductionResult(currentReceipt);
-  }
+  const reservation = await withProductionLock(beatDir, async () => {
+    const previousReceipt = await readProductionAttempts(receiptPath);
+    const currentReceipt =
+      previousReceipt?.operation === operation &&
+      previousReceipt.outputId === outputId &&
+      previousReceipt.inputPath === inputPath &&
+      previousReceipt.inputDigest === inputDigest
+        ? previousReceipt
+        : null;
+    if (currentReceipt?.status === "blocked" || currentReceipt?.status === "reserved") {
+      return { blocked: blockedProductionResult(currentReceipt) };
+    }
 
-  try {
-    const result = await run();
-    await rm(receiptPath, { force: true });
-    return result;
-  } catch (error) {
     const attempts = (currentReceipt?.attempts ?? 0) + 1;
-    const receipt = {
+    const reservationId = randomUUID();
+    await writeProductionAttempts(receiptPath, {
       schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
       operation,
       outputId,
       inputPath,
       inputDigest,
       attempts,
-      status:
-        attempts === MAX_PRODUCTION_ATTEMPTS ? "blocked" : "failed",
-      reason: error instanceof Error ? error.message : String(error),
-    };
-    await writeProductionAttempts(receiptPath, receipt);
-    if (receipt.status === "blocked") return blockedProductionResult(receipt);
+      status: "reserved",
+      reason: `production attempt ${attempts} is already running`,
+      reservationId,
+    });
+    return { attempts, reservationId };
+  });
+  if (reservation.blocked) return reservation.blocked;
+
+  try {
+    const result = await run();
+    await withProductionLock(beatDir, async () => {
+      const current = await readProductionAttempts(receiptPath);
+      if (current?.status === "reserved" && current.reservationId === reservation.reservationId) {
+        await rm(receiptPath, { force: true });
+      }
+    });
+    return result;
+  } catch (error) {
+    const receipt = await withProductionLock(beatDir, async () => {
+      const current = await readProductionAttempts(receiptPath);
+      if (current?.status !== "reserved" || current.reservationId !== reservation.reservationId) {
+        return null;
+      }
+      const failed = {
+        schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+        operation,
+        outputId,
+        inputPath,
+        inputDigest,
+        attempts: reservation.attempts,
+        status: reservation.attempts === MAX_PRODUCTION_ATTEMPTS ? "blocked" : "failed",
+        reason: error instanceof Error ? error.message : String(error),
+      };
+      await writeProductionAttempts(receiptPath, failed);
+      return failed;
+    });
+    if (receipt?.status === "blocked") return blockedProductionResult(receipt);
     throw error;
   }
 }
@@ -442,6 +554,9 @@ export async function runOperation(
     }
     case "map-bake": {
       const parameters = requireParameters(request, ["contractDigest"]);
+      if (!SHA256.test(parameters.contractDigest ?? "")) {
+        throw new Error("map contract digest must be a sha256 digest");
+      }
       const { story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
       const inputPath = "MAP-BAKE.json";

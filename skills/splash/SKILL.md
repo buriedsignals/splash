@@ -79,8 +79,8 @@ Each gate: what closes it (a sealed file), who closes it (unit vs human).
 | G1 — takeaway confirmed against frozen data                  | `STORYBOARD.md` front matter: confirmed `takeaway` + recorded `grounding:` verdict                | journalist (asked by `storyboard`) |
 | G2a/G2b/G2c — medium, publication format, size per slot       | slot's `medium:` / `format:` / `size:` + `reachable: yes`                                        | journalist |
 | G2-treatment / G2-producer — treatment, then conditional producer choice | slot's `chosen` (drawn from its own `candidates`) + `producer`/`datawrapperType` when eligible | journalist |
-| G3 — pixel approval, per beat                                | `beats/<n>-<slug>/APPROVED.md`                                                                   | journalist |
-| G4 — delivery hand-over, per beat                            | `export/<beat>/HANDOVER.md`                                                                      | unit, after the journalist chooses the form |
+| G3 — pixel approval, per beat                                | current `BRIEF.md` plan and findings + approved `OUTPUT-REVIEW.json` bound to that current plan, findings, render, and passing QA | journalist |
+| G4 — delivery hand-over, per beat                            | `HANDOVER.md` + complete `.delivery-manifest.json` bound to the accepted `OUTPUT-REVIEW.json` and current export artifact digests | unit, after the journalist chooses the form |
 
 **Human gates end the turn.** At every human gate, present the decision and recommendation, then
 **end the turn**: do not continue, self-approve, or treat silence as approval; act only after the
@@ -134,17 +134,20 @@ silently substituted.
   naming our paths or modules, so a maintainer-facing sentence physically cannot reach a delivered
   document.
 - It **never states a delivery constraint that did not come from `offerForms`** — calling it early
-  fails loudly (`deliver` requires the beat's `APPROVED.md`), instead of licensing a guess.
+  fails loudly (`deliver` requires the current approved `OUTPUT-REVIEW.json` bound to the beat's
+  `BRIEF.md`, findings, render, and passing QA), instead of licensing a guess. G4 remains open until
+  `HANDOVER.md` and `.delivery-manifest.json` bind that review to the exact current export digests.
 - **A missing prerequisite is reported and never designed around** (`scripts/preflight.mjs` carries
   the same line verbatim). A missing hard prerequisite blocks `ready` and surfaces through
   `assertPreflightReady`; a missing capability key is reported honestly in `capabilities` without
   blocking the session.
 - The **analyst never selects a chart type** — the slot's candidates were confirmed at Gate 2; the
   analyst shapes the frozen rows into that slot's artifact and nothing else.
-- **Neither this skill nor the analyst nor the designer ever approves pixels.** G3 closes when the
-  journalist has been shown the rendered artifact and says yes, into `APPROVED.md` — never because
-  a data file, a checklist, or a design rubric scored clean. The rubric informs the question; it
-  does not answer it. No persona ever answers a human gate for the journalist.
+- **Neither this skill nor the analyst nor the designer ever approves pixels.** G3 closes only
+  after the journalist sees the current rendered artifact and says yes, and the resulting approved
+  `OUTPUT-REVIEW.json` binds that render and passing QA to the current `BRIEF.md` plan and findings.
+  A data file, checklist, or clean design-rubric score cannot close it, and no persona ever answers
+  a human gate for the journalist.
 
 ## Tuning knobs
 
@@ -154,7 +157,7 @@ silently substituted.
 | How many phases the state machine recognises                                        | `6` (`intake`, `framing`, `storyboard`, `production`, `delivery`, `done`)                              | `scripts/where.mjs`                          |
 | Source files intake must freeze before leaving `intake`                             | `3` (`article.md`, `data.csv`, `profile.json`)                                                         | `whereIs`, `scripts/where.mjs`               |
 | Hand-of-the-journalist fields required before leaving `storyboard`                  | `6` (`HAND.length`, mirroring `storyboard`'s `HAND`)                                                   | `scripts/where.mjs`                          |
-| What a beat needs before the story can be `done`                                    | Current approved `OUTPUT-REVIEW.json` bound to render, plan, findings, passing QA, and feedback; `HANDOVER.md`; and a complete `.delivery-manifest.json` bound to that review and current exported artifact digests | `completionState`, `scripts/where.mjs` |
+| What a beat needs before the story can be `done`                                    | Current `BRIEF.md` plan and findings; approved `OUTPUT-REVIEW.json` bound to that plan, those findings, the render, passing QA, and feedback; plus `HANDOVER.md` and a complete `.delivery-manifest.json` bound to that review and the exact current export artifact digests | `completionState`, `scripts/where.mjs` |
 | Production cycles a beat gets before the status is `blocked`                        | `3`                                                                                                   | Operating contract clause 5, this document   |
 | Abstract verbs in the registry                                                      | `8`                                                                                                   | Verbs, this document                         |
 | Personas briefed under `agents/`                                                     | `5` (`archivist`, `editor`, `analyst`, `designer`, `courier`)                                          | `agents/`, repo root; parity-tested in `test/skill-md-matches-code.test.ts` |
