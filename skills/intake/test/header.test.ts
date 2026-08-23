@@ -32,6 +32,7 @@
  * find, and `readHeader` says so rather than picking one.
  */
 import { describe, expect, it } from "bun:test";
+import { parseCsv } from "../scripts/csv.mjs";
 import { readHeader } from "../scripts/header.mjs";
 
 describe("readHeader", () => {
@@ -121,8 +122,10 @@ describe("readHeader", () => {
   // back as something no table can be made of: ONE column named `{`.
   it("does not turn a JSON document into a table", () => {
     const json = JSON.stringify({ site: "A", photographs: [{ file: "a.jpg" }] }, null, 2);
-    const rows = json.trim().split("\n").map((line) => line.split(","));
-    const found = readHeader(rows);
+    // Read with intake's OWN reader, not with a hand roll: `splash/test/csv-hand-split.test.ts`
+    // walks this repository for a file that cuts rows on a newline and fields on a bare comma, and
+    // a test that demonstrates the defect by committing it is still committing it.
+    const found = readHeader(parseCsv(json.trim()));
     expect(found.names).toEqual(["{"]);
     expect(found.names.length).toBeLessThan(2);
   });
