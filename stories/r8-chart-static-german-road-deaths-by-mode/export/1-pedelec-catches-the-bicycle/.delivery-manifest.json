@@ -1,0 +1,18 @@
+{
+  "operationId": "40a436ba-976c-467e-805e-c37a6c73a81c",
+  "reviewId": "1-pedelec-catches-the-bicycle-review-2026-08-23-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:abfe5a64dd96ea1e8b172ac5256b86362bf7558ad8448bddd8915f4eec0b6ea4",
+  "findingIds": [
+    "pedelec-rises-39-to-214",
+    "bicycle-falls-357-to-248",
+    "the-two-series-have-not-crossed",
+    "series-begins-2014"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-23T08:50:27.156Z",
+  "schemaVersion": 1,
+  "outputId": "1-pedelec-catches-the-bicycle",
+  "state": "complete"
+}
