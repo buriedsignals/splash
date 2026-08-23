@@ -641,7 +641,7 @@ const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, size);
 assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
-frameCoversTheBoxRange({ width: size, height: frameHeight }, DELIVERY.studySet, DELIVERY.boxAspects);
+frameCoversTheBoxRange({ width: size, height: frameHeight }, DELIVERY.studySet, DELIVERY.boxAspects, DELIVERY.cannotCover && { ...DELIVERY.cannotCover, worldWidthPx: camera.worldWidthPx });
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -688,7 +688,7 @@ const geometry = {
   // A `cannotCover` plate is contained rather than cropped, so its label box IS its frame.
   labelFrame: DELIVERY.cannotCover
     ? { width: size, height: frameHeight, left: 0, top: 0, safeWidth: size, safeHeight: frameHeight }
-    : labelSafeFrame({ width: size, height: frameHeight }, DELIVERY.boxAspects),
+    : labelSafeFrame({ width: size, height: frameHeight }, DELIVERY.boxAspects, Boolean(DELIVERY.cannotCover)),
   points: projectedPoints,
   // THE SEA THIS PLATE WAS PAINTED WITH, and where it came from — so the live layer paints the same
   // one the fallback plate does (they used to paint two different seas and nothing measured the

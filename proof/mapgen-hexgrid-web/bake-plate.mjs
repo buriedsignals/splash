@@ -520,7 +520,7 @@ const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, width);
 assertCameraReachesBounds(frameCorners, BEAT.bounds, width);
-frameCoversTheBoxRange({ width: width, height: height }, DELIVERY.studySet, DELIVERY.boxAspects, DELIVERY.cannotCover);
+frameCoversTheBoxRange({ width: width, height: height }, DELIVERY.studySet, DELIVERY.boxAspects, DELIVERY.cannotCover && { ...DELIVERY.cannotCover, worldWidthPx: camera.worldWidthPx });
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -572,7 +572,7 @@ const geometry = {
   // A `cannotCover` plate is contained rather than cropped, so its label box IS its frame.
   labelFrame: DELIVERY.cannotCover
     ? { width: width, height: height, left: 0, top: 0, safeWidth: width, safeHeight: height }
-    : labelSafeFrame({ width: width, height: height }, DELIVERY.boxAspects),
+    : labelSafeFrame({ width: width, height: height }, DELIVERY.boxAspects, Boolean(DELIVERY.cannotCover)),
   frame,
   bounds: BEAT.bounds,
   style: BEAT.style,

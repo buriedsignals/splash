@@ -52,6 +52,28 @@
 // page whose real range has escaped the range its plate was baked for, which is the only thing that
 // makes a bake-time number safe to trust at delivery time.
 
+// THE RULING THAT FOLLOWED, 2026-08-23, from the owner looking at the two beats this file laid out
+// CONTAINED on the argument below: *that is the normal behaviour of an interactive map — go ahead
+// and repeat the map on the sides.* He is right about the medium. A slippy map wraps; MapLibre
+// paints world copies by default; a world camera therefore fills a box wider than its own Mercator
+// aspect by REPEATING THE WORLD EAST AND WEST, and the third option this file used to weigh (a
+// capped box) is off the table.
+//
+// SO THE DERIVATION BELOW STANDS AND ITS CONSEQUENCE CHANGES. `cannotCover` is still true and still
+// derived from the camera's own longitude span — ONE plate cannot cover a box wider than itself,
+// because past a full turn there is no more world. What is new is the answer: not one plate stretched
+// or cropped, but `worldCopies` of it, side by side, each carrying its own marks. The plate is the
+// TILE, and `frameCoversTheBoxRange` refuses a tile that is not exactly one world wide — because a
+// plate half a degree short of a turn repeats a picture that no longer registers with the geography
+// beside it, and every copy east of the first would be a little more wrong than the last.
+//
+// AND THE ENGINEERING CONSEQUENCE IS THE POINT, not the repeat. Two days before the ruling this
+// format was fixed for painting three worlds, and the defect was never the second painted world: it
+// was that there was ONE set of hit targets over three of them. A reader pointing at the second
+// Africa got nothing, and nothing measured it. So a copy is only allowed to exist here because
+// `render-web.mjs` gives it its own marks and `verify-wraps-the-world.mjs` COUNTS how many of them
+// answer a pointer, on each visible copy, at every width this format drives.
+
 /** The capability this script carries, read by `scripts/guards.mjs` and checked against
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
 export const GUARDS = ["frameCoversTheBoxRange"];
@@ -181,20 +203,17 @@ export function deliveryFrame(bounds, width, boxAspects, clearance = NO_CLEARANC
   const study = studyAspect(bounds);
   let unitWidth = Math.max(study, widest);
   let unitHeight = Math.max(1, study / narrowest);
-  // THE ONE STUDY SET THIS CANNOT BE SOLVED FOR, and it is named rather than approximated. A frame
-  // is `unitWidth / study` times the longitude the bounds asked for; a camera that already spans a
-  // full turn has no more world to its east or west, and past the world's own width MapLibre draws a
-  // REPEAT continent carrying none of this beat's marks — a bare copy a reader can reasonably take
-  // for a place with no data (`assertWorldFillsFrame` is the bake's own refusal of exactly that).
-  // So for such a camera the two requirements are provably in conflict, and the conflict is
-  // three-way rather than a preference: at `real-owid-life-expectancy`'s widest measured box
-  // (2.572:1) a 1568px-wide graphic showing the whole world is 1065px tall against a 610px stage.
-  // Full width, the whole subject, one window: pick two.
+  // THE ONE STUDY SET NO SINGLE PLATE CAN COVER, derived rather than named by hand. A frame is
+  // `unitWidth / study` times the longitude the bounds asked for; a camera that already spans a full
+  // turn has no more world to its east or west, so a frame wider than one world is a frame with
+  // nothing to put in it — margin here would be a bare repeat carrying none of this beat's marks,
+  // which is what `assertWorldFillsFrame` refuses in the plate.
   //
-  // The frame is then the camera's own shape, exactly as before, and `cannotCover` travels into
-  // `geometry.json` so the render can lay the page out the old way and SAY SO rather than crop
-  // 42.8% of the latitude range in silence. It is not a throw: a beat is not defective for being
-  // about the whole world.
+  // SO THE FRAME STAYS EXACTLY ONE WORLD, and the box is filled by REPEATING that world east and
+  // west (the owner's ruling, at the head of this file). The frame is the camera's own shape, the
+  // plate is a TILE, and `cannotCover` travels into `geometry.json` so the render knows to lay out
+  // `worldCopies` of it rather than one. It is not a throw: a beat is not defective for being about
+  // the whole world, and it no longer has to give up its box for it either.
   const askedLon = bounds[1][0] - bounds[0][0];
   const frameLon = (askedLon * unitWidth) / study;
   const cannotCover =
@@ -206,7 +225,7 @@ export function deliveryFrame(bounds, width, boxAspects, clearance = NO_CLEARANC
           why:
             `this camera spans ${Math.round(askedLon * 10) / 10}° of longitude and the box range asks for a ` +
             `frame ${Math.round(frameLon * 10) / 10}° wide — past a full turn there is no more world, only a ` +
-            `repeat of it`,
+            `repeat of it, so the box is filled by repeating the world east and west`,
         }
       : null;
   if (cannotCover) {
@@ -241,7 +260,39 @@ export function deliveryFrame(bounds, width, boxAspects, clearance = NO_CLEARANC
     boxAspects: measured,
     clearance: readClearance(clearance),
     cannotCover,
+    // HOW MANY WORLDS THE DELIVERED PAGE PAINTS. One for every camera that is not the world; for a
+    // world camera, the odd number of copies that covers the widest box this beat is delivered into.
+    worldCopies: cannotCover ? worldCopiesFor({ width, height }, measured) : 1,
   };
+}
+
+/**
+ * HOW MANY COPIES OF THE WORLD IT TAKES TO FILL THE WIDEST BOX — the ruling's own arithmetic, and
+ * the one number `render-web.mjs` lays the page out from.
+ *
+ * A wrapping plate is drawn at the box's HEIGHT and repeated sideways, because latitude is the one
+ * axis that cannot be repeated: a world map has no ground north of the north pole, so paying for
+ * width out of latitude is the crop the owner refused, and a horizontal repeat costs nothing at all.
+ * One copy is therefore `boxHeight · frameAspect` wide against a box `boxHeight · boxAspect` wide,
+ * and the count is `boxAspect / frameAspect` rounded up.
+ *
+ * ODD, always, and that is not a tidiness preference: the copies are CENTRED on the box, so an even
+ * count would put a seam down the middle of the picture and hand the reader two half-worlds where a
+ * single-world layout showed one whole one. An odd count keeps the middle copy exactly where the one
+ * copy used to be — which is what makes the wrap invisible to every other reading in this format.
+ *
+ * Measured on the two beats this exists for: `real-owid-life-expectancy` (frame 1.472:1, widest box
+ * 2.572:1) needs 1.747 worlds and gets 3; `proof/mapgen-hexgrid-web` (1.756:1, 2.185:1) needs 1.244
+ * and gets 3. Both spend one copy either side of the middle and clip what hangs over.
+ */
+export function worldCopiesFor(frame, boxAspects) {
+  const { widest } = readBoxAspects(boxAspects);
+  if (!frame || !(frame.width > 0) || !(frame.height > 0))
+    throw new Error(
+      `worldCopiesFor: a ${frame?.width}x${frame?.height} frame has no aspect to repeat`,
+    );
+  const needed = widest / (frame.width / frame.height);
+  return Math.max(1, 2 * Math.ceil((needed - 1) / 2) + 1);
 }
 
 /** The largest `aspect`-shaped rectangle that fits inside `frame`, centred — what a reader of a box
@@ -272,13 +323,45 @@ export function visibleBand(frame, aspect) {
  */
 export const TOLERANCE_PX = 1;
 
-export function frameCoversTheBoxRange(frame, studySet, boxAspects, cannotCover = null) {
+export function frameCoversTheBoxRange(frame, studySet, boxAspects, wrap = null) {
   const { narrowest, widest } = readBoxAspects(boxAspects);
-  // A NAMED, MEASURED IMPOSSIBILITY IS NOT A DEFECT — but it is only allowed to silence this
-  // refusal because `deliveryFrame` DERIVED it from the camera's own longitude span, and because
-  // the render is told about it and lays the page out differently and says so. An exemption a
-  // caller could simply pass in would be a way to turn this guard off.
-  if (cannotCover) return;
+  // A WRAPPING FRAME IS NOT EXEMPT, IT IS ASKED A DIFFERENT QUESTION — and this is where the ruling
+  // cost this guard its early return. Until 2026-08-23 a `cannotCover` frame simply silenced the
+  // refusal, which is this codebase's own recurring shape: a requirement that cannot fire is worse
+  // than a missing one. A wrapping plate is a TILE, so the two things that can actually be wrong
+  // about it are asked here instead.
+  //
+  //   · IS IT ONE WORLD WIDE? The repeat is drawn at the frame's own period, so a frame that is not
+  //     the world's own width paints copies that no longer register with the geography beside them,
+  //     and the error compounds east and west. `worldWidthPx` is the bake's own measurement of the
+  //     camera (`cameraFacts`), never a number this file could derive — which is why it is REQUIRED
+  //     rather than optional: a caller that omitted it would turn the check off in silence.
+  //   · DO THE COPIES REACH THE WIDEST BOX? `worldCopiesFor` answers it and `render-web.mjs` lays
+  //     out exactly that many, so this is the two halves being held against each other rather than
+  //     a second opinion of the same arithmetic.
+  if (wrap) {
+    const world = Number(wrap.worldWidthPx);
+    if (!Number.isFinite(world) || !(world > 0))
+      throw new Error(
+        `a wrapping frame is a tile and its width has to be the world's own: worldWidthPx is ` +
+          `${wrap.worldWidthPx}. Pass the bake's own camera measurement (cameraFacts().worldWidthPx) ` +
+          `beside cannotCover — nothing here can derive it, and a missing one would silence the check.`,
+      );
+    if (Math.abs(world - frame.width) > TOLERANCE_PX)
+      throw new Error(
+        `this plate cannot be repeated: the world draws ${world.toFixed(1)}px inside a ${frame.width}px ` +
+          `frame, so each copy east or west of the middle one lands ${Math.abs(world - frame.width).toFixed(1)}px ` +
+          `further from where its geography actually is. A wrapping plate's frame IS one world.`,
+      );
+    const copies = worldCopiesFor(frame, boxAspects);
+    const reach = (copies * frame.width) / frame.height;
+    if (reach < widest - 1e-9)
+      throw new Error(
+        `${copies} copies of this world reach a ${reach.toFixed(3)}:1 box and this beat is delivered ` +
+          `into one ${widest.toFixed(3)}:1 — the reader would see page ground beside the map.`,
+      );
+    return;
+  }
   const short = [];
   const atWidest = visibleBand(frame, widest);
   if (atWidest.height < studySet.height - TOLERANCE_PX)
@@ -313,6 +396,11 @@ export function frameCoversTheBoxRange(frame, studySet, boxAspects, cannotCover 
  * OWN aspect and no wider, and the honest thing is to record that number rather than to claim the
  * range that was asked for. Recorded in `geometry.json` as `coversTo`, read back by
  * `verify-fills-the-box.mjs`, and reported per page rather than averaged away.
+ *
+ * WHAT THIS NUMBER MEANS SINCE THE WRAP RULING: it is what ONE copy of the plate covers, which is
+ * still exactly the right reading for a plate whose delivery repeats it — the copies are what carry
+ * the rest, and `verify-fills-the-box.mjs` reads it as "the widest box one world fills" rather than
+ * as a shortfall. A non-wrapping plate is unaffected: it only ever gets one copy.
  */
 export function coversTo(frame, studySet) {
   return {
@@ -341,10 +429,14 @@ export function coversTo(frame, studySet) {
  * offsets, so a caller can hand it over in place of the frame without a new signature: the sides a
  * flip is decided against are `right` and `bottom`, and both are absolute plate coordinates.
  */
-export function labelSafeFrame(frame, boxAspects) {
+export function labelSafeFrame(frame, boxAspects, wraps = false) {
   const { narrowest, widest } = readBoxAspects(boxAspects);
   const safeWidth = visibleBand(frame, narrowest).width;
-  const safeHeight = visibleBand(frame, widest).height;
+  // A WRAPPING PLATE IS NEVER CROPPED IN LATITUDE, so its safe height is the whole frame. It is
+  // drawn at the box's own height and repeated sideways — the widest box takes MORE COPIES, not a
+  // shallower band — and reading `visibleBand(frame, widest).height` here would fence a wrapping
+  // beat's labels into the middle 57% of a plate no crop ever touches.
+  const safeHeight = wraps ? frame.height : visibleBand(frame, widest).height;
   const left = (frame.width - safeWidth) / 2;
   const top = (frame.height - safeHeight) / 2;
   return {
