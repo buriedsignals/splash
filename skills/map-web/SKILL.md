@@ -161,7 +161,7 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
-| Pure core (polygons) | `assets/geo-choropleth.ts` | `joinValues`/`unmatchedValues` (the join that fails loud), `binIndexLowerInclusive`/`scalePosition` (the classes), `sequentialRamp`/`dataRampEnd`/`assertRampReads` (the ramp), `noDataFor`/`waterFor`/`assertSurfacesRead` (the two surfaces that are NOT the data, derived from the same palette and measured against the ramp), `collidingPointerTargets` and `marksWithNoPointerPath` (whose 28px button a neighbour buries, and which marks this camera draws smaller than a pixel — the second is the larger fact and the one a journalist can act on), `pathFromRings`/`simplifyRing`/`keepRing`. This skill's OWN copy, byte-shared with the worked beat |
+| Pure core (polygons) | `assets/geo-choropleth.ts` | `joinValues`/`unmatchedValues` (the join that fails loud), `binIndexLowerInclusive`/`scalePosition` (the classes), `contrastRamp`/`dataRampEnd` (the ramp, spaced in contrast; `sequentialRamp` and `assertRampReads` are still here for the cores that call them, and a choropleth calls neither), `noDataFor`/`waterFor`/`surfaceReadings`/`assertSurfacesRead` (the page, the sea, the no-data fill and every class as ONE question, measured in contrast), `collidingPointerTargets` and `marksWithNoPointerPath` (whose 28px button a neighbour buries, and which marks this camera draws smaller than a pixel — the second is the larger fact and the one a journalist can act on), `pathFromRings`/`simplifyRing`/`keepRing`. This skill's OWN copy, byte-shared with the worked beat |
 | Pure core (points) | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
 | Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`), and makes the live layer obey the same filter selection the CSS obeys (`selectedGroup`, `applyFilter`) |
@@ -367,14 +367,50 @@ about land**. A country with NO READING was painted at the luminance of a real c
 this format has shipped, and `assertRampReads` could not see it — it measures the ramp against the
 GROUND, never these two against the RAMP.
 
-`offRampLuminance` puts both in the one band that is not the data — between the ground and the first
-class, which is where "this is not a reading" belongs, because a region with no value is nearer to
-bare ground than to any class. `noDataFor`/`waterFor` derive them there (neutral for no-data, blue
-for water — rule 7 is a rule about HUE), `assertSurfacesRead` refuses a surface a reader would read
-as a value, a surface that is really the ground, and a pair nobody could tell apart. A ramp that
-starts too close to its own ground fails there and is told to raise its low end, which is the fix.
-The two old hexes are not deleted: they are the MIDPOINT of the axis each colour now travels, so the
-derivation passes through the value this family already used.
+**AND DERIVING THEM WAS NOT ENOUGH, because the first derivation put them at the MIDPOINT of that
+band and measured them in a LUMINANCE GAP.** A midpoint's contrast against the upper end climbs
+toward 2.00:1 and is under it everywhere, so the separation was capped **by construction** — no
+ground, no ramp low end and no class count could ever have bought a case more. And `0.02` of
+relative luminance is 1.338:1 beside a `#16191B` ground and 1.017:1 beside white, so the rule
+meant something seventeen times stricter on one of this format's two shipped grounds than on the
+other: it refused a dark newsroom's charter fourteen times out of fourteen, short by 0.0015, while
+passing white's worse picture at 1.192:1. Measured on the world choropleth that earned this, the
+no-data fill sat **1.28:1** from the class of countries that had filed a real zero, on a map whose
+headline is that those two are opposite facts.
+
+**One decision now answers the whole surface set — the page, the sea, the no-data fill and every
+class — in CONTRAST, against two floors that are derived rather than typed:**
+
+- `KIND_FLOOR` — **3:1**, WCAG 2.2 SC 1.4.11, the same floor the top class already carries against
+  the ground. It applies between things that differ in KIND: a region carrying no reading against a
+  region carrying one, and the sea against either.
+- `stepFloorFor(classes)` — **`3 ** (1 / classes)`**. Between things of the same kind that a reader
+  ORDERS: two adjacent classes, or a surface against the page behind it. It is what one step is
+  worth in the smallest ramp this family permits. **A longer ramp is therefore the CHEAPER ask** —
+  15.588:1 of range for two classes, 10.808:1 for six, 10.168:1 for nine — which is the opposite of
+  what a typed low end assumed.
+
+`contrastRamp(ground, end, classes)` derives the whole scale: the sea one step off the page, the
+no-data fill one step past the sea, the FIRST CLASS `KIND_FLOOR` above it, then each class the
+smallest step that still clears the floor, and the last class the colour this newsroom's accent
+actually reaches. Every floor is measured on the finished 8-bit hex, so nothing lands one rounding
+step the wrong side of a promise. There is **no low end and no high end to type**. A palette that
+cannot pay is refused with the bill itemised and the class count that would fit —
+`#5B8A8A` on `#16191B` reaches 8.473:1 where six classes need 10.808:1, and no count up to twelve
+fits it. `assertSurfacesRead` throws with **every** failed reading at once.
+
+**A choropleth does not call `assertRampReads`,** and that is a replacement rather than an omission:
+its step rule is the same wrong unit. On the ramp derived for `#FFFFFF` and `#B2182B` the smallest
+step is 0.0188 of luminance and **1.221:1** of contrast — legible, and refused — while `0.02` at the
+light end of that same ramp would pass a step of 1.02:1 nobody can see. It stays byte-identical for
+the symbol, hex and forest cores that still call it.
+
+**The static genre answers this differently and it is worth knowing which you are writing.**
+`map-beat`'s `Co2MapStill.tsx` paints no-data as a 45° HATCH over the ground — *"No-data is a
+TEXTURE, not another shade: any shade is a shade the ramp could have used"* — and a texture cannot
+be read as a class whatever the palette does. The web genre paints a fill, because its live
+MapLibre layer takes a colour and not an SVG pattern, so the fill has to be derived far enough away
+instead.
 
 `scripts/render-web.mjs` reads its ground and accent from `PALETTE.md` with `readPalette` — never a hex literal. `PALETTE.md` is the answer `palette`'s own proposal (`proposePalette` + `formatProposal`, `skills/palette/scripts/`) put to the journalist; it is not this skill's to write. Missing file: `readPalette` refuses, names the next action — run the proposal, show it to the journalist, record the answer — and names what to do when nobody is there to answer right now: record the proposal's own recommended option — never inventing a colour, never one that failed the 3:1 floor — with `origin` naming its source and the file's own prose saying no journalist answered; a proposal with no passing option still ends the turn there. That is `palette-names-its-source`, this format's own share of `skills/palette/SKILL.md`.
 
@@ -447,8 +483,9 @@ for its own generic function.
 | How many reference sizes the legend shows | `3` | `niceReferenceValues`'s `count` default, `geo-symbol.ts` |
 | The frame's HEIGHT (derived from the camera, never `--size` on both axes) | `frameHeightFor(bounds, width)` | `bake-plate.mjs` |
 | How much of a frame may be margin the camera never asked for | `0.05` | `FRAME_MARGIN_TOLERANCE`, `bake-plate.mjs` |
-| The luminance a no-data fill and a water tint are placed at | the midpoint of ground → first class | `offRampLuminance`, `geo-choropleth.ts` |
-| How far those two must sit from the nearest class | `0.02` relative luminance | `SURFACE_CLEARANCE`, `geo-choropleth.ts` |
+| Where the sea, the no-data fill and the first class are placed | one step off the page, one step past the sea, `KIND_FLOOR` above that — nothing typed | `contrastRamp`, `geo-choropleth.ts` |
+| How far a surface carrying no reading must sit from EVERY class | `3:1` of contrast (WCAG 2.2 SC 1.4.11) | `KIND_FLOOR`, `geo-choropleth.ts` |
+| How far two classes, or a surface and the page, must sit apart | `3 ** (1 / classes)` of contrast — 1.2009:1 at six classes | `stepFloorFor`, `geo-choropleth.ts` |
 | The smallest channel spread that still reads as a hue | `0.05` | `MIN_CHROMA`, `geo-choropleth.ts` |
 | Which regions keep a pointer-active button, as a FRACTION of the frame | `26 / 496` | `SMALL_REGION_FRAME_FRACTION`, `ChoroplethWeb.tsx` |
 | The camera this seed bakes | `[[-14, 34], [28, 64]]` — Lisbon to Stockholm, padded ~5° | `BEAT.bounds`, `bake-plate.mjs` |
@@ -471,8 +508,9 @@ for its own generic function.
   `RegionTable`, the accessible table this format carries by default.
 - `assets/geo-choropleth.ts` — this skill's OWN copy of the pure POLYGON core: the join that fails
   loud (`joinValues`/`unmatchedValues`), the classes, the ramp (`sequentialRamp`/`dataRampEnd`/
-  `assertRampReads`), the two surfaces that are not the data (`noDataFor`/`waterFor`/
-  `assertSurfacesRead` — derived from the same palette the ramp is, and measured against it),
+  `assertRampReads`, which a CHOROPLETH does not call), the whole scale derived in contrast
+  (`contrastRamp`/`noDataFor`/`waterFor`/`surfaceReadings`/`assertSurfacesRead` — the page, the sea,
+  the no-data fill and every class measured as one question),
   `collidingPointerTargets`, and the ring arithmetic. `SEED_STUDY`/`SEED_BREAKS` are marked
   **REPLACE ME**: a beat declares its own study set as a LIST, because a study set read back out of
   the shapefile the shapes come from can never disagree with it. See "Producing a choropleth".
