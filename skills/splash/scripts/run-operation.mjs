@@ -310,9 +310,18 @@ export async function runOperation(
       return probeDatawrapper(resolveEnvKey(process.env, "DATAWRAPPER_TOKEN"), fetchFn);
     case "provider-check-cloudflare":
       requireParameters(request, []);
+      // THE THIRD PROVIDER CASE, and until 2026-08-23 the only one of the three that read its
+      // credential by its own canonical name while the two lines above it resolved aliases. Nothing
+      // here changes on this machine — `CLOUDFLARE_API_TOKEN` has no aliases and the root's `.env`
+      // holds it under that exact name — and that is the point: the read is now DECLARED, it goes
+      // through the one table `keys.mjs` owns, and the day this credential earns an alias the probe
+      // honours it without anybody remembering this line. The shape found three times in one week
+      // (`verify-live-map.mjs`, then the gate that decided whether that probe ran at all, then
+      // here) is a mechanism, not three accidents, and the mechanism is a read that has its own
+      // opinion about which names exist.
       return probeCloudflare(
         request.cloudflareAccountId ?? "",
-        process.env.CLOUDFLARE_API_TOKEN ?? "",
+        resolveEnvKey(process.env, "CLOUDFLARE_API_TOKEN"),
         fetchFn,
       );
     case "story-inspect": {

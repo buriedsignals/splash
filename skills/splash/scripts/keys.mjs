@@ -41,20 +41,68 @@ import { join } from "node:path";
 // therefore registers no CMS token and gives it no capability row in `runPreflight`; only the
 // explicitly legacy plaintext configurator can preserve the old name. A capability row that lies is
 // worse than no row.
-const KEY_ALIASES = {
-  MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
-  MAPTILER_DELIVERY_KEY: [],
-  DATAWRAPPER_TOKEN: ["DATAWRAPPER_API_TOKEN"],
-  CLOUDFLARE_API_TOKEN: [],
-  CLOUDFLARE_ACCOUNT_ID: [],
-  CMS_KIND: [],
-  CMS_ENDPOINT: [],
-  CMS_TOKEN: [],
-};
+//
+// THE TWO LISTS THAT ARE NOT EMPTY ARE DECLARED UNDER THE NAME THE REST OF THE TREE ALREADY USES
+// FOR THEM — `<CANONICAL>_ALIASES`, the exact shape `map-beat/scripts/bake-plate.mjs`,
+// `dw-beat/scripts/produce.mjs` and some twenty `bake.mjs` files under `proof/` already spell. That
+// is not tidying: `credentialReadsWithoutAlias` (the catalogue's `credential-alias-reconciled`)
+// reads that string to decide whether a canonical read has a declared fallback, and the trait
+// `reads-a-provider-credential` reads it to decide whether this skill reads a credential at all.
+// Written only as this object's keys, the alias mechanism was invisible to both — so routing the
+// last hand-written read through the resolver would have DELETED this skill's own trait and made
+// the rule stop reaching it, which is a cell disappearing rather than a cell being carried.
+//
+// AND ONLY THE TWO THAT ARE NOT EMPTY. Declaring `CLOUDFLARE_API_TOKEN_ALIASES = []` beside them
+// would read as the same thing and be the opposite of it: `credentialReadsWithoutAlias` excuses any
+// canonical read whose `<NAME>_ALIASES` string appears ANYWHERE in the skill, so an empty list under
+// that name buys a bare `process.env.CLOUDFLARE_API_TOKEN` three files away a pass it has not
+// earned. Measured 2026-08-23 — with all eight declared that way the guard reported this skill
+// clean while `run-operation.mjs`'s third provider case still read the token bare.
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+const DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"];
+const KEY_ALIASES = { MAPTILER_KEY: MAPTILER_KEY_ALIASES, DATAWRAPPER_TOKEN: DATAWRAPPER_TOKEN_ALIASES };
 
-// Reads `canonical` from `env`, falling back to each of its aliases above in order. Never the
-// reverse — an alias is read only when the canonical name is entirely absent, so a root that sets
-// both never has the alias silently win.
+/** THE NAMES `recordKey` WILL WRITE, which is a different fact from which of them have aliases and
+ *  was told through the alias table's own key set until 2026-08-23. Keeping them apart is what lets
+ *  the table hold only the two credentials that really have another name: read as an allowlist, a
+ *  table with six empty entries says "these six have a declared alias list", which is the one thing
+ *  `credentialReadsWithoutAlias` reads to excuse a canonical read.
+ *
+ *  `env-example.test.ts` holds this list to the names `.env.example` advertises, so it is checked
+ *  against something rather than only typed. */
+const RECORDABLE_KEYS = [
+  "MAPTILER_KEY",
+  "MAPTILER_DELIVERY_KEY",
+  "DATAWRAPPER_TOKEN",
+  "CLOUDFLARE_API_TOKEN",
+  "CLOUDFLARE_ACCOUNT_ID",
+  "CMS_KIND",
+  "CMS_ENDPOINT",
+  "CMS_TOKEN",
+];
+
+/** Reads `canonical` from `env`, falling back to each of its aliases above in order. Never the
+ *  reverse — an alias is read only when the canonical name is entirely absent, so a root that sets
+ *  both never has the alias silently win.
+ *
+ *  EVERY PROVIDER CREDENTIAL READ IN A SKILL THAT CARRIES THIS GOES THROUGH HERE, and that is the
+ *  whole mechanism: a read written by hand against one literal name honours that name and silently
+ *  ignores the table, which is precisely the defect `credential-alias-reconciled` was earned by and
+ *  the shape found three times in one week — `verify-live-map.mjs`, then the gate that decided
+ *  whether that probe ran at all, then a provider case sitting between two that already resolved
+ *  through it. Measured on this machine on
+ *  2026-08-23: the root `.env` holds `REMOTION_MAPTILER_KEY` and `VITE_MAPTILER_KEY` and neither
+ *  `MAPTILER_KEY` nor `MAPTILER_DELIVERY_KEY`, so a hand-written two-name fallback over those two
+ *  canonical names read back as "no key at all" against a working, present key.
+ *
+ *  It returns `""` and never `undefined`, so a caller can test it as a string without deciding
+ *  again what an absent credential looks like.
+ *
+ *  `KEY_ALIASES`, `MAPTILER_KEY_ALIASES` and `DATAWRAPPER_TOKEN_ALIASES` are named here and not
+ *  only above on purpose: `guard-copies-parity.test.ts`'s `constantsBehind` follows every
+ *  SHOUTING_CASE name inside this span to its own one-line declaration and compares that too, so a
+ *  copy of this function whose alias table lost `REMOTION_MAPTILER_KEY` reads as the drift it is
+ *  rather than as the same decision. A threshold is part of a decision; so is a lexicon. */
 export function resolveEnvKey(env, canonical) {
   if (env[canonical]) return env[canonical];
   for (const alias of KEY_ALIASES[canonical] ?? []) {
@@ -80,10 +128,12 @@ export function resolveEnvKey(env, canonical) {
  * pasted can name an arbitrary environment variable, and an alias is refused too: the canonical
  * name is what a later `resolveEnvKey` reads first.
  */
+export { RECORDABLE_KEYS };
+
 export async function recordKey({ root, name, value }) {
-  if (!Object.prototype.hasOwnProperty.call(KEY_ALIASES, name)) {
+  if (!RECORDABLE_KEYS.includes(name)) {
     throw new Error(
-      `${JSON.stringify(name)} is not a key this toolchain reads — expected one of ${Object.keys(KEY_ALIASES).join(", ")}`,
+      `${JSON.stringify(name)} is not a key this toolchain reads — expected one of ${RECORDABLE_KEYS.join(", ")}`,
     );
   }
   if (typeof value !== "string" || value.trim() === "") {
