@@ -41,10 +41,21 @@ import { progressOf, type BeatTiming } from "#shared/chart-video/timing.ts";
 import { frameInsetFor, sizeFor, stageFor } from "#shared/chart-video/sizes.mjs";
 import { MEASLES_TIMING } from "./timing-contract";
 
-/** The substrate fallback, used only when no recorded family reaches this component. `render.mjs`
- *  reads the answer out of the story's own `TYPEFACE.md` and passes it in — the seed and both
- *  pattern beats carry this constant as their ONLY family, which is why a journalist's recorded
- *  typeface has no effect on a video beat anywhere else in this tree. */
+/**
+ * THE FAMILY, AS A LITERAL — and it is a literal because the tree will not let it be anything else.
+ *
+ * `chart-video`'s render path reads `PALETTE.md` and does NOT read `TYPEFACE.md`; the seed and both
+ * pattern beats carry this same constant as their only family. This beat first threaded the
+ * recorded family in as a prop and used it to DRAW and to MEASURE — six lines — and
+ * `splash/test/video-helper-parity.test.ts` turned red on it, because `measureText` and `wrap`
+ * are vendored helpers required to stay byte-identical to `EmissionsVideo.tsx`'s, and honouring a
+ * recorded family in the MEASUREMENT means changing `measureText`'s signature.
+ *
+ * So the fix is refused by the architecture, and this beat does not work around it. What it does
+ * instead is refuse to render when the two disagree: `render.mjs` reads the recorded family out of
+ * `TYPEFACE.md`, reads this literal out of this file, and throws if they are not the same string.
+ * The limit stays; it stops being silent. See NOTES-FOR-MAINTAINER.md.
+ */
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 /**
@@ -55,11 +66,7 @@ export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 let measuringContext: CanvasRenderingContext2D | null | undefined;
 export function measureText(
   text: string,
-  {
-    fontSize,
-    fontWeight = 400,
-    family = FONT_FAMILY,
-  }: { fontSize: number; fontWeight?: number; family?: string },
+  { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
 ): number {
   if (!text) return 0;
   if (measuringContext === undefined)
@@ -68,17 +75,14 @@ export function measureText(
         ? null
         : document.createElement("canvas").getContext("2d");
   if (!measuringContext) return text.length * fontSize * 0.5;
-  // MEASURED IN THE FAMILY IT WILL BE DRAWN IN. Measuring in one family and drawing in another is
-  // the same class of silent error as deriving a colour twice: every wrap and every gutter is
-  // computed against ink nobody will see.
-  measuringContext.font = `${fontWeight} ${fontSize}px ${family}`;
+  measuringContext.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
   return measuringContext.measureText(text).width;
 }
 
 export function wrap(
   text: string,
   maxWidth: number,
-  font: { fontSize: number; fontWeight: number; family?: string },
+  font: { fontSize: number; fontWeight: number },
 ): string[] {
   const lines: string[] = [];
   let current = "";
@@ -290,9 +294,6 @@ export type MeaslesReturnVideoProps = {
   floorYear: number;
   excessLabel: string;
   unit: string;
-  /** The family recorded in the story's own `TYPEFACE.md`, read by `render.mjs` and passed in.
-   *  Falls back to the substrate stack only where nothing recorded reaches this component. */
-  fontFamily?: string;
   timing?: BeatTiming;
   /** The size row this beat's composition was registered from — `Root.tsx` passes it, one
    *  composition per row. Not a default: a video drawn at a scale nobody chose looks every bit as
@@ -315,7 +316,6 @@ export function MeaslesReturnVideo({
   floorYear,
   excessLabel,
   unit,
-  fontFamily = FONT_FAMILY,
   timing = MEASLES_TIMING,
   size,
 }: MeaslesReturnVideoProps) {
@@ -359,17 +359,14 @@ export function MeaslesReturnVideo({
     REFERENCE_DASH,
   } = tokens(typeScale);
 
-  /** Every token, carrying the family it will be measured and drawn in. */
-  const inFace = <T,>(tok: T) => ({ ...tok, family: fontFamily });
-
   const contentTop = stage.reserved ? stage.top : PAD;
   const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
 
   // ── Layout. Identical at every frame: the build changes what is VISIBLE, never where anything
   // SITS, so nothing shifts when a layer arrives late.
-  const titleLines = wrap(title, width - PAD * 2, inFace(TITLE));
+  const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = contentTop + TITLE.fontSize;
-  const sourceLines = wrap(source, width - PAD * 2, inFace(SOURCE));
+  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
 
   const subjectValue = data.find((d) => d.year === subjectYear)!.cases;
@@ -398,7 +395,7 @@ export function MeaslesReturnVideo({
     bottom:
       height - (sourceBaseline - SOURCE.fontSize - AXIS_TO_SOURCE) + X_LABEL_BAND,
     left:
-      PAD + Y_TICK_INSET + Math.max(...provisionalTicks.map((l) => measureText(l, inFace(AXIS)))),
+      PAD + Y_TICK_INSET + Math.max(...provisionalTicks.map((l) => measureText(l, AXIS))),
   };
 
   const g = measlesGeometry(data, {
@@ -492,7 +489,7 @@ export function MeaslesReturnVideo({
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      fontFamily={fontFamily}
+      fontFamily={FONT_FAMILY}
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 

@@ -65,15 +65,42 @@ console.log(
   `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
 );
 
-// THE RECORDED TYPEFACE, READ AND PASSED IN AS A PROP.
+// THE RECORDED TYPEFACE — READ, AND CHECKED AGAINST THE ONE THE COMPOSITION WILL ACTUALLY DRAW IN.
 //
-// `chart-video/scripts/render-video.mjs` reads `PALETTE.md` and does NOT read `TYPEFACE.md`, and
-// every composition in this tree carries `FONT_FAMILY` as a literal instead. That is silent when
-// the recorded answer happens to equal the literal, and wrong when it does not. This beat reads
-// the answer the journalist actually gave at movement 9 and hands it to the component, which uses
-// it both to DRAW and to MEASURE. Recorded in NOTES-FOR-MAINTAINER.md as a gap in the format.
+// `chart-video/scripts/render-video.mjs` reads `PALETTE.md` and does NOT read `TYPEFACE.md`. Every
+// composition in this tree carries `FONT_FAMILY` as a literal instead, so the answer a journalist
+// gives at movement 9 has no effect on a video beat — silently, whenever the recorded answer
+// happens to equal the literal, and wrongly whenever it does not.
+//
+// Threading the recorded family in as a prop was tried and REFUSED by the architecture:
+// `measureText` and `wrap` are vendored helpers that `splash/test/video-helper-parity.test.ts`
+// requires to stay byte-identical to `EmissionsVideo.tsx`'s, and measuring in a recorded family
+// means changing `measureText`'s signature. So the limit stays. What does not stay is its silence:
+// this reads the literal out of the composition's own source and refuses to render when the two
+// disagree. A beat set in a face nobody chose is exactly what `TYPEFACE.md` exists to prevent, and
+// a refusal is the honest half of a fix that cannot be made here.
 const typeface = readTypeface(HERE, { stopAt: STORY });
-console.log(`typeface from ${typeface.source} — ${typeface.family}, chosen by ${typeface.origin}`);
+const drawnFamily = /export const FONT_FAMILY = "([^"]+)"/.exec(
+  await readFile(join(HERE, "MeaslesReturnVideo.tsx"), "utf8"),
+);
+if (!drawnFamily)
+  throw new Error(
+    "MeaslesReturnVideo.tsx no longer declares FONT_FAMILY as a string literal — this check reads " +
+      "the family the composition will draw in, and it cannot read one that is computed",
+  );
+if (drawnFamily[1] !== typeface.family)
+  throw new Error(
+    `${typeface.source} records the family ${JSON.stringify(typeface.family)}, chosen by ` +
+      `${typeface.origin}, and this composition draws in ${JSON.stringify(drawnFamily[1])}. This ` +
+      "format has no channel for a recorded typeface — its render path never reads TYPEFACE.md — " +
+      "so the two can only be held together by hand. Either record the family this beat draws in, " +
+      "or change the literal in MeaslesReturnVideo.tsx to the recorded one; nothing here will " +
+      "render a beat in a face nobody chose.",
+  );
+console.log(
+  `typeface from ${typeface.source} — ${typeface.family}, chosen by ${typeface.origin}; ` +
+    "the composition's own FONT_FAMILY matches it",
+);
 
 /** The region this beat is about, and the years the publisher has actually observed. */
 const BEAT = {
@@ -262,7 +289,6 @@ const props = {
   floorYear: claims.floorYear,
   excessLabel: claims.excessLabel,
   unit: BEAT.unit,
-  fontFamily: typeface.family,
   size,
   width: sizeFor(size).width,
   height: sizeFor(size).height,

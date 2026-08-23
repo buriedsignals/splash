@@ -215,3 +215,39 @@ nothing measured that: a CRF change, a scale filter or a pixel-format change wou
 way, and the artifact the newsroom receives would differ from the artifact that was approved with
 nothing in the ladder noticing. `compare-png.mjs` already exists in this skill and decides
 exactly this question on decoded pixels.
+
+## Found at production
+
+**The helper-parity rule and the typeface gap are in direct conflict, and the rule wins.** Same
+defect as the TYPEFACE.md note above, seen from the fix's side, and worth recording separately
+because it says why the gap has survived several rounds.
+
+Honouring a recorded typeface means MEASURING in it as well as drawing in it — measuring in one
+family and drawing in another mis-wraps every string, silently. Measuring in a recorded family means
+`measureText` takes the family. `measureText` and `wrap` are the two helpers
+`splash/test/video-helper-parity.test.ts` requires to stay byte-identical to
+`skills/chart-video/assets/EmissionsVideo.tsx`'s, and it discovers its population by WALKING rather
+than from a list — so it found this beat immediately:
+
+    (fail) stories/.../MeaslesReturnVideo.tsx should not disagree with the canonical copy
+           about a shared helper
+    - []
+    + ["measureText", "wrap"]
+
+The guard is right and it worked exactly as designed. The effect, though, is that **no beat can
+close this gap on its own**: the change has to land in the canonical copy and every vendored copy at
+once, which is a change to the FORMAT, not to a beat. Note the contrast with the walking that is
+missing one directory over: this walker finds a story beat at once, while
+`chart-video/test/verify-video.test.ts` cannot see the same file at all.
+
+What this beat does instead is refuse. `render.mjs` reads the recorded family and the
+composition's own `FONT_FAMILY` literal and throws when they differ. Mutation-verified: a
+beat-local `TYPEFACE.md` naming `Courier New` stops the run with that sentence, and removing it
+lets the run through.
+
+Two things followed, both the machinery behaving correctly and recorded as such rather than as
+complaints: `whereIs` reopened production ("its OUTPUT-REVIEW.json does not open delivery — the
+rendered draft changed after it was written") on a component change that altered no pixel
+(`comparePngBuffers` on the new still against the delivered one: `same: true, diffPixels: 0`),
+and then reported `stale-delivery` until the export was rematerialised. A digest that moves on a
+change of that kind is the honest, cheap choice; nothing here asks for it to be cleverer.

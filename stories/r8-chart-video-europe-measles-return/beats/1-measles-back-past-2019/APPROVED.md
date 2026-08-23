@@ -54,6 +54,19 @@ any guard:
 4. **The line was a hairline where it is watched.** 1.33 × 3.0 = 4 frame px is 1.3 CSS px at
    360 dp, and it is the only mark carrying the argument. Raised to 2.0 (2 CSS px).
 
+A fifth change touched no pixel and reopened this gate, which is the machinery behaving correctly.
+The beat first read the story's recorded typeface and passed it to the component to DRAW and to
+MEASURE with; that turned `video-helper-parity` red, because `measureText` and `wrap` must stay
+byte-identical to the canonical copies and measuring in a recorded family means changing
+`measureText`'s signature. The threading was withdrawn rather than worked around, and replaced by a
+check in `render.mjs` that reads the recorded family and the composition's own `FONT_FAMILY`
+literal and REFUSES to render when they differ — verified by mutation: a beat-local `TYPEFACE.md`
+naming `Courier New` stops the run with that sentence, and removing it lets the run through.
+`whereIs` then reported `production, missing: [its OUTPUT-REVIEW.json does not open delivery — the
+rendered draft changed after it was written]`, and this review was rewritten against the new
+digest. The picture itself is unchanged: `comparePngBuffers` on the new still against the delivered
+one returns `same: true, diffPixels: 0`.
+
 **One thing was NOT corrected, because correcting it would have meant lying.** The crossing this
 beat's headline states — 2024 above 2019 — is 1 795 cases on a 110 000-case axis: **five pixels**.
 The reader cannot see it, and the frame does not pretend they can: the number is printed beside
