@@ -36,11 +36,14 @@ import {
   credentialReadsWithoutAlias,
   duplicatedPayload,
   groundFromPalette,
+  inkFromPalette,
   marksFromSource,
   pageLanguageMatchesStory,
   plateFollowsGround,
   plateLuminance,
   plateMatchesGeometry,
+  plateSurfaces,
+  plateSurfacesYieldToInk,
   revealDashInScreenSpace,
   surfaceLuminance,
 } from "../scripts/verify-guards.mjs";
@@ -90,6 +93,117 @@ describe("a baked plate under a declared ground", () => {
     expect(() => plateFollowsGround({ ground: 0.009, plate: Infinity })).toThrow(/not a measurement/);
     // The genuine middle band still says nothing, and that is a different answer from "unreadable".
     expect(plateFollowsGround({ ground: 0.009, plate: 0.4 })).toBe(true);
+  });
+});
+
+describe("the surfaces a basemap paints, against the ink the beat draws with", () => {
+  // The worst page in this corpus, measured 2026-08-23 off its own committed plate:
+  // `stories/r8-map-web-japan-bear-casualties`, ground #16191B (0.0094), accent #D4A853 (0.4263),
+  // plate 66.9% water #aac9e0 (0.5570) and 32.8% land #292929 (0.0222).
+  const JAPAN = {
+    ground: 0.0094,
+    ink: [{ name: "#D4A853", luminance: 0.4263 }],
+    surfaces: [
+      { hex: "#aac9e0", luminance: 0.557, share: 0.669, underInk: ["#D4A853"] },
+      { hex: "#292929", luminance: 0.0222, share: 0.328, underInk: ["#D4A853"] },
+    ],
+  };
+
+  it("refuses a sea that carries more contrast against the ground than the ink does", () => {
+    expect(plateSurfacesYieldToInk(JAPAN).join(" | ")).toMatch(/#aac9e0 covers 66\.9%.*10\.22:1 against the ground, past the 8\.02:1/);
+  });
+
+  it("refuses a surface a mark drawn on it cannot be seen against", () => {
+    expect(plateSurfacesYieldToInk(JAPAN).join(" | ")).toMatch(/1\.27:1 against it, under the 3:1/);
+  });
+
+  // The same plate with the sea derived from this ground and this ink instead of a literal:
+  // `#505e69`, the blue this palette leaves room for — 2.65:1 against the ground, so the coast still
+  // reads, and 3.03:1 under the accent, so a mark drawn on it is still a mark.
+  it("accepts the same plate once the sea is derived from the palette", () => {
+    expect(
+      plateSurfacesYieldToInk({
+        ...JAPAN,
+        surfaces: [
+          { hex: "#505e69", luminance: 0.1073, share: 0.669, underInk: ["#D4A853"] },
+          { hex: "#292929", luminance: 0.0222, share: 0.328, underInk: ["#D4A853"] },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  // A choropleth's fills REPLACE the plate, so no ink is drawn over the basemap and the second
+  // reading has nothing to fire on. The honey beat's own land, at 1.21:1 against a ground whose ink
+  // carries 8.01:1.
+  it("says nothing about a surface no mark is drawn on", () => {
+    expect(
+      plateSurfacesYieldToInk({
+        ground: 0.0094,
+        ink: [{ name: "#D4A853", luminance: 0.4263 }],
+        surfaces: [{ hex: "#292929", luminance: 0.0222, share: 0.687, underInk: [] }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("passes over a fill too small to be a surface the reader reads the map against", () => {
+    expect(
+      plateSurfacesYieldToInk({
+        ...JAPAN,
+        surfaces: [{ hex: "#aac9e0", luminance: 0.557, share: 0.001, underInk: ["#D4A853"] }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("does not run at all on a ground or an ink it could not read", () => {
+    expect(plateSurfacesYieldToInk({ ...JAPAN, ground: null })).toEqual([]);
+    expect(plateSurfacesYieldToInk({ ...JAPAN, ink: [] })).toEqual([]);
+  });
+
+  // `plateFollowsGround`'s own contract, one screen above: a value that was not read must not travel
+  // as a value that was.
+  it("throws on an arithmetic that failed rather than reading it as a pass", () => {
+    expect(() => plateSurfacesYieldToInk({ ...JAPAN, ground: NaN })).toThrow(/not a measurement/);
+    expect(() =>
+      plateSurfacesYieldToInk({ ...JAPAN, ink: [{ name: "#D4A853", luminance: NaN }] }),
+    ).toThrow(/not a measurement/);
+  });
+
+  // THE READING `plateFollowsGround` CANNOT MAKE, and the reason this decision exists beside it.
+  it("is silent on the very plate its neighbour passes by construction", () => {
+    expect(plateFollowsGround({ ground: 0.0094, plate: 0.3809 })).toBe(true);
+    expect(plateSurfacesYieldToInk(JAPAN).length).toBeGreaterThan(0);
+  });
+});
+
+describe("the ink a beat records, and the fills its plate carries", () => {
+  it("takes the accent and every further house accent from PALETTE.md", () => {
+    expect(inkFromPalette('---\nground: "#16191B"\naccent: "#D4A853"\n---\n')).toEqual(["#D4A853"]);
+    expect(
+      inkFromPalette('---\nground: "#16191B"\naccent: "#D4A853"\naccents: "#5B8A8A"\n---\n'),
+    ).toEqual(["#D4A853", "#5B8A8A"]);
+  });
+
+  it("returns nothing rather than a guess when there is none", () => {
+    expect(inkFromPalette('---\nground: "#16191B"\n---\n')).toEqual([]);
+    expect(inkFromPalette("")).toEqual([]);
+  });
+
+  it("reads the flat fills off a plate and leaves the anti-aliased edges out", () => {
+    const image = { width: 10, height: 10, data: new Uint8Array(400) };
+    for (let at = 0; at < 400; at += 4) {
+      const bright = at < 240;
+      image.data[at] = bright ? 0xaa : 0x29;
+      image.data[at + 1] = bright ? 0xc9 : 0x29;
+      image.data[at + 2] = bright ? 0xe0 : 0x29;
+      image.data[at + 3] = 255;
+    }
+    image.data[396] = 0x9a;
+    image.data[397] = 0xb5;
+    image.data[398] = 0xc9;
+    const surfaces = plateSurfaces(image);
+    expect(surfaces.map((one) => one.hex)).toEqual(["#aac9e0", "#292929"]);
+    expect(surfaces[0]!.share).toBeCloseTo(0.6, 5);
+    expect(surfaces[0]!.luminance).toBeCloseTo(0.557, 3);
   });
 });
 

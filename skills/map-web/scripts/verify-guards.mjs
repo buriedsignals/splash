@@ -29,6 +29,7 @@ export const GUARDS = [
   "revealDashInScreenSpace",
   "plateMatchesGeometry",
   "plateFollowsGround",
+  "plateSurfacesYieldToInk",
   "pageLanguageMatchesStory",
   "credentialReadsWithoutAlias",
   // THE THREE THE POLYGON CORE BROUGHT WITH IT (2026-08-22). `assets/geo-choropleth.ts` gave this
@@ -297,6 +298,170 @@ export function plateFollowsGround({ ground, plate }) {
   const two = side(plate);
   if (one === "middle" || two === "middle") return true;
   return one === two;
+}
+
+/** How much of a plate a flat fill has to cover before it is a SURFACE the reader reads the map
+ *  against, rather than a river, a lake's outline or an anti-aliased edge.
+ *
+ *  Measured over every plate committed in this tree (26 of them, 2026-08-23): the fills a basemap
+ *  paints cover between 3.6% and 89.2% of their own plate, and the next colour below them covers
+ *  0.03%. Two orders of magnitude of empty space between the two, so this is not a tuned number —
+ *  anything from 0.001 to 0.03 selects exactly the same surfaces on every plate in the corpus. */
+const SURFACE_SHARE = 0.02;
+
+/** WCAG 2.2 SC 1.4.11 Non-text Contrast — the same 3:1 `assertRampReads` holds a ramp's top class to
+ *  against the ground, asked here of a mark against the surface it is drawn ON. */
+const NON_TEXT_FLOOR = 3;
+
+/**
+ * THE SURFACES A BASEMAP PAINTS, MEASURED AGAINST THE INK THE BEAT DRAWS WITH — and this is the
+ * owner's own instruction, given twice: *"the ocean colours have to adapt to the palette."*
+ *
+ * WHY A SECOND DECISION BESIDE `plateFollowsGround` RATHER THAN A WIDER ONE. That decision reads a
+ * plate's MEAN luminance and asks which side of a mid-grey band it falls on. Measured on the worst
+ * page in this corpus — `stories/r8-map-web-japan-bear-casualties`, a symbol map of Japan on a
+ * newsroom ground of `#16191B` (0.0094) — the plate is 66.9% water at `#aac9e0` (0.5570) and 32.8%
+ * land at `#292929` (0.0222), and its mean is 0.3809. `DARK_SIDE` is 0.25 and `LIGHT_SIDE` is 0.6,
+ * so that mean lands in the band its neighbour deliberately says nothing about and it returns TRUE.
+ * That is not a tuning failure and widening the band does not fix it: a symbol plate is mostly
+ * basemap, so the mean of a bright sea and a dark land is a number no bake controls and no reader
+ * ever sees. **A MEAN IS THE WRONG STATISTIC.** A plate is a small number of large flat fills, and
+ * each one of them is a thing the reader looks at.
+ *
+ * SO THIS ONE READS THE FILLS, and it asks the question the owner asked: is the largest, brightest
+ * thing on the page something that carries no data? Two readings, one input set, one floor —
+ *
+ *   1. NOTHING THAT CARRIES NO DATA MAY OUT-SHOUT WHAT DOES. A surface's contrast against the story's
+ *      own ground may not exceed the contrast the beat's own ink carries against that same ground.
+ *      On the Japan page the sea measures 10.21:1 against the ground while the accent carrying the
+ *      whole argument measures 8.01:1, so the sea is the loudest thing on a map about land and the
+ *      subject reads as a hole cut out of a bright blue page.
+ *   2. A MARK MUST BE VISIBLE ON THE SURFACE IT IS DRAWN ON. Every ink a caller reports as drawn over
+ *      a surface has to clear `NON_TEXT_FLOOR` against it. On the same page the accent measures
+ *      1.27:1 against the sea.
+ *
+ * WHICH INK IS DRAWN OVER WHICH SURFACE IS THE CALLER'S OWN MEASUREMENT, never a list typed here: a
+ * verifier samples the finished plate at each mark's own projected pixel. A choropleth reports none,
+ * because its fills REPLACE the plate, and reading 2 then has nothing to fire on — which is right,
+ * and it is why this is one decision with two readings rather than two decisions with two
+ * populations to keep in step.
+ *
+ * WHAT THE INK IS, AND WHY THAT IS CONSERVATIVE. The caller reports the ink it can read, which for a
+ * verifier reading `PALETTE.md` is the recorded accent and any further house accents. A ramp is
+ * DERIVED from the accent away from the ground (`dataRampEnd`), so every class it draws carries LESS
+ * contrast against the ground than the accent does. The accent is therefore the ceiling of what the
+ * beat can draw, reading 1 is measured against that ceiling, and a beat is never refused for ink it
+ * does not spend.
+ *
+ * A GROUND OR AN INK THAT WAS NOT READ SAYS NOTHING — the same contract `plateFollowsGround` states
+ * one screen above. `null`, or an empty ink, is a CALLER admitting it could not read the value and is
+ * answered with silence; a non-finite number is an arithmetic that failed on the way in, which no
+ * caller in this tree filters for, so it THROWS naming what it could not measure.
+ */
+export function plateSurfacesYieldToInk({ ground, ink, surfaces }) {
+  if (ground == null || !Array.isArray(ink) || ink.length === 0) return [];
+  for (const [what, value] of [
+    ["the ground", ground],
+    ...ink.map((one) => [`the ink ${one.name}`, one.luminance]),
+    ...surfaces.map((one) => [`the surface ${one.hex}`, one.luminance]),
+  ])
+    if (!Number.isFinite(value))
+      throw new Error(
+        `plateSurfacesYieldToInk was handed ${value} for ${what} — that is not a measurement, and a ` +
+          `value which was not read must not travel as one that was. Pass null to say it could not be read.`,
+      );
+  const contrast = (one, two) => (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
+  const loudest = ink.reduce(
+    (best, one) => (contrast(one.luminance, ground) > contrast(best.luminance, ground) ? one : best),
+    ink[0],
+  );
+  const ceiling = contrast(loudest.luminance, ground);
+  const offences = [];
+  for (const surface of surfaces) {
+    if (!(surface.share >= SURFACE_SHARE)) continue;
+    const covers = `${surface.hex} covers ${(surface.share * 100).toFixed(1)}% of the plate and`;
+    const carried = contrast(surface.luminance, ground);
+    if (carried > ceiling)
+      offences.push(
+        `${covers} measures ${carried.toFixed(2)}:1 against the ground, past the ` +
+          `${ceiling.toFixed(2)}:1 the loudest ink this beat records (${loudest.name}) carries against ` +
+          `it — the largest, brightest thing on this page carries no data. Derive the basemap's own ` +
+          `surfaces from this ground and this ink rather than painting a literal.`,
+      );
+    for (const name of surface.underInk ?? []) {
+      const drawn = ink.find((one) => one.name === name);
+      if (!drawn) continue;
+      const seen = contrast(drawn.luminance, surface.luminance);
+      if (seen < NON_TEXT_FLOOR)
+        offences.push(
+          `${covers} the ink drawn on it (${name}) measures ${seen.toFixed(2)}:1 against it, under the ` +
+            `${NON_TEXT_FLOOR}:1 floor WCAG 2.2 SC 1.4.11 sets for a graphical object — a mark on this ` +
+            `surface cannot be seen.`,
+        );
+    }
+  }
+  return offences;
+}
+
+/** THE FLAT FILLS A DECODED PLATE CARRIES, each with the share of the plate it covers and the
+ *  relative luminance a reader sees it at — the reading `plateSurfacesYieldToInk` decides on, and the
+ *  one a MEAN over the same pixels throws away.
+ *
+ *  Every pixel rather than the 64x32 grid its neighbour samples: a share is what this decision turns
+ *  on, and a grid that misses a fill entirely would report it at share 0 and pass it in silence. */
+export function plateSurfaces(image) {
+  const counts = new Map();
+  for (let at = 0; at < image.width * image.height * 4; at += 4) {
+    const hex = `#${[0, 1, 2].map((c) => image.data[at + c].toString(16).padStart(2, "0")).join("")}`;
+    counts.set(hex, (counts.get(hex) ?? 0) + 1);
+  }
+  const total = image.width * image.height;
+  return [...counts]
+    .map(([hex, seen]) => ({ hex, luminance: surfaceLuminance(hex), share: seen / total }))
+    .filter((one) => one.share >= SURFACE_SHARE)
+    .sort((one, two) => two.share - one.share);
+}
+
+/** The ink a beat's own `PALETTE.md` records — the accent that carries its argument, and any further
+ *  house accents recorded beside it. The twin of `groundFromPalette` one screen above, and read the
+ *  same way: what is written, or nothing. A beat that records no accent is a beat this decision has
+ *  no scale to measure its plate against, and saying nothing is the honest answer. */
+export function inkFromPalette(source) {
+  if (typeof source !== "string") return [];
+  const found = [];
+  const accent = /^accent:\s*"?(#[0-9a-fA-F]{3,8})"?\s*$/m.exec(source);
+  if (accent) found.push(accent[1]);
+  const further = /^accents:\s*"?([^"\n]*)"?\s*$/m.exec(source);
+  if (further) for (const one of further[1].match(/#[0-9a-fA-F]{3,8}/g) ?? []) found.push(one);
+  return found;
+}
+
+/** THE SURFACES A BEAT'S OWN MARKS ARE DRAWN ON, sampled at each mark's own projected pixel.
+ *
+ *  `plateSurfacesYieldToInk`'s second reading has to know which fills can hold a mark, and the only
+ *  honest way to know is to look. `geometry.json` records every mark's position in FRAME units and
+ *  the plate is that same frame at an integer scale, so the pixel under a mark is arithmetic rather
+ *  than a guess. A beat with no `points` — every choropleth, whose fills REPLACE the plate — reports
+ *  none, and the reading then has nothing to fire on, which is the right answer rather than a gap.
+ *
+ *  WHY THE WHOLE RECORDED INK AND NOT ONE MARK'S OWN COLOUR. Nothing in a plate says which mark
+ *  carries the accent: a beat spends it on the one shape its title is about and draws the rest as
+ *  furniture. A fill that can hold a mark has to be able to hold the loudest one, so the whole
+ *  recorded ink travels with the fill a mark was found on. */
+export function surfacesUnderMarks({ image, geometry, surfaces, ink }) {
+  const points = Array.isArray(geometry?.points) ? geometry.points : [];
+  const frame = geometry?.frame;
+  if (!points.length || !frame?.width || !frame?.height)
+    return surfaces.map((one) => ({ ...one, underInk: [] }));
+  const seen = new Set();
+  for (const point of points) {
+    const x = Math.round((point.px * image.width) / frame.width);
+    const y = Math.round((point.py * image.height) / frame.height);
+    if (!(x >= 0 && x < image.width && y >= 0 && y < image.height)) continue;
+    const at = (y * image.width + x) * 4;
+    seen.add(`#${[0, 1, 2].map((c) => image.data[at + c].toString(16).padStart(2, "0")).join("")}`);
+  }
+  return surfaces.map((one) => ({ ...one, underInk: seen.has(one.hex) ? ink.map((each) => each.name) : [] }));
 }
 
 /** How far a plate's aspect ratio may sit from its frame's before it letterboxes. A frame is
