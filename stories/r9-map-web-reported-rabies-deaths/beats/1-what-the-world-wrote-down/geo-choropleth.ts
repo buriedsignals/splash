@@ -1381,6 +1381,130 @@ export function readingOrder<T extends { value: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.value - a.value);
 }
 
+/**
+ * A CLAIM WHOSE SECOND END IS A SILENCE — the reading this format could not express, and the ruling
+ * about where it belongs.
+ *
+ * DEFECT 11, found on a real story. `ChoroplethWeb.tsx` refused with "the subject and the comparison
+ * must both have a joined value". That is correct for the claim it was written for — a RANGE claim,
+ * highest against lowest — and structurally unable to carry the claim WHO's rabies register actually
+ * makes: 3 021 deaths written down against an estimated 59 000, with India, the comparison, having
+ * filed nothing at all. Refusing it leaves a producer two moves and both are worse than the defect:
+ * drop the half of the argument the takeaway is about, or paint a silence as a number.
+ *
+ * DOES IT BELONG IN THIS FORMAT? YES, ON ONE SIDE ONLY, and the asymmetry is the whole ruling.
+ *
+ *   · The COMPARISON may be an absence. "The highest reading in the world, against a country that
+ *     filed nothing" is one sentence about one map, and both halves are drawn on it — one in the
+ *     ramp, one in the no-data fill. Nothing about it needs a second beat.
+ *   · The SUBJECT may not. The claim is READ OFF THE VALUE SCALE; a claim with neither end on the
+ *     scale leaves the scale marking nothing and the argument lives entirely in a caption with a map
+ *     beside it. That beat exists and it is not this one: a map whose subject is a silence is a
+ *     COVERAGE map, whose classes are "returned" and "did not return" and whose scale is a count of
+ *     countries, not a count of deaths. Asking a value choropleth to carry it produces a picture
+ *     where the thing being claimed is the one thing the colour is not about.
+ *
+ * AND AN ABSENT END IS NEVER PUT ON THE VALUE SCALE. A triangle at 0 for a country that filed
+ * nothing says it reported zero, which is the single reading this class of beat exists to refuse —
+ * 94 countries filed nothing here and 44 filed a real zero, and those are opposite facts. So the
+ * absent end takes no position on the scale and says its absence in WORDS instead.
+ *
+ * `markedOnTheValueScale` is what the beat DID, not what it should do: this decides over the render
+ * that exists, so a component that draws the triangle anyway is caught rather than trusted.
+ */
+export type ClaimEnd = {
+  /** Which end of the claim this is — the words appear in the refusal a producer reads. */
+  role: "subject" | "comparison";
+  key: string;
+  /** The joined value, or `null` when this end is an absence — a region with no row at all. */
+  value: number | null;
+  /** The words this end's own callout carries, exactly as a reader sees them. */
+  says: string;
+  /** Whether the beat has marked this end on the value scale. */
+  markedOnTheValueScale: boolean;
+};
+
+export function claimEndsThatMisreport(ends: ClaimEnd[]): string[] {
+  const issues: string[] = [];
+  for (const end of ends) {
+    if (end.value !== null) continue;
+    if (end.role === "subject")
+      issues.push(
+        `the subject ${end.key} has no joined value, so this claim has no end on the value scale ` +
+          `and the scale marks nothing. A map whose subject is a silence is a COVERAGE map — ` +
+          `classes "returned" and "did not return", a count of regions rather than a count of the ` +
+          `quantity — and that is a different beat, not this one with a hole in it.`,
+      );
+    if (end.markedOnTheValueScale)
+      issues.push(
+        `the ${end.role} ${end.key} filed nothing and is marked on the value scale anyway — a mark ` +
+          `at any position says it reported that reading, and at 0 it says it reported zero, which ` +
+          `is the opposite of what it did. An absent end takes no position on the scale.`,
+      );
+    if (end.says.trim() === "")
+      issues.push(
+        `the ${end.role} ${end.key} filed nothing and its callout says nothing, so half of this ` +
+          `beat's claim is a fill colour a reader has to guess at. An absent end carries the ` +
+          `absence in words or it is not in the claim.`,
+      );
+  }
+  return issues;
+}
+
+/**
+ * THE TWO SILENCES, AND WHETHER THIS BEAT TELLS THEM APART.
+ *
+ * A region that filed nothing and a region that filed a real zero are opposite facts, and on a
+ * choropleth they are two surfaces a reader has to distinguish. Colour cannot carry it: measured
+ * across four ground/accent pairs at six classes, the no-data fill and the ramp's first class come
+ * out between 1.27:1 and 1.32:1 — the midpoint rule that derives the no-data fill puts it there by
+ * construction and no palette reaches the 3:1 non-text floor from a midpoint. So the distinction
+ * travels in WORDS, which `references/types/choropleth.md` asks for anyway, and this is the check
+ * that the words are actually different.
+ *
+ * NO LEXICON, DELIBERATELY. "Does this sentence mean absence?" is the shape that produced a false
+ * confirmation elsewhere in this tree — a phrase list that answers "no incompleteness is stated"
+ * about a file whose publisher states one in plain English. What is decidable without one is
+ * whether the beat wrote TWO sentences at all and whether they differ, and that is exactly the
+ * defect: a beat that labels the no-data swatch "No data" and the first class "0" has given a
+ * reader one word for two facts.
+ */
+export function silencesThatReadAlike(labels: {
+  /** The words on the no-data swatch. */
+  noReturn: string;
+  /** The words on the class or tick that contains a real zero. */
+  reportedZero: string;
+}): string[] {
+  const issues: string[] = [];
+  const noReturn = labels.noReturn.trim();
+  const reportedZero = labels.reportedZero.trim();
+  if (noReturn === "")
+    issues.push("the no-data surface carries no words, so nothing says what it means");
+  if (reportedZero === "")
+    issues.push("the class holding a real zero carries no words, so nothing says it is a reading");
+  if (noReturn !== "" && noReturn.toLowerCase() === reportedZero.toLowerCase())
+    issues.push(
+      `"${noReturn}" labels both the regions that filed nothing and the regions that filed a real ` +
+        `zero — one word for two opposite facts. Colour cannot carry this distinction (no-data ` +
+        `against the ramp's first class measures 1.27:1 to 1.32:1 on every ground this format ` +
+        `ships, against a 3:1 floor), so the words are the only place it can live.`,
+    );
+  return issues;
+}
+
+/** Both readings above, as the refusal a render throws. */
+export function assertClaimReads(
+  ends: ClaimEnd[],
+  labels?: { noReturn: string; reportedZero: string },
+): void {
+  const issues = [
+    ...claimEndsThatMisreport(ends),
+    ...(labels ? silencesThatReadAlike(labels) : []),
+  ];
+  if (issues.length > 0)
+    throw new Error(`this beat's claim cannot be read as drawn: ${issues.join(" · ")}`);
+}
+
 export type BBox = { minX: number; maxX: number; minY: number; maxY: number };
 
 /** The bounding box across every ring of a shape — used only to decide whether a shape's own

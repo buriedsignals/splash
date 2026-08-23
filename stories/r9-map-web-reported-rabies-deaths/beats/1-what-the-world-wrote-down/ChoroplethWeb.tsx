@@ -65,6 +65,7 @@ import {
   contrastRamp,
   dataRampEnd,
   assertSurfacesRead,
+  assertClaimReads,
   noDataFor,
   waterFor,
   type BakedShape,
@@ -308,6 +309,35 @@ export function ChoroplethWeb({
   // Refusing it would have meant either dropping the half of the argument the takeaway is about or
   // painting a silence as a number. Recorded in NOTES-FOR-MAINTAINER.md, phase `production`.
   const comparisonIsSilent = comparison.value === null;
+  const comparisonSays = comparisonIsSilent
+    ? `${comparison.name} — filed nothing for this year. Not zero: no return.`
+    : `${comparison.name} — lowest of the ${shapes.length}, ${en(comparison.value!)} ${UNIT_WORD}`;
+  // THE RULING, CALLED RATHER THAN RESTATED (`geo-choropleth.ts`, `claimEndsThatMisreport`). A
+  // decision hand-written into one beat is a decision the next beat does not have; this file used to
+  // carry the whole of it in the two `throw`s above, which is why the format refused a claim it
+  // should have drawn. Both readings are checked on what this render actually DOES — whether each
+  // end is on the value scale, and what the two silences are labelled — never on what it intends.
+  assertClaimReads(
+    [
+      {
+        role: "subject",
+        key: subject.key,
+        value: subject.value,
+        says: `${subject.name} — highest of the ${shapes.length} countries drawn`,
+        markedOnTheValueScale: true,
+      },
+      {
+        role: "comparison",
+        key: comparison.key,
+        value: comparison.value,
+        says: comparisonSays,
+        // AN ABSENT END TAKES NO POSITION. A triangle at 0 would say India reported zero, on a beat
+        // whose whole argument is that 94 countries filed nothing and 44 filed a real zero.
+        markedOnTheValueScale: !comparisonIsSilent,
+      },
+    ],
+    { noReturn: NO_DATA_LABEL, reportedZero: ZERO_LABEL },
+  );
 
   // Reading order: highest value first, shared by DOM order (so Tab/Home/End reach the hit targets
   // in this order), the accessible table, and nothing recomputed twice
@@ -542,9 +572,7 @@ export function ChoroplethWeb({
         {`${subject.name} — highest of the ${shapes.length} countries drawn, ${en(subject.value, 0)} ${UNIT_WORD}`}
       </p>
       <p className="mw-comparison">
-        {comparisonIsSilent
-          ? `${comparison.name} — filed nothing for this year. Not zero: no return.`
-          : `${comparison.name} — lowest of the ${shapes.length}, ${en(comparison.value)} ${UNIT_WORD}`}
+        {comparisonSays}
       </p>
       <p className="mw-caveat">{caveat}</p>
     </div>

@@ -414,13 +414,19 @@ const LIVE_RING_TOLERANCE_DEG = 0.001;
 /** Douglas-Peucker, iteratively, on a closed ring: the vertex furthest from the chord between two
  *  kept vertices survives when it is further than `toleranceDeg`, and everything under it goes.
  *
+ *  NOT `geo-choropleth.ts`'s own `simplifyRing`, and the name says so. That one thins a PROJECTED
+ *  ring by dropping points closer than `minGap` PIXELS to the last one kept — a spacing rule, in
+ *  frame units, for the plate the reader sees un-zoomed. This one works in DEGREES on unprojected
+ *  lon/lat for a layer the reader can zoom into, and a spacing rule would flatten a fjord and keep
+ *  a straight coast's every vertex. Two questions, two functions, two names.
+ *
  *  ITERATIVE, NOT RECURSIVE, and that is not a style choice: a country's outer ring here runs to
  *  several thousand vertices and a recursive split blows the stack on the worst-shaped of them.
  *
  *  A RING NEVER FALLS BELOW FOUR POINTS. Three points and a closing point is the least that is still
  *  a polygon; anything thinner is a shape that has stopped being one, and a country that thin should
  *  be culled by `keepRing`, not silently flattened here. */
-export function simplifyRing(ring, toleranceDeg) {
+export function thinRingToTolerance(ring, toleranceDeg) {
   if (!Array.isArray(ring) || ring.length <= 4 || !(toleranceDeg > 0)) return ring;
   const keep = new Uint8Array(ring.length);
   keep[0] = 1;
@@ -505,7 +511,7 @@ export function liveRings(collection, keys, geometry) {
       Number(lon.toFixed(LIVE_RING_DECIMALS)),
       Number(lat.toFixed(LIVE_RING_DECIMALS)),
     ]);
-  const thin = (ring) => simplifyRing(ring, LIVE_RING_TOLERANCE_DEG);
+  const thin = (ring) => thinRingToTolerance(ring, LIVE_RING_TOLERANCE_DEG);
 
   const shapes = new Map();
   for (const key of keys) {
