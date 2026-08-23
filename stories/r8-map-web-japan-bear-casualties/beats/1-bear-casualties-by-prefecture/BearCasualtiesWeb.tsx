@@ -422,7 +422,14 @@ export function BearCasualtiesWeb({
                   // how the first live render drew "Paris" across the Paris disc.
                   data-side={side}
                   data-gap={gap}
-                  data-dy={dy}
+                  // THE DE-COLLIDED OFFSET, not the raw one `labelPlacement` returned.
+                  // `live-map.mjs` repositions this node as `map.project(point).y + data-dy * scale`
+                  // and reads nothing else, so a beat that de-collides its labels for the fallback
+                  // and leaves `data-dy` alone gets the collisions straight back the moment the live
+                  // layer swaps in — which is the layer the reader actually looks at. Measured on
+                  // this beat before this line: "Yamagata" behind "Miyagi" and "Akita" over "Iwate"
+                  // on the live map, with the fallback underneath perfectly clean.
+                  data-dy={placed.y - point.py}
                   data-group={groupAttrOf(point, groups)}
                   style={style}
                 >
