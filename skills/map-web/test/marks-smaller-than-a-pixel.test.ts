@@ -34,7 +34,7 @@ import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
 import {
   READING_WIDTHS,
   announcedMarksOf,
-  containsItsPlate,
+  plateIsBoundByHeight,
   drawnRegionsOf,
   drawnWidthAt,
   marksStrandedWithNoChannel,
@@ -278,7 +278,7 @@ describe("every delivered page in this format, swept", () => {
       if (!drawn || drawn.shapes.length === 0) continue;
       counted.set(
         page.rel,
-        marksStrandedWithNoChannel(page.html, drawnWidthAt(1600, drawn.frame, containsItsPlate(page.html)))
+        marksStrandedWithNoChannel(page.html, drawnWidthAt(1600, drawn.frame, plateIsBoundByHeight(page.html)))
           .stranded.length,
       );
     }
@@ -304,7 +304,7 @@ describe("every delivered page in this format, swept", () => {
     // this beat at a 1600px container it answered 496px about a map the browser drew 739px wide.
     // The box is now the container on both axes and the plate covers it, so the reading is
     // `container - padding` and is exact here; one Baltic outline crossed a whole pixel and stopped
-    // being counted. The reading got MORE accurate in both directions — see `containsItsPlate`.
+    // being counted. The reading got MORE accurate in both directions — see `plateIsBoundByHeight`.
     expect(
       counted.get("proof/mapgen-choropleth-web/renders/choropleth.html"),
     ).toBe(2);

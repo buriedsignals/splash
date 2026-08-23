@@ -578,7 +578,10 @@ function markActive(doc, key) {
 }
 
 function showTooltip(win, tooltip, properties, event) {
-  const node = win.document.querySelector('.pt[data-key="' + properties.key + '"]');
+  // `[data-detail]`, which is what makes this the PRIMARY world's button on a page that wraps: a
+  // repeated world's marks carry `data-copy-detail` instead, and the first `.pt` in document order
+  // on such a page belongs to the westernmost copy.
+  const node = win.document.querySelector('.pt[data-detail][data-key="' + properties.key + '"]');
   // The detail string is the one the SSR'd markup already carries, never a second formatting of
   // the same number in a second place. A feature with no button of its own (a hex bin, a region a
   // beat draws no hit target for) carries its own `detail` instead.

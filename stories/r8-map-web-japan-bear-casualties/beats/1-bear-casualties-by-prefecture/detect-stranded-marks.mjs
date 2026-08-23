@@ -62,8 +62,8 @@ export const PAGE_PADDING_PX = 32;
  *  `render-web.mjs` emits only on that branch. A declaration, not a word: the prose above it in the
  *  same stylesheet quotes the expressions it replaced, so a looser match would read the explanation
  *  as the thing it explains. */
-export function containsItsPlate(html) {
-  return /\.mw-viewport\s*\{[^}]*container-type:\s*normal/.test(html);
+export function plateIsBoundByHeight(html) {
+  return /\.mw-fallback,\s*\.mw-overlay\s*\{[^}]*\bheight:\s*100cqh;/.test(html);
 }
 
 /** How wide the map is DRAWN at a given container width, in the fallback layer: the container less
@@ -88,15 +88,15 @@ export function containsItsPlate(html) {
  *  reader loses, not the most. `scripts/verify-live-map.mjs` drives the real camera and prints the
  *  real number; this is what a producer can be told without a browser and without a key.
  *
- *  `contains` is the one page shape that still fits its plate INSIDE the box (`containsItsPlate`
+ *  `contains` is the one page shape that still fits its plate INSIDE the box (`plateIsBoundByHeight`
  *  above): there the plate never scales past its own frame, so the old cap is still the right
  *  reading — and still optimistic in the same way, because the box is bounded by the stage's height
  *  as well. Measured on `real-owid-life-expectancy` at a 1600px container: this returns 1200 and the
  *  box is 898px wide. Naming that is better than silently answering 1568 about it, which is what a
  *  single uncapped reading would have done. */
-export function drawnWidthAt(containerWidthPx, frame, contains = false) {
+export function drawnWidthAt(containerWidthPx, frame, heightBound = false) {
   const box = containerWidthPx - PAGE_PADDING_PX;
-  return contains ? Math.min(box, frame.width) : box;
+  return heightBound ? Math.min(box, frame.width) : box;
 }
 
 /** The map's own frame and drawn rings, read out of the delivered page.
@@ -251,10 +251,10 @@ export function strandedVerdict(containerWidthPx, found) {
 export function strandedRefusal(html, widths = READING_WIDTHS) {
   const drawn = drawnRegionsOf(html);
   if (!drawn || drawn.shapes.length === 0) return null;
-  const contains = containsItsPlate(html);
+  const heightBound = plateIsBoundByHeight(html);
   const reasons = [];
   for (const width of widths) {
-    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, contains));
+    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, heightBound));
     if (found.unreachable.length === 0) continue;
     const rows = found.withoutARow.length > 0 ? `no row in the accessible table for ${found.withoutARow.join(", ")}` : null;
     const keys =

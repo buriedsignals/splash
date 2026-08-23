@@ -32,6 +32,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
+import { worldCopiesFor } from "./delivery-frame.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
@@ -713,9 +714,208 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
+/**
+ * THE WORLD REPEATS, AND THE MARKS REPEAT WITH IT — the owner's ruling of 2026-08-23, in the one
+ * place a delivered page is assembled.
+ *
+ * > *that is the normal behaviour of an interactive map — go ahead and repeat the map on the sides.*
+ *
+ * A camera that already spans a full turn of longitude cannot cover a wider box with one plate
+ * (`delivery-frame.mjs`, `cannotCover`), and paying for the width out of latitude was refused. A
+ * slippy map's own answer is to wrap, so the page paints `worldCopiesFor` copies of the plate side
+ * by side, centred, and clips what hangs over.
+ *
+ * WHAT THIS MUST NOT REINTRODUCE, and it is the whole reason this function exists rather than a CSS
+ * `background-repeat`. Two days before the ruling this format was fixed for painting three worlds,
+ * and the defect was never the repeat: it was that there was ONE SET OF HIT TARGETS over three
+ * painted worlds. A reader pointing at the second Africa got nothing, and nothing measured it. So
+ * every copy carries its own marks, its own hit targets and its own labels, and
+ * `verify-wraps-the-world.mjs` counts how many of them answer a pointer ON EACH VISIBLE COPY.
+ *
+ * WHY A COPY IS `<use>` AND NOT A SECOND COPY OF THE MARKUP, measured rather than preferred. The
+ * world beat this exists for delivers at 2,004,428 bytes against a 2,034,847-byte ceiling
+ * (`detect-weight-has-a-ceiling.mjs`) — 1.5% of headroom. Its map svg alone is 468,383 bytes
+ * (182,183 of baked plate, 286,200 of 241 country outlines), so duplicating the markup twice would
+ * add 1,081,182 bytes and deliver a 3.1 MB page: refused by the ceiling, and rightly. A `<use>`
+ * repaints an element that is already in the document — the plate is downloaded once, every outline
+ * is described once — at about 45 bytes per mark per copy, and, verified in Chrome before this was
+ * written, `document.elementFromPoint` inside a copy returns the `<use>` ITSELF, carrying its own
+ * `data-key`. That is the difference between a repeat a reader can point at and a decoration: a
+ * single `<use>` of the whole group renders identically and answers with one identity for the entire
+ * world, which is the defect wearing a cheaper coat.
+ */
+export function repeatWorlds(html, copies, css) {
+  if (!(copies > 1)) return html;
+  const marks = pointerActiveOverlayClasses(css);
+  const withIds = idsForWorldCopies(html);
+  return repeatLayer(repeatLayer(withIds, FALLBACK_LAYER, copies, useCopyOf), OVERLAY_LAYER, copies, (inner) =>
+    overlayCopyOf(inner, marks),
+  );
+}
+
+const FALLBACK_LAYER = /<div id="mw-fallback"[^>]*>/;
+const OVERLAY_LAYER = /<div class="mw-overlay"[^>]*>/;
+
+/** Splits one layer into `copies` worlds, laid out left to right, and hands every copy but the
+ *  middle one to `cheapen`. The MIDDLE copy is the untouched original — which is what keeps the
+ *  wrap invisible to every other reading in this format: the accessible table, the Tab order, the
+ *  census of announced marks and the stranded-mark reading all still see exactly one world, sitting
+ *  exactly where the one world used to sit. */
+function repeatLayer(html, opener, copies, cheapen) {
+  const open = opener.exec(html);
+  if (!open)
+    throw new Error(
+      `this page has no ${opener} to repeat, so the wrap would paint worlds with nothing in them. A ` +
+        `map-web component draws its plate into #mw-fallback and its marks into .mw-overlay`,
+    );
+  const start = open.index + open[0].length;
+  const scanner = /<div\b|<\/div>/g;
+  scanner.lastIndex = start;
+  let depth = 1;
+  let closing = null;
+  for (let found = scanner.exec(html); found; found = scanner.exec(html)) {
+    depth += found[0] === "</div>" ? -1 : 1;
+    if (depth === 0) {
+      closing = found;
+      break;
+    }
+  }
+  if (!closing) throw new Error(`the ${opener} layer never closes; nothing here can repeat it`);
+  const inner = html.slice(start, closing.index);
+  const middle = (copies - 1) / 2;
+  const worlds = [];
+  for (let n = 0; n < copies; n++)
+    worlds.push(
+      n === middle
+        ? `<div class="mw-world" data-world="primary">${inner}</div>`
+        : // `aria-hidden`, and this is the ruling's second half answered out loud: the keyboard and
+          // the accessible table DO NOT MULTIPLY. A prefecture is reachable once, not once per copy
+          // — a Tab order three times too long is a worse reader experience than a narrow map — so a
+          // repeat is out of the accessibility tree entirely and every focusable inside it is
+          // `tabindex="-1"`. It keeps the pointer, which is the channel the copies exist for.
+          `<div class="mw-world" data-world="repeat" aria-hidden="true">${cheapen(inner, n)}</div>`,
+    );
+  return html.slice(0, start) + worlds.join("") + html.slice(closing.index);
+}
+
+/** THE PLATE COPY. Every `<image>` and `<path>` the primary svg draws is given a short id once, and
+ *  the copy is one `<use>` per element in the same order — same paint, same z-order, same geometry,
+ *  and one hit target per mark. `data-key` and `class` travel onto the `<use>` because they are what
+ *  a pointer's answer is read from: `interaction.mjs` matches `.region[data-key]`, and a copy whose
+ *  marks lost their key would be a painted world a reader can point at and learn nothing from. */
+export function useCopyOf(inner) {
+  const openSvg = /<svg\b[^>]*>/.exec(inner);
+  if (!openSvg) throw new Error("the fallback layer draws no <svg> to repeat");
+  const viewBox = /viewBox="([^"]+)"/.exec(openSvg[0])?.[1];
+  if (!viewBox) throw new Error("the fallback svg carries no viewBox, so a copy has no frame to draw into");
+  const uses = [];
+  for (const element of inner.matchAll(/<(image|path)\b[^>]*>/g)) {
+    const tag = element[0];
+    const id = /\bid="([^"]+)"/.exec(tag)?.[1];
+    if (!id) continue;
+    const key = /\bdata-key="([^"]+)"/.exec(tag)?.[1];
+    const className = /\bclass="([^"]+)"/.exec(tag)?.[1];
+    uses.push(
+      `<use href="#${id}"${className ? ` class="${className}"` : ""}${key ? ` data-key="${key}"` : ""}/>`,
+    );
+  }
+  if (uses.length === 0)
+    throw new Error(
+      "nothing in the fallback svg carries an id, so a copy of it would be empty — `idsForWorldCopies` " +
+        "is what puts them there and it has to run before this does",
+    );
+  return `<svg class="map" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="presentation">${uses.join("")}</svg>`;
+}
+
+/** Gives every drawable in the primary svg the id its copies reference. Short (`w0`, `w1`, …)
+ *  because the count is the mark count and the page is already at its weight ceiling; unique across
+ *  the document because nothing else in this format emits an id of that shape. Elements that
+ *  already carry an id keep it. */
+export function idsForWorldCopies(html) {
+  let n = 0;
+  return html.replace(/<(image|path)\b[^>]*>/g, (tag) =>
+    /\bid="/.test(tag) ? tag : tag.replace(/^<(image|path)\b/, (open) => `${open} id="w${n++}"`),
+  );
+}
+
+/** THE OVERLAY COPY, and what it keeps is DERIVED FROM THE PAGE'S OWN STYLESHEET rather than typed.
+ *
+ *  Only some of an overlay's elements answer a pointer, and which ones is a beat's own decision
+ *  written in its own CSS: this format's symbol and hex-grid beats make every `.pt` button the
+ *  target (`.mw-overlay .pt { pointer-events: auto }`), while a choropleth points at the painted
+ *  country and keeps buttons only for the regions too small to land on (`.mw-overlay .pt-small`).
+ *  Carrying every button on every copy would be honest and, on the 241-region world beat, would add
+ *  72,208 bytes per copy to a page with 30,419 of headroom. So a copy keeps exactly the elements the
+ *  browser will let a pointer reach — read off the stylesheet the page actually ships — plus every
+ *  `.point-label`, because a copy with no names on it is a copy a reader cannot read.
+ *
+ *  A repeat's marks carry `data-copy-detail` rather than `data-detail`. Same string, deliberately a
+ *  different name: `data-detail` is the attribute this format's censuses count a mark by
+ *  (`tableCarriesTheMarks`, `keyboardReachesEveryMark`, `announcedMarksOf`), and a copy is the same
+ *  mark seen twice, not a second mark. `interaction.mjs` reads either. */
+export function overlayCopyOf(inner, markClasses) {
+  const keep = new Set([...markClasses, "point-label"]);
+  const out = [];
+  // The overlay's children are flat by construction — one `<button>` per mark, one label per name,
+  // never a nested structure — so an element is its own opening tag through its own closing tag.
+  for (const element of inner.matchAll(/<([a-zA-Z][\w-]*)\b[^>]*>[\s\S]*?<\/\1>/g)) {
+    const whole = element[0];
+    const classes = (/\bclass="([^"]*)"/.exec(whole)?.[1] ?? "").split(/\s+/);
+    if (!classes.some((one) => keep.has(one))) continue;
+    out.push(
+      whole
+        .replace(/\bdata-detail="/g, 'data-copy-detail="')
+        .replace(/\s(?:aria-label|title)="[^"]*"/g, "")
+        .replace(/^<button\b/, '<button tabindex="-1"'),
+    );
+  }
+  if (out.length === 0)
+    throw new Error(
+      `a repeated world would carry no pointer target at all: this page's stylesheet leaves every ` +
+        `overlay element pointer-inert (looked for ${[...keep].join(", ")}). A painted world a reader ` +
+        `cannot point at is the defect the wrap ruling was given WITH its engineering consequence`,
+    );
+  return out.join("");
+}
+
+/** The overlay classes this page's own CSS makes pointer-active, in the state that has no live map.
+ *  Read from the emitted stylesheet, never declared beside it — the browser obeys the stylesheet, so
+ *  the stylesheet is what a copy has to agree with. Rules qualified by `html.mw-live` are skipped:
+ *  live, the canvas hit-tests every painted copy itself and the DOM copies are hidden. */
+export function pointerActiveOverlayClasses(css) {
+  const found = new Set();
+  for (const rule of String(css ?? "").matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    const [, selector, body] = rule;
+    if (!/pointer-events:\s*auto/.test(body)) continue;
+    if (/html\.mw-live/.test(selector)) continue;
+    if (!/\.mw-overlay\b/.test(selector)) continue;
+    for (const one of selector.matchAll(/\.mw-overlay[^,]*?\.([\w-]+)/g)) found.add(one[1]);
+  }
+  return found;
+}
+
+/** The measured range of box shapes a wrapping beat is delivered into, refused rather than guessed
+ *  at. It is baked into `geometry.json` and it is the ONLY input the copy count has that is not the
+ *  camera: a beat that hands over a plate without it would get one world in a box that needs three,
+ *  and the page would show its own page ground beside the map with nothing saying so. */
+function requireBoxAspects(geometry) {
+  const measured = geometry?.boxAspects;
+  if (!measured)
+    throw new Error(
+      "this beat's camera spans the world, so its page fills its box by repeating that world east " +
+        "and west — and the number of copies is derived from `geometry.boxAspects`, the measured " +
+        "range of box shapes this beat is delivered into, which this plate does not carry. Re-bake " +
+        "it (bake-plate.mjs writes it) and pass it through in `props.geometry`.",
+    );
+  return measured;
+}
+
+
 async function renderMapWeb({ component, table, props, outDir, name, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
-  const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
+  const worldCopies = props.geometry?.cannotCover
+    ? worldCopiesFor(props.geometry.frame, requireBoxAspects(props.geometry))
+    : 1;
   const tableHtml = discloseTable(
     renderToStaticMarkup(createElement(table, { rows: props.rows, ...furniture })),
     TABLE_ROW_NOUN,
@@ -736,6 +936,15 @@ async function renderMapWeb({ component, table, props, outDir, name, live = fals
       `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
     : "";
 
+  const css = buildCss({ ...props, ...furniture, frame: props.geometry.frame, worldCopies });
+  // THE MARKS WRAP WITH THE MAP. The stylesheet is handed over rather than re-derived: which overlay
+  // elements a copy has to carry is a fact about the rules this page actually ships (`repeatWorlds`).
+  const mapHtml = repeatWorlds(
+    renderToStaticMarkup(createElement(component, { ...props, ...furniture })),
+    worldCopies,
+    css,
+  );
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -743,7 +952,7 @@ async function renderMapWeb({ component, table, props, outDir, name, live = fals
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, frame: props.geometry.frame , cannotCover: props.geometry.cannotCover ?? null })}
+${css}
 </style>
 </head>
 <body>
@@ -763,11 +972,15 @@ ${liveBlock}
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
-  const limit = props.geometry?.cannotCover
-    ? `this beat does not fill its container: ${props.geometry.cannotCover.why}. ` +
-      `The box keeps the plate's own ${props.geometry.frame.width}x${props.geometry.frame.height} shape and is centred; ` +
-      `filling the width would crop the study set instead. See delivery-frame.mjs, "cannotCover".`
-    : null;
+  const limit =
+    worldCopies > 1
+      ? `this beat fills its container by WRAPPING: ${props.geometry.cannotCover.why}. ` +
+        `The page paints ${worldCopies} copies of the ${props.geometry.frame.width}x${props.geometry.frame.height} plate ` +
+        `side by side, each carrying its own marks and its own hit targets; the middle copy is the ` +
+        `only one in the accessibility tree, so the Tab order and the accessible table are unchanged ` +
+        `at one reading per mark. Count what answers a pointer on each copy with ` +
+        `map-web/scripts/verify-wraps-the-world.mjs.`
+      : null;
   if (limit) console.log(limit);
   return { outPath, limit };
 }
@@ -782,7 +995,7 @@ function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function buildCss({ ground, accent, ink, muted, frame, cannotCover = null }) {
+function buildCss({ ground, accent, ink, muted, frame, worldCopies = 1 }) {
   // The plate's own aspect, the one number both the stage's width bound and the viewport's
   // aspect-ratio are computed from, so the box can never be asked to be two shapes at once.
   const aspect = frame.width / frame.height;
@@ -959,38 +1172,45 @@ html.mw-live .mw-overlay {
   height: 100%;
 }
 ${
-  cannotCover
-    ? `/* THE ONE STUDY SET THE RULE CANNOT HOLD FOR, laid out the old way ON PURPOSE and said out
-   loud rather than cropped in silence. A camera that already spans a full turn of longitude has no
-   more world to its east or west (delivery-frame.mjs, 'cannotCover'), so filling a container WIDER
-   than the world's own Mercator aspect can only be paid for out of latitude: measured on
-   real-owid-life-expectancy at its widest box, 2.572:1 against a 1.472:1 world, filling the width
-   costs 42.8% of the latitude range — everything south of 22.7°S and north of 71.8°N, which is
-   Australia, New Zealand, southern Africa, most of South America and northern Canada and Russia.
-   Full width, the whole subject, one window tall: this camera can have two of the three, and the
-   two it keeps are the subject and the window. 'renderMapWeb' prints the reason, and
-   'verify-fills-the-box.mjs' reports the shortfall as a stated exception rather than passing it.
-   'container-type: normal' is what lets '100cqh' below resolve against .mw-stage again instead of
-   self-referencing this box. */
-.mw-viewport {
-  container-type: normal;
-  width: min(100%, calc(100cqh * ${aspect}));
-  height: auto;
-  max-width: 100%;
-  margin-inline: auto;
-  aspect-ratio: ${frame.width} / ${frame.height} !important;
-}
+  worldCopies > 1
+    ? `/* THE WORLD REPEATS, AND THE MARKS REPEAT WITH IT (the owner, 2026-08-23: *that is the normal
+   behaviour of an interactive map — go ahead and repeat the map on the sides*). A camera that
+   already spans a full turn of longitude has no more world to its east or west, so ONE plate cannot
+   cover a container wider than the world's own Mercator aspect (delivery-frame.mjs, 'cannotCover')
+   and filling that width by scaling could only be paid for out of LATITUDE — measured on
+   real-owid-life-expectancy at its widest box, 2.572:1 against a 1.472:1 world, 42.8% of the
+   latitude range: Australia, New Zealand, southern Africa, most of South America, northern Canada
+   and Russia. Latitude is the axis that cannot be repeated; longitude is the axis that already is.
+   So the plate is drawn at exactly the box's HEIGHT — nothing is ever cropped off the top or the
+   bottom — and ${worldCopies} copies of it fill the width, centred, with the overflow clipped.
+   The odd count is what keeps the middle copy exactly where the single world used to sit.
+   AT A BOX NARROWER THAN ONE WORLD (a phone) the same rule crops LONGITUDE instead, which is what a
+   slippy map does at that size and the only crop a wrapping plate can take;
+   'verify-wraps-the-world.mjs' prints the degrees it costs at every width this format drives. */
 .mw-fallback, .mw-overlay {
-  inset: 0;
-  left: auto;
-  top: auto;
-  transform: none;
-  width: 100%;
+  width: calc(100cqh * ${frame.width / frame.height} * ${worldCopies});
+  height: 100cqh;
+  display: flex;
+}
+/* One world. 'position: relative' is load-bearing: every mark in the overlay is placed as a
+   PERCENTAGE of the plate, and a percentage resolves against the nearest positioned ancestor — so
+   this box is what makes a copy's marks land on that copy's own geography instead of all of them
+   piling onto the first world. */
+.mw-world {
+  position: relative;
+  flex: 0 0 calc(100% / ${worldCopies});
   height: 100%;
 }
+/* LIVE, THE COPIES ARE MAPLIBRE'S OWN. A live canvas paints world copies itself and hit-tests every
+   one of them through queryRenderedFeatures, so the DOM copies would be a second, staler set of
+   marks over the top of them. They go; the overlay drops back onto the viewport, 'live-map.mjs'
+   re-projects the ONE remaining set into the live camera, and the pointer is the canvas's job. */
+html.mw-live .mw-fallback, html.mw-live .mw-overlay { display: block; }
+html.mw-live [data-world="repeat"] { display: none; }
+html.mw-live .mw-world { position: static; }
 `
     : ""
-}.maplibregl-canvas-container canvas { outline: none; }
+}}.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* The region a pointer is on, marked on the plate itself rather than by a disc floating over it. */
 .region.pt-active { filter: brightness(0.85); }
@@ -1257,7 +1477,7 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
     component: ChoroplethWeb,
     table: RegionTable,
     props: {
-      geometry: { frame: geometry.frame, shapes: named, cannotCover: geometry.cannotCover ?? null, studySet: geometry.studySet ?? null, labelFrame: geometry.labelFrame ?? null },
+      geometry: { frame: geometry.frame, shapes: named, cannotCover: geometry.cannotCover ?? null, boxAspects: geometry.boxAspects ?? null, studySet: geometry.studySet ?? null, labelFrame: geometry.labelFrame ?? null },
       rows: named,
       breaks: LIFE_EXPECTANCY_BREAKS,
       plate,

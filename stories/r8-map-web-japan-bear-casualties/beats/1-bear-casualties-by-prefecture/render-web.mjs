@@ -35,7 +35,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
 import {
   READING_WIDTHS,
-  containsItsPlate,
+  plateIsBoundByHeight,
   drawnRegionsOf,
   drawnWidthAt,
   marksStrandedWithNoChannel,
@@ -466,7 +466,7 @@ ${liveBlock}
     );
   if (drawn && drawn.shapes.length > 0) {
     for (const width of READING_WIDTHS)
-      console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, containsItsPlate(html)))));
+      console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, plateIsBoundByHeight(html)))));
     const refusal = strandedRefusal(html);
     if (refusal) throw new Error(refusal);
   }

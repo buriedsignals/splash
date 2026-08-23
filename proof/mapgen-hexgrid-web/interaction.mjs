@@ -20,6 +20,21 @@
 // verification rule, an interactive format is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
+/** THE FACT A MARK CARRIES, wherever the wrap put it. A repeated world's marks carry
+ *  `data-copy-detail` rather than `data-detail` — the same string under a different name, because
+ *  `data-detail` is what this format's censuses count a mark BY (`tableCarriesTheMarks`,
+ *  `keyboardReachesEveryMark`), and a copy is the same mark seen twice, not a second mark. */
+function detailOf(node) {
+  return node.getAttribute("data-detail") || node.getAttribute("data-copy-detail");
+}
+
+/** Is this element on the world the reader navigates, rather than on one of its repeats?
+ *  A page that does not wrap has no `[data-world]` at all and every mark is primary. */
+function onThePrimaryWorld(node) {
+  const world = node.closest ? node.closest("[data-world]") : null;
+  return !world || world.getAttribute("data-world") === "primary";
+}
+
 /** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
  *  element. Every point already carries its own `data-detail` string and its own `aria-label`;
  *  this function never invents either — and never needs to know which points a filter has hidden:
@@ -27,6 +42,12 @@
  *  the same native behaviour that makes this file need no filter-awareness of its own. */
 export function initPoints(points, tooltip) {
   if (points.length === 0) return;
+  // THE KEYBOARD DOES NOT MULTIPLY WITH THE MAP. Every copy of a wrapped world carries its own
+  // pointer targets — that is what the copies are for — but a Tab order three times too long is a
+  // worse reader experience than a narrow map, so the arrow ring, like Tab itself, only ever visits
+  // the primary world. A repeat's marks are `tabindex="-1"` inside an `aria-hidden` subtree and
+  // never reach this at all.
+  const ring = points.filter(onThePrimaryWorld);
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
@@ -34,8 +55,11 @@ export function initPoints(points, tooltip) {
   }
 
   function show(point, clientX, clientY) {
-    points.forEach((p) => p.classList.toggle("pt-active", p === point));
-    tooltip.textContent = point.getAttribute("data-detail");
+    // BY KEY, never by identity: a wrapped world draws the same mark once per copy, and the
+    // reading a pointer just gave is true of all of them.
+    const key = point.getAttribute("data-key");
+    points.forEach((p) => p.classList.toggle("pt-active", p.getAttribute("data-key") === key));
+    tooltip.textContent = detailOf(point);
     tooltip.hidden = false;
     const tw = tooltip.offsetWidth || 160;
     const th = tooltip.offsetHeight || 28;
@@ -68,21 +92,23 @@ export function initPoints(points, tooltip) {
     });
     point.addEventListener("blur", clear);
     point.addEventListener("keydown", function (evt) {
+      const at = ring.indexOf(point);
+      if (at < 0) return;
       let nextIndex = null;
       if (evt.key === "ArrowRight" || evt.key === "ArrowDown")
-        nextIndex = Math.min(i + 1, points.length - 1);
+        nextIndex = Math.min(at + 1, ring.length - 1);
       else if (evt.key === "ArrowLeft" || evt.key === "ArrowUp")
-        nextIndex = Math.max(i - 1, 0);
+        nextIndex = Math.max(at - 1, 0);
       else if (evt.key === "Home") nextIndex = 0;
-      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "End") nextIndex = ring.length - 1;
       else if (evt.key === "Escape") {
         clear();
         point.blur();
         return;
       }
-      if (nextIndex !== null && nextIndex !== i) {
+      if (nextIndex !== null && nextIndex !== at) {
         evt.preventDefault();
-        points[nextIndex].focus();
+        ring[nextIndex].focus();
       }
     });
   });

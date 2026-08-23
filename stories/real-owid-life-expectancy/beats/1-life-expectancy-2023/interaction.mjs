@@ -27,13 +27,38 @@
 // verification rule, an interactive format is verified by driving a real browser, not asserting
 // against a DOM emulation nobody looked at.
 
+/** THE FACT A MARK CARRIES, wherever the wrap put it. A repeated world's marks carry
+ *  `data-copy-detail` rather than `data-detail` — the same string under a different name, because
+ *  `data-detail` is what this format's censuses count a mark BY (`tableCarriesTheMarks`,
+ *  `keyboardReachesEveryMark`), and a copy is the same mark seen twice, not a second mark. */
+function detailOf(node) {
+  return node.getAttribute("data-detail") || node.getAttribute("data-copy-detail");
+}
+
+/** Is this element on the world the reader navigates, rather than on one of its repeats?
+ *  A page that does not wrap has no `[data-world]` at all and every mark is primary. */
+function onThePrimaryWorld(node) {
+  const world = node.closest ? node.closest("[data-world]") : null;
+  return !world || world.getAttribute("data-world") === "primary";
+}
+
 /** Wires every `.pt` button on the page — and every region `<path>` that forwards to one — to
  *  hover, tap and keyboard, sharing the one tooltip element. Every region already carries its own
  *  `data-detail` string and its own `aria-label`; this function never invents either. */
 export function initRegions(buttons, tooltip) {
   if (buttons.length === 0) return;
+  // THE KEYBOARD DOES NOT MULTIPLY WITH THE MAP. Every copy of a wrapped world carries its own
+  // pointer targets — that is what the copies are for — but a Tab order three times too long is a
+  // worse reader experience than a narrow map, so the arrow ring, like Tab itself, only ever visits
+  // the primary world. A repeat's marks are `tabindex="-1"` inside an `aria-hidden` subtree and
+  // never reach this at all.
+  const ring = buttons.filter(onThePrimaryWorld);
   const byKey = {};
-  buttons.forEach(function (b) {
+  // A SHAPE ON ANY COPY FORWARDS TO THE PRIMARY BUTTON, which is the one carrying the reading:
+  // a repeat's button is out of the accessibility tree and carries `data-copy-detail`, so keying
+  // the map off whichever button happened to be last in the DOM would hand a copy a tooltip with
+  // nothing in it.
+  buttons.filter(onThePrimaryWorld).forEach(function (b) {
     byKey[b.getAttribute("data-key")] = b;
   });
   const shapes = Array.prototype.slice.call(
@@ -50,11 +75,13 @@ export function initRegions(buttons, tooltip) {
    *  disc floating at a country's centroid, and printed in the shared tooltip. */
   function show(button, clientX, clientY) {
     const key = button.getAttribute("data-key");
-    buttons.forEach((b) => b.classList.toggle("pt-active", b === button));
+    // BY KEY, never by identity: a wrapped world draws the same mark once per copy, and the
+    // reading a pointer just gave is true of all of them.
+    buttons.forEach((b) => b.classList.toggle("pt-active", b.getAttribute("data-key") === key));
     shapes.forEach((s) =>
       s.classList.toggle("pt-active", s.getAttribute("data-key") === key),
     );
-    tooltip.textContent = button.getAttribute("data-detail");
+    tooltip.textContent = detailOf(button);
     tooltip.hidden = false;
     const tw = tooltip.offsetWidth || 160;
     const th = tooltip.offsetHeight || 28;
@@ -85,21 +112,23 @@ export function initRegions(buttons, tooltip) {
     });
     button.addEventListener("blur", clear);
     button.addEventListener("keydown", function (evt) {
+      const at = ring.indexOf(button);
+      if (at < 0) return;
       let nextIndex = null;
       if (evt.key === "ArrowRight" || evt.key === "ArrowDown")
-        nextIndex = Math.min(i + 1, buttons.length - 1);
+        nextIndex = Math.min(at + 1, ring.length - 1);
       else if (evt.key === "ArrowLeft" || evt.key === "ArrowUp")
-        nextIndex = Math.max(i - 1, 0);
+        nextIndex = Math.max(at - 1, 0);
       else if (evt.key === "Home") nextIndex = 0;
-      else if (evt.key === "End") nextIndex = buttons.length - 1;
+      else if (evt.key === "End") nextIndex = ring.length - 1;
       else if (evt.key === "Escape") {
         clear();
         button.blur();
         return;
       }
-      if (nextIndex !== null && nextIndex !== i) {
+      if (nextIndex !== null && nextIndex !== at) {
         evt.preventDefault();
-        buttons[nextIndex].focus();
+        ring[nextIndex].focus();
       }
     });
   });
