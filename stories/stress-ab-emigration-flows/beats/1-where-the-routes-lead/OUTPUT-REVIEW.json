@@ -4,7 +4,7 @@
   "outputId": "1-where-the-routes-lead",
   "planVersion": 1,
   "draftRef": "renders/",
-  "draftDigest": "sha256:08cbf15bb8f5f8117f271c7e9e33d57d9130987acda466051859a13b9ec09548",
+  "draftDigest": "sha256:e7a599c24bc33036ebc8ca9d7c84d0691251c4c5932592e531829b2a3e7d13e3",
   "findingIds": [
     "ab-1-routes-fan-out-of-portugal",
     "ab-2-paris-outdraws-london"
@@ -15,7 +15,7 @@
       "id": "qa-1-where-the-routes-lead-2",
       "outputId": "1-where-the-routes-lead",
       "planVersion": 1,
-      "draftDigest": "sha256:08cbf15bb8f5f8117f271c7e9e33d57d9130987acda466051859a13b9ec09548",
+      "draftDigest": "sha256:e7a599c24bc33036ebc8ca9d7c84d0691251c4c5932592e531829b2a3e7d13e3",
       "findingIds": [
         "ab-1-routes-fan-out-of-portugal",
         "ab-2-paris-outdraws-london"
