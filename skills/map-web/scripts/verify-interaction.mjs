@@ -101,17 +101,34 @@ function check(name, ok, detail) {
 
 /** The `.pt` button for `key`, its centre in viewport coordinates, and what the browser's own hit
  *  test finds there. `elementFromPoint` is the half a dispatched event cannot fake. */
-function probePoint(page, key) {
-  return page.evaluate((k) => {
-    const button = document.querySelector(`.pt[data-key="${k}"]`);
+function probePoint(page, key, marks) {
+  return page.evaluate(([k, sel]) => {
+    // The PRIMARY world's button. On a page that wraps, the copies come first in document order and
+    // a bare `.pt[data-key]` finds the westernmost repeat, which is a sliver at the edge of the box.
+    // Filtered in JS rather than by appending `[data-key]` to the selector: measured in Chrome,
+    // `.pt:not([data-world="repeat"] .pt)[data-key="X"]` returns the SAME element for every X — the
+    // attribute test after a `:not()` holding a complex selector does not bind the way it reads, and
+    // every one of 153 marks came back as the same button. A selector whose meaning has to be
+    // guessed at is not one to hang a guard on.
+    const button = [...document.querySelectorAll(`.pt[data-key="${k}"]`)].find(
+      (node) => !node.closest('[data-world="repeat"]'),
+    );
     if (!button) return null;
     const r = button.getBoundingClientRect();
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;
     const hit = document.elementFromPoint(x, y);
+    // AND IS IT INSIDE THE PICTURE AT ALL? The graphic fills its container by scaling the plate to
+    // COVER it and clipping the overflow, so at a narrow box a mark near the picture's edge is
+    // simply not drawn — `elementFromPoint` at its centre answers with the page, or with nothing.
+    // Judging it as "covered" would report the crop as a broken hit target: measured on
+    // `proof/mapgen-hexgrid-web` at 375x667, 153 of 153 marks reported "covered by nothing" on a
+    // page whose every visible mark answers.
+    const box = document.querySelector(".mw-viewport")?.getBoundingClientRect();
     return {
       x,
       y,
+      inBox: !box || (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom),
       inWindow: r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth,
       // POINTER-ACTIVE OR NOT, read off the page rather than assumed. The symbol seed makes every
       // mark a real 28px button. A choropleth does the opposite on purpose: only the regions too
@@ -126,7 +143,7 @@ function probePoint(page, key) {
       width: r.width,
       height: r.height,
     };
-  }, key);
+  }, [key, marks]);
 }
 
 function readTooltip(page) {
@@ -141,20 +158,40 @@ function readTooltip(page) {
   });
 }
 
+/** THE MARKS THIS DRIVER IS ABOUT: the ones on the world the reader navigates.
+ *
+ *  A map-web page whose camera spans the world fills its box by painting several copies of that
+ *  world side by side, each carrying its own hit targets (`render-web.mjs`, `repeatWorlds`) — so a
+ *  bare `.pt` counts every mark three times. Driven on `proof/mapgen-hexgrid-web` before this
+ *  selector existed: 459 "pointer-active marks" for a beat with 153, of which 0 were reachable at
+ *  1024x768 because two thirds of them are clipped copies, and 153 reported as "covered by nothing"
+ *  at 375x667 for the same reason. Every one of those failures was the driver counting the same
+ *  mark three times, not a page that broke.
+ *
+ *  The copies are not unverified: `verify-wraps-the-world.mjs` is the driver that counts what
+ *  answers a pointer ON EACH of them, which is a different question from the ones asked here (does
+ *  the filter narrow both halves, does a real pointer reach a mark's own disc, does the no-JS state
+ *  still carry every mark). Those are questions about the beat, and the beat is one world.
+ *
+ *  One selector rather than a branch: a page that does not wrap has no `[data-world]` at all, and
+ *  `:not([data-world="repeat"] .pt)` selects every `.pt` on it exactly as `.pt` did. */
+export const PRIMARY_MARKS = '.pt:not([data-world="repeat"] .pt)';
+export const PRIMARY_LABELS = '.point-label:not([data-world="repeat"] .point-label)';
+
 /** What is actually drawn right now: the keys of every point still laid out (a `display: none` box
  *  has no client rects), plus the same count for the decorative circles and the table rows. */
 function visibleState(page) {
-  return page.evaluate(() => {
+  return page.evaluate(([marks, labels]) => {
     const shown = (sel) =>
       [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length > 0);
     return {
-      points: shown(".pt").map((e) => e.getAttribute("data-key")).sort(),
+      points: shown(marks).map((e) => e.getAttribute("data-key")).sort(),
       circles: shown("svg.map circle[data-group]").length,
-      labels: shown(".point-label").length,
+      labels: shown(labels).length,
       rows: shown(".region-table tbody tr").length,
       checked: [...document.querySelectorAll(".mw-filter input")].filter((i) => i.checked).map((i) => i.id),
     };
-  });
+  }, [PRIMARY_MARKS, PRIMARY_LABELS]);
 }
 
 /** The centre of a filter chip, by the id of the radio inside it — a real coordinate for a real
@@ -365,15 +402,15 @@ try {
   );
 
   // ── 0b. WHOSE MARKS? — see `subjectFromSeed`/`subjectFromPage` for what this replaced ─────────
-  const read = await page.evaluate(() => {
-    const nodes = [...document.querySelectorAll(".pt[data-key]")];
+  const read = await page.evaluate((marks) => {
+    const nodes = [...document.querySelectorAll(`${marks}[data-key]`)];
     return {
       keys: nodes.map((node) => node.getAttribute("data-key")),
       detailOf: Object.fromEntries(nodes.map((node) => [node.getAttribute("data-key"), node.getAttribute("data-detail")])),
       groupOf: Object.fromEntries(nodes.map((node) => [node.getAttribute("data-key"), node.getAttribute("data-group")])),
       chips: [...document.querySelectorAll("input[name=mw-filter]")].map((input) => input.id),
     };
-  });
+  }, PRIMARY_MARKS);
   const subject = drivingTheSeed ? subjectFromSeed(seedPoints) : subjectFromPage(read);
   const points = subject.keys;
   const expectedDetail = subject.expectedDetail;
@@ -444,7 +481,12 @@ try {
         // scaled non-uniformly — a lie about distance and shape (geo-discipline.md).
         bakedAspect: view.width / view.height,
         drawnAspect: (() => {
-          const layer = vp.querySelector(".mw-fallback");
+          // ONE WORLD, on a page that paints several. A world camera fills its box by repeating its
+          // plate east and west, so `.mw-fallback` is `worldCopies` plates wide and reading it whole
+          // reports a threefold "stretch" that is three faithful copies — measured on
+          // `proof/mapgen-hexgrid-web`: baked 1.7563 against a drawn 5.2689, which is exactly
+          // 1.7563 x 3. The unit that has to keep the plate's shape is one copy of it.
+          const layer = vp.querySelector(".mw-fallback .mw-world") ?? vp.querySelector(".mw-fallback");
           const r = (layer ?? vp).getBoundingClientRect();
           return r.width / r.height;
         })(),
@@ -516,10 +558,16 @@ try {
     const wrong = [];
     let compared = 0;
     let passive = 0;
+    let clipped = 0;
     for (const key of points) {
-      const probe = await probePoint(page, key);
+      const probe = await probePoint(page, key, PRIMARY_MARKS);
       if (!probe) {
         missed.push(`${key}: no button`);
+        continue;
+      }
+      if (!probe.inBox) {
+        // Cropped away by the box at this width, not broken. Counted and said out loud below.
+        clipped++;
         continue;
       }
       if (!probe.pointerActive) {
@@ -548,9 +596,12 @@ try {
       `hover ${w}x${h}: every pointer-active mark's own hit target is the topmost thing at its own centre`,
       missed.length === 0 && covered.length === 0,
       [...missed, ...covered].join("; ") ||
-        `${points.length - passive}/${points.length} carry a pointer-active button and every one of them is ` +
-          `the topmost thing at its own centre` +
-          (passive > 0 ? `; the other ${passive} are pointed at through the map's own fill` : ""),
+        `${points.length - passive - clipped}/${points.length} carry a pointer-active button inside the ` +
+          `picture and every one of them is the topmost thing at its own centre` +
+          (passive > 0 ? `; ${passive} are pointed at through the map's own fill` : "") +
+          (clipped > 0
+            ? `; ${clipped} are cropped away by the box at this width — the crop the graphic takes to fill its container, not a broken target`
+            : ""),
     );
     // ANTI-VACUITY, and it is the whole reason this is not just `wrong.length === 0`. On the world
     // beat every point was skipped as "no button" before the comparison, so `wrong` stayed empty and
@@ -558,10 +609,10 @@ try {
     // comparison that never ran is not a comparison that passed.
     check(
       `hover ${w}x${h}: a real pointer move shows that point's own value, in window`,
-      wrong.length === 0 && compared === points.length - passive && compared > 0,
+      wrong.length === 0 && compared === points.length - passive - clipped && compared > 0,
       wrong.join("; ") ||
-        (compared === points.length - passive && compared > 0
-          ? `${compared}/${points.length - passive} pointer-active marks checked against ${subject.source}`
+        (compared === points.length - passive - clipped && compared > 0
+          ? `${compared}/${points.length - passive - clipped} pointer-active, un-cropped marks checked against ${subject.source}`
           : `only ${compared} of the ${points.length - passive} pointer-active marks were reached at all, so ` +
             `this compared nothing for the other ${points.length - passive - compared}`),
     );
@@ -714,13 +765,15 @@ try {
   const noJsId = hasFilter ? `mw-filter-${slugOf(noJsGroup)}` : null;
   // Every measurement below runs in a SEPARATE page context that does have script — `page.evaluate`
   // is injected by the driver, not by the document — so the page itself stays script-free.
-  const noJsBefore = await page.evaluate(() =>
-    [...document.querySelectorAll(".pt")].filter((e) => e.getClientRects().length > 0).length,
+  const noJsBefore = await page.evaluate(
+    (marks) => [...document.querySelectorAll(marks)].filter((e) => e.getClientRects().length > 0).length,
+    PRIMARY_MARKS,
   );
   const noJsChip = noJsId ? await chipCentre(page, noJsId) : null;
   if (noJsChip) await page.mouse.click(noJsChip.x, noJsChip.y);
-  const noJsAfter = await page.evaluate(() =>
-    [...document.querySelectorAll(".pt")].filter((e) => e.getClientRects().length > 0).length,
+  const noJsAfter = await page.evaluate(
+    (marks) => [...document.querySelectorAll(marks)].filter((e) => e.getClientRects().length > 0).length,
+    PRIMARY_MARKS,
   );
   const wantedAfter = noJsChip ? keysByGroup.get(noJsGroup).length : points.length;
   check(

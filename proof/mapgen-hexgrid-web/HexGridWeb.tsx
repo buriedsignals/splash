@@ -335,6 +335,20 @@ export function HexGridWeb({
                   type="button"
                   className="pt"
                   style={{
+                    // NOT CLAMPED TO THE WORLD'S EDGE, and that was tried and measured. This
+                    // grid's outermost columns are centred OUTSIDE the plate frame — column -5's own
+                    // `cx` is negative and column 14's is past `frame.width` — so once the page fills
+                    // its container by REPEATING the world (`render-web.mjs`, `repeatWorlds`), the
+                    // pixel at such a centre belongs to the NEXT copy and the browser answers with
+                    // that copy's own cell: 5 of 153 at 1600x900 and 6 at 1024x768 (`13,9` answers as
+                    // `-5,9`, `14,8` as `-4,8`, `14,9` as `-4,9`), and every one of those answers is
+                    // the cell actually painted at that pixel, because the neighbour across the seam
+                    // is the neighbour on the ground. Clamping them inside their own world the way
+                    // `ChoroplethWeb`'s targets are moves the target off the cell instead — measured
+                    // the same way, the same two cells then went silent at their own painted edges,
+                    // and one of them stacked on its neighbour's target. A reading that is right for
+                    // the pixel beats a target that has left its mark, so the clamp was withdrawn
+                    // and the residual is named here and by `collidingPointerTargets`.
                     left: `${(cell.cx / frame.width) * 100}%`,
                     top: `${(cell.cy / frame.height) * 100}%`,
                     // ONE dimension. The height comes from `.pt { aspect-ratio: 1 }`, never from a

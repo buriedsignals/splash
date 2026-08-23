@@ -1219,6 +1219,22 @@ ${
   position: relative;
   flex: 0 0 calc(100% / ${worldCopies});
   height: 100%;
+  /* NOT CLIPPED TO ITS OWN BOX, and that was tried and measured rather than assumed. A mark's hit
+     target is a fixed-size box centred on the mark, so a mark near a world's edge hangs part of its
+     target over the NEXT world; the copies come after the primary in the DOM, so at the seam a
+     copy's westernmost target lies over the primary's easternmost marks. Measured on
+     proof/mapgen-hexgrid-web at 1600x900: 5 of 153 primary marks answer with their
+     across-the-antimeridian NEIGHBOUR rather than with themselves (13,9 answers as -5,9; 14,8 as
+     -4,8; 14,9 as -4,9) — and every one of those answers is the cell actually painted at that pixel,
+     because the neighbour across the seam is the neighbour on the ground.
+     'overflow: hidden' here takes those five down to two and costs more than it saves, measured both
+     ways: this grid centres its outermost columns OUTSIDE the plate frame, so clipping each world
+     cuts those marks' own targets where their paint leaves the world, and two of 153 then answer
+     NOWHERE along their own painted edges — which splash/test/interaction-promises-are-kept.test.ts
+     catches. Clamping the targets inside their world instead moves the target off the mark, with the
+     same result. A reading that is right for the pixel beats a target that has left its mark or
+     vanished, so the seam is left as it is and the five are named — here, in the verdict
+     'collidingPointerTargets' prints, and in the report. */
 }
 /* LIVE, THE COPIES ARE MAPLIBRE'S OWN. A live canvas paints world copies itself and hit-tests every
    one of them through queryRenderedFeatures, so the DOM copies would be a second, staler set of

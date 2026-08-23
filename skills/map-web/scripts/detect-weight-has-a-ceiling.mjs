@@ -33,11 +33,11 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *    1 071 776  stress-ab-emigration-flows/where-the-routes-lead.html   (and its export copy)
  *    1 153 504  stress-f-housing-pressure/housing-pressure-choropleth.html
  *    1 274 640  mapgen-locator-web/locator.html
- *    1 374 530  mapgen-hexgrid-web/hex-grid.html                       ← wraps: 1 283 891 + 90 639
+ *    1 376 027  mapgen-hexgrid-web/hex-grid.html                       ← wraps: 1 283 891 + 92 136
  *    1 426 390  mapgen-choropleth-web/choropleth.html
  *    1 704 495  mapgen-dot-web/dot-population.html
- *    2 153 428  real-owid-life-expectancy/life-expectancy-2023.html    ← MEASURED_MAX_BYTES,
- *                                                                       wraps: 2 004 428 + 149 000
+ *    2 154 925  real-owid-life-expectancy/life-expectancy-2023.html    ← MEASURED_MAX_BYTES,
+ *                                                                       wraps: 2 004 428 + 150 497
  *
  *  RE-MEASURED AGAIN 2026-08-23 AFTER THE WRAP RULING, and the two moves are named because a ceiling
  *  that rises without an argument is a ceiling that has stopped guarding anything. The owner ruled
@@ -45,8 +45,8 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  its consequence: every painted copy carries its own marks and its own hit targets, or it is the
  *  decoration the last round closed. Two pages in this population have a world camera and both grew:
  *
- *    · `mapgen-hexgrid-web`  +90 639 bytes (+7.1%) — two copies of 153 hex cells.
- *    · `real-owid-life-expectancy` +149 000 (+7.4%) — two copies of 241 countries and the 205
+ *    · `mapgen-hexgrid-web`  +92 136 bytes (+7.2%) — two copies of 153 hex cells.
+ *    · `real-owid-life-expectancy` +150 497 (+7.5%) — two copies of 241 countries and the 205
  *      fixed-size targets its smallest regions need.
  *
  *  THE COPIES ARE `<use>`, WHICH IS WHY IT IS 7% RATHER THAN 154%. The world beat's map svg alone is
@@ -58,7 +58,7 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  at and a picture of one. Measured in Chrome before the mechanism was written.
  *
  *  `MARGIN_BYTES` moved with the population rather than by decision: the largest step between two
- *  adjacent pages is now `dot-population` → `life-expectancy` at 448 933 bytes (it was 299 933
+ *  adjacent pages is now `dot-population` → `life-expectancy` at 450 430 bytes (it was 299 933
  *  between the same two, and the wrap pushed them apart). That is the number `ceilingFromPopulation`
  *  derives, and `test/weight-ceiling.test.ts` asserts both directions of it.
  *
@@ -80,8 +80,8 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  delivered pages sitting next to each other by size — 299 933 bytes, the step from
  *  `mapgen-dot-web/dot-population.html` to `real-owid-life-expectancy` (it was 228 063 and the step
  *  from `output-proof` to `dot-population`; that pair moved closer together and this one apart). */
-export const MEASURED_MAX_BYTES = 2153428;
-export const MARGIN_BYTES = 448933;
+export const MEASURED_MAX_BYTES = 2154925;
+export const MARGIN_BYTES = 450430;
 export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;
 
 /** THE TWO NUMBERS ABOVE, DERIVED FROM THE POPULATION THEY DESCRIBE — because until 2026-08-22
