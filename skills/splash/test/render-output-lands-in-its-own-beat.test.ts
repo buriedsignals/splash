@@ -197,6 +197,40 @@ function stripComments(src: string): string {
  * Read one balanced expression starting at `start`, stopping at the first `stop` character that
  * appears at bracket depth zero and outside any string. Returns the raw text.
  */
+/** Whether a `/` at this point opens a REGEX rather than divides. Decided on the last non-space
+ *  character consumed so far: after a value (an identifier, a number, a closing bracket) a slash is
+ *  division; after an operator, an opening bracket, a comma, a colon or nothing at all, it can only
+ *  open a pattern. */
+function regexCanStart(consumedSoFar: string): boolean {
+  const before = consumedSoFar.trimEnd().slice(-1);
+  return before === "" || "=([{,;:!&|?+-*%~^<>".includes(before);
+}
+
+/** The whole regex literal starting at `at`, flags included, or null if it never closes on its own
+ *  line. Character classes are tracked, because `/[^/]+/` is legal and its first `/` inside the
+ *  class does not end anything. */
+function regexLiteralAt(text: string, at: number): string | null {
+  let i = at + 1;
+  let inClass = false;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === "\n") return null;
+    if (c === "\\") {
+      i += 2;
+      continue;
+    }
+    if (c === "[") inClass = true;
+    else if (c === "]") inClass = false;
+    else if (c === "/" && !inClass) {
+      i++;
+      while (i < text.length && /[a-z]/.test(text[i])) i++;
+      return text.slice(at, i);
+    }
+    i++;
+  }
+  return null;
+}
+
 function balancedExpression(
   text: string,
   start: number,
@@ -207,6 +241,36 @@ function balancedExpression(
   let out = "";
   while (i < text.length) {
     const c = text[i];
+    // A REGEX LITERAL IS NOT A STRING, and this scanner could not tell them apart until the
+    // world-wrap block reached five `mapgen-*` renderers on 2026-08-23. Measured there:
+    // `const className = /\bclass="([^"]+)"/.exec(tag)?.[1];` — the scanner met the quote inside the
+    // PATTERN, went into string mode, and ran past its own `;\n` stop looking for a closing quote.
+    // The const's "expression" then swallowed the rest of the file, including the CLI block's
+    // `flag("--out", …)` and a `".."`, and this guard reported that a renderer writes outside its own
+    // beat. A regex is recognised where a regex can legally begin — after an operator, an opening
+    // bracket, a comma or nothing — which is exactly where a division cannot.
+    if (
+      c === "/" &&
+      text[i + 1] !== "/" &&
+      text[i + 1] !== "*" &&
+      regexCanStart(out)
+    ) {
+      const literal = regexLiteralAt(text, i);
+      if (literal) {
+        out += literal;
+        i += literal.length;
+        continue;
+      }
+    }
+    if (c === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      const end = text.indexOf("*/", i + 2);
+      i = end < 0 ? text.length : end + 2;
+      continue;
+    }
     if (c === '"' || c === "'" || c === "`") {
       const q = c;
       out += c;
@@ -349,12 +413,28 @@ function inline(
   return out;
 }
 
+/** A literal that could actually BE a filesystem path, not merely something that starts with a
+ *  slash. The quote-pairing scan below cannot see a REGEX literal, so `/\s(?:aria-label)="[^"]*"/g,
+ *  ""` pairs the quote inside the pattern with the one after it and hands this function `/g, `; and
+ *  a real, ordinary string can begin with a slash without being a path at all — `"/>"`, the close of
+ *  a self-closing tag, is one, and it is in every renderer that emits SVG.
+ *
+ *  So a candidate has to look like a path: one or more segments of path characters, nothing else.
+ *  That is the same discrimination `no-cross-skill-imports.test.ts` already makes at its own scan
+ *  ("a literal containing whitespace is skipped: prose reads as a sentence, a specifier never
+ *  does"), and it keeps every shape this guard was written to catch — `/tmp/video-twin`,
+ *  `/Users/…/out`, `~/Desktop/renders`. WHAT IT GIVES UP, said rather than discovered: an absolute
+ *  path containing a space or a shell metacharacter is no longer seen. None exists in this tree, and
+ *  a scanner that reads `/>` as a scratch directory is worse than one that misses `/My Renders`. */
+const PATH_SHAPED = /^~?(?:\/[A-Za-z0-9._~@+-]+)+\/?$/;
+
 /** String literals in an expression that name an absolute path. */
 function absoluteLiterals(expr: string): string[] {
   const out: string[] = [];
   for (const m of expr.matchAll(/["'`]([^"'`\n]*)["'`]/g)) {
     const v = m[1];
-    if (/^~?\/(?!\/)/.test(v) && !/^\/\//.test(v)) out.push(v);
+    if (/^~?\/(?!\/)/.test(v) && !/^\/\//.test(v) && PATH_SHAPED.test(v))
+      out.push(v);
   }
   return out;
 }
@@ -464,5 +544,26 @@ describe("the population this guard covers", () => {
       true,
     );
     expect(scans.some((s) => s.beat === "comparison")).toBe(false);
+  });
+
+  it("still reads a real scratch path, and no longer reads SVG or a regex as one", () => {
+    // The four shapes measured on 2026-08-23, when the world-wrap block reached five `mapgen-*`
+    // renderers and turned both rules above red on markup and pattern syntax. Kept as an assertion
+    // rather than a comment so that loosening `PATH_SHAPED` back cannot go unnoticed.
+    expect(absoluteLiterals('const out = "/tmp/video-twin";')).toEqual([
+      "/tmp/video-twin",
+    ]);
+    expect(absoluteLiterals('const out = "~/Desktop/renders";')).toEqual([
+      "~/Desktop/renders",
+    ]);
+    expect(absoluteLiterals('title === undefined ? "/>" : "<title>"')).toEqual(
+      [],
+    );
+    expect(
+      absoluteLiterals('whole.replace(/\\sdata-detail="[^"]*"/g, "")'),
+    ).toEqual([]);
+    expect(
+      absoluteLiterals('const classes = /\\bclass="([^"]*)"/.exec(whole)?.[1]'),
+    ).toEqual([]);
   });
 });
