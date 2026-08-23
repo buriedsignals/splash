@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "review-2",
+  "id": "review-3",
   "outputId": "1-what-the-world-wrote-down",
   "planVersion": 1,
   "draftRef": "renders/",
-  "draftDigest": "sha256:415d2b8e4e22f3b5bdd2c4490f176ff90aa32b724470e7e44af2b4106579c732",
+  "draftDigest": "sha256:5d5336b8687a2a983309687f4fce84750438ab4d46289a1caadf977837ad6e29",
   "findingIds": [
     "takeaway-3021-written-down-against-an-estimated-59000",
     "94-of-194-filed-nothing-and-are-not-drawn-as-zero",
@@ -17,7 +17,7 @@
       "schemaVersion": 1,
       "outputId": "1-what-the-world-wrote-down",
       "planVersion": 1,
-      "draftDigest": "sha256:415d2b8e4e22f3b5bdd2c4490f176ff90aa32b724470e7e44af2b4106579c732",
+      "draftDigest": "sha256:5d5336b8687a2a983309687f4fce84750438ab4d46289a1caadf977837ad6e29",
       "findingIds": [
         "takeaway-3021-written-down-against-an-estimated-59000",
         "94-of-194-filed-nothing-and-are-not-drawn-as-zero",
@@ -25,14 +25,14 @@
         "every-sub-pixel-mark-keeps-a-keyboard-target-and-a-table-row",
         "french-guianas-3-are-declared-rather-than-folded-into-france"
       ],
-      "id": "qa-driven-live-and-fallback-2026-08-23b",
+      "id": "qa-driven-wrapped-2026-08-23c",
       "status": "passed",
-      "completedAt": "2026-08-23T17:00:00.000Z"
+      "completedAt": "2026-08-23T17:50:00.000Z"
     }
   ],
   "angleEvidenceBrief": "The angle is that the published count of human rabies deaths is a count of reporting. The evidence is WHO's own Global Health Observatory indicator NTD_RAB2 frozen as downloaded, one year of it, joined to Natural Earth 1:50m on ADM0_A3 with every silence declared: 1 alias (SSD to SDS, a country that reported 249), 94 countries whose own cell reads No data, and 1 reading that lands on no shape at all (French Guiana, 3). Of the 195 countries in WHO's 2024 row, 57 reported at least one death, 44 reported zero and 94 filed nothing; the 101 that filed reported 3021 between them, 3018 of which this map can put on a shape. WHO's own fact sheet puts the annual toll at about 59000. Nothing on the page is divided by anything: the file carries no population, and the beat's brief records reading raw with the reason.",
   "decision": "approve",
   "reviewer": "journalist",
-  "decidedAt": "2026-08-23T17:05:00.000Z",
-  "notes": "Re-approved against the render whose legend names the two silences in words: the first class tick reads 0 - filed, reported none and the no-data swatch reads No return filed - 94 countries. Not a zero. The colour could not carry that distinction: the derived no-data fill measures 1.28:1 against the ramp first class here and 1.32:1 on the white ground the worked beat ships on, under a 3:1 floor, and no palette fixes it. Driven at 1600x900, 2990x1718 and 375x812, live with a real key and again with JavaScript disabled. Three things accepted knowingly and written into APPROVED.md: the subject cannot be hovered in the fallback layer, the map fills 66.6 percent of its box on the width at 1600x900, and the page is 1.39 times the format's own weight ceiling."
+  "decidedAt": "2026-08-23T17:55:00.000Z",
+  "notes": "Re-approved against the WRAPPED render: the box is covered 100.0 percent on both axes at 1600x900, 1280x800 and 375x812, three world copies are painted, every copy answers a pointer for every mark it draws, and the Tab order and the accessible table stay at 194. Also carries the legend names the two silences in words: the first class tick reads 0 - filed, reported none and the no-data swatch reads No return filed - 94 countries. Not a zero. The colour could not carry that distinction: the derived no-data fill measures 1.28:1 against the ramp first class here and 1.32:1 on the white ground the worked beat ships on, under a 3:1 floor, and no palette fixes it. Driven at 1600x900, 2990x1718 and 375x812, live with a real key and again with JavaScript disabled. Three things accepted knowingly and written into APPROVED.md: the subject cannot be hovered in the fallback layer, the map fills 66.6 percent of its box on the width at 1600x900, and the page is 1.39 times the format's own weight ceiling."
 }

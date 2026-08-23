@@ -82,3 +82,43 @@ The whole story turns on "filed nothing" and "filed a real zero" being opposite 
 alone a reader could not have told them apart on any ground this format ships. They are separated by
 text now, which is what `types/choropleth.md` asks for anyway. It is written up as a defect of the
 format.
+
+## Re-approved, 2026-08-23 17:50 — review-3, and this one is a different map
+
+Between review-2 and this one, `a1e79ad4` gave the six page assemblers that never got the wrap
+ruling their copy of `repeatWorlds` and `worldTilingCss`. I re-synced this beat's own runner from
+the beat the SKILL says to copy, three-way, no conflicts — and it threw:
+
+    this beat's camera spans the world, so its page fills its box by repeating that world east and
+    west — and the number of copies is derived from `geometry.boxAspects` … which this plate does
+    not carry. Re-bake it (bake-plate.mjs writes it) and pass it through in `props.geometry`.
+
+The plate did carry it. The runner was not passing it on. One line — `boxAspects:
+geometry.boxAspects ?? null` in `props.geometry` — and the beat wraps.
+
+What that changed, driven again at every width:
+
+| | before | after |
+| --- | ---: | ---: |
+| box coverage, 1600×900 | 66.7 % | **100.0 %** |
+| box coverage, 1280×800 | 67.3 % | **100.0 %** |
+| box coverage, 375×812 | 80.4 % | **100.0 %** |
+| worlds painted | 1 | **3** |
+| `verify-fills-the-box.mjs` | exit 1 | **exit 0** |
+| `verify-wraps-the-world.mjs` | threw | **exit 0** |
+
+And the promise the ruling makes about the copies holds, measured per copy:
+
+    1600x900   copy 0 (repeat): 24/24 answer a pointer · copy 1 (primary): 176/176 · copy 2: 7/7
+    2990x1718  copy 0: 5/5 · copy 1 (primary): 188/188 · copy 2: 4/4
+    375x812    copy 0: off screen · copy 1 (primary): 103/103 · copy 2: off screen
+    Tab stops 194 · announced marks 194 · table rows 194, at every width
+
+The keyboard and the table did not multiply. I looked at the picture as well as the numbers: the
+world runs edge to edge, the repeats carry their own shading — Indonesia and Thailand shaded on the
+left copy, India's white outline drawn on it too — and there is no page ground beside the map at any
+width. This is the map I am signing.
+
+Everything in the two sections above still stands: the fallback pointer still opens Pakistan's
+tooltip over Afghanistan at 1600×900, the sub-pixel counts are unchanged, and the page is still over
+the format's own weight ceiling.
