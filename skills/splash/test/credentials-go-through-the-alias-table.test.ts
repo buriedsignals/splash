@@ -126,6 +126,27 @@ describe("every provider credential splash reads goes through its own alias tabl
   });
 });
 
+// THE WIRING, CHECKED RATHER THAN ASSERTED. `declarationsWithoutACaller` is the decision that
+// refuses a guard a skill DECLARES and nothing it ships ever calls — round six's finding AC1, where
+// a rule was distributed to eight skills and called by none four hours after the fix was reported.
+// It never asks this skill, because it iterates the eight that DRAW; asking it here is what turns
+// "the command calls it" from a sentence in a commit message into something a test reads off the
+// files. An import is not a call there and a comment is not a call either, which is the whole point.
+describe("the guard this skill declares is reachable from something a person runs", () => {
+  it("is not one of this skill's declarations without a caller", async () => {
+    const wiring = await import(
+      "../../map-web/scripts/detect-guard-wiring.mjs"
+    );
+    expect(wiring.declarationsWithoutACaller(SKILL)).not.toContain(
+      "credentialReadsWithoutAlias",
+    );
+    const declared = wiring
+      .declaredDecisions(SKILL)
+      .find((decision: { name: string }) => decision.name === "credentialReadsWithoutAlias");
+    expect(declared?.callers).toEqual(["scripts/check-credentials.mjs"]);
+  });
+});
+
 describe("the command a person runs", () => {
   it("exits 0 on this skill", () => {
     const run = Bun.spawnSync(["bun", COMMAND], { cwd: SKILL });
