@@ -157,6 +157,32 @@ const COPIES: Record<string, string[]> = {
     // said dark where the guard says middle would not have moved the surprise, only relocated it.
     "splash/scripts/preflight.mjs",
   ],
+  // THE SEA, AND THE OWNER'S INSTRUCTION GIVEN TWICE. `plateFollowsGround` reads a plate's MEAN and
+  // passed the worst page in this corpus by construction — the mean of a bright sea and a dark land
+  // lands in the band it says nothing about, whatever the sea is. These four read the FILLS instead.
+  // All three plate-baking formats carry them; `scrolly` calls its copies from `verifyBeatFiles`,
+  // the pass that reads a beat's own plate directories off disk, rather than from its browser pass,
+  // which measures a plate through an `OffscreenCanvas` and could only ever answer with a mean.
+  plateSurfacesYieldToInk: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
+  plateSurfaces: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
+  surfacesUnderMarks: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
+  inkFromPalette: [
+    "map-beat/scripts/verify-map.mjs",
+    "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
+  ],
   surfaceLuminance: [
     "scrolly/scripts/verify-scrolly.mjs",
     "map-beat/scripts/verify-map.mjs",
@@ -172,6 +198,7 @@ const COPIES: Record<string, string[]> = {
   groundFromPalette: [
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
+    "scrolly/scripts/verify-scrolly.mjs",
     "dw-beat/scripts/verify-owned.mjs",
   ],
   plateLuminance: [
