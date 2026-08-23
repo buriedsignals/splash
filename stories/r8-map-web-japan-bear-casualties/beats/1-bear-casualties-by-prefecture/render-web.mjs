@@ -91,7 +91,6 @@ const SEED = {
   subjectKey: "jp-05",
   // Rule 7 of the cartographic rules, on this beat's dark ground: a blue a reader reads as sea and
   // not as a value. Sits below the first class of anything drawn on top of it.
-  waterFill: "#376084",
   regionTable: true,
   tableRowNoun: "prefectures",
 };
@@ -163,6 +162,22 @@ export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
  * — `frameCorners` is the extent the camera ACTUALLY showed, which is not the bounds it was asked
  * for, and it has only been recorded since 2026-08-10. This function is why that task came first.
  */
+/** The sea this beat's plate was baked with, out of the plate's own record.
+ *
+ *  A plate baked before that record existed has no `water`, and this REFUSES rather than falling
+ *  back to a literal: a live layer painting a sea the fallback plate does not carry is the defect
+ *  this reading exists to close, and a silent default is how it came back the first time. Re-bake. */
+export function waterFillOf(geometry) {
+  const fill = geometry?.water?.fill;
+  if (typeof fill !== "string" || !/^#[0-9a-fA-F]{6}$/.test(fill))
+    throw new Error(
+      "this plate's geometry.json records no water fill, so the live layer has no sea to paint that " +
+        "the fallback plate underneath it also carries. Re-bake with bake-plate.mjs, which derives " +
+        "the tint from this beat's own PALETTE.md and writes it into the plate's own record.",
+    );
+  return fill;
+}
+
 export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   const corners = geometry.frameCorners;
   if (!corners || !(geometry.degreesPerPixel > 0))
@@ -1030,7 +1045,14 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
           subjectKey: SEED.subjectKey,
           accent: SEED.accent,
           muted: deriveFurniture(SEED.ground).muted,
-          waterFill: SEED.waterFill,
+          // THE SEA THE PLATE WAS ACTUALLY PAINTED WITH, off the plate's own record — never a
+          // constant in this file. It WAS a constant, and the cost was measured on the beat that
+          // found it: `SEED.waterFill` was read only by the live layer, so the fallback plate and
+          // the live map painted two different seas and nothing compared the pair. A reader with
+          // JavaScript off saw one ocean and a reader with it on saw another. `bake-plate.mjs`
+          // derives the tint from this beat's own ground and ink and writes it into `geometry.json`;
+          // this reads it back, so there is one sea and it is the one on disk.
+          waterFill: waterFillOf(geometry),
         })
       : null,
   });

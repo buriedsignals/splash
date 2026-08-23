@@ -495,6 +495,12 @@ const geometry = {
   metresPerPixel: camera.metresPerPixel,
   anchors,
   shapes,
+  // THE SEA THIS PLATE WAS PAINTED WITH. Derived here by `choroplethSurfaces` from the ramp and
+  // the ground rather than by the bake family's own `basemapWaterFor` — the same placement, the
+  // midpoint of the band between the ground and the first class, reached from the choropleth's
+  // side of the toolchain. Recorded so a check after the fact can tell the surface this bake SET
+  // from the surfaces the provider painted.
+  water: { fill: WATER_FILL },
 };
 const geometryPath = join(outDir, "geometry.json");
 await writeFile(geometryPath, JSON.stringify(geometry));

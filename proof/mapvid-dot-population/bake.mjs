@@ -20,7 +20,7 @@
 // aspect offsets every scattered dot from the coastline beneath it, which is a silent lie about
 // where people live.
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -48,6 +48,201 @@ const flag = (name, fallback) => {
   const at = argv.indexOf(name);
   return at >= 0 ? argv[at + 1] : fallback;
 };
+
+/** THE BLUE AXIS A WATER TINT TRAVELS: black, through this family's own water blue, to white.
+ *
+ *  `geo-discipline.md` rule 7 is a rule about HUE — *"water is a blue tint, never grey, because grey
+ *  water is visually indistinguishable from a no-data region"* — so the hue is what stays fixed here
+ *  and the LUMINANCE is what the palette moves. The middle stop is the literal `#AAC9E0` every bake
+ *  in this tree used to paint unconditionally, kept as the axis's own midpoint so the derivation
+ *  passes through the value this family already used and the story decides where on it to land. */
+const WATER_AXIS = ["#000000", "#AAC9E0", "#FFFFFF"];
+
+/** How far a surface that carries no data has to sit from the ground, and from the nearest thing
+ *  that DOES carry data, before a reader can be sure it is neither. The same 0.02 relative luminance
+ *  `assertRampReads` holds two adjacent classes apart by — one number for one question. */
+const SURFACE_CLEARANCE = 0.02;
+
+/** WCAG 2.2 SC 1.4.11 Non-text Contrast: the floor a mark has to clear against the surface it is
+ *  drawn on before a reader can see it at all. */
+const NON_TEXT_FLOOR = 3;
+
+/**
+ * THE SEA, DERIVED FROM THE STORY'S OWN GROUND AND THE INK IT DRAWS WITH — the owner's instruction,
+ * given twice: *"the ocean colours have to adapt to the palette."*
+ *
+ * IT WAS BUILT ONCE, FOR THE CHOROPLETH, AND THE BAKE NEVER GOT IT. `map-web/assets/geo-choropleth.ts`
+ * derives a no-data fill and a water tint from the ramp and the ground (`offRampLuminance`,
+ * `noDataFor`, `waterFor`) and refuses a pair a reader could not tell from a class
+ * (`assertSurfacesRead`). Every bake in this tree meanwhile painted `#AAC9E0` unconditionally, or —
+ * in the one copy of three that never carried rule 7's override at all — left MapTiler's own
+ * near-neutral water alone. Measured on the page that made it impossible to miss
+ * (`stories/r8-map-web-japan-bear-casualties`, ground `#16191B`, accent `#D4A853`): the plate came
+ * back 66.9% water at relative luminance 0.5570 against a ground at 0.0094, so the SEA measured
+ * 10.22:1 against the ground while the accent carrying the whole argument measured 8.02:1, and an
+ * accent circle drawn over that sea measured 1.27:1 against a 3:1 floor. The largest and brightest
+ * thing on a dark newsroom's page carried no data at all.
+ *
+ * WHERE THE SEA GOES, and it is `offRampLuminance`'s own answer with one bound added:
+ *
+ *   - THE BAND is between the ground and the nearest thing that carries data. Past the far end a
+ *     surface reads as more than the maximum; inside, it reads as a value. A region with no reading
+ *     is nearer to bare ground than to any class, and so is the sea.
+ *   - THE MIDPOINT of that band is the placement, because it is the point furthest from both things
+ *     the sea must not be confused with.
+ *   - THE CEILING is the 3:1 non-text floor, measured from every ink this beat records: a mark drawn
+ *     over the sea has to stay a mark. On a symbol beat this is what binds — Japan's midpoint is
+ *     0.2178 and its ceiling 0.1088 — and on a choropleth, whose fills replace the plate rather than
+ *     sitting on it, it never bites.
+ *   - A CEILING PAST THE GROUND IS REPORTED, NOT OBEYED, and this is a real case rather than a
+ *     defensive branch: `proof/mapgen-locator-web` and `proof/mapmore-flow-danube` draw `#C68900`
+ *     (relative luminance 0.2988) on a WHITE ground, and 3:1 under that accent is luminance 1.0000 —
+ *     white itself. No tint at all sits between their ground and their ink, so the placement falls
+ *     back to the midpoint and says so in `ceilingUnreachable`, with the number. The bake prints it
+ *     and writes it into `geometry.json`; whether a mark is REALLY unreadable is then measured on the
+ *     finished plate at each mark's own pixel by `plateSurfacesYieldToInk`, which is the only place
+ *     that can know. A derivation that guessed here would refuse three correct beats.
+ *   - NO ROOM IS A REFUSAL, never a quiet literal. A band narrower than two clearances cannot hold a
+ *     surface that is neither the ground nor a class, and the answer is to raise the ramp's own low
+ *     end, which is what `assertSurfacesRead` already tells a caller in the same situation.
+ *
+ * THE HUE IS FIXED AND THE LUMINANCE MOVES, so the sea stays blue on every ground: `#505e69` on
+ * Japan's charcoal, a paler blue on a white one. And the finished hex is measured again after
+ * quantising to 8 bits, because a tint that lands one step the wrong side of the floor is a tint
+ * this function claimed and did not deliver.
+ */
+export function basemapWaterFor(ground, ink) {
+  const channel = (value) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const rgb = (hex) => {
+    const digits = /^#([0-9a-fA-F]{6})$/.exec(String(hex).trim());
+    if (!digits) throw new Error(`basemapWaterFor needs #rrggbb colours; got "${hex}"`);
+    return [0, 2, 4].map((at) => parseInt(digits[1].slice(at, at + 2), 16));
+  };
+  const luminance = (hex) => {
+    const [r, g, b] = rgb(hex);
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  };
+  const mix = (from, to, ratio) => {
+    const [a, b] = [rgb(from), rgb(to)];
+    return `#${a.map((one, at) => Math.round(one + (b[at] - one) * ratio).toString(16).padStart(2, "0")).join("")}`;
+  };
+  const along = (target) => {
+    const [dark, mid, light] = WATER_AXIS;
+    const [from, to] = target <= luminance(mid) ? [dark, mid] : [mid, light];
+    let low = 0;
+    let high = 1;
+    for (let step = 0; step < 40; step++) {
+      const at = (low + high) / 2;
+      if (luminance(mix(from, to, at)) < target) low = at;
+      else high = at;
+    }
+    return mix(from, to, (low + high) / 2);
+  };
+  const contrast = (one, two) => (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
+  if (!Array.isArray(ink) || ink.length === 0)
+    throw new Error(
+      "basemapWaterFor was given no ink to place the sea against. A bake that does not know what " +
+        "its beat draws with cannot derive the surfaces it draws over — pass the accent this beat's " +
+        "own PALETTE.md records.",
+    );
+  const groundAt = luminance(ground);
+  const inkAt = ink.map(luminance);
+  const nearest = inkAt.reduce((best, one) => (Math.abs(one - groundAt) < Math.abs(best - groundAt) ? one : best), inkAt[0]);
+  const band = Math.abs(nearest - groundAt);
+  if (band < SURFACE_CLEARANCE * 2)
+    throw new Error(
+      `the band between the ground ${ground} (relative luminance ${groundAt.toFixed(4)}) and the ` +
+        `nearest ink this beat draws with (${nearest.toFixed(4)}) is ${band.toFixed(4)} wide, under ` +
+        `the ${(SURFACE_CLEARANCE * 2).toFixed(2)} a surface that is neither the ground nor a class ` +
+        `needs. There is nowhere to put the sea that a reader would not read as one or the other. ` +
+        `Raise this beat's ramp at its low end, or take an accent with more room against this ground.`,
+    );
+  const towardsLight = nearest > groundAt;
+  const midpoint = (groundAt + nearest) / 2;
+  const ceilings = inkAt.map((one) =>
+    towardsLight ? (one + 0.05) / NON_TEXT_FLOOR - 0.05 : NON_TEXT_FLOOR * (one + 0.05) - 0.05,
+  );
+  const ceiling = towardsLight ? Math.min(...ceilings) : Math.max(...ceilings);
+  const reachable = towardsLight
+    ? ceiling >= groundAt + SURFACE_CLEARANCE
+    : ceiling <= groundAt - SURFACE_CLEARANCE;
+  const ceilingUnreachable = reachable
+    ? null
+    : `no tint sits between the ground ${ground} (relative luminance ${groundAt.toFixed(4)}) and a ` +
+      `${NON_TEXT_FLOOR}:1 floor under this beat's own ink, which lands at ${ceiling.toFixed(4)} — ` +
+      `past the ground itself. The sea is placed at the midpoint of the band instead, and whether a ` +
+      `mark drawn on it can be seen is measured on the finished plate rather than assumed here.`;
+  let at = reachable ? (towardsLight ? Math.min(midpoint, ceiling) : Math.max(midpoint, ceiling)) : midpoint;
+  // The finished tint is 8-bit, so it is measured AGAIN rather than claimed: a step the wrong side
+  // of the floor is a promise this function made and did not keep. One step at a time toward the
+  // ground, which is the direction that can only help both readings.
+  let hex = along(at);
+  for (let step = 0; step < 64; step++) {
+    const painted = luminance(hex);
+    const holds = reachable ? inkAt.every((one) => contrast(one, painted) >= NON_TEXT_FLOOR) : true;
+    if (holds && contrast(painted, groundAt) <= contrast(nearest, groundAt))
+      return { hex, luminance: painted, midpoint, ceiling, ceilingUnreachable };
+    at = towardsLight ? at - 0.002 : at + 0.002;
+    hex = along(at);
+  }
+  throw new Error(
+    `no tint on the water axis satisfies this ground and this ink: the last tried was ${hex} at ` +
+      `relative luminance ${luminance(hex).toFixed(4)}, against a ground of ${groundAt.toFixed(4)} ` +
+      `and ink at ${inkAt.map((one) => one.toFixed(4)).join(", ")}.`,
+  );
+}
+
+/** THE GROUND AND THE INK THIS BAKE PAINTS AGAINST, out of the nearest `PALETTE.md` at or above this
+ *  script — never a flag a caller has to remember.
+ *
+ *  THE DEFECT THIS SHAPE CLOSES, and it happened in this repository three days apart. A beat found
+ *  the sea unreadable on its own dark ground, added a `--water` flag to its own copy of this bake,
+ *  measured a tint by hand and passed it once. The next agent to re-bake that plate — for an
+ *  unrelated change to the frame — ran the same script without the flag, and the literal came
+ *  straight back into the delivered page. A colour that has to be remembered is a colour that will
+ *  be forgotten; the palette is on disk beside the beat, so it is read.
+ *
+ *  `--ground` and `--ink` stay as overrides for a caller with no beat around it. */
+function beatPalette() {
+  const declaredGround = flag("--ground", null);
+  const declaredInk = flag("--ink", null);
+  let current = HERE;
+  let source = "";
+  let read = null;
+  for (;;) {
+    const candidate = join(current, "PALETTE.md");
+    if (existsSync(candidate)) {
+      source = readFileSync(candidate, "utf8");
+      read = candidate;
+      break;
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  const ground = declaredGround ?? /^ground:\s*"?(#[0-9a-fA-F]{6})"?\s*$/m.exec(source)?.[1] ?? null;
+  const ink = declaredInk
+    ? declaredInk.match(/#[0-9a-fA-F]{6}/g) ?? []
+    : [
+        ...(/^accent:\s*"?(#[0-9a-fA-F]{6})"?\s*$/m.exec(source)?.slice(1, 2) ?? []),
+        ...(/^accents:\s*"?([^"\n]*)"?\s*$/m.exec(source)?.[1]?.match(/#[0-9a-fA-F]{6}/g) ?? []),
+      ];
+  if (!ground || ink.length === 0)
+    throw new Error(
+      `this bake paints a basemap and has no palette to paint it against: ${read ? `${read} records ` : "no PALETTE.md was found at or above this script, so nothing records "}` +
+        `${ground ? `a ground (${ground})` : "no ground"} and ${ink.length ? `${ink.length} accent(s)` : "no accent"}. ` +
+        `Record them, or pass --ground #rrggbb and --ink #rrggbb. The sea is derived from both and ` +
+        `there is no literal left to fall back on.`,
+    );
+  return { ground, ink, read };
+}
+
+const PALETTE = beatPalette();
+const WATER = basemapWaterFor(PALETTE.ground, PALETTE.ink);
+
 
 const [width, height] = flag("--size", "936x827").split("x").map(Number);
 const outDir = flag("--out", join(HERE, "plate"));
@@ -196,7 +391,7 @@ await page.setContent(
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs, width, height }) => {
+  async ({ key, style, bounds, settleMs, width, height , waterFill }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -218,7 +413,7 @@ const gate = await page.evaluate(
       }
     // Defect fixed tonight: `dataviz-light` paints water GREY — indistinguishable from a no-data
     // grey (geo-discipline.md rule 7). Force the cartographic-convention blue tint.
-    for (const id of ["Water", "Water shadow"]) if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", "#aac9e0");
+    for (const id of ["Water", "Water shadow"]) if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", waterFill);
 
     const started = Date.now();
     const how = await new Promise((resolve) => {
@@ -241,7 +436,7 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width, height },
+  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width, height , waterFill: WATER.hex },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -327,6 +522,10 @@ const geometry = {
   degreesPerPixel: camera.degreesPerPixel,
   metresPerPixel: camera.metresPerPixel,
   shapes: shapesOut,
+  // THE SEA THIS PLATE WAS PAINTED WITH, and where it came from — so a reader of this file sees the
+  // derivation rather than a hex someone chose, and so a check after the fact can tell the surface
+  // this bake SET from the surfaces the provider painted.
+  water: { fill: WATER.hex, luminance: WATER.luminance, ground: PALETTE.ground, ink: PALETTE.ink, ceilingUnreachable: WATER.ceilingUnreachable },
 };
 const geometryPath = join(outDir, "geometry.json");
 await writeFile(geometryPath, JSON.stringify(geometry));
