@@ -39,6 +39,7 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
+import { coversTo, deliveryFrame, frameCoversTheBoxRange } from "./delivery-frame.mjs";
 import { keepPoint } from "../assets/geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -119,9 +120,31 @@ function beatCamera() {
 }
 
 const BEAT = beatCamera();
-// DERIVED FROM THE CAMERA, never typed and never the width used twice. `--height` overrides it for a
-// beat that has a reason; nothing in this tree has needed one. See `frameHeightFor` below.
-const frameHeight = Number(flag("--height", "0")) || frameHeightFor(BEAT.bounds, size);
+// DERIVED FROM THE CAMERA **AND FROM THE BOX**, and that pairing is the 2026-08-23 change. The
+// frame used to be `frameHeightFor(bounds, size)` — the camera's own Mercator shape and nothing
+// else — and the delivered page then sized its map box from the plate, so a portrait camera got a
+// portrait box in a landscape container: measured on the page the owner was looking at, 520.1px of
+// box in 1568px of container. The graphic now takes the whole box on both axes and the plate is
+// what has to fit THAT, so the frame is solved from the study set plus the range of box shapes this
+// beat is actually delivered into. See `delivery-frame.mjs`'s own header for the full argument and
+// for what it overrules.
+const boxAspectsFlag =
+  flag("--box-aspects", null) ??
+  (() => {
+    throw new Error(
+      "--box-aspects <narrowest>,<widest> is required: it is the range of shapes this beat's own " +
+        ".mw-stage takes on the rendered page, measured with verify-fills-the-box.mjs. A plate " +
+        "baked without it is a plate baked for a box nobody looked at.",
+    );
+  })();
+// `--clearance <x>,<y>`: the fraction of the delivered BOX each side must keep clear of the study
+// set, so a point LABEL — drawn beside its mark at a fixed CSS size, outside the SVG, and therefore
+// no part of the study set — is not cut by the crop. Zero by default: a beat that draws no labels
+// outside its marks needs none, and `verify-fills-the-box.mjs` prints the pair a beat that does
+// need one should be re-baked with, measured from the runs the page actually cut.
+const [clearanceX = 0, clearanceY = 0] = String(flag("--clearance", "0,0")).split(",").map(Number);
+const DELIVERY = deliveryFrame(BEAT.bounds, size, boxAspectsFlag, { x: clearanceX, y: clearanceY });
+const frameHeight = Number(flag("--height", "0")) || DELIVERY.frame.height;
 const settleMs = Number(flag("--settle", "15000"));
 const sealedBrowserPath = flag("--browser", null);
 const sealedMaplibreJsPath = flag("--maplibre-js", null);
@@ -251,38 +274,15 @@ function normaliseLon(lon, west) {
   return west + ((((lon - west) % 360) + 360) % 360);
 }
 
-/** How much of a frame may be margin the camera never asked for. 5%: on a 1000px frame that is 50px
- * of empty ocean, which is visible; under it, the difference is the fit landing on an integer frame.
- * Measured across this format's own beats — a re-baked European choropleth wastes 0.2%, a world
- * choropleth 0.0%, and the two still on a square frame waste 8.6% and 46.2%. */
-const FRAME_MARGIN_TOLERANCE = 0.05;
-
-/** THE FRAME IS THE CAMERA'S OWN SHAPE, NOT A SQUARE. The owner's report, on a rendered map: *the
- * map does not take the full available width.*
- *
- * `assertCameraReachesBounds` above already refuses a frame that CROPS the study area. This is its
- * other half, and it was missing: a frame that is too generous on one axis does not crop anything —
- * it pads. `fitBounds` fits the bounds on whichever axis binds first, so every pixel of the other
- * axis past the camera's own aspect is empty ground, the marks are drawn that much smaller, and the
- * delivered page — which sizes its map box from the plate's own aspect — then hands the reader a
- * square in the middle of a wide window with a gutter either side. Measured on
- * `stress-f-housing-pressure`: a camera asking for 0.538 baked into a 1.000 frame, 46.2% margin.
- *
- * The number in the message is `frameHeightFor`'s, so the fix is the value the fix is computed
- * with. @parity-exempt: this format's own addition; the canonical bake has no equivalent yet. */
-function frameMatchesItsCamera(bounds, frame) {
-  const asked = ((bounds[1][0] - bounds[0][0]) * Math.PI) / 180 / (mercY(bounds[1][1]) - mercY(bounds[0][1]));
-  const drawn = frame.width / frame.height;
-  const margin = 1 - Math.min(asked, drawn) / Math.max(asked, drawn);
-  if (margin <= FRAME_MARGIN_TOLERANCE) return;
-  throw new Error(
-    `this frame is not the shape its camera asked for: ${frame.width}x${frame.height} is ` +
-      `${drawn.toFixed(3)}:1 where the bounds ask for ${asked.toFixed(3)}:1, so ` +
-      `${(margin * 100).toFixed(1)}% of the plate is margin no reader can read anything off — and a ` +
-      `page that sizes its map box from this plate cannot fill the width it is given. At ` +
-      `${frame.width}px wide this camera wants a ${frameHeightFor(bounds, frame.width)}px height.`,
-  );
-}
+/** THE FRAME IS THE SHAPE OF THE BOX, NOT OF THE CAMERA — and `frameMatchesItsCamera` used to be
+ * the refusal that said the opposite. It refused any frame whose aspect differed from the camera's
+ * own by more than 5%, which is now the normal, correct case: a portrait study set delivered into a
+ * 2.77:1 box needs a plate with ocean either side, and that plate is 66% margin by design. The
+ * refusal it is replaced by is `frameCoversTheBoxRange` in `delivery-frame.mjs`, which asks the
+ * question that actually protects the reader — does every crop the delivery can ask for land on
+ * basemap rather than on the subject — and `deliveryFrame` is the derivation that answers it.
+ * `FRAME_MARGIN_TOLERANCE` went with it: margin is no longer waste to be tolerated, it is the
+ * mechanism. @parity-exempt: this format's own addition; the canonical bake has no equivalent. */
 
 /** THE WORLD MUST FILL THE FRAME'S WIDTH. Under it, MapLibre draws a repeat continent inside the
  * picture carrying none of this beat's marks, and a reader can reasonably read the bare copy as a
@@ -371,7 +371,7 @@ if (sealed) {
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, styleDefinition, bounds, settleMs, width, height }) => {
+  async ({ key, style, styleDefinition, bounds, padding, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: styleDefinition ?? `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -381,7 +381,7 @@ const gate = await page.evaluate(
       // Without this the WebGL canvas is empty by the time a screenshot reads it (rule 6).
       preserveDrawingBuffer: true,
       bounds,
-      fitBoundsOptions: { padding: 0, animate: false },
+      fitBoundsOptions: { padding, animate: false },
     });
     window.__map = map;
     await new Promise((resolve) => map.once("style.load", resolve));
@@ -424,14 +424,14 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: frameHeight },
+  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, padding: DELIVERY.padding, settleMs, width: size, height: frameHeight },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, size);
 assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
-frameMatchesItsCamera(BEAT.bounds, { width: size, height: frameHeight });
+frameCoversTheBoxRange({ width: size, height: frameHeight }, DELIVERY.studySet, DELIVERY.boxAspects);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -465,6 +465,14 @@ const geometry = {
   worldWidthPx: camera.worldWidthPx,
   degreesPerPixel: camera.degreesPerPixel,
   metresPerPixel: camera.metresPerPixel,
+  // WHAT THIS PLATE WAS BAKED FOR, so the delivered page can be checked against it rather than
+  // trusted. `studySet` is where the camera's own bounds landed inside the frame, `boxAspects` is
+  // the measured range asked for, and `coversTo` is the range the frame actually reaches — the two
+  // differ for a camera that already spans a full turn of longitude and has no more world to give.
+  studySet: DELIVERY.studySet,
+  boxAspects: DELIVERY.boxAspects,
+  clearance: DELIVERY.clearance,
+  coversTo: coversTo({ width: size, height: frameHeight }, DELIVERY.studySet),
   points: projectedPoints,
 };
 const geometryPath = join(outDir, "geometry.json");
