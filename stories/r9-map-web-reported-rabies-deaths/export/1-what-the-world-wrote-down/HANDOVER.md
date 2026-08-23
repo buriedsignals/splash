@@ -40,3 +40,10 @@ switches off **every** key on it — including the maps in articles you publishe
 The way to close that, when you want to: create a second MapTiler key restricted to your own
 domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that
 substitute the restricted key, which is worth nothing to anyone who lifts it out of the page.
+
+## The one thing this does not show
+
+You named this limit yourself, and it belongs beside the visual — in the caption or the
+paragraph next to it — not only in your notes.
+
+> A world choropleth of 194 countries shaded by the number of human rabies deaths each reported to WHO for 2024, in 6 classes from 0 to 250 and over. 94 countries filed nothing and are painted in a neutral no-reading fill, including India, China and Pakistan. The darkest countries are Afghanistan, which reported 641, the highest of any country, together with the Philippines, Ghana and South Sudan. The 100 countries that did file reported 3 021 deaths between them, against WHO's standing estimate of about 59 000 a year.
