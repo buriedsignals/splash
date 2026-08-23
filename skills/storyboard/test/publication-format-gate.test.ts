@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { formatPublicationFormatGate } from "../scripts/format-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import { whereIs } from "../../splash/scripts/where.mjs";
+import {
+  publishStagedDelivery,
+  replacementArtifacts,
+} from "../../deliver/scripts/delivery-replacement.mjs";
 import { HOST_ACCEPTANCE } from "./fixtures/publication-format-host-acceptance.mjs";
 
 const PRE_FORMAT = `---
@@ -195,10 +199,68 @@ describe("active fixture migration", () => {
       "stories",
       "heat-pump-adoption-across-europe",
     );
-    const parsed = parseStoryboard(await readFile(join(activeStory, "STORYBOARD.md"), "utf8"));
-    expect(parsed.meta.slots[0].proves).toContain("Every sampled country increased adoption");
+    const migratedStory = join(storyDir, "active-story");
+    await cp(activeStory, migratedStory, { recursive: true });
+    const parsed = parseStoryboard(
+      await readFile(join(migratedStory, "STORYBOARD.md"), "utf8"),
+    );
+    expect(parsed.meta.slots[0].proves).toContain(
+      "Every sampled country increased adoption",
+    );
     expect(checkStoryboard(parsed.meta)).toEqual([]);
-    expect(await whereIs(activeStory)).toEqual({ phase: "done", missing: [] });
+
+    const inputHashes = await fixtureManifest(migratedStory, [
+      "STORYBOARD.md",
+      "source/profile.json",
+      "source/data.csv",
+    ]);
+    await writeFile(
+      join(migratedStory, "beats", "1-the-gap-that-persists", "data.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        meta: {
+          hashes: {
+            storyboard: `sha256:${inputHashes["STORYBOARD.md"]}`,
+            profile: `sha256:${inputHashes["source/profile.json"]}`,
+            sourceData: `sha256:${inputHashes["source/data.csv"]}`,
+          },
+        },
+      }),
+    );
+    const beat = "1-the-gap-that-persists";
+    const exportDir = join(migratedStory, "export", beat);
+    const legacyManifest = JSON.parse(
+      await readFile(join(exportDir, ".delivery-manifest.json"), "utf8"),
+    );
+    const review = JSON.parse(
+      await readFile(
+        join(migratedStory, "beats", beat, "OUTPUT-REVIEW.json"),
+        "utf8",
+      ),
+    );
+    const operationId = "delivery-active-fixture-current";
+    const { stagingDir } = replacementArtifacts(exportDir, operationId);
+    await mkdir(stagingDir, { recursive: true });
+    for (const entry of await readdir(exportDir)) {
+      if (entry === ".delivery-manifest.json") continue;
+      await cp(join(exportDir, entry), join(stagingDir, entry), {
+        recursive: true,
+      });
+    }
+    await publishStagedDelivery({
+      stagingDir,
+      exportDir,
+      manifest: {
+        ...legacyManifest,
+        operationId,
+        reviewId: review.id,
+        planVersion: review.planVersion,
+        draftDigest: review.draftDigest,
+        findingIds: review.findingIds,
+        feedbackDigest: review.feedbackDigest,
+      },
+    });
+    expect(await whereIs(migratedStory)).toEqual({ phase: "done", missing: [] });
   });
 });
 

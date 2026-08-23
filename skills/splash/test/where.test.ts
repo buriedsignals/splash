@@ -19,6 +19,10 @@ import {
   REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../storyboard/scripts/storyboard.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import {
+  publishStagedDelivery,
+  replacementArtifacts,
+} from "../../deliver/scripts/delivery-replacement.mjs";
 
 let dir: string;
 beforeEach(async () => {
@@ -85,17 +89,46 @@ function without<T extends Record<string, string>>(
 
 const storyboard = build();
 
-// What a DELIVERED beat looks like on disk: its own directory under `export/`, holding the chosen
-// form's files AND the hand-over. G4 closes into `export/<beat>/HANDOVER.md` the way G3 closes into
-// `APPROVED.md` one phase earlier — a delivery of files nobody was told what to do with is the run
-// that produced A11, and it is not a closed gate.
-async function deliver(storyDir: string, beat: string, fileName: string) {
-  await mkdir(join(storyDir, "export", beat), { recursive: true });
-  await writeFile(join(storyDir, "export", beat, fileName), "x");
+interface BoundReviewFixture {
+  id: string;
+  planVersion: number;
+  draftDigest: string;
+  findingIds: string[];
+  feedbackDigest?: string | null;
+}
+
+// A completed delivery is the published form plus a manifest bound to the current approved review.
+// Build it through the production manifest writer so fixtures carry the same artifact digests as
+// real deliveries instead of treating a bare hand-over file as sufficient.
+async function deliver(
+  storyDir: string,
+  beat: string,
+  fileName: string,
+  review: BoundReviewFixture,
+) {
+  const exportDir = join(storyDir, "export", beat);
+  const operationId = `delivery-${review.id}`;
+  const { stagingDir } = replacementArtifacts(exportDir, operationId);
+  await mkdir(stagingDir, { recursive: true });
+  await writeFile(join(stagingDir, fileName), "x");
   await writeFile(
-    join(storyDir, "export", beat, "HANDOVER.md"),
+    join(stagingDir, "HANDOVER.md"),
     "# What you have, and where it goes",
   );
+  await publishStagedDelivery({
+    stagingDir,
+    exportDir,
+    manifest: {
+      operationId,
+      reviewId: review.id,
+      planVersion: review.planVersion,
+      draftDigest: review.draftDigest,
+      findingIds: review.findingIds,
+      feedbackDigest: review.feedbackDigest,
+      form: "owned-file",
+      format: "static",
+    },
+  });
 }
 
 // What the analyst pre-step leaves behind: `beats/<beat>/data.json`, the chart-ready file
@@ -213,20 +246,21 @@ describe("whereIs", () => {
     expect(state.missing).toEqual([]);
   });
 
-  // The analyst gap must not MASK an approval gap once something has rendered: both are
-  // reported, and the approval entry keeps its exact wording.
-  it("should report the analyst gap beside, never instead of, an unapproved render", async () => {
+  // The analyst precondition must not erase the later gate's explicit diagnosis. Once the
+  // analyst artifact exists, an unapproved render remains named rather than becoming an empty
+  // production state.
+  it("should name an unapproved render after the analyst precondition is satisfied", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
     await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
-      "beat 1: run analyst (data.json)",
-      "beat 1-rainfall: rendered but not approved",
+      "beat 1-rainfall: rendered but not currently approved",
     ]);
   });
 
@@ -463,6 +497,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
       recursive: true,
     });
@@ -474,7 +509,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toContain(
-      "beat 1-rainfall: rendered but not approved",
+      "beat 1-rainfall: rendered but not currently approved",
     );
   });
 
@@ -483,7 +518,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
       recursive: true,
     });
@@ -492,10 +527,7 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
-    await writeFile(
-      join(dir, "beats", "1-rainfall", "APPROVED.md"),
-      "seen and approved",
-    );
+    await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
     expect((await whereIs(dir)).phase).toBe("delivery");
   });
 
@@ -505,17 +537,17 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
-    await analyse(dir, "1-rainfall");
-    await analyse(dir, "2-snowpack");
+    await analyseBound(dir, "1-rainfall");
+    await analyseBound(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
     }
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
-      "beat 2-snowpack: rendered but not approved",
+      "beat 2-snowpack: rendered but not currently approved",
     ]);
   });
 
@@ -524,7 +556,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
       recursive: true,
     });
@@ -533,8 +565,8 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
-    await deliver(dir, "1-rainfall", "rainfall.png");
+    const review = await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
+    await deliver(dir, "1-rainfall", "rainfall.png", review);
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
@@ -543,15 +575,15 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
     await mkdir(join(beatDir, "renders"), { recursive: true });
     await writeFile(join(beatDir, "renders", "still.png"), "old render");
-    await writeFile(join(beatDir, "APPROVED.md"), "seen");
-    await deliver(dir, "1-rainfall", "rainfall.png");
+    const oldReview = await approveCurrentOutput(beatDir, {
+      reviewId: "review-old",
+    });
+    await deliver(dir, "1-rainfall", "rainfall.png", oldReview);
     const feedbackPath = join(beatDir, "FEEDBACK.md");
-    const manifestPath = join(dir, "export", "1-rainfall", ".delivery-manifest.json");
-    await approveCurrentOutput(beatDir, { reviewId: "review-old" });
     await writeFile(feedbackPath, "Move the annotation above the line.");
 
     expect(await whereIs(dir)).toMatchObject({
@@ -568,20 +600,7 @@ describe("whereIs", () => {
       missing: [],
     });
 
-    await writeFile(
-      manifestPath,
-      JSON.stringify({
-        schemaVersion: 1,
-        state: "complete",
-        operationId: "delivery-review-new",
-        outputId: "1-rainfall",
-        reviewId: review.id,
-        planVersion: review.planVersion,
-        draftDigest: review.draftDigest,
-        findingIds: review.findingIds,
-        feedbackDigest: review.feedbackDigest,
-      }),
-    );
+    await deliver(dir, "1-rainfall", "rainfall.png", review);
     expect(await whereIs(dir)).toMatchObject({ phase: "done", missing: [] });
 
     await writeFile(feedbackPath, "Move the annotation below the line instead.");
@@ -596,12 +615,12 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
     await mkdir(join(beatDir, "renders"), { recursive: true });
     await writeFile(join(beatDir, "renders", "still.png"), "render");
-    await writeFile(join(beatDir, "APPROVED.md"), "seen");
-    await deliver(dir, "1-rainfall", "rainfall.png");
+    const review = await approveCurrentOutput(beatDir);
+    await deliver(dir, "1-rainfall", "rainfall.png", review);
     await writeFile(join(beatDir, "FEEDBACK.md"), "Change the label.");
     await writeFile(join(beatDir, "OUTPUT-REVIEW.json"), JSON.stringify({ decision: "approve" }));
     await expect(whereIs(dir)).rejects.toThrow(/unsupported schemaVersion/);
@@ -628,20 +647,20 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
-    await analyse(dir, "1-rainfall");
-    await analyse(dir, "2-snowpack");
+    await analyseBound(dir, "1-rainfall");
+    await analyseBound(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
     }
     // Beat 1 was shown, approved and delivered. Beat 2 has rendered and nobody has seen it.
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
-    await deliver(dir, "1-rainfall", "rainfall.png");
+    const review = await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
+    await deliver(dir, "1-rainfall", "rainfall.png", review);
 
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
-      "beat 2-snowpack: rendered but not approved",
+      "beat 2-snowpack: rendered but not currently approved",
     ]);
   });
 
@@ -652,18 +671,19 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
-    await analyse(dir, "1-rainfall");
-    await analyse(dir, "2-snowpack");
+    await analyseBound(dir, "1-rainfall");
+    await analyseBound(dir, "2-snowpack");
     for (const beat of ["1-rainfall", "2-snowpack"]) {
       await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
       await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
-      await writeFile(join(dir, "beats", beat, "APPROVED.md"), "seen");
     }
-    await deliver(dir, "1-rainfall", "rainfall.png");
+    const reviewOne = await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
+    const reviewTwo = await approveCurrentOutput(join(dir, "beats", "2-snowpack"));
+    await deliver(dir, "1-rainfall", "rainfall.png", reviewOne);
 
     expect((await whereIs(dir)).phase).toBe("delivery");
 
-    await deliver(dir, "2-snowpack", "snowpack.png");
+    await deliver(dir, "2-snowpack", "snowpack.png", reviewTwo);
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
@@ -681,20 +701,17 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
-    await analyse(dir, "1-rainfall");
+    await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
     await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    const review = await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
 
     await mkdir(join(dir, "export", "1-rainfall"), { recursive: true });
     await writeFile(join(dir, "export", "1-rainfall", "still.png"), "x");
     await writeFile(join(dir, "export", "1-rainfall", "still.svg"), "<svg/>");
     expect((await whereIs(dir)).phase).toBe("delivery");
 
-    await writeFile(
-      join(dir, "export", "1-rainfall", "HANDOVER.md"),
-      "# What you have, and where it goes",
-    );
+    await deliver(dir, "1-rainfall", "still.png", review);
     expect((await whereIs(dir)).phase).toBe("done");
   });
 
@@ -745,7 +762,7 @@ describe("whereIs", () => {
     );
   });
 
-  it("should report a stale artifact beside, never instead of, an unapproved render", async () => {
+  it("should reopen at stale analyst data before evaluating render approval", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
@@ -759,7 +776,6 @@ describe("whereIs", () => {
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual([
       "beat 1-rainfall: analyst data stale — rebuild",
-      "beat 1-rainfall: rendered but not approved",
     ]);
   });
 

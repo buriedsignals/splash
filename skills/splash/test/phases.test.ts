@@ -2,6 +2,7 @@
 // about the vocabulary of phases — the class of drift that let main's SKILL.md keep promising a
 // fallback the code had stopped producing.
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   readFile,
   readdir,
@@ -13,6 +14,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { whereIs } from "../scripts/where.mjs";
+import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
+import {
+  publishStagedDelivery,
+  replacementArtifacts,
+} from "../../deliver/scripts/delivery-replacement.mjs";
 
 const PHASES = [
   "intake",
@@ -66,6 +72,60 @@ slots:
     candidates: [trajectory, comparison]
 ---
 `;
+interface BoundReviewFixture {
+  id: string;
+  planVersion: number;
+  draftDigest: string;
+  findingIds: string[];
+  feedbackDigest?: string | null;
+}
+
+function sha256(bytes: Buffer | string): string {
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+async function analyseBound(storyDir: string, beat: string) {
+  const hashes = {
+    storyboard: sha256(await readFile(join(storyDir, "STORYBOARD.md"))),
+    profile: sha256(await readFile(join(storyDir, "source", "profile.json"))),
+    sourceData: sha256(await readFile(join(storyDir, "source", "data.csv"))),
+  };
+  await writeFile(
+    join(storyDir, "beats", beat, "data.json"),
+    JSON.stringify({ schemaVersion: 1, meta: { hashes } }),
+  );
+}
+
+async function deliverBound(
+  storyDir: string,
+  beat: string,
+  review: BoundReviewFixture,
+) {
+  const exportDir = join(storyDir, "export", beat);
+  const operationId = `delivery-${review.id}`;
+  const { stagingDir } = replacementArtifacts(exportDir, operationId);
+  await mkdir(stagingDir, { recursive: true });
+  await writeFile(join(stagingDir, "rainfall.png"), "x");
+  await writeFile(
+    join(stagingDir, "HANDOVER.md"),
+    "# What you have, and where it goes",
+  );
+  await publishStagedDelivery({
+    stagingDir,
+    exportDir,
+    manifest: {
+      operationId,
+      reviewId: review.id,
+      planVersion: review.planVersion,
+      draftDigest: review.draftDigest,
+      findingIds: review.findingIds,
+      feedbackDigest: review.feedbackDigest,
+      form: "owned-file",
+      format: "static",
+    },
+  });
+}
+
 
 // Drives one story directory through every transition where.mjs recognises, recording the actual
 // `.phase` whereIs returns at each step. This exercises where.mjs's real runtime behaviour rather
@@ -91,33 +151,26 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   await mkdir(join(storyDir, "beats", "1-rainfall", "renders"), {
     recursive: true,
   });
-  // The analyst pre-step runs before any craft skill, so the beat's chart-ready data.json
-  // exists by the time anything renders.
-  await writeFile(join(storyDir, "beats", "1-rainfall", "data.json"), "{}");
+  await analyseBound(storyDir, "1-rainfall");
   await writeFile(
     join(storyDir, "beats", "1-rainfall", "renders", "still.png"),
     "x",
   );
   observed.add((await whereIs(storyDir)).phase); // production: rendered, not yet approved
 
-  await writeFile(
-    join(storyDir, "beats", "1-rainfall", "APPROVED.md"),
-    "the journalist looked at it and said yes",
+  const review = await approveCurrentOutput(
+    join(storyDir, "beats", "1-rainfall"),
   );
   observed.add((await whereIs(storyDir)).phase); // delivery: approved, nothing exported
 
   // Delivery is per beat, into `export/<beat>/` — the shape `deliver`'s `exportDirFor` writes,
-  // and the shape `whereIs` reads. A story is done when every approved beat has one.
+  // and the shape `whereIs` reads. A story is not done merely because files exist.
   await mkdir(join(storyDir, "export", "1-rainfall"), { recursive: true });
   await writeFile(join(storyDir, "export", "1-rainfall", "rainfall.png"), "x");
-  observed.add((await whereIs(storyDir)).phase); // still delivery: nothing hands the files over
+  observed.add((await whereIs(storyDir)).phase); // still delivery: no bound manifest or hand-over
 
-  // G4 closes into `export/<beat>/HANDOVER.md`, the way G3 closes into `APPROVED.md`.
-  await writeFile(
-    join(storyDir, "export", "1-rainfall", "HANDOVER.md"),
-    "# What you have, and where it goes",
-  );
-  observed.add((await whereIs(storyDir)).phase); // done: the beat has been handed over
+  await deliverBound(storyDir, "1-rainfall", review);
+  observed.add((await whereIs(storyDir)).phase); // done: manifest binds review and delivered bytes
 
   return observed;
 }
