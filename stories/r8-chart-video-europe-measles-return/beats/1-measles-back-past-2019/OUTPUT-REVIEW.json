@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "review-r8cv-1-measles-back-past-2019-1",
+  "outputId": "1-measles-back-past-2019",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:67422e428052d252d602a45fe71d7e531c6629abd2b9f2d6e35603bc74702472",
+  "findingIds": [
+    "R8CV-1-the-level-exists-before-the-evidence",
+    "R8CV-2-every-printed-number-is-derived-from-the-frozen-table",
+    "R8CV-3-2025-is-excluded-because-its-zeros-are-placeholders",
+    "R8CV-4-the-crossing-is-stated-in-type-not-claimed-by-geometry",
+    "R8CV-5-the-last-frame-is-a-complete-chart"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-measles-back-past-2019",
+      "planVersion": 1,
+      "draftDigest": "sha256:67422e428052d252d602a45fe71d7e531c6629abd2b9f2d6e35603bc74702472",
+      "findingIds": [
+        "R8CV-1-the-level-exists-before-the-evidence",
+        "R8CV-2-every-printed-number-is-derived-from-the-frozen-table",
+        "R8CV-3-2025-is-excluded-because-its-zeros-are-placeholders",
+        "R8CV-4-the-crossing-is-stated-in-type-not-claimed-by-geometry",
+        "R8CV-5-the-last-frame-is-a-complete-chart"
+      ],
+      "id": "qa-chart-video-guards-and-five-frames",
+      "status": "passed",
+      "completedAt": "2026-08-23T08:55:03.310Z"
+    }
+  ],
+  "angleEvidenceBrief": "The takeaway is that reported measles across the 53 countries of WHO's European Region fell to 150 in 2021 and by 2024 stood at 106 237, above the 104 442 of 2019. The evidence is the story's own frozen source/data.csv - WHO's published monthly workbook, 2910 rows, one row per country per year with twelve month columns. Every figure the frame prints is computed from that file in render.mjs and never typed: the annual totals, the floor year, the reference year (the largest reading before the floor), the excess, and the count of unreported country-months in 2024. Blank cells are counted as missing and never as zero. 2025 is excluded because the publisher's own note says future months are reported as 0. The picture is one line over fourteen years on a zero baseline, with the 2019 level laid down and named before any data exists, so the last mark arrives against a level the reader already holds. Grounding at G1 came back unverifiable and is recorded as such: the frozen table is a cross-tab and the measure this beat is about is not a column of it, so every numeral was refused as unplaced. The crossing itself is 1795 on a 110000 axis, five pixels, and is stated in type beside the mark rather than claimed by the geometry.",
+  "decision": "approve",
+  "reviewer": "journalist (stood in for, at the Gate 3 human gate)",
+  "decidedAt": "2026-08-23T08:55:03.310Z",
+  "notes": "Approved after rendering the final frame first, looking at it, then rendering the mp4 and looking at five frames extracted from the encoded file (kept in verification/, outside renders/). Four corrections landed before the approval, all found by looking and none by any guard: the plot was a 200px strip inside a 1080px frame, two axis labels shared a baseline five pixels apart, the title broke on a one-word last line, and the line was a 1.3 CSS px hairline at the size it is watched. revealDashInScreenSpace, neverArrives and graphicFillsItsFrame were run by hand from a scratch script because nothing in this toolchain runs them against a beat under stories/ - recorded in NOTES-FOR-MAINTAINER.md rather than worked around."
+}

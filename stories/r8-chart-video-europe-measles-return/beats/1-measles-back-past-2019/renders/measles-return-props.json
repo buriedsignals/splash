@@ -1,0 +1,77 @@
+{
+  "data": [
+    {
+      "year": 2011,
+      "cases": 33646
+    },
+    {
+      "year": 2012,
+      "cases": 27657
+    },
+    {
+      "year": 2013,
+      "cases": 32779
+    },
+    {
+      "year": 2014,
+      "cases": 16070
+    },
+    {
+      "year": 2015,
+      "cases": 28344
+    },
+    {
+      "year": 2016,
+      "cases": 5131
+    },
+    {
+      "year": 2017,
+      "cases": 25812
+    },
+    {
+      "year": 2018,
+      "cases": 88296
+    },
+    {
+      "year": 2019,
+      "cases": 104442
+    },
+    {
+      "year": 2020,
+      "cases": 12193
+    },
+    {
+      "year": 2021,
+      "cases": 150
+    },
+    {
+      "year": 2022,
+      "cases": 935
+    },
+    {
+      "year": 2023,
+      "cases": 60943
+    },
+    {
+      "year": 2024,
+      "cases": 106237
+    }
+  ],
+  "title": "Measles in Europe and central Asia: 150 cases in 2021, then back above 2019 by 2024.",
+  "source": "Source: WHO Regional Office for Europe and UNICEF, joint news release, 13 March 2025 · 2024 incomplete: 183 of 636 country-months unreported",
+  "ground": "#16191B",
+  "accent": "#D4A853",
+  "reference": 104442,
+  "referenceLabel": "2019 level · 104,442 cases",
+  "subjectYear": 2024,
+  "floorYear": 2021,
+  "excessLabel": "1,795 above 2019",
+  "unit": "cases",
+  "fontFamily": "Helvetica, Arial, sans-serif",
+  "size": "square",
+  "width": 1080,
+  "height": 1080,
+  "ink": "#FFFFFF",
+  "muted": "#a6a8a8",
+  "grid": "#404244"
+}
