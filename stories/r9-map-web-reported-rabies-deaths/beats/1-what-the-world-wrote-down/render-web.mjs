@@ -171,8 +171,13 @@ const COMPARISON_KEY = "IND";
 const JOIN_RECORD = JSON.parse(readFileSyncSync(join(HERE, "JOIN.json"), "utf8"));
 // DERIVED, never typed: a shape this beat draws that the frozen csv carries no row for is a country
 // that filed nothing. Typing the 94 codes here would be a second list to keep in step with the first.
+// Through `parseCsvRows`, the real reader at the top of this file, never a `split(",")`. The split
+// happened to work on this csv — the code column is first and carries no comma — and
+// `splash/test/csv-hand-split.test.ts` reddened on it anyway, correctly: the entity column two
+// fields along is quoted BECAUSE some country names carry commas, and a reader that cannot see the
+// quoting on one column is a reader that cannot see it on any.
 const REPORTING_SHAPES = new Set(
-  readFileSyncSync(DEFAULT_VALUES_PATH, "utf8").trim().split("\n").slice(1).map((line) => line.split(",")[0]),
+  parseCsvRows(readFileSyncSync(DEFAULT_VALUES_PATH, "utf8").trim()).slice(1).map((row) => row[0]),
 );
 const SILENT_SHAPES = RABIES_2024_STUDY.filter((code) => !REPORTING_SHAPES.has(code));
 // =========================================
