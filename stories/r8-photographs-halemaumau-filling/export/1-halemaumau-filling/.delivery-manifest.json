@@ -1,0 +1,18 @@
+{
+  "operationId": "0242b2b7-67a3-4847-860d-c3c67fa9e407",
+  "reviewId": "review-r8-halemaumau-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:e40471d284d30861e075893d539434f865d9b8252cd5fc8e7458079acb4c3d5a",
+  "findingIds": [
+    "R8-checkweight-names-undefined",
+    "R8-credit-never-wraps",
+    "R8-image-medium-has-one-treatment",
+    "R8-typeface-unreachable-by-this-format"
+  ],
+  "form": "owned-file",
+  "format": "static",
+  "createdAt": "2026-08-23T08:56:17.120Z",
+  "schemaVersion": 1,
+  "outputId": "1-halemaumau-filling",
+  "state": "complete"
+}
