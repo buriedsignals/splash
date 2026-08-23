@@ -81,6 +81,7 @@
 //         19 pass, 4 fail
 
 import { describe, expect, it } from "bun:test";
+import { worldCopiesToCover } from "../../skills/scrolly/scripts/detect-wraps-the-world.mjs";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -235,6 +236,18 @@ describe("the world repeat", () => {
   it("refuses to answer for a world with no width rather than returning a number", () => {
     expect(worldRepeats(1600, 0)).toBe(0);
   });
+
+  // THE TWO SUBSTRATES COUNT WORLDS THE SAME WAY, and this is what keeps them from drifting.
+  // `worldRepeats` above is the LIVE layer's own copy, run against MapLibre's camera; the skill's
+  // `worldCopiesToCover` is the same arithmetic run at RENDER time for the no-JavaScript fallback,
+  // which cannot measure the reader's box and has to bake its count. They live in two files on
+  // purpose — a beat directory stays copy-pasteable on its own — so nothing but this asserts they
+  // still agree.
+  it("counts worlds exactly as the fallback's own derivation does, over every box a reader has", () => {
+    for (let frame = 300; frame <= 6000; frame += 37)
+      for (const world of [375, 512, 836.5, 1128, 1313, 2653])
+        expect(worldRepeats(frame, world)).toBe(worldCopiesToCover(frame, world));
+  });
 });
 
 describe("the drift tripwire", () => {
@@ -363,6 +376,24 @@ describe("the delivered file carries the live layer", () => {
     expect(html).toContain("data:image/png;base64,");
     // The plate is hidden by a class the live layer adds, and by nothing else — so with no script
     // it is what a reader sees.
-    expect(html).toContain("html.qm-live [data-part=plate]{opacity:0}");
+    expect(html).toContain("html.qm-live [data-part=plate]");
+  });
+
+  it("repeats the world east and west with no script, and puts this beat's marks on every copy", () => {
+    // The 2026-08-23 wrap ruling, on the substrate that cannot ask MapLibre for anything. Four
+    // frames, one copy each side, in BOTH layers: the plate a reader sees and the marks that make
+    // the copy mean something. 4 x 2 x 2 = 16.
+    expect(html.match(/data-part="fallback-world"/g)).toHaveLength(16);
+    expect(html.match(/data-world="-1"/g)).toHaveLength(8);
+    expect(html.match(/data-world="1"/g)).toHaveLength(8);
+    // Each mark copy references its OWN frame's surface, never another frame's — one reference, no
+    // second copy of a 190 KiB dot path in the delivered file.
+    for (const step of ["events", "bins", "biggest", "strength"]) {
+      expect(html).toContain(`id="qm-surface-${step}"`);
+      expect(html.match(new RegExp(`href="#qm-surface-${step}"`, "g"))).toHaveLength(2);
+    }
+    // And the two substrates hand over rather than both painting: the fallback's copies go to zero
+    // at the same moment the plate does.
+    expect(html).toContain("html.qm-live [data-part=fallback-world]{opacity:0}");
   });
 });

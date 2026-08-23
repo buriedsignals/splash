@@ -42,6 +42,11 @@
  */
 
 import type { ReactNode } from "react";
+import {
+  fallbackWorldCopies,
+  MARGIN_BOX_ASPECT,
+  MEASURED_WIDEST_BOX_ASPECT,
+} from "../../skills/scrolly/scripts/detect-wraps-the-world.mjs";
 import { hexCorners } from "./geo-hex.ts";
 import type { QuakeCell, QuakeFacts } from "./quake-encodings.ts";
 import { classOf, energyRadius } from "./quake-encodings.ts";
@@ -71,8 +76,33 @@ function hexPath(cell: { cx: number; cy: number }, size: number) {
  *  revealed the tiles, it puts `qm-live` on the document element and every frame's fallback plate —
  *  the baked basemap AND the ground it letterboxes against — goes to zero, in ONE place rather than
  *  four kept in step. Without the script, without a key, without a network or with a MapTiler
- *  failure, the class is never added and the plate is what a reader sees. */
-const LIVE_STYLE = "html.qm-live [data-part=plate]{opacity:0}";
+ *  failure, the class is never added and the plate is what a reader sees.
+ *
+ *  The second selector retires the FALLBACK's own world copies for the same reason and at the same
+ *  moment. Both substrates tile, and they cannot both tile at once: the fallback's copies are SVG
+ *  `<use>` in plate units, laid out by the browser's own `preserveAspectRatio`, while the live
+ *  layer's are DOM boxes translated in screen pixels to follow MapLibre's camera (see
+ *  `live-scroll-map.mjs`, `syncWorldRepeats`). The plate's copies need no rule of their own —
+ *  they live inside `[data-part=plate]`, which the first selector already takes to zero. */
+const LIVE_STYLE =
+  "html.qm-live [data-part=plate],html.qm-live [data-part=fallback-world]{opacity:0}";
+
+/** HOW MANY COPIES OF THE WORLD THE FALLBACK PAINTS EACH SIDE OF THE PRIMARY. Derived from the
+ *  vehicle's own measured widest box and this beat's own camera, never typed here — see
+ *  `scrolly/scripts/detect-wraps-the-world.mjs`, which owns both the arithmetic and the constant. */
+const FALLBACK_COPIES = (frame: Frame, worldWidthPx: number) =>
+  fallbackWorldCopies(
+    MEASURED_WIDEST_BOX_ASPECT + MARGIN_BOX_ASPECT,
+    frame.height,
+    worldWidthPx,
+  );
+
+/** The signed indices of the copies, primary last so it paints OVER its neighbours' seams. */
+function worldIndices(copies: number) {
+  const out: number[] = [];
+  for (let k = copies; k >= 1; k--) out.push(-k, k);
+  return out;
+}
 
 /**
  * The shell every frame shares: the fallback plate, this beat's own mark layer over it, and a
@@ -86,18 +116,27 @@ const LIVE_STYLE = "html.qm-live [data-part=plate]{opacity:0}";
 const PLATE_ID = "quakes-plate";
 
 function PlateFrame({
+  step,
   plate,
   frame,
+  worldWidthPx,
   ground,
   legend,
   live,
   annotations,
   children,
 }: {
+  /** This frame's own step id — the only thing that differs between the four, and what makes each
+   *  one's surface group referenceable by its own copies. */
+  step: string;
   /** The plate's own data URI — passed on the DEFINING frame only. Every other frame leaves it
    *  empty and references the one copy by id. */
   plate: string;
   frame: Frame;
+  /** The world's own width in PLATE units, off the bake (`geometry.worldWidthPx`). Only the copy
+   *  COUNT is derived from it; the copies themselves are laid out at `frame.width` — see the
+   *  fallback's own note below. */
+  worldWidthPx: number;
   ground: string;
   legend?: ReactNode;
   live?: boolean;
@@ -111,6 +150,13 @@ function PlateFrame({
     height: "100%",
     display: "block" as const,
   };
+  // THE COPIES ARE PAINTED OUTSIDE THE VIEWBOX, so the primary's own fit is byte-for-byte the fit
+  // this beat has always resolved and the live camera still reconciles against it. An SVG root
+  // clips to its viewport by default; `overflow: visible` lifts that, and the frame's own
+  // `overflow: hidden` above is what a copy is finally clipped by.
+  const spill = { ...fit, overflow: "visible" as const };
+  const copies = worldIndices(FALLBACK_COPIES(frame, worldWidthPx));
+  const surfaceId = `qm-surface-${step}`;
   return (
     <div
       data-frame="quakes"
@@ -156,8 +202,34 @@ function PlateFrame({
           xmlns="http://www.w3.org/2000/svg"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="xMidYMid meet"
-          style={fit}
+          style={spill}
         >
+          {/* THE WORLD REPEATS EAST AND WEST HERE TOO, and it has to, because this layer is what a
+              reader sees when the live map is not there. Before the ruling this plate sat centred
+              with bare ground down both sides — 82.0% of a 1600x900 box, 88.7% of the owner's own
+              2990x1718 — while the live map beside it filled the frame with a second and a third
+              world. Two pictures of the same beat, and the one that shows on a rotated key, a
+              spending limit or a train tunnel was the narrow one.
+
+              THE COPIES TILE AT `frame.width`, NOT AT `worldWidthPx`, and that is the one number in
+              this file that differs from the live layer's. The plate PICTURES 359.8° of the 360, so
+              the world is 0.5 plate units wider than the picture of it: tiling at the world's width
+              leaves that half unit of bare ground at every seam (0.8px at 1600x900, 1.6px at
+              2990x1718 — a hairline of page ground through the map), and tiling at the picture's
+              own width closes it and skips 0.2° of open Pacific either side of the antimeridian
+              instead. Both layers move together under a single fit, so the marks below tile at the
+              same width and plate and marks cannot drift apart on any copy. The live layer has real
+              tiles to register against and tiles at the world's true width; this one has only
+              itself, and tiles at its own. */}
+          {copies.map((k) => (
+            <use
+              key={k}
+              data-part="fallback-world"
+              data-world={k}
+              href={`#${PLATE_ID}`}
+              x={k * frame.width}
+            />
+          ))}
           {/* ONE COPY OF THE PLATE, referenced three more times. Every frame draws the same 123 KiB
               basemap, and emitting it per frame put four identical copies in the delivered file —
               371 KiB of 1.6 MB that no reader benefits from, caught by `verify-scrolly.mjs`'s
@@ -168,6 +240,7 @@ function PlateFrame({
           {plate ? (
             <image
               id={PLATE_ID}
+              data-world={0}
               href={plate}
               x={0}
               y={0}
@@ -175,7 +248,7 @@ function PlateFrame({
               height={frame.height}
             />
           ) : (
-            <use href={`#${PLATE_ID}`} />
+            <use data-world={0} href={`#${PLATE_ID}`} />
           )}
         </svg>
       </div>
@@ -191,15 +264,34 @@ function PlateFrame({
           sentence names — is NOT repeated: this beat's rule is "exactly one cell is ringed on
           exactly the frame whose paragraph names it" (BRIEF, craft decision 3, earned from a defect
           logged against `map-quake-density`), and driven at 1600×900 the repeat put a second ringed
-          hexagon in the right-hand band, 1,296px from the first, with nothing said about it. */}
+          hexagon in the right-hand band, 1,296px from the first, with nothing said about it.
+
+          SINCE THE RULING THE SAME SPLIT SERVES THE FALLBACK, on the same terms. The copies below
+          are `<use>` of THIS frame's surface group — one reference each, no second copy of a 190 KiB
+          dot path in the delivered file — laid out at the same `frame.width` the plate's copies are,
+          so a copy's dots sit exactly on that copy's coastline. What they carry is what the
+          primary carries: the dots, the hexagons, the circles. What they do not carry is the ring,
+          for the reason above, and a legend, which is HTML furniture in the frame's own corner and
+          belongs to the frame rather than to a world. */}
       <svg
         data-part="marks"
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`0 0 ${frame.width} ${frame.height}`}
         preserveAspectRatio="xMidYMid meet"
-        style={fit}
+        style={spill}
       >
-        <g data-part="surface">{children}</g>
+        {copies.map((k) => (
+          <use
+            key={k}
+            data-part="fallback-world"
+            data-world={k}
+            href={`#${surfaceId}`}
+            x={k * frame.width}
+          />
+        ))}
+        <g id={surfaceId} data-part="surface" data-world={0}>
+          {children}
+        </g>
         {annotations}
       </svg>
       {legend}
@@ -357,6 +449,7 @@ function Rings({
 export function DotFrame({
   plate,
   frame,
+  worldWidthPx,
   points,
   ground,
   accent,
@@ -364,6 +457,7 @@ export function DotFrame({
 }: Furniture & {
   plate: string;
   frame: Frame;
+  worldWidthPx: number;
   points: { px: number; py: number }[];
   live?: boolean;
 }) {
@@ -371,7 +465,14 @@ export function DotFrame({
     .map((p) => `M${p.px.toFixed(1)} ${p.py.toFixed(1)}h0`)
     .join("");
   return (
-    <PlateFrame plate={plate} frame={frame} ground={ground} live={live}>
+    <PlateFrame
+      step="events"
+      plate={plate}
+      frame={frame}
+      worldWidthPx={worldWidthPx}
+      ground={ground}
+      live={live}
+    >
       <path
         d={d}
         stroke={accent}
@@ -389,6 +490,7 @@ export function DotFrame({
 export function HexCountFrame({
   plate,
   frame,
+  worldWidthPx,
   facts,
   ramp,
   legendLabels,
@@ -400,6 +502,7 @@ export function HexCountFrame({
 }: Furniture & {
   plate: string;
   frame: Frame;
+  worldWidthPx: number;
   facts: QuakeFacts;
   ramp: string[];
   legendLabels: string[];
@@ -407,8 +510,10 @@ export function HexCountFrame({
 }) {
   return (
     <PlateFrame
+      step="bins"
       plate={plate}
       frame={frame}
+      worldWidthPx={worldWidthPx}
       ground={ground}
       legend={
         <Legend
@@ -448,6 +553,7 @@ export function HexCountFrame({
 export function SymbolFrame({
   plate,
   frame,
+  worldWidthPx,
   facts,
   maxRadius,
   ground,
@@ -456,6 +562,7 @@ export function SymbolFrame({
 }: Furniture & {
   plate: string;
   frame: Frame;
+  worldWidthPx: number;
   facts: QuakeFacts;
   maxRadius: number;
 }) {
@@ -464,7 +571,13 @@ export function SymbolFrame({
   // logged against a proportional-symbol beat.
   const drawn = [...facts.bigEvents].sort((a, b) => b.point.mag - a.point.mag);
   return (
-    <PlateFrame plate={plate} frame={frame} ground={ground}>
+    <PlateFrame
+      step="biggest"
+      plate={plate}
+      frame={frame}
+      worldWidthPx={worldWidthPx}
+      ground={ground}
+    >
       {drawn.map((e, i) => (
         <circle
           key={`${e.px}-${e.py}-${i}`}
@@ -486,6 +599,7 @@ export function SymbolFrame({
 export function HexStrengthFrame({
   plate,
   frame,
+  worldWidthPx,
   facts,
   ramp,
   legendLabels,
@@ -497,6 +611,7 @@ export function HexStrengthFrame({
 }: Furniture & {
   plate: string;
   frame: Frame;
+  worldWidthPx: number;
   facts: QuakeFacts;
   ramp: string[];
   legendLabels: string[];
@@ -504,8 +619,10 @@ export function HexStrengthFrame({
 }) {
   return (
     <PlateFrame
+      step="strength"
       plate={plate}
       frame={frame}
+      worldWidthPx={worldWidthPx}
       ground={ground}
       legend={
         <Legend

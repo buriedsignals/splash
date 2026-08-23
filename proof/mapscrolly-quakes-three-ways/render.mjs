@@ -160,7 +160,16 @@ async function render() {
     RAMP_ENDS.to,
   );
 
-  const shared = { ground, ink: furniture.ink, muted: furniture.muted, accent };
+  // `worldWidthPx` rides with the furniture because every frame needs it for the same reason:
+  // the fallback tiles the world east and west (the 2026-08-23 wrap ruling), and how many
+  // copies it paints is derived from the camera's own world width, never typed.
+  const shared = {
+    ground,
+    ink: furniture.ink,
+    muted: furniture.muted,
+    accent,
+    worldWidthPx: geometry.worldWidthPx,
+  };
   const busiest = facts.busiest.cell;
   const strongestCell = facts.strongest.cell;
 

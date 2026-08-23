@@ -114,6 +114,7 @@
 // Usage: bun skills/scrolly/scripts/verify-scrolly.mjs <file.html> [more.html...] [--width=W]
 
 import puppeteer from "puppeteer-core";
+import { everyPaintedWorldCarriesTheMarks } from "./detect-wraps-the-world.mjs";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -1419,6 +1420,32 @@ export function verifyBeatFiles(file) {
       );
     else notes.push(`${where}: ${name}/ plate ${image.width}x${image.height} matches its frame at ${fit.scale}x`);
 
+    // ── AND WHETHER A WORLD CAMERA'S DELIVERED PAGE ACTUALLY WRAPS ────────────────────────────
+    //
+    // THE POPULATION IS DERIVED FROM THE CAMERA, never typed. A plate whose own frame corners span
+    // a full turn of longitude is a world camera, and since the 2026-08-23 ruling a world camera
+    // fills its box by repeating the world east and west rather than sitting narrow in it. Without
+    // this, `everyPaintedWorldCarriesTheMarks` is a rule that cannot fire on the page that needs it
+    // most: a beat that repeats NOTHING has no copy for the browser reading to be about, so it
+    // would report one world and pass. Measured across every plate in this tree, exactly one beat
+    // in this vehicle is a world camera (`mapscrolly-quakes-three-ways`, 359.8°) and the other
+    // eight span 0.1° to 59° — so this is derived from geometry and reaches whatever is baked next.
+    const corners = geometry.frameCorners;
+    const span = corners ? Math.abs(corners.east - corners.west) : 0;
+    if (span >= 359) {
+      const worlds = new Set(
+        [...readFileSync(resolve(file), "utf8").matchAll(/data-world="(-?\d+)"/g)].map((m) => m[1]),
+      );
+      if (worlds.size < 2)
+        failures.push(
+          `${where}: ${name}/ is a world camera (${span.toFixed(1)}° of longitude) and the ` +
+            `delivered page paints one world. A box wider than the world is filled by REPEATING ` +
+            `the world east and west — with the marks on every copy — not by letterboxing the ` +
+            `plate in it`,
+        );
+      else notes.push(`${where}: ${name}/ spans ${span.toFixed(1)}° and the page declares ${worlds.size} worlds`);
+    }
+
     // AND THE FILLS THAT PLATE IS MADE OF, against the ink this beat draws with. The reading
     // `plateFollowsGround` cannot make: it averages, and the average of a bright sea and a dark land
     // is a number no bake controls. The palette is the nearest `PALETTE.md` at or above the beat —
@@ -1603,6 +1630,140 @@ function paintedMarks() {
   return painted;
 }
 
+/** WHAT THE PAGE PAINTS OF THE WORLD, AND WHETHER A READER CAN SEE THE BEAT'S MARKS ON EACH COPY —
+ *  read in the browser, returned as the plain reading `everyPaintedWorldCarriesTheMarks` decides on.
+ *  Returns `null` for a page that paints one world, which is every beat in this vehicle but the one
+ *  with a full-turn camera; a beat that OUGHT to declare copies and does not is caught off disk by
+ *  `verifyBeatFiles`, where the camera's own longitude span can be read.
+ *
+ *  A MARK IS PROBED WHERE IT WAS FOUND, never where it was computed. For each mark the primary
+ *  draws, this hunts a screen point that really hits it — the bounding box's centre first, then
+ *  points along the path itself, because this format's densest mark is a single `<path>` of 14,057
+ *  `M x y h0` dots whose bbox centre is open ocean. That point, in the drawing's own units, is then
+ *  moved by whole tiles and asked of the compositor again through `elementsFromPoint`, which is the
+ *  same like-for-like denominator `map-web`'s pointer census uses: the pixel that answered for a
+ *  mark on the primary, moved by whole worlds. A mark no point on the primary hits is drawn under a
+ *  pixel — a different, already-named defect — and is charged to nobody. */
+function readWorldCopies() {
+  const graphic = document.querySelector(".scrolly-graphic");
+  const active = document.querySelector(".step-frame.active") ?? document.querySelector(".step-frame");
+  if (!graphic || !active) return null;
+
+  // THE POPULATION IS WHAT IS PAINTED OF THE WORLD, WHICH IS THE PLATE — never the mark layer's own
+  // copies. Reading it off the marks was this instrument's own first version and it was the defect
+  // wearing the uniform of the check: with the plate repeating three worlds and the marks repeating
+  // none, `copies.length === 0` and the reading returned "one world, nothing to ask". Rebuilt as a
+  // mutation and measured, it passed the exact page the ruling exists to refuse. What is painted
+  // decides who owes; what the marks do is what is being asked.
+  const plate = active.querySelector("[data-part=plate]");
+  const marks = active.querySelector("[data-part=marks]");
+  const surface = marks && marks.querySelector("[data-part=surface]");
+  if (!plate || !marks || !surface) return null;
+  const painted = Array.from(plate.querySelectorAll("[data-world]"));
+  if (painted.length < 2) return null;
+
+  const box = graphic.getBoundingClientRect();
+  const ctm = marks.getScreenCTM();
+  if (!ctm) return null;
+  const toScreen = (x, y) => ({ x: ctm.a * x + ctm.c * y + ctm.e, y: ctm.b * x + ctm.d * y + ctm.f });
+  const home = painted.find((one) => Number(one.dataset.world) === 0);
+  if (!home) return null;
+  const tilePx = home.getBoundingClientRect().width;
+  const tileUnits = ctm.a > 0 ? tilePx / ctm.a : 0;
+  if (!(tileUnits > 0)) return null;
+
+  // A POINT ON THE BOX'S OWN EDGE IS NOT A POINT A READER SEES, and it is not a point the browser
+  // will answer for either: `elementsFromPoint` returns an EMPTY stack at exactly `innerWidth`.
+  // Measured before this inset existed — at 375x812 the hex frames' westernmost cells are centred
+  // at plate x=0, which moved by one tile lands at screen x=375.0 on a 375px viewport, and the
+  // reading called a correctly painted copy silent on 2 of 2 marks. Half a pixel inside the box on
+  // every side; the same correction `map-web` made for the same reason, one level down.
+  const inside = (point) =>
+    point.x > box.left + 0.5 &&
+    point.x < box.right - 0.5 &&
+    point.y > box.top + 0.5 &&
+    point.y < box.bottom - 0.5;
+  const hits = (node, point) => inside(point) && document.elementsFromPoint(point.x, point.y).includes(node);
+
+  const shapes = Array.from(surface.querySelectorAll("circle,ellipse,rect,line,polygon,polyline,path"));
+  // How many points one shape may contribute, derived from how many shapes there are: a surface
+  // that IS one path gets the whole budget, and a surface of 156 hexagons gets one point each.
+  const perShape = Math.max(1, Math.ceil(64 / Math.max(1, shapes.length)));
+  // THE POINTS THE COMPOSITOR REALLY ANSWERS FOR, in the drawing's own units — the population this
+  // census counts, and deliberately not "one per element". This format's densest mark is a SINGLE
+  // `<path>` carrying 14,057 dots, so an element census would read 1/1 on the very frame the defect
+  // was photographed on; a point census reads the world across.
+  const probes = [];
+  for (const shape of shapes) {
+    if (probes.length >= 400) break;
+    const b = shape.getBBox();
+    const candidates = [{ x: b.x + b.width / 2, y: b.y + b.height / 2 }];
+    if (typeof shape.getTotalLength === "function") {
+      const total = shape.getTotalLength();
+      if (total > 0) for (const at of [0.5, 0.25, 0.75, 0.1]) candidates.push(shape.getPointAtLength(total * at));
+    }
+    // A PATH OF ZERO-LENGTH SEGMENTS HAS NO LENGTH TO WALK, and this format's densest mark is
+    // exactly that: 14,057 dots written `M x y h0`, drawn by a round line cap. `getTotalLength()`
+    // returns 0, so the walk above yields nothing and the bbox centre is open ocean — measured, the
+    // reading came back `copy 0 0/0` on the one frame the defect was photographed on. Its own
+    // move-to commands are points on the path by definition, sampled evenly so the census spans the
+    // longitude the beat draws rather than whichever corner the path happens to start in.
+    const d = shape.getAttribute("d");
+    if (d) {
+      const moves = [...d.matchAll(/[Mm]\s*(-?[\d.]+)[\s,]+(-?[\d.]+)/g)];
+      const wanted = Math.min(moves.length, 64);
+      for (let n = 0; n < wanted; n += 1) {
+        const m = moves[Math.floor((n * moves.length) / wanted)];
+        candidates.push({ x: Number(m[1]), y: Number(m[2]) });
+      }
+    }
+    let kept = 0;
+    for (const candidate of candidates) {
+      if (kept >= perShape || probes.length >= 400) break;
+      if (!hits(shape, toScreen(candidate.x, candidate.y))) continue;
+      probes.push({ x: candidate.x, y: candidate.y, of: shape });
+      kept += 1;
+    }
+  }
+
+  const overlap = (left, right) => Math.max(0, Math.min(right, box.right) - Math.max(left, box.left));
+  const homeLeft = home.getBoundingClientRect().left;
+  const worlds = [];
+  for (const world of painted) {
+    const index = Number(world.dataset.world);
+    // The mark layer's own answer for THIS painted world. `null` when the marks did not repeat with
+    // the map, which is precisely the defect and reads as a copy that paints nothing.
+    const answering =
+      index === 0
+        ? surface
+        : marks.querySelector(`[data-part=fallback-world][data-world="${index}"]`);
+    const owed = [];
+    const drawn = [];
+    for (let i = 0; i < probes.length; i += 1) {
+      const point = toScreen(probes[i].x + index * tileUnits, probes[i].y);
+      if (!inside(point)) continue;
+      owed.push(i);
+      if (!answering) continue;
+      const stack = document.elementsFromPoint(point.x, point.y);
+      // On the primary the mark itself is what answers; on a copy it is the `<use>`, because a
+      // `<use>` does not expose its clone to hit testing — measured in Chrome, and the reason a
+      // per-element `<use>` was never needed here.
+      if (stack.includes(index === 0 ? probes[i].of : answering)) drawn.push(i);
+    }
+    const rect = world.getBoundingClientRect();
+    worlds.push({
+      index,
+      role: index === 0 ? "primary" : "repeat",
+      offsetPx: rect.left - homeLeft,
+      visiblePx: Math.round(overlap(rect.left, rect.right)),
+      owed,
+      painted: drawn,
+    });
+  }
+  worlds.sort((a, b) => a.index - b.index);
+  return { boxWidthPx: box.width, tilePx, worlds };
+}
+
 export async function verifyCargo(page, file, { w, h }) {
   const failures = [];
   const notes = [];
@@ -1687,6 +1848,41 @@ export async function verifyCargo(page, file, { w, h }) {
       return { id: active ? active.getAttribute("data-step") : null, dashed, scale };
     });
     seen.painted = await page.evaluate(paintedMarks);
+    // ── EVERY PAINTED COPY OF THE WORLD CARRIES THIS BEAT'S OWN MARKS ─────────────────────────
+    //
+    // Read at EVERY step, because a world copy is built per frame and a beat that repeats three of
+    // its four is a beat whose fourth step contradicts its own paragraph.
+    const wrapped = await page.evaluate(readWorldCopies);
+    if (wrapped) {
+      const r = everyPaintedWorldCarriesTheMarks(wrapped);
+      for (const one of r.short)
+        failures.push(
+          `${where}: step ${i + 1} paints a copy of the world with none of this beat's marks on ` +
+            `it — copy ${one.copy} answers for ${one.of - one.missing.length} of the ${one.of} ` +
+            `marks the primary paints there. A repeated coast with no evidence on it contradicts ` +
+            `the paragraph over it`,
+        );
+      for (const one of r.adrift)
+        failures.push(
+          `${where}: step ${i + 1} paints copy ${one.copy} ${one.tiles.toFixed(3)} tiles from the ` +
+            `primary instead of a whole number of them — its marks are on the wrong coast, which a ` +
+            `settled screenshot reads as a perfectly good map`,
+        );
+      if (r.uncoveredPx > 1)
+        failures.push(
+          `${where}: step ${i + 1} paints ${r.copies} world(s) and leaves ${r.uncoveredPx}px of ` +
+            `the box bare — a world camera fills its box by repeating the world, so ship ` +
+            `${r.needed} copies each side rather than ${(r.copies - 1) / 2}`,
+        );
+      if (i === 0)
+        notes.push(
+          `${where}: ${r.copies} world(s) painted, ${r.visible} visible, ` +
+            r.perCopy
+              .filter((one) => one.visiblePx == null || one.visiblePx > 0)
+              .map((one) => `copy ${one.index} ${one.painted}/${one.owed}`)
+              .join(", "),
+        );
+    }
     const changed = previous === null ? null : fingerprintDrift(previous, seen.painted);
     previous = seen.painted;
     for (const mark of seen.dashed) if (!dashed.has(mark.id)) dashed.set(mark.id, mark);
