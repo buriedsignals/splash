@@ -46,10 +46,10 @@ const KEY_ALIASES = { MAPTILER_KEY: MAPTILER_KEY_ALIASES, DATAWRAPPER_TOKEN: DAT
  *  ignores the table, which is precisely the defect `credential-alias-reconciled` was earned by and
  *  the shape found three times in one week — `verify-live-map.mjs`, then the gate that decided
  *  whether that probe ran at all, then a provider case sitting between two that already resolved
- *  through it. Measured on this machine on
- *  2026-08-23: the root `.env` holds `REMOTION_MAPTILER_KEY` and `VITE_MAPTILER_KEY` and neither
- *  `MAPTILER_KEY` nor `MAPTILER_DELIVERY_KEY`, so a hand-written two-name fallback over those two
- *  canonical names read back as "no key at all" against a working, present key.
+ *  through it. Measured on this machine on 2026-08-23: the root `.env` holds
+ *  `REMOTION_MAPTILER_KEY` and `VITE_MAPTILER_KEY` and neither `MAPTILER_KEY` nor
+ *  `MAPTILER_DELIVERY_KEY`, so a hand-written two-name fallback over those two canonical names read
+ *  back as "no key at all" against a working, present key.
  *
  *  It returns `""` and never `undefined`, so a caller can test it as a string without deciding
  *  again what an absent credential looks like.
