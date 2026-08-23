@@ -1,0 +1,183 @@
+{
+  "rowCount": 4,
+  "columns": [
+    {
+      "name": "file",
+      "type": "text",
+      "missing": 0,
+      "distinct": 4,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "date",
+      "type": "text",
+      "missing": 0,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "episode",
+      "type": "text",
+      "reason": "looked numeric but \"1 & 50\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "title",
+      "type": "text",
+      "missing": 0,
+      "distinct": 4,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "caption",
+      "type": "text",
+      "missing": 0,
+      "distinct": 4,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "credit",
+      "type": "text",
+      "missing": 1,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "byline",
+      "type": "text",
+      "missing": 0,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "licence",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "source_url",
+      "type": "text",
+      "missing": 0,
+      "distinct": 4,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "alt",
+      "type": "text",
+      "missing": 2,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": {
+    "entity": "file",
+    "period": "date",
+    "entities": 4,
+    "periods": 3,
+    "rowsPerPeriod": {
+      "min": 1,
+      "max": 2
+    },
+    "balanced": false,
+    "says": "one row per entity per period: every (\"file\", \"date\") pair in this table is unique, so rowCount (4) counts readings, never subjects — there are 4 of those",
+    "decidedBy": "every (\"file\", \"date\") pair is unique across all 4 rows, and \"file\" holds no blank",
+    "coverage": {
+      "byPeriod": [
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        }
+      ],
+      "fullest": {
+        "period": null,
+        "entities": 2
+      },
+      "thinnest": {
+        "period": null,
+        "entities": 1
+      },
+      "says": "a period's own step being present is not the same as every entity being present in it: the fullest period here carries 2 entities and the thinnest carries 1"
+    },
+    "aggregates": {
+      "says": "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+      "byArithmetic": [],
+      "byStructure": [
+        {
+          "entity": "episode_1_vs_50.jpg",
+          "proposedBy": "code-missing",
+          "code": null
+        },
+        {
+          "entity": "Image_(5)_0.jpg",
+          "proposedBy": "code-shape",
+          "code": "USGS photo by M. Cappos"
+        }
+      ],
+      "arithmetic": {
+        "ran": true,
+        "over": "the 2 rows the \"credit\" column's own shape sets apart",
+        "column": null,
+        "nodes": 0,
+        "exhausted": false,
+        "measuresTried": []
+      },
+      "structure": {
+        "column": "credit",
+        "shape": "AAAA aaaaa aa A. Aaaaaaa",
+        "entitiesWithThatShape": 2,
+        "entitiesCoded": 3
+      }
+    },
+    "periodNotASequence": {
+      "says": "\"date\" was read as the period from its NAME, and this profiler's own typing does not make it a sequence — its gaps are null, so nothing here can say which steps it skips",
+      "column": "date",
+      "type": "text"
+    }
+  }
+}
