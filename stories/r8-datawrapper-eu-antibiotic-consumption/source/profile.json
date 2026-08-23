@@ -1,0 +1,152 @@
+{
+  "rowCount": 30,
+  "columns": [
+    {
+      "name": "freq,unit,geo\\TIME_PERIOD",
+      "type": "text",
+      "missing": 0,
+      "distinct": 30,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2013",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 26,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2014",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 25,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2015",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 26,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2016",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 25,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2017",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 25,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2018",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 27,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2019",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 26,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2020",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"16.1 b\" has one, \"8.8\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 29,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2021",
+      "type": "text",
+      "reason": "looked numeric but \":\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 29,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2022",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"19.1 b\" has one, \"10.5\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 29,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2023",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"28.5 b\" has one, \"11.3\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 28,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "2024",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"19 b\" has one, \"11.8\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 29,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": null
+}
