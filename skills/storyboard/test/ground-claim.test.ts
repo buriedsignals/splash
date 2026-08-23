@@ -2185,3 +2185,50 @@ describe("a two-letter code is matched as a code, not as a word", () => {
     expect(superlative.verdict).toBe("supported");
   });
 });
+
+// ROUND EIGHT — A COLUMN WHERE EVERY ROW HOLDS THE EXTREME DECIDES NOTHING.
+//
+// USDA's honey release carries a column of table identifiers, every cell `20`. The superlative shape
+// decided against it: "Ohio has the highest" came back `supported` AND "Florida has the lowest" came
+// back `supported` — two mutually exclusive claims, both confirmed, because on a column with no
+// spread every row's value IS the maximum and IS the minimum. The numeral range check in this same
+// file has said for two rounds that a range whose min and max are equal is a check that cannot fail;
+// this shape had never been told.
+describe("a superlative is not decided against a column with no spread", () => {
+  const flat = {
+    columns: [
+      { name: "state", type: "text" },
+      { name: "tbl", type: "number", min: 20, max: 20 },
+    ],
+    rows: [
+      { state: "Ohio", tbl: 20 },
+      { state: "Florida", tbl: 20 },
+      { state: "Mississippi", tbl: 20 },
+    ],
+  };
+
+  it("should refuse both ends rather than confirm them both", () => {
+    for (const takeaway of ["Ohio has the highest tbl.", "Florida has the lowest tbl."]) {
+      const { claims } = groundTakeaway(takeaway, flat);
+      const superlative = claims.find((c) => /highest|lowest/.test(c.claim))!;
+      expect(superlative.verdict).toBe("unverifiable");
+      expect(superlative.detail).toContain("holds 20 in every row");
+    }
+  });
+
+  it("should still decide a superlative against a column that does vary", () => {
+    const spread = {
+      columns: [
+        { name: "state", type: "text" },
+        { name: "yield", type: "number", min: 41, max: 89 },
+      ],
+      rows: [
+        { state: "Ohio", yield: 52 },
+        { state: "Florida", yield: 41 },
+        { state: "Mississippi", yield: 89 },
+      ],
+    };
+    const { claims } = groundTakeaway("Mississippi has the highest yield.", spread);
+    expect(claims.find((c) => /highest/.test(c.claim))!.verdict).toBe("supported");
+  });
+});

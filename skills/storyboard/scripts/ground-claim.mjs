@@ -2880,6 +2880,29 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
     return { claim, verdict: "unverifiable", detail: "could not identify which entity this claim is about" };
   }
 
+  // A COLUMN WHERE EVERY ROW HOLDS THE EXTREME IS A CHECK THAT CANNOT FAIL (round eight, USDA honey).
+  //
+  // The frozen table carried a column of table identifiers, every cell `20`, and this shape decided
+  // a superlative against it: "Ohio has the highest" came back `supported` AND "Florida has the
+  // lowest" came back `supported` — two mutually exclusive claims, both confirmed, because on a
+  // column with no spread every row's value IS the maximum and IS the minimum. The numeral range
+  // check three hundred lines below has said for two rounds that "a range whose min and max are the
+  // same value is a check that CANNOT FAIL"; this shape had never been told.
+  //
+  // Refused rather than answered, and the refusal names the column and the value, because the fact
+  // worth knowing is that the sentence was decided against a column that measures nothing.
+  if (
+    Number.isFinite(valueColumn.min) &&
+    Number.isFinite(valueColumn.max) &&
+    valueColumn.min === valueColumn.max
+  ) {
+    return {
+      claim,
+      verdict: "unverifiable",
+      detail: `column "${valueColumn.name}" holds ${valueColumn.min} in every row, so every row holds its maximum AND its minimum — a superlative decided against it would be confirmed whichever entity and whichever end it named${refused}`,
+    };
+  }
+
   const extreme = item.extreme === "min" ? valueColumn.min : valueColumn.max;
   const extremeName = item.extreme === "min" ? "minimum" : "maximum";
   const rows = Array.isArray(profile.rows) ? profile.rows : null;
@@ -2929,6 +2952,15 @@ function resolveSuperlative(item, profile, claim, columns, sentence) {
         claim,
         verdict: "unverifiable",
         detail: `no row of "${panel.periodColumn.name}" ${anchor} carries a numeric value in column "${valueColumn.name}"${refused}`,
+      };
+    }
+    // The same question asked of the SLICE: a period in which every subject reports the same value
+    // cannot say who leads it, and the whole-column check above cannot see that.
+    if (Math.min(...values) === Math.max(...values)) {
+      return {
+        claim,
+        verdict: "unverifiable",
+        detail: `every row of "${panel.periodColumn.name}" ${anchor} holds ${values[0]} in column "${valueColumn.name}", so no entity leads it and none trails it${refused}`,
       };
     }
     extremeValue = item.extreme === "min" ? Math.min(...values) : Math.max(...values);
