@@ -1233,6 +1233,13 @@ function aggregatesOf(entity, period, columns, rowCount) {
 // policy `denominatorUnread` states for the denominator list one section up. Two languages here,
 // not four: these are the words this author can write correctly, and a dataset stating its
 // incompleteness in Greek or Arabic is a gap named out loud rather than a guess made quietly.
+//
+// ROUND NINE ADDS THE UNDERREPORTING FAMILY, because that is how a register of PEOPLE states this
+// about itself. WHO's rabies fact sheet says "however, due to underreporting, documented case
+// numbers often differ from the estimate" — the plainest possible English, the whole subject of the
+// story, and not one word of it was in this list. The words above describe a period that is not
+// finished; these describe a count that was never complete at any period, which is the ordinary
+// condition of every notifiable-disease register, every crime statistic and every casualty count.
 const INCOMPLETENESS_WORDS = [
   "incomplete",
   "partial",
@@ -1241,6 +1248,15 @@ const INCOMPLETENESS_WORDS = [
   "provisional",
   "year to date",
   "year-to-date",
+  "underreported",
+  "under-reported",
+  "underreporting",
+  "under-reporting",
+  "undercount",
+  "undercounted",
+  "undercounting",
+  "under-count",
+  "under-counted",
   "incomplet",
   "incomplets",
   "incomplète",
@@ -1253,6 +1269,16 @@ const INCOMPLETENESS_WORDS = [
   "préliminaires",
   "provisoire",
   "provisoires",
+  "sous-déclaration",
+  "sous-déclarations",
+  "sous-déclaré",
+  "sous-déclarés",
+  "sous-déclarée",
+  "sous-déclarées",
+  "sous-notification",
+  "sous-notifications",
+  "sous-notifié",
+  "sous-notifiés",
 ];
 
 const INCOMPLETENESS_LANGUAGES_SAID = "English and French";
@@ -1288,7 +1314,21 @@ function sentencesOf(prose) {
 /** A CLAIM OF INCOMPLETENESS ABOUT A PERIOD THIS TABLE HOLDS, read off the frozen prose. A sentence
  *  qualifies when it carries one of the declared words AND a numeral that is one of the period
  *  column's own values — the numeral is what ties the claim to a row of the table, and without it a
- *  sentence about an incomplete argument would read as a sentence about an incomplete year. */
+ *  sentence about an incomplete argument would read as a sentence about an incomplete year.
+ *
+ *  ROUND NINE — AND WHAT HAPPENS TO THE SENTENCES THAT DO NOT QUALIFY. That numeral test is right
+ *  about what may be placed on a ROW and was wrong about what may be dropped on the floor. WHO's
+ *  fact sheet states its register's incompleteness in one sentence — "however, due to
+ *  underreporting, documented case numbers often differ from the estimate" — and names no year in
+ *  it, because the incompleteness is not about one period; it is about every period, which is the
+ *  ordinary condition of a register of people. The sentence therefore produced no claim, and this
+ *  field then said `the frozen prose states no incompleteness`, which is not a hedge: it is a
+ *  positive statement, and it was false about that file.
+ *
+ *  So there are three states now, not two, and `says` distinguishes them: a claim TIED to a period
+ *  this table holds (`claims`); an incompleteness STATED and tied to no period this table holds
+ *  (`unplaced` — carried with its sentence, placed on no row, and never reported as silence); and
+ *  the prose carrying no declared word at all, which is the only case that may say so. */
 function statedIncompletenessOf(prose, period) {
   const words = INCOMPLETENESS_WORDS;
   const base = { reads: INCOMPLETENESS_LANGUAGES_SAID, words, column: period.name };
@@ -1297,11 +1337,13 @@ function statedIncompletenessOf(prose, period) {
       ...base,
       readProse: false,
       claims: [],
+      unplaced: [],
       says: `no prose was handed to this profiler, so nothing was read: this is not a statement that the "${period.name}" column is complete`,
     };
   }
   const held = new Set(period._values.filter((v) => v !== "").map(Number));
   const claims = [];
+  const unplaced = [];
   const seen = new Set();
   for (const sentence of sentencesOf(prose)) {
     const lower = sentence.toLowerCase();
@@ -1309,23 +1351,35 @@ function statedIncompletenessOf(prose, period) {
       new RegExp(`(^|[^\\p{L}])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^\\p{L}]|$)`, "u").test(lower),
     );
     if (!said) continue;
+    let placed = false;
     for (const numeral of sentence.match(/\d+/g) ?? []) {
       const value = Number(numeral);
       if (!held.has(value)) continue;
+      placed = true;
       const key = `${value}\u0000${sentence}`;
       if (seen.has(key)) continue;
       seen.add(key);
       claims.push({ period: value, column: period.name, word: said, sentence });
     }
+    if (!placed && !unplaced.some((u) => u.sentence === sentence)) {
+      unplaced.push({ column: period.name, word: said, sentence });
+    }
   }
+  const statedNote =
+    unplaced.length > 0
+      ? `the frozen prose states an incompleteness — the word "${unplaced[0].word}" — and ties it to no period this table holds, so nothing here places it on a row of "${period.name}": it is a claim about the register as a whole, carried in \`unplaced\` with the sentence that made it, and it is NOT a statement that this table is complete`
+      : "";
   return {
     ...base,
     readProse: true,
     claims,
+    unplaced,
     says:
       claims.length > 0
-        ? `the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote, carried here with the sentence that made it, never a fact this profiler checked`
-        : `the frozen prose states no incompleteness in ${INCOMPLETENESS_LANGUAGES_SAID}; a dataset that states one in another language is not read here`,
+        ? `the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote, carried here with the sentence that made it, never a fact this profiler checked` +
+          (statedNote ? `; and ${statedNote}` : "")
+        : statedNote ||
+          `the frozen prose states no incompleteness in ${INCOMPLETENESS_LANGUAGES_SAID}; a dataset that states one in another language is not read here`,
   };
 }
 

@@ -569,3 +569,75 @@ describe("the period column a table's values make, not the one its names promise
     expect(findYearColumn(columns)!.name).toBe("TimeDim");
   });
 });
+
+// =============================================================================================
+// ROUND NINE — A STATED INCOMPLETENESS THAT NAMES NO PERIOD IS STILL A STATED INCOMPLETENESS.
+//
+// WHO's own fact sheet says it in the plainest possible English — "however, due to underreporting,
+// documented case numbers often differ from the estimate" — and the profile came back
+// `statedIncompleteness.claims: []` with `says: "the frozen prose states no incompleteness in
+// English and French"`. That sentence is not a hedge; it is a positive statement, and it is false
+// about this file. A producer who trusted it would have shipped a register as if it were a census.
+//
+// TWO gates, measured separately, and the second is the structural one:
+//   1. the lexicon carried `incomplete`/`partial`/`provisional` and no word from the
+//      UNDERREPORTING family, which is how a register of people states this about itself;
+//   2. even with the word, a sentence qualifies only if it also carries a numeral that is one of
+//      the period column's own values. WHO's sentence carries "59" and "000" and names no year,
+//      because the incompleteness is not about one period — it is about the whole register.
+// =============================================================================================
+describe("a stated incompleteness the sentence ties to no period", () => {
+  const WHO = "r9-map-web-reported-rabies-deaths";
+  const whoProfile = () =>
+    profileTable(
+      parseCsv(readFileSync(`${STORIES}/${WHO}/source/data.csv`, "utf8")),
+      { prose: readFileSync(`${STORIES}/${WHO}/source/article.md`, "utf8") },
+    );
+
+  it("should read the UNDERREPORTING family, which is how a register says this about itself", () => {
+    const { statedIncompleteness } = whoProfile();
+    expect(statedIncompleteness.words).toContain("underreporting");
+    expect(statedIncompleteness.words).toContain("sous-déclaration");
+  });
+
+  it("should carry WHO's own sentence rather than report no incompleteness at all", () => {
+    const { statedIncompleteness } = whoProfile();
+    expect(statedIncompleteness.unplaced.length).toBe(1);
+    const [stated] = statedIncompleteness.unplaced;
+    expect(stated.word).toBe("underreporting");
+    expect(stated.sentence).toContain("due to underreporting");
+  });
+
+  it("should NEVER say a file states no incompleteness when it states one", () => {
+    const { statedIncompleteness } = whoProfile();
+    expect(statedIncompleteness.says).not.toContain("states no incompleteness");
+    expect(statedIncompleteness.says).toContain("no period this table holds");
+  });
+
+  it("should keep a period-tied claim where there is one, and say so", () => {
+    const profile = profileTable(SMALL_PANEL, {
+      prose: "The 2022 data is incomplete.",
+    });
+    expect(profile.statedIncompleteness.claims.length).toBe(1);
+    expect(profile.statedIncompleteness.unplaced).toEqual([]);
+    expect(profile.statedIncompleteness.says).toContain("a period this table holds");
+  });
+
+  it("should still say nothing was stated when nothing was", () => {
+    const profile = profileTable(SMALL_PANEL, {
+      prose: "Nothing to declare here.",
+    });
+    expect(profile.statedIncompleteness.claims).toEqual([]);
+    expect(profile.statedIncompleteness.unplaced).toEqual([]);
+    expect(profile.statedIncompleteness.says).toContain("states no incompleteness");
+  });
+
+  it("should carry an incompleteness about a period this table does NOT hold, rather than drop it", () => {
+    const profile = profileTable(SMALL_PANEL, {
+      prose: "The 1998 series is incomplete.",
+    });
+    expect(profile.statedIncompleteness.claims).toEqual([]);
+    expect(profile.statedIncompleteness.unplaced.length).toBe(1);
+    expect(profile.statedIncompleteness.says).not.toContain("states no incompleteness");
+  });
+});

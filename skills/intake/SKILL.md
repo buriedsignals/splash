@@ -317,20 +317,36 @@ read as a 41% collapse. The profile now carries the claim as a first-class field
 ```js
 statedIncompleteness: {
   reads: "English and French",
-  words: ["incomplete", "partial", …, "provisoire", "provisoires"],
+  words: ["incomplete", "partial", …, "underreporting", …, "sous-déclaration", …],
   column: "year",
   readProse: true,
   claims: [{ period: 2026, column: "year", word: "incomplete",
              sentence: "The 2026 data is incomplete and was last updated 21 August 2026." }],
+  unplaced: [],
   says: "the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote …",
 }
 ```
 
 **It is a CLAIM, not a fact**, and the sentence travels with it for that reason: the profiler cannot
 check whether a period really is short, only that the journalist's own frozen prose says so. A
-sentence qualifies when it carries one of the declared words AND a numeral that is one of the period
-column's own values — the numeral is what ties the claim to a row of the table, and without it a
-sentence about an incomplete *argument* would read as a sentence about an incomplete *year*.
+sentence qualifies as a `claims` entry when it carries one of the declared words AND a numeral that
+is one of the period column's own values — the numeral is what ties the claim to a row of the table,
+and without it a sentence about an incomplete *argument* would read as a sentence about an incomplete
+*year*.
+
+**Three states, not two — and `unplaced` is the third.** That numeral test is right about what may be
+placed on a ROW and was wrong about what may be dropped on the floor. WHO's rabies fact sheet states
+its register's incompleteness in one sentence — *"however, due to underreporting, documented case
+numbers often differ from the estimate"* — and names no year in it, because the incompleteness is not
+about one period; it is about every period, which is the ordinary condition of a register of people.
+That sentence produced no claim, and this field then said *"the frozen prose states no
+incompleteness"*: not a hedge, a positive statement, and false about that file. So a stated
+incompleteness the sentence ties to no period is now carried in `unplaced`, with its sentence and the
+word that found it, and `says` distinguishes the three cases. Only prose carrying no declared word at
+all may say nothing was stated. The **underreporting family** — `underreporting`, `undercount`,
+`sous-déclaration`, `sous-notification` and their forms — is in the list for the same reason: the
+words above it describe a period that is not finished, and these describe a count that was never
+complete at any period.
 
 **The reach is declared**, the same policy `denominatorUnread` states one section up: a lexicon's
 silence must not read as a clean bill. Two languages, not the four `LEXICON_LANGUAGES` declares —
