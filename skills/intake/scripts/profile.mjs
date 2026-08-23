@@ -1383,6 +1383,88 @@ function statedIncompletenessOf(prose, period) {
   };
 }
 
+// ==================================================================================================
+// THE CLASS SCALE NOBODY PROPOSED (round nine, WHO's rabies register).
+//
+// Measured over the whole tree: `jenks`, `quantileBreaks`, `proposeBreaks`, `naturalBreaks`,
+// `classIntervals` — nothing. `binIndexLowerInclusive` CONSUMES a set of breaks; no function in this
+// project produced one. So the default for a fresh choropleth was the PREVIOUS beat's breaks, in the
+// previous beat's unit, silently: `CO2_BREAKS = [2, 4, 6, 8, 10]`, tonnes of CO2 per person, handed
+// to a register that counts dead people. On WHO's 2024 rows those breaks put 52 countries in the
+// first class and 27 in the last — a top class that is a bucket.
+//
+// A count of PEOPLE is skewed by construction — most subjects report none or few, a handful report
+// most of the total — and that is the ordinary case for this kind of file, not a special one. So the
+// proposal is derived from the column's own distribution, by a method stated in the answer:
+//
+//   1. A REPORTED ZERO IS ITS OWN CLASS. It is a reading, not an absence, and the whole argument of
+//      a register story is the difference between the two. Only where the column actually holds
+//      zeros; nothing is invented where it does not.
+//   2. The remaining classes are QUANTILES of the positive values, so each class carries a
+//      comparable number of subjects rather than a comparable slice of the range — which is what
+//      makes an equal-interval scale useless on a skew.
+//   3. Every break is rounded UP to a step a reader can hold (1, 1.5, 2, 2.5, 3, 4, 5, 7.5 x 10^k).
+//      A legend reading "12.7" is arithmetic showing its work.
+//
+// It is a PROPOSAL, and it says so: the journalist decides what the classes mean. What it replaces
+// is not a decision — it is an inheritance nobody made.
+// ==================================================================================================
+
+/** The smallest readable step at or above `v` — a legend a reader holds, never a quantile's decimals. */
+function niceStep(v) {
+  if (!(v > 0) || !Number.isFinite(v)) return v;
+  const base = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const step of [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10]) {
+    if (step * base >= v - 1e-12) return Number((step * base).toPrecision(12));
+  }
+  return 10 * base;
+}
+
+/** The value at `p` of an ascending list, interpolated — the ordinary quantile, written out because
+ *  this file imports nothing. */
+function quantileOf(sorted, p) {
+  const at = (sorted.length - 1) * p;
+  const lo = Math.floor(at);
+  const hi = Math.ceil(at);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+}
+
+/** The proposal itself — see the block above. `values` are the numbers a beat would paint; `over` is
+ *  the sentence saying which rows they are, because on a panel that is a choice and a silent one
+ *  would be a scale computed across fifteen years for a map of one. */
+function classBreaksOf(values, over, classes = 6) {
+  const numbers = values.filter((v) => typeof v === "number" && Number.isFinite(v));
+  const zeros = numbers.filter((v) => v === 0).length;
+  const positive = numbers.filter((v) => v > 0).sort((a, b) => a - b);
+  const anchored = zeros > 0;
+  const bands = classes - (anchored ? 1 : 0);
+  if (positive.length < bands) {
+    return {
+      breaks: null,
+      counts: null,
+      over,
+      says: `no class scale is proposed: this column carries ${positive.length} value(s) above zero, too few to cut into ${bands} class(es) — a scale with a class nothing falls in says something about the ramp and nothing about the world`,
+    };
+  }
+  const cuts = [];
+  for (let k = 1; k < bands; k++) cuts.push(niceStep(quantileOf(positive, k / bands)));
+  const breaks = [...new Set([...(anchored ? [niceStep(positive[0])] : []), ...cuts])].sort((a, b) => a - b);
+  const counts = [];
+  for (let i = 0; i <= breaks.length; i++) {
+    const low = i === 0 ? -Infinity : breaks[i - 1];
+    const high = i === breaks.length ? Infinity : breaks[i];
+    counts.push(numbers.filter((v) => v >= low && v < high).length);
+  }
+  return {
+    breaks,
+    counts,
+    over,
+    says:
+      `a PROPOSAL, never a decision: ${anchored ? `a reported zero is its own first class (${zeros} of these rows report one, and a zero is a reading, not an absence), then ` : ""}` +
+      `quantiles of the ${positive.length} value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean`,
+  };
+}
+
 /** THE DENOMINATOR OF A PANEL IS A DIFFERENT FILE, so this table's silence about one is not an
  *  answer. `findDenominatorColumn` looks in the same table; every country panel published one
  *  indicator per file — Our World in Data, Eurostat, the World Bank — keeps its population and its
@@ -1583,6 +1665,29 @@ export function profileTable(rows, { prose } = {}) {
       if (column.denominator || column.denominatorUnread || namesADenominator(column.name)) continue;
       column.denominatorNotInThisTable = { says: DENOMINATOR_NOT_IN_THIS_TABLE, reads: LEXICON_LANGUAGES_SAID };
     }
+  }
+
+  // THE CLASS SCALE — see classBreaksOf. The population is the one the denominator note above
+  // already uses, derived the same way: a numeric column this profiler's own typing does not make a
+  // sequence. On a PANEL the values are one period's, because that is what a choropleth paints, and
+  // the latest is the one a fresh beat is about; the sentence says which, so a beat painting another
+  // period knows it must ask again.
+  const periodValues = key ? key.period._values : null;
+  const latestPeriod = periodValues
+    ? [...new Set(periodValues.filter((v) => v !== ""))].sort((a, b) => Number(a) - Number(b)).at(-1)
+    : null;
+  for (const column of columns) {
+    if (column.type !== "number" || column.gaps !== null) continue;
+    const values =
+      latestPeriod === null
+        ? column._rowNumbers.filter((v) => v !== null)
+        : column._rowNumbers.filter((v, i) => v !== null && periodValues[i] === latestPeriod);
+    column.classBreaks = classBreaksOf(
+      values,
+      latestPeriod === null
+        ? `every row this column carries (${values.length})`
+        : `the ${values.length} row(s) this column carries at "${key.period.name}" = ${latestPeriod}, the latest period this table holds — a beat painting another period must propose again`,
+    );
   }
 
   // A STATED INCOMPLETENESS — see statedIncompletenessOf. Emitted whenever this table HAS a period

@@ -24,7 +24,7 @@ Turns the article and CSV a journalist brought into a **frozen, immutable record
 | Layer | File | Role |
 | --- | --- | --- |
 | Reader | `scripts/csv.mjs` | `parseCsv(text)` — a real RFC 4180 reader: quoted fields, embedded commas/newlines, doubled quotes, CRLF **and** lone-CR line endings |
-| Profiler | `scripts/profile.mjs` | `profileTable(rows, {prose})` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), describes the table's own SHAPE (`panel`, with its entity, its period, its per-period coverage and which rows are aggregates of the others), carries a stated incompleteness off the frozen prose (`statedIncompleteness`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `denominatorUnread`, `denominatorNotInThisTable`, `percentAboveHundred`, `sumWithheld`, `gapsAreNotCoverage` |
+| Profiler | `scripts/profile.mjs` | `profileTable(rows, {prose})` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`), describes the table's own SHAPE (`panel`, with its entity, its period, its per-period coverage and which rows are aggregates of the others), carries a stated incompleteness off the frozen prose (`statedIncompleteness`), proposes a class scale from each measure's own distribution (`classBreaks`), and names what it will not decide for the journalist: `reason`, `gaps`, `mixedUnits`, `denominator`, `denominatorUnread`, `denominatorNotInThisTable`, `percentAboveHundred`, `sumWithheld`, `gapsAreNotCoverage` |
 | Orchestrator | `scripts/freeze.mjs` | `freezeSource({storyDir, articlePath, dataPath})` — reads both source files once, profiles the data **with the article's own prose in hand**, writes the three frozen artifacts, refuses a second call |
 
 ## How it works (the shape)
@@ -38,6 +38,8 @@ each period carries, and which rows are aggregates of the other rows. See "The p
 2b. **Report what only the journalist can settle.** A column carries `reason` when it looked numeric and was refused, `gaps` when a sequence's own grain skips a step, `mixedUnits` when a sibling `unit` column says the range is not one measure, `denominator` when a population-shaped column sits in the same table, `denominatorUnread` when a sibling numeric column is NAMED IN A LANGUAGE THIS PROFILER DOES NOT READ, `percentAboveHundred` when a column whose own values carry `%` holds a share above 100, `sumWithheld` when a total was refused because the column is a period, `gapsAreNotCoverage` when a full range is not full coverage, and `denominatorNotInThisTable` when a panel's denominator can only be in another file — see below. None of them repairs anything.
 2c. **Carry a stated incompleteness off the prose.** `statedIncompleteness` — see "What this
 profiler cannot decide" below.
+2d. **Propose a class scale.** `classBreaks`, on every numeric column this profiler's own typing does
+not make a sequence — see "A class scale is proposed, never inherited" below.
 3. **Freeze**: `freezeSource` checks `source/article.md` doesn't already exist (refuses with `"already frozen"` if it does), then reads the article and CSV, runs the profiler, and writes all three files into `source/`. A read failure (missing file, permission denied, no `source/` directory to write into) surfaces its real error — it is never mislabelled as "already frozen" and never swallowed.
 
 ## A count is not a rate, and this profiler never divides
@@ -297,6 +299,41 @@ is **proposed**. The same test sweeps in Kosovo, Northern Cyprus and Akrotiri an
 places and not sums — which is exactly why `byStructure` is reported apart from `byArithmetic` and
 never called a decision. Where the code column carries no majority shape, `structure.answered` is
 `false` with a reason.
+
+## A class scale is proposed, never inherited
+
+Measured over the whole tree while running WHO's rabies register:
+`grep -rl "jenks\|quantileBreaks\|proposeBreaks\|naturalBreaks\|classIntervals"` returned nothing.
+`binIndexLowerInclusive` CONSUMES a set of breaks; no function anywhere produced one. So the default
+for a fresh choropleth was **the previous beat's breaks, in the previous beat's unit, silently** —
+`CO2_BREAKS = [2, 4, 6, 8, 10]`, tonnes of CO₂ per person, handed to a register that counts dead
+people. On WHO's 2024 rows those breaks put **52** countries in the first class and **27** in the
+last: a top class that is a bucket, on a six-class ramp.
+
+A count of PEOPLE is skewed by construction, and that is the ordinary case for this kind of file. So
+each numeric column carries a proposal derived from its own distribution:
+
+```js
+classBreaks: {
+  breaks: [1, 2, 4, 15, 75],
+  counts: [44, 8, 13, 12, 15, 9],
+  over: "the 101 row(s) this column carries at \"TimeDim\" = 2024, the latest period this table holds …",
+  says: "a PROPOSAL, never a decision: a reported zero is its own first class (44 of these rows report one …",
+}
+```
+
+1. **A reported zero is its own class.** It is a reading, not an absence, and the difference between
+   the two is the whole argument of a register story. Only where the column holds zeros.
+2. **The rest are quantiles of the positive values**, so every class carries a comparable number of
+   subjects rather than a comparable slice of the range — which is what an equal-interval scale
+   cannot do on a skew.
+3. **Every break is rounded up to a step a reader can hold** (1, 1.5, 2, 2.5, 3, 4, 5, 7.5 × 10^k).
+   A legend reading `12.7` is arithmetic showing its work.
+
+**On a panel the values are ONE period's**, because that is what a choropleth paints, and `over`
+says which — a scale computed across fifteen years for a map of one year is the silent version of the
+same defect. A distribution too thin to cut refuses (`breaks: null`) with the reason. It is a
+PROPOSAL: the classes mean what the journalist says they mean.
 
 ## What this profiler cannot decide, said where the journalist reads it
 

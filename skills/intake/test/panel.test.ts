@@ -641,3 +641,58 @@ describe("a stated incompleteness the sentence ties to no period", () => {
     expect(profile.statedIncompleteness.says).not.toContain("states no incompleteness");
   });
 });
+
+// =============================================================================================
+// ROUND NINE — NOTHING IN THIS TOOLCHAIN PROPOSED A CLASS BREAK.
+//
+// Measured over the whole tree while running WHO's rabies register:
+// `grep -rl "jenks\|quantileBreaks\|proposeBreaks\|naturalBreaks\|classIntervals"` returned
+// nothing. `binIndexLowerInclusive` CONSUMES breaks; no function produced them. What the documented
+// path handed a fresh beat was `CO2_BREAKS = [2, 4, 6, 8, 10]` — tonnes of CO2 per person, under a
+// docstring saying so — inherited by a register that counts dead people. On WHO's 2024 rows those
+// breaks put 52 countries in the first class and 27 in the last: a top class that is a bucket, on a
+// six-class ramp. A skewed count is the ORDINARY case for a register of people, and the chain
+// having no opinion about it is a gap, not a styling note.
+// =============================================================================================
+describe("a class scale proposed from the distribution, not inherited from the last beat", () => {
+  const WHO = "r9-map-web-reported-rabies-deaths";
+
+  it("should propose breaks from the column's own distribution", () => {
+    const { columns } = read(WHO);
+    const scale = columns.find((c) => c.name === "NumericValue").classBreaks;
+    expect(scale.breaks).toEqual([1, 2, 4, 15, 75]);
+    expect(scale.counts).toEqual([44, 8, 13, 12, 15, 9]);
+  });
+
+  it("should give a reported ZERO its own class, because a zero is a reading", () => {
+    const { columns } = read(WHO);
+    const scale = columns.find((c) => c.name === "NumericValue").classBreaks;
+    expect(scale.breaks[0]).toBe(1);
+    expect(scale.counts[0]).toBe(44);
+    expect(scale.says).toContain("zero");
+  });
+
+  it("should propose over ONE period of a panel, and say which", () => {
+    const { columns } = read(WHO);
+    const scale = columns.find((c) => c.name === "NumericValue").classBreaks;
+    expect(scale.over).toContain("TimeDim");
+    expect(scale.over).toContain("2024");
+  });
+
+  it("should never propose a class scale for the table's own period column", () => {
+    const { columns } = read(WHO);
+    expect(columns.find((c) => c.name === "TimeDim").classBreaks).toBeUndefined();
+  });
+
+  it("should refuse rather than invent a scale a distribution cannot carry", () => {
+    const { columns } = profileTable([
+      ["place", "deaths"],
+      ["A", "0"],
+      ["B", "0"],
+      ["C", "1"],
+    ]);
+    const scale = columns.find((c) => c.name === "deaths").classBreaks;
+    expect(scale.breaks).toBeNull();
+    expect(scale.says).toContain("too few");
+  });
+});
