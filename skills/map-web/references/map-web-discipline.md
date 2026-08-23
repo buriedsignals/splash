@@ -48,6 +48,63 @@ below, written after the owner looked at a real render and found the beat taller
 was on. The width still fills; what changed is that filling the width no longer buys an unbounded
 height with it.
 
+## A world camera wraps, and the marks wrap with it
+
+**Everything in the section above describes the layout this format shipped until 2026-08-23**, when
+the owner replaced it twice in two days. First: *the map must take all the available width, every
+time* — and the height is not an editorial choice either, so the graphic occupies the whole box its
+host gives it, on both axes, and the plate is scaled to COVER that box rather than fitted inside it
+(`scripts/delivery-frame.mjs` carries the whole argument, and the bake solves the frame from the
+measured range of box shapes the beat is delivered into). The `aspect-ratio` and the
+`width: min(100cqw, …)` above are the mechanism that was replaced; the reasoning under them — that a
+plate is never stretched to a shape it was not baked for — survives intact and is why the answer is
+cover rather than a stretch.
+
+Then, on the two beats a cover could not solve:
+
+> that is the normal behaviour of an interactive map — go ahead and repeat the map on the sides.
+
+**A camera that already spans a full turn of longitude has no world east or west of it.** One plate
+cannot cover a box wider than the world's own Mercator aspect, and filling that width by scaling
+could only be paid for out of LATITUDE — measured on `stories/real-owid-life-expectancy` at its
+widest box, 2.572:1 against a 1.472:1 world: 42.8% of the latitude range, which is Australia, New
+Zealand, southern Africa, most of South America and northern Canada and Russia. Latitude is the one
+axis that cannot be repeated. Longitude already is.
+
+**So the plate is drawn at exactly the box's HEIGHT and repeated east and west** — an odd number of
+copies, centred, so the middle one sits exactly where the single world used to
+(`worldCopiesFor`). Nothing is ever cropped off the top or the bottom. A box NARROWER than one world
+crops longitude instead, which is what a slippy map does on a phone and the only crop a wrapping
+plate can take; `renderMapWeb` prints the degrees a reader is left with at the narrowest measured
+box, and what falls outside is still in the accessible table, still on the keyboard path, and still
+reachable by panning the live map (which fits the whole world into a phone's canvas, so the two
+states genuinely differ there).
+
+**The repeat was never the defect. A repeat nobody can point at was.** Two days before the ruling
+this format was fixed for painting three worlds at planet extent, and what was actually wrong was
+that there was ONE SET OF HIT TARGETS over three painted worlds: a reader pointing at the second
+Africa got nothing, and nothing measured it. So the ruling comes with its price, and it is not
+negotiable:
+
+- **Every copy carries its own marks, its own hit targets and its own `title`** — the tooltip a
+  browser shows with the page's script absent entirely. A copy is built with `<use>` rather than a
+  second copy of the markup, because the world beat's map svg alone is 468 383 bytes and duplicating
+  it twice would deliver a 3.1 MB page; a `<use>` repaints an element already in the document at
+  about 45 bytes per mark per copy, and `document.elementFromPoint` inside a copy still returns the
+  `<use>` itself carrying its own `data-key`.
+- **The keyboard and the accessible table do NOT multiply.** A prefecture is reachable once, not once
+  per copy: a Tab order three times too long is a worse reader experience than a narrow map. Every
+  repeat is `aria-hidden="true"` with `tabindex="-1"` on everything inside it, and only the primary
+  world carries `data-detail` — which is the attribute this format's censuses count a mark by, so a
+  copy is the same mark seen twice rather than a second mark.
+- **Live there are no DOM copies at all.** MapLibre paints the world copies itself and hit-tests
+  every one of them through `queryRenderedFeatures`, so the repeats are hidden and the one remaining
+  overlay is re-projected into the live camera.
+- **It is counted, not promised.** `scripts/verify-wraps-the-world.mjs` opens the delivered page at
+  every width this format drives — including the owner's own 2990×1718 — and reports, per visible
+  copy, how many marks answer a pointer sent to their own position. It exits non-zero when a copy
+  answers for fewer marks than the world it is a copy of.
+
 ## Fit the window
 
 **A beat that does not fit the window is not finished.** Measured on the shipped render before this
