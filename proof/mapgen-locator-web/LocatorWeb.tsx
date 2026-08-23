@@ -162,7 +162,7 @@ export function labelPlacements(
     frame,
     measure,
   }: {
-    frame: { width: number; height: number };
+    frame: { width: number; height: number; left?: number; top?: number };
     measure: Measure;
   },
 ): Map<string, LabelPlacement> {
@@ -199,10 +199,16 @@ export function labelPlacements(
     });
     const stack = height / 2 + LABEL_GAP_FRAME;
     const candidates = [beside(preferred), beside(other), centred(-stack), centred(stack)];
+    // THE EDGES ARE THE PICTURE'S, NOT THE PLATE'S. Since 2026-08-23 the delivered box takes the
+    // whole container and the plate is drawn to COVER it, so the reader sees a BAND of the plate and
+    // a name that clears the plate's own edge can still be cut. `labelFrame` (delivery-frame.mjs,
+    // `labelSafeFrame`) carries the intersection of every band this beat is delivered into, with its
+    // `width`/`height` as the RIGHT and BOTTOM edges and `left`/`top` as the other two. A plate baked
+    // before that change has no offsets, and the edges are then 0 and the frame, as they were.
     const fits = (candidate: Omit<LabelPlacement, "clears">) =>
-      candidate.box.x >= 0 &&
+      candidate.box.x >= (frame.left ?? 0) &&
       candidate.box.x + candidate.box.width <= frame.width &&
-      candidate.box.y >= 0 &&
+      candidate.box.y >= (frame.top ?? 0) &&
       candidate.box.y + candidate.box.height <= frame.height &&
       !points.some(
         (mark) =>
@@ -235,6 +241,9 @@ export function LocatorWeb({
 }: {
   geometry: {
     frame: { width: number; height: number };
+    /** The band a label has to stay inside — see `labelSafeFrame`. Optional: a plate baked before
+     *  2026-08-23 has none, and the frame is then the box it was drawn against. */
+    labelFrame?: { width: number; height: number; left?: number; top?: number };
     points: (OrgRow & { px: number; py: number })[];
   };
   plate: string;
@@ -262,7 +271,8 @@ export function LocatorWeb({
   if (points.length < 1)
     throw new Error(`a locator needs at least one point, got ${points.length}`);
 
-  const placements = labelPlacements(points, { frame, measure });
+  // The band a label has to stay inside — see `fits` above and `delivery-frame.mjs`.
+  const placements = labelPlacements(points, { frame: geometry.labelFrame ?? frame, measure });
   // The SSR'd label set: the deterministic priority declutter over the placements that clear the
   // plate and every other organisation's marker, computed at the plate's own 1:1 size. It is the
   // answer a reader with no JavaScript keeps, and the starting point the live declutter in

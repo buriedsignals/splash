@@ -61,6 +61,15 @@ const BEAT = {
  *  to the baked one — read from the bake rather than typed twice. */
 const WATER_FILL = "#aac9e0";
 const PLATE_SIZE = 1000;
+// THE BOX RANGE THIS BEAT IS DELIVERED INTO, measured on its own rendered page at the three widths
+// this format drives — the second input the bake needs since 2026-08-23 (`delivery-frame.mjs`). It
+// is a property of THIS beat's furniture, not of the format, and it is read back with
+// `bun skills/map-web/scripts/verify-fills-the-box.mjs <page.html>`, which refuses a page whose real
+// range has escaped the range its plate was baked for.
+const PLATE_BOX_ASPECTS = "1.246,2.643";
+// The room this beat's own labels need inside the crop, as a fraction of the box on each side —
+// measured the same way, by the runs the page actually cut. `0,0` is a beat whose every run is whole.
+const PLATE_CLEARANCE = "0,0";
 // FROZEN BESIDE THE BEAT, for the same reason the csv is: a basemap living in `/tmp` cannot be
 // committed, so the delivered html could be neither reproduced nor audited — and MapTiler restyles,
 // so a re-bake months later is a different picture under the same circles. `ensurePlate` bakes only
@@ -286,7 +295,7 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame })}
+${buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame, cannotCover: props.geometry.cannotCover ?? null })}
 </style>
 </head>
 <body>
@@ -306,7 +315,13 @@ ${liveBlock}
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
-  return { outPath };
+  const limit = props.geometry?.cannotCover
+    ? `this beat does not fill its container: ${props.geometry.cannotCover.why}. ` +
+      `The box keeps the plate's own ${props.geometry.frame.width}x${props.geometry.frame.height} shape and is centred; ` +
+      `filling the width would crop the study set instead. See delivery-frame.mjs, "cannotCover".`
+    : null;
+  if (limit) console.log(limit);
+  return { outPath, limit };
 }
 
 /** Strips the `export` keyword from each top-level declaration, so the module can also sit as a
@@ -350,7 +365,7 @@ function assertDistinctSlugs(groups) {
  * string, once turned `&` into five literal characters that matched no element, and one filter left
  * a reader an empty map with nothing red anywhere.
  */
-function buildCss({ ground, accent, ink, muted, groups, frame }) {
+function buildCss({ ground, accent, ink, muted, groups, frame, cannotCover = null }) {
   const aspect = frame.width / frame.height;
   const filterRules = groups
     .map((g) => {
@@ -469,25 +484,64 @@ body {
    size' is what lets the viewport bound itself by the stage's HEIGHT as well as its width — CSS has
    no other way to say "as wide as you like, never taller than the room left". */
 .mw-stage { flex: 1 1 auto; container-type: size; min-height: 180px; }
-/* The viewport: the bake's own aspect, exactly, at every size — bounded by the stage's width AND its
-   height, whichever binds first. A plate stretched to fill a shape it was not baked for is a lie
-   about distance and shape, so it is not one of the outcomes here; a smaller, correct map is. The
-   plain 'width: 100%' above the 'min()' is the fallback for a browser without container query
-   units. */
+/* THE GRAPHIC TAKES THE WHOLE BOX, ON BOTH AXES. The owner, looking at a real delivered page in a
+   2990px window (2026-08-23): *the map must take all the available width, every time* — and then,
+   on the correction that followed, *the height is not an editorial choice either; like the scrolly,
+   it must take all the space available.* One rule, both axes: the graphic occupies the whole box
+   its host gives it, and the host decides that box.
+
+   WHAT THIS REPLACES, AND WHY THE OLD RULE WAS NOT ENOUGH. The viewport used to be
+   'width: min(100cqw, calc(100cqh * aspect))' with an 'aspect-ratio' — the PLATE's shape, sized
+   inside the stage and centred. Every word of the reasoning under that was sound: a plate is never
+   stretched to a shape it was not baked for (geo-discipline.md — that is a lie about distance and
+   shape), so a plate squarer than its container is smaller by construction and centring is how a
+   smaller graphic sits in the room it was given. The frame guard was even re-measured in that
+   light, from an AREA against the window to the fraction of the axis the box is BOUND on, because
+   the area punished a correct bake for the shape of its own camera. And it is exactly why the page
+   the owner was looking at passed every check: Japan's plate is 1000x1089, the box is bound on
+   height, it fills that height (the binding reading was 62.9%) — and the box covered 33.2% of the
+   container's width, 520.1px of 1568px at 1600x900. The question the guard was answering was "how
+   well does this box fit its plate"; the question that matters to a reader is "how much of the room
+   it was given did the graphic take".
+
+   SO THE BOX IS THE STAGE, AND THE PLATE IS WHAT ADAPTS. Nothing here is stretched and no page
+   ground is allowed inside the frame: the two layers that carry the plate's own coordinate system
+   are sized to COVER this box — scaled uniformly until they fill it on both axes, centred, with the
+   overflow clipped — so the spare room shows MORE BASEMAP, ocean and the neighbouring coast, which
+   is what a newsroom map looks like. That is the same answer 'scrolly''s map track already gives
+   ("COVER, not contain … A contain fit would letterbox a near-square European plate inside a wide
+   frame and leave a third of the picture as bare ground",
+   proof/mapscrolly-one-map-europe-carbon/map-drive.mjs) — reached in CSS rather than in a scroll
+   transform, because a map-web page has to be right with JavaScript off.
+
+   The BAKE is what makes the crop safe: 'delivery-frame.mjs' solves the frame from the study set
+   AND from the measured range of box shapes this beat is delivered into, so every crop the layout
+   can ask for eats basemap and never the subject. 'verify-fills-the-box.mjs' reads that back off
+   the rendered page. */
 .mw-viewport {
   position: relative;
   width: 100%;
-  width: min(100cqw, calc(100cqh * ${aspect}));
-  max-width: 100%;
-  /* Flush left, not centred: when the window's HEIGHT is what bounds the map, the leftover room is
-     horizontal, and a centred map floats away from the title, the chips and the legend, which are
-     all flush left. */
-  margin-inline: 0 auto;
-  /* 'visible', not 'hidden'. The plate and its circles are already clipped to the frame by the SVG's
-     own clipPath, so the only thing this would ever clip is the subject's own label — a word, which
-     is data. Letting it spill into the page's side gutter keeps the word whole. */
-  overflow: visible;
+  height: 100%;
+  /* The container the two plate layers below measure themselves against. 'size', not 'inline-size':
+     the cover arithmetic needs BOTH axes of this box, which is the whole difference between filling
+     a width and filling a box. */
+  container-type: size;
+  /* A CROPPING BOX MUST CLIP. This was 'visible' so that a point LABEL — a name, which is data —
+     could spill into the page's own side gutter rather than lose its last letters at 375px
+     ('Stockholm' and 'Warsaw' each lost 3-4px, measured). That trade is gone with the box that made
+     it: the plate now extends PAST this box on the axis with room to spare, so anything visible
+     outside the frame would be un-cropped basemap, not a rescued word. The labels are drawn at
+     their marks and the marks sit inside the study set, which the bake keeps clear of the crop on
+     every box shape this beat is delivered into — so the room a label needs is basemap, not gutter. */
+  overflow: hidden;
   border: 1px solid var(--muted);
+  /* NEUTRALISED, and '!important' is right here for the reason it was right when this rule EMITTED
+     an aspect-ratio: every map-web component writes 'aspectRatio' as an INLINE style on this same
+     element, and an inline style outranks any ordinary stylesheet rule. With both width and height
+     definite the property has no effect anyway — but "has no effect anyway" is exactly the kind of
+     reasoning that shipped a 451x2px map in round six, so the box is told its shape rather than
+     left to inherit one from a beat's own file. */
+  aspect-ratio: auto !important;
 }
 /* The two map layers occupy the SAME box, the live one underneath. It is laid out from the first
    frame rather than revealed later, because a container with no size is a map with no size:
@@ -495,6 +549,27 @@ body {
    nothing ever paints into. Invisible-but-laid-out, then, and the swap is one flip of the
    fallback's own hidden attribute. */
 .mw-fallback, .mw-live-map, .mw-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* THE COVER, AND IT IS THE WHOLE OF THE NEW RULE'S MECHANISM. The fallback plate and the overlay
+   that carries this beat's marks and labels are ONE coordinate system — every mark is placed as a
+   percentage of the plate — so they are sized together, to the same box, or the marks come off the
+   map. That box is the smallest rectangle of the PLATE's own aspect that covers the viewport:
+   'max(100cqw, 100cqh * aspect)' by 'max(100cqh, 100cqw / aspect)', centred. Scaling is uniform on
+   both axes at every size, so nothing is stretched (geo-discipline.md); the viewport's
+   'overflow: hidden' takes the overflow; and because the bake gave the plate real basemap around
+   the study set, what is clipped is ocean.
+   The live map is NOT in this box: a live canvas has no plate to keep registered with, it IS the
+   container, so it stays at 'inset: 0' and fills the viewport directly.
+   The plain 'width/height: 100%' left standing above is the fallback for a browser with no
+   container query units — it contains rather than covers, which shows ground inside the frame but
+   never a broken or stretched map. */
+.mw-fallback, .mw-overlay {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100cqw, calc(100cqh * ${aspect}));
+  height: max(100cqh, calc(100cqw / ${aspect}));
+}
 .mw-live-map { z-index: 0; }
 .mw-fallback { z-index: 1; background: var(--ground); }
 .mw-fallback[hidden] { display: none; }
@@ -508,12 +583,52 @@ body {
    button under a 90px disc could never give. The buttons stay in the DOM, still Tab-reachable and
    still carrying their own aria-label — only their pointer-events go. */
 html.mw-live .mw-overlay .pt { pointer-events: none; }
-/* B5.1, and the conflict that dissolves with the ruling. The viewport keeps the PLATE's aspect,
-   because scaling a raster non-uniformly is a lie about distance and shape. A LIVE map has no plate
-   aspect to preserve — the canvas IS the container and the camera fills it — so live, the map takes
-   the whole stage. The fallback keeps its aspect-ratio, unchanged, because it is still a plate. */
-html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
-.maplibregl-canvas-container canvas { outline: none; }
+/* B5.1. The viewport already takes the whole stage in both states; what changes live is that there
+   is no plate to stay registered with. A live canvas IS the container and its camera fills it, so
+   the overlay drops out of the cover box and back onto the viewport — 'live-map.mjs' re-projects
+   every mark into the live camera, and a mark left in plate coordinates over a live map points at
+   the wrong country. The fallback goes with it and is then hidden. */
+html.mw-live .mw-fallback,
+html.mw-live .mw-overlay {
+  left: 0;
+  top: 0;
+  transform: none;
+  width: 100%;
+  height: 100%;
+}
+${
+  cannotCover
+    ? `/* THE ONE STUDY SET THE RULE CANNOT HOLD FOR, laid out the old way ON PURPOSE and said out
+   loud rather than cropped in silence. A camera that already spans a full turn of longitude has no
+   more world to its east or west (delivery-frame.mjs, 'cannotCover'), so filling a container WIDER
+   than the world's own Mercator aspect can only be paid for out of latitude: measured on
+   real-owid-life-expectancy at its widest box, 2.572:1 against a 1.472:1 world, filling the width
+   costs 42.8% of the latitude range — everything south of 22.7°S and north of 71.8°N, which is
+   Australia, New Zealand, southern Africa, most of South America and northern Canada and Russia.
+   Full width, the whole subject, one window tall: this camera can have two of the three, and the
+   two it keeps are the subject and the window. 'renderMapWeb' prints the reason, and
+   'verify-fills-the-box.mjs' reports the shortfall as a stated exception rather than passing it.
+   'container-type: normal' is what lets '100cqh' below resolve against .mw-stage again instead of
+   self-referencing this box. */
+.mw-viewport {
+  container-type: normal;
+  width: min(100%, calc(100cqh * ${aspect}));
+  height: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  aspect-ratio: ${frame.width} / ${frame.height} !important;
+}
+.mw-fallback, .mw-overlay {
+  inset: 0;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 100%;
+  height: 100%;
+}
+`
+    : ""
+}.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* Furniture, in HTML: font-size is a fixed CSS number on every rule below, so it never tracks the
    container's width the way an SVG <text> inside a scaling viewBox would. */
@@ -622,7 +737,7 @@ async function ensurePlate(plateDir) {
   await mkdir(plateDir, { recursive: true });
   const result = spawnSync(
     "bun",
-    [join(HERE, "bake.mjs"), "--size", String(PLATE_SIZE), "--out", plateDir],
+    [join(HERE, "bake.mjs"), "--size", String(PLATE_SIZE), "--box-aspects", PLATE_BOX_ASPECTS, "--clearance", PLATE_CLEARANCE, "--out", plateDir],
     { cwd: resolve(HERE, "../.."), stdio: "inherit" },
   );
   if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status}`);

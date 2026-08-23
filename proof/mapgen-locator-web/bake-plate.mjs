@@ -36,6 +36,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { orgsFromCsv } from "./geo-locator.ts";
+import { coversTo, deliveryFrame, frameCoversTheBoxRange, labelSafeFrame } from "./delivery-frame.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -62,6 +63,24 @@ const flag = (name, fallback) => {
 // 420 — this beat's own plate resolution (see the header note), not the 496 the web seed bakes for
 // its own, different frame.
 const size = Number(flag("--size", "420"));
+// THE FRAME IS THE SHAPE OF THE BOX, NOT OF THE CAMERA (2026-08-23). The delivered page now takes
+// the whole container on both axes and fills it by COVER, so the plate has to carry enough real
+// basemap around the study set that every crop the layout can ask for lands on ocean. See
+// `delivery-frame.mjs` for the derivation, the argument it overrules, and the one camera it cannot
+// be solved for. `--box-aspects` is measured off the rendered page with `verify-fills-the-box.mjs`;
+// `--clearance` is the room this beat's own labels need, measured the same way.
+const BOX_ASPECTS =
+  flag("--box-aspects", null) ??
+  (() => {
+    throw new Error(
+      "--box-aspects <narrowest>,<widest> is required: it is the range of shapes this beat's own " +
+        ".mw-stage takes on the rendered page, measured with verify-fills-the-box.mjs. A plate " +
+        "baked without it is a plate baked for a box nobody looked at.",
+    );
+  })();
+const [clearanceX = 0, clearanceY = 0] = String(flag("--clearance", "0,0")).split(",").map(Number);
+const DELIVERY = deliveryFrame(BEAT.bounds, size, BOX_ASPECTS, { x: clearanceX, y: clearanceY });
+const frameHeight = DELIVERY.frame.height;
 const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "geneva-orgs.csv"));
 const settleMs = Number(flag("--settle", "15000"));
@@ -179,19 +198,19 @@ const browser = await puppeteer.launch({
   args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--hide-scrollbars"],
 });
 const page = await browser.newPage();
-await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
+await page.setViewport({ width: size, height: frameHeight, deviceScaleFactor: 2 });
 await page.setContent(
   `<!doctype html><html><head>
 <link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
 <script src="${MAPLIBRE}"></script>
-<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
+<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${frameHeight}px}</style>
 </head><body><div id="map"></div></body></html>`,
   { waitUntil: "load" },
 );
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs, width, height }) => {
+  async ({ key, style, padding, bounds, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -200,7 +219,7 @@ const gate = await page.evaluate(
       fadeDuration: 0,
       preserveDrawingBuffer: true,
       bounds,
-      fitBoundsOptions: { padding: 0, animate: false },
+      fitBoundsOptions: { padding, animate: false },
     });
     window.__map = map;
     await new Promise((resolve) => map.once("style.load", resolve));
@@ -238,17 +257,18 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  { key, style: BEAT.style, padding: DELIVERY.padding, bounds: BEAT.bounds, settleMs, width: size, height: frameHeight },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, size);
 assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
+frameCoversTheBoxRange({ width: size, height: frameHeight }, DELIVERY.studySet, DELIVERY.boxAspects, DELIVERY.cannotCover);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
-await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: size } });
+await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: frameHeight } });
 
 const projected = await page.evaluate((points) => {
   const map = window.__map;
@@ -266,10 +286,24 @@ const points = orgs.map((o) => {
   return { ...o, px, py };
 });
 
-const frame = { width: size, height: size };
+const frame = { width: size, height: frameHeight };
 const offFrame = points.filter((p) => p.px < 0 || p.px > frame.width || p.py < 0 || p.py > frame.height);
 
 const geometry = {
+  // What this plate was baked for, so the delivered page can be checked against it rather than
+  // trusted: where the camera's bounds landed inside the frame, the box range asked for, the
+  // range the frame actually reaches, and the named impossibility when there is one.
+  studySet: DELIVERY.studySet,
+  boxAspects: DELIVERY.boxAspects,
+  clearance: DELIVERY.clearance,
+  cannotCover: DELIVERY.cannotCover,
+  coversTo: coversTo({ width: size, height: frameHeight }, DELIVERY.studySet),
+  // The box a LABEL has to stay inside — the intersection of every band the delivery can show,
+  // never the plate. A plate the cover crops is a plate whose own edge is not the picture's edge.
+  // A `cannotCover` plate is contained rather than cropped, so its label box IS its frame.
+  labelFrame: DELIVERY.cannotCover
+    ? { width: size, height: frameHeight, left: 0, top: 0, safeWidth: size, safeHeight: frameHeight }
+    : labelSafeFrame({ width: size, height: frameHeight }, DELIVERY.boxAspects),
   frame,
   bounds: BEAT.bounds,
   style: BEAT.style,

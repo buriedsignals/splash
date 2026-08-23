@@ -101,6 +101,9 @@ export function QuakeSymbolWeb({
 }: {
   geometry: {
     frame: { width: number; height: number };
+    /** The band a label has to stay inside — see `labelSafeFrame`. Optional: a plate baked before
+     *  2026-08-23 has none, and the frame is then the box it was drawn against. */
+    labelFrame?: { width: number; height: number; safeWidth?: number; safeHeight?: number };
     points: ProjectedQuake[];
   };
   plate: string;
@@ -118,6 +121,16 @@ export function QuakeSymbolWeb({
   muted: string;
 }) {
   const { frame, points } = geometry;
+  // THE BOX A LABEL IS FLIPPED AGAINST IS THE PICTURE'S EDGE, NOT THE PLATE'S. Under the 2026-08-23
+  // rule the delivered box takes the whole container and the plate is drawn to COVER it, so the
+  // reader sees a BAND of the plate and a run that clears the plate's own edge by 300px of ocean can
+  // still be cut. `labelFrame` is the intersection of every band this beat is delivered into
+  // (`delivery-frame.mjs`, `labelSafeFrame`), recorded by the bake; the flip margin scales with the
+  // SAFE width for the same reason it used to scale with the frame's. An older plate with no
+  // `labelFrame` falls back to the frame, which is what it was drawn against.
+  const labelFrame = geometry.labelFrame ?? frame;
+  const flipMargin = (labelFrame.safeWidth ?? labelFrame.width) * 0.18;
+
   if (points.length < 2)
     throw new Error(
       `a symbol map needs at least two points, got ${points.length}`,
@@ -140,8 +153,8 @@ export function QuakeSymbolWeb({
   const { side, dy } = labelPlacement(
     subject.px,
     subject.py,
-    frame,
-    frame.width * 0.18,
+    labelFrame,
+    flipMargin,
   );
   const gapPct = ((subjectRadius + frame.width * 0.012) / frame.width) * 100;
   const subjectX = (subject.px / frame.width) * 100;
