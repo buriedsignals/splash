@@ -34,6 +34,7 @@ import {
 import { createHash, randomUUID } from "node:crypto";
 import { lstat, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { resolveEnvKey } from "./env-keys.mjs";
 
 const API = "https://api.cloudflare.com/client/v4";
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
@@ -308,8 +309,12 @@ export function contentTypeFor(fileName) {
 // round trip on every call. A present-but-wrong token still enables the form; it fails loudly the
 // moment `materialise` actually tries to use it, never silently.
 export function resolveCloudflareCredentials(env) {
-  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = env.CLOUDFLARE_API_TOKEN;
+  // Both names go through the skill's own alias table rather than being read off `env` by hand.
+  // Neither has an alias today; what this buys is that the day one is added, the presence check and
+  // the deploy that follows it read the same names — the split that made preflight report a
+  // capability open while production refused "no token" one phase later.
+  const accountId = resolveEnvKey(env, "CLOUDFLARE_ACCOUNT_ID");
+  const apiToken = resolveEnvKey(env, "CLOUDFLARE_API_TOKEN");
   if (!accountId || !apiToken) return null;
   return { accountId, apiToken };
 }

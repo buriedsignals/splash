@@ -3,6 +3,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, relative } from "node:path";
 import { materialise } from "./deliver.mjs";
+import { resolveEnvKey } from "./env-keys.mjs";
 
 const MAX_REQUEST_BYTES = 64 * 1024;
 function exactKeys(value, expected) {
@@ -32,7 +33,7 @@ async function readRequest() {
 }
 
 function keyState(files) {
-  const key = process.env.MAPTILER_DELIVERY_KEY ?? "";
+  const key = resolveEnvKey(process.env, "MAPTILER_DELIVERY_KEY");
   if (!key) return "unkeyed";
   return files.some((body) => body.includes(key)) ? "restricted" : "none";
 }
@@ -55,7 +56,7 @@ export async function runSealedDelivery(
     const written = await materialiseFn({
       ...request,
       form: "owned-file",
-      env: { MAPTILER_DELIVERY_KEY: process.env.MAPTILER_DELIVERY_KEY ?? "" },
+      env: { MAPTILER_DELIVERY_KEY: resolveEnvKey(process.env, "MAPTILER_DELIVERY_KEY") },
     });
     const bodies = await Promise.all(
       written.map(async (path) => {
@@ -93,7 +94,7 @@ export async function runSealedDelivery(
       handover: request.handover,
       env: {
         CLOUDFLARE_ACCOUNT_ID: request.accountId,
-        CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ?? "",
+        CLOUDFLARE_API_TOKEN: resolveEnvKey(process.env, "CLOUDFLARE_API_TOKEN"),
       },
       fetchFn,
     });

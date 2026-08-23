@@ -18,6 +18,7 @@ import {
   resolveCloudflareCredentials,
 } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
+import { resolveEnvKey } from "./env-keys.mjs";
 import { ALT_TEXT_FILE, formatHandover } from "./format-handover.mjs";
 import {
   FORMAT_OFFER_RECEIPT,
@@ -484,7 +485,13 @@ export function substituteKeys(html, env = process.env) {
   // has nothing here to protect.
   if (!carriesMapKey(html)) return html;
 
-  const key = env.MAPTILER_DELIVERY_KEY || env.MAPTILER_KEY;
+  // THROUGH THE ALIAS TABLE, NOT A TWO-NAME `||`. The order is ruling R1b's and is unchanged — the
+  // restricted key first, the development key second — but each name is now resolved rather than
+  // read. Measured on this machine on 2026-08-23: the root `.env` held the MapTiler key only under
+  // the engine's own `REMOTION_MAPTILER_KEY`/`VITE_MAPTILER_KEY`, so the hand-written fallback
+  // substituted nothing and every delivered map shipped its placeholder and a dead tile layer
+  // against a working, present key.
+  const key = resolveEnvKey(env, "MAPTILER_DELIVERY_KEY") || resolveEnvKey(env, "MAPTILER_KEY");
   if (!key) return html;
   return html.split(MAP_KEY_PLACEHOLDER).join(key);
 }
@@ -500,8 +507,11 @@ export const LIVE_TILE_STATES = ["none", "restricted", "development", "unkeyed"]
 
 export function mapKeyState(html, env = process.env) {
   if (!carriesMapKey(html)) return "none";
-  if (env.MAPTILER_DELIVERY_KEY) return "restricted";
-  if (env.MAPTILER_KEY) return "development";
+  // The same resolution `substituteKeys` uses, and it has to be the same one: a state that said
+  // "unkeyed" while the substitution found a key would be a hand-over describing a different file
+  // from the one the newsroom receives.
+  if (resolveEnvKey(env, "MAPTILER_DELIVERY_KEY")) return "restricted";
+  if (resolveEnvKey(env, "MAPTILER_KEY")) return "development";
   return "unkeyed";
 }
 
