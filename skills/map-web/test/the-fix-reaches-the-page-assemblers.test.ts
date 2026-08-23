@@ -106,6 +106,116 @@ function pageAssemblers(): string[] {
   return found.sort();
 }
 
+/** Just past the `)` closing the parameter list that starts at or after `from`. */
+function paramsEnd(text: string, from: number): number {
+  let i = text.indexOf("(", from);
+  if (i < 0) return -1;
+  let depth = 0;
+  for (; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\\") {
+      i++;
+      continue;
+    }
+    if (c === "(") depth++;
+    else if (c === ")") {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+/** Just past the `}` closing the block that starts at or after `from`, brace-matched with strings,
+ *  template literals (and their `${…}` holes), comments and regex literals all tracked.
+ *
+ *  IT IS NOT "THE FIRST `\n}\n`", and the difference is not cosmetic: `worldTilingCss` RETURNS a
+ *  stylesheet, and a stylesheet is full of lines that are exactly `}`. Measured while writing this
+ *  file — the cheap reading stopped 4 001 bytes early, at the closing brace of the function's own
+ *  destructured parameter, so the "byte-identical" comparison below covered a 951-byte prefix of a
+ *  4 952-byte function and every line of the tiling CSS was outside it. A comparison that silently
+ *  covers a fifth of what it names is the shape of defect this whole file is about. */
+function blockEnd(text: string, from: number): number {
+  let i = text.indexOf("{", from);
+  if (i < 0) return -1;
+  const stack: string[] = [];
+  let depth = 0;
+  for (; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\\") {
+      i++;
+      continue;
+    }
+    const mode = stack[stack.length - 1];
+    if (mode === "'" || mode === '"') {
+      if (c === mode) stack.pop();
+      continue;
+    }
+    if (mode === "`") {
+      if (c === "`") stack.pop();
+      else if (c === "$" && text[i + 1] === "{") {
+        stack.push("${");
+        i++;
+      }
+      continue;
+    }
+    if (mode === "//") {
+      if (c === "\n") stack.pop();
+      continue;
+    }
+    if (mode === "/*") {
+      if (c === "*" && text[i + 1] === "/") {
+        stack.pop();
+        i++;
+      }
+      continue;
+    }
+    if (mode === "/") {
+      if (c === "[") stack.push("[");
+      else if (c === "/") stack.pop();
+      continue;
+    }
+    if (mode === "[") {
+      if (c === "]") stack.pop();
+      continue;
+    }
+    if (c === "'" || c === '"' || c === "`") {
+      stack.push(c);
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "/") {
+      stack.push("//");
+      i++;
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      stack.push("/*");
+      i++;
+      continue;
+    }
+    if (c === "/") {
+      const before = text.slice(0, i).trimEnd().slice(-1);
+      if (before === "" || "=([{,;:!&|?+-*%~^<>".includes(before)) {
+        stack.push("/");
+        continue;
+      }
+    }
+    if (c === "{") {
+      depth++;
+      continue;
+    }
+    if (c === "}") {
+      if (mode === "${") {
+        stack.pop();
+        continue;
+      }
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
 /** A function's own doc comment and body, as written — the same reading
  *  `splash/test/guard-copies-parity.test.ts` compares skill copies with, and the doc comment is
  *  included for the same reason: it carries the defect that earned the rule, and a copy that kept
@@ -115,16 +225,40 @@ function declaration(source: string, name: string): string | null {
     new RegExp(`^(?:export )?(?:async )?function ${name}\\(`, "m"),
   );
   if (at < 0) return null;
+  const end = blockEnd(source, paramsEnd(source, at));
+  if (end < 0) return null;
   const comment = source.lastIndexOf("/**", at);
   const between =
     comment < 0
       ? "no comment"
       : source.slice(source.indexOf("*/", comment) + 2, at);
-  const end = source.indexOf("\n}\n", at);
-  if (end < 0) return null;
   return comment >= 0 && between.trim() === ""
-    ? source.slice(comment, end + 2)
-    : source.slice(at, end + 2);
+    ? source.slice(comment, end)
+    : source.slice(at, end);
+}
+
+/** THE MODULE-LEVEL CONSTANTS A COMPARED SPAN DECIDES WITH, appended to it — the same reading, and
+ *  for the same reason, as `guard-copies-parity.test.ts`'s own `constantsBehind`. `repeatWorlds`
+ *  reads `FALLBACK_LAYER` and `OVERLAY_LAYER`, the two regexes that say WHICH layers repeat, and
+ *  they live outside every function that uses them: a copy whose `FALLBACK_LAYER` had drifted would
+ *  repeat the wrong element while the function bodies stayed byte-identical. */
+function constantsBehind(source: string, span: string): string {
+  const found: string[] = [];
+  for (const token of new Set(span.match(/\b[A-Z][A-Z0-9_]{2,}\b/g) ?? [])) {
+    const declared = new RegExp(`^const ${token} = .*;$`, "m").exec(source);
+    if (declared) found.push(declared[0]);
+  }
+  return found.sort().join("\n");
+}
+
+/** What this file compares, copy against copy: the declaration and the constants it decides with. */
+function comparable(source: string, name: string): string | null {
+  const span = declaration(source, name);
+  if (span === null) return null;
+  const constants = constantsBehind(source, span);
+  return constants
+    ? `${span}\n// constants it decides with:\n${constants}`
+    : span;
 }
 
 /** Every function `source` declares, by name. */
@@ -160,11 +294,15 @@ function capabilityClosure(source: string): string[] {
     const name = queue.shift() as string;
     if (closure.has(name)) continue;
     closure.add(name);
+    // EVERY MENTION IN THE CODE, not every call. `repeatWorlds` hands `useCopyOf` to `repeatLayer`
+    // as a value — `repeatLayer(withIds, FALLBACK_LAYER, copies, useCopyOf)` — and a walk that only
+    // followed `name(` left the plate-copying half of the capability out of the set entirely. It was
+    // caught by RUNNING the copies (`useCopyOf is not defined`), which is the argument for the drive
+    // below over any amount of static reading. The prose is stripped first, so a doc comment that
+    // merely names a neighbour does not drag it in.
     const code = codeOf(declaration(source, name) ?? "");
-    for (const call of new Set(
-      [...code.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]),
-    ))
-      if (declared.has(call) && !closure.has(call)) queue.push(call);
+    for (const token of new Set(code.match(/\b[A-Za-z_$][\w$]*\b/g) ?? []))
+      if (declared.has(token) && !closure.has(token)) queue.push(token);
   }
   return [...closure].sort();
 }
@@ -233,10 +371,10 @@ describe("every file in the tree that assembles a map-web page", () => {
 
       it("carries them byte-identically with the skill's own renderer", () => {
         for (const name of CLOSURE) {
-          const mine = declaration(source, name);
+          const mine = comparable(source, name);
           if (mine === null) continue; // already reported by the assertion above
           expect(`${shortName(file)} :: ${name}\n${mine}`).toBe(
-            `${shortName(file)} :: ${name}\n${declaration(skillSource, name)}`,
+            `${shortName(file)} :: ${name}\n${comparable(skillSource, name)}`,
           );
         }
       });
@@ -253,8 +391,239 @@ describe("every file in the tree that assembles a map-web page", () => {
           ).toBe(`${shortName(file)} calls ${name}: true`);
         }
       });
+
+      it("threads the copy count's own input into the props it hands the painter", () => {
+        // THE ONE LINE THE PAINTER NEEDS AND THE PARITY CHECK CANNOT SEE. `requireBoxAspects` reads
+        // `props.geometry.boxAspects`; a runner that builds `props.geometry` as a hand-typed field
+        // list can carry every function of this capability, byte for byte, and still throw the first
+        // time a world camera reaches it — which is what happened to the rabies beat on 2026-08-23,
+        // with advice ("re-bake it") that spends a MapTiler key and changes nothing, because the bake
+        // had already written the field. The two fields are one derivation: a hand-typed
+        // `props.geometry` that names `cannotCover` must name `boxAspects` too. A runner that hands
+        // the whole loaded plate geometry over (`geometry,` / `{ ...geometry, points }`) carries both
+        // by construction and is not asked.
+        for (const at of [...source.matchAll(/\bgeometry:\s*\{/g)]) {
+          const literal = source.slice(
+            at.index ?? 0,
+            blockEnd(source, (at.index ?? 0) + "geometry:".length),
+          );
+          if (!literal.includes("cannotCover")) continue;
+          expect(
+            `${shortName(file)}: a typed props.geometry names cannotCover and boxAspects: ${literal.includes("boxAspects")}`,
+          ).toBe(
+            `${shortName(file)}: a typed props.geometry names cannotCover and boxAspects: true`,
+          );
+        }
+      });
     });
   }
+});
+
+// ── EXERCISING EVERY COPY, BECAUSE THE BEATS CANNOT ──────────────────────────────────────────────
+//
+// The wrap ruling was verified on the two beats that had a full-turn camera. It was then propagated
+// to six more whose cameras span 59°, 66°, 0.1°, 83°, 18° and 34° — so `worldCopies` is 1 in all six
+// and the code path CANNOT EXECUTE on any of them. Byte-identity says the copies are the same text;
+// it does not say the text works, and the propagation commit's own message said out loud that every
+// stylesheet was unchanged. That is a capability certified by a population incapable of exercising
+// it, and it is the same shape as a requirement that cannot fire.
+//
+// So each copy is RUN, on a world-shaped fixture, out of its own file's bytes: the closure's
+// declarations and the constants behind them are lifted and evaluated on their own, with no import
+// and no beat. Every copy therefore has evidence of its own, whatever camera its beat happens to
+// have — and the fixture is deliberately the awkward case the format actually ships (a choropleth
+// whose pointer target is `.pt-small`, marks that answer by their painted shape, one label).
+
+/** A two-layer page in the shape `repeatWorlds` requires: the baked plate under `#mw-fallback`, this
+ *  beat's marks under `.mw-overlay`, one mark carrying every channel the ruling talks about — a
+ *  `data-key` to answer with, a `data-detail` the censuses count it by, a `title` for the reader with
+ *  no JavaScript, an `aria-label` for the keyboard. */
+const WORLD_FIXTURE_HTML =
+  '<div class="map-web-page"><div class="mw-stage"><div class="mw-viewport">' +
+  '<div id="mw-fallback" class="mw-fallback"><svg class="map" viewBox="0 0 1200 815">' +
+  '<image href="data:image/png;base64,AA"/>' +
+  '<path class="region pt-small" data-key="NGA" d="M0 0"><title>Nigeria — 54.5</title></path>' +
+  "</svg></div>" +
+  '<div class="mw-overlay">' +
+  '<button class="pt-small" data-key="NGA" data-detail="Nigeria — 54.5" aria-label="Nigeria" title="Nigeria — 54.5"></button>' +
+  '<span class="point-label">Nigeria</span>' +
+  "</div></div></div></div>";
+
+/** The stylesheet a copy reads its own answer out of. `.pt-small` is pointer-active and `.pt` is
+ *  active only under `html.mw-live`, which is the discrimination `pointerActiveOverlayClasses` was
+ *  written for — a copy that ignored the live qualifier would carry the wrong marks. */
+const WORLD_FIXTURE_CSS =
+  ".mw-overlay { pointer-events: none; }\n" +
+  ".mw-overlay .pt-small { pointer-events: auto; }\n" +
+  "html.mw-live .mw-overlay .pt { pointer-events: auto; }";
+
+type WrapApi = {
+  repeatWorlds: (html: string, copies: number, css: string) => string;
+  worldTilingCss: (a: {
+    frame: { width: number; height: number };
+    worldCopies: number;
+  }) => string;
+  requireBoxAspects: (geometry: unknown) => unknown;
+  pointerActiveOverlayClasses: (css: string) => Set<string>;
+};
+
+/** THIS FILE'S OWN COPY OF THE CAPABILITY, EVALUATED. Its declarations and the constants they decide
+ *  with are lifted out and run as a standalone script — no `import`, so a renderer's module-level
+ *  work (reading a palette, resolving maplibre, its CLI block) never runs and nothing is written. */
+function wrapApiOf(source: string): WrapApi {
+  const declarations = CLOSURE.map((name) =>
+    (declaration(source, name) ?? "").replace(/^export /m, ""),
+  );
+  const constants = [...source.matchAll(/^const [A-Z][A-Z0-9_]* = .*;$/gm)]
+    .map((m) => m[0])
+    .filter((line) => {
+      const named = /^const ([A-Z][A-Z0-9_]*)/.exec(line)?.[1] ?? "";
+      return declarations.some((d) => new RegExp(`\\b${named}\\b`).test(d));
+    });
+  const script = `${constants.join("\n")}\n${declarations.join("\n")}\nreturn { ${CLOSURE.join(", ")} };`;
+  return new Function(script)() as WrapApi;
+}
+
+/** What one copy does to the fixture. */
+function driveWrap(source: string) {
+  const api = wrapApiOf(source);
+  const out = api.repeatWorlds(WORLD_FIXTURE_HTML, 3, WORLD_FIXTURE_CSS);
+  const n = (re: RegExp) => (out.match(re) ?? []).length;
+  return {
+    painted: n(/class="mw-world"/g),
+    layers: n(/\sdata-world="primary"/g),
+    repeats: n(/\sdata-world="repeat"/g),
+    pointable: n(/data-key="NGA"/g),
+    counted: n(/data-detail=/g),
+    tooltips: n(/title="Nigeria/g) + n(/<title>Nigeria/g),
+    unfocusable: n(/tabindex="-1"/g),
+    uses: n(/<use /g),
+    labels: n(/point-label/g),
+    unchangedAtOne:
+      api.repeatWorlds(WORLD_FIXTURE_HTML, 1, WORLD_FIXTURE_CSS) ===
+      WORLD_FIXTURE_HTML,
+    tiling: api.worldTilingCss({
+      frame: { width: 1200, height: 815 },
+      worldCopies: 3,
+    }),
+    tilingAtOne: api.worldTilingCss({
+      frame: { width: 1200, height: 815 },
+      worldCopies: 1,
+    }),
+    marks: [...api.pointerActiveOverlayClasses(WORLD_FIXTURE_CSS)]
+      .sort()
+      .join(","),
+    keepsBoxAspects: JSON.stringify(
+      api.requireBoxAspects({
+        boxAspects: { narrowest: 1.317, widest: 2.572 },
+      }),
+    ),
+    refusesWithoutBoxAspects: (() => {
+      try {
+        api.requireBoxAspects({});
+        return false;
+      } catch {
+        return true;
+      }
+    })(),
+  };
+}
+
+const REFERENCE_DRIVE = driveWrap(skillSource);
+
+describe("every copy of the capability, run on a world it will never meet in its own beat", () => {
+  it("paints three worlds out of the skill's own renderer, and that is the reading the copies are held to", () => {
+    // The reference, asserted in full rather than derived from a copy — otherwise nine files agreeing
+    // on a broken answer would pass. Two layers repeat, so six `.mw-world` for three copies.
+    expect(REFERENCE_DRIVE).toMatchObject({
+      painted: 6,
+      layers: 2,
+      repeats: 4,
+      // Six pointable marks: the primary's path and button, plus one `<use>` and one button per
+      // repeat. This is the number the ruling is about — a repeat a reader can point at.
+      pointable: 6,
+      // ONE. The keyboard and the accessible table do not multiply with the copies.
+      counted: 1,
+      // Six: every copy keeps the tooltip a reader gets with the script off, on both layers — three
+      // `<title>` children on the painted shapes and three `title=` attributes on the buttons.
+      tooltips: 6,
+      unfocusable: 2,
+      uses: 4,
+      labels: 3,
+      unchangedAtOne: true,
+      tilingAtOne: "",
+      marks: "pt-small",
+      keepsBoxAspects: '{"narrowest":1.317,"widest":2.572}',
+      refusesWithoutBoxAspects: true,
+    });
+    expect(REFERENCE_DRIVE.tiling).toContain(".mw-world {");
+    expect(REFERENCE_DRIVE.tiling).toContain("height: 100cqh;");
+    expect(REFERENCE_DRIVE.tiling).toContain("calc(100% / 3)");
+  });
+
+  for (const file of ASSEMBLERS) {
+    if (file === SKILL_RENDERER) continue;
+    it(`${shortName(file)} does exactly the same`, () => {
+      expect({
+        file: shortName(file),
+        ...driveWrap(readFileSync(file, "utf8")),
+      }).toEqual({
+        file: shortName(file),
+        ...REFERENCE_DRIVE,
+      });
+    });
+  }
+
+  it("says how much of its own evidence comes from a beat, and refuses to certify a copy on bytes alone", () => {
+    // THE COORDINATOR'S QUESTION, ASSERTED. A capability whose whole verification population has
+    // `worldCopies = 1` is certified by nothing. This names the split rather than leaving it to be
+    // discovered: today two of the ten assemblers have a beat with a full-turn camera, so eight are
+    // covered only by the drive above — and if the drive were ever deleted or narrowed, that eight
+    // becomes ten and this assertion is the one that says so.
+    const worldCameras = new Set(
+      BEATS.filter(({ span }) => span >= FULL_TURN_DEG).map(({ beat }) => beat),
+    );
+    const exercisedByItsOwnBeat = ASSEMBLERS.filter((file) =>
+      [...worldCameras].some((beat) => file.startsWith(beat + sep)),
+    );
+    const exercisedByTheDrive = ASSEMBLERS.filter(
+      (file) => driveWrap(readFileSync(file, "utf8")).painted === 6,
+    );
+    const certifiedByBytesAlone = ASSEMBLERS.filter(
+      (file) =>
+        !exercisedByItsOwnBeat.includes(file) &&
+        !exercisedByTheDrive.includes(file),
+    );
+    expect(
+      `certified by byte-comparison alone: ${certifiedByBytesAlone.map(shortName).join(", ")}`,
+    ).toBe("certified by byte-comparison alone: ");
+    expect(exercisedByTheDrive.length).toBe(ASSEMBLERS.length);
+    expect(exercisedByItsOwnBeat.length).toBeLessThan(ASSEMBLERS.length);
+  });
+});
+
+describe("the painter and the derivation reach the same files", () => {
+  it("is nobody's asymmetry: every file that declares one declares the other", () => {
+    // Measured on 2026-08-23, and it is the finding underneath this whole file: the DERIVATION
+    // (`cannotCover`, in `delivery-frame.mjs`) was distributed to seven files and the PAINTER
+    // (`repeatWorlds`) to two. A beat could therefore be right that it needs to wrap, print the
+    // sentence saying so, and have nothing able to do it — which is precisely the page that covered
+    // 66.7% of its window while announcing that it filled it by repeating the world.
+    const painters: string[] = [];
+    for (const dir of WALKED)
+      for (const file of filesUnder(join(TWIN, dir))) {
+        if (file.split(sep).includes("test")) continue;
+        if (
+          /^(?:export )?function repeatWorlds\(/m.test(
+            readFileSync(file, "utf8"),
+          )
+        )
+          painters.push(file);
+      }
+    expect(painters.map(shortName).sort()).toEqual(
+      ASSEMBLERS.map(shortName).sort(),
+    );
+  });
 });
 
 /** Every beat in the tree with a baked plate, paired with the map-web pages it delivers. Derived by
