@@ -813,6 +813,23 @@
       "exceptions": {
         "scrolly": "measured 2026-08-23: this vehicle asks the same question and answers it at RUNTIME, not at bake time. proof/mapscrolly-one-map-europe-carbon/map-drive.mjs resolveCamera interpolates between contain and cover against the box it is actually being drawn in, on every scroll frame (\"COVER, not contain: the target box FILLS the frame ... A contain fit would letterbox a near-square European plate inside a wide frame and leave a third of the picture as bare ground\"), and it moves the CAMERA rather than the plate — so there is no fixed frame for a bake-time refusal to be about, and a plate whose margin ran out is answered by a shallower scale rather than by a crop. The bake this rule guards is the one a map-web page cannot redo, because a map-web page must be right with JavaScript off. Structural, not incidental: giving scrolly this refusal would require it to declare, at bake time, a box range its own scroll states are free to leave."
       }
+    },
+    {
+      "id": "every-painted-world-answers-a-pointer",
+      "kind": "guard",
+      "requires": [
+        "bakes-a-plate",
+        "ships-standalone-html"
+      ],
+      "decidedBy": "everyPaintedWorldAnswersAPointer",
+      "refuses": "a delivered page that paints a copy of the world a reader cannot point at — a repeat that answers for fewer marks than the world it is a copy of",
+      "earnedBy": "the owner, on the two beats this format laid out contained because one plate cannot cover a box wider than the world: *that is the normal behaviour of an interactive map — go ahead and repeat the map on the sides* (2026-08-23). He is right about the medium, and the ruling came with its engineering consequence, because two days earlier this same format had been fixed for painting three worlds at planet extent and THE DEFECT WAS NEVER THE REPEAT: measured live with a real key on a 241-region world choropleth at 1600x900, the fit was height-bound and MapLibre filled ~800px of margin either side with a second and a third painted world — three Africas, three Japans, ONE SET OF HIT TARGETS, bounds [[-355.77, -68.88], [355.77, 85.05]]. A reader pointing at the second Africa got nothing and nothing measured it, which is why it shipped. So a world camera may now fill its box by repeating the world, and this decision is the price: every copy carries its own marks, its own hit targets and its own script-free tooltip, and a copy is compared against the world it is a copy of — every mark the primary answers for, and which this copy draws inside the box, must answer on this copy too. Measured on the two wrapping beats at four widths including the owner's own 2990x1718 screen: hex-grid 18/18, 152/152, 17/17 at 1600x900 and 3/3, 152/152, 8/8 at 2990x1718; life-expectancy 59/59, 204/204, 46/46 and 22/22, 228/228, 9/9. Live, where MapLibre paints the copies itself, the canvas answers on each of them through queryRenderedFeatures: 40/40, 153/153, 33/33 at 1600x900",
+      "states": {
+        "map-web": "carried"
+      },
+      "exceptions": {
+        "scrolly": "measured 2026-08-23: this vehicle never paints a second world, so there is no copy for the rule to be about. Its map track resolves the camera at RUNTIME and fills the frame by COVER (proof/mapscrolly-one-map-europe-carbon/map-drive.mjs, resolveCamera: \"COVER, not contain: the target box FILLS the frame\"), which scales the plate up until it covers on both axes and crops the overflow — a cover fit leaves no margin for MapLibre or for a CSS repeat to fill, at any frame shape. It does own a full-turn camera (proof/mapscrolly-quakes-three-ways, 359.8° of longitude, bounds [[-179.9, -60], [179.9, 78]]), so this is a fact about the layout and not about the geography: if the wrap ruling is ever extended to the scrolly vehicle, this exception has to be removed rather than kept"
+      }
     }
   ]
 }
