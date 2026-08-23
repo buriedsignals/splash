@@ -297,8 +297,8 @@
         "map-beat": "carried",
         "scrolly": "carried",
         "map-web": "carried",
-        "intake": "owed",
-        "storyboard": "owed"
+        "intake": "carried",
+        "storyboard": "carried"
       },
       "exceptions": {}
     },
@@ -424,8 +424,8 @@
         "map-beat": "carried",
         "map-web": "carried",
         "scrolly": "carried",
-        "deliver": "owed",
-        "splash": "owed"
+        "deliver": "carried",
+        "splash": "carried"
       },
       "exceptions": {}
     },

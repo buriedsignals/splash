@@ -163,13 +163,21 @@ describe("the guard catalogue", () => {
     ).toEqual([]);
   });
 
-  it("owes exactly the cells widening the population made visible, and not one more", () => {
-    expect(owedRows(readCatalogue())).toEqual([
-      { rule: "csv-split-by-hand", skill: "intake" },
-      { rule: "csv-split-by-hand", skill: "storyboard" },
-      { rule: "credential-alias-reconciled", skill: "deliver" },
-      { rule: "credential-alias-reconciled", skill: "splash" },
-    ]);
+  // AND THE LIST IS EMPTY AGAIN, on 2026-08-23, a few hours after it was written. The four cells
+  // widening the population exposed were an exact, pinned list so that a fifth could not appear
+  // unnoticed while they were being paid; all four are paid, so the list is what it was written to
+  // become. Two of them were live defects rather than missing paperwork — `splash`'s own
+  // `run-operation.mjs` read `CLOUDFLARE_API_TOKEN` by its canonical name between two lines that
+  // resolved aliases, and `deliver` shipped every delivered map with a dead tile layer because the
+  // root's `.env` held the MapTiler key under the engine's names.
+  //
+  // IT MAY ONLY EVER GET SHORTER, and it cannot get shorter than this. This assertion is now the
+  // whole tree's version of the one above it: a rule reaching one more skill, a skill growing one
+  // more trait, a new skill appearing — any of them lands here as a red naming the cell, on the day
+  // it appears. The way out is never to blank the cell; it is to carry the guard, or to argue in
+  // `exceptions` that the defect cannot happen there.
+  it("owes nothing anywhere in the tree, not only among the skills that draw", () => {
+    expect(owedRows(readCatalogue())).toEqual([]);
   });
 });
 

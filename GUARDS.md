@@ -32,12 +32,12 @@ red the day it witnesses one.
 | scrub-not-slideshow |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
 | model-declared |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
 | reveal-completes |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |  |
-| csv-split-by-hand |  | **R** |  |  | **R** |  | · | **R** | **R** |  |  | **R** |  | · |
+| csv-split-by-hand |  | **R** |  |  | **R** |  | **R** | **R** | **R** |  |  | **R** |  | **R** |
 | unmatched-value-hides |  |  |  |  |  |  |  | **R** | **R** |  |  |  |  |  |
 | sub-pixel-marks-keep-a-channel |  |  |  |  |  |  |  |  | **R** |  |  |  |  |  |
 | value-labels-collide-or-clip |  |  |  |  |  |  |  | **R** | **R** |  |  |  |  |  |
 | page-declares-story-language |  |  | **R** |  | **R** |  |  |  | **R** |  |  | **R** |  |  |
-| credential-alias-reconciled |  |  |  | · | **R** |  |  | **R** | **R** |  |  | **R** | · |  |
+| credential-alias-reconciled |  |  |  | **R** | **R** |  |  | **R** | **R** |  |  | **R** | **R** |  |
 | reveal-fills-the-frame |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
 | label-fits-inside-the-plate |  |  |  |  |  |  |  | **R** | **R** |  |  | **R** |  |  |
 | reveal-order-is-earned |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |  |
@@ -78,12 +78,9 @@ red the day it witnesses one.
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 4 cells
+## What is still owed — 0 cells
 
-- `intake` owes **csv-split-by-hand**
-- `storyboard` owes **csv-split-by-hand**
-- `deliver` owes **credential-alias-reconciled**
-- `splash` owes **credential-alias-reconciled**
+Nothing. Every format carries every rule it can reach.
 
 ## Why a cell is blank, where the blankness was argued — 22 of them
 
