@@ -381,6 +381,14 @@ export function ownSuiteWithoutACaller(skillDir, claims) {
  *  `assets/geo-choropleth.ts` REPAIRS a stack against the same two conditions without ever asking
  *  the decision, which is how a beat comes to clear it without running it. Until a real beat calls
  *  it, the excuse is unbacked and the name stays under the ratchet, where a reader can see it.
+ *
+ *  `labelsClippedByPlate` LEFT THIS LIST ON 2026-08-23, and it is the ratchet doing what it is for:
+ *  the debt was paid rather than re-argued. The rule that the graphic takes the whole box gave the
+ *  format a delivered box that CROPS its own plate, so a run that clears the plate's edge by 300px
+ *  of ocean can now be cut by the frame — and `verify-fills-the-box.mjs` calls this decision against
+ *  the box, on the real page, at all three widths. It found three cut runs on this skill's own seed
+ *  at 375x812 the first time it was driven ("Athens" 61.1px past the right edge, "Warsaw" 34.9,
+ *  "Stockholm" 25.2), which is what a decision with no caller had been unable to say for five rounds.
  */
 export const RECORDED_UNWIRED_DEBT = [
   "credentialReadsWithoutAlias",
@@ -389,7 +397,6 @@ export const RECORDED_UNWIRED_DEBT = [
   "doubleHyphenInDeliveredText",
   "keyboardReachesEveryMark",
   "labelPlacementIssues",
-  "labelsClippedByPlate",
   "mislabelledRows",
   "pageLanguageMatchesStory",
   "plateFollowsGround",
