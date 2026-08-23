@@ -155,6 +155,13 @@ function assertWorldFillsFrame(camera, width) {
       `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
   );
 }
+/** @parity-exempt: this beat's BOUNDS are derived from the 1,406 accidents in the frozen file
+ *  (`boundsOf`), never typed, so `askedSouth` is `45.817669980000004` and the canonical bake's
+ *  refusal — which interpolates the asked value raw, correct for a bake whose bounds are a typed
+ *  literal — would print seventeen digits at a journalist. Every asked value is rounded to two
+ *  decimals here, and the closing sentence names the latitudes rather than repeating them. The
+ *  arithmetic, the 0.01° tolerance and the `minFrameHeightPx` advice are the canonical's, verbatim.
+ *  Measured 2026-08-23. */
 function assertCameraReachesBounds(frameCorners, bounds, width) {
   const [[askedWest, askedSouth], [askedEast, askedNorth]] = bounds;
   const shortfall = [];

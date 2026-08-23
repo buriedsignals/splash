@@ -65,11 +65,17 @@ function normalise(source: string): string {
   return source.replace(/,(\s*[)\]}])/g, "$1").replace(/\s+/g, "");
 }
 
+type Declaration = { body: string; exemptReason: string | null };
+
 /** Top-level `function NAME(…) {…}` declarations, by brace matching — the
  *  `render-still-parity.test.ts:109-146` method, argument parens balanced first so a destructured
- *  or inline-typed parameter cannot make the scan close at the end of the signature. */
-function topLevelFunctions(text: string): Map<string, string> {
-  const found = new Map<string, string>();
+ *  or inline-typed parameter cannot make the scan close at the end of the signature.
+ *
+ *  AND THE `@parity-exempt` TAG ON THE DECLARATION ABOVE IT, read exactly as
+ *  `geo-parity.test.ts:172-182` reads it: the docblock is whatever `/** … *\/` ends immediately
+ *  before the declaration, and the reason is the rest of the tag's own line. */
+function topLevelFunctions(text: string): Map<string, Declaration> {
+  const found = new Map<string, Declaration>();
   const re = /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\(/gm;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
@@ -94,7 +100,17 @@ function topLevelFunctions(text: string): Map<string, string> {
         if (depth === 0) break;
       }
     }
-    found.set(m[1], normalise(stripComments(text.slice(m.index, end + 1))));
+    const before = text.slice(0, m.index).trimEnd();
+    let exemptReason: string | null = null;
+    if (before.endsWith("*/")) {
+      const doc = before.slice(before.lastIndexOf("/**"));
+      const exempt = /@parity-exempt\s*:?\s*([^\n*]*)/.exec(doc);
+      if (exempt) exemptReason = exempt[1]!.trim();
+    }
+    found.set(m[1], {
+      body: normalise(stripComments(text.slice(m.index, end + 1))),
+      exemptReason,
+    });
   }
   return found;
 }
@@ -133,17 +149,58 @@ describe("the bakes — every camera in the tree, discovered rather than listed"
     expect(plates.length).toBeGreaterThanOrEqual(6);
   });
 
+  let compared = 0;
+
   for (const copy of copies) {
     const label = relative(TWIN, copy);
     it(`${label} should not disagree with the canonical bake about any shared function`, () => {
       const theirs = topLevelFunctions(readFileSync(copy, "utf8"));
       const drifted: string[] = [];
-      for (const [name, body] of theirs)
-        if (canonical.has(name) && canonical.get(name) !== body)
-          drifted.push(name);
+      for (const [name, declaration] of theirs) {
+        if (!canonical.has(name)) continue;
+        // `@parity-exempt: <reason>` — THE TAG `map-beat/SKILL.md` ALREADY TELLS AUTHORS TO WRITE,
+        // and which this walk did not read until 2026-08-23. That line names this file by name:
+        // *"tag a function you keep verbatim `@parity` (or `@parity-exempt: <reason>` the moment it
+        // must differ) … `geo-parity.test.ts`, `bake-parity.test.ts` and `csv-hand-split.test.ts`
+        // walk the whole tree for exactly those three mistakes."* `geo-parity` honoured it; this
+        // one did not, so the documented way to declare a justified divergence could not fire here
+        // — worse than a missing requirement, because an author who followed the instruction was
+        // still red and the only move left was to delete the difference.
+        //
+        // WHAT EARNED IT. `r8-scrolly-swiss-avalanche-deaths` computes its camera BOUNDS from the
+        // 1,406 accidents in its own frozen file rather than typing them, so `askedSouth` is
+        // `45.817669980000004`. The canonical bake interpolates that value raw into its refusal,
+        // which is right for a bake whose bounds are a typed literal and prints seventeen digits at
+        // a journalist here. The copy rounds it. Two correct bodies for two kinds of material — the
+        // exact case a tag exists for, and not a case for making either one worse.
+        //
+        // A TAG IS NOT A PASS: the reason is required below, and `compared` counts what is still
+        // really compared so exemptions cannot quietly swallow this walk.
+        if (declaration.exemptReason !== null) continue;
+        compared++;
+        if (canonical.get(name)!.body !== declaration.body) drifted.push(name);
+      }
       expect([label, drifted]).toEqual([label, []]);
     });
+
+    it(`${label} should give a reason with every @parity-exempt`, () => {
+      // The same floor `geo-parity.test.ts:246-251` sets: a bare tag is a silence with a name on
+      // it, and twelve characters is about the shortest thing that can be a reason at all.
+      const reasonless = [...topLevelFunctions(readFileSync(copy, "utf8")).entries()]
+        .filter(([, d]) => d.exemptReason !== null && d.exemptReason.length < 12)
+        .map(([name]) => name);
+      expect([label, reasonless]).toEqual([label, []]);
+    });
   }
+
+  it("should still be comparing function bodies — exemptions must not have swallowed the walk", () => {
+    // ANTI-VACUITY, the same shape `csv-hand-split.test.ts` gives its own walk with
+    // `expect(walked).toBeGreaterThan(700)`. Reading `@parity-exempt` makes it possible to silence
+    // this guard one function at a time; this is what turns doing so into a red rather than a
+    // quieter suite. Measured 2026-08-23, with exactly one exemption in the whole tree: 249 shared
+    // function bodies really compared across 30 bakes.
+    expect(compared).toBeGreaterThan(180);
+  });
 });
 
 describe("minFrameHeightPx — the derivation that replaced a constant tuned for one beat", () => {
