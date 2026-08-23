@@ -55,13 +55,25 @@ function sources(skill, { exclude } = {}) {
 const has = (skill, relative) => existsSync(join(skillDir(skill), relative));
 const anySource = (skill, pattern, options) => sources(skill, options).some((text) => pattern.test(text));
 
-/** A single source file both CALLS a write function and names an `.html` target — not just mentions
- *  the extension somewhere, which a bare substring match cannot tell apart from a comment, a URL, or
- *  an unrelated string. The two must share one file: two different sources each matching half of it
- *  would prove nothing about either. */
+/** A single source file CALLS a write function, names an `.html` target, AND carries a document
+ *  opening — not just mentions the extension somewhere, which a bare substring match cannot tell
+ *  apart from a comment, a URL, or an unrelated string. All three must share one file: two different
+ *  sources each matching part of it would prove nothing about either.
+ *
+ *  THE DOCTYPE IS THE THIRD CONDITION, and it was added on 2026-08-23 when the population widened
+ *  past the eight skills that draw. Write-plus-`.html` alone fired on `deliver`, which writes
+ *  `EMBED_CODE.html` — an `<iframe>` and a `<script>` tag (`embedCodeFor`), a snippet a CMS pastes
+ *  into someone else's page. That is the opposite of what this trait names: a file a reader opens
+ *  with no server and no build has to BE a document. Measured across all fifteen skills, exactly
+ *  four sources write an `.html` target and open a document — `chart-web/render-web.mjs`,
+ *  `dw-beat/produce.mjs`, `map-web/render-web.mjs`, `scrolly/render-scrolly.mjs` — the same four
+ *  skills this trait already reached, unchanged. */
 const writesHtmlArtifact = (skill) =>
   sources(skill).some(
-    (text) => /\bwrite(File(Sync)?|Atomic)\s*\(/.test(text) && /\.html["'`]/.test(text),
+    (text) =>
+      /\bwrite(File(Sync)?|Atomic)\s*\(/.test(text) &&
+      /\.html["'`]/.test(text) &&
+      /<!doctype\s+html/i.test(text),
   );
 
 export const TRAITS = [
@@ -78,7 +90,18 @@ export const TRAITS = [
   {
     id: "delegates-rendering",
     describes: "the delivered artefact is produced by a provider and fetched, never drawn here",
-    witness: (skill) => anySource(skill, /api\.datawrapper\.de|exportChartPng/),
+    // THE PROVIDER'S ADDRESS IS NOT THE DELEGATION. This witness used to accept
+    // `api.datawrapper.de` as an alternative to `exportChartPng`, and on 2026-08-23, when the
+    // population widened past the eight skills that draw, that alternative fired on `splash` —
+    // whose only match is `keys.mjs`'s `const DATAWRAPPER_PROBE = "https://api.datawrapper.de/v3/me"`,
+    // a liveness probe for a preflight. splash renders nothing and fetches no artefact; naming a
+    // provider is not handing it the drawing. The remaining half is the ACT: `exportChartPng` asks
+    // the provider for the rendered picture and takes it back. Measured across all fifteen skills,
+    // it appears only in `dw-beat` — `dw-client.mjs` (the call itself) and `produce.mjs` (two real
+    // uses) as well as its own `verify-range-annotation.mjs`, so this is not a trait a verify script
+    // could satisfy on its own, and the exclusion below matches the convention the other
+    // guard-adjacent witnesses already use.
+    witness: (skill) => anySource(skill, /exportChartPng/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
   {
     id: "owns-a-surface-it-did-not-choose",
@@ -121,8 +144,18 @@ export const TRAITS = [
     // `embeds-reader-photos` (`manifest.json`) matches only `render-preview.mjs`, never a
     // `verify-*`/`detect-*` file, and is additionally gated on `build-sample-photos.mjs` existing.
     // None of the four share this trait's defect.
+    //
+    // A DATA URI, NOT AN ENCODING (ruled 2026-08-23, when the population widened past the eight
+    // skills that draw). The bare word `base64` fired on `deliver`, whose every match is in
+    // `deploy-embed.mjs` — `buffer.toString("base64")` and a `{ key, value, base64: true }` request
+    // body, the encoding Cloudflare's asset-upload API requires on the wire. Nothing `deliver`
+    // hands a reader carries a data URI at all. The witness now reads the URI's own payload
+    // separator `;base64,` (or a literal `data:image`/`data:font`, for the forms that carry no
+    // base64 payload), which is the shape a file EMBEDS rather than the verb a request uses:
+    // `data:${mime};base64,` (image-beat), `data:image/png;base64,` (map-beat, map-web, scrolly).
+    // The four skills this trait reached before are the four it reaches after.
     witness: (skill) =>
-      anySource(skill, /data:image|data:font|base64/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+      anySource(skill, /data:image|data:font|;base64,/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
   {
     id: "embeds-reader-photos",
@@ -142,7 +175,33 @@ export const TRAITS = [
     // so the witness matches the WORD, not the file extension: `chart-video/scripts/render-video.mjs`,
     // `dw-beat/scripts/prove-co2.mjs`, `map-beat/scripts/render-map.mjs` and `assets/geo.ts`,
     // `scrolly/scripts/render-scrolly.mjs`, `assets/gauge-data.ts` and `scripts/extent-range.mjs`.
-    witness: (skill) => anySource(skill, /\bcsv\b/i, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+    //
+    // A FIFTH FALSE FIRING, found here on 2026-08-23 and NOT in the report that opened this task —
+    // which listed four. Widened past the eight skills that draw, the bare word matched `splash`,
+    // whose one and only hit is `sealed-map-bake.mjs:35`
+    // `const DATA_FORMATS = new Set(["csv", "geojson", "json", "tsv"])` — an allowlist of format
+    // NAMES inside a request validator, next to `MAP_TREATMENTS` and `GEOMETRY_TYPES`. splash opens
+    // no table; it checks that somebody else said they would.
+    //
+    // So the witness keeps reading the WORD rather than the extension — that part was right and the
+    // comment above says why — but only where the word is CODE: an identifier containing `Csv`
+    // (`parseCsvRows`, `valuesFromCsv`, `toCsv`), or a bare `csv` followed by the syntax of a
+    // parameter, an argument, a property or a module path (`csv:`, `csv,`, `csv)`, `csv.`). A
+    // quoted `"csv"` in a set of format names matches none of them: the character after it is the
+    // closing quote. Measured across all fifteen skills — the seven that really ingest a frozen
+    // table (chart-video, dw-beat, map-beat, map-web, scrolly, intake, storyboard) all keep it, and
+    // only splash drops.
+    //
+    // A `.csv` PATH was tried as a second alternative and REMOVED: swept over every source file in
+    // the tree, not one names a `.csv` without also using `csv` as code, so the alternative could
+    // never decide anything on its own — a branch that cannot fire is worse than a missing one. The
+    // reverse is not true and is why this half is the one kept: `map-beat/assets/geo.ts`,
+    // `scrolly/assets/gauge-data.ts`, `dw-beat/scripts/dw-client.mjs` and three more take csv text
+    // already read and never name a file at all.
+    witness: (skill) =>
+      anySource(skill, /[a-z]Csv\b|[a-z]Csv[A-Z(]|\bcsv\s*[:,).]/, {
+        exclude: /^(verify|detect)-.*\.mjs$/,
+      }),
   },
   {
     id: "joins-values-to-shapes",
@@ -169,7 +228,18 @@ export const TRAITS = [
     // map-beat, map-web, image-beat, scrolly — and in none of dw-beat's. Excluding `verify-*`/
     // `detect-*` matches the convention every other guard-adjacent trait already uses, even though
     // no such file currently mentions this call at all.
-    witness: (skill) => anySource(skill, /readPalette\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
+    //
+    // AND NOT THE DECLARATION (ruled 2026-08-23, when the population widened past the eight skills
+    // that draw). `readPalette(` matched `export function readPalette(dir, { stopAt } = {})` — the
+    // declaration — as readily as a call, so it fired on `palette/scripts/palette.mjs:1617`, the
+    // ORIGIN every other skill's copy is taken from. `palette` renders nothing: it writes the file
+    // the others read, and this trait's own `describes` says "its own RENDER calls readPalette".
+    // The seven producing skills that hold the trait each declare the function in their own
+    // `render-still.mjs` AND call it somewhere else (`render-preview.mjs`, `render-web.mjs`,
+    // `render-map.mjs`, `render-video.mjs`, `render-scrolly.mjs`), so excluding the declaration
+    // leaves all seven and drops only the skill that has nothing to draw.
+    witness: (skill) =>
+      anySource(skill, /(?<!function\s)readPalette\(/, { exclude: /^(verify|detect)-.*\.mjs$/ }),
   },
   {
     id: "reads-a-provider-credential",
