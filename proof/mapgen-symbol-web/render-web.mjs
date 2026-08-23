@@ -126,7 +126,7 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   // `MARK_MAX_RADIUS_FRACTION` (0.045), so the fallback circle and the live circle can never be two
   // sizes. A second constant here is exactly the "two numbers describing one circle" defect the live
   // layer already paid for once.
-  const radiusOf = radiusScale(maxMag, geometry.frame.width * 0.045);
+  const radiusOf = radiusScale(maxMag, (geometry.studySet?.width ?? geometry.frame.width) * 0.045);
   const anchors = {};
   for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   const studyLonSpan = Math.max(...lons) - Math.min(...lons);
@@ -805,7 +805,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   // The percentage through the beat's OWN scale, so the sentence cannot drift from the circles it
   // describes: the max radius cancels out of the ratio, and the pixel difference is quoted at the
   // plate's own scale, which is the one number the geometry actually holds.
-  const plateRadius = radiusScale(subject.mag, geometry.frame.width * 0.045);
+  const plateRadius = radiusScale(subject.mag, (geometry.studySet?.width ?? geometry.frame.width) * 0.045);
   const percentWider = (plateRadius(subject.mag) / plateRadius(second.mag) - 1) * 100;
   const pixelsWider = plateRadius(subject.mag) - plateRadius(second.mag);
   const energyOverSecond = energyRatio(subject.mag, second.mag);

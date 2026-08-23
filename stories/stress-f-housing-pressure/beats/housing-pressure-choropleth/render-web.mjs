@@ -1159,7 +1159,7 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
     component: ChoroplethWeb,
     table: RegionTable,
     props: {
-      geometry: { frame: geometry.frame, shapes: named, cannotCover: geometry.cannotCover ?? null },
+      geometry: { frame: geometry.frame, shapes: named, cannotCover: geometry.cannotCover ?? null, studySet: geometry.studySet ?? null, labelFrame: geometry.labelFrame ?? null },
       rows: named,
       breaks: PRESSURE_BREAKS,
       plate,

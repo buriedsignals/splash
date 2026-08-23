@@ -247,7 +247,7 @@ export function DotDensityWeb({
                     d={ringPath(c.parts)}
                     fill={landFill}
                     stroke={muted}
-                    strokeWidth={frame.width * 0.0006}
+                    strokeWidth={(geometry.studySet?.width ?? frame.width) * 0.0006}
                   />
                 ))}
 

@@ -28,6 +28,10 @@ No MapTiler key was recorded, so this page does not draw its map live: it shows 
 that is baked into the file. That layer is complete and readable — it simply does not pan or
 zoom. Recording a MapTiler key on the setup page is what makes the live version possible.
 
+**This file does not carry a key.** Where one would go it carries the placeholder
+`__MAPTILER_KEY__`, so the file is safe to commit, mail and paste anywhere. A delivery made after
+you record a key is what replaces that placeholder — this copy never will on its own.
+
 ## The one thing this does not show
 
 You named this limit yourself, and it belongs beside the visual — in the caption or the

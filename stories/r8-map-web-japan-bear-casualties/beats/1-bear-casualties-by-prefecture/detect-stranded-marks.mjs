@@ -52,18 +52,51 @@ export const READING_WIDTHS = [1600, 1024, 768, 375];
  *  verdict states it. */
 export const PAGE_PADDING_PX = 32;
 
-/** How wide the map is DRAWN at a given container width, in the fallback layer: the container less
- *  this format's page padding, never more than the plate's own frame, since `preserveAspectRatio`
- *  stops scaling it up past that.
+/** Does this delivered page CONTAIN its plate inside the box instead of covering the box with it?
  *
- *  IT IS A FLOOR, AND THE FLOOR IS NAMED. The LIVE layer fits its camera to the reader's own
- *  container and draws NARROWER than this — measured on the world beat, canvas 896 / 640 / 263 px
- *  from containers of 1600x900, 1024x768 and 375x667, against 1200 / 992 / 343 here. So the count
- *  this returns is the fewest marks a reader loses, not the most: live, at 1600x900, it is 90 rather
- *  than the 75 this width gives. `scripts/verify-live-map.mjs` drives the real camera and prints the
- *  real number; this is what a producer can be told without a browser and without a key. */
-export function drawnWidthAt(containerWidthPx, frame) {
-  return Math.min(containerWidthPx - PAGE_PADDING_PX, frame.width);
+ *  One page shape in this format still does, and it is derived rather than guessed: a camera that
+ *  already spans a full turn of longitude cannot be given the horizontal margin a wider box needs
+ *  (`delivery-frame.mjs`, `cannotCover`), so its plate keeps the camera's own shape and the box is
+ *  sized from the plate and centred — exactly as every page in this format did before 2026-08-23.
+ *  The marker is the RULE that does it, `container-type: normal` on `.mw-viewport`, which
+ *  `render-web.mjs` emits only on that branch. A declaration, not a word: the prose above it in the
+ *  same stylesheet quotes the expressions it replaced, so a looser match would read the explanation
+ *  as the thing it explains. */
+export function containsItsPlate(html) {
+  return /\.mw-viewport\s*\{[^}]*container-type:\s*normal/.test(html);
+}
+
+/** How wide the map is DRAWN at a given container width, in the fallback layer: the container less
+ *  this format's page padding.
+ *
+ *  THE CAP CAME OFF ON 2026-08-23, and taking it off made this reading CORRECT rather than merely
+ *  larger. It used to be `Math.min(container - padding, frame.width)`, because the plate was fitted
+ *  INSIDE the box and `preserveAspectRatio` stopped scaling it up past its own frame. Two things
+ *  were wrong with that even then: the box was ALSO bounded by the stage's height, which this never
+ *  knew about, so on a near-square plate in a wide window it reported the frame's own width when the
+ *  real drawn width was much smaller — measured on `proof/mapgen-dot-web` at 1600px, it answered
+ *  1000px about a map drawn 704px wide, 42% too generous, and the specks it missed were real.
+ *
+ *  Under the rule the owner set (`delivery-frame.mjs`), the box IS the container on both axes and
+ *  the plate is scaled to COVER it, so the plate is drawn `max(boxWidth, boxHeight × plateAspect)`
+ *  wide — never less than the box. `container - padding` is therefore a true floor at every box
+ *  shape, and it is exact whenever the box is no wider than the plate.
+ *
+ *  IT IS STILL A FLOOR, AND THE FLOOR IS STILL NAMED. The LIVE layer fits its camera to the reader's
+ *  own container and draws NARROWER than this — measured on the world beat, canvas 896 / 640 / 263 px
+ *  from containers of 1600x900, 1024x768 and 375x667. So the count this feeds is the fewest marks a
+ *  reader loses, not the most. `scripts/verify-live-map.mjs` drives the real camera and prints the
+ *  real number; this is what a producer can be told without a browser and without a key.
+ *
+ *  `contains` is the one page shape that still fits its plate INSIDE the box (`containsItsPlate`
+ *  above): there the plate never scales past its own frame, so the old cap is still the right
+ *  reading — and still optimistic in the same way, because the box is bounded by the stage's height
+ *  as well. Measured on `real-owid-life-expectancy` at a 1600px container: this returns 1200 and the
+ *  box is 898px wide. Naming that is better than silently answering 1568 about it, which is what a
+ *  single uncapped reading would have done. */
+export function drawnWidthAt(containerWidthPx, frame, contains = false) {
+  const box = containerWidthPx - PAGE_PADDING_PX;
+  return contains ? Math.min(box, frame.width) : box;
 }
 
 /** The map's own frame and drawn rings, read out of the delivered page.
@@ -218,9 +251,10 @@ export function strandedVerdict(containerWidthPx, found) {
 export function strandedRefusal(html, widths = READING_WIDTHS) {
   const drawn = drawnRegionsOf(html);
   if (!drawn || drawn.shapes.length === 0) return null;
+  const contains = containsItsPlate(html);
   const reasons = [];
   for (const width of widths) {
-    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame));
+    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, contains));
     if (found.unreachable.length === 0) continue;
     const rows = found.withoutARow.length > 0 ? `no row in the accessible table for ${found.withoutARow.join(", ")}` : null;
     const keys =

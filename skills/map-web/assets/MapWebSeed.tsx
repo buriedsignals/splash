@@ -127,6 +127,9 @@ export function MapWebSeed({
     /** The band a label has to stay inside — see `labelSafeFrame`. Optional: a plate baked before
      *  2026-08-23 has none, and the frame is then the box it was drawn against. */
     labelFrame?: { width: number; height: number; safeWidth?: number; safeHeight?: number };
+    /** Where the camera's own bounds landed inside the plate — the unit every mark size and gap on
+     *  this page is a fraction of. Optional for a plate baked before 2026-08-23. */
+    studySet?: { x: number; y: number; width: number; height: number };
     points: ProjectedPoint[];
   };
   plate: string;
@@ -143,6 +146,17 @@ export function MapWebSeed({
   muted: string;
 }) {
   const { frame, points } = geometry;
+  // THE UNIT EVERY MARK AND GAP IS A FRACTION OF, and it is the STUDY SET's width, not the frame's.
+  // These fractions were calibrated when the plate's frame WAS the study set — `fitBounds` with no
+  // padding, so the geography filled the picture. Since 2026-08-23 the plate carries real basemap
+  // around the study set so the delivered box can be filled by cover (`delivery-frame.mjs`), and a
+  // radius written as a fraction of the FRAME then grows with the ocean: measured on this skill's
+  // own seed, the study set went from 878 of 1000 plate px to 328, so a `frame.width * 0.062`
+  // maximum radius went from 7.1% of the drawn geography to 18.9% of it, and Paris's own hit target
+  // covered London. A mark is a fraction of the SUBJECT, and the subject is the study set.
+  // An older plate with no `studySet` falls back to the frame, which is what it was calibrated on.
+  const markUnit = geometry.studySet?.width ?? frame.width;
+
   // THE BOX A LABEL IS FLIPPED AGAINST IS THE PICTURE'S EDGE, NOT THE PLATE'S. Under the 2026-08-23
   // rule the delivered box takes the whole container and the plate is drawn to COVER it, so the
   // reader sees a BAND of the plate and a run that clears the plate's own edge by 300px of ocean can
@@ -162,7 +176,7 @@ export function MapWebSeed({
   if (!subject) throw new Error(`no point for the subject ${SUBJECT_KEY}`);
 
   const maxValue = Math.max(...points.map((p) => p.value));
-  const maxRadius = frame.width * MARK_MAX_RADIUS_FRACTION;
+  const maxRadius = markUnit * MARK_MAX_RADIUS_FRACTION;
   const radiusOf = radiusScale(maxValue, maxRadius);
   const legendRadiusOf = radiusScale(maxValue, LEGEND_MAX_RADIUS_PX);
   const drawn = drawOrder(points); // largest first, so smaller circles paint on top
@@ -280,7 +294,7 @@ export function MapWebSeed({
                       fill={fill}
                       fillOpacity={isSubject ? 0.55 : 0.38}
                       stroke={fill}
-                      strokeWidth={Math.max(1, frame.width * 0.0016)}
+                      strokeWidth={Math.max(1, markUnit * 0.0016)}
                       // The filter (render-web.mjs's own CSS, `:has()`) has to reach this decorative
                       // mark too, or a narrowed view still leaves every OTHER region's circle sitting
                       // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map. The
@@ -334,7 +348,7 @@ export function MapWebSeed({
                 labelFrame,
                 flipMargin,
               );
-              const gap = r + frame.width * 0.014;
+              const gap = r + markUnit * 0.014;
               const xPct = (point.px / frame.width) * 100;
               const yPct = (point.py / frame.height) * 100;
               const gapPct = (gap / frame.width) * 100;

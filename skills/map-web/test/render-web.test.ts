@@ -527,14 +527,29 @@ describe("renderMapWeb", () => {
     ).rejects.toThrow('slugs to "all"');
   });
 
-  it("should bound the map by the window's height, not only by its width", async () => {
+  it("should give the map the whole stage and COVER it with the plate", async () => {
     // The mechanism, asserted as text because its EFFECT is only observable in a browser — which is
-    // what scripts/verify-interaction.mjs measures. This test's job is to notice the rule being
-    // deleted, not to prove it works.
+    // what test/frame-fills-window.test.ts and scripts/verify-fills-the-box.mjs measure on the real
+    // page. This test's job is to notice the rule being deleted, not to prove it works.
+    //
+    // IT USED TO ASSERT THE OPPOSITE, and the change is the owner's (2026-08-23): the box was
+    // 'width: min(100cqw, calc(100cqh * aspect))' — the PLATE's shape, sized inside the stage — and
+    // the delivered page then put a 520.1px box in a 1568px container. The box is now the stage on
+    // both axes, and the two layers that share the plate's coordinate system are sized to cover it:
+    // 'max', not 'min', which is the whole difference between filling a box and fitting inside one.
     const html = await build();
     expect(html).toContain("container-type: size");
-    expect(html).toContain("width: min(100cqw, calc(100cqh * 1))");
+    expect(html).toContain("width: max(100cqw, calc(100cqh * 1))");
+    expect(html).toContain("height: max(100cqh, calc(100cqw / 1))");
+    // The box itself takes everything the column has left, which is what makes those two a cover.
     expect(html).toContain("height: calc(100svh - var(--page-pad) * 2)");
+    // And the box itself is the stage on both axes — the half a `max()` alone would not prove, since
+    // a cover box inside a SMALLER viewport still reads as a cover. (A `not.toContain("min(100cqw")`
+    // was tried here first and was wrong for an instructive reason: the rule this file guards is
+    // explained in a CSS comment that quotes the expression it replaced, and that comment ships
+    // inside the delivered page. A guard that greps delivered bytes for a string cannot tell a
+    // declaration from the prose about it.)
+    expect(html).toContain("  width: 100%;\n  height: 100%;\n");
   });
 });
 
@@ -716,9 +731,18 @@ describe("the viewport's shape", () => {
     }
   }
 
-  it("should state the height in the format's own stylesheet, from the plate's own frame", async () => {
+  it("should take the box's shape, and refuse to inherit a plate's aspect from a beat's own file", async () => {
+    // THE OTHER HALF OF THE 2026-08-23 CHANGE. This used to assert that the format EMITTED
+    // 'aspect-ratio: 1000 / 600 !important', because the box was the plate's shape and a beat that
+    // wrote its own component without carrying that inline style got a 451x2px map (round six).
+    // The box is now the container's shape on both axes, so the property must not act at all — and
+    // '!important' is still right for the reason it was right then: every map-web component writes
+    // 'aspectRatio' as an INLINE style on this same element, and an inline style outranks any
+    // ordinary stylesheet rule. The plate's own shape has moved to the two cover rules below it.
     const html = await buildFrame({ width: 1000, height: 600 });
-    expect(html).toContain("aspect-ratio: 1000 / 600 !important;");
+    expect(html).toContain("aspect-ratio: auto !important;");
+    expect(html).not.toContain("aspect-ratio: 1000 / 600 !important;");
+    expect(html).toContain("width: max(100cqw, calc(100cqh * 1.6666666666666667))");
   });
 
   it("should not leave the shape to an inline style a replacement component can drop", async () => {

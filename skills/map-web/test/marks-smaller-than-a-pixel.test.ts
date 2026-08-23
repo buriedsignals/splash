@@ -34,6 +34,7 @@ import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
 import {
   READING_WIDTHS,
   announcedMarksOf,
+  containsItsPlate,
   drawnRegionsOf,
   drawnWidthAt,
   marksStrandedWithNoChannel,
@@ -277,7 +278,7 @@ describe("every delivered page in this format, swept", () => {
       if (!drawn || drawn.shapes.length === 0) continue;
       counted.set(
         page.rel,
-        marksStrandedWithNoChannel(page.html, drawnWidthAt(1600, drawn.frame))
+        marksStrandedWithNoChannel(page.html, drawnWidthAt(1600, drawn.frame, containsItsPlate(page.html)))
           .stranded.length,
       );
     }
@@ -293,9 +294,15 @@ describe("every delivered page in this format, swept", () => {
         "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
       ),
     ).toBe(75);
+    // 3 -> 2 on 2026-08-23, and the mark that left was never really a speck. `drawnWidthAt` used to
+    // cap the drawn width at the plate's own frame and knew nothing about the stage's height, so on
+    // this beat at a 1600px container it answered 496px about a map the browser drew 739px wide.
+    // The box is now the container on both axes and the plate covers it, so the reading is
+    // `container - padding` and is exact here; one Baltic outline crossed a whole pixel and stopped
+    // being counted. The reading got MORE accurate in both directions — see `containsItsPlate`.
     expect(
       counted.get("proof/mapgen-choropleth-web/renders/choropleth.html"),
-    ).toBe(3);
+    ).toBe(2);
 
     // And the narrow end is a different map: at 375px the world beat loses two thirds more.
     const world = pages.find((page) =>
@@ -304,7 +311,7 @@ describe("every delivered page in this format, swept", () => {
     expect(
       marksStrandedWithNoChannel(
         world.html,
-        drawnWidthAt(375, { width: 1200, height: 815 }),
+        drawnWidthAt(375, { width: 1200, height: 815 }, true),
       ).stranded.length,
     ).toBe(124);
   });
@@ -325,7 +332,7 @@ describe("the refusal, proven on the real page by taking a channel away", () => 
     "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
   );
   const html = readFileSync(worldPage, "utf8");
-  const drawnAt1600 = drawnWidthAt(1600, { width: 1200, height: 815 });
+  const drawnAt1600 = drawnWidthAt(1600, { width: 1200, height: 815 }, true);
 
   it("refuses a beat that drops one stranded mark's row from the accessible table", () => {
     // Monaco is about a thirteenth of a pixel at this camera. Take its ROW away and the only thing
@@ -446,7 +453,7 @@ describe("the producer is told, at production time", () => {
       1600,
       marksStrandedWithNoChannel(
         html,
-        drawnWidthAt(1600, { width: 1200, height: 815 }),
+        drawnWidthAt(1600, { width: 1200, height: 815 }, true),
       ),
     );
     expect(said).toContain("75 of 241 marks are drawn smaller than a pixel");

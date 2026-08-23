@@ -35,6 +35,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
 import {
   READING_WIDTHS,
+  containsItsPlate,
   drawnRegionsOf,
   drawnWidthAt,
   marksStrandedWithNoChannel,
@@ -183,7 +184,7 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   const maxValue = Math.max(...geometry.points.map((p) => p.value));
   const marks = markLayers(geometry.points, {
     maxValue,
-    maxRadiusFrameUnits: geometry.frame.width * 0.062,
+    maxRadiusFrameUnits: (geometry.studySet?.width ?? geometry.frame.width) * 0.062,
     subjectKey,
     accent,
     muted,
@@ -228,7 +229,7 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
       0,
       maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan) -
         geometry.zoom,
-      separationHeadroom(geometry.points, radiusScale(maxValue, geometry.frame.width * 0.062)),
+      separationHeadroom(geometry.points, radiusScale(maxValue, (geometry.studySet?.width ?? geometry.frame.width) * 0.062)),
     ),
     // Where each `.pt` hit target and `.point-label` follows the camera to. Keyed exactly as the
     // markup's own `data-key`, so the live label and the fallback label are one placement seen at
@@ -447,7 +448,7 @@ ${liveBlock}
     );
   if (drawn && drawn.shapes.length > 0) {
     for (const width of READING_WIDTHS)
-      console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame))));
+      console.log(strandedVerdict(width, marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, containsItsPlate(html)))));
     const refusal = strandedRefusal(html);
     if (refusal) throw new Error(refusal);
   }

@@ -23,36 +23,41 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  `discoverMapWebPages()` finds — DISCOVERED rather than a hardcoded list of 4 `mapgen-*-web`
  *  directories, which for a while silently left `mapgen-choropleth-web` and this skill's own
  *  `output-proof/population.html` out of every sweep that used to copy that list (fix round
- *  2026-08-20). RE-MEASURED 2026-08-22 over the 10 pages that population now holds:
+ *  2026-08-20). RE-MEASURED 2026-08-23 over the 12 pages that population now holds — the two new
+ *  ones are `r8-map-web-japan-bear-casualties`'s render and its export copy — and after every plate
+ *  in the format was re-baked to the shape of the box it is drawn in (`delivery-frame.mjs`):
  *
- *    1 095 318  mapgen-symbol-web/quake-symbol.html
- *    1 115 390  stress-ab-emigration-flows export copy
- *    1 117 748  stress-ab-emigration-flows/where-the-routes-lead.html
- *    1 154 910  stress-f-housing-pressure/housing-pressure-choropleth.html
- *    1 193 192  mapgen-locator-web/locator.html
- *    1 279 070  mapgen-hexgrid-web/hex-grid.html
- *    1 370 772  mapgen-choropleth-web/choropleth.html
- *    1 586 699  map-web/output-proof/population.html
- *    1 814 762  mapgen-dot-web/dot-population.html   (1 809 942 before its country outlines
- *                gained the `data-key`/`class="region"` its own fallback pointer path and
- *                `marksStrandedWithNoChannel` both needed, 2026-08-23)
- *    1 998 902  real-owid-life-expectancy/life-expectancy-2023.html   ← MEASURED_MAX_BYTES
+ *    1 008 454  mapgen-symbol-web/quake-symbol.html
+ *    1 017 145  r8-map-web-japan-bear-casualties/renders   (and its byte-identical export copy)
+ *    1 051 099  map-web/output-proof/population.html
+ *    1 069 824  stress-ab-emigration-flows/where-the-routes-lead.html   (and its export copy)
+ *    1 153 330  stress-f-housing-pressure/housing-pressure-choropleth.html
+ *    1 274 658  mapgen-locator-web/locator.html
+ *    1 285 889  mapgen-hexgrid-web/hex-grid.html
+ *    1 426 390  mapgen-choropleth-web/choropleth.html
+ *    1 703 413  mapgen-dot-web/dot-population.html
+ *    2 004 428  real-owid-life-expectancy/life-expectancy-2023.html   ← MEASURED_MAX_BYTES
  *
  *  an order of magnitude above `chart-web`'s own ceiling, because the baked basemap plate this
  *  format inlines is far heavier than any geometry `chart-web` draws. `MEASURED_MAX_BYTES` is the
  *  heaviest one measured — today's population is what earns the line, not a round number that felt
  *  right, and `ceilingFromPopulation` below is now the thing that says so out loud.
  *
+ *  THE RE-BAKE WAS NOT THE WEIGHT EVENT IT LOOKED LIKE. A plate that carries ocean around its study
+ *  set has more pixels of basemap and fewer of coastline, and flat water compresses: six of the ten
+ *  pages got LIGHTER (symbol 1 095 318 → 1 008 454, output-proof 1 586 699 → 1 051 099, dot
+ *  1 814 762 → 1 703 413), and the heaviest page moved 1 998 902 → 2 004 428, five and a half
+ *  kilobytes, because its camera is the whole world and its plate did not change shape at all.
+ *
  *  A CEILING SET AT EXACTLY TODAY'S CHAMPION HAS NO MARGIN. Ruled 2026-08-20 after a review found
  *  that the next delivered beat one byte heavier than `MEASURED_MAX_BYTES` would have tripped this
  *  guard, in every one of the five formats that carry it. `MARGIN_BYTES` is not a percentage picked
  *  because it felt right: it is the largest jump this population has ALREADY taken between two
- *  delivered pages sitting next to each other by size — 228 063 bytes, the step from
- *  `output-proof/population.html` to `mapgen-dot-web/dot-population.html`. The overall range is a
- *  narrow 1.82x, but the ten pages do not weigh evenly, and the margin matches the biggest jump
- *  already on disk between two of them rather than a smooth percentage of the max. */
-export const MEASURED_MAX_BYTES = 1998902;
-export const MARGIN_BYTES = 228063;
+ *  delivered pages sitting next to each other by size — 300 889 bytes, the step from
+ *  `mapgen-dot-web/dot-population.html` to `real-owid-life-expectancy` (it was 228 063 and the step
+ *  from `output-proof` to `dot-population`; that pair moved closer together and this one apart). */
+export const MEASURED_MAX_BYTES = 2004428;
+export const MARGIN_BYTES = 300889;
 export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;
 
 /** THE TWO NUMBERS ABOVE, DERIVED FROM THE POPULATION THEY DESCRIBE — because until 2026-08-22

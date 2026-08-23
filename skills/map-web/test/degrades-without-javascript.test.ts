@@ -58,9 +58,12 @@ describe("every map-web page on disk", () => {
     // delivered page and its export copy, both genuinely new map-web pages (round six). The two
     // before them were `stress-f-housing-pressure`'s `housing-pressure-choropleth` (2026-08-20/21).
     // This count is an exact ratchet on purpose — the next beat is expected to redden it too,
-    // bumped deliberately rather than widened into a floor.
+    // bumped deliberately rather than widened into a floor. 10 -> 12 on 2026-08-23:
+    // `stories/r8-map-web-japan-bear-casualties` landed its render and its export copy, and the
+    // ratchet did exactly what it is for — it went red on the beat's own commit and is bumped here,
+    // by hand, having driven both new pages.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(10);
+    expect(files.length).toBe(12);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {

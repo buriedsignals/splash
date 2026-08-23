@@ -298,6 +298,10 @@ describe("every committed map-web page is a live map", () => {
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population.html",
+      // Added 2026-08-23: `r8-map-web-japan-bear-casualties` landed its render and its export copy,
+      // and reddened this list on its own commit, which is the ratchet doing its job.
+      "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/renders/bear-casualties-by-prefecture.html",
+      "stories/r8-map-web-japan-bear-casualties/export/1-bear-casualties-by-prefecture/bear-casualties-by-prefecture.html",
       "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
       "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
       "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",

@@ -118,10 +118,13 @@ const HIT_TARGET_PX = 28;
 /** One point's own detail string, the single implementation the hit-target's `aria-label`/
  *  `data-detail`/`title` AND the accessible table both draw from — never a second formatting of
  *  the same number. */
-export function pointDetail(point: { name: string; value: number }): string {
+export function nounFor(value: number): string {
   // One person is not "1 people hurt". The singular is spelled here rather than in three places.
-  const noun = point.value === 1 ? "person hurt" : UNIT_WORD;
-  return `${point.name} : ${count(point.value)} ${noun}`;
+  return value === 1 ? "person hurt" : UNIT_WORD;
+}
+
+export function pointDetail(point: { name: string; value: number }): string {
+  return `${point.name} : ${count(point.value)} ${nounFor(point.value)}`;
 }
 
 export function BearCasualtiesWeb({
@@ -143,6 +146,9 @@ export function BearCasualtiesWeb({
     /** The band a label has to stay inside — see `labelSafeFrame`. Optional: a plate baked before
      *  2026-08-23 has none, and the frame is then the box it was drawn against. */
     labelFrame?: { width: number; height: number; safeWidth?: number; safeHeight?: number };
+    /** Where the camera's own bounds landed inside the plate — the unit every mark size and gap on
+     *  this page is a fraction of. Optional for a plate baked before 2026-08-23. */
+    studySet?: { x: number; y: number; width: number; height: number };
     points: ProjectedPoint[];
   };
   plate: string;
@@ -159,6 +165,17 @@ export function BearCasualtiesWeb({
   muted: string;
 }) {
   const { frame, points } = geometry;
+  // THE UNIT EVERY MARK AND GAP IS A FRACTION OF, and it is the STUDY SET's width, not the frame's.
+  // These fractions were calibrated when the plate's frame WAS the study set — `fitBounds` with no
+  // padding, so the geography filled the picture. Since 2026-08-23 the plate carries real basemap
+  // around the study set so the delivered box can be filled by cover (`delivery-frame.mjs`), and a
+  // radius written as a fraction of the FRAME then grows with the ocean: measured on this skill's
+  // own seed, the study set went from 878 of 1000 plate px to 328, so a `frame.width * 0.062`
+  // maximum radius went from 7.1% of the drawn geography to 18.9% of it, and Paris's own hit target
+  // covered London. A mark is a fraction of the SUBJECT, and the subject is the study set.
+  // An older plate with no `studySet` falls back to the frame, which is what it was calibrated on.
+  const markUnit = geometry.studySet?.width ?? frame.width;
+
   // THE BOX A LABEL IS FLIPPED AGAINST IS THE PICTURE'S EDGE, NOT THE PLATE'S. Under the 2026-08-23
   // rule the delivered box takes the whole container and the plate is drawn to COVER it, so the
   // reader sees a BAND of the plate and a run that clears the plate's own edge by 300px of ocean can
@@ -178,7 +195,7 @@ export function BearCasualtiesWeb({
   if (!subject) throw new Error(`no point for the subject ${SUBJECT_KEY}`);
 
   const maxValue = Math.max(...points.map((p) => p.value));
-  const maxRadius = frame.width * MARK_MAX_RADIUS_FRACTION;
+  const maxRadius = markUnit * MARK_MAX_RADIUS_FRACTION;
   const radiusOf = radiusScale(maxValue, maxRadius);
   const legendRadiusOf = radiusScale(maxValue, LEGEND_MAX_RADIUS_PX);
   const drawn = drawOrder(points); // largest first, so smaller circles paint on top
@@ -331,7 +348,7 @@ export function BearCasualtiesWeb({
                       fill={fill}
                       fillOpacity={isSubject ? 0.55 : 0.38}
                       stroke={fill}
-                      strokeWidth={Math.max(1, frame.width * 0.0016)}
+                      strokeWidth={Math.max(1, markUnit * 0.0016)}
                       // The filter (render-web.mjs's own CSS, `:has()`) has to reach this decorative
                       // mark too, or a narrowed view still leaves every OTHER region's circle sitting
                       // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map. The
@@ -351,7 +368,7 @@ export function BearCasualtiesWeb({
                   .map((point) => {
                     const placed = placements.get(point.key)!;
                     const r = radiusOf(point.value);
-                    const gap = r + frame.width * 0.014;
+                    const gap = r + markUnit * 0.014;
                     const x2 = placed.side === "right" ? point.px + gap : point.px - gap;
                     return (
                       <line
@@ -361,7 +378,7 @@ export function BearCasualtiesWeb({
                         x2={x2}
                         y2={placed.y}
                         stroke={muted}
-                        strokeWidth={Math.max(1, frame.width * 0.0012)}
+                        strokeWidth={Math.max(1, markUnit * 0.0012)}
                         data-group={groupAttrOf(point, groups)}
                         data-key={point.key}
                       />
@@ -409,7 +426,7 @@ export function BearCasualtiesWeb({
               // label's own `top` and the leader drawn to it are one number seen once.
               const placed = placements.get(point.key)!;
               const { side, dy } = placed;
-              const gap = r + frame.width * 0.014;
+              const gap = r + markUnit * 0.014;
               const xPct = (point.px / frame.width) * 100;
               const gapPct = (gap / frame.width) * 100;
               const style: Record<string, string> = {
@@ -592,7 +609,16 @@ export function RegionTable({
             className={point.key === SUBJECT_KEY ? "subject" : undefined}
           >
             <th scope="row">{point.name}</th>
-            <td>{count(point.value)}</td>
+            {/* THE UNIT TRAVELS WITH THE NUMBER, not only in the column head. The doc-comment on
+                `pointDetail` above has always said this table and the map's own hit targets draw
+                from ONE formatting of the same number, and until 2026-08-23 it did not: the cell
+                printed the bare count while the mark said "Akita : 67 people hurt", and
+                `tableCarriesTheMarks` reported all 39 of this beat's marks as facts the table did
+                not carry — correctly, since a row reading "Akita | 67" answers "sixty-seven what?"
+                only by asking the reader to hold the header in their head. Every other beat in this
+                format spells the unit in the cell ("11,0 million inhabitants", "86.4 years"); this
+                one now does too. */}
+            <td>{`${count(point.value)} ${nounFor(point.value)}`}</td>
           </tr>
         ))}
       </tbody>

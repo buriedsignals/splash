@@ -57,7 +57,7 @@ import {
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 import {
   FLOOR_FRACTION,
-  bindingAxisFraction,
+  containerFraction,
   graphicFillsItsFrame,
 } from "./detect-fills-its-frame.mjs";
 
@@ -402,6 +402,11 @@ try {
       const vp = document.querySelector(".mw-viewport");
       const svg = vp.querySelector("svg.map");
       const box = vp.getBoundingClientRect();
+      // THE CONTAINER, not the window. Since 2026-08-23 the rule is that the graphic takes the whole
+      // box its HOST gives it, and the host here is `.mw-stage` — the window minus this beat's own
+      // furniture. The window was the right thing to measure while the box was sized from the plate;
+      // it is the wrong thing to measure against a rule about the room the layout handed over.
+      const stageBox = document.querySelector(".mw-stage").getBoundingClientRect();
       const view = svg.viewBox.baseVal;
       // The collapsed table disclosure's own SUMMARY LINE — B5.2 ruled the table collapsed rather
       // than deleted, and `map-web-discipline.md`'s own measured table records what that line costs
@@ -428,16 +433,30 @@ try {
         mapBottom: box.bottom,
         mapWidth: box.width,
         mapHeight: box.height,
+        stageWidth: stageBox.width,
+        stageHeight: stageBox.height,
         disclosureHeight,
-        // The bake's own aspect against the box the plate is actually drawn in. A mismatch here is
-        // a stretched basemap — a lie about distance and shape (geo-discipline.md).
+        // The bake's own aspect against the box the plate IS ACTUALLY DRAWN IN — which since
+        // 2026-08-23 is `.mw-fallback`, not the viewport. The viewport is now the container's shape
+        // and the plate covers it, so comparing the plate's aspect to the VIEWPORT's would report a
+        // stretch on every correctly drawn page in the format. `.mw-fallback` carries the plate's
+        // own coordinate system and must be the plate's own shape at every size, or the basemap is
+        // scaled non-uniformly — a lie about distance and shape (geo-discipline.md).
         bakedAspect: view.width / view.height,
-        drawnAspect: box.width / box.height,
-        // Only a box that CLIPS can scroll. With 'overflow: visible' a point label reaching past
-        // the frame makes scrollHeight exceed clientHeight without a scrollbar existing anywhere —
-        // reading the raw numbers alone would report a scroll that no reader can perform.
+        drawnAspect: (() => {
+          const layer = vp.querySelector(".mw-fallback");
+          const r = (layer ?? vp).getBoundingClientRect();
+          return r.width / r.height;
+        })(),
+        // Only a box a reader can SCROLL is a scrolling box, and that is 'auto' or 'scroll' — not
+        // merely "not visible". This used to read `!== "visible"`, which was right while the box
+        // clipped nothing by design: 'overflow: hidden' arrived in this format on 2026-08-23 as the
+        // mechanism that CROPS the plate to the container, so the plate layer overflows this box on
+        // purpose at every width and `scrollHeight > clientHeight` is now the normal, correct state.
+        // A hidden box has no scrollbar and no reader-initiated scrolling; reporting it as one would
+        // be the guard describing its own format's design as a defect.
         innerScroll:
-          getComputedStyle(vp).overflow !== "visible" &&
+          /^(auto|scroll)$/.test(getComputedStyle(vp).overflow) &&
           (vp.scrollHeight > vp.clientHeight + 1 || vp.scrollWidth > vp.clientWidth + 1),
       };
     });
@@ -449,25 +468,26 @@ try {
     // against this skill's decision because nothing here ever asked it. This is the call. The
     // box and the window are already measured above; only the question was missing.
     //
-    // WHAT IS FED TO IT CHANGED ON 2026-08-23, and the decision itself did not. It was the box's
-    // AREA against the window's, which is a function of the reader's window aspect as much as of the
-    // producer's work: re-baking `stress-f-housing-pressure` to its camera's own shape moved its
-    // readings from 30.3/27.8/38.6% to 16.3/15.0/22.5% while the drawing got better. It is now
-    // `bindingAxisFraction` — how much of the axis the box is bound on it actually took — which is
-    // aspect-independent and red exactly when the box failed to grow into the room it had. The full
-    // measurement is in `detect-fills-its-frame.mjs`'s own header, including the half it still
-    // cannot see: a box that dumps its leftover room on one side moves neither fraction by 0.01 pt.
+    // WHAT IS FED TO IT CHANGED TWICE ON 2026-08-23, and the decision itself did not, either time.
+    // It was the box's AREA against the WINDOW's, which is a function of the reader's window aspect
+    // as much as of the producer's work: re-baking `stress-f-housing-pressure` to its camera's own
+    // shape moved its readings from 30.3/27.8/38.6% to 16.3/15.0/22.5% while the drawing got better.
+    // It became `bindingAxisFraction` for exactly that reason, and that was a sound reading of the
+    // wrong quantity — the page the owner was looking at read 62.9% while covering 33.2% of its
+    // container's width. It is now `containerFraction`: how much of the CONTAINER the graphic covers
+    // on the axis it covers LEAST, against a floor that is the rule rather than a measurement of a
+    // population. `detect-fills-its-frame.mjs`'s own header carries the full argument.
     const filled = graphicFillsItsFrame(
-      bindingAxisFraction(
+      containerFraction(
         { width: fit.mapWidth, height: fit.mapHeight },
-        { width: fit.windowWidth, height: fit.windowHeight },
+        { width: fit.stageWidth, height: fit.stageHeight },
       ),
       FLOOR_FRACTION,
     );
     check(
-      `fit ${w}x${h}: the map takes the axis it is bound on`,
+      `fit ${w}x${h}: the map takes the whole box its host gave it`,
       !filled.under,
-      `box ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} covers ${(filled.fraction * 100).toFixed(1)}% of the axis it is bound on, against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
+      `box ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} covers ${(filled.fraction * 100).toFixed(1)}% of a ${Math.round(fit.stageWidth)}x${Math.round(fit.stageHeight)} container, against a ${(FLOOR_FRACTION * 100).toFixed(1)}% floor`,
     );
     check(
       `fit ${w}x${h}: the whole beat is inside the window`,
