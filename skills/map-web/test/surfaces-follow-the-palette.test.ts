@@ -332,46 +332,95 @@ describe("the axes the two surfaces travel", () => {
   });
 });
 
-describe("the copies of this decision still carrying the retired one", () => {
-  // The surfaces family is copied into every beat that draws a choropleth, and the copies are NOT
-  // held byte-identical by `geo-parity.test.ts` — nothing in the family is tagged `@parity`, which
-  // is that walk's own documented blind spot ("a family duplicated under a name that is tagged
-  // nowhere is invisible"). So the drift is pinned HERE, as an equality with the exact list: a beat
-  // that adopts the new decision is red until it is struck off, and a beat that starts carrying the
-  // retired one is red on the day it appears.
+describe("does this fix reach what a new beat copies?", () => {
+  // FOUR FIXES IN ONE WEEK FAILED TO TRAVEL BY THE SAME SHAPE — a decision landed in the skill and
+  // never reached the file a beat actually copies, and every guard stayed green because the
+  // populations that could have seen it were TYPED: `guard-copies-parity.test.ts` walks a list of
+  // paths between skills, and `guard-catalogue.json` states a rule per skill and can say nothing
+  // about a file under `proof/` or `stories/`. So this asks the question directly, over a
+  // population DERIVED from the risk itself: every file in the tree that decides what colour a
+  // region with no reading is painted — whether it derives one (`noDataFor`) or types one
+  // (`NO_DATA_FILL`). A beat that grows either joins the population on its own.
   const cores = (() => {
     const out: string[] = [];
     const walk = (dir: string) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        // `test/` is walked past for the reason every trait witness excludes `verify-`/`detect-`:
+        // this file names both shapes in its own source, and a population that counts the check
+        // among the things it checks is a population that can go green by deleting the check.
+        if (["node_modules", ".git", "test"].includes(entry.name)) continue;
         const path = join(dir, entry.name);
         if (entry.isDirectory()) walk(path);
-        else if (/^geo-choropleth\.ts$/.test(entry.name)) out.push(path);
+        else if (/\.tsx?$/.test(entry.name)) {
+          const text = readFileSync(path, "utf8");
+          if (/export function noDataFor\(|export const NO_DATA_FILL\b/.test(text)) out.push(path);
+        }
       }
     };
     walk(TWIN);
-    return out.sort();
+    return out.map((path) => relative(TWIN, path)).sort();
   })();
 
-  it("finds every choropleth core in the tree", () => {
-    expect(cores.length).toBeGreaterThanOrEqual(6);
+  it("finds every file in the tree that decides a no-data colour", () => {
+    // Nine: three that carry the derivation, three that still place it at the midpoint of the band,
+    // and three that type `#B9B9B9` outright. A tenth appearing is a beat that has to be looked at.
+    expect(cores).toHaveLength(9);
   });
 
-  it("names the beats whose colours are still placed at the midpoint of the band", () => {
-    const retired = cores
-      .filter((path) =>
-        readFileSync(path, "utf8").includes("export function offRampLuminance"),
-      )
-      .map((path) => relative(TWIN, path));
-    expect(retired).toEqual([
-      // All three are outside the ownership of the round that replaced this decision. Each carries
-      // its own copy, so each still refuses and still passes exactly as it did — no page in the
-      // tree changed behaviour without being re-rendered. What they measure today, with the
-      // decision this file now holds: their no-data fill sits at 1.2–1.3:1 from their own first
-      // class, the same defect, on the same arithmetic.
+  it("puts the derivation in the SKILL and in the beat a producer is told to copy", () => {
+    // `map-web/SKILL.md`'s own "Producing a choropleth" names `proof/mapgen-choropleth-web` as the
+    // complete worked beat to copy, and a story written hours after a fix copies that, not this
+    // skill's `scripts/`. Both have to carry it or the fix has not travelled.
+    const carried = cores.filter((path) =>
+      readFileSync(join(TWIN, path), "utf8").includes("export function surfaceReadings("),
+    );
+    expect(carried).toEqual([
+      "proof/mapgen-choropleth-web/geo-choropleth.ts",
+      "skills/map-web/assets/geo-choropleth.ts",
+      "stories/r9-map-web-reported-rabies-deaths/beats/1-what-the-world-wrote-down/geo-choropleth.ts",
+    ]);
+  });
+
+  it("names every beat still deciding it the old way, with what each one measures", () => {
+    // Pinned as an EQUALITY, with the numbers, so a beat that adopts the decision is red until it is
+    // struck off and a beat that starts carrying the defect is red on the day it appears. Nothing
+    // in the tree holds these copies byte-identical: the surfaces family carries no `@parity` tag,
+    // and `geo-parity.test.ts`'s own note says a family tagged nowhere is invisible to it.
+    const behind = cores.filter(
+      (path) => !readFileSync(join(TWIN, path), "utf8").includes("export function surfaceReadings("),
+    );
+    expect(behind).toEqual([
+      // Measured with the decision this file holds, each on its own recorded ground:
+      //
+      //   MIDPOINT, on #16191B — no-data #2f2f2f (0.0284) against class 1 #3f3d34 (0.0464): 1.23:1,
+      //   and its sea #282f35 against that same no-data fill: 1.013:1. All three, identically.
+      //
+      //   LITERAL #B9B9B9 (0.4851), which is worse in a quieter way — it does not approximate a
+      //   class, it lands ON one: 1.09:1 from `#b1c5c5`, the third class of the light scrolly beat,
+      //   and 1.24:1 from `#b7a47d` on the two dark ones. Their sea is the literal `#AAC9E0`, 1.134:1
+      //   from the no-data grey, which is the pair rule 7 was written to keep apart.
+      //
+      // `mapscrolly-one-map-europe-carbon` is the one of the three inside this round's ownership. It
+      // is left here rather than migrated because moving its sea means re-baking a scrolly plate and
+      // re-driving a four-track vehicle, and the number is recorded so the work is scoped rather
+      // than remembered.
+      "proof/mapscrolly-one-map-europe-carbon/geo-choropleth.ts",
       "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/geo-choropleth.ts",
       "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/geo-choropleth.ts",
       "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/geo-choropleth.ts",
+      "stories/stress-l-mixed-unit-clinics/beats/mixed-unit-clinics/geo-clinics.ts",
+      "stories/stress-m-forest-loss/beats/forest-loss/geo-forest.ts",
     ]);
+  });
+
+  it("measures what each one still paints, rather than asserting that it is wrong", () => {
+    // The defect, reproduced from the literals themselves so the pin above carries evidence and not
+    // a claim. `#B9B9B9` is the constant every one of the three types.
+    const midpointDark = { noData: "#2f2f2f", class1: "#3f3d34", water: "#282f35" };
+    expect(contrastOf(midpointDark.noData, midpointDark.class1)).toBeCloseTo(1.229, 3);
+    expect(contrastOf(midpointDark.water, midpointDark.noData)).toBeCloseTo(1.013, 3);
+    expect(contrastOf("#B9B9B9", "#b1c5c5")).toBeCloseTo(1.09, 2);
+    expect(contrastOf("#B9B9B9", "#b7a47d")).toBeCloseTo(1.242, 3);
+    expect(contrastOf("#AAC9E0", "#B9B9B9")).toBeCloseTo(1.134, 3);
   });
 });
