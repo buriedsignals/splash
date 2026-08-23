@@ -12,6 +12,7 @@ import {
   resolveDatawrapperToken,
 } from "../scripts/produce.mjs";
 import { accentPaintsTheMarks } from "../scripts/detect-accent-reaches-the-marks.mjs";
+import { deleteChart } from "../scripts/dw-client.mjs";
 
 function baseSpec(overrides = {}) {
   return {
@@ -684,8 +685,9 @@ describe("produce against the real Datawrapper API", () => {
     "should produce a real static PNG for a small spec with a range annotation",
     async () => {
       const outDir = await mkdtemp(join(tmpdir(), "dw-beat-real-"));
+      let result;
       try {
-        const result = await produce(
+        result = await produce(
           baseSpec({ rangeAnnotations: [{ value: 20, label: "reference" }] }),
           { outDir, name: "real", size: "landscape", token, fetchFn: fetch },
         );
@@ -693,6 +695,9 @@ describe("produce against the real Datawrapper API", () => {
         const bytes = await readFile(result.pngPath);
         expect(bytes.length).toBeGreaterThan(0);
       } finally {
+        // The chart this run PUBLISHED on a real account goes with it. See `deleteChart` in
+        // `dw-client.mjs` for what these live cases cost while nobody could see them running.
+        if (result?.chartId) await deleteChart(result.chartId, token, fetch);
         await rm(outDir, { recursive: true, force: true });
       }
     },

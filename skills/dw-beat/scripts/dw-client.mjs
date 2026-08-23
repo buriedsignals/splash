@@ -130,6 +130,30 @@ export async function exportChartPng(id, token, fetchFn = fetch, { width = 900, 
   return new Uint8Array(await readBody(call, "arrayBuffer"));
 }
 
+/**
+ * DELETE one chart. The capability a producer that CREATES needs and did not have.
+ *
+ * Found 2026-08-23 by the first agent ever to exercise this format's live path here: the suite
+ * creates and PUBLISHES three charts on a real account per run and deleted none of them. That was
+ * invisible for as long as the live tests skipped — they read the canonical token name while the
+ * root held only the alias — so making them run turned a silent skip into an unbounded write on a
+ * real newsroom account, three more objects on every `bun test`. The account held 1 139.
+ *
+ * A tool that can make a thing on somebody's account and not unmake it leaves the cleaning up to a
+ * human who does not know it happened.
+ */
+export async function deleteChart(id, token, fetchFn = fetch, options = {}) {
+  const call = await request(
+    `${API_BASE}/charts/${chartIdForPath(id)}`,
+    { method: "DELETE", headers: authHeaders(token) },
+    fetchFn,
+    "delete chart",
+    options.timeoutMs,
+  );
+  await assertOk(call);
+  return { id: chartIdForPath(id), deleted: true };
+}
+
 export async function getChart(id, token, fetchFn = fetch, options = {}) {
   const call = await request(
     `${API_BASE}/charts/${chartIdForPath(id)}`,

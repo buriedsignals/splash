@@ -5,6 +5,7 @@ import {
   setChartData,
   patchMetadata,
   publishChart,
+  deleteChart,
   exportChartPng,
   getChart,
 } from "../scripts/dw-client.mjs";
@@ -221,6 +222,11 @@ describe("against the real Datawrapper API", () => {
   it.skipIf(!token)(
     "should create, set data on, patch, publish and export a real chart",
     async () => {
+      // WHAT THIS TEST LEAVES BEHIND, and why it now leaves nothing (2026-08-23). This created and
+      // PUBLISHED a chart on a real Datawrapper account and deleted nothing. It was invisible while
+      // the live tests skipped — they read the canonical token name and the root holds only the
+      // alias — so making them run turned a silent skip into three more published objects on a real
+      // newsroom account on every `bun test`. The account held 1 139.
       const chart = await createChart(
         {
           title: "dw-beat client test",
@@ -231,20 +237,26 @@ describe("against the real Datawrapper API", () => {
         fetch,
       );
       expect(chart.id).toBeTruthy();
-      await setChartData(chart.id, "year,value\n2000,1\n2010,9", token, fetch);
-      await patchMetadata(
-        chart.id,
-        { describe: { intro: "test" } },
-        token,
-        fetch,
-      );
-      const published = await publishChart(chart.id, token, fetch);
-      expect(published.publicUrl ?? published.data?.publicUrl).toBeTruthy();
-      const png = await exportChartPng(chart.id, token, fetch, {
-        width: 400,
-        height: 300,
-      });
-      expect(png.length).toBeGreaterThan(0);
+      try {
+        await setChartData(chart.id, "year,value\n2000,1\n2010,9", token, fetch);
+        await patchMetadata(
+          chart.id,
+          { describe: { intro: "test" } },
+          token,
+          fetch,
+        );
+        const published = await publishChart(chart.id, token, fetch);
+        expect(published.publicUrl ?? published.data?.publicUrl).toBeTruthy();
+        const png = await exportChartPng(chart.id, token, fetch, {
+          width: 400,
+          height: 300,
+        });
+        expect(png.length).toBeGreaterThan(0);
+      } finally {
+        // In `finally`, so a failing assertion above still takes its chart with it — a test that
+        // only cleans up when it passes litters exactly when someone is least likely to notice.
+        await deleteChart(chart.id, token, fetch);
+      }
     },
     30000,
   );

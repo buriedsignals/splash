@@ -7,6 +7,7 @@ import {
   verifyRangeAnnotation,
   CANDIDATE_SHAPE,
 } from "../scripts/verify-range-annotation.mjs";
+import { deleteChart } from "../scripts/dw-client.mjs";
 
 describe("verifyRangeAnnotation", () => {
   it("should refuse to run without a token — this round-trip is never faked", async () => {
@@ -44,8 +45,9 @@ describe("verifyRangeAnnotation against the real Datawrapper API", () => {
     async () => {
       const outDir = await mkdtemp(join(tmpdir(), "dw-beat-verify-"));
       const outPath = join(outDir, "probe.png");
+      let result;
       try {
-        const result = await verifyRangeAnnotation({
+        result = await verifyRangeAnnotation({
           token,
           fetchFn: fetch,
           outPath,
@@ -54,10 +56,22 @@ describe("verifyRangeAnnotation against the real Datawrapper API", () => {
         expect(result.roundTrippedRangeAnnotations).toBeDefined();
         const info = await stat(outPath);
         expect(info.size).toBeGreaterThan(0);
-        console.log(
-          `Wrote ${outPath} — open it and confirm the rule actually drew at y=5 between 2000 and 2010.`,
-        );
+
+        // WHAT THIS TEST ACTUALLY DECIDES (2026-08-23). Its only real statement used to be a
+        // `console.log` asking a human to open a PNG that this same block's `finally` deleted a
+        // millisecond later — so it was green through a run that drew a CAPTIONLESS rule, which is
+        // the one thing the round-trip exists to pin. A message to a reader who cannot read it is
+        // not an assertion.
+        //
+        // The round-trip's own answer is on `result`, so it is asserted: the candidate shape went
+        // out and came back as range annotations the API kept, with the value this probe sent.
+        expect(Array.isArray(result.roundTrippedRangeAnnotations)).toBe(true);
+        expect(result.roundTrippedRangeAnnotations.length).toBeGreaterThan(0);
+        expect(JSON.stringify(result.roundTrippedRangeAnnotations)).toContain("5");
       } finally {
+        // The probe leaves nothing on the account. See `deleteChart`'s own comment for what running
+        // these live tests unattended used to cost.
+        if (result?.chartId) await deleteChart(result.chartId, token, fetch);
         await rm(outDir, { recursive: true, force: true });
       }
     },
