@@ -41,6 +41,7 @@ import {
   READING_VIEWPORTS,
 } from "../scripts/verify-fills-the-box.mjs";
 import { discoverMapWebPages } from "../scripts/discover-pages.mjs";
+import { FULL_TURN_DEG } from "../assets/live-map.mjs";
 
 describe("containerFraction — the worse of the two axes, never an area and never the better one", () => {
   it("reads 1.0 for a box that is its container", () => {
@@ -152,7 +153,18 @@ type Reading = {
   container: { width: number; height: number };
   box: { width: number; height: number };
   cannotCover: unknown;
+  /** The page's own camera, in degrees of longitude, read off the plate beside it. */
+  lonSpan: number;
 };
+
+/** A camera's own longitude span, from the plate's recorded bounds — the same reading
+ *  `spansTheWorld` and `cannotCover` are derived from, so which pages wrap is never typed. */
+function lonSpanOf(geometry: { bounds?: number[][] } | null | undefined): number {
+  const bounds = geometry?.bounds;
+  return Array.isArray(bounds) && bounds.length === 2
+    ? Math.abs(bounds[1][0] - bounds[0][0])
+    : 0;
+}
 
 /** Every delivered page, at every width, measured once in one browser. The box AND the container, so
  *  the reading and the thing it is a fraction OF are both in the failure message — a bare percentage
@@ -195,6 +207,7 @@ async function readEveryPage(): Promise<Reading[]> {
           container: measured.container,
           box: measured.box,
           cannotCover: geometry?.cannotCover ?? null,
+          lonSpan: lonSpanOf(geometry),
         });
       }
     }
@@ -241,13 +254,26 @@ describe("the graphic takes the whole box its host gives it", () => {
         .map(({ rel }) => rel),
     );
     expect([...falling].sort()).toEqual([...STATED_EXCEPTIONS].sort());
-    // …and the two pages that used to be here are still WORLD cameras: the exception was retired
+    // …and the pages that used to be in that list are still WORLD cameras: the exception was retired
     // because the layout changed, never because the geography did.
-    const wrapping = readings.filter((one) => one.cannotCover !== null).map(({ rel }) => rel);
-    expect([...new Set(wrapping)].sort()).toEqual([
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
-    ]);
+    //
+    // DERIVED, NOT TYPED, and this is the second half of the same lesson. Until 2026-08-23 the two
+    // wrapping pages were named here by path, so the first world beat an outside story shipped
+    // reddened this assertion for existing — in a skill its author was not allowed to edit. The set
+    // of pages that wrap has one honest definition: the pages whose own plate spans a full turn of
+    // longitude. Both sides are read off disk, so a world camera that stops wrapping and a continent
+    // that starts are each a red, and a story that ships a new world map is not.
+    const wrapping = [
+      ...new Set(readings.filter((one) => one.cannotCover !== null).map(({ rel }) => rel)),
+    ].sort();
+    const worldCameras = [
+      ...new Set(
+        readings.filter((one) => one.lonSpan >= FULL_TURN_DEG).map(({ rel }) => rel),
+      ),
+    ].sort();
+    expect(wrapping).toEqual(worldCameras);
+    // Anti-vacuity: this tree has world cameras in it, so an empty pair of lists is not the answer.
+    expect(worldCameras.length).toBeGreaterThan(0);
   }, 600000);
 
   it("is not vacuous: the rule still fires on a box that fell short", () => {

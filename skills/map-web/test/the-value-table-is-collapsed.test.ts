@@ -53,6 +53,10 @@ import {
   renderMapWeb,
 } from "../scripts/render-web.mjs";
 import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
+import {
+  RECORDED_PAGES,
+  pagesThatLeftTheWalk,
+} from "./delivered-pages-ratchet.ts";
 
 /**
  * The page's own MARKUP, with every `<style>` and `<script>` block taken out first.
@@ -102,53 +106,37 @@ describe("every committed map page keeps its value table collapsed", () => {
     // Anti-vacuity, and the reason this is not a bare `for` loop: a sweep that finds no work to do
     // passes, which is exactly how a guard stops covering what was added after it.
     //
-    // NINE, not seven: `stress-ab-emigration-flows`'s `where-the-routes-lead` ships a delivered
-    // page and its export copy (round six), after `stress-f-housing-pressure`'s
-    // `housing-pressure-choropleth` (2026-08-20/21). A count this exact is a ratchet on purpose —
-    // the next beat is expected to redden this list too, and whoever adds it is expected to bump it
-    // deliberately, by name, rather than have the guard widen itself into a floor.
-    expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/renders/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
-      "skills/map-web/output-proof/population.html",
-      // Added 2026-08-23: `r8-map-web-japan-bear-casualties` landed its render and its export copy,
-      // and reddened both lists on its own commit, which is the ratchet doing its job.
-      "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/renders/bear-casualties-by-prefecture.html",
-      "stories/r8-map-web-japan-bear-casualties/export/1-bear-casualties-by-prefecture/bear-casualties-by-prefecture.html",
-      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
-      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
-      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
-      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
-    ]);
+    // A PAGE MAY JOIN FREELY; NO PAGE MAY LEAVE UNNAMED. This used to be the whole population typed
+    // out here and in the clause below, with a note asking the next author to bump both lists by
+    // hand. One shipped story reddened eight assertions across this skill at once and its author was
+    // not allowed to edit any of them. `RECORDED_PAGES` names the population instead — argued in
+    // full in `test/delivered-pages-ratchet.ts`.
+    expect(
+      pagesThatLeftTheWalk(
+        RECORDED_PAGES,
+        pages.map((page) => page.abs),
+        TWIN,
+      ),
+    ).toEqual([]);
   });
 
   it("should be looking at pages that actually have a table to collapse", () => {
     // The second anti-vacuity clause, and the one that matters most here: "no page renders an
     // expanded table" is trivially true of a tree with no tables in it. `regionTable` now defaults
     // to true (`same-facts-without-the-picture`, 2026-08-20), and the seed carries it like every
-    // other beat — the floor is all nine committed pages, including the housing-pressure
-    // choropleth's own 8-row table of every country it declares and the emigration flow beat's
-    // TWO tables behind one disclosure (its eight routes and the five destinations they reach).
+    // other beat — the floor is EVERY recorded page, including the housing-pressure choropleth's own
+    // 8-row table of every country it declares and the emigration flow beat's TWO tables behind one
+    // disclosure (its eight routes and the five destinations they reach). A recorded page that stops
+    // carrying a table drops out of `withTables` and is named here, which is the reading that
+    // matters: the clause is about a page LOSING its table, not about how many pages there are.
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
-    expect(withTables.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/renders/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
-      "skills/map-web/output-proof/population.html",
-      // Added 2026-08-23: `r8-map-web-japan-bear-casualties` landed its render and its export copy,
-      // and reddened both lists on its own commit, which is the ratchet doing its job.
-      "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/renders/bear-casualties-by-prefecture.html",
-      "stories/r8-map-web-japan-bear-casualties/export/1-bear-casualties-by-prefecture/bear-casualties-by-prefecture.html",
-      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
-      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
-      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
-      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
-    ]);
+    expect(
+      pagesThatLeftTheWalk(
+        RECORDED_PAGES,
+        withTables.map((page) => page.abs),
+        TWIN,
+      ),
+    ).toEqual([]);
   });
 
   for (const page of pages)

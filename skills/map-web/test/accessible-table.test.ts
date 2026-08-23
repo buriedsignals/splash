@@ -26,7 +26,11 @@
  */
 import { describe, expect, it } from "bun:test";
 import { tableCarriesTheMarks } from "../scripts/detect-accessible-table.mjs";
-import { discoverMapWebPages } from "../scripts/discover-pages.mjs";
+import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
+import {
+  RECORDED_PAGES,
+  pagesThatLeftTheWalk,
+} from "./delivered-pages-ratchet.ts";
 
 describe("an accessible table carries the marks' own values", () => {
   const page = (table: string) =>
@@ -163,7 +167,14 @@ describe("this format's own real pages, measured against the widened detector", 
     // bumped deliberately rather than widened into a floor. 10 -> 12 on 2026-08-23:
     // `stories/r8-map-web-japan-bear-casualties` landed its render and its export copy.
     const pages = discoverMapWebPages();
-    expect(pages.length).toBe(12);
+    // A PAGE MAY JOIN FREELY; NO PAGE MAY LEAVE UNNAMED. This used to be `expect(…length).toBe(12)`
+    // under a paragraph asking the next author to bump it by hand — a count that cannot say WHICH
+    // page went missing, stays green on one-in-one-out, and whose honest edit is indistinguishable
+    // from the edit that papers a page over. `RECORDED_PAGES` names the population instead.
+    // Argued in full in `test/delivered-pages-ratchet.ts`.
+    expect(
+      pagesThatLeftTheWalk(RECORDED_PAGES, pages.map((page) => page.abs), TWIN),
+    ).toEqual([]);
     const offenders: string[] = [];
     for (const page of pages) {
       const found = tableCarriesTheMarks(page.html);

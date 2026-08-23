@@ -62,6 +62,10 @@ import { join } from "node:path";
 import { deriveFurniture } from "../scripts/render-still.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { SEED, livePlan, renderMapWeb } from "../scripts/render-web.mjs";
+import {
+  RECORDED_PAGES,
+  pagesThatLeftTheWalk,
+} from "./delivered-pages-ratchet.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 
@@ -284,29 +288,19 @@ describe("every committed map-web page is a live map", () => {
     // Every map-web beat in the tree, named, so a beat that stops committing its own rendered file
     // reddens here rather than disappearing from the check.
     //
-    // TEN, not nine: `real-owid-life-expectancy`'s `1-life-expectancy-2023` (2026-08-22) is the
-    // first world choropleth this format has shipped — 241 regions, driven live with a real key —
-    // and it reddened this list the moment it was committed, which is the ratchet doing its job.
-    // Before it: `stress-ab-emigration-flows`'s `where-the-routes-lead` and its export copy (round
-    // six), and `stress-f-housing-pressure`'s `housing-pressure-choropleth` (2026-08-20/21). This
-    // list is an exact ratchet on purpose — the next beat is expected to redden it too, bumped
-    // deliberately by name rather than widened into a floor.
-    expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/renders/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
-      "skills/map-web/output-proof/population.html",
-      // Added 2026-08-23: `r8-map-web-japan-bear-casualties` landed its render and its export copy,
-      // and reddened this list on its own commit, which is the ratchet doing its job.
-      "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/renders/bear-casualties-by-prefecture.html",
-      "stories/r8-map-web-japan-bear-casualties/export/1-bear-casualties-by-prefecture/bear-casualties-by-prefecture.html",
-      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
-      "stories/stress-ab-emigration-flows/beats/1-where-the-routes-lead/renders/where-the-routes-lead.html",
-      "stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/where-the-routes-lead.html",
-      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/renders/housing-pressure-choropleth.html",
-    ]);
+    // A PAGE MAY JOIN FREELY; NO PAGE MAY LEAVE UNNAMED. This used to be the whole population typed
+    // out, with a note asking the next author to bump it by hand — a list whose honest edit is
+    // indistinguishable from the edit that papers over a page falling out of the walk, and which one
+    // shipped story reddened along with seven of its siblings, in a skill that story's author was
+    // not allowed to edit. `RECORDED_PAGES` names the population instead; argued in full in
+    // `test/delivered-pages-ratchet.ts`.
+    expect(
+      pagesThatLeftTheWalk(
+        RECORDED_PAGES,
+        pages.map((page) => join(TWIN, page.rel)),
+        TWIN,
+      ),
+    ).toEqual([]);
   });
 
   for (const page of pages)

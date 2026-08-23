@@ -13,6 +13,10 @@ import { join } from "node:path";
 import puppeteer from "puppeteer";
 import { keyboardReachesEveryMark } from "../scripts/detect-reachable-by-keyboard.mjs";
 import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
+import {
+  RECORDED_PAGES,
+  pagesThatLeftTheWalk,
+} from "./delivered-pages-ratchet.ts";
 
 setDefaultTimeout(600000);
 
@@ -60,7 +64,12 @@ describe("every map-web page on disk", () => {
     // bumped deliberately rather than widened into a floor. 10 -> 12 on 2026-08-23:
     // `stories/r8-map-web-japan-bear-casualties` landed its render and its export copy.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(12);
+    // A PAGE MAY JOIN FREELY; NO PAGE MAY LEAVE UNNAMED. This used to be `expect(…length).toBe(12)`
+    // under a paragraph asking the next author to bump it by hand — a count that cannot say WHICH
+    // page went missing, stays green on one-in-one-out, and whose honest edit is indistinguishable
+    // from the edit that papers a page over. `RECORDED_PAGES` names the population instead.
+    // Argued in full in `test/delivered-pages-ratchet.ts`.
+    expect(pagesThatLeftTheWalk(RECORDED_PAGES, files, TWIN)).toEqual([]);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {

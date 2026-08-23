@@ -14,6 +14,10 @@ import { join } from "node:path";
 import puppeteer from "puppeteer";
 import { staticFrameSurvives } from "../scripts/detect-degrades-without-javascript.mjs";
 import { discoverMapWebPages, TWIN } from "../scripts/discover-pages.mjs";
+import {
+  RECORDED_PAGES,
+  pagesThatLeftTheWalk,
+} from "./delivered-pages-ratchet.ts";
 
 setDefaultTimeout(600000);
 
@@ -63,7 +67,12 @@ describe("every map-web page on disk", () => {
     // ratchet did exactly what it is for — it went red on the beat's own commit and is bumped here,
     // by hand, having driven both new pages.
     const files = discoverMapWebPages().map((page) => page.abs);
-    expect(files.length).toBe(12);
+    // A PAGE MAY JOIN FREELY; NO PAGE MAY LEAVE UNNAMED. This used to be `expect(…length).toBe(12)`
+    // under a paragraph asking the next author to bump it by hand — a count that cannot say WHICH
+    // page went missing, stays green on one-in-one-out, and whose honest edit is indistinguishable
+    // from the edit that papers a page over. `RECORDED_PAGES` names the population instead.
+    // Argued in full in `test/delivered-pages-ratchet.ts`.
+    expect(pagesThatLeftTheWalk(RECORDED_PAGES, files, TWIN)).toEqual([]);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {

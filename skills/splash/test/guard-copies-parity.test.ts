@@ -323,6 +323,23 @@ const COPIES: Record<string, string[]> = {
   // `csvSplitByHand` is green on that defect and always was: there is no bare comma split in a
   // per-character splitter. This registry entry is what the guard could not be.
   parseCsv: ["intake/scripts/csv.mjs", "storyboard/scripts/ground-claim.mjs"],
+  // THE POPULATION RATCHET, and the second skill grew one the same day the first did. `chart-web`
+  // replaced five `expect(files.length).toBe(24)` counts with a record of NAMES on 2026-08-23;
+  // `map-web` had eight of the same counts and lists, and one shipped story reddened all eight at
+  // once for existing. The property is "a page may JOIN freely, no page may LEAVE unnamed", and it
+  // has to be one decision: a copy that compared the raw absolute paths, or that returned the
+  // pages that joined instead of the ones that left, would leave its skill's walks green while a
+  // delivered page quietly dropped out of every capability that measures it. Both are walked, not
+  // only the refusing one — `pagesThatJoinedTheWalk` is what keeps each record from rotting, and a
+  // copy that stopped naming joins would make the other skill's ratchet stale by silence.
+  pagesThatLeftTheWalk: [
+    "chart-web/test/delivered-pages-ratchet.ts",
+    "map-web/test/delivered-pages-ratchet.ts",
+  ],
+  pagesThatJoinedTheWalk: [
+    "chart-web/test/delivered-pages-ratchet.ts",
+    "map-web/test/delivered-pages-ratchet.ts",
+  ],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.
