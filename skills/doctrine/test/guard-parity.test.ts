@@ -166,10 +166,14 @@ describe("the guard catalogue", () => {
   // AND THE LIST IS EMPTY AGAIN, on 2026-08-23, a few hours after it was written. The four cells
   // widening the population exposed were an exact, pinned list so that a fifth could not appear
   // unnoticed while they were being paid; all four are paid, so the list is what it was written to
-  // become. Two of them were live defects rather than missing paperwork — `splash`'s own
+  // become. ONE of them was a live defect rather than missing paperwork, and it is worth naming
+  // because the other three were not: `deliver` shipped every delivered map with a dead tile layer,
+  // measured, because the root's `.env` held the MapTiler key under the engine's own names and its
+  // hand-written two-name fallback read that back as no key at all. `splash`'s own
   // `run-operation.mjs` read `CLOUDFLARE_API_TOKEN` by its canonical name between two lines that
-  // resolved aliases, and `deliver` shipped every delivered map with a dead tile layer because the
-  // root's `.env` held the MapTiler key under the engine's names.
+  // resolved aliases — the same shape, with nothing behind it today, since that credential has no
+  // alias; the two csv cells were clean when the rule arrived and the debt there was the missing
+  // sweep. Running the storyboard reader anyway found a real defect the guard cannot see.
   //
   // IT MAY ONLY EVER GET SHORTER, and it cannot get shorter than this. This assertion is now the
   // whole tree's version of the one above it: a rule reaching one more skill, a skill growing one
