@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
 import { readFile } from "node:fs/promises";
-import { basename, relative } from "node:path";
-import { materialise } from "./deliver.mjs";
+import { basename, dirname, join, relative } from "node:path";
+import { KEYED_DELIVERY_DIR, materialise } from "./deliver.mjs";
 import { resolveEnvKey } from "./env-keys.mjs";
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -32,10 +32,40 @@ async function readRequest() {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-function keyState(files) {
+/**
+ * WHETHER THE RESTRICTED KEY ACTUALLY REACHED THE ARTIFACT THAT CARRIES IT — asked of the file that
+ * carries it, which as of 2026-08-23 is not the file that lands in `export/<beat>/`.
+ *
+ * D1: a live key may not be committed and the export is inside the repository, so `materialise` now
+ * writes the record with the placeholder and the DELIVERY into `export/<beat>/keyed/`. This used to
+ * scan the record bodies for the key and would now answer "none" on every successful keyed
+ * delivery — a mechanism reporting a failure that had not happened, which is the same shape as one
+ * reporting a success that had not.
+ *
+ * AND THE RECORD IS CHECKED IN THE OTHER DIRECTION, at the seal, because this is the last place the
+ * bytes are in hand before they are committed: a record body carrying the key is a leak and stops
+ * the operation rather than being reported.
+ */
+async function keyStateOf(written, readFileFn) {
   const key = resolveEnvKey(process.env, "MAPTILER_DELIVERY_KEY");
   if (!key) return "unkeyed";
-  return files.some((body) => body.includes(key)) ? "restricted" : "none";
+  const read = async (path) => {
+    try {
+      return await readFileFn(path, "utf8");
+    } catch {
+      return "";
+    }
+  };
+  for (const path of written)
+    if ((await read(path)).includes(key))
+      throw new Error(
+        `the delivered record ${basename(path)} carries the live MapTiler key. The key belongs in ` +
+          `${KEYED_DELIVERY_DIR}/, which git cannot commit; the record carries the placeholder.`,
+      );
+  const keyed = await Promise.all(
+    written.map((path) => read(join(dirname(path), KEYED_DELIVERY_DIR, basename(path)))),
+  );
+  return keyed.some((body) => body.includes(key)) ? "restricted" : "none";
 }
 
 export async function runSealedDelivery(
@@ -58,18 +88,9 @@ export async function runSealedDelivery(
       form: "owned-file",
       env: { MAPTILER_DELIVERY_KEY: resolveEnvKey(process.env, "MAPTILER_DELIVERY_KEY") },
     });
-    const bodies = await Promise.all(
-      written.map(async (path) => {
-        try {
-          return await readFileFn(path, "utf8");
-        } catch {
-          return "";
-        }
-      }),
-    );
     return {
       outputs: written.map((path) => relative(request.storiesRoot, path)),
-      keyState: keyState(bodies),
+      keyState: await keyStateOf(written, readFileFn),
     };
   }
   if (operation === "materialise-embed") {

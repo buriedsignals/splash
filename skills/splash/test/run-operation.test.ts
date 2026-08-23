@@ -245,7 +245,12 @@ describe("closed Splash operation runner", () => {
     delete process.env.VITE_MAPTILER_KEY;
   });
 
-  test("map delivery writes the client-publishable key only to the final artifact", async () => {
+  // D1, 2026-08-23: the key no longer goes into the file that lands in `export/<beat>/`, because
+  // that file is inside the repository and a live key may never be committed. The delivery writes
+  // TWO copies — the record with the placeholder, and `export/<beat>/keyed/<page>` with the
+  // substitution, in a directory made un-committable by its own `.gitignore`. Everything this test
+  // guarded still holds and is asserted below; what moved is which of the two files carries the key.
+  test("map delivery writes the client-publishable key only to the copy git cannot commit", async () => {
     const fixture = await storyFixture();
     const beat = join(fixture.story, "beats", "map");
     const input = join(beat, "renders", "source.html");
@@ -270,11 +275,28 @@ describe("closed Splash operation runner", () => {
         planVersion: TEST_PLAN_VERSION,
       },
     });
-    const final = await readFile(
+    // The RECORD, which is what a `git add -A` would sweep up: placeholder, never the key.
+    const record = await readFile(
       join(fixture.story, "export", "map", "source.html"),
       "utf8",
     );
-    expect(final).toContain("restricted-delivery-canary-12345");
+    expect(record).toContain("__MAPTILER" + "_KEY__");
+    expect(record).not.toContain("restricted-delivery-canary-12345");
+    // The DELIVERY, which is the copy the newsroom publishes.
+    const keyed = await readFile(
+      join(fixture.story, "export", "map", "keyed", "source.html"),
+      "utf8",
+    );
+    expect(keyed).toContain("restricted-delivery-canary-12345");
+    // And what keeps it out of the repository: the directory ignores its own whole contents.
+    expect(
+      await readFile(
+        join(fixture.story, "export", "map", "keyed", ".gitignore"),
+        "utf8",
+      ),
+    ).toContain("*");
+    // Unchanged, and the reason this test was written: the key reaches neither the beat's own
+    // render nor anything the operation hands back.
     expect(await readFile(input, "utf8")).not.toContain(
       "restricted-delivery-canary-12345",
     );
