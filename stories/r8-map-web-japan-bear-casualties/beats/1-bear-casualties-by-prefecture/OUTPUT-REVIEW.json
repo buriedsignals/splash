@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "review-1",
+  "outputId": "1-bear-casualties-by-prefecture",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:d9bb87936cc15cdb43c311368552ac20773e0d19bd97d0e8f9e35d8d71c316f1",
+  "findingIds": [
+    "takeaway-tohoku-holds-158-of-238",
+    "akita-is-67-and-the-largest-mark",
+    "every-mark-answers-a-real-pointer-or-a-key",
+    "the-eight-unlisted-prefectures-are-not-drawn-and-are-named"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-bear-casualties-by-prefecture",
+      "planVersion": 1,
+      "draftDigest": "sha256:d9bb87936cc15cdb43c311368552ac20773e0d19bd97d0e8f9e35d8d71c316f1",
+      "findingIds": [
+        "takeaway-tohoku-holds-158-of-238",
+        "akita-is-67-and-the-largest-mark",
+        "every-mark-answers-a-real-pointer-or-a-key",
+        "the-eight-unlisted-prefectures-are-not-drawn-and-are-named"
+      ],
+      "id": "qa-live-and-fallback-2026-08-23",
+      "status": "passed",
+      "completedAt": "2026-08-23T09:20:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "The angle is that Japan record bear year is a regional one. The evidence is the environment ministry own preliminary casualty table for fiscal 2025, one column of it, transcribed as published and joined to Natural Earth admin-1 label points with every silence declared: 47 aliases, 8 prefectures the ministry does not list, 0 readings landing on no shape. The 39 drawn values sum to 238, the ministry own published national total. Tohoku six prefectures hold 158 of those 238 and Akita alone 67. Nothing on the page is divided by anything: the ministry publishes no population beside these counts, so the beat draws counts and its caveat says it is not a rate.",
+  "decision": "approve",
+  "reviewer": "journalist",
+  "decidedAt": "2026-08-23T09:25:00Z",
+  "notes": "Driven in a real browser at five viewport sizes on both layers: 39 of 39 marks answer a real pointer, all 39 are reachable by keyboard, every filter chip narrows map and table together, and the page renders complete with JavaScript disabled."
+}

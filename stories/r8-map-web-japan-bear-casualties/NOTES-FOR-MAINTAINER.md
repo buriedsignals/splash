@@ -269,3 +269,31 @@ canonical bake in `assertCameraReachesBounds`. My own copied bake passes the sam
   `custom` as the only answer. No guessing.
 - The typeface proposal measured every recorded face on this machine and said plainly that Space
   Grotesk draws identical ink to a nonsense family here. Nothing was silently substituted.
+
+## deliver — G3's record is named now, but four of its required values and their vocabulary are not
+
+`splash/SKILL.md` says the G3 row "now names the record and the function that writes it", closing a
+gate that used to be "a wall". It names `writeOutputReview`, the `renders/` digest, the plan version,
+the finding IDs and a passing QA run. It does not name `angleEvidenceBrief`, which is required and
+undocumented, and it does not give the vocabulary the validator insists on. Four consecutive throws,
+in this order, each discovered by running it:
+
+    findingIds must name at least one finding ID
+    qaRuns[0].status must be "passed" or "failed"        (I had passed "pass")
+    OutputReview.angleEvidenceBrief must be a non-empty string
+    OutputReview.decision must be "approve", ...          (I had passed "approved")
+
+Every message is good; the documented path just does not lead through them. Same shape one level
+down at G4: `materialise` refuses without `handover.language`, which `STORYBOARD.md` already records
+and `whereIs` already parses, and without `handover.placement`, which is hand field 4 — both are on
+disk and neither is read.
+
+## deliver — the hand-over describes the key state of the ENV, and calls it the file's
+
+The delivered `HANDOVER.md` reads *"No MapTiler key was recorded, so this page does not draw its map
+live"*. That is true of the environment I deliberately handed `materialise` — this repository is
+public and a live key was committed to it once — and it is what should be on disk. It is not true of
+this machine, which has a working key that `runPreflight` probed to a 200 in the same session. A
+journalist reading that sentence would go and record a key they already have.
+`mapKeyState` has four states and no fifth; the missing fifth is "a key exists and this delivery was
+asked not to use it", which is the state every delivery into a public repository is in.
