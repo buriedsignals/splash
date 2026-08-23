@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "review-r8-halemaumau-1",
+  "outputId": "1-halemaumau-filling",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:e40471d284d30861e075893d539434f865d9b8252cd5fc8e7458079acb4c3d5a",
+  "findingIds": [
+    "R8-checkweight-names-undefined",
+    "R8-credit-never-wraps",
+    "R8-image-medium-has-one-treatment",
+    "R8-typeface-unreachable-by-this-format"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-halemaumau-filling",
+      "planVersion": 1,
+      "draftDigest": "sha256:e40471d284d30861e075893d539434f865d9b8252cd5fc8e7458079acb4c3d5a",
+      "findingIds": [
+        "R8-checkweight-names-undefined",
+        "R8-credit-never-wraps",
+        "R8-image-medium-has-one-treatment",
+        "R8-typeface-unreachable-by-this-format"
+      ],
+      "id": "qa-r8-halemaumau-1",
+      "status": "passed",
+      "completedAt": "2026-08-23T08:54:59.452Z"
+    }
+  ],
+  "angleEvidenceBrief": "Three photographs from the USGS Hawaiian Volcano Observatory, pulled off its own media pages on 23 August 2026, showing the floor of Halemaʻumaʻu being rebuilt: the observatory’s fixed B1cam at episode 1 and at episode 50 eighteen months later, the 16 July overflight of the resurfaced western floor, and the 12 August panorama of episode 53. The evidence is the photographs; every number on the frame is the observatory’s, quoted from its own 16 July 2026 Volcano Watch article, and G1 returned unverifiable because the frozen manifest is a photograph manifest with no quantity in it. One photograph has no photographer and its credit says so; its alt text was written at the desk by a person who opened the file, because nothing mechanical may write one.",
+  "decision": "approve",
+  "reviewer": "desk (round-eight run, journalist decision taken by the producer)",
+  "decidedAt": "2026-08-23T08:54:59.452Z",
+  "notes": "Looked at renders/still.png at 1920x1080, the size BRIEF.md pins and the size the delivered PNG own IHDR measures. Letterbox geometry exact on all three aspect ratios (0.881 -> 394x447, 1.500 -> 536x357, 2.715 -> 536x197 inside one 536x447 box). Approved with four caveats recorded rather than fixed; three of the four are the format and not this beat."
+}
