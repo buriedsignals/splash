@@ -1,0 +1,88 @@
+{
+  "takeaway": "EU antibiotic consumption reached 20.3 DDD per 1 000 inhabitants per day in 2024, 4.4 above the 2030 target of 15.9.",
+  "limits": "Defined daily doses per 1 000 inhabitants per day. The 2020-2021 fall is the pandemic, not policy; the EU mean is population-weighted and partly imputed where member states did not report.",
+  "credit": "Eurostat (sdg_03_70), compiled by ECDC through ESAC-Net",
+  "effectiveDate": "2026-03-05",
+  "language": "en",
+  "color": "#D4A853",
+  "chartType": "d3-lines",
+  "seriesLabel": "EU average",
+  "format": "static",
+  "data": [
+    {
+      "year": 2013,
+      "ddd": 21.6
+    },
+    {
+      "year": 2014,
+      "ddd": 21.1
+    },
+    {
+      "year": 2015,
+      "ddd": 21.7
+    },
+    {
+      "year": 2016,
+      "ddd": 20.9
+    },
+    {
+      "year": 2017,
+      "ddd": 20.4
+    },
+    {
+      "year": 2018,
+      "ddd": 20.2
+    },
+    {
+      "year": 2019,
+      "ddd": 19.9
+    },
+    {
+      "year": 2020,
+      "ddd": 16.4
+    },
+    {
+      "year": 2021,
+      "ddd": 16.4
+    },
+    {
+      "year": 2022,
+      "ddd": 19.4
+    },
+    {
+      "year": 2023,
+      "ddd": 20
+    },
+    {
+      "year": 2024,
+      "ddd": 20.3
+    }
+  ],
+  "rangeAnnotations": [
+    {
+      "value": 15.9,
+      "label": "2030 target — 15.9",
+      "axis": "y",
+      "strokeType": "dashed",
+      "strokeWidth": 2,
+      "color": "#5B8A8A"
+    }
+  ],
+  "textAnnotations": [
+    {
+      "x": "2013-01-01",
+      "y": 15.9,
+      "text": "2030 target — 15.9",
+      "align": "bl",
+      "dy": -6,
+      "color": "#5B8A8A"
+    },
+    {
+      "x": "2020-07-01",
+      "y": 16.4,
+      "text": "pandemic years",
+      "align": "tc",
+      "dy": 14
+    }
+  ]
+}

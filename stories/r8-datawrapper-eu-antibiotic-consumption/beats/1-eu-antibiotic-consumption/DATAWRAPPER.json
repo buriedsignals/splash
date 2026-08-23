@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "provider": "datawrapper",
+  "state": "local-complete",
+  "outputId": "1-eu-antibiotic-consumption",
+  "chartId": "Ob0NA",
+  "chartType": "d3-lines",
+  "format": "static",
+  "attemptId": "c6060a20-f82f-46f3-9889-b2e107136ad3",
+  "specDigest": "sha256:571d6a9983356f5a8c57984cb8d2f416033e1c22291611fb0eb63b152ef88b89",
+  "publicUrl": "https://datawrapper.dwcdn.net/Ob0NA/6/",
+  "editableSpec": "spec.json",
+  "renderedArtifact": "renders/chart.png",
+  "createdAt": "2026-08-23T08:38:00.960Z",
+  "updatedAt": "2026-08-23T08:42:03.327Z"
+}
