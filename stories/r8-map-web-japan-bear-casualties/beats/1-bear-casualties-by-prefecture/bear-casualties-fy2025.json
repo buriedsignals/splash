@@ -1,0 +1,353 @@
+[
+  {
+    "key": "jp-05",
+    "name": "Akita",
+    "nameJa": "秋田県",
+    "lon": 140.334,
+    "lat": 39.7318,
+    "value": 67,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-03",
+    "name": "Iwate",
+    "nameJa": "岩手県",
+    "lon": 141.364,
+    "lat": 39.5715,
+    "value": 40,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-07",
+    "name": "Fukushima",
+    "nameJa": "福島県",
+    "lon": 140.099,
+    "lat": 37.4153,
+    "value": 24,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-15",
+    "name": "Niigata",
+    "nameJa": "新潟県",
+    "lon": 139.005,
+    "lat": 37.5471,
+    "value": 17,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-20",
+    "name": "Nagano",
+    "nameJa": "長野県",
+    "lon": 138.019,
+    "lat": 36.0666,
+    "value": 16,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-10",
+    "name": "Gunma",
+    "nameJa": "群馬県",
+    "lon": 139.025,
+    "lat": 36.5592,
+    "value": 12,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-06",
+    "name": "Yamagata",
+    "nameJa": "山形県",
+    "lon": 140.084,
+    "lat": 38.4024,
+    "value": 12,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-02",
+    "name": "Aomori",
+    "nameJa": "青森県",
+    "lon": 140.769,
+    "lat": 40.6385,
+    "value": 10,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-01",
+    "name": "Hokkaidō",
+    "nameJa": "北海道",
+    "lon": 142.805,
+    "lat": 43.37,
+    "value": 6,
+    "group": "Hokkaido"
+  },
+  {
+    "key": "jp-16",
+    "name": "Toyama",
+    "nameJa": "富山県",
+    "lon": 137.246,
+    "lat": 36.596,
+    "value": 6,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-04",
+    "name": "Miyagi",
+    "nameJa": "宮城県",
+    "lon": 140.972,
+    "lat": 38.5307,
+    "value": 5,
+    "group": "Tohoku"
+  },
+  {
+    "key": "jp-21",
+    "name": "Gifu",
+    "nameJa": "岐阜県",
+    "lon": 136.941,
+    "lat": 35.8522,
+    "value": 4,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-09",
+    "name": "Tochigi",
+    "nameJa": "栃木県",
+    "lon": 139.786,
+    "lat": 36.6593,
+    "value": 4,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-18",
+    "name": "Fukui",
+    "nameJa": "福井県",
+    "lon": 136.316,
+    "lat": 35.9297,
+    "value": 3,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-26",
+    "name": "Kyōto",
+    "nameJa": "京都府",
+    "lon": 135.451,
+    "lat": 35.2117,
+    "value": 2,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-29",
+    "name": "Nara",
+    "nameJa": "奈良県",
+    "lon": 135.877,
+    "lat": 34.2815,
+    "value": 2,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-25",
+    "name": "Shiga",
+    "nameJa": "滋賀県",
+    "lon": 136.093,
+    "lat": 35.1832,
+    "value": 2,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-19",
+    "name": "Yamanashi",
+    "nameJa": "山梨県",
+    "lon": 138.645,
+    "lat": 35.6149,
+    "value": 2,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-34",
+    "name": "Hiroshima",
+    "nameJa": "広島県",
+    "lon": 132.853,
+    "lat": 34.6067,
+    "value": 1,
+    "group": "Chugoku"
+  },
+  {
+    "key": "jp-28",
+    "name": "Hyōgo",
+    "nameJa": "兵庫県",
+    "lon": 134.837,
+    "lat": 35.063,
+    "value": 1,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-32",
+    "name": "Shimane",
+    "nameJa": "島根県",
+    "lon": 132.603,
+    "lat": 35.0972,
+    "value": 1,
+    "group": "Chugoku"
+  },
+  {
+    "key": "jp-13",
+    "name": "Tokyo",
+    "nameJa": "東京都",
+    "lon": 139.407,
+    "lat": 35.6578,
+    "value": 1,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-23",
+    "name": "Aichi",
+    "nameJa": "愛知県",
+    "lon": 137.214,
+    "lat": 34.9973,
+    "value": 0,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-12",
+    "name": "Chiba",
+    "nameJa": "千葉県",
+    "lon": 140.318,
+    "lat": 35.489,
+    "value": 0,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-38",
+    "name": "Ehime",
+    "nameJa": "愛媛県",
+    "lon": 132.916,
+    "lat": 33.8141,
+    "value": 0,
+    "group": "Shikoku"
+  },
+  {
+    "key": "jp-08",
+    "name": "Ibaraki",
+    "nameJa": "茨城県",
+    "lon": 140.257,
+    "lat": 36.2773,
+    "value": 0,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-17",
+    "name": "Ishikawa",
+    "nameJa": "石川県",
+    "lon": 136.677,
+    "lat": 36.5654,
+    "value": 0,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-37",
+    "name": "Kagawa",
+    "nameJa": "香川県",
+    "lon": 134.001,
+    "lat": 34.2162,
+    "value": 0,
+    "group": "Shikoku"
+  },
+  {
+    "key": "jp-14",
+    "name": "Kanagawa",
+    "nameJa": "神奈川県",
+    "lon": 139.344,
+    "lat": 35.4378,
+    "value": 0,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-39",
+    "name": "Kōchi",
+    "nameJa": "高知県",
+    "lon": 133.442,
+    "lat": 33.6129,
+    "value": 0,
+    "group": "Shikoku"
+  },
+  {
+    "key": "jp-24",
+    "name": "Mie",
+    "nameJa": "三重県",
+    "lon": 136.386,
+    "lat": 34.5679,
+    "value": 0,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-33",
+    "name": "Okayama",
+    "nameJa": "岡山県",
+    "lon": 133.831,
+    "lat": 34.8521,
+    "value": 0,
+    "group": "Chugoku"
+  },
+  {
+    "key": "jp-27",
+    "name": "Ōsaka",
+    "nameJa": "大阪府",
+    "lon": 135.519,
+    "lat": 34.5993,
+    "value": 0,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-11",
+    "name": "Saitama",
+    "nameJa": "埼玉県",
+    "lon": 139.287,
+    "lat": 36.0173,
+    "value": 0,
+    "group": "Kanto"
+  },
+  {
+    "key": "jp-22",
+    "name": "Shizuoka",
+    "nameJa": "静岡県",
+    "lon": 138.306,
+    "lat": 35.0359,
+    "value": 0,
+    "group": "Chubu"
+  },
+  {
+    "key": "jp-36",
+    "name": "Tokushima",
+    "nameJa": "徳島県",
+    "lon": 134.2,
+    "lat": 33.8546,
+    "value": 0,
+    "group": "Shikoku"
+  },
+  {
+    "key": "jp-31",
+    "name": "Tottori",
+    "nameJa": "鳥取県",
+    "lon": 133.819,
+    "lat": 35.3657,
+    "value": 0,
+    "group": "Chugoku"
+  },
+  {
+    "key": "jp-30",
+    "name": "Wakayama",
+    "nameJa": "和歌山県",
+    "lon": 135.401,
+    "lat": 33.93,
+    "value": 0,
+    "group": "Kansai"
+  },
+  {
+    "key": "jp-35",
+    "name": "Yamaguchi",
+    "nameJa": "山口県",
+    "lon": 131.645,
+    "lat": 34.2154,
+    "value": 0,
+    "group": "Chugoku"
+  }
+]

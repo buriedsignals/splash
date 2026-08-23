@@ -1,0 +1,75 @@
+{
+  "measure": "計_被害者数",
+  "aggregateRowsExcluded": [
+    {
+      "name": "計",
+      "value": 238
+    }
+  ],
+  "aliasesApplied": 46,
+  "aliasRule": "Natural Earth's name_ja less a trailing 県/府/都; 北海道 keeps its 道",
+  "shapesWithNoReading": [
+    {
+      "ja": "鹿児島県",
+      "en": "Kagoshima",
+      "iso": "JP-46"
+    },
+    {
+      "ja": "大分県",
+      "en": "Ōita",
+      "iso": "JP-44"
+    },
+    {
+      "ja": "福岡県",
+      "en": "Fukuoka",
+      "iso": "JP-40"
+    },
+    {
+      "ja": "佐賀県",
+      "en": "Saga",
+      "iso": "JP-41"
+    },
+    {
+      "ja": "長崎県",
+      "en": "Nagasaki",
+      "iso": "JP-42"
+    },
+    {
+      "ja": "熊本県",
+      "en": "Kumamoto",
+      "iso": "JP-43"
+    },
+    {
+      "ja": "宮崎県",
+      "en": "Miyazaki",
+      "iso": "JP-45"
+    },
+    {
+      "ja": "沖縄県",
+      "en": "Okinawa",
+      "iso": "JP-47"
+    }
+  ],
+  "readingsWithNoShape": [],
+  "drawn": 39,
+  "reportedZero": [
+    "Aichi",
+    "Chiba",
+    "Ehime",
+    "Ibaraki",
+    "Ishikawa",
+    "Kagawa",
+    "Kanagawa",
+    "Kōchi",
+    "Mie",
+    "Okayama",
+    "Ōsaka",
+    "Saitama",
+    "Shizuoka",
+    "Tokushima",
+    "Tottori",
+    "Wakayama",
+    "Yamaguchi"
+  ],
+  "total": 238
+}
