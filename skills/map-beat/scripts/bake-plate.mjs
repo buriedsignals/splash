@@ -95,6 +95,14 @@ const NON_TEXT_FLOOR = 3;
  *     surface that is neither the ground nor a class, and the answer is to raise the ramp's own low
  *     end, which is what `assertSurfacesRead` already tells a caller in the same situation.
  *
+ * IT IS THE SAME ANSWER THE CHOROPLETH CORE ALREADY GAVE, and that is measured rather than claimed.
+ * `geo-choropleth.ts`'s `waterFor(ramp, ground)` — the derivation the owner's instruction produced
+ * the first time, for the one format that got it — places the sea at exactly this midpoint. Checked
+ * on three real palettes in this tree (`#FFFFFF`/`#B2182B`, `#FFFFFF`/`#0B7A75`, `#16191B`/`#D4A853`):
+ * the two functions return the IDENTICAL hex, `#f0f6fa`, `#f2f7fa` and `#313a40`. What this adds is
+ * the ceiling, which a choropleth never needs because its fills replace the plate, and which a
+ * symbol beat cannot do without because its marks sit on the water.
+ *
  * THE HUE IS FIXED AND THE LUMINANCE MOVES, so the sea stays blue on every ground: `#505e69` on
  * Japan's charcoal, a paler blue on a white one. And the finished hex is measured again after
  * quantising to 8 bits, because a tint that lands one step the wrong side of the floor is a tint

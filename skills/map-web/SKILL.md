@@ -124,9 +124,16 @@ enough: it is not, because it requires spatial access to find in the first place
 what a screen-reader user does not have. The second trap this skill's own bake avoids by construction
 rather than by discipline: MapTiler's `dataviz-light` basemap paints water a near-grey (`hsl(240, 2%,
 88%)`), and a point-based beat leaves nearly the whole plate exposed as basemap —
-`scripts/bake-plate.mjs` overrides the `Water`/`Water shadow` layers to a genuine blue tint
-(`#aac9e0`) before capture, the fix `geo-discipline.md` rule 7 requires and that another beat in this
-same project only found by looking at a rendered symbol map, not by reading the style.
+`scripts/bake-plate.mjs` overrides the `Water`/`Water shadow` layers to a genuine blue tint before
+capture, the fix `geo-discipline.md` rule 7 requires and that another beat in this same project only
+found by looking at a rendered symbol map, not by reading the style. **The tint is DERIVED, not
+fixed** (`basemapWaterFor`, 2026-08-23): it was the literal `#aac9e0` for a year, and on a dark
+newsroom ground that literal measured 10.22:1 against the ground where the beat's own accent measured
+8.02:1 — the sea was the loudest thing on a map about land, and an accent circle over it measured
+1.27:1 against a 3:1 floor. The derivation reads this beat's own `PALETTE.md`, places the sea in the
+band between the ground and the nearest thing that carries data, and bounds it by the contrast a mark
+needs against what it is drawn on; the bake then decodes its own capture and refuses it rather than
+writing it (`plateSurfacesYieldToInk`).
 
 **The third trap: a hover you never dispatched at a real pixel is a hover you never tested.** An
 HTML overlay with no `pointer-events: none` once swallowed every hover on this format's own map while
@@ -444,7 +451,7 @@ for its own generic function.
 | The smallest channel spread that still reads as a hue | `0.05` | `MIN_CHROMA`, `geo-choropleth.ts` |
 | Which regions keep a pointer-active button, as a FRACTION of the frame | `26 / 496` | `SMALL_REGION_FRAME_FRACTION`, `ChoroplethWeb.tsx` |
 | The camera this seed bakes | `[[-14, 34], [28, 64]]` — Lisbon to Stockholm, padded ~5° | `BEAT.bounds`, `bake-plate.mjs` |
-| Which basemap | `"dataviz-light"`, water overridden to `#aac9e0` before capture | `BEAT.style` / the `style.load` handler, `bake-plate.mjs` |
+| Which basemap | `"dataviz-light"`, water overridden before capture to the tint `basemapWaterFor` derives from this beat's own `PALETTE.md` — `#aecce1` for the seed's own white ground and teal accent, `#505e69` for a `#16191B` ground and a `#D4A853` accent | `BEAT.style` / the `style.load` handler, `bake-plate.mjs` |
 | How long the capture waits before it gives up on `idle` | `15000` ms | `--settle`, `bake-plate.mjs` |
 | This skill's own bake namespace (never collides with `map-beat`'s `/tmp/map-twin`) | `/tmp/map-twin-web` | `DEFAULT_PLATE_DIR`, `render-web.mjs` |
 | The one point this seed highlights as the subject | `"paris"` | `SUBJECT_KEY`, `MapWebSeed.tsx` |
