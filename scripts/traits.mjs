@@ -307,10 +307,25 @@ export const TRAITS = [
     // than any literal property — already alias-safe by construction, and caught here by its own
     // `MAPTILER_KEY_ALIASES` declaration rather than by the read. Excluding `verify-*`/`detect-*`
     // matches the convention every other guard-adjacent trait already uses.
+    //
+    // A WITNESS THAT DISAPPEARS WHEN THE DEFECT IS FIXED IS NOT A WITNESS (2026-08-23). The two forms
+    // above are a LITERAL property read and a declared `..._ALIASES` array — and a skill that routes
+    // every one of its reads through a resolver has neither. Measured: `splash` was one line from
+    // losing this trait entirely by fixing its last bare read, which would have deleted the rule's
+    // own cell at the exact moment the skill started complying, leaving a later regression invisible.
+    // A guard that erases its own population as a reward for passing is the sharpest form of the
+    // false confirmation this tree keeps finding.
+    //
+    // So two more forms, each a MECHANISM rather than a spelling: a canonical name handed to a
+    // resolver beside an environment (`resolveEnvKey(process.env, "MAPTILER_KEY")`), and an alias
+    // list declared as a TABLE row (`MAPTILER_KEY: ["MAPTILER_API_KEY", ...]`) rather than as an
+    // `..._ALIASES` array. Both are the same act the first two forms describe. Measured across all
+    // fifteen skills before and after: the answers are byte-identical, so nothing about today's
+    // population moved — what moved is that it can no longer vanish tomorrow.
     witness: (skill) =>
       anySource(
         skill,
-        /\benv(\.|\[["'`])[A-Z][A-Z0-9_]*_(KEY|TOKEN)\b|\b[A-Z][A-Z0-9_]*_(KEY|TOKEN)_ALIASES\b/,
+        /\benv(\.|\[["'`])[A-Z][A-Z0-9_]*_(KEY|TOKEN)\b|\b[A-Z][A-Z0-9_]*_(KEY|TOKEN)_ALIASES\b|\benv\s*,\s*["'`][A-Z][A-Z0-9_]*_(KEY|TOKEN)["'`]|\b[A-Z][A-Z0-9_]*_(KEY|TOKEN)\s*:\s*\[/,
         { exclude: /^(verify|detect)-.*\.mjs$/ },
       ),
   },
