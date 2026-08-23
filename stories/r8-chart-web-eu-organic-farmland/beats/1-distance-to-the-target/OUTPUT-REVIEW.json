@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "review-1-distance-to-the-target-1",
+  "outputId": "1-distance-to-the-target",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:979c196d2c4e94fdf9c81a928240b87f11c7d54c965a48653307768a1ad633dd",
+  "findingIds": [
+    "organic-1-no-reporter-reaches-the-target",
+    "organic-2-the-only-crossing-stopped-publishing"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-distance-to-the-target",
+      "planVersion": 1,
+      "draftDigest": "sha256:979c196d2c4e94fdf9c81a928240b87f11c7d54c965a48653307768a1ad633dd",
+      "findingIds": [
+        "organic-1-no-reporter-reaches-the-target",
+        "organic-2-the-only-crossing-stopped-publishing"
+      ],
+      "id": "qa-1-distance-to-the-target-1",
+      "status": "passed",
+      "completedAt": "2026-08-23T08:56:20.697Z"
+    }
+  ],
+  "angleEvidenceBrief": "The page draws twenty-seven member states as stems against one rule at 25 percent, and not one of the twenty-five that published a figure for 2024 reaches it, the longest being Estonia at 22.6 percent. Below a drawn divider it puts the two states with no 2024 figure, each carrying its own year, and Austria at 25.7 percent in 2020 is the only stem on the chart that crosses the rule. Both are the storyboard slot own proves, and every value is printed at rest.",
+  "decision": "approve",
+  "reviewer": "journalist (decision taken in this run, recorded in APPROVED.md)",
+  "decidedAt": "2026-08-23T08:56:20.697Z",
+  "notes": "Approved after seven photographed viewports and a real mouse and keyboard. Three changes were made because of looking and are listed in APPROVED.md: value labels struck through by their own stems, six axis numbers colliding at 375px, and two rows dimmed where this format reads dimming as filtering."
+}
