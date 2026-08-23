@@ -1,0 +1,6 @@
+{
+  "$comment": "What this skill IS, and therefore which catalogue rules reach it. Read by scripts/traits.mjs, proved against this skill's own files by doctrine/test/traits.test.ts, and joined to the rules by doctrine/test/guard-parity.test.ts. Removing a trait to escape a rule fails: the witness is still there.",
+  "traits": [
+    "reads-a-journalists-csv"
+  ]
+}

@@ -32,6 +32,51 @@ export const PRODUCING_SKILLS = [
   "scrolly",
 ];
 
+/** Every skill in this tree, read off the filesystem: a directory under `skills/` that ships a
+ *  `SKILL.md`. NOT A LIST. The one list this module still keeps is `PRODUCING_SKILLS` above, and it
+ *  keeps it because "the skills that DRAW" is a claim someone has to make; "the skills that exist"
+ *  is not, and typing it would only be a slower way of reading the directory. */
+export function allSkills() {
+  return readdirSync(join(ROOT, "skills"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join(ROOT, "skills", entry.name, "SKILL.md")))
+    .map((entry) => entry.name)
+    .sort();
+}
+
+/** THE SKILLS THE CATALOGUE MAY ASK, and the one it never will, with the argument attached.
+ *
+ *  A rule reaches a skill through the traits that skill proves. Until 2026-08-23 it could only
+ *  reach one of the eight that DRAW, because `reachable()` iterated `PRODUCING_SKILLS` — so the
+ *  editorial checker, the profiler, the gates and delivery were asked nothing at all, and every fix
+ *  made in them was local by construction. Widening was not free: five witnesses had to be tightened
+ *  first, because each was matching a NAME where it meant an ACT (see the trait comments above).
+ *
+ *  `doctrine` is permanently outside, and this is the statement a reader meets before wondering why
+ *  it has no rows anywhere. It is not an exception per rule — it is one fact about one skill:
+ *  `skills/doctrine/scripts/` holds a single 90-line file exporting two pure string functions over a
+ *  markdown table (`checkReferenceSet`, `countReferenceRows`). It has no story directory, no gate,
+ *  no lexicon, no probe, no proposal, and it witnesses none of the traits in this vocabulary. It is
+ *  also the REGISTRY: `guard-catalogue.json` lives in it, and `guard-parity.test.ts`,
+ *  `guard-wiring.test.ts` and `traits.test.ts` live in its own `test/`. A catalogue rule about
+ *  `doctrine` would be the registry judging itself through itself.
+ *
+ *  The exclusion is not permission to stop looking. `traits.test.ts` holds it to witnessing NOTHING:
+ *  the day this skill grows a mechanism, the exclusion goes red and has to be argued again. */
+export const OUTSIDE_THE_CATALOGUE = {
+  doctrine:
+    "the registry itself, not a skill the registry can judge: one 90-line script exporting two pure " +
+    "string functions over a markdown table, no story directory, no gate, no lexicon, no probe, no " +
+    "proposal — it witnesses no trait in this vocabulary, and it is where the catalogue and the tests " +
+    "that hold the catalogue honest already live",
+};
+
+/** The population every catalogue rule is asked of: every skill in the tree except those argued
+ *  permanently outside. DERIVED — this is the thing a rule's `requires` filters, and the reason a
+ *  rule can now reach a skill that ships a beat as well as one that draws it. */
+export function cataloguedSkills() {
+  return allSkills().filter((skill) => !(skill in OUTSIDE_THE_CATALOGUE));
+}
+
 const skillDir = (skill) => join(ROOT, "skills", skill);
 
 /** Every `.mjs` and `.ts`/`.tsx` under a skill's `scripts/` and `assets/`, as text. `exclude`, when

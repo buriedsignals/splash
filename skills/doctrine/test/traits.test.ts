@@ -11,22 +11,29 @@
  * cheapest way out of a red cell would otherwise be to stop admitting what the skill is.
  */
 import { describe, expect, it } from "bun:test";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import {
+  OUTSIDE_THE_CATALOGUE,
   PRODUCING_SKILLS,
   TRAITS,
+  allSkills,
+  cataloguedSkills,
   provenTraits,
   traitsOf,
 } from "../../../scripts/traits.mjs";
 
-describe("every producing skill declares what it is", () => {
+const SKILLS = join(import.meta.dirname, "..", "..");
+
+describe("every catalogued skill declares what it is", () => {
   it("names only traits the vocabulary knows", () => {
     const known = new Set(TRAITS.map((trait) => trait.id));
-    for (const skill of PRODUCING_SKILLS)
+    for (const skill of cataloguedSkills())
       for (const id of traitsOf(skill)) expect([...known]).toContain(id);
   });
 
   it("claims no trait its own files contradict", () => {
-    for (const skill of PRODUCING_SKILLS) {
+    for (const skill of cataloguedSkills()) {
       const proven = new Set(provenTraits(skill));
       const unproven = traitsOf(skill).filter((id) => !proven.has(id));
       expect(`${skill} claims unproven: ${unproven.join(", ")}`).toBe(
@@ -36,11 +43,18 @@ describe("every producing skill declares what it is", () => {
   });
 
   it("drops no trait its own files still prove — the escape hatch this closes", () => {
-    for (const skill of PRODUCING_SKILLS) {
+    for (const skill of cataloguedSkills()) {
       const declared = new Set(traitsOf(skill));
       const hidden = provenTraits(skill).filter((id) => !declared.has(id));
       expect(`${skill} hides: ${hidden.join(", ")}`).toBe(`${skill} hides: `);
     }
+  });
+
+  it("writes a TRAITS.json for every skill the catalogue asks — including one with nothing to say", () => {
+    for (const skill of cataloguedSkills())
+      expect(`${skill}: ${existsSync(join(SKILLS, skill, "TRAITS.json"))}`).toBe(
+        `${skill}: true`,
+      );
   });
 
   it("gives every trait in the vocabulary a describing line a reader can disagree with", () => {
@@ -118,5 +132,56 @@ describe("no witness fires on a skill whose files only MENTION what it looks for
     ];
     for (const [trait, skill] of holds)
       expect(`${skill}: ${provenTraits(skill).join(", ")}`).toContain(trait);
+  });
+});
+
+/**
+ * THE POPULATION IS READ OFF THE TREE, NOT TYPED INTO IT.
+ *
+ * `PRODUCING_SKILLS` is a fact about skills that DRAW, and other code depends on it meaning exactly
+ * that. It was never a fact about who the CATALOGUE may ask — but it was doing that job too, and so
+ * seven skills were asked nothing. Every fix made to the editorial checker, the profiler, the gates
+ * and delivery was local by construction: no rule could reach them however many traits they proved.
+ *
+ * A second hand-written constant would have been the same defect with a new name. The catalogue's
+ * population is now DERIVED: every directory under `skills/` that ships a `SKILL.md`, minus the ones
+ * argued permanently outside — and the argument, not just the name, lives with the exclusion.
+ */
+describe("the catalogue's population is derived from the tree", () => {
+  it("misses no skill on disk — every one is catalogued, or argued out by name", () => {
+    const onDisk = readdirSync(SKILLS, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(join(SKILLS, entry.name, "SKILL.md")))
+      .map((entry) => entry.name)
+      .sort();
+    const accounted = [...cataloguedSkills(), ...Object.keys(OUTSIDE_THE_CATALOGUE)].sort();
+    expect(accounted).toEqual(onDisk);
+  });
+
+  it("still knows which skills DRAW, and that is a smaller set", () => {
+    for (const skill of PRODUCING_SKILLS) expect(cataloguedSkills()).toContain(skill);
+    expect(PRODUCING_SKILLS.length).toBeLessThan(cataloguedSkills().length);
+  });
+
+  it("asks the skills that shape and ship a beat, which it never used to", () => {
+    for (const skill of ["splash", "storyboard", "intake", "deliver", "palette", "newsroom-charter"])
+      expect(cataloguedSkills()).toContain(skill);
+  });
+
+  // AN ABSENCE THAT IS ARGUED IS NOT A GAP — and this is what stops the argument going stale. An
+  // exclusion nobody re-measures is the cheapest hiding place in the whole mechanism: name a skill
+  // here and no rule reaches it again, ever, whatever it grows. So the exclusion is only allowed to
+  // stand while the skill witnesses NOTHING. The day `doctrine` grows a render, a lexicon, a probe
+  // or a proposal, this goes red and somebody has to argue it again or let it in.
+  it("excludes only a skill that witnesses nothing at all", () => {
+    for (const [skill, reason] of Object.entries(OUTSIDE_THE_CATALOGUE)) {
+      expect(`${skill} proves: ${provenTraits(skill).join(", ")}`).toBe(`${skill} proves: `);
+      expect(reason.length).toBeGreaterThan(120);
+    }
+  });
+
+  it("names doctrine, and only doctrine, as permanently outside", () => {
+    expect(Object.keys(OUTSIDE_THE_CATALOGUE)).toEqual(["doctrine"]);
+    expect(allSkills()).toContain("doctrine");
+    expect(cataloguedSkills()).not.toContain("doctrine");
   });
 });
