@@ -471,14 +471,19 @@ export function useCopyOf(inner) {
   const viewBox = /viewBox="([^"]+)"/.exec(openSvg[0])?.[1];
   if (!viewBox) throw new Error("the fallback svg carries no viewBox, so a copy has no frame to draw into");
   const uses = [];
-  for (const element of inner.matchAll(/<(image|path)\b[^>]*>/g)) {
+  for (const element of inner.matchAll(/<(image|path)\b[^>]*>(<title>([^<]*)<\/title>)?/g)) {
     const tag = element[0];
     const id = /\bid="([^"]+)"/.exec(tag)?.[1];
     if (!id) continue;
     const key = /\bdata-key="([^"]+)"/.exec(tag)?.[1];
     const className = /\bclass="([^"]+)"/.exec(tag)?.[1];
+    // THE MARK'S OWN `<title>` TRAVELS WITH IT. That element is the native, script-free tooltip a
+    // reader gets with JavaScript off, and a copy without one would be a world a reader can point at
+    // and learn nothing from in exactly the state this format promises to still work in.
+    const title = element[3];
     uses.push(
-      `<use href="#${id}"${className ? ` class="${className}"` : ""}${key ? ` data-key="${key}"` : ""}/>`,
+      `<use href="#${id}"${className ? ` class="${className}"` : ""}${key ? ` data-key="${key}"` : ""}` +
+        (title === undefined ? "/>" : `><title>${title}</title></use>`),
     );
   }
   if (uses.length === 0)
@@ -511,10 +516,11 @@ export function idsForWorldCopies(html) {
  *  browser will let a pointer reach — read off the stylesheet the page actually ships — plus every
  *  `.point-label`, because a copy with no names on it is a copy a reader cannot read.
  *
- *  A repeat's marks carry `data-copy-detail` rather than `data-detail`. Same string, deliberately a
- *  different name: `data-detail` is the attribute this format's censuses count a mark by
- *  (`tableCarriesTheMarks`, `keyboardReachesEveryMark`, `announcedMarksOf`), and a copy is the same
- *  mark seen twice, not a second mark. `interaction.mjs` reads either. */
+ *  A repeat's marks keep their `title` and lose their `data-detail`. Same string, and the choice of
+ *  which one survives is the point: `data-detail` is what this format's censuses count a mark BY, and
+ *  a copy is the same mark seen twice rather than a second mark; `title` is the tooltip the browser
+ *  itself shows with the page's script absent entirely, which is a reading the copies must keep.
+ *  `interaction.mjs` reads either. */
 export function overlayCopyOf(inner, markClasses) {
   const keep = new Set([...markClasses, "point-label"]);
   const out = [];
@@ -526,8 +532,12 @@ export function overlayCopyOf(inner, markClasses) {
     if (!classes.some((one) => keep.has(one))) continue;
     out.push(
       whole
-        .replace(/\bdata-detail="/g, 'data-copy-detail="')
-        .replace(/\s(?:aria-label|title)="[^"]*"/g, "")
+        // `data-detail` GOES, `title` STAYS. The first is the attribute this format's censuses count
+        // a mark by (`tableCarriesTheMarks`, `keyboardReachesEveryMark`, `announcedMarksOf`), and a
+        // copy is the same mark seen twice, not a second mark. The second is the native tooltip a
+        // reader gets with the page's script absent entirely, which is a channel the copies have to
+        // carry. `aria-label` goes with the accessibility tree the copy is already outside of.
+        .replace(/\s(?:aria-label|data-detail)="[^"]*"/g, "")
         .replace(/^<button\b/, '<button tabindex="-1"'),
     );
   }
@@ -691,6 +701,15 @@ ${liveBlock}
   const limit =
     worldCopies > 1
       ? `this beat fills its container by WRAPPING: ${props.geometry.cannotCover.why}. ` +
+        // AND WHAT THAT COSTS AT THE NARROW END, said in the same breath. Latitude is never cropped
+        // — the plate is drawn at the box's own height — but a box NARROWER than one world crops
+        // LONGITUDE, and there is no copy to recover it from because at that width no copy is on
+        // screen at all. The live map does not have this limit (it fits the whole world into a
+        // phone's canvas and fills the rest with latitude the plate does not hold), so the two
+        // states genuinely differ there and a producer is told the number rather than left to find it.
+        `At its narrowest measured box (${requireBoxAspects(props.geometry).narrowest.toFixed(3)}:1) the ` +
+        `reader sees ${Math.min(360, (360 * requireBoxAspects(props.geometry).narrowest) / (props.geometry.frame.width / props.geometry.frame.height)).toFixed(0)}° of ` +
+        `longitude, centred; what falls outside is in the table and on the keyboard path, and the live map pans to it. ` +
         `The page paints ${worldCopies} copies of the ${props.geometry.frame.width}x${props.geometry.frame.height} plate ` +
         `side by side, each carrying its own marks and its own hit targets; the middle copy is the ` +
         `only one in the accessibility tree, so the Tab order and the accessible table are unchanged ` +
@@ -1076,7 +1095,7 @@ html.mw-live [data-world="repeat"] { display: none; }
 html.mw-live .mw-world { position: static; }
 `
     : ""
-}}.maplibregl-canvas-container canvas { outline: none; }
+}.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* Furniture, in HTML: font-size is a fixed CSS number on every rule below, so it never tracks the
    container's own width the way an SVG-embedded <text> inside a scaling viewBox would. */

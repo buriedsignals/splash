@@ -398,9 +398,18 @@ function aimAtMarkEdges(i: number) {
   if (!hit) return null;
   const key = hit.getAttribute("data-key");
   if (!key) return { derivable: false as const };
-  const drawn = document.querySelector(
-    `svg [data-key="${key.replace(/"/g, '\\"')}"]`,
-  ) as SVGGraphicsElement | null;
+  // THE DRAWN MARK ON THE WORLD THE HIT ELEMENT BELONGS TO. A map-web page whose camera is the
+  // whole world now fills its container by painting several copies of that world side by side
+  // (`map-web/scripts/render-web.mjs`, `repeatWorlds`), and the copies come FIRST in document order:
+  // a bare `svg [data-key]` therefore found the westernmost repeat, which is clipped to a sliver at
+  // the left edge, and every edge point fell outside the window — three of three probes came back
+  // `derivable: false` on `proof/mapgen-hexgrid-web`. The hit element is always on the primary
+  // world, so the drawn mark this probe is about is the primary one too. A page that does not wrap
+  // has no `[data-world]` at all and the fallback below is exactly the old selector.
+  const selector = `[data-key="${key.replace(/"/g, '\\"')}"]`;
+  const drawn = (document.querySelector(
+    `[data-world="primary"] svg ${selector}`,
+  ) ?? document.querySelector(`svg ${selector}`)) as SVGGraphicsElement | null;
   if (!drawn) return { derivable: false as const };
   hit.scrollIntoView({ block: "center", inline: "center" });
   const d = drawn.getBoundingClientRect();
@@ -415,6 +424,37 @@ function aimAtMarkEdges(i: number) {
   // the element's real fill — `isPointInFill`, in the SVG's own user space — and only the points
   // that land on painted mark are kept. For a circle all four survive; for a concave country some
   // do not, and those are not a promise anybody made.
+  // AND INSIDE THE BOX THE GRAPHIC IS CLIPPED TO, which is not the same as inside the window. A
+  // format that fills its container by scaling the drawing to COVER it draws PAST the box on the
+  // axis with room to spare and clips the overflow, so a mark at the edge of the picture can have
+  // its own left edge outside the frame while sitting in the middle of the page. Measured on
+  // `proof/mapgen-hexgrid-web` at 1200x900: the densest cell's box starts at x=8 against a graphic
+  // whose own left edge is x=16, so `d.left + 4` landed on the BODY and this guard reported a mark
+  // that answers everywhere it is painted as silent on its left. A pixel the graphic clipped away is
+  // not a pixel a reader can point at, and demanding an answer there demands one for nothing.
+  // EVERY clipping ancestor, intersected, not the first one found: an `<svg>` root computes to
+  // `overflow: hidden` in its own right, so stopping at the first would answer about the drawing's
+  // own frame and never about the box the page clips that frame to — which is the box that moved.
+  let clip: { left: number; right: number; top: number; bottom: number } | null = null;
+  for (
+    let node = drawn.parentElement as Element | null;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
+    const overflow = getComputedStyle(node).overflow;
+    if (!overflow || overflow === "visible") continue;
+    const r = node.getBoundingClientRect();
+    clip = clip
+      ? {
+          left: Math.max(clip.left, r.left),
+          right: Math.min(clip.right, r.right),
+          top: Math.max(clip.top, r.top),
+          bottom: Math.min(clip.bottom, r.bottom),
+        }
+      : { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+  }
+  const insideTheClip = (x: number, y: number) =>
+    !clip || (x >= clip.left && x <= clip.right && y >= clip.top && y <= clip.bottom);
   const ctm = drawn.getScreenCTM();
   const owner = drawn.ownerSVGElement ?? (drawn as unknown as SVGSVGElement);
   const onMark = (x: number, y: number) => {
@@ -440,6 +480,7 @@ function aimAtMarkEdges(i: number) {
       p.y >= 0 &&
       p.x < window.innerWidth &&
       p.y < window.innerHeight &&
+      insideTheClip(p.x, p.y) &&
       onMark(p.x, p.y),
   );
   // Fewer than two points on painted mark is not a measurement, it is a coincidence.

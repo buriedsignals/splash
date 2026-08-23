@@ -129,25 +129,22 @@ function resolveChrome(): string {
 }
 
 /**
- * THE PAGES THAT DO NOT FILL THEIR CONTAINER, EACH WITH THE MEASUREMENT THAT SAYS WHY, and the list
- * may only shrink.
+ * THE PAGES THAT DO NOT FILL THEIR CONTAINER — AND THERE ARE NONE LEFT.
  *
- * Both are the SAME study set: a camera that already spans a full turn of longitude. There is no
- * world east or west of it to bake margin out of — past the world's own width MapLibre draws a
- * repeat continent carrying none of the beat's marks — so the three requirements are provably
- * two-of-three: at `real-owid-life-expectancy`'s widest measured box, a 1568px-wide graphic showing
- * the whole world is 1065px tall against a 610px stage. Filling the width would cost 42.7% of the
- * latitude range — everything south of 22.7°S and north of 71.8°N.
+ * There used to be two, both the same study set: a camera already spanning a full turn of longitude,
+ * with no world east or west of it to bake margin out of. They were laid out contained ON PURPOSE
+ * and said so, on the argument that filling a wider box could only be paid for out of latitude —
+ * 42.7% of the range at `real-owid-life-expectancy`'s widest box.
  *
- * A page earns a place here by DERIVATION, never by being typed in: `deliveryFrame` computes
- * `cannotCover` from the camera's own longitude span, the bake records it in `geometry.json`, the
- * render lays the page out the old way and PRINTS the reason, and this test refuses a page that
- * falls short WITHOUT that finding on its plate. A beat cannot be added here by hand to make it pass.
+ * The owner overruled it on 2026-08-23, and he is right about the medium: *that is the normal
+ * behaviour of an interactive map — go ahead and repeat the map on the sides.* A slippy map wraps.
+ * Such a page now fills its container by painting `worldCopiesFor` copies of its plate, each with
+ * its own marks and its own hit targets (`render-web.mjs`, `repeatWorlds`), so the list is EMPTY and
+ * the second test below is what keeps it that way: a page may only be here while its own plate
+ * carries the derived `cannotCover` finding AND the wrap could not be built for it. Nothing may be
+ * added by hand to make a shortfall pass.
  */
-const STATED_EXCEPTIONS = [
-  "proof/mapgen-hexgrid-web/hex-grid.html",
-  "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
-];
+const STATED_EXCEPTIONS: string[] = [];
 
 type Reading = {
   rel: string;
@@ -225,11 +222,12 @@ describe("the graphic takes the whole box its host gives it", () => {
     );
   }, 600000);
 
-  it("names every page that does not, and each one's plate says why", async () => {
-    // THE HALF THAT KEEPS THE LIST HONEST, in both directions. A page may only sit in
-    // `STATED_EXCEPTIONS` while its own plate carries the DERIVED `cannotCover` finding — so the
-    // list cannot be used to excuse a page that merely failed — and a page that stops needing the
-    // exception has to be removed rather than left behind as a stale entry.
+  it("names every page that does not — and the list is empty, because the wrap emptied it", async () => {
+    // THE HALF THAT KEEPS THE LIST HONEST, in both directions. It cannot be used to excuse a page
+    // that merely fell short, and a page that stops needing it has to be removed rather than left
+    // behind as a stale entry. Since the wrap ruling there is nothing in it at all, which is the
+    // strongest form of the same assertion: every delivered page in this format, world cameras
+    // included, covers its container on both axes.
     const readings = await readEveryPage();
     const falling = new Set(
       readings
@@ -243,12 +241,13 @@ describe("the graphic takes the whole box its host gives it", () => {
         .map(({ rel }) => rel),
     );
     expect([...falling].sort()).toEqual([...STATED_EXCEPTIONS].sort());
-    for (const rel of STATED_EXCEPTIONS) {
-      const one = readings.find((reading) => reading.rel === rel);
-      expect(
-        `${rel}: cannotCover ${one?.cannotCover ? "recorded" : "MISSING"}`,
-      ).toBe(`${rel}: cannotCover recorded`);
-    }
+    // …and the two pages that used to be here are still WORLD cameras: the exception was retired
+    // because the layout changed, never because the geography did.
+    const wrapping = readings.filter((one) => one.cannotCover !== null).map(({ rel }) => rel);
+    expect([...new Set(wrapping)].sort()).toEqual([
+      "proof/mapgen-hexgrid-web/hex-grid.html",
+      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
+    ]);
   }, 600000);
 
   it("is not vacuous: the rule still fires on a box that fell short", () => {

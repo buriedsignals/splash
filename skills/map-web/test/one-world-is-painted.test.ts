@@ -7,19 +7,22 @@
  * second and a third painted world: three Africas, three Japans, one set of hit targets, at
  * `bounds [[-355.77, -68.88], [355.77, 85.05]]`.
  *
- * Holding the live viewport to the plate's own aspect took that to `±203.55°` — 407° of visible
- * longitude, still 104px of repeated world inside an 896px canvas — and the report that found it
- * called that fixed. It was not: the remainder is the FIT PADDING. `fitBounds` puts 360° inside
- * `896 - 2·48` px and then shows all 896, which is 403°.
+ * THE OWNER HAS SINCE RULED ON THE REPEAT ITSELF (2026-08-23): *that is the normal behaviour of an
+ * interactive map — go ahead and repeat the map on the sides.* He is right about the medium, and the
+ * important half of the finding above survives it word for word: THE DEFECT WAS THE ONE SET OF HIT
+ * TARGETS, never the second painted world. A world camera may now paint copies, and every copy
+ * carries its own marks — `verify-wraps-the-world.mjs` counts what answers a pointer on each, live
+ * and with the script off, and `test/the-world-wraps-with-its-marks.test.ts` asserts it.
  *
- * `renderWorldCopies: false` is not the answer either, and that is the other half of this: MapLibre
- * then clamps the camera so one world fills the width and the view CROPS — the same beat came back
- * cut at 20.8°S with Lesotho, one of the six countries its own title names, off the screen.
- *
- * So the padding is zero when the study set spans the world. The bake has refused the same thing in
- * the plate since it was written (`assertWorldFillsFrame`); this is that rule in the layer that fits
- * inside the reader's own container. `scripts/verify-live-map.mjs` measures the span the reader
- * actually gets and fails past 361°.
+ * SO WHAT IS LEFT HERE IS THE HALF THE RULING DID NOT TOUCH, and it is still worth its own file. The
+ * fit's PADDING is not the medium: it paints a repeat because the camera was inset inside its own
+ * canvas, and on a beat whose study set is NOT the world that repeat is bare basemap carrying none
+ * of the beat's marks. `fitPadding` is therefore still zero at planet extent — a world camera fills
+ * its box by wrapping, not by being fitted small inside it — and `verify-live-map.mjs` still refuses
+ * a CONTINENT beat that shows more than one full turn. `renderWorldCopies: false` is not the answer
+ * to any of it, and that is the other half of this: MapLibre then clamps the camera so one world
+ * fills the width and the view CROPS — the same beat came back cut at 20.8°S with Lesotho, one of
+ * the six countries its own title names, off the screen.
  */
 import { describe, expect, it } from "bun:test";
 import {
@@ -124,6 +127,10 @@ describe("what the fit means for the span the reader gets", () => {
     (360 * width) / (width - 2 * padding);
 
   it("is one world with no padding and more than one with the old padding", () => {
+    // Still the right arithmetic and still the right zero: what changed with the wrap ruling is that
+    // a world camera showing MORE than one turn is no longer a failure by itself — the copies carry
+    // marks now — while a fit that shows more than one turn because it padded itself inwards is
+    // still painting a repeat nobody asked for, at a zoom the reader did not choose.
     expect(spanShown(896, 0)).toBe(360);
     expect(spanShown(896, MAX_FIT_PADDING_PX)).toBeGreaterThan(
       360 + WORLD_SPAN_TOLERANCE_DEG,

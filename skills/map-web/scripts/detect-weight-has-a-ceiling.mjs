@@ -28,15 +28,39 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  in the format was re-baked to the shape of the box it is drawn in (`delivery-frame.mjs`):
  *
  *    1 008 662  mapgen-symbol-web/quake-symbol.html
- *    1 016 570  r8-map-web-japan-bear-casualties/renders   (and its byte-identical export copy)
+ *    1 013 270  r8-map-web-japan-bear-casualties/renders   (and its byte-identical export copy)
  *    1 051 265  map-web/output-proof/population.html
- *    1 069 824  stress-ab-emigration-flows/where-the-routes-lead.html   (and its export copy)
+ *    1 071 776  stress-ab-emigration-flows/where-the-routes-lead.html   (and its export copy)
  *    1 153 504  stress-f-housing-pressure/housing-pressure-choropleth.html
  *    1 274 640  mapgen-locator-web/locator.html
- *    1 283 891  mapgen-hexgrid-web/hex-grid.html
+ *    1 374 530  mapgen-hexgrid-web/hex-grid.html                       ← wraps: 1 283 891 + 90 639
  *    1 426 390  mapgen-choropleth-web/choropleth.html
  *    1 704 495  mapgen-dot-web/dot-population.html
- *    2 004 428  real-owid-life-expectancy/life-expectancy-2023.html   ← MEASURED_MAX_BYTES
+ *    2 153 428  real-owid-life-expectancy/life-expectancy-2023.html    ← MEASURED_MAX_BYTES,
+ *                                                                       wraps: 2 004 428 + 149 000
+ *
+ *  RE-MEASURED AGAIN 2026-08-23 AFTER THE WRAP RULING, and the two moves are named because a ceiling
+ *  that rises without an argument is a ceiling that has stopped guarding anything. The owner ruled
+ *  that a world camera fills its box by REPEATING the world east and west, and the ruling came with
+ *  its consequence: every painted copy carries its own marks and its own hit targets, or it is the
+ *  decoration the last round closed. Two pages in this population have a world camera and both grew:
+ *
+ *    · `mapgen-hexgrid-web`  +90 639 bytes (+7.1%) — two copies of 153 hex cells.
+ *    · `real-owid-life-expectancy` +149 000 (+7.4%) — two copies of 241 countries and the 205
+ *      fixed-size targets its smallest regions need.
+ *
+ *  THE COPIES ARE `<use>`, WHICH IS WHY IT IS 7% RATHER THAN 154%. The world beat's map svg alone is
+ *  468 383 bytes (182 183 of baked plate, 286 200 of country outlines) and its buttons another
+ *  175 190; duplicating that markup twice would deliver a 3.1 MB page. A `<use>` repaints an element
+ *  already in the document — the plate is carried once, every outline described once — at about 45
+ *  bytes per mark per copy, and `document.elementFromPoint` inside a copy still returns the `<use>`
+ *  itself with its own `data-key`, which is the whole difference between a repeat a reader can point
+ *  at and a picture of one. Measured in Chrome before the mechanism was written.
+ *
+ *  `MARGIN_BYTES` moved with the population rather than by decision: the largest step between two
+ *  adjacent pages is now `dot-population` → `life-expectancy` at 448 933 bytes (it was 299 933
+ *  between the same two, and the wrap pushed them apart). That is the number `ceilingFromPopulation`
+ *  derives, and `test/weight-ceiling.test.ts` asserts both directions of it.
  *
  *  an order of magnitude above `chart-web`'s own ceiling, because the baked basemap plate this
  *  format inlines is far heavier than any geometry `chart-web` draws. `MEASURED_MAX_BYTES` is the
@@ -56,8 +80,8 @@ export function weightAgainstCeiling(bytes, ceiling) {
  *  delivered pages sitting next to each other by size — 299 933 bytes, the step from
  *  `mapgen-dot-web/dot-population.html` to `real-owid-life-expectancy` (it was 228 063 and the step
  *  from `output-proof` to `dot-population`; that pair moved closer together and this one apart). */
-export const MEASURED_MAX_BYTES = 2004428;
-export const MARGIN_BYTES = 299933;
+export const MEASURED_MAX_BYTES = 2153428;
+export const MARGIN_BYTES = 448933;
 export const CEILING_BYTES = MEASURED_MAX_BYTES + MARGIN_BYTES;
 
 /** THE TWO NUMBERS ABOVE, DERIVED FROM THE POPULATION THEY DESCRIBE — because until 2026-08-22

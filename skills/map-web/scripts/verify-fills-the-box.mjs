@@ -34,7 +34,7 @@ import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 import { labelsClippedByPlate } from "./detect-label-clipped-by-plate.mjs";
 import { discoverMapWebPages, TWIN } from "./discover-pages.mjs";
-import { readBoxAspects, visibleBand, TOLERANCE_PX } from "./delivery-frame.mjs";
+import { readBoxAspects, visibleBand, worldCopiesFor, TOLERANCE_PX } from "./delivery-frame.mjs";
 import { containerFraction, graphicFillsItsFrame, FLOOR_FRACTION } from "./detect-fills-its-frame.mjs";
 
 /** THIS SCRIPT DECLARES NO GUARD OF ITS OWN. The decision it drives is `graphicFillsItsFrame`,
@@ -178,21 +178,30 @@ export function reportFor(rel, readings, geometry) {
         `${Math.max(0, needY).toFixed(3)} to stay whole inside the crop`,
     );
   if (geometry?.cannotCover) {
-    // THE NAMED EXCEPTION, REPORTED RATHER THAN PASSED OR FAILED. A camera that already spans a full
-    // turn of longitude cannot be given the margin a wider box needs, so this page is laid out the
-    // old way on purpose: the box keeps the plate's own shape, is centred, and nothing is cropped.
-    // The reading above is therefore SUPPOSED to be under 100%, and the honest thing is to print
-    // both numbers — what the box takes, and what filling it would have cost the subject.
-    const worst = Math.max(...aspects);
-    const costOfFilling =
-      1 - visibleBand(geometry.frame, worst).height / geometry.studySet.height;
+    // THE WRAP, REPORTED RATHER THAN EXCUSED. Until the owner's ruling of 2026-08-23 this branch
+    // silenced the reading — a camera spanning a full turn was allowed to fall short of its
+    // container and say so. It no longer falls short: one plate still cannot cover a wider box, so
+    // the page paints `worldCopies` of it side by side (`render-web.mjs`, `repeatWorlds`), the
+    // fraction above reads 1.0 like every other page in the format, and what is worth printing here
+    // is what the wrap costs and what it gives.
+    //
+    // The one number this cannot answer is the one the ruling is really about — how many marks
+    // answer a pointer on each painted copy — because that needs a hit test rather than a rectangle.
+    // `verify-wraps-the-world.mjs` is the driver that measures it, and it is named rather than
+    // approximated here.
+    const copies = worldCopiesFor(geometry.frame, geometry.boxAspects ?? geometry.coversTo);
+    const aspect = geometry.frame.width / geometry.frame.height;
+    const shown = readings.map(({ viewport, container }) => {
+      const oneWorld = container.height * aspect;
+      return `${viewport.width}px: ${((360 * container.width) / oneWorld).toFixed(0)}°`;
+    });
     lines.push(
-      `  DOES NOT FILL ITS CONTAINER, AND SAYS SO: ${geometry.cannotCover.why}. Filling the widest box ` +
-        `(${worst.toFixed(3)}:1) would cost ${(costOfFilling * 100).toFixed(1)}% of the subject's own height. ` +
-        `See delivery-frame.mjs, "cannotCover".`,
+      `  FILLS ITS CONTAINER BY WRAPPING: ${geometry.cannotCover.why}. ${copies} copies of a ` +
+        `${geometry.frame.width}x${geometry.frame.height} plate, drawn at the box's own height so no ` +
+        `latitude is ever cropped; longitude shown — ${shown.join(", ")}. Count what answers a pointer ` +
+        `on each copy with verify-wraps-the-world.mjs.`,
     );
-    failed = false;
-    return { rel, failed, lines, statedException: true };
+    return { rel, failed, lines, wraps: true };
   }
   if (geometry?.coversTo) {
     const covered = readBoxAspects(geometry.coversTo);

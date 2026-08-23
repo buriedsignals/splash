@@ -81,6 +81,10 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
+// This skill's own live layer, not another skill's: `spansTheWorld` is the derivation `fitPadding`
+// already makes at runtime, and reading it here is what keeps the driver and the page from
+// disagreeing about which beat is allowed to paint a second world.
+import { spansTheWorld } from "../assets/live-map.mjs";
 
 /** The two shapes. The first is wide enough that a square plate's scale and the camera's disagree
  *  by more than a third; the second is tall, so the disagreement reverses sign. One of them alone
@@ -145,7 +149,12 @@ export function hoverLayerIds(plan) {
 
 /** How far the visible longitude span may exceed one full turn before the reader is looking at more
  *  than one painted world. One degree: a fit is a float and the camera lands on it, and nothing
- *  under a degree is a repeated continent. */
+ *  under a degree is a repeated continent.
+ *
+ *  SINCE THE WRAP RULING (2026-08-23) THIS IS ASKED ONLY OF A BEAT THAT IS NOT THE WORLD. A world
+ *  camera fills its box by repeating the world, marks and all, and the count of copies is the point
+ *  rather than the defect; `verify-wraps-the-world.mjs` measures those. A continent beat painting a
+ *  second copy of itself is still the padding defect this number was measured for. */
 export const WORLD_SPAN_TOLERANCE_DEG = 1;
 
 /** HOW FINE THE GRID IS that asks the map for a pixel it attributes to a mark — `grid - 1` samples
@@ -582,24 +591,36 @@ export async function verifyLiveMap({ htmlPath, key }) {
     for (const shape of SHAPES) results.push(await measureShape(browser, keyedPath, shape, plan));
     const failures = [];
     for (const result of results) {
-      // 0. ONE WORLD, NOT THREE.
+      // 0. MORE THAN ONE PAINTED WORLD IS NOW CORRECT — FOR A CAMERA THAT IS THE WORLD.
       //
-      // Measured live on a 241-region world choropleth at 1600x900: the live viewport took the whole
-      // stage (2.58 aspect against the world's 1.47), so the runtime fit was height-bound and
-      // MapLibre filled ~800px of margin either side with a second and a third painted world — three
-      // Africas, three Japans, one set of hit targets, at `bounds [[-355.77, …], [355.77, …]]`.
-      // `renderWorldCopies: false` is NOT the fix: MapLibre then clamps the camera so one world
-      // fills the width and CROPS the claim — the same beat came back cut at 20.8°S with Lesotho,
-      // one of the six countries its title names, off the screen. The bake refuses this in the plate
-      // (`assertWorldFillsFrame`); the live layer, which fits in the READER's own container, had no
-      // equivalent, so this is it — asked of the camera the reader actually gets.
-      if (result.lonSpan > 360 + WORLD_SPAN_TOLERANCE_DEG)
+      // This used to refuse any camera showing more than one full turn of longitude, and the reason
+      // was real: measured live on a 241-region world choropleth at 1600x900, MapLibre filled ~800px
+      // of margin either side with a second and a third painted world — three Africas, three Japans,
+      // ONE SET OF HIT TARGETS. The owner has since ruled on the layout (2026-08-23): *that is the
+      // normal behaviour of an interactive map — go ahead and repeat the map on the sides.* The
+      // defect was never the repeat; it was the single set of hit targets, and that is measured
+      // where it can be measured — `verify-wraps-the-world.mjs --live` counts what answers a pointer
+      // ON EACH painted copy, through the canvas's own `queryRenderedFeatures`.
+      //
+      // So the refusal keeps exactly the half the ruling did not touch: a beat whose study set is
+      // NOT the world has no business painting a second copy of it. There the repeat is bare
+      // basemap carrying none of the beat's marks — a reader can reasonably read it as a place with
+      // no data — and it comes from padding rather than from the medium. `spansTheWorld` is the same
+      // derivation `fitPadding` uses, so the two cannot disagree about which beat this is.
+      if (!spansTheWorld(plan) && result.lonSpan > 360 + WORLD_SPAN_TOLERANCE_DEG)
         failures.push(
-          `${result.shape}: the camera shows ${result.lonSpan.toFixed(1)}° of longitude — more than one ` +
-            `world is painted (bounds ${result.bounds.map((n) => n.toFixed(2)).join(", ")}), so the reader ` +
-            `sees the same continent two or three times with one set of hit targets. Hold the live ` +
-            `viewport to the plate's own aspect so the fit is width-bound; renderWorldCopies:false ` +
-            `answers this by cropping the claim instead`,
+          `${result.shape}: this beat's study set is ${(plan.studyBounds.east - plan.studyBounds.west).toFixed(1)}° of ` +
+            `longitude and the camera shows ${result.lonSpan.toFixed(1)}° (bounds ` +
+            `${result.bounds.map((n) => n.toFixed(2)).join(", ")}), so the reader sees a repeat of a ` +
+            `continent that carries none of this beat's marks. That repeat is the fit's own padding, ` +
+            `not the medium: only a camera that spans the world may paint copies, and those copies ` +
+            `carry their own marks (see the wrap ruling, delivery-frame.mjs)`,
+        );
+      if (spansTheWorld(plan))
+        console.log(
+          `${result.shape}: ${result.lonSpan.toFixed(1)}° of longitude — ` +
+            `${(result.lonSpan / 360).toFixed(2)} worlds painted, which is what a world camera does when it ` +
+            `fills its box. Count what answers a pointer on each copy with verify-wraps-the-world.mjs --live.`,
         );
       // 0b. EVERY MARK COULD BE LOCATED AT ALL. A region whose key has no anchor in the plan is a
       // mark this probe cannot see, and a probe that silently skips what it cannot reach is the

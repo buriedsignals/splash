@@ -16,12 +16,13 @@
 // verification rule, an interactive format is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
-/** THE FACT A MARK CARRIES, wherever the wrap put it. A repeated world's marks carry
- *  `data-copy-detail` rather than `data-detail` — the same string under a different name, because
- *  `data-detail` is what this format's censuses count a mark BY (`tableCarriesTheMarks`,
- *  `keyboardReachesEveryMark`), and a copy is the same mark seen twice, not a second mark. */
+/** THE FACT A MARK CARRIES, wherever the wrap put it. A repeated world's marks keep their `title` —
+ *  the tooltip a browser shows with this script absent entirely — and lose their `data-detail`,
+ *  which is the attribute this format's censuses count a mark BY (`tableCarriesTheMarks`,
+ *  `keyboardReachesEveryMark`): a copy is the same mark seen twice, not a second mark. Both carry the
+ *  same string, so reading either gives the reader the same reading. */
 function detailOf(node) {
-  return node.getAttribute("data-detail") || node.getAttribute("data-copy-detail");
+  return node.getAttribute("data-detail") || node.getAttribute("title");
 }
 
 /** Is this element on the world the reader navigates, rather than on one of its repeats?

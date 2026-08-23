@@ -31,6 +31,7 @@ import {
   readBoxAspects,
   studyAspect,
   visibleBand,
+  worldCopiesFor,
 } from "../scripts/delivery-frame.mjs";
 
 /** The two cameras the report is about, with the box range each page actually delivers into,
@@ -243,19 +244,71 @@ describe("the one study set this cannot be solved for, named rather than approxi
     expect(solved.cannotCover).toBeNull();
   });
 
-  it("lets the bake-time refusal stand down ONLY on a derived impossibility", () => {
-    // `frameCoversTheBoxRange` returns early when handed `cannotCover`, and `deliveryFrame` is the
-    // only thing that produces one. A shipped-as-is Japan plate with no such finding is still red.
+  it("counts the copies the box needs, odd and centred", () => {
+    // THE RULING'S OWN ARITHMETIC. The world beat's frame is 1.472:1 against a 2.572:1 box: 1.747
+    // worlds, which is 3 once the middle one has to stay in the middle. The hex-grid beat needs
+    // 1.244 and gets 3 for the same reason.
+    expect(worldCopiesFor({ width: 1200, height: 815 }, [1.317, 2.572])).toBe(3);
+    expect(worldCopiesFor({ width: 836, height: 476 }, [0.744, 2.185])).toBe(3);
+    // A box no wider than one world needs no repeat at all…
+    expect(worldCopiesFor({ width: 1200, height: 815 }, [0.8, 1.4])).toBe(1);
+    // …and a very wide host takes more, always odd.
+    expect(worldCopiesFor({ width: 1200, height: 815 }, [1, 5])).toBe(5);
+    expect(worldCopiesFor({ width: 1200, height: 815 }, [1, 8])).toBe(7);
+    for (const widest of [1.5, 2, 3, 4, 6, 9])
+      expect(worldCopiesFor({ width: 1200, height: 815 }, [1, widest]) % 2).toBe(1);
+  });
+
+  it("refuses a wrapping plate that is not exactly one world wide", () => {
+    // THE HALF THE OLD EARLY RETURN COULD NOT HAVE. A wrapping plate is a TILE: the page repeats it
+    // at the frame's own period, so a frame that is not the world's own width paints copies that
+    // drift from the geography beside them, further with every copy.
+    const frame = { width: 1200, height: 815 };
+    const study = { x: 0, y: 0, width: 1200, height: 815 };
+    const wrap = { axis: "longitude", worldWidthPx: 1200 };
+    expect(() => frameCoversTheBoxRange(frame, study, [1.317, 2.572], wrap)).not.toThrow();
+    // `proof/mapgen-hexgrid-web`'s own half-pixel: a 359.8° camera in an 836px frame, world 836.5px.
+    expect(() =>
+      frameCoversTheBoxRange({ width: 836, height: 476 }, { x: 0, y: 0, width: 836, height: 476 }, [0.744, 2.185], {
+        axis: "longitude",
+        worldWidthPx: 836.5,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      frameCoversTheBoxRange(frame, study, [1.317, 2.572], { axis: "longitude", worldWidthPx: 1100 }),
+    ).toThrow(/cannot be repeated/);
+    // And a measurement nobody took is refused rather than skipped — the shape that made the old
+    // early return unable to fire at all.
+    expect(() =>
+      frameCoversTheBoxRange(frame, study, [1.317, 2.572], { axis: "longitude" }),
+    ).toThrow(/worldWidthPx is undefined/);
+  });
+
+  it("still refuses a plate that merely fell short, with no derived finding on it", () => {
+    // An escape hatch that fires too easily is the defect, not the hatch. A shipped-as-is Japan
+    // plate carries no `cannotCover`, so it is judged as every other plate is.
     const shipped = { width: 1000, height: 1089 };
     const noMargin = { x: 0, y: 0, width: 1000, height: 1089 };
     expect(() => frameCoversTheBoxRange(shipped, noMargin, [1.398, 2.768], null)).toThrow();
-    expect(() =>
-      frameCoversTheBoxRange(shipped, noMargin, [1.398, 2.768], { axis: "longitude" }),
-    ).not.toThrow();
+  });
+
+  it("records the copy count on the frame it solved", () => {
+    expect(deliveryFrame(WORLD, 1200, [1.317, 2.572]).worldCopies).toBe(3);
+    // A camera that is not the world is one world, always.
+    expect(deliveryFrame(JAPAN, 1600, [1.398, 2.768]).worldCopies).toBe(1);
   });
 });
 
 describe("labelSafeFrame — the box a label has to stay inside, which is not the plate", () => {
+  it("gives a WRAPPING plate its whole height back, because nothing crops it", () => {
+    // A wrapping plate is drawn at the box's own height and repeated sideways: the widest box takes
+    // MORE COPIES, never a shallower band. Reading the widest box's band here would fence a world
+    // beat's labels into the middle 57% of a plate no crop ever touches.
+    const frame = { width: 1200, height: 815 };
+    expect(labelSafeFrame(frame, [1.317, 2.572], true).safeHeight).toBe(815);
+    expect(labelSafeFrame(frame, [1.317, 2.572], false).safeHeight).toBeCloseTo(466.6, 1);
+  });
+
   it("is the intersection of every band the delivery can show", () => {
     // Japan's own plate and range. The narrowest box (1.398:1) shows the least WIDTH of the plate;
     // the widest (2.768:1) the least HEIGHT. A run inside both is inside the picture at every width.

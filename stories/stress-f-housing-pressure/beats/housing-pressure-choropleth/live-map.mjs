@@ -542,7 +542,7 @@ function markActive(doc, key) {
 
 function showTooltip(win, tooltip, properties, event) {
   // `[data-detail]`, which is what makes this the PRIMARY world's button on a page that wraps: a
-  // repeated world's marks carry `data-copy-detail` instead, and the first `.pt` in document order
+  // repeated world's marks carry no `data-detail` at all — only their `title` — and the first `.pt` in document order
   // on such a page belongs to the westernmost copy.
   const node = win.document.querySelector('.pt[data-detail][data-key="' + properties.key + '"]');
   // The detail string is the one the SSR'd markup already carries, never a second formatting of
