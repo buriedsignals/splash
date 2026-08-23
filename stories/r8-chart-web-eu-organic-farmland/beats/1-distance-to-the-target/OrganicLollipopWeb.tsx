@@ -46,9 +46,9 @@ export type WebFrame = {
 
 export const FRAME: WebFrame = {
   width: 640,
-  rowHeight: 30,
-  topPad: 26,
-  gapRows: 1.7,
+  rowHeight: 40,
+  topPad: 30,
+  gapRows: 2.8,
   domainMax: 28,
   flipAt: 0.68,
   xAxisRowPx: 26,
@@ -123,11 +123,20 @@ export function OrganicLollipopWeb({
   });
   const ticks = xTickValues(frame.domainMax);
 
-  // THE LEFT GUTTER IS MEASURED, NEVER GUESSED. It carries every country's own name at the label
-  // font's fixed size; a gutter typed as a round number is a gutter that clips the longest name the
-  // day a different country enters the table.
+  // THE LEFT GUTTER IS MEASURED, NEVER GUESSED, and it carries TWO columns: every country's own
+  // name, and that country's own value. A gutter typed as a round number is a gutter that clips the
+  // longest name the day a different country enters the table.
+  //
+  // WHY THE VALUE IS HERE AND NOT BESIDE ITS DOT. It was beside its dot in the first build, and the
+  // screenshot at 1600x800 showed the accent stem running straight through the four longest rows'
+  // own numbers — a strikethrough nothing in the markup or the check suite can see. Moving it left
+  // of the dot is what caused that; moving it right of the dot clips off the frame at 375px, where
+  // the whole plot is 327px wide and the longest label is 80. A label column is the arrangement
+  // that has no collision at any width, which is the only kind of answer a fluid frame accepts.
   const widestName = Math.max(...layout.rows.map((r) => measure(r.name, frame.label)));
-  const Y_GUTTER_PX = Math.ceil(widestName) + 16;
+  const widestValue = Math.max(...layout.rows.map((r) => measure(labelFor(r), frame.label)));
+  const VALUE_COL_PX = Math.ceil(widestValue) + 10;
+  const Y_GUTTER_PX = Math.ceil(widestName) + VALUE_COL_PX + 18;
 
   // The target rule and the axis's own last tick land on the same coordinate when the target IS a
   // tick, which is the case here (25 of a 0-28 domain). Refused rather than drawn, if a re-pointed
@@ -177,15 +186,30 @@ export function OrganicLollipopWeb({
           aspectRatio: `${Y_GUTTER_PX + frame.width} / ${totalHeight + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div className="y-axis" style={{ ["--value-col" as string]: `${VALUE_COL_PX}px` }}>
           {layout.rows.map((r) => (
             <span
-              key={r.code}
+              key={`${r.code}-name`}
               className={`axis-label y country${r.stale ? " is-stale" : ""}`}
               data-row={r.code}
               style={{ top: over(r.cy, totalHeight), color: r.stale ? muted : ink }}
             >
               {r.name}
+            </span>
+          ))}
+          {/* EVERY VALUE, DRAWN. Twenty-seven rows fit twenty-seven numbers, so nothing a static
+              frame could state is gated behind an ask — the interaction adds the year, the flag and
+              the comparison, never the number itself. A row whose figure is not from the newest
+              year carries that year here, in words, because a ranking whose rows come from
+              different years and does not say so is the defect this whole beat is about. */}
+          {layout.rows.map((r) => (
+            <span
+              key={`${r.code}-value`}
+              className={`axis-label y value${r.stale ? " is-stale" : ""}`}
+              data-row={r.code}
+              style={{ top: over(r.cy, totalHeight), color: r.stale ? muted : ink }}
+            >
+              {labelFor(r)}
             </span>
           ))}
         </div>
@@ -242,7 +266,6 @@ export function OrganicLollipopWeb({
               y2={r.cy}
               stroke={accent}
               strokeWidth={2}
-              strokeOpacity={r.stale ? 0.5 : 1}
               vectorEffect="non-scaling-stroke"
             />
           ))}
@@ -291,21 +314,6 @@ export function OrganicLollipopWeb({
             />
           ))}
 
-          {/* EVERY VALUE, DRAWN. Twenty-seven rows fit twenty-seven labels, so nothing a static
-              frame could state is gated behind an ask — the interaction adds the year, the flag and
-              the comparison, never the number itself. A label whose stem reaches too far right is
-              drawn inside the stem instead of after it, decided by the geometry rather than by eye. */}
-          {layout.rows.map((r) => (
-            <span
-              key={r.code}
-              className={`value-label${r.labelFlips ? " flipped" : ""}${r.stale ? " is-stale" : ""}`}
-              data-row={r.code}
-              style={{ left: over(r.cx, frame.width), top: over(r.cy, totalHeight), color: r.stale ? muted : ink }}
-            >
-              {labelFor(r)}
-            </span>
-          ))}
-
           <span
             className="note target-label"
             style={{ left: over(layout.x(target), frame.width), top: 0 }}
@@ -327,7 +335,14 @@ export function OrganicLollipopWeb({
           {ticks.map((value, i) => (
             <span
               key={value}
-              className={`axis-label x${i === 0 ? " first" : ""}${i === ticks.length - 1 ? " last" : ""}`}
+              className={
+                `axis-label x${i === 0 ? " first" : ""}${i === ticks.length - 1 ? " last" : ""}` +
+                // Every other tick is tagged so a narrow frame can drop it: at 375px the plot is
+                // 167px wide and six labels at this fixed size need 180px, which is the collision
+                // the first build shipped. The GRID LINES are untouched — the axis keeps every
+                // step it had, and only half the numbering steps aside.
+                (i % 2 === 1 ? " minor" : "")
+              }
               style={{ left: over(layout.x(value), frame.width), color: muted }}
             >
               {`${value} %`}

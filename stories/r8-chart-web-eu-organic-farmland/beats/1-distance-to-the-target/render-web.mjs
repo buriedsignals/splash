@@ -242,21 +242,19 @@ export async function render({ outDir = OUT_DIR, name = OUTPUT_NAME } = {}) {
   const { ground, accent, origin, source: paletteSource } = readPalette(HERE, { stopAt: STORY });
   const storyboard = parseStoryboard(await readFile(join(STORY, "STORYBOARD.md"), "utf8")).meta;
 
-  const title = `No EU country reporting for ${newestYear} has reached the Union's ${TARGET} % organic-farmland target`;
+  const title = `No EU country reporting for ${newestYear} has reached the ${TARGET} % organic-farmland target`;
 
   // THREE SHORT LINES, not two long ones — what a caveat owes the reader is the fact, not the
   // workings. The workings are in the brief and in the storyboard, where a desk reads them.
   const caveats = [
-    `Land fully converted to organic farming plus land still under conversion, as a share of each ` +
-      `country's utilised agricultural area. One row per EU member state, ranked on its own most ` +
-      `recent published figure.`,
-    `${stale.map((d) => `${d.name} has published nothing since ${d.year}`).join(" and ")}, so ` +
-      `${stale.length === 1 ? "it is" : "they are"} shown apart from the ranking rather than compared with it.` +
+    `Land converted or under conversion to organic farming, as a share of utilised agricultural ` +
+      `area. Each row is that country's own most recent published figure.`,
+    `${stale.map((d) => `${d.name} has published none since ${d.year}`).join(", ")} — shown apart, ` +
+      `not ranked.` +
       (everOverTarget.length > 0
         ? ` ${everOverTarget.map((d) => `${d.name} was over the line in ${d.year}`).join(", ")}.`
         : ""),
-    `No European average is drawn: this table's own EU aggregate stops at ${euLast.year}, where it ` +
-      `stands at ${pct(euLast.value)}.`,
+    `No EU average is drawn: this table's own aggregate stops at ${euLast.year}, at ${pct(euLast.value)}.`,
   ];
 
   /** The one string a reader gets back for a row — on hover, on tap, on keyboard focus, and in the
@@ -371,10 +369,14 @@ const EXTRA_CSS = `
   transform: translate(-50%, -50%);
   fill: none;
 }
-.pt.is-stale { opacity: 0.55; }
+/* A ROW WHOSE FIGURE IS NOT FROM THE NEWEST YEAR IS DRAWN HOLLOW, NOT DIMMED. It was dimmed in the
+   first build, and the format's own driven check refused it: the view a reader lands on must dim
+   nothing, because in this format a dimmed mark is a filtered-out mark. A hollow dot is the same
+   accent at full strength, says "not filled in yet" without a second hue, and keeps the mark at the
+   contrast the palette measured. */
+.pt.is-stale { background: var(--ground); box-shadow: inset 0 0 0 2px var(--accent); }
 .pt:hover, .pt:focus, .pt.pt-active {
   fill: none;
-  opacity: 1;
   background: var(--ink);
   box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--ink);
   z-index: 3;
@@ -382,27 +384,27 @@ const EXTRA_CSS = `
 .pt:focus { outline: none; }
 .pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
-/* THE ROW LABELS. A country's name sits in the left gutter and its value beside its own dot; both
-   carry the row's code, so lighting a dot lights the whole row. On a wide screen the gutter is a
-   long way from the mark, and a highlight that stops at the dot leaves a reader hunting for their
-   own place in the list. */
+/* THE LABEL COLUMN. Two right-aligned columns in the gutter — the country's own name, then its own
+   value against the axis — so no word is ever drawn over a stem and nothing can be clipped off the
+   right edge of a narrow frame. Both carry the row's code, so lighting a dot lights the whole row:
+   on a wide screen the gutter is a long way from the mark, and a highlight that stops at the dot
+   leaves a reader hunting for their own place in the list. */
 .axis-label.y.country {
-  right: 10px;
+  right: calc(10px + var(--value-col));
   transform: translateY(-50%);
   font-size: var(--label-size);
   font-weight: var(--label-weight);
   white-space: nowrap;
 }
-.value-label {
-  position: absolute;
-  font-size: var(--note-size);
-  font-weight: 600;
+.axis-label.y.value {
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: var(--label-size);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  transform: translate(8px, -50%);
-  pointer-events: none;
 }
-.value-label.flipped { transform: translate(-8px, -50%) translateX(-100%); }
-.axis-label.y.country.row-active, .value-label.row-active { color: var(--ink); text-decoration: underline; }
+.axis-label.y.row-active { color: var(--ink); text-decoration: underline; }
 
 .note.target-label {
   transform: translate(-8px, 0) translateX(-100%);
@@ -411,9 +413,18 @@ const EXTRA_CSS = `
   white-space: nowrap;
 }
 .note.divider-label {
-  transform: translateY(-100%) translateY(-5px);
+  transform: translateY(-100%) translateY(-7px);
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* THE NARROW FRAME'S OWN AXIS. Below 640px the plot rectangle is under 200px wide and six tick
+   labels at this format's fixed type size cannot stand side by side — measured at 375x812, where
+   the first build printed "0 % 5 %10 %15 %20 %25 %" as one run. Every gridline stays; every other
+   NUMBER steps aside, and the one number the whole chart is read against is named in full by the
+   target rule's own label. */
+@media (max-width: 640px) {
+  .axis-label.x.minor { display: none; }
 }
 `;
 
