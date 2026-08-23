@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import puppeteer from "puppeteer";
 import { staticFrameSurvives } from "../scripts/detect-degrades-without-javascript.mjs";
 import { deliveredPages } from "../scripts/delivered-pages.mjs";
+import { RECORDED_PAGES, pagesThatLeftTheWalk } from "./delivered-pages-ratchet.ts";
 
 const SKILL = resolve(import.meta.dirname, "..");
 const TWIN = resolve(SKILL, "..", "..");
@@ -113,14 +114,14 @@ function chartWebArtifacts(): string[] {
 describe("every chart-web page on disk", () => {
   it("keeps every mark when scripting is taken away", async () => {
     const files = chartWebArtifacts();
-    // Measured 2026-08-22, after the walk was widened from `proof/` alone to every root a beat
-    // lives in: 24 delivered pages — the 18 under `proof/` this used to see, plus 6 under
-    // `stories/`. Asserted exactly, not as a floor: a walk of this shape is exactly the kind of
-    // check that silently drops a page (this one did, on `web-co2-ranking`, until the
-    // parent-directory lookup that `deliveredPages` replaced), so a count that creeps back down
-    // must fail loudly. A 25th delivered beat SHOULD turn this red — bump the number here and in
-    // its four siblings rather than loosen it back to a floor.
-    expect(files.length).toBe(24);
+    // A RATCHET OVER NAMES, NOT A COUNT. This walk once silently dropped a page (`web-co2-ranking`,
+    // until the parent-directory lookup `deliveredPages` replaced), so a page LEAVING it must fail
+    // loudly — but the `toBe(24)` this replaced could only say the total moved, stayed green on
+    // one-in-one-out, and charged every shipped story a five-file edit indistinguishable from the
+    // edit that papers the drop over. `RECORDED_PAGES` names the population instead: a page joins
+    // freely and is measured by this loop from its first run, and one that leaves is named here.
+    // Argued in full in `test/delivered-pages-ratchet.ts`.
+    expect(pagesThatLeftTheWalk(RECORDED_PAGES, files, TWIN)).toEqual([]);
     const browser = await puppeteer.launch({ executablePath: resolveChrome() });
     const offenders: string[] = [];
     try {
