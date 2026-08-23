@@ -277,11 +277,14 @@ describe("closed Splash operation runner", () => {
 
   test("map production dispatches only a story-bound declarative contract through the managed browser", async () => {
     const fixture = await storyFixture();
-    await mkdir(join(fixture.story, "beats", "map"), { recursive: true });
+    const beatDir = join(fixture.story, "beats", "map");
+    const contract = "{}\n";
+    await mkdir(beatDir, { recursive: true });
+    await writeFile(join(beatDir, "MAP-BAKE.json"), contract);
     process.env.MAPTILER_KEY = "broker-map-canary-12345";
     process.env.SPLASH_BROWSER_PATH = "/engine/managed/chromium";
     let dispatched: any = null;
-    const contractDigest = `sha256:${"a".repeat(64)}`;
+    const contractDigest = sha256(contract);
     const result = await runOperation(
       "map-bake",
       {
@@ -342,6 +345,44 @@ describe("closed Splash operation runner", () => {
     ).toBe(false);
   });
 
+  test("rejects a mismatched map contract before dispatch or attempt persistence", async () => {
+    const fixture = await storyFixture();
+    const beatDir = join(fixture.story, "beats", "map");
+    await mkdir(beatDir, { recursive: true });
+    await writeFile(join(beatDir, "MAP-BAKE.json"), "{}\n");
+    let dispatched = false;
+
+    const outcome = await runOperation(
+      "map-bake",
+      {
+        ...fixture.request,
+        outputId: "map",
+        parameters: { contractDigest: sha256('{"changed":true}\n') },
+      },
+      {
+        mapBakeFn: async () => {
+          dispatched = true;
+          throw new Error("mismatched map contract reached the producer");
+        },
+      },
+    ).then(
+      () => "resolved",
+      (error) => String(error),
+    );
+
+    expect({
+      outcome,
+      dispatched,
+      receiptExists: await Bun.file(
+        join(beatDir, "PRODUCTION-ATTEMPTS.json"),
+      ).exists(),
+    }).toEqual({
+      outcome: expect.stringMatching(/map contract.*digest/i),
+      dispatched: false,
+      receiptExists: false,
+    });
+  });
+
   test("reserves the third failed attempt once across dispatcher processes", async () => {
     const fixture = await storyFixture();
     const result = await runConcurrentLastAttempt(fixture, "failure");
@@ -373,6 +414,82 @@ describe("closed Splash operation runner", () => {
         join(result.beatDir, "PRODUCTION-ATTEMPTS.json"),
       ).exists(),
     ).toBe(false);
+  });
+
+  test("recovers a dead reservation without resetting the attempt budget", async () => {
+    const fixture = await storyFixture();
+    const outputId = "chart";
+    const beatDir = join(fixture.story, "beats", outputId);
+    await mkdir(beatDir, { recursive: true });
+    await writeFile(join(beatDir, "spec.json"), "{}\n");
+    const controlDir = join(fixture.workspace, "orphaned-reservation");
+    await mkdir(controlDir);
+    const admittedPath = join(controlDir, "admitted");
+    const childPath = join(controlDir, "reserve-and-wait.mjs");
+    await writeFile(
+      childPath,
+      `import { writeFile } from "node:fs/promises";
+const { runOperation } = await import(process.env.RUN_OPERATION_URL);
+const request = JSON.parse(process.env.REQUEST_JSON);
+await runOperation("datawrapper-produce", request, {
+  runSkillEntrypointFn: async () => {
+    await writeFile(process.env.ADMITTED_PATH, "admitted\\n");
+    while (true) await new Promise((resolve) => setImmediate(resolve));
+  },
+});
+`,
+    );
+    const request = {
+      ...fixture.request,
+      outputId,
+      parameters: { format: "static", size: "landscape" },
+    };
+    const child = Bun.spawn([process.execPath, childPath], {
+      env: {
+        ...process.env,
+        ADMITTED_PATH: admittedPath,
+        REQUEST_JSON: JSON.stringify(request),
+        RUN_OPERATION_URL: new URL(
+          "../scripts/run-operation.mjs",
+          import.meta.url,
+        ).href,
+      },
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    while (!(await Bun.file(admittedPath).exists())) await nextTurn();
+    child.kill("SIGKILL");
+    await child.exited;
+
+    let resumedRuns = 0;
+    const resumedOutcome = await runOperation(
+      "datawrapper-produce",
+      request,
+      {
+        runSkillEntrypointFn: async () => {
+          resumedRuns++;
+          throw new Error("resumed attempt failed");
+        },
+      },
+    ).then(
+      () => "resolved",
+      (error) => String(error),
+    );
+    const receipt = JSON.parse(
+      await readFile(join(beatDir, "PRODUCTION-ATTEMPTS.json"), "utf8"),
+    );
+
+    expect({
+      resumedRuns,
+      resumedOutcome,
+      attempts: receipt.attempts,
+      status: receipt.status,
+    }).toEqual({
+      resumedRuns: 1,
+      resumedOutcome: "Error: resumed attempt failed",
+      attempts: 2,
+      status: "failed",
+    });
   });
 
   test("map delivery writes the client-publishable key only to the final artifact", async () => {

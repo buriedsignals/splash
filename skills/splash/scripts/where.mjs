@@ -63,6 +63,14 @@ function scalarFieldValue(frontmatter, field) {
   return scalarValue(match[1]);
 }
 
+function exactScalarFieldValue(frontmatter, field) {
+  if (!frontmatter) return null;
+  const matches = [
+    ...frontmatter.matchAll(new RegExp(`^${field}:[ \\t]*([^\\n]*)$`, "gm")),
+  ];
+  return matches.length === 1 ? scalarValue(matches[0][1]) : null;
+}
+
 // The six hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
 // membership rule below, mirror storyboard/scripts/storyboard.mjs's own `HAND` constant and
 // `checkStoryboard` — reimplemented here, not imported, because skills in this branch do not
@@ -469,7 +477,13 @@ async function currentBeats(storyRoot, storyDir, slots) {
   const beats = [];
   for (const [index, slot] of slots.entries()) {
     const id = String(slot.id ?? index + 1);
-    const name = names.find((candidate) => candidate === id || candidate.startsWith(`${id}-`)) ?? null;
+    const matches = names.filter(
+      (candidate) => candidate === id || candidate.startsWith(`${id}-`),
+    );
+    if (matches.length > 1) {
+      throw new Error(`multiple beat directories match storyboard slot ${id}`);
+    }
+    const name = matches[0] ?? null;
     const path = name
       ? await containedStoryDirectory(storyRoot, storyDir, ["beats", name], `beat ${name}`)
       : null;
@@ -598,8 +612,8 @@ async function currentBriefBinding(beatDir) {
   const path = join(beatDir, "BRIEF.md");
   if (!(await regularFileStat(path))) return null;
   const frontmatter = extractFrontmatter(await readFile(path, "utf8"));
-  const planVersionValue = scalarFieldValue(frontmatter, "planVersion");
-  const findingIds = stringSet(scalarFieldValue(frontmatter, "findingIds"));
+  const planVersionValue = exactScalarFieldValue(frontmatter, "planVersion");
+  const findingIds = stringSet(exactScalarFieldValue(frontmatter, "findingIds"));
   if (
     typeof planVersionValue !== "string" ||
     !/^[1-9][0-9]*$/.test(planVersionValue) ||

@@ -216,7 +216,10 @@ function validateProductionAttempts(record, path) {
     (record.status === "blocked" && record.attempts !== MAX_PRODUCTION_ATTEMPTS) ||
     (record.status === "failed" && record.attempts === MAX_PRODUCTION_ATTEMPTS) ||
     (record.status === "reserved" &&
-      (typeof record.reservationId !== "string" || record.reservationId.length === 0))
+      (typeof record.reservationId !== "string" ||
+        record.reservationId.length === 0 ||
+        !Number.isSafeInteger(record.pid) ||
+        record.pid < 1))
   ) {
     throw new Error(`production attempt receipt is invalid at ${path}`);
   }
@@ -369,8 +372,27 @@ async function runManagedProductionAttempt({
       previousReceipt.inputDigest === inputDigest
         ? previousReceipt
         : null;
-    if (currentReceipt?.status === "blocked" || currentReceipt?.status === "reserved") {
+    if (currentReceipt?.status === "blocked") {
       return { blocked: blockedProductionResult(currentReceipt) };
+    }
+    if (currentReceipt?.status === "reserved") {
+      if (processIsAlive(currentReceipt.pid)) {
+        return { blocked: blockedProductionResult(currentReceipt) };
+      }
+      if (currentReceipt.attempts === MAX_PRODUCTION_ATTEMPTS) {
+        const blocked = {
+          schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+          operation,
+          outputId,
+          inputPath,
+          inputDigest,
+          attempts: currentReceipt.attempts,
+          status: "blocked",
+          reason: `production attempt ${currentReceipt.attempts} ended before reconciliation; attempt limit reached`,
+        };
+        await writeProductionAttempts(receiptPath, blocked);
+        return { blocked: blockedProductionResult(blocked) };
+      }
     }
 
     const attempts = (currentReceipt?.attempts ?? 0) + 1;
@@ -385,6 +407,7 @@ async function runManagedProductionAttempt({
       status: "reserved",
       reason: `production attempt ${attempts} is already running`,
       reservationId,
+      pid: process.pid,
     });
     return { attempts, reservationId };
   });
@@ -560,10 +583,15 @@ export async function runOperation(
       const { story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
       const inputPath = "MAP-BAKE.json";
-      const beatDir = await realDirectory(
-        join(story, "beats", outputId),
-        "map beat",
+      const contractPath = await existingStoryFile(
+        story,
+        join("beats", outputId, inputPath),
+        "map contract",
       );
+      if (productionInputDigest(await readFile(contractPath)) !== parameters.contractDigest) {
+        throw new Error("map contract digest does not match MAP-BAKE.json");
+      }
+      const beatDir = dirname(contractPath);
       return runManagedProductionAttempt({
         operation,
         beatDir,

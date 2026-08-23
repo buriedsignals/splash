@@ -198,6 +198,12 @@ describe("authoritative Splash orchestration", () => {
       review.draftDigest = `sha256:${"0".repeat(64)}`;
       await writeFile(path, `${JSON.stringify(review)}\n`);
     }, "production"],
+    ["passing QA result", async () => {
+      const path = join(beatDir, "OUTPUT-REVIEW.json");
+      const review = JSON.parse(await readFile(path, "utf8"));
+      review.qaRuns[0].status = "failed";
+      await writeFile(path, `${JSON.stringify(review)}\n`);
+    }, "production"],
     ["delivery binding", async () => {
       const path = join(storyDir, "export", OUTPUT_ID, ".delivery-manifest.json");
       const manifest = JSON.parse(await readFile(path, "utf8"));
@@ -222,6 +228,28 @@ describe("authoritative Splash orchestration", () => {
     [
       "changed current findings",
       () => writeCurrentBrief(beatDir, TEST_PLAN_VERSION, ["finding-reframed"]),
+    ],
+    [
+      "duplicate current plan version",
+      () =>
+        writeFile(
+          join(beatDir, "BRIEF.md"),
+          currentBrief().replace(
+            "\n---\n\n# Current beat plan",
+            `\nplanVersion: ${TEST_PLAN_VERSION + 1}\n---\n\n# Current beat plan`,
+          ),
+        ),
+    ],
+    [
+      "duplicate current findings",
+      () =>
+        writeFile(
+          join(beatDir, "BRIEF.md"),
+          currentBrief().replace(
+            "\n---\n\n# Current beat plan",
+            "\nfindingIds: [finding-reframed]\n---\n\n# Current beat plan",
+          ),
+        ),
     ],
   ] as const) {
     it(`reopens G3 for a ${name}`, async () => {
@@ -353,6 +381,14 @@ describe("authoritative Splash orchestration", () => {
     expect(state.phase).toBe("production");
     expect(state.missing).toEqual(
       expect.arrayContaining([expect.stringMatching(/beat 2.*render/)]),
+    );
+  });
+
+  it("rejects multiple beat directories for one storyboard slot", async () => {
+    await completeDemo();
+    await mkdir(join(storyDir, "beats", "1-duplicate"));
+    await expect(whereIs(storyDir)).rejects.toThrow(
+      /multiple beat directories.*1/i,
     );
   });
 
