@@ -312,14 +312,18 @@ export function discloseTable(tableHtml, rowNoun) {
     );
   const noun = (tableHtml.match(/<table\b/gi) ?? []).length > 1 ? "Tables" : "Table";
   return (
-    // THIS BEAT SHIPS THE DISCLOSURE OPEN. `MapWebSeed.tsx`'s own docstring for `RegionTable`
-    // says the table is "rendered plainly and visibly (never behind a disclosure widget, never
-    // screen-reader-only CSS)"; this function puts it behind one, closed. On a beat where the
-    // map draws marks the reader can see that is a defensible trade. On this one, 17 of 39 marks
-    // have a value of zero and therefore a radius of zero — no pointer can reach them, which is
-    // the state `marksStrandedWithNoChannel` exists for — so the table is those marks' only
-    // COMPLETE reading, and a reading a reader has to open first is one most readers never take.
-    `<details class="mw-table-disclosure" open>` +
+    // THE DISCLOSURE STAYS CLOSED, AND THAT IS NOT THIS BEAT'S CALL TO MAKE.
+    // Ruling B5.2 (2026-08-10) is the owner's, in their own words, and it is "and for all": the
+    // value table is collapsed on every map page without exception. This beat shipped it OPEN for
+    // one render, on the argument below, and `the-value-table-is-collapsed.test.ts` refused it —
+    // correctly. The argument is recorded in NOTES-FOR-MAINTAINER.md as a question for the owner,
+    // not acted on here: 17 of this beat's 39 marks have a value of zero and therefore a radius of
+    // zero, so no pointer reaches them and the table is their only COMPLETE reading — which is the
+    // state `marksStrandedWithNoChannel` exists for. Note also that `MapWebSeed.tsx`'s own
+    // docstring for `RegionTable`, the file a beat is told to copy, still says the table is
+    // "rendered plainly and visibly (never behind a disclosure widget, never screen-reader-only
+    // CSS)" — the opposite of the ruling.
+    `<details class="mw-table-disclosure">` +
     `<summary>${escapeHtml(`${noun} of values — ${rows} ${rowNoun}`)}</summary>\n` +
     `${tableHtml}\n</details>`
   );

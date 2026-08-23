@@ -297,3 +297,69 @@ this machine, which has a working key that `runPreflight` probed to a 200 in the
 journalist reading that sentence would go and record a key they already have.
 `mapKeyState` has four states and no fifth; the missing fifth is "a key exists and this delivery was
 asked not to use it", which is the state every delivery into a public repository is in.
+
+## map-web — seven of this format's tests hold their population as a hand-typed number
+
+Ran: `bun test skills/map-web/test` after adding one beat (two pages: the beat's render and its
+delivered copy).
+Came back: 8 failures out of 297. Seven are the same line in seven files —
+
+    keyboard-reach.test.ts:62               expect(files.length).toBe(10)   Received: 12
+    weight-ceiling.test.ts:67               expect(files.length).toBe(10)   Received: 12
+    accessible-table.test.ts:165            expect(pages.length).toBe(10)   Received: 12
+    degrades-without-javascript.test.ts:63  expect(files.length).toBe(10)   Received: 12
+    the-live-layer-is-in-the-artifact.test.ts   "should find the pages it is supposed to be checking"
+    the-value-table-is-collapsed.test.ts:110    a hardcoded LIST of page paths, +2
+    the-value-table-is-collapsed.test.ts:132    the same list again
+
+Every substantive per-page assertion in all seven PASSED on both new pages: they are reachable by
+Tab and name every mark, they are under the weight ceiling, their accessible table carries every
+mark's fact, they keep every mark with scripting off, and their value table is collapsed. Only the
+counters failed.
+`the-value-table-is-collapsed.test.ts`'s own header is the sharpest version of this: *"WHY IT WALKS
+RATHER THAN LISTS. This project has been burned by list-based guards that stopped covering what was
+added after them ... the page set here is DISCOVERED"* — and then the discovered set is asserted
+against a hardcoded list of names, so it reddens for a beat that starts committing a page exactly as
+it does for a beat that stops. The intent (catching a beat that quietly leaves the check) is right;
+the mechanism charges every new beat for it.
+Cost: adding one beat to this format costs 8 red tests, 7 of which say nothing about the beat. A
+counter that always reddens is a counter people learn to update without reading.
+
+## deliver / map-web — the hand-over guard's lexicon cannot match anything the hand-over writer
+## produces
+
+Ran: `bun test skills/map-web/test/the-handover-agrees-about-the-key.test.ts` on the first `map/web`
+delivery this toolchain has produced through the documented path.
+Came back: FAIL — page `"the placeholder"`, hand-over `"says nothing about the key"`.
+The guard recognises exactly two phrasings (`the-handover-agrees-about-the-key.test.ts:79-83`):
+
+    /does not carry\s+a key/          or        /carries the placeholder `?__MAPTILER_KEY__/
+
+`formatHandover` is the only writer of `HANDOVER.md`, it has four key states and no fifth, and its
+`unkeyed` text (`format-handover.mjs:143`) reads: *"No MapTiler key was recorded, so this page does
+not draw its map live: it shows the map layer that is baked into the file."* Neither pattern matches
+it, and `grep "does not carry" skills/deliver/scripts/format-handover.mjs` returns nothing at all —
+in English or in French.
+Why it has been green: the one delivery it was ever read against,
+`stories/stress-ab-emigration-flows/export/1-where-the-routes-lead/HANDOVER.md`, contains both
+phrases verbatim — text `formatHandover` cannot emit. The lexicon was written from that file rather
+than derived from the producer, so the guard passes on a hand-made sample and refuses the first one
+the machine wrote. Recurring shape 3 and shape 4 in one guard.
+
+## map-web — the seed component's own doctrine contradicts a standing owner ruling
+
+`MapWebSeed.tsx`, the file a beat is told to copy, says of `RegionTable` that it is *"rendered
+plainly and visibly (never behind a disclosure widget, never screen-reader-only CSS)"*.
+Ruling B5.2 (2026-08-10), in the owner's own words, is the opposite and is "and for all", and
+`the-value-table-is-collapsed.test.ts` enforces it. I read the component, shipped the table open,
+and was refused — correctly. One render's cost, and the next beat pays it again.
+
+## A question for the owner, not a defect
+
+Ruling B5.2 collapses the value table on every map page without exception. On a beat where most
+marks HAVE a pointer path that is a small cost. On this one, 17 of 39 marks are zeros drawn at
+radius zero: `verify-live-map.mjs` reports that no pointer reaches them at any of the container
+shapes it drives, and `marksStrandedWithNoChannel` exists precisely because the keyboard and the
+table are then those marks' only two paths. One of those two is behind a click the ruling requires.
+Worth asking whether the ruling wants an exception for a beat whose own machinery has already
+measured that most of its marks are unreachable — or whether the answer is a tighter camera.

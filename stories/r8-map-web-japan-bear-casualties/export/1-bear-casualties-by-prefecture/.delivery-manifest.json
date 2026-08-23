@@ -1,8 +1,8 @@
 {
-  "operationId": "0d694df4-1cd0-4930-93fe-ee7a5929f098",
-  "reviewId": "review-1",
+  "operationId": "a2086862-58da-47d4-91e7-125c67522d1f",
+  "reviewId": "review-2",
   "planVersion": 1,
-  "draftDigest": "sha256:d9bb87936cc15cdb43c311368552ac20773e0d19bd97d0e8f9e35d8d71c316f1",
+  "draftDigest": "sha256:7fe6c39002a40463b2b8ee43925c577d25a433aa61bd111c0cdbbb26d823f611",
   "findingIds": [
     "takeaway-tohoku-holds-158-of-238",
     "akita-is-67-and-the-largest-mark",
@@ -11,7 +11,7 @@
   ],
   "form": "owned-file",
   "format": "web",
-  "createdAt": "2026-08-23T09:04:54.150Z",
+  "createdAt": "2026-08-23T09:09:05.655Z",
   "schemaVersion": 1,
   "outputId": "1-bear-casualties-by-prefecture",
   "state": "complete"

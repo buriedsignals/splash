@@ -29,7 +29,10 @@ reader gets). Then driven, not described:
 
 - **17 of the 39 marks have no pointer path**, because they are zeros and a zero has no area. The
   live-map probe said so unprompted and named them. Their reading is the keyboard and the table,
-  which is why the table ships open on this beat rather than behind a closed disclosure.
+  and the table sits behind a closed disclosure because ruling B5.2 says it does on every map page
+  without exception. I shipped it open for one render and the guard refused me, correctly — that
+  ruling is the owner's and not mine to overrule on one beat. The argument for reopening it on a
+  beat where most marks have no pointer path is written down for them instead.
 - **Akita's own disc is a quarter owned by Iwate's hit target** on the live layer. There is no fix
   inside this beat; it is written up for the maintainer.
 - **At 1024x768 and 375x667 only Akita keeps a printed label.** Below a 460px map box the labels
