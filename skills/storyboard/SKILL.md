@@ -509,6 +509,8 @@ if (errors.length > 0) {
 
 ## Files
 
+- `scripts/verify-frozen-csv.mjs` — `csvSplitByHand`, the catalogue's `csv-split-by-hand` guard, and `handSplitCsvReaders`, the sweep that runs it over this skill's own source with comments stripped. `intake` carries the same two, byte-identically.
+- `scripts/check-frozen-csv.mjs` — the command: `bun skills/storyboard/scripts/check-frozen-csv.mjs`. Exit 0 only when no file here cuts a csv row on a bare comma.
 - `references/exchange.md` — the movements, the hand-of-the-journalist questions with
   their destinations, and the discipline list. Read by every conversation running this phase.
 - `references/type-survey.md` — **generated, do not edit by hand.** Every type sheet in the tree,

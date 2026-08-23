@@ -532,6 +532,9 @@ const exportDir = exportDirFor(identity); // informational; materialise derives 
 
 ## Files
 
+- `scripts/env-keys.mjs` — `resolveEnvKey` and its alias table, a byte-identical copy of `splash/scripts/keys.mjs`'s own (walked by `splash/test/guard-copies-parity.test.ts`). Every credential this skill reads goes through it: the root's `.env` may name the MapTiler key `MAPTILER_API_KEY`, `REMOTION_MAPTILER_KEY` or `VITE_MAPTILER_KEY`, and a delivery that read only the canonical name shipped its placeholder against a working key.
+- `scripts/verify-credentials.mjs` — `credentialReadsWithoutAlias`, the catalogue's `credential-alias-reconciled` guard, and `credentialReadings`, the sweep that runs it over this skill's whole source.
+- `scripts/check-credentials.mjs` — the command: `bun skills/deliver/scripts/check-credentials.mjs`. Exit 0 only when both readings are empty.
 - `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
   hand fields 4 and 5, the caveat is `limits`, the alt is `beats/<outputId>/ALT.md`

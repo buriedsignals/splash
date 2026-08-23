@@ -387,6 +387,8 @@ const { article, data, profile } = await freezeSource({
 
 - `references/ourworldindata-csv-filter-trap.md` — how Our World in Data's CSV endpoint silently ignores country filters without `&csvType=filtered`, and the rule: always count rows to verify a dataset arrived as expected.
 - `scripts/csv.mjs` — `parseCsv`, the RFC 4180 reader.
+- `scripts/verify-frozen-csv.mjs` — `csvSplitByHand`, the catalogue's `csv-split-by-hand` guard, and `handSplitCsvReaders`, the sweep that runs it over this skill's own source with comments stripped. `storyboard` carries the same two, byte-identically.
+- `scripts/check-frozen-csv.mjs` — the command: `bun skills/intake/scripts/check-frozen-csv.mjs`. Exit 0 only when no file here cuts a csv row on a bare comma.
 - `scripts/profile.mjs` — `profileTable`, the column profiler.
 - `scripts/freeze.mjs` — `freezeSource`, the orchestrator (depends on the two above).
 - `test/{csv,profile,freeze}.test.ts` — `bun:test` coverage, including regression tests for the hex/empty-table and lone-CR fixes made on top of the original design.

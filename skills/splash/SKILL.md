@@ -535,6 +535,8 @@ if (missing.length > 0) {
 
 ## Files
 
+- `scripts/verify-credentials.mjs` — `credentialReadsWithoutAlias`, the catalogue's `credential-alias-reconciled` guard, and `credentialReadings`, which runs it over this whole skill and asks one stricter question beside it: a skill that ships `resolveEnvKey` reads no canonical credential name off the environment at all.
+- `scripts/check-credentials.mjs` — the command: `bun skills/splash/scripts/check-credentials.mjs`. Exit 0 only when both readings are empty.
 - `scripts/where.mjs` — `whereIs(storyDir)`, the six-phase recovery function.
 - `scripts/preflight.mjs` — `runPreflight` (capabilities, not a verdict — see "Preflight
   establishes what is possible" above), `assertPreflightReady` (the mechanical stop), and
