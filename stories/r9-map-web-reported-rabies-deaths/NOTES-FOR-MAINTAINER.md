@@ -172,6 +172,71 @@ Three of the format's own instruments disagree with each other about this page:
   page that does not — and the list is empty, because the wrap emptied it"*. My two pages put two
   entries back into it.
 
+### P1b — THE FIX LANDED WHILE I WAS WRITING THIS, AND IT THROWS ON THE FIRST BEAT THAT NEEDS IT
+
+**Ran**, after `a1e79ad4` (*"the wrap reaches the six page assemblers that never got it"*) landed:
+a three-way merge of the now-fixed `proof/mapgen-choropleth-web/render-web.mjs` into this beat's own
+runner. Clean, zero conflicts. Then re-rendered.
+
+**Came back**
+
+```
+this beat's camera spans the world, so its page fills its box by repeating that world east and west
+— and the number of copies is derived from `geometry.boxAspects`, the measured range of box shapes
+this beat is delivered into, which this plate does not carry. Re-bake it (bake-plate.mjs writes it)
+and pass it through in `props.geometry`.
+```
+
+**The plate does carry it.** `geometry.json` has held `boxAspects` since the bake. What is missing is
+the second half of that sentence — the runner never puts it into `props.geometry`. Measured across
+every assembler in the tree:
+
+| Runner | passes `boxAspects` in `props.geometry` |
+| --- | ---: |
+| `skills/map-web/scripts/render-web.mjs` | **no** |
+| `proof/mapgen-choropleth-web/render-web.mjs` | **no** |
+| `proof/mapgen-dot-web/render-web.mjs` | **no** |
+| `proof/mapgen-hexgrid-web/render-web.mjs` | **no** |
+| `proof/mapgen-locator-web/render-web.mjs` | **no** |
+| `proof/mapgen-symbol-web/render-web.mjs` | **no** |
+| `stories/real-owid-life-expectancy/.../render-web.mjs` | **yes** |
+
+One runner in nine. It is the one beat that already wrapped — the 241-region world beat the ruling
+was built on.
+
+**Why the verification could not see it.** `requireBoxAspects` is only reached when `worldCopies > 1`,
+and `a1e79ad4`'s own commit message says: *"None of these six has a full-turn camera (59°, 66°, 0.1°,
+83°, 18°, 34°), so `worldCopies` is 1 and every stylesheet is byte-identical before and after."* The
+six beats it was verified on are exactly the six on which the new code path cannot execute. Recurring
+shape 1, at the level of the fix rather than the feature: a mechanism whose verification is
+structurally incapable of touching it.
+
+**And the refusal's advice is the wrong action.** *"Re-bake it (bake-plate.mjs writes it)"* spends a
+MapTiler key and a headless browser and changes nothing, because the bake already wrote it. The fix
+is one line in the runner.
+
+**What it is worth.** One line — `boxAspects: geometry.boxAspects ?? null` — and this beat wraps
+correctly and completely. Driven at four widths:
+
+```
+1600x900   box 1568.0x583.5 covers 100.0% · 3 copies · Tab stops 194 · table rows 194
+   copy 0 (repeat)  24 of 24 marks answer a pointer   [263px visible]
+   copy 1 (primary) 176 of 176                        [1042px visible]
+   copy 2 (repeat)   7 of 7                           [263px visible]
+2990x1718  covers 100.0% · copy 0: 5/5 · copy 1 (primary): 188/188 · copy 2: 4/4
+1280x800   covers 100.0% · copy 0: 23/23 · copy 1 (primary): 170/170 · copy 2: 7/7
+ 375x812   covers 100.0% · copy 1 (primary): 103/103, both repeats off screen
+```
+
+`verify-fills-the-box.mjs` exit 1 → **0**. `verify-wraps-the-world.mjs` threw → **exit 0**. Coverage
+66.7 % → **100.0 %** at 1600×900. The keyboard and the accessible table did not multiply, at any
+width. Looked at, not only counted: the world runs edge to edge, the repeats carry their own shading
+(Indonesia and Thailand shaded on the left copy, India's white outline drawn on it too), and there is
+no page ground beside the map at any width.
+
+So the ruling is right and the mechanism works. It reaches a fresh beat only after one line that no
+assembler but one carries.
+
 ### P2 — the sub-pixel census is optimistic by one width step, for the same reason
 
 **Ran** `marksStrandedWithNoChannel` / `drawnWidthAt` over the delivered page.
