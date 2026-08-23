@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 // The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
 // in. See the block at the bottom of this file for why it is here and what stayed green without it.
 import { profileTable } from "../../intake/scripts/profile.mjs";
+import { parseCsv } from "../../intake/scripts/csv.mjs";
 
 // The real trial fixtures (docs: twin/TRIAL-THREE-BEATS.md). Column ranges come from the real
 // series; rows carry only the years the checks below actually need.
@@ -1001,6 +1002,45 @@ describe("readFrozenRows — where rows come from now (finding 2)", () => {
 
   it("should return no rows at all for a table with only a header, rather than a row of nulls", () => {
     expect(readFrozenRows("a,b\n")).toEqual([]);
+  });
+
+  // FOUND 2026-08-23, by running the reader rather than reading it. This reader split the text into
+  // LINES first and parsed quotes inside each line, so a quoted field carrying its own newline —
+  // legal RFC 4180, and what a journalist's note column looks like the moment somebody wrapped a
+  // sentence — was torn in two: the tail became a whole extra ROW whose first column read as an
+  // entity name and whose every other column was empty. Everything downstream (the superlative
+  // check, `panelShapeOf`, every value lookup) then answered over a row that does not exist.
+  //
+  // `csvSplitByHand` — the guard this skill carries for exactly this file — cannot see it: there is
+  // no `.split(",")` anywhere in the reader. That is the measurement that says a guard is not a
+  // substitute for one reader: `intake` froze this table with a real RFC 4180 parser and this skill
+  // read it back with a second, line-oriented one, and the two disagreed about how many rows the
+  // table has.
+  it("should keep a quoted field's own newline inside its cell, not start a new row on it", () => {
+    const csv = [
+      "entity,value,note",
+      '"Bonaire, Sint Eustatius and Saba",42,plain',
+      '"Netherlands, the","1,234.5","a note\nspanning two lines"',
+      "Chad,7,ok",
+    ].join("\n");
+    const rows = readFrozenRows(csv);
+    expect(rows.map((row) => row.entity)).toEqual([
+      "Bonaire, Sint Eustatius and Saba",
+      "Netherlands, the",
+      "Chad",
+    ]);
+    expect(rows[1].note).toBe("a note\nspanning two lines");
+  });
+
+  // The same table read by `intake`'s own parser, so the claim is that the two skills agree rather
+  // than that this one is self-consistent. A13's whole seam is two skills reading one frozen table.
+  it("should read the same rows intake's own reader does", () => {
+    const csv = 'a,b\n"one, two","carrying\na newline"\nplain,text\n';
+    const [header, ...rows] = parseCsv(csv);
+    expect(header).toEqual(["a", "b"]);
+    expect(readFrozenRows(csv)).toEqual(
+      rows.map((cells) => ({ a: cells[0], b: cells[1] })),
+    );
   });
 });
 
