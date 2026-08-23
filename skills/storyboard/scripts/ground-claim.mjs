@@ -3409,12 +3409,61 @@ function checkNumericRanges(text, columns, consumedSpans, table = {}) {
     }
 
     if (!target) {
-      say(
-        "unverifiable",
-        `"${claimText}" was not placed: ${chosen.refusal}` +
+      // ROUND NINE — THE TABLE'S OWN SHAPE IS A HOME A SENTENCE DOES NOT HAVE TO NAME.
+      //
+      // WHO's Global Health Observatory publishes its columns under its own schema — `Id`,
+      // `TimeDim`, `NumericValue`, `TimeDimensionValue` — and this check asked the journalist's
+      // sentence to contain one of those words before it would place a number at all. It never
+      // will: no published sentence names a machine column. So G1 decided 0 of 1 on a takeaway
+      // whose central numbers are in the frozen table, and every refusal read "the claim names none
+      // of them".
+      //
+      // `rowCount` and a column's `missing` count were ALREADY a numeral's home (round six, beat
+      // AA) and neither could be reached from here: both are tried further down, after a target
+      // column has been resolved. They do not need one — they are facts about the TABLE, not about
+      // a column's values — and a count of subjects (`distinct`) is the same kind of fact and the
+      // one a sentence like "the 195 countries in WHO's own file" is actually about.
+      //
+      // The verdict is `consistent`, never `supported`, and the difference is the whole discipline:
+      // the sentence named nothing, so a numeral equalling one of these counts has been PLACED
+      // against the table's shape and has confirmed no claim. Where SEVERAL counts equal it the
+      // numeral is refused and all of them are named — 2 919 is WHO's row count, its `Id` column's
+      // distinct count and the blank count of eleven empty columns, and picking one of those to
+      // confirm would be a coincidence dressed as a reading. A relation excludes the whole search
+      // for the reason the `rowCount` branch below already gives.
+      const shapes = relation
+        ? []
+        : [
+            ...(rowCount !== null && sameNumber(value, rowCount)
+              ? [`the number of rows the frozen table carries (${rowCount})`]
+              : []),
+            ...columns
+              .filter((c) => Number.isFinite(c.distinct) && c.distinct > 0 && sameNumber(value, c.distinct))
+              .map((c) => `the number of distinct values column "${c.name}" carries (${c.distinct})`),
+            ...columns
+              .filter((c) => Number.isFinite(c.missing) && c.missing > 0 && sameNumber(value, c.missing))
+              .map((c) => `the number of blank cells column "${c.name}" carries (${c.missing})`),
+          ];
+      if (shapes.length === 1) {
+        say(
+          "consistent",
+          `"${claimText}" names no column of this table, and it equals ${shapes[0]} — that places the numeral against the table's own shape, it does not confirm the claim it sits in`,
+        );
+        continue;
+      }
+      claims.push({
+        claim: claimText,
+        verdict: "unverifiable",
+        notPlaced: "names-no-column",
+        detail:
+          `"${claimText}" was not placed: ${chosen.refusal}` +
+          (shapes.length > 1
+            ? ` — and it equals ${shapes.length} different counts this table makes of itself (${shapes.join("; ")}), so reading it as any one of them would be a coincidence`
+            : "") +
           (wouldLandIn.length > 0 ? ` (it would fall inside ${rangeOf(wouldLandIn)})` : "") +
-          refusedColumnNote(columns),
-      );
+          refusedColumnNote(columns) +
+          settledNote,
+      });
       continue;
     }
 
@@ -3638,6 +3687,12 @@ function computeCoverage(text, claims) {
     // declared languages is written with says the sentence is in a fifth language without this file
     // being taught one.
     unreadableLetters: lettersNotRead(text),
+    // ROUND NINE — THE CLAIMS THAT FAILED FOR ONE STRUCTURAL REASON, counted apart from the rest.
+    // A claim refused because the journalist's sentence names no column of the frozen table has not
+    // failed a check; it has failed a JOIN — prose to table by column NAME — and on a file whose
+    // publisher names its columns for its own schema every claim fails it at once. Named here so
+    // the caller that writes the verdict the journalist reads can say which limit they met.
+    namedNoColumn: claims.filter((c) => c.notPlaced === "names-no-column").map((c) => c.claim),
   };
 }
 

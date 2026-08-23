@@ -1372,3 +1372,88 @@ describe("one candidate shape, and the mechanism refuses what it does not accept
       ).toThrow(/marks/);
   });
 });
+
+// =============================================================================================
+// ROUND NINE — THE TWO THINGS G1 KNEW AND DID NOT SAY.
+//
+// WHO's rabies register decided 0 of 1, and the verdict a journalist read gave a per-claim reason
+// ("the claim names none of them") without ever saying what those five refusals had in common:
+// this check joins prose to table by column NAME, and a real publisher's API names its columns for
+// its own schema. That is a limit of the join, not evidence against the takeaway, and a journalist
+// cannot act on it unless it is written down.
+//
+// And `intake` had already carried the publisher's own statement that the register is underreported
+// onto the profile — a field measured, at the time this was written, to be read by NO script in the
+// tree (`grep -rn statedIncompleteness skills/` returned `intake` and its own tests). A claim
+// carried onto a profile nobody reads is a claim nobody made.
+// =============================================================================================
+describe("resolveGrounding — the limits of the check, on the verdict the journalist reads", () => {
+  const RABIES = "r9-map-web-reported-rabies-deaths";
+  const WHO_TAKEAWAY =
+    "WHO estimates 59 000 people die of rabies every year. For 2024 the world's health ministries wrote down 3 021 between them.";
+
+  it("should name the JOIN as the reason, not leave five refusals looking like five defects", () => {
+    const resolved = resolveGrounding(WHO_TAKEAWAY, storyProfile(RABIES), {
+      csv: storyCsv(RABIES),
+    });
+    expect(resolved.detail).toContain("by column NAME");
+    expect(resolved.detail).toContain("its publisher's own schema");
+    expect(resolved.detail).toContain("3 021");
+  });
+
+  it("should say nothing about a join that was never the problem", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.detail).not.toContain("by column NAME");
+  });
+
+  it("should carry a stated incompleteness the profile holds onto the G1 verdict", () => {
+    const profile = {
+      rowCount: 3,
+      columns: [{ name: "deaths", type: "number", min: 1, max: 9, sum: 12 }],
+      statedIncompleteness: {
+        claims: [],
+        unplaced: [
+          {
+            column: "year",
+            word: "underreporting",
+            sentence:
+              "Globally there are an estimated 59 000 deaths from rabies annually; however, due to underreporting, documented case numbers often differ from the estimate.",
+          },
+        ],
+      },
+    };
+    const resolved = resolveGrounding("Deaths reached 12.", profile);
+    expect(resolved.detail).toContain("states an incompleteness");
+    expect(resolved.detail).toContain("due to underreporting");
+    expect(resolved.detail).toContain("REPORTED");
+  });
+
+  it("should carry a period-tied incompleteness the same way", () => {
+    const profile = {
+      rowCount: 3,
+      columns: [{ name: "fires", type: "number", min: 1, max: 9, sum: 12 }],
+      statedIncompleteness: {
+        claims: [
+          {
+            period: 2026,
+            column: "year",
+            word: "incomplete",
+            sentence: "The 2026 data is incomplete and was last updated 21 August 2026.",
+          },
+        ],
+        unplaced: [],
+      },
+    };
+    const resolved = resolveGrounding("Fires reached 12.", profile);
+    expect(resolved.detail).toContain("2026 data is incomplete");
+  });
+
+  it("should say nothing where the profile carries no stated incompleteness", () => {
+    const resolved = resolveGrounding("Le glacier recule depuis 2003", meltProfile);
+    expect(resolved.detail).not.toContain("states an incompleteness");
+  });
+});

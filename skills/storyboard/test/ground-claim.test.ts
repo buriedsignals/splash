@@ -2326,3 +2326,56 @@ describe("ROUND NINE — a space-grouped numeral is ONE numeral (WHO, Eurostat, 
     expect(claims.some((c) => c.claim === "500")).toBe(true);
   });
 });
+
+// =============================================================================================
+// ROUND NINE — WHAT A NUMERAL CAN BE PLACED AGAINST WHEN THE SENTENCE NAMES NO COLUMN.
+//
+// G1 decided 0 of 1 on WHO's rabies register, and every claim came back with the same reason:
+// "this profile carries 3 measures ("Id", "NumericValue", "TimeDimensionValue") and the claim names
+// none of them". No published sentence ever will — a real publisher's API names its columns for its
+// own schema, and `TimeDimensionValue` is not a word a journalist writes. `rowCount` and a column's
+// `missing` count were already a numeral's home, and both were unreachable here: they are tried
+// only AFTER a target column has been resolved, so a sentence that names no column never got as far
+// as the facts that do not need one.
+// =============================================================================================
+describe("ROUND NINE — the table's own shape is a numeral's home even when no column is named", () => {
+  const RABIES = "r9-map-web-reported-rabies-deaths";
+
+  it("should place a count of subjects against the column that carries them", () => {
+    const { claims } = grounded(
+      RABIES,
+      "There are 195 countries in WHO's own file.",
+    );
+    const claim = claims.find((c) => c.claim === "195");
+    expect(claim).toBeTruthy();
+    expect(claim!.verdict).toBe("consistent");
+    expect(claim!.detail).toContain("SpatialDim");
+    expect(claim!.detail).toContain("195");
+  });
+
+  it("should refuse a numeral several of the table's own counts equal, naming them all", () => {
+    const { claims } = grounded(RABIES, "The file records 2919 readings.");
+    const claim = claims.find((c) => c.claim === "2919");
+    expect(claim).toBeTruthy();
+    expect(claim!.verdict).toBe("unverifiable");
+    expect(claim!.detail).toContain("rows the frozen table carries");
+    expect(claim!.detail).toContain("Id");
+  });
+
+  it("should still refuse a numeral no shape of the table holds", () => {
+    const { claims } = grounded(
+      RABIES,
+      "WHO estimates 59 000 people die of rabies every year.",
+    );
+    const claim = claims.find((c) => c.claim === "59 000");
+    expect(claim!.verdict).toBe("unverifiable");
+  });
+
+  it("should name, in coverage, the claims refused only because the sentence named no column", () => {
+    const { coverage } = grounded(
+      RABIES,
+      "For 2024 the world's health ministries wrote down 3 021 between them.",
+    );
+    expect(coverage.namedNoColumn).toContain("3 021");
+  });
+});

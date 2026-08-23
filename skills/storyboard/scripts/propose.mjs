@@ -178,9 +178,38 @@ export function resolveGrounding(takeaway, profile, options = {}) {
       : ""
   })`;
 
+  // ROUND NINE — THE JOIN, NAMED ONCE, WHERE FIVE IDENTICAL REFUSALS OTHERWISE READ AS FIVE
+  // DEFECTS IN THE TAKEAWAY.
+  //
+  // On WHO's rabies register every claim came back "the claim names none of them", and the verdict
+  // repeated that per claim without ever saying what they had in common: this check joins the
+  // journalist's prose to the frozen table by column NAME, and a real publisher's API names its
+  // columns for its own schema (`Id`, `NumericValue`, `TimeDimensionValue`). No published sentence
+  // will ever contain one. That limit cannot be removed from here — the join is what the check IS —
+  // so it is stated where the journalist reads the verdict, once, with the columns it was asking
+  // their sentence to name.
+  const namedNoColumn = coverage.namedNoColumn ?? [];
+  const measures = measureColumns(profile.columns ?? [], findYearColumn(profile.columns ?? []));
+  const joinNote =
+    namedNoColumn.length > 0
+      ? ` ${namedNoColumn.length} claim(s) were refused for one reason only — this check joins the takeaway to the frozen table by column NAME, and this file's columns are named for its publisher's own schema (${measures.map((c) => `"${c.name}"`).join(", ")}): ${namedNoColumn.map((c) => `"${c}"`).join(", ")}. A published sentence does not name a machine column, so that is a limit of the JOIN and not evidence against the takeaway.`
+      : "";
+
+  // AND THE PUBLISHER'S OWN STATEMENT ABOUT ITS DATA, WHICH `intake` CARRIED AND NOBODY READ.
+  // `profileTable` writes `statedIncompleteness` off the frozen prose — a claim the journalist's
+  // own source made about how complete its register is. Measured while writing this: no script in
+  // this tree read that field. A claim carried onto a profile nobody reads is a claim nobody made,
+  // and this is the verdict a journalist reads before they choose what the graphic asserts.
+  const stated = profile.statedIncompleteness ?? null;
+  const statedSentences = [...(stated?.claims ?? []), ...(stated?.unplaced ?? [])].map((c) => c.sentence);
+  const incompletenessNote =
+    statedSentences.length > 0
+      ? ` And the frozen prose states an incompleteness about this very table, carried onto the profile by \`intake\`: ${statedSentences.map((s) => `"${s}"`).join(" ")} — so every figure here is what was REPORTED, which is not the same quantity as what happened, and the graphic may not present one as the other.`
+      : "";
+
   return {
     verdict,
-    detail: `${detail}${placedNote}${withheldNote}${disagreementNote}${coverageNote}`,
+    detail: `${detail}${placedNote}${withheldNote}${disagreementNote}${coverageNote}${joinNote}${incompletenessNote}`,
     claims,
     contradicted,
     supported,
