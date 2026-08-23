@@ -39,7 +39,7 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
-import { coversTo, deliveryFrame, frameCoversTheBoxRange } from "./delivery-frame.mjs";
+import { coversTo, deliveryFrame, frameCoversTheBoxRange, labelSafeFrame } from "./delivery-frame.mjs";
 import { keepPoint } from "../assets/geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -473,6 +473,12 @@ const geometry = {
   boxAspects: DELIVERY.boxAspects,
   clearance: DELIVERY.clearance,
   coversTo: coversTo({ width: size, height: frameHeight }, DELIVERY.studySet),
+  // The box a LABEL has to stay inside — the intersection of every band the delivery can show,
+  // never the plate. A plate the cover crops is a plate whose own edge is not the picture's edge.
+  // A `cannotCover` plate is contained rather than cropped, so its label box IS its frame.
+  labelFrame: DELIVERY.cannotCover
+    ? { width: size, height: frameHeight, left: 0, top: 0, safeWidth: size, safeHeight: frameHeight }
+    : labelSafeFrame({ width: size, height: frameHeight }, DELIVERY.boxAspects),
   points: projectedPoints,
 };
 const geometryPath = join(outDir, "geometry.json");

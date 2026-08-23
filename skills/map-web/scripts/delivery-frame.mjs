@@ -315,3 +315,42 @@ export function coversTo(frame, studySet) {
     narrowest: studySet.width / frame.height,
   };
 }
+
+/**
+ * THE BOX A LABEL HAS TO STAY INSIDE, and it is not the plate.
+ *
+ * A point label is placed at SSR time, in plate pixels, and flipped to the other side of its mark
+ * when it would run past the frame's own edge. That was exactly right while the whole plate was
+ * visible. Under cover the reader sees a BAND of the plate, so a run that clears the plate's edge by
+ * 300px of ocean can still be cut by the box — measured on `proof/mapgen-locator-web` at 375x812
+ * after its re-bake: three of eleven runs cut, on a plate whose every mark sat comfortably inside.
+ * It is this codebase's own recurring shape — a decision taken against the wrong quantity — and the
+ * quantity here is the band, not the frame.
+ *
+ * The safe box is the INTERSECTION of every band the delivery can show: the narrowest box gives the
+ * least width, the widest box the least height, and both are centred on the frame, so the
+ * intersection is one centred rectangle. A label placed inside it is inside the picture at every
+ * width this beat is delivered at — which is what the flip was always trying to guarantee.
+ *
+ * It is returned in the same `{ width, height }` shape `labelPlacement` already takes, plus the
+ * offsets, so a caller can hand it over in place of the frame without a new signature: the sides a
+ * flip is decided against are `right` and `bottom`, and both are absolute plate coordinates.
+ */
+export function labelSafeFrame(frame, boxAspects) {
+  const { narrowest, widest } = readBoxAspects(boxAspects);
+  const safeWidth = visibleBand(frame, narrowest).width;
+  const safeHeight = visibleBand(frame, widest).height;
+  const left = (frame.width - safeWidth) / 2;
+  const top = (frame.height - safeHeight) / 2;
+  return {
+    // `width`/`height` are the RIGHT and BOTTOM edges in plate coordinates, not the box's own size:
+    // `labelPlacement` reads them as `frame.width - margin` and `frame.height - 18`, which are edge
+    // tests, and an edge test wants the edge.
+    width: left + safeWidth,
+    height: top + safeHeight,
+    left,
+    top,
+    safeWidth,
+    safeHeight,
+  };
+}

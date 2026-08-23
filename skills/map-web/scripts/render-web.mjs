@@ -112,6 +112,10 @@ const PLATE_SIZE = 1000;
 // The seed's own readings, `.mw-stage` width/height at the three widths this format drives:
 //   1600x900  1568x585  2.680     1280x800  1248x485  2.573     375x812  343x420  0.817
 const PLATE_BOX_ASPECTS = "0.817,2.680";
+// The room this seed's own labels need inside the crop, as a fraction of the box on each side —
+// measured by the runs the page actually cut: at 375x812 the whole plate is not visible, and
+// "Athens" ran 25.4px past the frame. `verify-fills-the-box.mjs` prints this number.
+const PLATE_CLEARANCE = "0.074,0";
 // The seed's own frozen plate keeps preview, interaction and installation checks offline. Story
 // beats pass their own plate directory and still bake through `bake-plate.mjs` when it is absent.
 const DEFAULT_PLATE_DIR = join(HERE, "..", "assets", "sample-data", "plate");
@@ -958,6 +962,8 @@ async function ensurePlate(plateDir) {
       String(PLATE_SIZE),
       "--box-aspects",
       PLATE_BOX_ASPECTS,
+      "--clearance",
+      PLATE_CLEARANCE,
       "--out",
       plateDir,
     ],

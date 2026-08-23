@@ -27,6 +27,7 @@ import {
   coversTo,
   deliveryFrame,
   frameCoversTheBoxRange,
+  labelSafeFrame,
   readBoxAspects,
   studyAspect,
   visibleBand,
@@ -251,5 +252,26 @@ describe("the one study set this cannot be solved for, named rather than approxi
     expect(() =>
       frameCoversTheBoxRange(shipped, noMargin, [1.398, 2.768], { axis: "longitude" }),
     ).not.toThrow();
+  });
+});
+
+describe("labelSafeFrame — the box a label has to stay inside, which is not the plate", () => {
+  it("is the intersection of every band the delivery can show", () => {
+    // Japan's own plate and range. The narrowest box (1.398:1) shows the least WIDTH of the plate;
+    // the widest (2.768:1) the least HEIGHT. A run inside both is inside the picture at every width.
+    const { frame } = deliveryFrame(JAPAN, 1600, [1.398, 2.768]);
+    const safe = labelSafeFrame(frame, [1.398, 2.768]);
+    expect(safe.safeWidth).toBeCloseTo(visibleBand(frame, 1.398).width, 6);
+    expect(safe.safeHeight).toBeCloseTo(visibleBand(frame, 2.768).height, 6);
+    // Centred on the frame, so the right edge a flip is decided against sits inside the plate.
+    expect(safe.left).toBeCloseTo((frame.width - safe.safeWidth) / 2, 6);
+    expect(safe.width).toBeLessThan(frame.width);
+  });
+
+  it("is the whole frame when the delivery only ever shows the whole frame", () => {
+    const frame = { width: 1000, height: 500 };
+    const safe = labelSafeFrame(frame, [2, 2]);
+    expect(safe.width).toBeCloseTo(1000, 6);
+    expect(safe.height).toBeCloseTo(500, 6);
   });
 });

@@ -32,96 +32,71 @@ export function graphicFillsItsFrame(fraction, floor) {
 }
 
 /**
- * THE FRACTION THIS FORMAT FEEDS THE DECISION ABOVE — the window's own BINDING AXIS, not its area.
+ * THE FRACTION THIS FORMAT FEEDS THE DECISION ABOVE — HOW MUCH OF ITS CONTAINER THE GRAPHIC COVERS,
+ * ON THE AXIS IT COVERS LEAST.
  *
- * THE MEASUREMENT THAT WITHDREW THE AREA (2026-08-23). `stress-f-housing-pressure` had been baked
- * into a 496x496 frame for a camera asking 0.538:1. Re-baked to its camera's own shape, its three
- * area readings FELL — 30.3 / 27.8 / 38.6% to 16.3 / 15.0 / 22.5% — while the drawing got BETTER:
- * measured on the two rendered pages at 1600x900, the box is 660px tall either way, holds the same
- * 36° of latitude either way, and Sweden is drawn at 13.2 against 13.1 pixels per degree. What left
- * the screen was 29° of longitude nobody asked for. A metric that falls when the work improves is
- * measuring something other than what it believes it is measuring.
+ * THE THIRD READING THIS FORMAT HAS HAD, and the two it retires were each right about the thing they
+ * fixed. The AREA against the window was withdrawn on 2026-08-23 because a plate keeps its own true
+ * aspect at every width, so the area a correctly fitted plate covers is a function of the READER's
+ * window shape as much as the producer's camera — it fell when a re-bake made the drawing better.
+ * The BINDING-AXIS fraction that replaced it fixed exactly that: it asked how much of the axis the
+ * box ran out of room on the box had taken, which is aspect-independent by construction, and over
+ * ten pages at three widths it narrowed the spread from 15.0-62.8% to 51.1-91.5%.
  *
- * WHY AN AREA COULD NEVER HAVE ANSWERED THIS QUESTION HERE. A baked plate keeps its own true aspect
- * at every width — it is never stretched to a shape it was not baked for (`geo-discipline.md`) — so
- * the AREA a correctly fitted plate covers is a function of two aspects, the plate's and the
- * reader's window's, and only the first is the producer's to choose. There is no layout that makes a
- * 0.538:1 picture cover a 1.78:1 window. The old floor was reading the reader's window shape and
- * charging the producer for it.
+ * AND IT WAS A SOUND READING OF THE WRONG QUANTITY. The owner, looking at a real delivered page in a
+ * 2990px window: *the map must take all the available width, every time* — then, on the correction
+ * that followed, *the height is not an editorial choice either; like the scrolly, it must take all
+ * the space available.* Japan's plate is 1000x1089, a correct bake of a portrait camera; the box was
+ * bound on height, filled that height, and read 62.9% here — while covering 33.2% of the container's
+ * width (520.1px of 1568px at 1600x900, 428.3 of 1248 at 1280x800, 1175.7 of 2958 at 2990x1600).
+ * The binding reading answers "how well does this box fit its plate". The reader's question is "how
+ * much of the room it was given did the graphic take", and those are different numbers.
  *
- * WHAT A CORRECTLY FITTED PLATE ACTUALLY DOES. It is bound on exactly one axis — the one it runs out
- * of room on first — and free on the other. So the honest question is not "how much of the window is
- * this?" but "how much of the axis it is bound on did it take?", and that is aspect-independent by
- * construction: a correct portrait plate in a landscape window and a correct landscape plate in a
- * portrait window read the same fitted-ness, while a box that simply failed to grow into the room it
- * had is small on BOTH axes and so reads low here. Measured over this format's whole delivered
- * population, the reading's spread narrowed from 15.0–62.8% (area, 4.2x) to 51.1–91.5% (binding
- * axis, 1.8x), and `stress-f-housing-pressure` stopped being the worst page in the format.
+ * WHY `min`, NEVER `max` AND NEVER AN AREA. The rule is one rule on both axes, so the honest reading
+ * is the worse of the two: a box that fills the width and half the height has taken half the room it
+ * was given, and both `max` (100%) and an area (50%) would say something kinder than the truth.
  *
- * ONLY THIS FORMAT'S READING CHANGED. `graphicFillsItsFrame` above is untouched and stays
- * byte-identical in all eight copies — the decision was never what was wrong. Its own doc comment
- * still cites map-web's worst case as 15.0%, which is a reading of a fraction this file no longer
- * feeds it; that sentence is one text in eight files, and correcting it here alone would break the
- * parity that keeps them one decision. The other seven formats' fractions and floors are left
- * exactly as they are, deliberately: chart-web's frame IS its viewBox and is fluid by construction,
- * and the four fixed-frame formats read ink out of a delivered PNG rather than a box out of a
- * window. Whether any of them has this same defect is a question for their own populations, not one
- * this file may answer for them.
+ * AND WHY THERE IS NO FLOOR MEASURED OVER A POPULATION ANY MORE. Both retired readings had to be
+ * CALIBRATED — they measured a plate against a window, only one of those shapes was the producer's,
+ * and the achievable number was a fact about a population that had to be re-measured whenever the
+ * population changed. This reading measures a layout against itself: the box is its container, or it
+ * is not. `render-web.mjs` sizes `.mw-viewport` at 100% on both axes and `delivery-frame.mjs` bakes
+ * the plate to cover it, so every page in this format reads exactly 1.0 — and the one study set that
+ * provably cannot (a camera already spanning a full turn of longitude, see `cannotCover`) is laid
+ * out the old way ON PURPOSE and says so, rather than reading 0.57 as if it had merely fallen short.
  *
- * A SIDE NOBODY MEASURED IS REFUSED, NOT AVERAGED OVER — `plateFollowsGround`'s own rule, one level
- * down. A fraction built out of a `NaN` width is a reading nobody took, and handing it to the
+ * A side nobody measured is refused rather than averaged over — `plateFollowsGround`'s own rule, one
+ * level down. A fraction built out of a `NaN` is a reading nobody took, and handing it to the
  * decision above would make it `under: false`, which is the silent direction.
  */
-export function bindingAxisFraction(box, frame) {
+export function containerFraction(box, container) {
   const sides = [
     ["box width", box?.width],
     ["box height", box?.height],
-    ["window width", frame?.width],
-    ["window height", frame?.height],
+    ["container width", container?.width],
+    ["container height", container?.height],
   ];
   for (const [side, value] of sides)
     if (!Number.isFinite(value) || value < 0)
       throw new Error(
-        `bindingAxisFraction: ${side} is ${value}, so nothing here was measured — a fraction built ` +
+        `containerFraction: ${side} is ${value}, so nothing here was measured — a fraction built ` +
           `out of it would be a reading nobody took, and the floor would pass it.`,
       );
-  if (!(frame.width > 0) || !(frame.height > 0))
+  if (!(container.width > 0) || !(container.height > 0))
     throw new Error(
-      `bindingAxisFraction: a ${frame.width}x${frame.height} window has no axis to bind against.`,
+      `containerFraction: a ${container.width}x${container.height} container gives the graphic no room to fill.`,
     );
-  return Math.max(box.width / frame.width, box.height / frame.height);
+  return Math.min(box.width / container.width, box.height / container.height);
 }
 
-/** THIS FORMAT'S OWN FLOOR, RE-MEASURED 2026-08-23 as a BINDING-AXIS fraction over the whole
- *  delivered population `discoverMapWebPages()` derives — ten pages, not the two this floor used to
- *  be taken from — at the three widths this format's own test drives (1600x900, 1280x800, 375x812).
- *  Every reading, worst per page first:
+/** THIS FORMAT'S OWN FLOOR, AND IT IS NOT A MEASUREMENT OF A POPULATION — it is the rule itself.
+ *  The graphic takes the whole box or it does not.
  *
- *    stress-f-housing-pressure   51.1%  66.7%  73.4%   ← the format's worst, and it is a CORRECT bake
- *    output-proof/population      60.6%  65.0%  91.5%
- *    mapgen-symbol-web            61.6%  65.9%  73.4%
- *    real-owid-life-expectancy    63.7%  67.7%  91.5%
- *    mapgen-choropleth-web        66.7%  73.4%  91.5%
- *    mapgen-locator-web           67.7%  73.0%  91.5%
- *    mapgen-dot-web               70.8%  78.2%  83.2%
- *    stress-ab-emigration-flows   79.3%  81.6%  91.5%   (renders/ and export/, identical)
- *    mapgen-hexgrid-web           79.2%  79.7%  91.5%
- *
- *  `MEASURED_MIN_FRACTION` is the worst of those thirty readings, and `MARGIN_FRACTION` keeps the
- *  floor off a correct page's own number while still catching a box that collapsed toward zero —
- *  the same two-part shape the area floor had, over a population five times larger.
- *
- *  WHAT THIS FLOOR STILL CANNOT CATCH, AND IT IS THE DEFECT THE RULE WAS WRITTEN FOR. The origin
- *  defect was a left-aligned box dumping ALL its leftover room on one side: `stress-f`'s choropleth
- *  drawn in the left half of a 1440x900 window with the right half plain empty ground. Put back
- *  deliberately in a browser (2026-08-23) on both `stress-f` and this skill's own seed, at 1600x900
- *  and 1280x800 — `.mw-viewport` moved from 622.6px to 16.0px from the left — the AREA fraction moved
- *  0.00 points and the BINDING-AXIS fraction moved 0.00 points. Neither can see it, and neither ever
- *  could: both are readings of the box's SIZE, and alignment is a POSITION. The origin defect is
- *  closed by construction instead — `render-web.mjs` centres `.mw-viewport` — and nothing here
- *  guards its return. That is worth knowing about a rule that catches other things well: this floor
- *  is the guard against a future regression BELOW today's honest minimum, and it has never been the
- *  guard its own name and history suggest. */
-export const MEASURED_MIN_FRACTION = 0.51;
-export const MARGIN_FRACTION = 0.05;
-export const FLOOR_FRACTION = MEASURED_MIN_FRACTION - MARGIN_FRACTION;
+ *  `SUB_PIXEL` is a rounding allowance and never a margin. A browser reports fractional CSS pixels
+ *  for a percentage box inside a bordered container, and across this format's ten delivered pages at
+ *  three widths the largest departure from 1.0 measured 0.000000; this is three orders of magnitude
+ *  above that and still nowhere near a layout failure, since the smallest shortfall this format can
+ *  actually produce is a whole axis (the box the owner reported covered 0.332 of its container).
+ *  `under` is strictly `<`, the same reasoning `weightAgainstCeiling` states for `over`. */
+export const SUB_PIXEL = 0.001;
+export const FLOOR_FRACTION = 1 - SUB_PIXEL;

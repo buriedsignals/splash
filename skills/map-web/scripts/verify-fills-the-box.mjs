@@ -35,10 +35,13 @@ import puppeteer from "puppeteer-core";
 import { labelsClippedByPlate } from "./detect-label-clipped-by-plate.mjs";
 import { discoverMapWebPages, TWIN } from "./discover-pages.mjs";
 import { readBoxAspects, visibleBand, TOLERANCE_PX } from "./delivery-frame.mjs";
+import { containerFraction, graphicFillsItsFrame, FLOOR_FRACTION } from "./detect-fills-its-frame.mjs";
 
-/** The capability this script carries, read by `scripts/guards.mjs` and checked against
- *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
-export const GUARDS = ["boxFillsItsContainer"];
+/** THIS SCRIPT DECLARES NO GUARD OF ITS OWN. The decision it drives is `graphicFillsItsFrame`,
+ *  which is one decision in eight formats and stays byte-identical in all of them
+ *  (`splash/test/guard-copies-parity.test.ts`); what changed on 2026-08-23 is only the FRACTION this
+ *  format feeds it, and that lives beside the decision in `detect-fills-its-frame.mjs`. A second
+ *  catalogue entry here would be the same rule claimed twice. */
 
 /** THE WIDTHS THIS FORMAT DRIVES, and the same three every other sweep in this skill uses. They are
  *  the population the box-aspect range is measured over, so a range read here is a range about
@@ -49,62 +52,6 @@ export const READING_VIEWPORTS = [
   { width: 1280, height: 800 },
   { width: 375, height: 812 },
 ];
-
-/**
- * THE OWNER'S RULE, AS ONE READING: how much of the container the graphic covers, on the axis it
- * covers LEAST.
- *
- * `min`, never `max` and never an area. The rule is *the graphic occupies the whole box its host
- * gives it* — both axes — so the honest reading is the worse of the two: a box that fills the width
- * and half the height has taken half the room it was given, and a reading that averaged the two, or
- * took the better of them, would call it 75% or 100%. This is the third reading this format has had
- * and the argument for retiring the second is in `detect-fills-its-frame.mjs`'s own header.
- *
- * A side nobody measured is refused rather than averaged over, the same rule `plateFollowsGround`
- * states one level down: a fraction built out of a `NaN` is a reading nobody took, and handing it to
- * a floor would pass it.
- */
-export function containerFraction(box, container) {
-  const sides = [
-    ["box width", box?.width],
-    ["box height", box?.height],
-    ["container width", container?.width],
-    ["container height", container?.height],
-  ];
-  for (const [side, value] of sides)
-    if (!Number.isFinite(value) || value < 0)
-      throw new Error(
-        `containerFraction: ${side} is ${value}, so nothing here was measured — a fraction built ` +
-          `out of it would be a reading nobody took, and the floor would pass it.`,
-      );
-  if (!(container.width > 0) || !(container.height > 0))
-    throw new Error(
-      `containerFraction: a ${container.width}x${container.height} container gives the graphic no room to fill.`,
-    );
-  return Math.min(box.width / container.width, box.height / container.height);
-}
-
-/**
- * THE DECISION, and it needs no floor measured over a population — which is the whole difference
- * between this rule and the two it replaces.
- *
- * The area reading and the binding-axis reading both had to be calibrated: they measured how a
- * PLATE sat inside a window, the plate's shape was the producer's and the window's was the reader's,
- * and the achievable number was therefore a fact about a population that had to be re-measured every
- * time the population changed. This reading measures a LAYOUT against itself. The box is its
- * container, or it is not, and there is no honest page anywhere in this format at 0.94.
- *
- * `SUB_PIXEL` is a rounding allowance and never a margin. A browser reports fractional CSS pixels
- * for a percentage box inside a bordered container, and the difference lands in the sixth decimal;
- * this is three orders of magnitude above that and still nowhere near a layout failure — the box the
- * owner reported covered 0.332 of its container, and the smallest genuine shortfall this format can
- * produce is a whole axis.
- */
-export const SUB_PIXEL = 0.001;
-
-export function boxFillsItsContainer(fraction) {
-  return { fraction, floor: 1 - SUB_PIXEL, under: fraction < 1 - SUB_PIXEL };
-}
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — a skill's own
  *  scripts stay copy-pasteable, so this is not imported from anywhere else. */
@@ -154,16 +101,25 @@ export async function readPage(page, abs) {
         return { width: r.width, height: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
       };
       const viewportEl = document.querySelector(".mw-viewport");
-      const labels = Array.from(document.querySelectorAll(".point-label")).map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
-          what: el.textContent.trim() || "a label",
-          left: r.left,
-          right: r.right,
-          top: r.top,
-          bottom: r.bottom,
-        };
-      });
+      // A LABEL THAT IS NOT DRAWN IS NOT A LABEL THAT IS CUT. A run hidden by this beat's own filter,
+      // or dropped by its de-collider, reports a 0x0 rectangle at the document origin — which sits
+      // outside every frame and would read here as the worst clip on the page. Measured on
+      // `proof/mapgen-locator-web`, where 4 of 11 runs are hidden at the opening view: the reading
+      // said "4 labels cut by the frame" about a page whose every visible run is whole. Zero-area
+      // rectangles are therefore skipped, and only runs a reader can actually see are judged.
+      const labels = Array.from(document.querySelectorAll(".point-label"))
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            what: el.textContent.trim() || "a label",
+            left: r.left,
+            right: r.right,
+            top: r.top,
+            bottom: r.bottom,
+            drawn: r.width > 0 && r.height > 0,
+          };
+        })
+        .filter((label) => label.drawn);
       return {
         container: rect(document.querySelector(".mw-stage")),
         box: rect(viewportEl),
@@ -190,7 +146,7 @@ export function reportFor(rel, readings, geometry) {
   let needY = 0;
   for (const { viewport, container, box, labels } of readings) {
     const fraction = containerFraction(box, container);
-    const found = boxFillsItsContainer(fraction);
+    const found = graphicFillsItsFrame(fraction, FLOOR_FRACTION);
     if (found.under) failed = true;
     const aspect = container.width / container.height;
     aspects.push(aspect);
@@ -221,6 +177,23 @@ export function reportFor(rel, readings, geometry) {
       `  the labels this page draws need --clearance ${Math.max(0, needX).toFixed(3)},` +
         `${Math.max(0, needY).toFixed(3)} to stay whole inside the crop`,
     );
+  if (geometry?.cannotCover) {
+    // THE NAMED EXCEPTION, REPORTED RATHER THAN PASSED OR FAILED. A camera that already spans a full
+    // turn of longitude cannot be given the margin a wider box needs, so this page is laid out the
+    // old way on purpose: the box keeps the plate's own shape, is centred, and nothing is cropped.
+    // The reading above is therefore SUPPOSED to be under 100%, and the honest thing is to print
+    // both numbers — what the box takes, and what filling it would have cost the subject.
+    const worst = Math.max(...aspects);
+    const costOfFilling =
+      1 - visibleBand(geometry.frame, worst).height / geometry.studySet.height;
+    lines.push(
+      `  DOES NOT FILL ITS CONTAINER, AND SAYS SO: ${geometry.cannotCover.why}. Filling the widest box ` +
+        `(${worst.toFixed(3)}:1) would cost ${(costOfFilling * 100).toFixed(1)}% of the subject's own height. ` +
+        `See delivery-frame.mjs, "cannotCover".`,
+    );
+    failed = false;
+    return { rel, failed, lines, statedException: true };
+  }
   if (geometry?.coversTo) {
     const covered = readBoxAspects(geometry.coversTo);
     const escaped = [];
