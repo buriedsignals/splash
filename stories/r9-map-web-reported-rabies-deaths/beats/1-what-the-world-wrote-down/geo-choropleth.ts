@@ -610,43 +610,93 @@ export function assertRampReads(
   return ramp;
 }
 
-// ── The two surfaces that are NOT the data, derived from the same palette the ramp is ──────────
+// ── ONE ANSWER FOR THE WHOLE SURFACE SET: ground, water, no-data, and every class ───────────────
 //
-// THE DEFECT THIS CLOSES, and it is the owner's own words: *"it has to adapt to the palette."*
+// WHAT THE OWNER SAW, on the first draft, before anything was measured: *"the no-data grey and the
+// low class read the same."* A world choropleth of rabies deaths REPORTED to WHO — 94 countries
+// filed nothing and 44 filed a real zero, opposite facts — drew the two silences so a reader could
+// not tell them apart. The map contradicted its own headline.
 //
-// These two used to be fixed hexes, with a docstring arguing that fixing them is what makes a
-// no-data reading "stay recognisable across every newsroom's own ground colour". Measured on this
-// format's OWN two shipped grounds, that claim is false in both directions:
+// Measured on that page and on three more palettes, in CONTRAST rather than in luminance:
 //
-//   light ground `#FFFFFF`, accent `#B2182B` — ramp 0.815 0.598 0.421 0.283 0.177 0.101
-//     the fixed no-data grey `#B9B9B9` is 0.485 → between class 2 and class 3
-//     the fixed water tint  `#AAC9E0` is 0.557 → between class 2 and class 3
-//   dark ground `#16191B`, accent `#D4A853` — ramp 0.052 0.109 0.191 0.300 0.442 0.616
-//     `#B9B9B9` 0.485 → between class 5 and class 6
-//     `#AAC9E0` 0.557 → brighter than five of the six classes, on a map whose ocean is most of the
-//     picture, so the SEA was the loudest thing on a map about land
+//   ground   accent     no-data vs class 1     water vs no-data
+//   #16191B  #D4A853         1.28:1                1.02:1
+//   #FFFFFF  #B2182B         1.32:1                1.00:1
+//   #FFFFFF  #1A6B8A         1.27:1                1.00:1
+//   #0B0B0B  #E8E8E8         1.31:1                1.00:1
 //
-// A country with NO READING was therefore painted at the luminance of a real class, on every beat
-// this format has shipped. `assertRampReads` measures the ramp against the GROUND and has never
-// measured these two against the RAMP.
+// TWO MECHANISMS PRODUCED THAT, and neither is a tuning slip.
 //
-// THE TWO OLD CONSTANTS ARE NOT DELETED — they become the MIDPOINT of the axis each colour now
-// travels along, so the derivation passes through the value this family already used and the
-// palette decides where on that axis it lands. `greyAt(0.485)` is `#B9B9B9`; `blueAt(0.557)` is
-// `#AAC9E0`.
+// 1. THE MIDPOINT RULE CAPPED THE SEPARATION AT 2:1 BY CONSTRUCTION. Both surfaces were placed at
+//    the ARITHMETIC midpoint of the band between the ground and the first class. A midpoint's
+//    contrast against the upper end is (L1 + 0.05) / ((Lg + L1) / 2 + 0.05), which climbs toward
+//    2.00:1 as L1 grows and is under it everywhere. No ground, no ramp low end and no class count
+//    could ever have bought this case more — it is a property of the placement, not of any beat.
+//    And "the point furthest from both things it must not be confused with" was never true in the
+//    unit a reader sees: the point equidistant in CONTRAST is the geometric mean, not the mean.
+//
+// 2. THE MEASUREMENT WAS IN THE WRONG UNIT, so nothing could see it. `SURFACE_CLEARANCE` held each
+//    surface `0.02` of relative LUMINANCE clear of the nearest class. A luminance gap is not a
+//    contrast, and the same gap does not mean the same thing twice: 0.02 beside a `#16191B` ground
+//    is 1.34:1, and 0.02 beside white is 1.019:1 — a floor seventeen times stricter on the dark
+//    ground than on the light one. That is the whole of the "short by 0.0015, fourteen times out of
+//    fourteen" refusal this newsroom's own charter used to collect: the dark ground was held to
+//    1.34:1 and missed it by 7.5%, while the WHITE ground passed the same rule at 1.19:1 — the
+//    WORSE of the two pictures, admitted, because 0.02 buys nothing up there. **The 0.0015 was
+//    never real. The comparison was wrong, and it was wrong in a direction that flattered white.**
+//
+// SO THE FOUR SURFACES ARE ONE QUESTION, NOT FOUR. A reader looking at this map sees the page
+// ground, the sea, the countries that filed nothing, and six classes of countries that filed
+// something. Every pair of those a reader must tell apart is measured here, in contrast, against
+// two floors — and both floors are DERIVED from a rule this family already holds rather than typed:
+//
+//   · `KIND_FLOOR` — 3:1, WCAG 2.2 SC 1.4.11, the floor `assertRampReads` already sets for the top
+//     class against the ground. It applies between things that differ in KIND: a surface carrying
+//     no reading against a surface carrying one. Nothing orders them, so nothing but contrast
+//     tells a reader they are different sorts of fact.
+//   · `stepFloorFor(classes)` — `KIND_FLOOR ** (1 / classes)`. Between things of the SAME kind
+//     that a reader orders — two adjacent classes, or a surface against the page it sits on. It is
+//     what one step is worth in the smallest ramp this family permits: a ramp whose top class only
+//     just clears 3:1 against the ground, with its `classes` gaps evenly spent. A step under it is
+//     a step the ramp gave away.
+//
+// WHY `assertRampReads` IS REPLACED HERE RATHER THAN WIDENED. Its own step rule is the same wrong
+// unit: `0.02` of luminance between neighbours. On the ramp this file now derives for a `#FFFFFF`
+// ground and a `#B2182B` accent the smallest step is 0.0188 of luminance and **1.221:1** of
+// contrast — legible, and refused; while `0.02` at the light end of that same ramp would pass a
+// step of 1.02:1 that nobody can see. Widening the number cannot fix a quantity that means two
+// different things at two ends of one ramp. `assertRampReads` is left byte-identical because
+// sixteen files carry it under `@parity` and the symbol, hex and forest cores still call it; a
+// choropleth calls `assertSurfacesRead`, which measures the same three things about the ramp
+// (fold-back, step, top against the ground) in the unit the eye works in, and the surfaces too.
 
 /** The neutral axis a no-data surface travels: black through this family's own mid-grey to white. */
 export const NO_DATA_AXIS = ["#000000", "#B9B9B9", "#FFFFFF"] as const;
 
-/** The blue axis a water tint travels: black through this family's own water blue to white. Rule 7
- *  is a rule about HUE ("water is a blue tint, never grey"), and the hue is what stays fixed here
- *  while the luminance is what the palette moves. */
-export const WATER_AXIS = ["#000000", "#AAC9E0", "#FFFFFF"] as const;
+/** The blue axis a water tint travels. Rule 7 is a rule about HUE ("water is a blue tint, never
+ *  grey"), so the hue is what stays fixed here while the luminance is what the palette moves.
+ *
+ *  THE DARK POLE IS A NAVY, NOT BLACK, and that is measured rather than chosen: a sea derived on a
+ *  `#16191B` ground now lands at 0.0215 relative luminance, and the old `#000000 → #AAC9E0` axis
+ *  carries only 0.043 of chroma down there — under `MIN_CHROMA`, which is this file's own floor for
+ *  "does this read as a hue at all". The same slot on `#001B33 → #AAC9E0` carries 0.200. The old
+ *  axis could not paint a dark sea that was still blue, so it painted a grey one. */
+export const WATER_AXIS = ["#001B33", "#AAC9E0", "#FFFFFF"] as const;
 
-/** How far a surface that is not part of the ramp must sit from the nearest class before a reader
- *  can be sure it is not one. The SAME 0.02 relative luminance `assertRampReads` holds two adjacent
- *  classes apart by — one number for one question, rather than a second one tuned here. */
-export const SURFACE_CLEARANCE = 0.02;
+/** The floor between two surfaces that differ in KIND — a region with a reading against a region
+ *  with none, or either of them against the sea. WCAG 2.2 SC 1.4.11 Non-text Contrast, the same
+ *  3:1 `assertRampReads` holds the top class to against the ground. */
+export const KIND_FLOOR = 3;
+
+/** The floor between two surfaces of the same kind that a reader ORDERS — two adjacent classes, or
+ *  a surface against the page ground behind it. DERIVED, not typed: it is one step of the smallest
+ *  ramp this family permits, the one whose top class only just reaches `KIND_FLOOR` against the
+ *  ground with its `classes` gaps spent evenly. Six classes → 1.2009:1; four → 1.3161:1; eight →
+ *  1.1472:1. A ramp with more classes may take smaller steps because it has more of them, which is
+ *  the relationship a typed constant could not have expressed. */
+export function stepFloorFor(classes: number): number {
+  return KIND_FLOOR ** (1 / classes);
+}
 
 /** The smallest channel spread that reads as a HUE rather than as a printing artefact. Measured on
  *  the two colours this decision is about: this family's own water blue `#AAC9E0` carries 0.212, and
@@ -688,99 +738,392 @@ export function blueAt(luminance: number): string {
   return alongAxis(WATER_AXIS, luminance);
 }
 
-/**
- * THE ONE PLACE A SURFACE THAT IS NOT THE DATA CAN SIT: between the ground and the ramp's first
- * class.
- *
- * Everything from the first class to the last is the data, and a reader orders it. Everything past
- * the last class is further from the ground than the argument's own colour, which reads as more
- * than the maximum. What is left is the band the ramp deliberately does not start in — and that
- * band is exactly where "this is not a reading" belongs, because a region with no value is nearer
- * to bare ground than to any class.
- *
- * Both surfaces land at its MIDPOINT, which is the point furthest from both things they must not be
- * confused with, and they are told apart from each other by HUE — the channel that still has room
- * when the band is narrow. That is not a compromise: a grey country among tinted ones and a blue sea
- * are different in KIND, which is what rule 7 asks for.
- */
-export function offRampLuminance(ramp: string[], ground: string): number {
-  return (luminanceOf(ground) + luminanceOf(ramp[0]!)) / 2;
+/** The luminance that measures exactly `ratio` against `from`, on the side `away` points to.
+ *  `away` is +1 to move lighter and -1 to move darker; the answer can fall outside 0..1, which is
+ *  how a caller learns there is no room left on that side. */
+export function luminanceAtContrast(from: number, ratio: number, away: number): number {
+  return away > 0 ? (from + 0.05) * ratio - 0.05 : (from + 0.05) / ratio - 0.05;
 }
 
-/** The no-data fill this ground and this ramp leave room for. */
-export function noDataFor(ramp: string[], ground: string): string {
-  return greyAt(offRampLuminance(ramp, ground));
+/** EVERY DISTINCT 8-BIT COLOUR an axis can actually paint, darkest first.
+ *
+ *  The arithmetic answer and the paintable answer are not the same thing: a channel is eight bits,
+ *  and a colour that lands one step the wrong side of a floor is a promise a derivation made and did
+ *  not keep. So nothing here computes a target luminance and trusts it — the derivation picks from
+ *  the colours that exist, and every floor below is measured on the finished hex. */
+function paintable(mix: (at: number) => string): string[] {
+  const seen: string[] = [];
+  for (let i = 0; i <= 1024; i++) {
+    const hex = mix(i / 1024);
+    if (hex !== seen[seen.length - 1]) seen.push(hex);
+  }
+  return seen.sort((a, b) => luminanceOf(a) - luminanceOf(b));
 }
 
-/** The water tint this ground and this ramp leave room for. */
+/** THE NEAREST REAL COLOUR ON `axis` THAT CLEARS `ratio` AGAINST `from`, walking away from it in
+ *  the direction `away` (+1 lighter, -1 darker) and stopping at the first one that holds.
+ *
+ *  Nearest, not furthest: every scrap of range this surface does not spend is range the next floor
+ *  below it gets to spend. `null` when the axis runs out before the floor is reached — a refusal for
+ *  the caller to report with its own number, never a colour to fall back to. */
+function firstBeyond(
+  axis: readonly string[],
+  from: string,
+  ratio: number,
+  away: number,
+  minChroma = 0,
+): string | null {
+  const rungs = paintable((at) => alongAxis(axis, at));
+  const walk = away > 0 ? rungs : [...rungs].reverse();
+  for (const hex of walk) {
+    if (away > 0 ? luminanceOf(hex) <= luminanceOf(from) : luminanceOf(hex) >= luminanceOf(from))
+      continue;
+    if (contrastOf(hex, from) >= ratio && chromaOf(hex) >= minChroma) return hex;
+  }
+  return null;
+}
+
+/** The same walk along the ramp's OWN axis — the mix from the ground to the far end this beat's
+ *  accent reaches — rather than along a neutral or blue one. It cannot walk past the far end,
+ *  because the mix that produced the rungs stops there. */
+function firstBeyondOnRamp(
+  ground: string,
+  end: string,
+  from: string,
+  ratio: number,
+  away: number,
+): string | null {
+  const rungs = paintable((at) => mixHex(ground, end, at));
+  const walk = away > 0 ? rungs : [...rungs].reverse();
+  for (const hex of walk) {
+    if (away > 0 ? luminanceOf(hex) <= luminanceOf(from) : luminanceOf(hex) >= luminanceOf(from))
+      continue;
+    if (contrastOf(hex, from) >= ratio) return hex;
+  }
+  return null;
+}
+
+/** The colour on the ground→end mix whose relative luminance is `target`. Bisection, for the same
+ *  reason `alongAxis` uses it: `mixHex` is linear in the channels and luminance is not. */
+function alongMix(ground: string, end: string, target: number): string {
+  const rising = luminanceOf(end) > luminanceOf(ground);
+  let low = 0;
+  let high = 1;
+  for (let i = 0; i < 40; i++) {
+    const at = (low + high) / 2;
+    const value = luminanceOf(mixHex(ground, end, at));
+    if (rising ? value < target : value > target) low = at;
+    else high = at;
+  }
+  return mixHex(ground, end, (low + high) / 2);
+}
+
+/** The direction, away from the ground, that this beat's data travels in. */
+function awayFromGround(ground: string, end: string): number {
+  return luminanceOf(end) > luminanceOf(ground) ? 1 : -1;
+}
+
+/** The sea, given only the page and how many classes the ramp will have. */
+function waterAt(ground: string, classes: number, away: number): string {
+  const hex = firstBeyond(WATER_AXIS, ground, stepFloorFor(classes), away, MIN_CHROMA);
+  if (hex === null)
+    throw new Error(
+      `no sea can be derived on the ground ${ground}: the water axis runs out before a tint that is ` +
+        `both ${stepFloorFor(classes).toFixed(3)}:1 clear of this page and still carries ` +
+        `${MIN_CHROMA} of chroma.`,
+    );
+  return hex;
+}
+
+/** The no-data fill, one step past the sea. */
+function noDataAt(ground: string, classes: number, away: number): string {
+  const hex = firstBeyond(
+    NO_DATA_AXIS,
+    waterAt(ground, classes, away),
+    stepFloorFor(classes),
+    away,
+  );
+  if (hex === null)
+    throw new Error(
+      `no no-data fill can be derived on the ground ${ground}: the neutral axis runs out before a ` +
+        `grey ${stepFloorFor(classes).toFixed(3)}:1 clear of the sea derived for it.`,
+    );
+  return hex;
+}
+
+/** THE SEA, the first surface off the page.
+ *
+ *  It recedes toward the page ground rather than standing between the no-data fill and the classes,
+ *  because the sea is the thing on this map a reader least needs to look at and the argument should
+ *  keep the room. One step of this ramp's own kind clear of the page — enough that it is a surface
+ *  and not the page showing through, and not one rung more, because every rung it does not spend is
+ *  a rung the surfaces above it get.
+ *
+ *  It must still read as WATER — `MIN_CHROMA` of blue, which is rule 7 ("water is a blue tint,
+ *  never grey") measured rather than asserted, and the reason `WATER_AXIS` carries a navy at its
+ *  dark pole rather than black. */
 export function waterFor(ramp: string[], ground: string): string {
-  return blueAt(offRampLuminance(ramp, ground));
+  return waterAt(ground, ramp.length, awayFromGround(ground, ramp[ramp.length - 1]!));
 }
 
-/**
- * CAN A READER TELL THESE TWO FROM THE DATA, AND FROM EACH OTHER? The sibling `assertRampReads`
- * never had, and the reason it never had is that it measures the ramp against the GROUND while this
- * measures two surfaces against the RAMP.
+/** THE FILL FOR A REGION WITH NO READING: one step past the sea, on the neutral axis.
  *
- * Three refusals, each with the number that failed:
- *   1. neither surface may sit inside the ramp's own luminance range, nor within `SURFACE_CLEARANCE`
- *      of either end — a no-data country painted at a class's luminance is a country a reader reads
- *      a value off, and that is worse than a bad join because nothing about it looks wrong;
- *   2. neither may sit within `SURFACE_CLEARANCE` of the ground, or it is not a surface at all;
- *   3. the two may not be confusable with each other: either `SURFACE_CLEARANCE` apart in luminance,
- *      or one of them carrying a real hue while the other does not.
+ *  Below the first class, because a region with no value is nearer to bare ground than to any
+ *  reading, and every class above the first is further still. Neutral always: the sea carries the
+ *  hue and this carries none, so the two differ in KIND as well as in luminance, and a reader who
+ *  cannot use hue still has the step between them. */
+export function noDataFor(ramp: string[], ground: string): string {
+  return noDataAt(ground, ramp.length, awayFromGround(ground, ramp[ramp.length - 1]!));
+}
+
+/** WHAT A SCALE OF `classes` CLASSES COSTS, end to end: one step from the page to the sea, one from
+ *  the sea to the no-data fill, `KIND_FLOOR` from there to the first class, and `classes - 1` steps
+ *  between the classes. `stepFloorFor` shrinks as classes are added, so this FALLS as the ramp gets
+ *  longer — a two-class map has to hold its two classes 1.732:1 apart and needs 15.6:1 of range,
+ *  where nine classes need 10.1:1. Fewer classes is the harder ask, not the easier one, and the
+ *  refusals below say so with the count that would fit. */
+export function rangeOwedFor(classes: number): number {
+  const floor = stepFloorFor(classes);
+  return floor * floor * KIND_FLOOR * floor ** (classes - 1);
+}
+
+/** The shortest scale this much range can pay for, or null when none up to twelve classes can. */
+export function classesThatFit(available: number): number | null {
+  for (let n = 2; n <= 12; n++) if (rangeOwedFor(n) <= available) return n;
+  return null;
+}
+
+/** THE RAMP, SPACED IN THE UNIT A READER SEES, AND STARTED WHERE THE SILENCES LEAVE OFF.
  *
- * The band between the ground and the first class is what all three depend on, so a beat whose ramp
- * starts too close to its ground fails here and is told to raise the ramp's own low end — which is
- * the fix, and it is the fix the one beat that hit this made by hand before there was a guard.
- */
+ *  `sequentialRamp` spaces its classes evenly in the MIX RATIO, and a mix ratio is linear in the
+ *  channels while contrast is not: on a `#16191B` ground with a `#D4A853` accent it spends 1.53:1
+ *  on its first step and 1.28:1 on its last, and its low end crowds against the ground — which is
+ *  exactly the band the two surfaces that are NOT the data have to live in. Its low end was
+ *  therefore a typed constant (`0.20`, raised once from `0.10`, and short of the old rule by 0.0015
+ *  on this newsroom's own ground). Nothing here is typed.
+ *
+ *  The walk goes UP, from the page: sea, then no-data fill, then the FIRST CLASS at `KIND_FLOOR`
+ *  above the no-data fill — so the gap the owner saw fail is a floor the ramp is built on rather
+ *  than a leftover it inherits — then each class the smallest step that still clears
+ *  `stepFloorFor(classes)`, and the last class is the far end the accent actually reaches, so the
+ *  newsroom's own colour is spent at full strength on the class the argument is made with.
+ *
+ *  Every floor is met on the FINISHED 8-BIT HEX, never on an arithmetic target, so the leftover of
+ *  a palette's range gathers in one place: the last step, into the accent's own end. It cannot fold
+ *  back — each class is derived from the last in one direction — and it refuses rather than
+ *  crowding, with the bill itemised. */
+export function contrastRamp(
+  ground: string,
+  end: string,
+  classes: number,
+  where = "this ramp",
+): string[] {
+  if (classes < 2)
+    throw new Error(`${where}: a ramp needs at least two classes, got ${classes}`);
+  const floor = stepFloorFor(classes);
+  // THE WHOLE BILL, BEFORE THE FIRST CLASS IS PLACED. Between the page ground and the far end this
+  // accent reaches, this beat has to fit: one step from the page to the sea, one from the sea to
+  // the no-data fill, `KIND_FLOOR` from there to the first class, then `classes - 1` steps of the
+  // ramp itself. A palette that cannot pay it is told what it has and what it costs, here, rather
+  // than being handed a scale a reader cannot read.
+  const available = contrastOf(end, ground);
+  const owed = rangeOwedFor(classes);
+  const fits = classesThatFit(available);
+  const advice =
+    fits === null
+      ? `No class count up to twelve fits this range. Record an accent with more room against this ` +
+        `ground, or change the ground.`
+      : `${fits} classes would fit, at ${rangeOwedFor(fits).toFixed(3)}:1 — a longer ramp is the ` +
+        `CHEAPER ask here, because one step of it is worth less.`;
+  if (available < owed)
+    throw new Error(
+      `${where}: the ground ${ground} and this accent's far end ${end} are ${available.toFixed(3)}:1 ` +
+        `apart, and a ${classes}-class choropleth needs ${owed.toFixed(3)}:1 — short by ` +
+        `${(owed / available).toFixed(3)}x. The bill: ${floor.toFixed(3)}:1 from the page to the sea, ` +
+        `${floor.toFixed(3)}:1 from the sea to a region that filed nothing, ${KIND_FLOOR}:1 from there ` +
+        `to the first class, ${(floor ** (classes - 1)).toFixed(3)}:1 for the ${classes - 1} steps ` +
+        `between classes. ${advice}`,
+    );
+  const away = awayFromGround(ground, end);
+  const first = firstBeyondOnRamp(ground, end, noDataAt(ground, classes, away), KIND_FLOOR, away);
+  if (first === null)
+    throw new Error(
+      `${where}: no first class can be derived. The ground ${ground} and the far end ${end} are ` +
+        `${available.toFixed(3)}:1 apart and this scale owes ${owed.toFixed(3)}:1; the shortfall is ` +
+        `what 8-bit colour costs on top of the arithmetic.`,
+    );
+  // The two ends are now pinned — the first class by what the silences below it need, the last by
+  // the colour the accent actually reaches — so the classes between them are spread EVENLY IN
+  // CONTRAST rather than taken greedily. A greedy walk leaves all of a palette's leftover range in
+  // whichever step happens to be last: on a `#0B0B0B` ground with an `#E8E8E8` accent that was
+  // 1.20:1 for four steps and 1.84:1 for the fifth, one visible jump in a scale that is supposed to
+  // read as one quantity.
+  // TWO WAYS TO SPEND WHAT IS LEFT, and the roomier one is tried first.
+  //
+  //   EVENLY. The two ends are pinned — the first class by what the silences below it need, the
+  //   last by the colour the accent actually reaches — so the classes between them go at even
+  //   ratios. A ramp is one quantity, and a step that is twice its neighbour reads as a break in it.
+  //
+  //   PACKED. When a palette has so little range that 8-bit rounding eats the surplus, every class
+  //   takes the SMALLEST step that still clears the floor, from the bottom up. Greedy-minimum is
+  //   not a nicer ramp; it is the one that exists. Each class placed as low as it may be leaves the
+  //   most room for every class above it, so if any arrangement clears the floors this one does.
+  //
+  // Both are measured on the finished 8-bit hexes, and the packed one is only reached when the even
+  // one comes back short. A palette that fails both is refused with the number it failed by.
+  const evenly = (): string[] => {
+    const each = contrastOf(end, first) ** (1 / (classes - 1));
+    const ramp: string[] = new Array(classes);
+    ramp[0] = first;
+    ramp[classes - 1] = end;
+    for (let i = classes - 2; i >= 1; i--) {
+      const target = luminanceAtContrast(luminanceOf(first), each ** i, away);
+      const hex = alongMix(ground, end, target);
+      ramp[i] =
+        contrastOf(hex, ramp[i + 1]!) >= floor
+          ? hex
+          : (firstBeyondOnRamp(ground, end, ramp[i + 1]!, floor, -away) ?? hex);
+    }
+    return ramp;
+  };
+  const packed = (): string[] => {
+    const ramp = [first];
+    for (let i = 1; i < classes - 1; i++) {
+      const next = firstBeyondOnRamp(ground, end, ramp[i - 1]!, floor, away);
+      if (next === null) return ramp.concat(end);
+      ramp.push(next);
+    }
+    return ramp.concat(end);
+  };
+  const shortSteps = (ramp: string[]) =>
+    ramp
+      .slice(1)
+      .map((hex, i) => [i + 1, contrastOf(hex, ramp[i]!)] as const)
+      .filter(([, seen]) => seen < floor);
+  let ramp = evenly();
+  let short = shortSteps(ramp);
+  if (short.length > 0) {
+    ramp = packed();
+    short = shortSteps(ramp);
+  }
+  if (ramp.length !== classes || short.length > 0)
+    throw new Error(
+      `${where}: ${short
+        .map(([i, seen]) => `the step from class ${i} to class ${i + 1} measures ${seen.toFixed(3)}:1`)
+        .join(", ")}, under the ${floor.toFixed(3)}:1 one step of a ${classes}-class ramp is worth. ` +
+        `The ground ${ground} and the far end ${end} are ${available.toFixed(3)}:1 apart against the ` +
+        `${owed.toFixed(3)}:1 this scale owes — the arithmetic fits and 8-bit colour does not. ` +
+        `${classes < 12 ? `Ask for ${classes + 1} classes: one step of a longer ramp is worth less, so the same range pays for more of them.` : "Record an accent with more room against this ground."}`,
+    );
+  return ramp;
+}
+
+/** CAN A READER TELL THESE FOUR KINDS OF SURFACE APART? Every pair of them, measured in contrast.
+ *
+ *  The readings, each returned with the number that failed and what it needed:
+ *
+ *   1. the ramp never folds back — two classes at one lightness are one class to a reader;
+ *   2. two adjacent classes clear `stepFloorFor(classes)` — they are ordered, and read against a
+ *      legend, so they need a step rather than a kind;
+ *   3. the top class clears `KIND_FLOOR` against the ground — the class the argument is made with;
+ *   4. the no-data fill clears `KIND_FLOOR` against EVERY class, not only the nearest. This is the
+ *      reading the old luminance-gap rule could not make, and the one the owner made by eye;
+ *   5. the sea clears `KIND_FLOOR` against every class, for the same reason one level down: a
+ *      coastal country in the lowest class must not dissolve into the water beside it;
+ *   6. each surface clears `stepFloorFor(classes)` against the page ground — a surface a reader
+ *      cannot tell from the page is not a surface;
+ *   7. the sea and the no-data fill clear `stepFloorFor(classes)` against EACH OTHER, or one of
+ *      them carries a hue and the other does not. Which of the two carried it is named in the
+ *      reading, so a page separated by hue alone is visible in the verdict rather than silent.
+ *
+ *  Returns every failure rather than the first, because a palette that fails one of these usually
+ *  fails three, and a journalist who is shown them one at a time changes their ground three times. */
+export function surfaceReadings(
+  ramp: string[],
+  ground: string,
+  surfaces: { noData: string; water: string },
+): string[] {
+  const out: string[] = [];
+  const step = stepFloorFor(ramp.length);
+  const lightness = ramp.map(luminanceOf);
+  const rising = lightness[lightness.length - 1]! > lightness[0]!;
+  for (let i = 1; i < ramp.length; i++) {
+    if (rising !== lightness[i]! - lightness[i - 1]! > 0) {
+      out.push(
+        `class ${i + 1} (${ramp[i]}) turns back on class ${i} (${ramp[i - 1]}) — the ramp runs ` +
+          `${rising ? "lighter" : "darker"} everywhere else, so a reader has no ordering here.`,
+      );
+      continue;
+    }
+    const seen = contrastOf(ramp[i]!, ramp[i - 1]!);
+    if (seen < step)
+      out.push(
+        `classes ${i} (${ramp[i - 1]}) and ${i + 1} (${ramp[i]}) measure ${seen.toFixed(3)}:1 ` +
+          `against each other, under the ${step.toFixed(3)}:1 one step of a ${ramp.length}-class ` +
+          `ramp is worth. They will read as one class.`,
+      );
+  }
+  const top = contrastOf(ramp[ramp.length - 1]!, ground);
+  if (top < KIND_FLOOR)
+    out.push(
+      `the top class ${ramp[ramp.length - 1]} measures ${top.toFixed(2)}:1 against the ground ` +
+        `${ground}, under the ${KIND_FLOOR}:1 floor WCAG 2.2 SC 1.4.11 sets for a graphical object. ` +
+        `The class carrying this map's argument cannot be seen.`,
+    );
+  const named: [string, string][] = [
+    ["the no-data fill", surfaces.noData],
+    ["the sea", surfaces.water],
+  ];
+  for (const [name, hex] of named) {
+    let worst = Infinity;
+    let worstAt = 0;
+    ramp.forEach((klass, index) => {
+      const seen = contrastOf(hex, klass);
+      if (seen < worst) {
+        worst = seen;
+        worstAt = index;
+      }
+    });
+    if (worst < KIND_FLOOR)
+      out.push(
+        `${name} ${hex} measures ${worst.toFixed(2)}:1 against class ${worstAt + 1} ` +
+          `(${ramp[worstAt]}), under the ${KIND_FLOOR}:1 floor WCAG 2.2 SC 1.4.11 sets for a ` +
+          `graphical object. A reader has to be able to see that this is not a reading — it is the ` +
+          `opposite of one. Derive it with noDataFor/waterFor from a ramp derived with contrastRamp, ` +
+          `which leaves the band below the first class wide enough for both.`,
+      );
+    const page = contrastOf(hex, ground);
+    if (page < step)
+      out.push(
+        `${name} ${hex} measures ${page.toFixed(3)}:1 against the ground ${ground}, under the ` +
+          `${step.toFixed(3)}:1 a surface needs to be a surface rather than the page showing through.`,
+      );
+  }
+  const apart = contrastOf(surfaces.noData, surfaces.water);
+  const hues = [chromaOf(surfaces.noData), chromaOf(surfaces.water)];
+  if (apart < step && Math.abs(hues[0]! - hues[1]!) < MIN_CHROMA)
+    out.push(
+      `the no-data fill ${surfaces.noData} and the sea ${surfaces.water} measure ${apart.toFixed(3)}:1 ` +
+        `against each other — under the ${step.toFixed(3)}:1 two surfaces of one kind need — and ` +
+        `${Math.abs(hues[0]! - hues[1]!).toFixed(3)} apart in chroma, under the ${MIN_CHROMA} that ` +
+        `reads as a hue. A reader cannot tell a country with no reading from the sea by either ` +
+        `channel (rule 7: water is a blue tint, never grey).`,
+    );
+  return out;
+}
+
+/** The one decision a choropleth asks about its colours, and it throws with every failed reading at
+ *  once. `assertRampReads` is NOT called here and is not called by a choropleth at all — see the
+ *  note at the head of this section for the measurement that replaced it. */
 export function assertSurfacesRead(
   ramp: string[],
   ground: string,
   surfaces: { noData: string; water: string },
   where = "this beat",
 ): { noData: string; water: string } {
-  const classes = ramp.map(luminanceOf);
-  const low = Math.min(...classes);
-  const high = Math.max(...classes);
-  const groundLuminance = luminanceOf(ground);
-  const named: [string, string][] = [
-    ["the no-data fill", surfaces.noData],
-    ["the water tint", surfaces.water],
-  ];
-  for (const [name, hex] of named) {
-    const value = luminanceOf(hex);
-    if (value > low - SURFACE_CLEARANCE && value < high + SURFACE_CLEARANCE) {
-      const nearest = classes.reduce(
-        (best, at, index) => (Math.abs(at - value) < Math.abs(classes[best]! - value) ? index : best),
-        0,
-      );
-      throw new Error(
-        `${where}: ${name} ${hex} measures ${value.toFixed(3)} relative luminance, inside this ramp's ` +
-          `own range ${low.toFixed(3)}–${high.toFixed(3)} (nearest: class ${nearest + 1}, ${ramp[nearest]} ` +
-          `at ${classes[nearest]!.toFixed(3)}). A reader would read it as a value. Derive it from the ` +
-          `ground with noDataFor/waterFor, and if there is no room, raise the ramp's own low end so ` +
-          `there is.`,
-      );
-    }
-    if (Math.abs(value - groundLuminance) < SURFACE_CLEARANCE)
-      throw new Error(
-        `${where}: ${name} ${hex} is ${Math.abs(value - groundLuminance).toFixed(4)} from the ground ` +
-          `${ground} in relative luminance, under the ${SURFACE_CLEARANCE} this family holds two ` +
-          `surfaces apart by — it is not a surface, it is the ground. The band between this ground ` +
-          `and the first class is ${Math.abs(luminanceOf(ramp[0]!) - groundLuminance).toFixed(4)} wide; ` +
-          `it needs ${(SURFACE_CLEARANCE * 2).toFixed(2)}.`,
-      );
-  }
-  const apart = Math.abs(luminanceOf(surfaces.noData) - luminanceOf(surfaces.water));
-  const hues = named.map(([, hex]) => chromaOf(hex));
-  if (apart < SURFACE_CLEARANCE && Math.abs(hues[0]! - hues[1]!) < MIN_CHROMA)
-    throw new Error(
-      `${where}: the no-data fill ${surfaces.noData} and the water tint ${surfaces.water} are ` +
-        `${apart.toFixed(4)} apart in relative luminance and ${Math.abs(hues[0]! - hues[1]!).toFixed(3)} ` +
-        `apart in chroma — a reader cannot tell a country with no reading from the sea. One of them ` +
-        `has to carry a hue (rule 7: water is a blue tint, never grey).`,
-    );
+  const readings = surfaceReadings(ramp, ground, surfaces);
+  if (readings.length > 0)
+    throw new Error(`${where}: ${readings.join("\n  · ")}`);
   return surfaces;
 }
 

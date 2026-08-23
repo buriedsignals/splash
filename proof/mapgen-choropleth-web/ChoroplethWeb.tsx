@@ -62,9 +62,8 @@ import {
   en,
   pathFromRings,
   scalePosition,
-  assertRampReads,
+  contrastRamp,
   dataRampEnd,
-  sequentialRamp,
   assertSurfacesRead,
   noDataFor,
   waterFor,
@@ -146,28 +145,26 @@ export function regionDetail(region: {
  *  only thing on this map a reader reads a quantity off, and it used to be derived between the
  *  ground and the ink — grey, whatever the newsroom recorded, with one accent outline on top
  *  (`AUDIT-W2-palette-credits.md` H3). `dataRampEnd` walks the accent toward the pole the ground is
- *  not; `assertRampReads` measures the finished classes before anything is painted. Both call sites
- *  come through here, so they cannot disagree about it. */
+ *  not.
+ *
+ *  NOTHING HERE IS TYPED ANY MORE, and that is the change of 2026-08-23. This used to hand
+ *  `sequentialRamp` a low end and a high end as bare positional numbers — `0.20`, raised once from
+ *  `0.10`, then `0.24` on one beat — under a comment explaining that the low end has to leave room
+ *  for the two surfaces that are NOT the data. It never knew how much room that was: on this
+ *  newsroom's own dark ground `0.20` missed the old floor by 0.0015 of relative luminance, fourteen
+ *  times out of fourteen, and the refusal's advice ("raise the ramp's own low end") named no file
+ *  and no number. `contrastRamp` derives both ends and every step from the one thing that decides
+ *  them — how much contrast this ground and this accent have between them — and starts the ramp
+ *  exactly where the sea and the no-data fill leave off. See `geo-choropleth.ts`. */
 export function choroplethRamp(
   ground: string,
   accent: string,
   breaks: number[],
 ): string[] {
-  return assertRampReads(
-    sequentialRamp(
-      ground,
-      dataRampEnd(accent, ground),
-      breaks.length + 1,
-      // THE LOW END LEAVES ROOM FOR THE TWO SURFACES THAT ARE NOT THE DATA. It was 0.10, and at
-      // 0.10 the band between this ground and the first class is 0.185 of relative luminance —
-      // enough for a no-data grey, not enough for a water tint that still reads as blue
-      // (`assertSurfacesRead` refuses it at 0.039 chroma against a 0.05 floor). 0.20 gives the band
-      // 0.348 and both surfaces a colour a reader can name. A ramp that starts on top of its own
-      // ground has nowhere to put "no reading", which is what that band is for.
-      0.2,
-      0.78,
-    ),
+  return contrastRamp(
     ground,
+    dataRampEnd(accent, ground),
+    breaks.length + 1,
     "the per-capita CO2 choropleth ramp",
   );
 }

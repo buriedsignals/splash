@@ -1,168 +1,377 @@
 /**
- * THE OCEAN AND THE NO-DATA FILL FOLLOW THE PALETTE — the owner's instruction, in his words:
- * *"it has to adapt to the palette."*
+ * NO-DATA MUST NOT READ AS DATA — on any ground, and measured in the unit a reader sees.
  *
- * Both were fixed hexes with a docstring arguing that fixing them is what makes a no-data reading
- * "stay recognisable across every newsroom's own ground colour". Measured on this format's own two
- * shipped grounds, that claim is false in BOTH directions — this is the whole finding:
+ * THE PAGE THAT EARNED THIS. A world choropleth of rabies deaths REPORTED to WHO
+ * (`stories/r9-map-web-reported-rabies-deaths`), whose whole editorial point is that **94 countries
+ * filed nothing and 44 filed a real zero** — opposite facts. The owner saw it on the first draft,
+ * before anything was measured: *"the no-data grey and the low class read the same."* Asked of the
+ * page exactly as it shipped:
  *
- *   light ground #FFFFFF, accent #B2182B, ramp 0.815 0.598 0.421 0.283 0.177 0.101
- *     no-data #B9B9B9 at 0.485 → between class 2 and class 3
- *     water   #AAC9E0 at 0.557 → between class 2 and class 3
- *   dark ground #16191B, accent #D4A853, ramp 0.052 0.109 0.191 0.300 0.442 0.616
- *     no-data #B9B9B9 at 0.485 → between class 5 and class 6
- *     water   #AAC9E0 at 0.557 → brighter than five of the six classes, on a world map where the
- *             sea is most of the picture: the ocean was the loudest thing on a map about land
+ *   no-data #343434 against class 1 #484439      1.28:1
+ *   the sea #2c343b against class 1              1.30:1
+ *   the sea against no-data                      1.015:1
  *
- * So a country with NO READING was painted at the luminance of a real class on every beat this
- * format has shipped, and `assertRampReads` could not see it: it measures the ramp against the
- * GROUND and never these two against the RAMP.
+ * and on the light-ground beat this format ships as its worked example
+ * (`proof/mapgen-choropleth-web`, `#FFFFFF` + `#B2182B`):
  *
- * The derivation and its one refusal live in `proof/mapgen-choropleth-web/geo-choropleth.ts`
- * (`offRampLuminance`, `noDataFor`, `waterFor`, `assertSurfacesRead`) and in this skill's own copy,
- * `assets/geo-choropleth.ts`. This test measures them at BOTH grounds, because a colour rule
- * checked on one ground is the same defect it is replacing.
+ *   no-data #ebebeb against class 1 #e1cfd1      1.25:1
+ *   the sea #e2ecf4 against class 1              1.25:1
+ *   the sea against no-data                      1.004:1
+ *   no-data against the page                     1.192:1
+ *
+ * TWO MECHANISMS, and both are in `assets/geo-choropleth.ts`'s own note. The midpoint rule capped
+ * the separation at 2:1 BY CONSTRUCTION, so no ground could ever have bought this case more; and
+ * the guard measured LUMINANCE GAPS against a fixed 0.02, which is 1.34:1 beside a `#16191B` ground
+ * and 1.019:1 beside white — so it could not see the failure at either end, and refused the darker,
+ * better picture fourteen times out of fourteen while passing the lighter, worse one.
+ *
+ * This file drives the replacement: one decision over the whole surface set, measured in contrast.
  */
 import { describe, expect, it } from "bun:test";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, relative } from "node:path";
 import {
+  KIND_FLOOR,
   MIN_CHROMA,
-  SURFACE_CLEARANCE,
   assertSurfacesRead,
   blueAt,
   chromaOf,
+  classesThatFit,
+  contrastOf,
+  contrastRamp,
   dataRampEnd,
   greyAt,
   luminanceOf,
   noDataFor,
-  offRampLuminance,
+  rangeOwedFor,
   sequentialRamp,
+  stepFloorFor,
+  surfaceReadings,
   waterFor,
 } from "../assets/geo-choropleth.ts";
 
-const rampFor = (ground: string, accent: string, from: number, to: number) =>
-  sequentialRamp(ground, dataRampEnd(accent, ground), 6, from, to);
+const TWIN = join(import.meta.dirname, "..", "..", "..");
 
-const LIGHT = { ground: "#FFFFFF", accent: "#B2182B", from: 0.2, to: 0.78 };
-const DARK = { ground: "#16191B", accent: "#D4A853", from: 0.22, to: 1 };
+/** Every ground this format actually ships a beat on, plus one narrow palette that must be refused
+ *  and one neutral one whose ramp carries no hue at all — a colour rule checked on one ground is
+ *  the same defect it is replacing. */
+const PALETTES = [
+  {
+    name: "the rabies world map's dark ground",
+    ground: "#16191B",
+    accent: "#D4A853",
+  },
+  {
+    name: "the worked beat's white ground",
+    ground: "#FFFFFF",
+    accent: "#B2182B",
+  },
+  {
+    name: "a near-black ground with a neutral accent",
+    ground: "#0B0B0B",
+    accent: "#E8E8E8",
+  },
+] as const;
 
-describe("the axis each surface travels", () => {
-  it("passes through the two hexes this family used as constants, so nothing was thrown away", () => {
-    // `#B9B9B9` and `#AAC9E0` are not deleted — they are the MIDPOINT of the axis each colour now
-    // moves along, and the palette decides where on it the colour lands.
-    expect(greyAt(luminanceOf("#B9B9B9"))).toBe("#b8b8b8");
-    expect(blueAt(luminanceOf("#AAC9E0"))).toBe("#aac9df");
+const scaleFor = (ground: string, accent: string, classes = 6) => {
+  const ramp = contrastRamp(ground, dataRampEnd(accent, ground), classes);
+  return {
+    ramp,
+    noData: noDataFor(ramp, ground),
+    water: waterFor(ramp, ground),
+  };
+};
+
+describe("the floors, derived rather than typed", () => {
+  it("holds two things that differ in KIND to the same 3:1 the top class already carries", () => {
+    expect(KIND_FLOOR).toBe(3);
   });
 
-  it("keeps a grey grey and a blue blue", () => {
-    expect(chromaOf(greyAt(0.5))).toBe(0);
-    expect(chromaOf(blueAt(0.5))).toBeGreaterThan(MIN_CHROMA);
+  it("makes one step of a ramp worth less the more classes it has", () => {
+    // A ramp whose top class only just clears 3:1 against the ground, with its `classes` gaps spent
+    // evenly. Two classes have to be 1.732:1 apart; nine need only 1.129:1.
+    expect(stepFloorFor(2)).toBeCloseTo(1.7321, 4);
+    expect(stepFloorFor(6)).toBeCloseTo(1.2009, 4);
+    expect(stepFloorFor(9)).toBeCloseTo(1.1298, 4);
+    expect(stepFloorFor(6) ** 6).toBeCloseTo(KIND_FLOOR, 6);
   });
 
-  it("hits the luminance it was asked for, at both ends of the range", () => {
-    for (const target of [0.03, 0.2, 0.5, 0.9])
-      for (const at of [greyAt(target), blueAt(target)])
-        expect(luminanceOf(at)).toBeCloseTo(target, 2);
+  it("makes a LONGER ramp the cheaper ask, which is the opposite of what a typed floor said", () => {
+    // The whole bill falls as classes are added, because every one of its steps is worth less.
+    expect(rangeOwedFor(2)).toBeCloseTo(15.588, 3);
+    expect(rangeOwedFor(6)).toBeCloseTo(10.808, 3);
+    expect(rangeOwedFor(9)).toBeCloseTo(10.168, 3);
+    expect(classesThatFit(rangeOwedFor(6))).toBe(6);
+    expect(classesThatFit(8.473)).toBe(null);
   });
 });
 
-describe("the two surfaces the palette leaves room for", () => {
-  for (const [name, palette] of [
-    ["a light ground", LIGHT],
-    ["a dark ground", DARK],
-  ] as const) {
-    it(`sit outside the ramp on ${name}, and a reader can tell them apart`, () => {
-      const ramp = rampFor(
-        palette.ground,
-        palette.accent,
-        palette.from,
-        palette.to,
+describe("what the delivered pages measured before this decision existed", () => {
+  // Reproduced here as the exact fixture, not as prose: the old derivation put both surfaces at the
+  // ARITHMETIC midpoint of the band between the ground and the first class, and spaced the ramp
+  // evenly in the mix ratio. These are the hexes the two pages shipped.
+  // The two pages' own hexes, read off their plates' `geometry.json` and their components' own
+  // ramps, written as literals rather than re-derived: the derivation they came from no longer
+  // exists in this file, and a fixture that moves when the code moves proves nothing.
+  const shippedRamp = (ground: string, accent: string, from: number, to: number) =>
+    sequentialRamp(ground, dataRampEnd(accent, ground), 6, from, to);
+
+  it("refuses the rabies world map as it shipped, naming the 1.28:1 the owner saw", () => {
+    const ramp = shippedRamp("#16191B", "#D4A853", 0.24, 1);
+    const shipped = { noData: "#343434", water: "#2c343b" };
+    expect(ramp[0]).toBe("#484439");
+    expect(contrastOf(shipped.noData, ramp[0]!)).toBeCloseTo(1.281, 3);
+    expect(contrastOf(shipped.water, shipped.noData)).toBeCloseTo(1.015, 3);
+    const readings = surfaceReadings(ramp, "#16191B", shipped);
+    expect(readings).toHaveLength(2);
+    expect(readings[0]).toContain(
+      "the no-data fill #343434 measures 1.28:1 against class 1",
+    );
+    expect(readings[1]).toContain(
+      "the sea #2c343b measures 1.30:1 against class 1",
+    );
+  });
+
+  it("refuses the worked light beat as it shipped, on four readings and not one", () => {
+    const ramp = shippedRamp("#FFFFFF", "#B2182B", 0.2, 0.78);
+    const shipped = { noData: "#ebebeb", water: "#e2ecf4" };
+    expect(ramp[0]).toBe("#e1cfd1");
+    expect(contrastOf(shipped.noData, ramp[0]!)).toBeCloseTo(1.254, 3);
+    expect(contrastOf(shipped.water, shipped.noData)).toBeCloseTo(1.004, 3);
+    const readings = surfaceReadings(ramp, "#FFFFFF", shipped);
+    expect(readings).toHaveLength(4);
+    expect(readings.join(" ")).toContain("1.192:1 against the ground #FFFFFF");
+  });
+
+  it("shows why the retired rule could not see either page: 0.02 is not one quantity", () => {
+    // The luminance gap the old `SURFACE_CLEARANCE` held both surfaces to, expressed as the
+    // contrast it actually buys at each end of the two shipped grounds. The dark ground was held to
+    // a floor seventeen times stricter than the light one — and failed it by 7.5%, while white
+    // passed at 1.19:1.
+    const beside = (ground: string) =>
+      contrastOf(
+        ground,
+        greyAt(
+          luminanceOf(ground) + (luminanceOf(ground) > 0.5 ? -0.02 : 0.02),
+        ),
       );
-      const noData = noDataFor(ramp, palette.ground);
-      const water = waterFor(ramp, palette.ground);
-      const classes = ramp.map(luminanceOf);
-      const low = Math.min(...classes);
-      const high = Math.max(...classes);
-      for (const surface of [noData, water]) {
-        const value = luminanceOf(surface);
-        // Outside the ramp's whole range, with the same clearance two adjacent classes get.
-        expect(
-          value < low - SURFACE_CLEARANCE || value > high + SURFACE_CLEARANCE,
-        ).toBe(true);
-        // And not the ground either — a surface indistinguishable from the page is not a surface.
-        expect(
-          Math.abs(value - luminanceOf(palette.ground)),
-        ).toBeGreaterThanOrEqual(SURFACE_CLEARANCE);
-      }
-      // Water carries a hue; no-data does not. That is how they are told apart when the band
-      // between the ground and the first class is too narrow for a luminance step.
-      expect(chromaOf(noData)).toBe(0);
-      expect(chromaOf(water)).toBeGreaterThan(MIN_CHROMA);
+    expect(beside("#16191B")).toBeCloseTo(1.338, 3);
+    expect(beside("#FFFFFF")).toBeCloseTo(1.017, 3);
+  });
+});
+
+describe("the scale this decision derives, on every ground", () => {
+  for (const palette of PALETTES) {
+    it(`answers every reading on ${palette.name}`, () => {
+      const scale = scaleFor(palette.ground, palette.accent);
+      expect(surfaceReadings(scale.ramp, palette.ground, scale)).toEqual([]);
       expect(
-        assertSurfacesRead(ramp, palette.ground, { noData, water }),
-      ).toEqual({ noData, water });
+        assertSurfacesRead(scale.ramp, palette.ground, {
+          noData: scale.noData,
+          water: scale.water,
+        }),
+      ).toEqual({ noData: scale.noData, water: scale.water });
+    });
+
+    it(`puts every class ${KIND_FLOOR}:1 clear of both silences on ${palette.name}`, () => {
+      const scale = scaleFor(palette.ground, palette.accent);
+      for (const klass of scale.ramp) {
+        expect(contrastOf(scale.noData, klass)).toBeGreaterThanOrEqual(
+          KIND_FLOOR,
+        );
+        expect(contrastOf(scale.water, klass)).toBeGreaterThanOrEqual(
+          KIND_FLOOR,
+        );
+      }
+    });
+
+    it(`keeps the sea blue and the no-data fill neutral on ${palette.name}`, () => {
+      const scale = scaleFor(palette.ground, palette.accent);
+      expect(chromaOf(scale.noData)).toBe(0);
+      expect(chromaOf(scale.water)).toBeGreaterThanOrEqual(MIN_CHROMA);
+      // …and a real step between them as well, so a reader who cannot use hue is not left with one
+      // surface where there are two. This is the 1.00–1.02:1 the shipped pages carried.
+      expect(contrastOf(scale.noData, scale.water)).toBeGreaterThanOrEqual(
+        stepFloorFor(6),
+      );
     });
   }
 
-  it("lands on the dark ground where the one beat that hit this put them by hand", () => {
-    // `stories/real-owid-life-expectancy` chose #2B3236 (0.031) and #12293B (0.023) by measuring.
-    // The derivation, which was not available to it, answers 0.031 for both — the same slot.
-    const ramp = rampFor(DARK.ground, DARK.accent, DARK.from, DARK.to);
-    expect(offRampLuminance(ramp, DARK.ground)).toBeCloseTo(0.0306, 3);
-    expect(noDataFor(ramp, DARK.ground)).toBe("#313131");
+  it("spends the newsroom's own accent at full strength on the class the argument is made with", () => {
+    for (const palette of PALETTES) {
+      const scale = scaleFor(palette.ground, palette.accent);
+      expect(scale.ramp[scale.ramp.length - 1]).toBe(
+        dataRampEnd(palette.accent, palette.ground),
+      );
+    }
+  });
+
+  it("holds for every class count a palette can pay for, not only for six", () => {
+    for (const palette of PALETTES)
+      for (let classes = 2; classes <= 9; classes++) {
+        const end = dataRampEnd(palette.accent, palette.ground);
+        if (rangeOwedFor(classes) > contrastOf(end, palette.ground)) continue;
+        let scale;
+        try {
+          scale = scaleFor(palette.ground, palette.accent, classes);
+        } catch (error) {
+          // Only 8-bit rounding may refuse a scale the arithmetic could pay for, and it has to say
+          // so in those words rather than in any other.
+          expect((error as Error).message).toContain("8-bit colour does not");
+          continue;
+        }
+        expect(surfaceReadings(scale.ramp, palette.ground, scale)).toEqual([]);
+      }
   });
 });
 
-describe("what assertSurfacesRead refuses", () => {
-  const ramp = rampFor(DARK.ground, DARK.accent, DARK.from, DARK.to);
+describe("what the derivation refuses, with the number", () => {
+  it("a palette whose range cannot pay the bill, itemised", () => {
+    // `#5B8A8A` is this newsroom's SECOND recorded accent, and it measures 4.58:1 against its own
+    // ground where `#D4A853` measures 8.01:1. A six-class choropleth cannot be drawn in it.
+    expect(() => scaleFor("#16191B", "#5B8A8A")).toThrow(
+      /8\.473:1 apart, and a 6-class choropleth needs 10\.808:1 — short by 1\.276x/,
+    );
+    expect(() => scaleFor("#16191B", "#5B8A8A")).toThrow(
+      /No class count up to twelve fits this range/,
+    );
+  });
 
-  it("a no-data fill sitting inside the ramp — the defect itself, on the ground that made it visible", () => {
+  it("a scale the arithmetic fits and 8-bit colour does not, naming the longer ramp that would", () => {
+    // 11.168:1 of range against a 10.808:1 bill — 3.3% of surplus, and quantising six classes onto
+    // an 8-bit channel costs more than that.
+    expect(() => scaleFor("#FFFFFF", "#1A6B8A")).toThrow(
+      /8-bit colour does not/,
+    );
+    expect(() => scaleFor("#FFFFFF", "#1A6B8A")).toThrow(/Ask for 7 classes/);
+    expect(
+      surfaceReadings(
+        ...(() => {
+          const scale = scaleFor("#FFFFFF", "#1A6B8A", 7);
+          return [scale.ramp, "#FFFFFF", scale] as const;
+        })(),
+      ),
+    ).toEqual([]);
+  });
+
+  it("a no-data fill a reader would read a value off — the defect itself", () => {
+    const scale = scaleFor("#16191B", "#D4A853");
     expect(() =>
-      assertSurfacesRead(ramp, DARK.ground, {
+      assertSurfacesRead(scale.ramp, "#16191B", {
+        ...scale,
         noData: "#B9B9B9",
-        water: waterFor(ramp, DARK.ground),
       }),
-    ).toThrow(/inside this ramp's own range/);
+    ).toThrow(/the no-data fill #B9B9B9 measures 1\.03:1 against class 5/);
   });
 
-  it("the same fixed pair on the LIGHT ground, which nobody had measured", () => {
-    const light = rampFor(LIGHT.ground, LIGHT.accent, 0.1, LIGHT.to);
+  it("a sea a reader cannot tell from a country with no reading, by either channel", () => {
+    const scale = scaleFor("#16191B", "#D4A853");
     expect(() =>
-      assertSurfacesRead(light, LIGHT.ground, {
-        noData: "#B9B9B9",
-        water: "#AAC9E0",
+      assertSurfacesRead(scale.ramp, "#16191B", {
+        noData: scale.noData,
+        water: scale.noData,
       }),
-    ).toThrow(/inside this ramp's own range/);
+    ).toThrow(
+      /cannot tell a country with no reading from the sea by either channel/,
+    );
   });
 
-  it("a water tint a reader cannot tell from the no-data fill", () => {
+  it("a surface a reader cannot tell from the page it sits on", () => {
+    const scale = scaleFor("#16191B", "#D4A853");
     expect(() =>
-      assertSurfacesRead(ramp, DARK.ground, {
-        noData: "#313131",
-        // A grey sea. Same slot, same luminance, no hue — the one case the band is too narrow to
-        // separate any other way, which is why the hue clause exists.
-        water: "#313131",
+      assertSurfacesRead(scale.ramp, "#16191B", {
+        ...scale,
+        noData: "#191c1e",
       }),
-    ).toThrow(/cannot tell a country with no reading from the sea/);
+    ).toThrow(/rather than the page showing through/);
   });
 
-  it("a surface that is really the ground", () => {
-    expect(() =>
-      assertSurfacesRead(ramp, DARK.ground, {
-        noData: "#171a1c",
-        water: waterFor(ramp, DARK.ground),
-      }),
-    ).toThrow(/it is not a surface, it is the ground/);
+  it("a ramp that folds back on itself", () => {
+    const scale = scaleFor("#16191B", "#D4A853");
+    const folded = [...scale.ramp];
+    folded[3] = folded[1]!;
+    expect(() => assertSurfacesRead(folded, "#16191B", scale)).toThrow(
+      /turns back on class 3/,
+    );
   });
 
-  it("a ramp that starts too close to its own ground to leave room for either", () => {
-    // The light beat's original low end, 0.10: the band is 0.185 wide, and the blue that fits in it
-    // carries 0.039 chroma against a 0.05 floor — a sea a reader would call grey.
-    const tight = rampFor(LIGHT.ground, LIGHT.accent, 0.1, LIGHT.to);
-    expect(() =>
-      assertSurfacesRead(tight, LIGHT.ground, {
-        noData: noDataFor(tight, LIGHT.ground),
-        water: waterFor(tight, LIGHT.ground),
-      }),
-    ).toThrow(/cannot tell a country with no reading from the sea/);
+  it("names EVERY failed reading at once, because a bad palette fails three at a time", () => {
+    const scale = scaleFor("#FFFFFF", "#B2182B");
+    const message = (() => {
+      try {
+        assertSurfacesRead(scale.ramp, "#FFFFFF", {
+          noData: "#f4f4f4",
+          water: "#f2f6fa",
+        });
+      } catch (error) {
+        return (error as Error).message;
+      }
+      return "";
+    })();
+    expect(message.split(" · ")).toHaveLength(3);
+  });
+});
+
+describe("the axes the two surfaces travel", () => {
+  it("keeps the family's own two hexes as the midpoint of each axis", () => {
+    expect(greyAt(luminanceOf("#B9B9B9"))).toBe("#b8b8b8");
+    expect(blueAt(luminanceOf("#AAC9E0"))).toBe("#aac9e0");
+  });
+
+  it("carries a navy at the dark pole, because a sea derived on a dark ground has to stay blue", () => {
+    // The whole reason `WATER_AXIS` changed. At the luminance a `#16191B` ground puts the sea at,
+    // the old `#000000` pole carried 0.043 of chroma — under `MIN_CHROMA`, which is this file's own
+    // floor for "does this read as a hue at all".
+    const sea = waterFor(scaleFor("#16191B", "#D4A853").ramp, "#16191B");
+    expect(luminanceOf(sea)).toBeLessThan(0.03);
+    expect(chromaOf(sea)).toBeGreaterThan(0.19);
+    // The old axis ran from `#000000`, and at this luminance it carried 0.043 of chroma — a sea a
+    // reader would have called grey, which is why the derivation could not put the sea down here at
+    // all until the pole moved.
+    expect(chromaOf(sea)).toBeGreaterThan(MIN_CHROMA * 3);
+  });
+});
+
+describe("the copies of this decision still carrying the retired one", () => {
+  // The surfaces family is copied into every beat that draws a choropleth, and the copies are NOT
+  // held byte-identical by `geo-parity.test.ts` — nothing in the family is tagged `@parity`, which
+  // is that walk's own documented blind spot ("a family duplicated under a name that is tagged
+  // nowhere is invisible"). So the drift is pinned HERE, as an equality with the exact list: a beat
+  // that adopts the new decision is red until it is struck off, and a beat that starts carrying the
+  // retired one is red on the day it appears.
+  const cores = (() => {
+    const out: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/^geo-choropleth\.ts$/.test(entry.name)) out.push(path);
+      }
+    };
+    walk(TWIN);
+    return out.sort();
+  })();
+
+  it("finds every choropleth core in the tree", () => {
+    expect(cores.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("names the beats whose colours are still placed at the midpoint of the band", () => {
+    const retired = cores
+      .filter((path) =>
+        readFileSync(path, "utf8").includes("export function offRampLuminance"),
+      )
+      .map((path) => relative(TWIN, path));
+    expect(retired).toEqual([
+      // All three are outside the ownership of the round that replaced this decision. Each carries
+      // its own copy, so each still refuses and still passes exactly as it did — no page in the
+      // tree changed behaviour without being re-rendered. What they measure today, with the
+      // decision this file now holds: their no-data fill sits at 1.2–1.3:1 from their own first
+      // class, the same defect, on the same arithmetic.
+      "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/geo-choropleth.ts",
+      "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/geo-choropleth.ts",
+      "stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/geo-choropleth.ts",
+    ]);
   });
 });
