@@ -88,7 +88,18 @@ type NamedRow = { key: string; name: string; value: number | null };
 const UNIT_WORD = "human rabies deaths reported to WHO, 2024";
 const SUBJECT_KEY = "AFG";
 const COMPARISON_KEY = "IND";
-const NO_DATA_LABEL = "No data";
+// TWO LABELS, because this beat has two silences and a reader must not read one as the other.
+// MEASURED, 2026-08-23, and this is why the words carry it rather than the colour: the derived
+// no-data fill sits 1.28:1 from the ramp's own first class on this ground — and 1.32:1 on the white
+// ground the worked beat ships on, so it is not a property of this palette. `offRampLuminance` puts
+// the no-data fill at the MIDPOINT between the ground and class 1, and a midpoint's contrast against
+// the upper end tends to 2.00:1 from below however the ramp is stretched, so no palette reaches the
+// 3:1 non-text floor. `assertSurfacesRead` cannot see it: it measures a LUMINANCE GAP against a
+// 0.02 floor (here 0.0237, on white 0.2075 — both pass) and never a contrast ratio.
+// So the distinction travels in WORDS, which is what `types/choropleth.md` asks for anyway: colour
+// is never the only channel a value travels through. Written up for the maintainer.
+const NO_DATA_LABEL = "No return filed";
+const ZERO_LABEL = "0 — filed, reported none";
 // =========================================
 
 // ===== Format mechanics — not one story's numbers =====
@@ -133,7 +144,7 @@ export function regionDetail(region: {
 }): string {
   return region.value === null
     ? `${region.name} : ${NO_DATA_LABEL}`
-    : `${region.name} : ${en(region.value)} ${UNIT_WORD}`;
+    : `${region.name} : ${en(region.value, 0)} ${UNIT_WORD}`;
 }
 
 /** The beat's class ramp, in ONE place: this component paints its `<path>`s from it and
@@ -520,7 +531,11 @@ export function ChoroplethWeb({
           {[0, ...breaks].map((tick, i) => (
             <span key={tick} className="mw-legend-tick">
               <span>
-                {i === breaks.length ? `${en(tick, 0)}+` : en(tick, 0)}
+                {i === 0
+                  ? ZERO_LABEL
+                  : i === breaks.length
+                    ? `${en(tick, 0)}+`
+                    : en(tick, 0)}
               </span>
             </span>
           ))}
@@ -531,7 +546,7 @@ export function ChoroplethWeb({
               className="mw-legend-swatch"
               style={{ background: noData, borderColor: muted }}
             />
-            {NO_DATA_LABEL}
+            {`${NO_DATA_LABEL} — ${shapes.filter((r) => r.value === null).length} countries. Not a zero.`}
           </p>
         ) : null}
       </div>
@@ -601,7 +616,7 @@ export function RegionTable({
             <td>
               {region.value === null
                 ? NO_DATA_LABEL
-                : `${en(region.value)} ${UNIT_WORD}`}
+                : `${en(region.value, 0)} ${UNIT_WORD}`}
             </td>
           </tr>
         ))}

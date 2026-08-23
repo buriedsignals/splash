@@ -1,0 +1,19 @@
+{
+  "operationId": "dac8af77-8a94-4ba4-aed5-8d82c57e5fb6",
+  "reviewId": "review-2",
+  "planVersion": 1,
+  "draftDigest": "sha256:415d2b8e4e22f3b5bdd2c4490f176ff90aa32b724470e7e44af2b4106579c732",
+  "findingIds": [
+    "takeaway-3021-written-down-against-an-estimated-59000",
+    "94-of-194-filed-nothing-and-are-not-drawn-as-zero",
+    "afghanistan-641-is-the-highest-reading-drawn",
+    "every-sub-pixel-mark-keeps-a-keyboard-target-and-a-table-row",
+    "french-guianas-3-are-declared-rather-than-folded-into-france"
+  ],
+  "form": "owned-file",
+  "format": "web",
+  "createdAt": "2026-08-23T15:32:58.163Z",
+  "schemaVersion": 1,
+  "outputId": "1-what-the-world-wrote-down",
+  "state": "complete"
+}
