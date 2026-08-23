@@ -258,6 +258,14 @@ const props = {
   // table row of the delivered page, with no control anywhere to work them.
   geometry: {
     frame: geometry.frame,
+    // THE TWO FIELDS THE WRAP IS DERIVED FROM, threaded even though this beat's camera spans 23.7°
+    // and can never wrap. A hand-typed field list is how the wrap failed to reach a world beat on
+    // 2026-08-23: the plate carried `boxAspects` from the bake, the runner never put it into
+    // `props.geometry`, and `requireBoxAspects` threw with advice ("re-bake it") that spends a
+    // MapTiler key and changes nothing. A beat's camera can widen; the fields it hands over should
+    // not depend on the camera it happens to have today.
+    cannotCover: geometry.cannotCover ?? null,
+    boxAspects: geometry.boxAspects ?? null,
     points: routes.map((r) => ({ ...r, name: `${r.origin} to ${r.destination}` })),
   },
   routes,
