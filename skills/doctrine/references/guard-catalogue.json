@@ -69,6 +69,24 @@
       "alsoReachedBy": "dw-beat, where the surface is not a baked plate but the PNG a delegated renderer hands back. This producer's spec requires an accent and has no field for a ground, so Datawrapper paints on whatever surface its own theme chooses and a story that declared a dark ground can be delivered a white rectangle. Same decision, same tuning constants, different measurement."
     },
     {
+      "id": "basemap-yields-to-the-ink",
+      "kind": "guard",
+      "requires": [
+        "bakes-a-plate",
+        "reads-a-palette"
+      ],
+      "decidedBy": "plateSurfacesYieldToInk",
+      "refuses": "a baked plate whose own flat fills carry more contrast against the story's ground than the ink the beat draws with, or a fill a mark drawn on it cannot be seen against",
+      "earnedBy": "THE OWNER'S INSTRUCTION, GIVEN TWICE: \"the ocean colours have to adapt to the palette.\" It was built for the CHOROPLETH bake (`waterFor`/`noDataFor`/`offRampLuminance` in `map-web/assets/geo-choropleth.ts`) and the SYMBOL bake never got it. The 2026-08-23 full-width change made the consequence impossible to miss: `stories/r8-map-web-japan-bear-casualties`, a map of Japan on a newsroom ground of #16191B (relative luminance 0.0094), delivered a plate that is 66.9% water at the literal #aac9e0 (0.5570) and 32.8% land at #292929 (0.0222). The sea measured 10.22:1 against the ground while the accent carrying the whole argument measured 8.02:1, and the accent over the sea measured 1.27:1 against a 3:1 non-text floor — the largest and brightest thing on the page carried no data at all, and the subject read as a hole cut out of a bright blue page. `plateFollowsGround` PASSED it, and not by a tuning slip: that decision reads the plate's MEAN, the mean of that plate is 0.3809, and 0.3809 sits inside the 0.25-0.6 band it deliberately says nothing about. A symbol plate is mostly basemap, so its mean is a number no bake controls and no reader ever sees. A mean is the wrong statistic for a picture made of a few large flat fills; this decision reads the fills, measured pixel by pixel off the finished plate, and which ink is drawn over which fill is sampled at each mark's own projected pixel rather than typed. Measured across all 26 plates committed in this tree the day it was written: three plates carry a fill that out-shouts their beat's own ink, and the Japan plate is the only one of the three its neighbour did not already refuse",
+      "states": {
+        "map-beat": "carried",
+        "map-web": "carried",
+        "scrolly": "carried"
+      },
+      "exceptions": {},
+      "alsoReachedBy": "scrolly, which bakes a plate and records a palette exactly as the other two do, but reads its delivered page's ground off a live `--ground` custom property and its plate through an `OffscreenCanvas`. Its copy is therefore called from the place in that skill that DOES read a plate off disk — `verifyBeatFiles`, the pass that walks a beat's own plate directories — rather than from the browser pass, and its bake carries the same derivation the other two do so a scrolly plate baked after 2026-08-23 is right by construction rather than only checked afterwards"
+    },
+    {
       "id": "screen-space-dash",
       "kind": "guard",
       "requires": [
