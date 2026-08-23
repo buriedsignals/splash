@@ -562,6 +562,72 @@ function requireBoxAspects(geometry) {
   return measured;
 }
 
+/** THE STYLESHEET HALF OF THE SAME RULING, and it is a function for the reason the markup half is
+ *  one: it has to travel. `repeatWorlds` paints the copies; these rules are what make them a TILE —
+ *  the plate drawn at the box's own HEIGHT, `worldCopies` of it laid across the width, and each world
+ *  its own positioning context so that a mark placed as a percentage of the plate lands on the copy it
+ *  belongs to instead of piling onto the first. Markup without them is three worlds stacked on one
+ *  another with one set of marks over the top, which is the closed defect exactly.
+ *
+ *  It cannot live inside a `buildCss`: every beat's stylesheet is its own — its colours, its mark
+ *  shapes, its furniture — so a rule written inside one reaches one beat. Written here it is part of
+ *  the same copied set as the markup, and `the-fix-reaches-the-page-assemblers.test.ts` counts it. */
+export function worldTilingCss({ frame, worldCopies }) {
+  if (!(worldCopies > 1)) return "";
+  return `/* THE WORLD REPEATS, AND THE MARKS REPEAT WITH IT (the owner, 2026-08-23: *that is the normal
+   behaviour of an interactive map — go ahead and repeat the map on the sides*). A camera that
+   already spans a full turn of longitude has no more world to its east or west, so ONE plate cannot
+   cover a container wider than the world's own Mercator aspect (delivery-frame.mjs, 'cannotCover')
+   and filling that width by scaling could only be paid for out of LATITUDE — measured on
+   real-owid-life-expectancy at its widest box, 2.572:1 against a 1.472:1 world, 42.8% of the
+   latitude range: Australia, New Zealand, southern Africa, most of South America, northern Canada
+   and Russia. Latitude is the axis that cannot be repeated; longitude is the axis that already is.
+   So the plate is drawn at exactly the box's HEIGHT — nothing is ever cropped off the top or the
+   bottom — and ${worldCopies} copies of it fill the width, centred, with the overflow clipped.
+   The odd count is what keeps the middle copy exactly where the single world used to sit.
+   AT A BOX NARROWER THAN ONE WORLD (a phone) the same rule crops LONGITUDE instead, which is what a
+   slippy map does at that size and the only crop a wrapping plate can take;
+   'verify-wraps-the-world.mjs' prints the degrees it costs at every width this format drives. */
+.mw-fallback, .mw-overlay {
+  width: calc(100cqh * ${frame.width / frame.height} * ${worldCopies});
+  height: 100cqh;
+  display: flex;
+}
+/* One world. 'position: relative' is load-bearing: every mark in the overlay is placed as a
+   PERCENTAGE of the plate, and a percentage resolves against the nearest positioned ancestor — so
+   this box is what makes a copy's marks land on that copy's own geography instead of all of them
+   piling onto the first world. */
+.mw-world {
+  position: relative;
+  flex: 0 0 calc(100% / ${worldCopies});
+  height: 100%;
+  /* NOT CLIPPED TO ITS OWN BOX, and that was tried and measured rather than assumed. A mark's hit
+     target is a fixed-size box centred on the mark, so a mark near a world's edge hangs part of its
+     target over the NEXT world; the copies come after the primary in the DOM, so at the seam a
+     copy's westernmost target lies over the primary's easternmost marks. Measured on
+     proof/mapgen-hexgrid-web at 1600x900: 5 of 153 primary marks answer with their
+     across-the-antimeridian NEIGHBOUR rather than with themselves (13,9 answers as -5,9; 14,8 as
+     -4,8; 14,9 as -4,9) — and every one of those answers is the cell actually painted at that pixel,
+     because the neighbour across the seam is the neighbour on the ground.
+     'overflow: hidden' here takes those five down to two and costs more than it saves, measured both
+     ways: this grid centres its outermost columns OUTSIDE the plate frame, so clipping each world
+     cuts those marks' own targets where their paint leaves the world, and two of 153 then answer
+     NOWHERE along their own painted edges — which splash/test/interaction-promises-are-kept.test.ts
+     catches. Clamping the targets inside their world instead moves the target off the mark, with the
+     same result. A reading that is right for the pixel beats a target that has left its mark or
+     vanished, so the seam is left as it is and the five are named — here, in the verdict
+     'collidingPointerTargets' prints, and in the report. */
+}
+/* LIVE, THE COPIES ARE MAPLIBRE'S OWN. A live canvas paints world copies itself and hit-tests every
+   one of them through queryRenderedFeatures, so the DOM copies would be a second, staler set of
+   marks over the top of them. They go; the overlay drops back onto the viewport, 'live-map.mjs'
+   re-projects the ONE remaining set into the live camera, and the pointer is the canvas's job. */
+html.mw-live .mw-fallback, html.mw-live .mw-overlay { display: block; }
+html.mw-live [data-world="repeat"] { display: none; }
+html.mw-live .mw-world { position: static; }
+`;
+}
+
 
 async function renderHexGridWeb({ component, table, props, outDir, name, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
@@ -841,62 +907,7 @@ html.mw-live .mw-overlay {
   width: 100%;
   height: 100%;
 }
-${
-  worldCopies > 1
-    ? `/* THE WORLD REPEATS, AND THE MARKS REPEAT WITH IT (the owner, 2026-08-23: *that is the normal
-   behaviour of an interactive map — go ahead and repeat the map on the sides*). A camera that
-   already spans a full turn of longitude has no more world to its east or west, so ONE plate cannot
-   cover a container wider than the world's own Mercator aspect (delivery-frame.mjs, 'cannotCover')
-   and filling that width by scaling could only be paid for out of LATITUDE — measured on
-   real-owid-life-expectancy at its widest box, 2.572:1 against a 1.472:1 world, 42.8% of the
-   latitude range: Australia, New Zealand, southern Africa, most of South America, northern Canada
-   and Russia. Latitude is the axis that cannot be repeated; longitude is the axis that already is.
-   So the plate is drawn at exactly the box's HEIGHT — nothing is ever cropped off the top or the
-   bottom — and ${worldCopies} copies of it fill the width, centred, with the overflow clipped.
-   The odd count is what keeps the middle copy exactly where the single world used to sit.
-   AT A BOX NARROWER THAN ONE WORLD (a phone) the same rule crops LONGITUDE instead, which is what a
-   slippy map does at that size and the only crop a wrapping plate can take;
-   'verify-wraps-the-world.mjs' prints the degrees it costs at every width this format drives. */
-.mw-fallback, .mw-overlay {
-  width: calc(100cqh * ${frame.width / frame.height} * ${worldCopies});
-  height: 100cqh;
-  display: flex;
-}
-/* One world. 'position: relative' is load-bearing: every mark in the overlay is placed as a
-   PERCENTAGE of the plate, and a percentage resolves against the nearest positioned ancestor — so
-   this box is what makes a copy's marks land on that copy's own geography instead of all of them
-   piling onto the first world. */
-.mw-world {
-  position: relative;
-  flex: 0 0 calc(100% / ${worldCopies});
-  height: 100%;
-  /* NOT CLIPPED TO ITS OWN BOX, and that was tried and measured rather than assumed. A mark's hit
-     target is a fixed-size box centred on the mark, so a mark near a world's edge hangs part of its
-     target over the NEXT world; the copies come after the primary in the DOM, so at the seam a
-     copy's westernmost target lies over the primary's easternmost marks. Measured on
-     proof/mapgen-hexgrid-web at 1600x900: 5 of 153 primary marks answer with their
-     across-the-antimeridian NEIGHBOUR rather than with themselves (13,9 answers as -5,9; 14,8 as
-     -4,8; 14,9 as -4,9) — and every one of those answers is the cell actually painted at that pixel,
-     because the neighbour across the seam is the neighbour on the ground.
-     'overflow: hidden' here takes those five down to two and costs more than it saves, measured both
-     ways: this grid centres its outermost columns OUTSIDE the plate frame, so clipping each world
-     cuts those marks' own targets where their paint leaves the world, and two of 153 then answer
-     NOWHERE along their own painted edges — which splash/test/interaction-promises-are-kept.test.ts
-     catches. Clamping the targets inside their world instead moves the target off the mark, with the
-     same result. A reading that is right for the pixel beats a target that has left its mark or
-     vanished, so the seam is left as it is and the five are named — here, in the verdict
-     'collidingPointerTargets' prints, and in the report. */
-}
-/* LIVE, THE COPIES ARE MAPLIBRE'S OWN. A live canvas paints world copies itself and hit-tests every
-   one of them through queryRenderedFeatures, so the DOM copies would be a second, staler set of
-   marks over the top of them. They go; the overlay drops back onto the viewport, 'live-map.mjs'
-   re-projects the ONE remaining set into the live camera, and the pointer is the canvas's job. */
-html.mw-live .mw-fallback, html.mw-live .mw-overlay { display: block; }
-html.mw-live [data-world="repeat"] { display: none; }
-html.mw-live .mw-world { position: static; }
-`
-    : ""
-}.maplibregl-canvas-container canvas { outline: none; }
+${worldTilingCss({ frame, worldCopies })}.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* THE HIT TARGET: one HTML <button> per non-empty cell, clipped to that cell's OWN hexagon.
    'clip-path' clips hit testing as well as painting, and that is the whole reason it is here: a
