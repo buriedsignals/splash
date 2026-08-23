@@ -290,8 +290,70 @@ function beatPalette() {
   return { ground, ink, read };
 }
 
+/** THE RIVER'S OWN STROKE, one clearance FURTHER FROM THE GROUND than the water it belongs to.
+ *
+ *  This bake is the only one in the family that paints a `line` as well as a `fill`, because a river
+ *  at this zoom is a stroke rather than a polygon — and a stroke is drawn over LAND, which sits near
+ *  the page ground on both of MapTiler's themes. Painted at the fill's own luminance it would be a
+ *  river a reader has to know is there. It was the literal `#7fa9c9` until 2026-08-23, which is one
+ *  step DARKER than the literal fill it went with: right on a light ground, and on a dark one a
+ *  bright blue thread through a near-black country.
+ *
+ *  So the relationship is kept and the direction is derived: the stroke sits **as far beyond the fill
+ *  as the fill sits beyond the ground**, on the same blue axis — darker on a light ground, lighter on
+ *  a dark one, and always the same water. One sentence, and it is symmetric, which a literal chosen
+ *  for one theme can never be.
+ *
+ *  WHY TWICE THE OFFSET AND NOT ONE CLEARANCE. A stroke is drawn over LAND, and MapTiler paints land
+ *  within about 1.2:1 of a matching page ground on both its themes — so what a river has to clear is
+ *  roughly the ground itself, and one clearance does not clear it. Measured on the three palettes
+ *  this tree bakes with, the resulting stroke against the land it crosses: **4.85:1** over `#f7f7f7`
+ *  (white ground, teal ink), **2.83:1** over `#f7f7f7` (white ground, gold ink), **3.51:1** over
+ *  `#292929` (charcoal ground, gold ink). The literal it replaces reached 3.06:1 on the first of
+ *  those and would have been a bright thread through a near-black country on the third.
+ *
+ *  The middle number is under 3 and it is left standing rather than tuned around, because it is the
+ *  SAME limit two locator beats hit at the same time and for the same reason: `#C68900` is a light
+ *  accent on a light ground, so everything the band leaves room for is close to the page. Tuning the
+ *  offset until that one case cleared would move the other two off the relationship this rule states.
+ *
+ *  It is not measured against the non-text floor and it must not be: a river carries no reading here,
+ *  and holding basemap furniture to the floor a MARK is held to is what put the sea above the data in
+ *  the first place. */
+function waterStrokeFor(ground, fill) {
+  const luminance = (hex) => {
+    const channel = (value) => {
+      const c = value / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const digits = /^#([0-9a-fA-F]{6})$/.exec(String(hex).trim());
+    if (!digits) throw new Error(`waterStrokeFor needs #rrggbb colours; got "${hex}"`);
+    const [r, g, b] = [0, 2, 4].map((at) => parseInt(digits[1].slice(at, at + 2), 16));
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  };
+  const groundAt = luminance(ground);
+  const fillAt = luminance(fill);
+  const target = Math.min(1, Math.max(0, groundAt + (fillAt - groundAt) * 2));
+  const [dark, mid, light] = WATER_AXIS;
+  const [from, to] = target <= luminance(mid) ? [dark, mid] : [mid, light];
+  const mix = (one, two, ratio) => {
+    const a = [0, 2, 4].map((at) => parseInt(one.slice(1 + at, 3 + at), 16));
+    const b = [0, 2, 4].map((at) => parseInt(two.slice(1 + at, 3 + at), 16));
+    return `#${a.map((value, at) => Math.round(value + (b[at] - value) * ratio).toString(16).padStart(2, "0")).join("")}`;
+  };
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 40; step++) {
+    const at = (low + high) / 2;
+    if (luminance(mix(from, to, at)) < target) low = at;
+    else high = at;
+  }
+  return mix(from, to, (low + high) / 2);
+}
+
 const PALETTE = beatPalette();
 const WATER = basemapWaterFor(PALETTE.ground, PALETTE.ink);
+const WATER_STROKE = waterStrokeFor(PALETTE.ground, WATER.hex);
 
 const width = Number(flag("--width", "1000"));
 const height = Number(flag("--height", "640"));
@@ -578,7 +640,7 @@ if (sealed) {
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, styleDefinition, zoom, centre, bounds, settleMs, width, height, waterFill }) => {
+  async ({ key, style, styleDefinition, zoom, centre, bounds, settleMs, width, height, waterFill, waterStroke }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: styleDefinition ?? `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -613,7 +675,7 @@ const gate = await page.evaluate(
       if (map.getLayer(id)) {
         const type = map.getLayer(id).type;
         if (type === "fill") map.setPaintProperty(id, "fill-color", waterFill);
-        if (type === "line") map.setPaintProperty(id, "line-color", "#7fa9c9");
+        if (type === "line") map.setPaintProperty(id, "line-color", waterStroke);
       }
 
     // Gate on idle OR a bounded settle, and record which one fired: `idle` alone never fires when
@@ -639,7 +701,7 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BASEMAP.style, styleDefinition: sealedStyle, zoom: ZOOM, centre: CENTRE, bounds: BOUNDS, settleMs, width, height, waterFill: WATER.hex },
+  { key, style: BASEMAP.style, styleDefinition: sealedStyle, zoom: ZOOM, centre: CENTRE, bounds: BOUNDS, settleMs, width, height, waterFill: WATER.hex, waterStroke: WATER_STROKE },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -702,7 +764,7 @@ const geometry = {
   // fills `plateSurfaces` counts into a cloud of near-colours, so the reading has to happen where a
   // PNG plate exists — `verifyBeatFiles`, over this beat's own plate directories. Recorded here so
   // that reading has the derivation to compare against rather than a hex nobody can trace.
-  water: { fill: WATER.hex, luminance: WATER.luminance, ground: PALETTE.ground, ink: PALETTE.ink, ceilingUnreachable: WATER.ceilingUnreachable },
+  water: { fill: WATER.hex, stroke: WATER_STROKE, luminance: WATER.luminance, ground: PALETTE.ground, ink: PALETTE.ink, ceilingUnreachable: WATER.ceilingUnreachable },
 };
 const geometryPath = join(outDir, `${outName}-plate.json`);
 await writeFile(geometryPath, JSON.stringify(geometry, null, 2) + "\n");
@@ -710,7 +772,7 @@ await writeFile(geometryPath, JSON.stringify(geometry, null, 2) + "\n");
 console.log(
   `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} boundary layers · zoom ${geometry.zoom}\n` +
     `basemap  → ${BASEMAP.style} (${BASEMAP.chosenBy})\n` +
-    `sea      → ${WATER.hex} (luminance ${WATER.luminance.toFixed(4)}) from ${PALETTE.read ?? "--ground/--ink"}${WATER.ceilingUnreachable ? " · ceiling unreachable, see the plate record" : ""}\n` +
+    `sea      → ${WATER.hex} fill / ${WATER_STROKE} river stroke (luminance ${WATER.luminance.toFixed(4)}) from ${PALETTE.read ?? "--ground/--ink"}${WATER.ceilingUnreachable ? " · ceiling unreachable, see the plate record" : ""}\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ` +
     (projected
