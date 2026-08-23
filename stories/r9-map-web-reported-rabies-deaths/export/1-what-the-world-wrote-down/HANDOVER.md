@@ -22,23 +22,21 @@ not a description of a chart.
 
 > World Health Organization, Global Health Observatory — indicator NTD_RAB2, \"Reported number of human rabies deaths\" (retrieved 23 August 2026)
 
-## The live map in this file, and the key it carries
+## The live map, the two copies of this page, and the key one of them carries
 
-This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is
-inside the file: anyone who opens the published article can read it, and it is your development
-key, which is not restricted to your own domains.
+This page draws its map live, so a reader can pan and zoom it, and that takes a MapTiler key.
+So you have been given the page twice:
+
+- **`keyed/reported-rabies-deaths-2024.html`** — **the copy to publish.** Your MapTiler key was substituted into it when this delivery was made. It sits in a folder version control cannot see, so the key never enters any repository.
+- **`reported-rabies-deaths-2024.html`** — the copy kept beside your story, as the record. It does not carry a key: it carries the placeholder `__MAPTILER_KEY__`. Opened on its own it shows the map layer baked into the file, complete and readable, and does not pan or zoom.
+
+The key that was substituted is your development key, which is not restricted to your own
+domains, and anyone who opens the published article can read it out of the page.
 
 What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by
 whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler
 switches off **every** key on it — including the maps in articles you published years ago.
 
 The way to close that, when you want to: create a second MapTiler key restricted to your own
-domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry
-the restricted key, which is worth nothing to anyone who lifts it out of the page.
-
-## The one thing this does not show
-
-You named this limit yourself, and it belongs beside the visual — in the caption or the
-paragraph next to it — not only in your notes.
-
-> These are REPORTED deaths, not deaths. WHO's own fact sheet says so in one sentence — \"due to underreporting, documented case numbers often differ from the estimate\" — and the arithmetic says how far: 3 021 written down against an estimated 59 000 a year. A blank cell is not a zero: 94 countries filed nothing and are drawn as no-data, never as 0. A reported 0 is a reading and is drawn as one. The counts are RAW counts of people, never a rate: the file carries no population column and dividing an under-report by a population would invent a risk nobody measured. Natural Earth folds some reporting territories into the state that administers them, so a small number of WHO readings land on no shape at all and are named in the caveat.
+domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that
+substitute the restricted key, which is worth nothing to anyone who lifts it out of the page.

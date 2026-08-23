@@ -21,8 +21,9 @@
  * makes no claim about them.
  */
 import { describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PLACEHOLDER = "__MAPTILER_KEY__";
@@ -94,4 +95,83 @@ describe("a delivered map page and its hand-over agree about the key", () => {
       });
     });
   }
+});
+
+/**
+ * AND THE OTHER COPY — the one this guard could not see, and the reason it used to be unsatisfiable.
+ *
+ * D1: a keyed delivery wrote its key into `export/<beat>/<page>.html`, inside the repository, so
+ * "clean tree" and "no key in the repository" each cost the other and the report concluded no third
+ * state existed. It does: `deliver.mjs` writes the record with the placeholder and the DELIVERY into
+ * `export/<beat>/keyed/`, a directory made un-committable by its own `.gitignore` holding `*`.
+ *
+ * The block above reads the record and the hand-over. This one reads the pair — because a hand-over
+ * saying "the copy to publish is `keyed/x.html`" is a promise about a file, and because "git cannot
+ * commit it" is a claim about a tool that only the tool can answer. Both are asked here, of the real
+ * deliveries in this tree.
+ */
+describe("a keyed delivery keeps its key where git cannot reach it", () => {
+  const keyedDeliveries = DELIVERIES.map((delivery) => {
+    const dir = join(TWIN, delivery.rel, "..");
+    const keyedDir = join(dir, "keyed");
+    const named = [...delivery.handover.matchAll(/`keyed\/([^`]+)`/g)].map((m) => m[1]);
+    return { ...delivery, dir, keyedDir, named };
+  });
+
+  it("names, in the hand-over, a keyed copy that is actually on disk", () => {
+    // A paragraph promising a file nobody wrote is the same defect one document along.
+    const missing: string[] = [];
+    for (const delivery of keyedDeliveries)
+      for (const name of delivery.named)
+        if (!existsSync(join(delivery.keyedDir, name)))
+          missing.push(`${delivery.rel}: the hand-over names keyed/${name} and it is not there`);
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps every keyed copy out of everything a `git add -A` would commit", () => {
+    // Asked of git itself, over both listings `no-key-in-the-repository.test.ts` reads. A keyed page
+    // appearing in either is the leak the third state exists to close.
+    const listing = (args: string[]) =>
+      execFileSync("git", args, { cwd: TWIN, encoding: "utf8" }).split("\0").filter(Boolean);
+    const committable = new Set([
+      ...listing(["ls-files", "-z", "--", "."]),
+      ...listing(["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
+    ]);
+    const leaked: string[] = [];
+    for (const delivery of keyedDeliveries)
+      for (const name of delivery.named) {
+        const rel = relative(TWIN, join(delivery.keyedDir, name));
+        if (committable.has(rel)) leaked.push(rel);
+      }
+    expect(
+      leaked,
+      "a keyed delivered page is committable. The `keyed/` directory carries its own .gitignore " +
+        "holding `*`, which ignores its whole contents including itself; if that file is gone, the " +
+        "key is one `git add -A` from the history.",
+    ).toEqual([]);
+  });
+
+  it("has at least one keyed delivery to be looking at", () => {
+    // Anti-vacuity: without this the two assertions above pass over a tree with no keyed delivery
+    // in it, which is the tree that existed before the third state was built.
+    expect(keyedDeliveries.filter((delivery) => delivery.named.length > 0).length).toBeGreaterThan(0);
+  });
+
+  it("carries the key in the copy the hand-over says carries it", () => {
+    // The other half of the pair: the record has the placeholder (asserted above) and the keyed copy
+    // really does request MapTiler with something else. Value-independent, the same shape R1b's own
+    // style-URL scan uses, so no key has to be known to see one.
+    const wrong: string[] = [];
+    for (const delivery of keyedDeliveries)
+      for (const name of delivery.named) {
+        const path = join(delivery.keyedDir, name);
+        if (!existsSync(path)) continue;
+        const html = readFileSync(path, "latin1");
+        if (!/api\.maptiler\.com\/[^"'\s]*[?&]key=[A-Za-z0-9]{16,}/.test(html))
+          wrong.push(`${delivery.rel}: keyed/${name} carries no substituted key`);
+        if (html.includes(PLACEHOLDER))
+          wrong.push(`${delivery.rel}: keyed/${name} still carries the placeholder`);
+      }
+    expect(wrong).toEqual([]);
+  });
 });
