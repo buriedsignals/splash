@@ -212,3 +212,38 @@ Two production cycles were spent. The second fixed everything a beat CAN fix: th
 positions (ISO dates, so the labels render at all), the series label (four wrapped lines to two),
 and a second accent for the target rule so it is not the same colour as the series. Nothing
 remains that a third cycle could reach, so this is the stall rather than a fourth attempt.
+
+## Found at production
+
+THE LIVE TESTS NOW WRITE TO A REAL NEWSROOM ACCOUNT AND CLEAN UP NOTHING, AND
+UNTIL TODAY THAT COST WAS INVISIBLE BECAUSE THEY ALL SKIPPED.
+Ran: bun test skills/dw-beat/test — 210 pass, 0 fail, 28s.
+Came back, on the account: three new charts, all PUBLISHED — "Emissions fell", "dw-beat client
+test", "range-annotation probe" — created within thirteen seconds of each other and removed by
+nothing. GET /v3/charts reports total: 1139 on this account. Two earlier triples with the same
+three titles sit at 08:26 and 08:27 today, and matching triples sit at 2026-08-08.
+Expected: a live contract test either tears down what it created, or says in the suite's output
+that it did not.
+The credential alias fix that made these tests stop skipping is right, and it converted a silent
+skip into an unbounded, unreverted write to a real provider account on every full-suite run. The
+suite is run at the end of every round.
+Cost: I deleted the three my own run created (Jsofm, amOib, TokJp — DELETE /v3/charts/{id}, 204
+each). The rest of the accumulation is older than this run.
+
+## Found at production
+
+A LIVE TEST WHOSE ONE ASSERTION IS A SENTENCE ADDRESSED TO A HUMAN, ABOUT A FILE
+IT THEN DELETES.
+skills/dw-beat/test/verify-range-annotation.test.ts is the live pin for the range-annotation
+shape. It asserts result.sentShape, that roundTrippedRangeAnnotations is defined, and that the
+PNG is larger than zero bytes — then prints "Wrote <path> — open it and confirm the rule actually
+drew at y=5 between 2000 and 2010." The thing the test exists to establish, that the rule DREW,
+is delegated to a human in a console.log.
+Measured: the try block's last statement is that console.log; the finally block immediately runs
+rm(outDir, {recursive: true, force: true}). The file the reader is told to open is deleted before
+the test returns. I watched that line print during my run and the temp directory was already gone.
+So: the assertions pass on a PNG of any content whatever, and the escape hatch is destroyed by
+the test's own cleanup. This is the shape the branch's own constraints call out — a test that
+stays green when the mechanism is broken — and my beat is the evidence that it does: my first
+production run drew a rule whose label rendered NOWHERE, through this same code path, and every
+test in this file was green.
