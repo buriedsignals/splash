@@ -167,3 +167,36 @@ and is never told which angle the slot chose; the beat directory is named by the
 number prefix. references/exchange.md says a subject id is one "that could name a beat directory",
 which is advice, not a binding — and the guard depends on the two strings coinciding exactly.
 Cost: the last thing this journalist reads is an offer to make the graphic they are holding.
+
+## Found at intake
+
+D11 — freezeSource accepted a table with sixteen blank column names, profiled sixteen columns
+called "", and the refusal lives three phases away in a test the journalist never runs.
+Ran: freezeSource over the Destatis sheet exported at its full 37x328 grid. The sheet's used range
+is 21 named columns; the remaining 16 carry no header and — measured — no value in any of the 327
+rows.
+Came back from intake: nothing. Three files written, no warning, exit 0.
+Came back from the profile: "profiled columns: 37", the last sixteen of which are
+{"name": "", ...}. Sixteen indistinguishable columns with the same name, in the record every later
+phase reasons from. Every downstream reader that addresses a column BY NAME —
+chooseValueColumn, findDenominatorColumn, measureColumns, isShareColumn — is handed sixteen
+columns called "".
+Came back from the repo suite, 200 lines and four phases later:
+  bun test skills/splash/test/a-frozen-source-is-what-its-name-says.test.ts
+  (fail) should find no .csv that does not parse as a table with a header and a row
+  + "stories/r8-chart-static-german-road-deaths-by-mode/source/data.csv"
+That test's rule is `rows[0].some(name => name.trim() === "")`, and it is RIGHT: a blank column name
+is not addressable. It was written for a .csv that held a JSON document.
+Expected: the check that says a frozen source is not a table belongs in freezeSource, where the
+journalist is standing, not in a suite they do not run. intake/SKILL.md's own promise is that this
+phase "reads, it parses, it types the columns, it writes" and that the frozen record can never drift
+— so a record it accepts and a record the tree refuses cannot be the same file.
+NOT FIXED IN THIS STORY, deliberately, and the test is left red rather than papered over. Three
+reasons: the round brief says the messy file is the point and must not be cleaned; intake's own
+contract is that a frozen source is never modified and a re-freeze requires a fresh story, so
+correcting it means deleting the frozen record by hand — working around the one rule intake exists
+to enforce; and the defect is upstream of this story's bytes. The fix is one of: freezeSource
+refuses a header carrying a blank cell, naming the column index; or profileTable names them
+(col_22 ... col_37) and says it did; or both.
+Cost: one red assertion in skills/splash/test/a-frozen-source-is-what-its-name-says.test.ts,
+reported rather than hidden.
