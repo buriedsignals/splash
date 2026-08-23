@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "1-pedelec-catches-the-bicycle-review-2026-08-23-1",
+  "outputId": "1-pedelec-catches-the-bicycle",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:abfe5a64dd96ea1e8b172ac5256b86362bf7558ad8448bddd8915f4eec0b6ea4",
+  "findingIds": [
+    "pedelec-rises-39-to-214",
+    "bicycle-falls-357-to-248",
+    "the-two-series-have-not-crossed",
+    "series-begins-2014"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-pedelec-catches-the-bicycle",
+      "planVersion": 1,
+      "draftDigest": "sha256:abfe5a64dd96ea1e8b172ac5256b86362bf7558ad8448bddd8915f4eec0b6ea4",
+      "findingIds": [
+        "pedelec-rises-39-to-214",
+        "bicycle-falls-357-to-248",
+        "the-two-series-have-not-crossed",
+        "series-begins-2014"
+      ],
+      "id": "1-pedelec-catches-the-bicycle-qa-2026-08-23-1",
+      "status": "passed",
+      "completedAt": "2026-08-23T00:00:00Z"
+    }
+  ],
+  "angleEvidenceBrief": "All 141 data rows of the frozen table were read before anything was drawn, and the 186 all-blank trailing rows skipped by testing the year cell rather than by a row count. The panel's three Ortschaft rows were checked by hand and by build-data.mjs: 'Innerhalb und außerhalb von Ortschaften' is the exact sum of the other two in 47 of 47 years, so the beat reads that row alone and the profile's own Getoetete_Insgesamt.sum (673274) is exactly twice the real 47-year total (336637) — nothing in the toolchain says so. Both column breaks were verified against the publisher's own column names: the two _ab_2014 columns are the not-applicable marker for every year before 2014 and a number from 2014 on, and Getoetete_Fahrraeder_bis_2013 is the mirror image, so the chart starts in 2014 and says why. render.mjs re-reads the takeaway's own 214 and 36 out of data.json and refuses to draw a title they no longer match, and refuses to claim the pedelec series has 'almost caught' the bicycle series if the frozen numbers ever cross. The delivered PNG was opened at 1920x1080 and read: 39 at the left edge, a marked 36 in 2015, a labelled 214 at the right, the comparison line labelled 248, and the annotation measured 13px clear of the accent stroke after a first render in which the stroke entered its ink box at 1.00:1 against a 3:1 floor.",
+  "decision": "approve",
+  "reviewer": "the journalist (this run: the gates were answered in the journalist's own voice — see the run report)",
+  "decidedAt": "2026-08-23T00:00:00Z",
+  "notes": "Approved with three limitations recorded in APPROVED.md. (1) A count is not a risk: the statistic records no distance ridden, so nothing here is a rate; it is stated on the face of the chart. (2) The takeaway quotes Destatis's own preliminary 16.4%; the final table gives 16.3%. The grounding check answered unverifiable, correctly, and could not have answered contradicted: it computes no ratio between two columns and both columns are typed text because the publisher writes a hyphen for not-applicable. (3) The house accent measures 2.20:1 on white; this beat ships on the newsroom's dark ground at 8.01:1, and the light-ground probe is committed beside the render."
+}
