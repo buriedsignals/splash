@@ -223,6 +223,13 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
         // an unrecognised value throws, so nothing a caller writes can be rendered through it. That
         // is the condition on which this list may grow at all.
         "liveTiles",
+        // `keyed` carries the same exemption `files` already has, for the same reason: it is the
+        // list of PATHS `materialise` actually wrote into the ignored `keyed/` directory, and only
+        // their basenames reach the page. No caller writes prose through it — the sentences around
+        // each name come from `TWO_COPIES`, which is a closed table like `LIVE_TILES` beside it. It
+        // exists because a keyed delivery now writes TWO files and a hand-over that says "the file"
+        // is describing neither of them (D1).
+        "keyed",
       ].sort(),
     );
   });

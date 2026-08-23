@@ -97,6 +97,48 @@ export function creditLine(credit) {
 }
 
 
+/**
+ * THE TWO COPIES, NAMED — the paragraph that made a keyed delivery committable at all.
+ *
+ * D1, measured on a real world choropleth: the delivered page carried the newsroom's key and lives
+ * inside the repository, so "clean tree" and "no key in the repository" could not both hold and no
+ * third state existed. `deliver.mjs` builds the third state — the record keeps the placeholder, an
+ * ignored `keyed/` copy carries the substitution — and this is the half a journalist reads. It
+ * ATTESTS TO THE SUBSTITUTION and never to the key: it says which file the key went into, says the
+ * other one does not carry a key, and never restates a character of the key itself, because this
+ * document is committed beside the record.
+ *
+ * The keyed names are the ones `materialise` actually wrote, relative to the folder the journalist
+ * has open. A delivery that substituted nothing writes no `keyed/` copy, and this says so — a
+ * paragraph promising a file that is not there is the same defect one document along.
+ */
+const TWO_COPIES = {
+  en: {
+    keyed: (name) =>
+      `- **\`${name}\`** — **the copy to publish.** Your MapTiler key was substituted into it when this delivery was made. It sits in a folder version control cannot see, so the key never enters any repository.`,
+    record: (name) =>
+      `- **\`${name}\`** — the copy kept beside your story, as the record. It does not carry a key: it carries the placeholder \`__MAPTILER_KEY__\`. Opened on its own it shows the map layer baked into the file, complete and readable, and does not pan or zoom.`,
+    none: "- No keyed copy was written for this delivery, so nothing here carries a key.",
+  },
+  fr: {
+    keyed: (name) =>
+      `- **\`${name}\`** — **l'exemplaire à publier.** Votre clé MapTiler y a été substituée au moment de la livraison. Il se trouve dans un dossier que le gestionnaire de versions ne voit pas : la clé n'entre donc dans aucun dépôt.`,
+    record: (name) =>
+      `- **\`${name}\`** — l'exemplaire conservé auprès de votre sujet, comme trace. Il ne porte pas de clé : il porte le marqueur \`__MAPTILER_KEY__\`. Ouvert seul, il affiche la couche cartographique intégrée au fichier, complète et lisible, et ne se déplace ni ne zoome.`,
+    none: "- Aucun exemplaire avec clé n'a été écrit pour cette livraison : rien ici ne porte de clé.",
+  },
+};
+
+function twoCopies(keyed, written) {
+  const words = TWO_COPIES[written] ?? TWO_COPIES.en;
+  const names = Array.isArray(keyed) ? keyed : [];
+  if (names.length === 0) return [words.none];
+  return names.flatMap((name) => [
+    words.keyed(name),
+    words.record(baseName(name)),
+  ]);
+}
+
 // WHAT THE DELIVERED PAGE CARRIES, WHEN IT CARRIES A LIVE MAP — rendered from a CLOSED vocabulary,
 // which is what lets a paragraph this honest exist here at all without opening a free-text field.
 //
@@ -115,51 +157,68 @@ export function creditLine(credit) {
 export const LIVE_TILES = {
   en: {
     none: null,
-    restricted: [
-      "## The live map in this file",
+    restricted: (keyed) => [
+      "## The live map, and the two copies of this page",
       "",
-      "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-      "inside the file, and it is the one restricted to your own domains — copied out of the page, it",
-      "does not work anywhere else.",
+      "This page draws its map live, so a reader can pan and zoom it, and that takes a MapTiler key.",
+      "So you have been given the page twice:",
+      "",
+      ...twoCopies(keyed, "en"),
+      "",
+      "The key that was substituted is the one restricted to your own domains — copied out of the",
+      "published page, it does not work anywhere else.",
     ],
-    development: [
-      "## The live map in this file, and the key it carries",
+    development: (keyed) => [
+      "## The live map, the two copies of this page, and the key one of them carries",
       "",
-      "This page draws its map live, so a reader can pan and zoom it. The key that lets it draw is",
-      "inside the file: anyone who opens the published article can read it, and it is your development",
-      "key, which is not restricted to your own domains.",
+      "This page draws its map live, so a reader can pan and zoom it, and that takes a MapTiler key.",
+      "So you have been given the page twice:",
+      "",
+      ...twoCopies(keyed, "en"),
+      "",
+      "The key that was substituted is your development key, which is not restricted to your own",
+      "domains, and anyone who opens the published article can read it out of the page.",
       "",
       "What that costs you, plainly. The tiles this map draws are billed to your MapTiler account, by",
       "whoever is using the key. And if that account ever reaches 100% of its spending limit, MapTiler",
       "switches off **every** key on it — including the maps in articles you published years ago.",
       "",
       "The way to close that, when you want to: create a second MapTiler key restricted to your own",
-      "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that carry",
-      "the restricted key, which is worth nothing to anyone who lifts it out of the page.",
+      "domains, and record it on the setup page as `MAPTILER_DELIVERY_KEY`. Deliveries after that",
+      "substitute the restricted key, which is worth nothing to anyone who lifts it out of the page.",
     ],
-    unkeyed: [
+    unkeyed: () => [
       "## The live map in this file",
       "",
-      "No MapTiler key was recorded, so this page does not draw its map live: it shows the map layer",
-      "that is baked into the file. That layer is complete and readable — it simply does not pan or",
-      "zoom. Recording a MapTiler key on the setup page is what makes the live version possible.",
+      "No MapTiler key was recorded, so nothing was substituted and this page does not carry a key:",
+      "it carries the placeholder `__MAPTILER_KEY__`. It does not draw its map live — it shows the map",
+      "layer that is baked into the file. That layer is complete and readable, it simply does not pan",
+      "or zoom. Recording a MapTiler key on the setup page is what makes the live version possible.",
     ],
   },
   fr: {
     none: null,
-    restricted: [
-      "## La carte en direct dans ce fichier",
+    restricted: (keyed) => [
+      "## La carte en direct, et les deux copies de cette page",
       "",
-      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
-      "qui permet ce dessin est à l'intérieur du fichier, et c'est celle qui est restreinte à vos",
-      "propres domaines — sortie de la page, elle ne fonctionne nulle part ailleurs.",
+      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer, et cela",
+      "demande une clé MapTiler. La page vous est donc remise en deux exemplaires :",
+      "",
+      ...twoCopies(keyed, "fr"),
+      "",
+      "La clé qui a été substituée est celle qui est restreinte à vos propres domaines — sortie de la",
+      "page publiée, elle ne fonctionne nulle part ailleurs.",
     ],
-    development: [
-      "## La carte en direct dans ce fichier, et la clé qu'elle emporte",
+    development: (keyed) => [
+      "## La carte en direct, les deux copies de cette page, et la clé que l'une d'elles emporte",
       "",
-      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer. La clé",
-      "qui permet ce dessin est à l'intérieur du fichier : n'importe qui ouvrant l'article publié peut",
-      "la lire, et c'est votre clé de développement, qui n'est pas restreinte à vos propres domaines.",
+      "Cette page dessine sa carte en direct, pour qu'un lecteur puisse la déplacer et zoomer, et cela",
+      "demande une clé MapTiler. La page vous est donc remise en deux exemplaires :",
+      "",
+      ...twoCopies(keyed, "fr"),
+      "",
+      "La clé qui a été substituée est votre clé de développement, qui n'est pas restreinte à vos",
+      "propres domaines : n'importe qui ouvrant l'article publié peut la lire dans la page.",
       "",
       "Ce que cela vous coûte, clairement. Les tuiles que dessine cette carte sont facturées à votre",
       "compte MapTiler, quelle que soit la personne qui utilise la clé. Et si ce compte atteint un jour",
@@ -168,16 +227,17 @@ export const LIVE_TILES = {
       "",
       "Comment fermer cela, quand vous le voudrez : créez une seconde clé MapTiler restreinte à vos",
       "propres domaines, et enregistrez-la sur la page de configuration sous le nom",
-      "`MAPTILER_DELIVERY_KEY`. Les livraisons suivantes emporteront la clé restreinte, qui ne vaut rien",
-      "pour qui l'extrait de la page.",
+      "`MAPTILER_DELIVERY_KEY`. Les livraisons suivantes substitueront la clé restreinte, qui ne vaut",
+      "rien pour qui l'extrait de la page.",
     ],
-    unkeyed: [
+    unkeyed: () => [
       "## La carte en direct dans ce fichier",
       "",
-      "Aucune clé MapTiler n'a été enregistrée : cette page ne dessine donc pas sa carte en direct, elle",
-      "affiche la couche cartographique intégrée au fichier. Cette couche est complète et lisible — elle",
-      "ne se déplace simplement pas et ne zoome pas. Enregistrer une clé MapTiler sur la page de",
-      "configuration est ce qui rend la version en direct possible.",
+      "Aucune clé MapTiler n'a été enregistrée : rien n'a été substitué et cette page ne porte pas de",
+      "clé, elle porte le marqueur `__MAPTILER_KEY__`. Elle ne dessine donc pas sa carte en direct,",
+      "elle affiche la couche cartographique intégrée au fichier. Cette couche est complète et lisible",
+      "— elle ne se déplace simplement pas et ne zoome pas. Enregistrer une clé MapTiler sur la page",
+      "de configuration est ce qui rend la version en direct possible.",
     ],
   },
 };
@@ -422,7 +482,7 @@ function baseName(path) {
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it
  * looks complete.
  */
-export function formatHandover({ files, placement, alt, credit, caveat, format, language, liveTiles = "none" }) {
+export function formatHandover({ files, placement, alt, credit, caveat, format, language, liveTiles = "none", keyed = [] }) {
   if (Object.prototype.hasOwnProperty.call(arguments[0], "genre")) {
     throw new Error("formatHandover does not accept genre; use the canonical format field");
   }
@@ -504,8 +564,11 @@ export function formatHandover({ files, placement, alt, credit, caveat, format, 
     "",
   );
 
+  // A FUNCTION OF WHAT WAS DELIVERED, not a fixed paragraph: which files exist and which of them
+  // carries the key is a fact about this delivery, and a static sentence about "the file" is what
+  // made the hand-over disagree with the page it shipped.
   const tiles = LIVE_TILES[scaffold.written][liveTiles];
-  if (tiles) lines.push(...tiles, "");
+  if (tiles) lines.push(...tiles(keyed), "");
 
   if (caveat && String(caveat).trim()) {
     lines.push(copy.caveat, "", ...copy.caveatHelp, "", `> ${caveat}`, "");

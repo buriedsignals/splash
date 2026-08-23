@@ -8,6 +8,7 @@ import {
   readFile,
   symlink,
 } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import {
@@ -2000,10 +2001,14 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(substituteKeys(mapPage, {})).toContain("__MAPTILER" + "_KEY__");
   });
 
-  it("should deliver a MAP beat on a development key, and say so in the hand-over", async () => {
-    // R1: the delivered HTML carries the key, knowingly. R1b prefers the restricted one. The
-    // journalist gets the delivery AND the statement of what it costs — never a refusal instead of
-    // both.
+  it("should deliver a MAP beat on a development key, in TWO copies, and say so in the hand-over", async () => {
+    // R1: the delivered HTML carries the key, knowingly. R1b prefers the restricted one, and forbids
+    // one reaching the repository. Both hold at once because the delivery writes two files.
+    //
+    // D1, MEASURED BOTH WAYS AND CALLED UNRESOLVABLE: with the keyed file as delivered,
+    // `splash/test/no-key-in-the-repository.test.ts` reddens on it; with the placeholder put back by
+    // hand, `map-web/test/the-handover-agrees-about-the-key.test.ts` reddens because the hand-over
+    // described a file that no longer existed. The third state is this one.
     await rm(join(beatDir, "renders", "still.png"));
     await rm(join(beatDir, "renders", "still.svg"));
     await writeFile(join(beatDir, "renders", "map.html"), mapPage);
@@ -2017,13 +2022,57 @@ describe("the key rule reads the artifact, not the environment", () => {
       handover,
     });
 
-    expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(
-      'style.json?key=development-key"',
-    );
+    // The RECORD — committed beside the story, and it carries the placeholder, never the key.
+    expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(mapPage);
+    // The DELIVERY — the page the newsroom publishes, with the key substituted into it.
+    expect(
+      await readFile(join(exportDir, "keyed", "map.html"), "utf8"),
+    ).toBe('style.json?key=development-key"');
+    // And what keeps it out of every repository: the directory ignores its whole contents, itself
+    // included, so git never learns it is there.
+    expect(await readFile(join(exportDir, "keyed", ".gitignore"), "utf8")).toContain("*");
+
     const readme = await readFile(join(exportDir, "HANDOVER.md"), "utf8");
     expect(readme).toContain("development");
     expect(readme).toContain("100% of its spending limit");
     expect(readme).toContain("MAPTILER_DELIVERY_KEY");
+    // THE HAND-OVER ATTESTS TO THE SUBSTITUTION AND NAMES BOTH COPIES — never to the key itself,
+    // because this document is committed beside the record.
+    expect(readme).toContain("`keyed/map.html`");
+    expect(readme).toContain("the copy to publish");
+    expect(readme).toContain("It does not carry a key");
+    expect(readme).toContain("__MAPTILER" + "_KEY__");
+    expect(readme).not.toContain("development-key");
+  });
+
+  it("should write no keyed copy at all when nothing was substituted", async () => {
+    // A `keyed/` folder promising a file nobody wrote is the same defect one document along. Two
+    // cases: a map page with no key on the environment, and a page with no key slot at all.
+    await rm(join(beatDir, "renders", "still.png"));
+    await rm(join(beatDir, "renders", "still.svg"));
+    await writeFile(join(beatDir, "renders", "map.html"), mapPage);
+
+    await materialise({
+      form: "owned-file",
+      format: "web",
+      beatDir,
+      exportDir,
+      env: {},
+      handover,
+    });
+    expect(existsSync(join(exportDir, "keyed"))).toBe(false);
+
+    await rm(join(beatDir, "renders", "map.html"));
+    await writeFile(join(beatDir, "renders", "chart.html"), chartPage);
+    await materialise({
+      form: "owned-file",
+      format: "web",
+      beatDir,
+      exportDir,
+      env: { MAPTILER_KEY: "development-key" },
+      handover,
+    });
+    expect(existsSync(join(exportDir, "keyed"))).toBe(false);
   });
 
   it("should say the map is not live when no key was recorded at all", async () => {

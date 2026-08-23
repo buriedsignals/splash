@@ -317,14 +317,75 @@ export function ownedFileDelivery(names, format) {
   return { delivered, withheld };
 }
 
-// One file into the export, with the HTML path's key substitution and its `mapKeyState` reading.
-// Split out of `copyTree` so the owned-file branch can copy a CHOSEN set without re-implementing
-// either.
-async function copyDeliverable(srcPath, destPath, written, { env = process.env, states = [] } = {}) {
+/**
+ * THE THIRD STATE — where a keyed page goes when both of the two rules are right.
+ *
+ * D1, measured on a real map x web delivery and measured BOTH ways: with the delivered file as
+ * delivered, `splash/test/no-key-in-the-repository.test.ts` goes red naming it; with the placeholder
+ * put back by hand, `map-web/test/the-handover-agrees-about-the-key.test.ts` goes red because the
+ * hand-over said the page carried a key and the page in the tree did not. The report concluded there
+ * was no third state. There is, and the two rules point straight at it: the guard's own header says
+ * it scans what a `git add -A` would commit, "`--exclude-standard` means anything genuinely ignored
+ * … is still out of scope, and the distinction the guard draws is between committable and not".
+ *
+ * So a keyed delivery writes TWO files, and they are different by construction:
+ *
+ *   export/<beat>/<page>.html          the RECORD.   Placeholder. Committed, and committable.
+ *   export/<beat>/keyed/<page>.html    the DELIVERY. Keyed. Not committable, and cannot become so.
+ *
+ * WHAT MAKES THE SECOND ONE UN-COMMITTABLE IS ITS OWN FILE, not a line in a shared `.gitignore` at
+ * the root. `keyed/.gitignore` holding `*` ignores the directory's whole contents INCLUDING ITSELF,
+ * so the directory never appears in `git status`, in `git ls-files --others --exclude-standard`, or
+ * in anything derived from either — `discoverMapWebPages()` walks `git ls-files` and cannot see it,
+ * so the keyed copy joins no population and is judged by no sweep. It travels with the delivery
+ * rather than depending on a repository-wide file three agents edit at once, and it is written
+ * fresh on every `materialise`, so a delivery that is moved or copied carries its own protection.
+ *
+ * AND IT OBSERVES ITS OWN FAILURE. Delete the ignore file and the keyed page becomes committable,
+ * at which point R1b's value scan and its value-INDEPENDENT style-URL scan both redden on it
+ * immediately — the same guard that was red before, now red for the right reason.
+ * `test/the-keyed-copy-cannot-be-committed.test.ts` drives `git status --porcelain` over a real
+ * delivery to prove it, and drives it again with the ignore file removed to prove the proof works.
+ *
+ * WHY NOT SOMEWHERE OUTSIDE THE REPOSITORY ALTOGETHER, which was the first shape considered. Because
+ * `delivery-identity.mjs` refuses every path that escapes the declared stories root, on purpose, and
+ * a keyed file loose on the filesystem with no receipt beside it is a worse secret than one git
+ * cannot see: nothing names it, nothing cleans it up, and the journalist has to be told a path
+ * instead of opening the folder they are already in.
+ */
+export const KEYED_DELIVERY_DIR = "keyed";
+
+/** `*` ignores everything in this directory, itself included, so git never learns the directory is
+ *  there. Written by every delivery that substitutes a key, never assumed to exist. */
+const KEYED_DELIVERY_IGNORE = "# Written by the delivery. The page beside this file carries a live\n# API key: it is delivered to the newsroom and never committed.\n*\n";
+
+// One file into the export, and — when a key was actually substituted — a second, keyed copy into
+// the ignored `keyed/` directory beside it. Split out of `copyTree` so the owned-file branch can
+// copy a CHOSEN set without re-implementing either.
+//
+// THE RECORD IS WRITTEN FIRST AND WITHOUT THE SUBSTITUTION. Until 2026-08-23 this wrote
+// `substituteKeys(html, env)` into the export, which is inside the repository, so a successful
+// keyed delivery could not be committed at all.
+async function copyDeliverable(
+  srcPath,
+  destPath,
+  written,
+  { env = process.env, states = [], keyedRoot = null, exportDir = null, keyed = [] } = {},
+) {
   if (srcPath.endsWith(".html")) {
     const html = await readFile(srcPath, "utf8");
     states.push(mapKeyState(html, env));
-    await writeFile(destPath, substituteKeys(html, env));
+    await writeFile(destPath, html);
+    const substituted = substituteKeys(html, env);
+    // A substitution that changed nothing is not a keyed delivery: no slot in the file, or no key on
+    // the environment. Deciding on the BYTES rather than on the state keeps the two from drifting.
+    if (keyedRoot && exportDir && substituted !== html) {
+      const keyedPath = join(keyedRoot, relative(exportDir, destPath));
+      await mkdir(dirname(keyedPath), { recursive: true });
+      await writeFile(join(keyedRoot, ".gitignore"), KEYED_DELIVERY_IGNORE);
+      await writeFile(keyedPath, substituted);
+      keyed.push(keyedPath);
+    }
   } else {
     await copyFile(srcPath, destPath);
   }
@@ -344,7 +405,8 @@ async function copyDeliverable(srcPath, destPath, written, { env = process.env, 
  * The symbolic-link refusal is made over EVERY entry, delivered or not, so withholding a file
  * cannot also withhold that refusal.
  */
-async function copyOwnedFiles(rendersDir, destDir, written, format, { env = process.env, states = [] } = {}) {
+async function copyOwnedFiles(rendersDir, destDir, written, format, options = {}) {
+  const { env = process.env, states = [] } = options;
   const found = [];
   const kept = [];
   const withheld = [];
@@ -366,7 +428,7 @@ async function copyOwnedFiles(rendersDir, destDir, written, format, { env = proc
           continue;
         }
         await mkdir(outDir, { recursive: true });
-        await copyDeliverable(srcPath, join(outDir, entry.name), written, { env, states });
+        await copyDeliverable(srcPath, join(outDir, entry.name), written, options);
         kept.push(label);
       }
     }
@@ -391,7 +453,7 @@ async function copyOwnedFiles(rendersDir, destDir, written, format, { env = proc
 // not throw EISDIR.
 // `states` collects one `mapKeyState` per HTML file copied, so the hand-over can state what the
 // delivery actually carries rather than what the environment happens to hold.
-async function copyTree(srcDir, destDir, written, { env = process.env, states = [] } = {}) {
+async function copyTree(srcDir, destDir, written, options = {}) {
   await mkdir(destDir, { recursive: true });
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name);
@@ -399,9 +461,9 @@ async function copyTree(srcDir, destDir, written, { env = process.env, states = 
     if (entry.isSymbolicLink()) {
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env, states });
+      await copyTree(srcPath, destPath, written, options);
     } else {
-      await copyDeliverable(srcPath, destPath, written, { env, states });
+      await copyDeliverable(srcPath, destPath, written, options);
     }
   }
 }
@@ -853,12 +915,21 @@ function sameSentence(left, right) {
   return flattenSentence(left) === flattenSentence(right);
 }
 
-async function withHandover(written, { exportDir, format, handover, states = [] }) {
+async function withHandover(written, { exportDir, format, handover, states = [], keyed = [] }) {
   if (!handover) throw new Error(HANDOVER_REQUIRED);
   const path = join(exportDir, "HANDOVER.md");
   await writeFile(
     path,
-    formatHandover({ ...handover, format, files: written, liveTiles: costliestState(states) }),
+    formatHandover({
+      ...handover,
+      format,
+      files: written,
+      liveTiles: costliestState(states),
+      // The keyed copies, as the journalist sees them from inside their own export folder —
+      // `keyed/<page>.html`. The hand-over attests to the SUBSTITUTION and names both copies; it
+      // never restates the key, which is the one thing a committed document may not carry.
+      keyed: keyed.map((file) => `${KEYED_DELIVERY_DIR}/${basename(file)}`),
+    }),
   );
   written.push(path);
   return written;
@@ -1052,10 +1123,16 @@ async function materialiseInto({
   // One `mapKeyState` per HTML file this delivery writes — read for the hand-over, never for a
   // verdict. Nothing in this function refuses over a key.
   const states = [];
+  // Every keyed copy this delivery writes into `keyed/`, so the hand-over can name the file the
+  // newsroom publishes rather than the file it keeps. Empty on every delivery that substitutes
+  // nothing, which is every delivery of a beat that is not a live map.
+  const keyed = [];
+  const keyedRoot = join(exportDir, KEYED_DELIVERY_DIR);
+  const copying = { env, states, keyed, keyedRoot, exportDir };
 
   if (form === "owned-file") {
-    await copyOwnedFiles(join(beatDir, "renders"), exportDir, written, format, { env, states });
-    return withHandover(written, { exportDir, format, handover, states });
+    await copyOwnedFiles(join(beatDir, "renders"), exportDir, written, format, copying);
+    return withHandover(written, { exportDir, format, handover, states, keyed });
   }
 
   if (form === "embed") {
@@ -1073,7 +1150,14 @@ async function materialiseInto({
     // The hosted copy carries the key too, or a live map beat would deploy a page whose live layer
     // can never boot. Written into the export directory first so what is deployed is a real file on
     // disk that can be inspected, never a string only this function ever saw.
-    const stagedPath = join(exportDir, fileName);
+    // STAGED INSIDE `keyed/`, NOT AT THE ROOT OF THE EXPORT. The hosted copy carries the key, and a
+    // keyed file at the export root is committable for as long as it exists — the `rm` below is a
+    // promise about a happy path, and a delivery that throws between here and there used to leave a
+    // live key sitting where the next `git add -A` would sweep it up. The ignore file goes down with
+    // it, so the window does not exist at all.
+    const stagedPath = join(keyedRoot, fileName);
+    await mkdir(keyedRoot, { recursive: true });
+    await writeFile(join(keyedRoot, ".gitignore"), KEYED_DELIVERY_IGNORE);
     const sourcePath = join(beatDir, "renders", fileName);
     const hosted = await readFile(sourcePath, "utf8");
     const confirmedBytes = await readFile(sourcePath, "utf8");
@@ -1104,7 +1188,10 @@ async function materialiseInto({
       fetchFn,
     });
     hostedOperation.result = deployment;
-    await rm(stagedPath, { force: true });
+    // The staging directory goes with the file. A hosted embed has nothing local to keep — the URL
+    // IS the delivery — so leaving an empty `keyed/` behind would put a folder in the journalist's
+    // export that promises a file nobody wrote.
+    await rm(keyedRoot, { recursive: true, force: true });
     // A hosted embed has no local file to keep — the URL IS the delivery. Mirrors the sibling
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
@@ -1169,7 +1256,7 @@ async function materialiseInto({
       )}\n`,
     );
     written.push(deploymentPath);
-    return withHandover(written, { exportDir, format, handover, states });
+    return withHandover(written, { exportDir, format, handover, states, keyed });
   }
 
   if (form === "cms-insertion") {
@@ -1208,7 +1295,7 @@ ${JSON.stringify(insertion, null, 2)}
     const docPath = join(exportDir, "CMS-INSERTION.md");
     await writeFile(docPath, doc);
     written.push(docPath);
-    return withHandover(written, { exportDir, format, handover, states });
+    return withHandover(written, { exportDir, format, handover, states, keyed });
   }
 
   for (const entry of await readdir(beatDir, { withFileTypes: true })) {
@@ -1218,7 +1305,7 @@ ${JSON.stringify(insertion, null, 2)}
     if (entry.isSymbolicLink()) {
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env, states });
+      await copyTree(srcPath, destPath, written, copying);
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
@@ -1246,7 +1333,7 @@ ${JSON.stringify(insertion, null, 2)}
   );
   written.push(manifestPath);
 
-  return withHandover(written, { exportDir, format, handover, states });
+  return withHandover(written, { exportDir, format, handover, states, keyed });
 }
 
 /**
