@@ -1,0 +1,42 @@
+20,"t","Honey: Released March 13, 2026, by the National Agricultural Statistics Service (NASS), Agricultural Statistics Board, United States Department of Agriculture (USDA)."
+20,"t","Colonies, Yield, Production, Stocks, Price, and Value � States and United States: 2025"
+20,"t","[Colonies which produced honey in more than one State were counted in each State]"
+20,"h","","","","","","",""
+20,"h","","Honey","Yield","","","Average","Value"
+20,"h","State","producing","per","Production","Stocks","price per","of"
+20,"h","","colonies 1/","colony","","December 15 2/","pound 3/","production 4/"
+20,"h","","","","","","",""
+20,"u","","(1,000)","(pounds)","(1,000 pounds)","(1,000 pounds)","(dollars)","(1,000 dollars)"
+20,"d","California",315,35,11025,2426,2.57,28334
+20,"d","Florida",113,32,3616,723,3.94,14247
+20,"d","Georgia",67,32,2144,429,3.68,7890
+20,"d","Idaho",104,29,3016,754,2.07,6243
+20,"d","Iowa",34,62,2108,843,5.43,11446
+20,"d","Louisiana",62,53,3286,887,2.47,8116
+20,"d","Michigan",89,42,3738,748,3.27,12223
+20,"d","Minnesota",113,50,5650,2656,2.38,13447
+20,"d","Mississippi",25,89,2225,200,2.32,5162
+20,"d","Montana",123,85,10455,3346,2.18,22792
+20,"d","",,,,,,
+20,"d","New York",52,56,2912,1077,5.14,14968
+20,"d","North Carolina",16,42,672,161,7.99,5369
+20,"d","North Dakota",460,67,30820,5856,1.89,58250
+20,"d","Ohio",17,45,765,474,6.45,4934
+20,"d","Oregon",87,27,2349,916,2.09,4909
+20,"d","Pennsylvania",25,57,1425,456,4.33,6170
+20,"d","South Dakota",205,40,8200,5658,2.44,20008
+20,"d","Texas",72,30,2160,1080,3.91,8446
+20,"d","Washington",66,31,2046,818,4.36,8921
+20,"d","Wisconsin",50,30,1500,1140,4.52,6780
+20,"d","",,,,,,
+20,"d","Other States 5/ 6/",317,49,15604,4192,3.75,58515
+20,"d","",,,,,,
+20,"d","United States 6/ 7/",2412,48.0,115716,34840,3.05,352934
+20,"c",""
+20,"f","1/ Honey producing colonies are the maximum number of colonies from which honey was harvested during the year. It is possible to harvest honey from colonies which did not survive the entire year."
+20,"f","2/ Stocks held by producers."
+20,"f","3/ Average price per pound based on expanded sales."
+20,"f","4/ Value of production is equal to production multiplied by average price per pound."
+20,"f","5/ Includes data for States not published in this table."
+20,"f","6/ Due to rounding, total colonies multiplied by total yield may not exactly equal production."
+20,"f","7/ United States value of production will not equal summation of States."

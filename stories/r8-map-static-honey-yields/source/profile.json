@@ -1,0 +1,78 @@
+{
+  "rowCount": 41,
+  "columns": [
+    {
+      "name": "20",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 20,
+      "max": 20,
+      "sum": 820,
+      "gaps": null
+    },
+    {
+      "name": "t",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Honey: Released March 13, 2026, by the National Agricultural Statistics Service (NASS), Agricultural Statistics Board, United States Department of Agriculture (USDA).",
+      "type": "text",
+      "missing": 9,
+      "distinct": 32,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 2,
+    "rows": [
+      {
+        "values": [
+          "20",
+          "h",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "indices": [
+          2,
+          6
+        ],
+        "occurrences": 2
+      },
+      {
+        "values": [
+          "20",
+          "d",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "indices": [
+          18,
+          29,
+          31
+        ],
+        "occurrences": 3
+      }
+    ]
+  },
+  "panel": null
+}
