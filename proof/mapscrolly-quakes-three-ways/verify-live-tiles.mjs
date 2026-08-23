@@ -65,15 +65,29 @@ function resolveChrome() {
   return found;
 }
 
+/** THE SAME ALIAS LIST EVERY `bake.mjs` IN THIS TREE CARRIES, and the reason this file has one at
+ *  all: it read a bare `MAPTILER_KEY=` off the root `.env`, which names the credential
+ *  `REMOTION_MAPTILER_KEY` and `VITE_MAPTILER_KEY` — the engine's own names — and nothing else. So
+ *  this instrument threw "no MAPTILER_KEY" against a real, present key and could not be run at all;
+ *  found 2026-08-23 while driving the wrap ruling. It is the exact defect `credentialReadsWithoutAlias`
+ *  is catalogued for, in a beat file rather than in a skill, where that guard's scan does not reach.
+ *  A duplicate rather than an import: a beat directory stays copy-pasteable on its own. */
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+
 /** The key, read from the SAME `.env` this beat's own plate was baked with (the twin root, two
  *  directories up). One home, and it is the sibling beats' own existing convention rather than a
  *  second path invented here. */
 function readKey() {
   const env = join(HERE, "../../.env");
   if (!existsSync(env)) throw new Error(`no .env at ${env}: this probe needs a real MAPTILER_KEY`);
-  const line = readFileSync(env, "utf8").split(/\r?\n/).find((l) => l.startsWith("MAPTILER_KEY="));
-  if (!line) throw new Error(`no MAPTILER_KEY in ${env}`);
-  return line.slice("MAPTILER_KEY=".length).trim();
+  const text = readFileSync(env, "utf8").split(/\r?\n/);
+  for (const name of ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES]) {
+    const line = text.find((l) => l.startsWith(`${name}=`));
+    if (line) return line.slice(name.length + 1).trim();
+  }
+  throw new Error(
+    `no MapTiler key in ${env} under MAPTILER_KEY or any of ${MAPTILER_KEY_ALIASES.join(", ")}`,
+  );
 }
 
 /** The keyed page, written OUTSIDE the tree. The committed file keeps the placeholder. */

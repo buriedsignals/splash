@@ -1498,7 +1498,9 @@ before. On a NARROW box it is not free, and this vehicle's graphic is the whole 
 gives it a 0.643 box against a 1.608 plate. Filling that height means showing 143.8° of longitude
 centred on 0° — and this beat's own first sentence reads *"Every earthquake of magnitude 4.0 and
 above the USGS catalogued in 2024: 14,057 of them, one dot each."* Measured against the catalogue:
-that crop holds **2,809 of 14,130 on-frame events, 19.9%**. At 768x1024 it holds 4,435, 31.4%.
+that crop holds **2,758 of the 14,044 events inside this camera's own declared bounds, 19.6%**. At
+768x1024 it holds 4,384, 31.2%. (The beat's own projected count is 14,057; the 13 it and this
+arithmetic disagree about are at the latitude edge and move neither number by a tenth of a point.)
 
 So a narrow box keeps the letterbox — 100% of the width, 52.5% and 40.0% of the height — and that is
 the right answer, not a shortfall to be closed later. A picture that fills its box and contradicts
