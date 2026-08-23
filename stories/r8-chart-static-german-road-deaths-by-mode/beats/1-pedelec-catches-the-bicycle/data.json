@@ -1,0 +1,67 @@
+{
+  "years": [
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "seriesBeginsIn": 2014,
+  "pedelec": [
+    39,
+    36,
+    62,
+    68,
+    89,
+    118,
+    142,
+    131,
+    208,
+    190,
+    195,
+    214
+  ],
+  "bicycle": [
+    357,
+    347,
+    331,
+    314,
+    356,
+    327,
+    284,
+    241,
+    266,
+    256,
+    250,
+    248
+  ],
+  "allRoadDeaths": [
+    3377,
+    3459,
+    3206,
+    3180,
+    3275,
+    3046,
+    2719,
+    2562,
+    2788,
+    2839,
+    2770,
+    2832
+  ],
+  "row": "Innerhalb und außerhalb von Ortschaften",
+  "columns": {
+    "pedelec": "Getoetete_Pedelecs_ab_2014",
+    "bicycle": "Getoetete_Fahrraeder_ohne_Elektroantrieb_ab_2014",
+    "retired": "Getoetete_Fahrraeder_bis_2013",
+    "total": "Getoetete_Insgesamt"
+  },
+  "lastYearOfTheRetiredColumn": 2013
+}
