@@ -41,16 +41,133 @@ import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
  *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
 export const GUARDS = ["marksStrandedWithNoChannel"];
 
-/** The container widths a producer is answered at. Four, not one, because the answer changes with
- *  the container — measured on the world beat: 75 marks with no pointer path at the widest and 124
- *  at the narrowest, over the same geometry. The narrow end is where a world map stops being a map
- *  and becomes a table, and a producer who is only told the desktop number never learns that. */
-export const READING_WIDTHS = [1600, 1024, 768, 375];
+/** The reader's WINDOW a producer is answered at — a shape, not a width, and that is the correction
+ *  of 2026-08-23.
+ *
+ *  Four, not one, because the answer changes with the container: measured on the world beat, 75
+ *  marks with no pointer path at the widest and 124 at the narrowest over the same geometry. The
+ *  narrow end is where a world map stops being a map and becomes a table, and a producer who is
+ *  only told the desktop number never learns that.
+ *
+ *  WHY A HEIGHT BELONGS HERE AT ALL. This format's stage takes the whole window on BOTH axes
+ *  (`render-web.mjs`, "THE GRAPHIC TAKES THE WHOLE BOX"), so how wide the map is DRAWN is decided
+ *  by the box, and the box's height is decided by the window's height less the page's own
+ *  furniture. A reading set that carried widths alone was answering about a box nobody has. */
+export const READING_VIEWPORTS = [
+  { width: 1600, height: 900 },
+  { width: 1024, height: 768 },
+  { width: 768, height: 1024 },
+  { width: 375, height: 667 },
+];
+
+/** The widths of `READING_VIEWPORTS`, derived rather than typed beside them — `render-web.mjs`'s
+ *  verdict loop reads this and prints one sentence per width. Two lists typed by hand is how a
+ *  reading set and the verdict about it come apart. */
+export const READING_WIDTHS = READING_VIEWPORTS.map((viewport) => viewport.width);
 
 /** The page padding this format's own stage spends before the map is drawn — `.map-web-page`'s own,
  *  stated here rather than parsed out of the CSS, exactly as `render-web.mjs`'s colliding-target
  *  verdict states it. */
 export const PAGE_PADDING_PX = 32;
+
+/** `.mw-viewport`'s own border, one pixel each side. It is here because it was WRONG by exactly this
+ *  much and the browser said so: `container-type: size` measures the CONTENT box, so every `cqh`
+ *  inside the viewport resolves against `boxHeight - 2`, not against the box a `getBoundingClientRect`
+ *  reports. Measured on the rabies world beat at 1600x900 — border box 583.5, one world drawn
+ *  1042.3; 583.5 x 1.79257 is 1045.9 and 581.5 x 1.79257 is 1042.4. Two pixels of border, three and
+ *  a half pixels of map. */
+export const BOX_BORDER_PX = 1;
+
+/** `.mw-stage`'s own `min-height`, which is a real floor and not a hint: on a short window the stage
+ *  stops giving up height and the page scrolls instead. Measured at 375x667 across this format's
+ *  whole delivered population — five of fourteen pages sit at exactly 180. */
+export const STAGE_MIN_HEIGHT_PX = 180;
+
+/**
+ * THE VERTICAL ROOM A MAP-WEB PAGE'S OWN FURNITURE TAKES, per reading viewport — the one term of the
+ * box arithmetic that a string cannot be read for, and the reason this reading is an estimate.
+ *
+ * A page's title, its source line, its legend, its caption, its note and its table summary are text.
+ * How tall they are depends on where the words wrap, which is a browser's answer and not a
+ * stylesheet's. So the census cannot compute the box; it can only bound it.
+ *
+ * THE NUMBER IS THE MOST THIS FORMAT'S OWN PAGES SPEND, not an average and not a guess — the
+ * shortest box any delivered page in this population is drawn into, therefore the NARROWEST world
+ * and therefore the MOST stranded marks. That direction is deliberate: a count that is wrong low
+ * tells a journalist the map is better than it is, and the count exists so they can tighten the
+ * camera or add an inset.
+ *
+ * MEASURED 2026-08-23 in Chrome over all 14 pages `discoverMapWebPages()` finds, at these four
+ * viewports (`test/marks-smaller-than-a-pixel.test.ts` re-derives it and reddens if the population
+ * moves under it):
+ *
+ *   viewport   least   median   MOST   the page that spends the most
+ *   1600x900   166.0   290.3   333.6   r8-map-web-japan-bear-casualties
+ *   1024x768   166.0   306.8   347.6   r8-map-web-japan-bear-casualties
+ *   768x1024   180.0   315.0   390.6   r8-map-web-japan-bear-casualties
+ *    375x667   256.0   487.0   487.0   five pages, all of them clamped by STAGE_MIN_HEIGHT_PX
+ *
+ * WHAT IT IS WORTH, measured against the browser on the rabies world beat — census against a real
+ * `getBoundingClientRect` of one painted world: 41/41, 49/49, 38/38, 86/87. Before this, with the
+ * plate's own frame width as the cap, the same four read 36/41, 41/49, 50/38, 78/87 — wrong in both
+ * directions and wrong LOW on the two commonest desktop shapes.
+ */
+export const FURNITURE_HEIGHT_PX = { 1600: 333.6, 1024: 347.6, 768: 390.6, 375: 487.0 };
+
+/** The furniture allowance for a container width, from the table when it is one of the four and from
+ *  the NEAREST measured width when it is not. Nearest, not the maximum of all four: the table's
+ *  values climb as the window narrows and the words wrap more, so the maximum applied to a wide
+ *  window says a 1280px desktop is drawn in a phone's box. Measured on the world beat at 1280x800 —
+ *  the maximum answered 125 stranded against the browser's 91; the nearest width answers 104. Both
+ *  err high, which is the direction this count must err in; one of them errs high by a third. */
+export function furnitureAt(containerWidthPx) {
+  const widths = Object.keys(FURNITURE_HEIGHT_PX).map(Number);
+  const nearest = widths.reduce((best, width) =>
+    Math.abs(width - containerWidthPx) < Math.abs(best - containerWidthPx) ? width : best,
+  );
+  return FURNITURE_HEIGHT_PX[nearest];
+}
+
+/** The window this format answers about at a given container width, and the shape it assumes when
+ *  the width is not one of the four. 16:9 is named rather than left implicit — it is the ordinary
+ *  desktop window and the shape three of this tree's own capture scripts already drive. */
+export function viewportFor(containerWidthPx) {
+  return (
+    READING_VIEWPORTS.find((viewport) => viewport.width === containerWidthPx) ?? {
+      width: containerWidthPx,
+      height: Math.round((containerWidthPx * 9) / 16),
+    }
+  );
+}
+
+/** The CONTENT box the two plate layers measure themselves against, at one reading viewport — the
+ *  container less this format's page padding and less `.mw-viewport`'s own border on each axis, with
+ *  the stage's own `min-height` taking over on a window too short to give the room up. */
+export function boxAt(viewport, furnitureHeightPx = furnitureAt(viewport.width)) {
+  const furniture = furnitureHeightPx;
+  return {
+    width: viewport.width - PAGE_PADDING_PX - 2 * BOX_BORDER_PX,
+    height: Math.max(STAGE_MIN_HEIGHT_PX, viewport.height - furniture) - 2 * BOX_BORDER_PX,
+  };
+}
+
+/** HOW WIDE ONE WORLD IS DRAWN IN A BOX OF THIS SHAPE — the page's own two CSS expressions, in
+ *  arithmetic, and exact to a tenth of a pixel against the browser.
+ *
+ *  Cover (`render-web.mjs`: `width: max(100cqw, calc(100cqh * aspect))`) — the plate is scaled up
+ *  until it fills the box on both axes, so it is drawn `max(boxWidth, boxHeight * aspect)` and never
+ *  narrower than the box.
+ *
+ *  Wrap (`worldTilingCss`: `width: calc(100cqh * aspect * worldCopies)`, each `.mw-world` taking
+ *  `100% / worldCopies`) — one world is drawn at exactly `boxHeight * aspect`, whatever the box's
+ *  width, because a full-turn camera fills the width by REPEATING rather than by scaling.
+ *
+ *  Verified in Chrome on the rabies beat, box content height against one `.mw-world`'s measured
+ *  width: 581.5 -> 1042.4 (measured 1042.3), 633.2 -> 1135.0 (1135.0), 178.0 -> 319.1 (319.1). */
+export function drawnWidthInBox(box, frame, heightBound = false) {
+  const aspect = frame.width / frame.height;
+  return heightBound ? box.height * aspect : Math.max(box.width, box.height * aspect);
+}
 
 /** Is this delivered page's plate bound by the container's HEIGHT rather than by its width?
  *
@@ -73,40 +190,43 @@ export function plateIsBoundByHeight(html) {
   return /\.mw-fallback,\s*\.mw-overlay\s*\{[^}]*\bheight:\s*100cqh;/.test(html);
 }
 
-/** How wide the map is DRAWN at a given container width, in the fallback layer: the container less
- *  this format's page padding.
+/** HOW WIDE THE MAP IS DRAWN at one of this format's reading widths, in the fallback layer.
  *
- *  THE CAP CAME OFF ON 2026-08-23, and taking it off made this reading CORRECT rather than merely
- *  larger. It used to be `Math.min(container - padding, frame.width)`, because the plate was fitted
- *  INSIDE the box and `preserveAspectRatio` stopped scaling it up past its own frame. Two things
- *  were wrong with that even then: the box was ALSO bounded by the stage's height, which this never
- *  knew about, so on a near-square plate in a wide window it reported the frame's own width when the
- *  real drawn width was much smaller — measured on `proof/mapgen-dot-web` at 1600px, it answered
- *  1000px about a map drawn 704px wide, 42% too generous, and the specks it missed were real.
+ *  THE CAP CAME OFF ON 2026-08-23; THE CONTAINER'S HEIGHT WENT ON THE SAME DAY, AND THE SECOND HALF
+ *  IS WHAT MADE THE READING TRUE. Taking the cap off replaced `Math.min(container - padding,
+ *  frame.width)` with `container - padding`, which is exact for a COVER page and has nothing to do
+ *  with a WRAPPING one: there one world is drawn at the box's HEIGHT times the plate's aspect and
+ *  never scales with the container's width at all. The plate's own frame width was standing in for
+ *  a number nobody had.
  *
- *  Under the rule the owner set (`delivery-frame.mjs`), the box IS the container on both axes and
- *  the plate is scaled to COVER it, so the plate is drawn `max(boxWidth, boxHeight × plateAspect)`
- *  wide — never less than the box. `container - padding` is therefore a true floor at every box
- *  shape, and it is exact whenever the box is no wider than the plate.
+ *  WHAT THAT COST, MEASURED IN CHROME on the rabies world beat (194 regions, a 1400x781 plate, three
+ *  painted copies) — the census against a `getBoundingClientRect` of one painted world:
  *
- *  IT IS STILL A FLOOR, AND THE FLOOR IS STILL NAMED. The LIVE layer fits its camera to the reader's
- *  own container and draws NARROWER than this — measured on the world beat, canvas 896 / 640 / 263 px
- *  from containers of 1600x900, 1024x768 and 375x667. So the count this feeds is the fewest marks a
- *  reader loses, not the most. `scripts/verify-live-map.mjs` drives the real camera and prints the
- *  real number; this is what a producer can be told without a browser and without a key.
+ *    viewport    one world drawn   census said   stranded, census vs browser
+ *    1600x900          1042.3         1400.0            36  vs  41
+ *    1024x768           751.0          992.0            41  vs  49
+ *    768x1024          1135.0          736.0            50  vs  38
+ *     375x667           319.1          343.0            78  vs  87
  *
- *  `heightBound` is the WRAPPING page shape (`plateIsBoundByHeight` above): there one world is drawn
- *  at the box's height times the plate's aspect and never scales with the container's width, so the
- *  plate's own frame width is the cap — the same arithmetic the contained layout needed, for the
- *  same reason and about the same pixels. Measured on `real-owid-life-expectancy` at a 1600px
- *  container: this returns 1200 and one world is drawn 898px wide. It is optimistic by exactly that
- *  much, because the stage's height is not a thing a string can be read for; naming it is better
- *  than silently answering 1568, which is what a single uncapped reading would do — and the error
- *  runs in the safe direction, since a too-generous width can only UNDER-report a stranded mark on a
- *  page whose keyboard and table are what this then checks. */
+ *  Wrong in both directions, and wrong LOW on the two commonest desktop shapes — which is the
+ *  direction that flatters, and the direction this count may not err in. It is now derived from the
+ *  BOX (`boxAt`) and the page's own two CSS expressions (`drawnWidthInBox`), and reads 41 / 49 / 38
+ *  / 86 against the browser's 41 / 49 / 38 / 87.
+ *
+ *  IT IS STILL AN ESTIMATE, AND WHAT IS ESTIMATED IS NAMED. One term of the box is not in the file:
+ *  the height the page's own furniture takes, which depends on where its words wrap.
+ *  `FURNITURE_HEIGHT_PX` bounds it with the MOST this format's own delivered population spends, so
+ *  the box is the shortest a page here is drawn into and the count errs high rather than low. It is
+ *  not a proved bound: at 375x667 it read 86 against the browser's 87, a sub-pixel tie on one mark.
+ *
+ *  AND IT IS STILL A FLOOR AGAINST THE LIVE LAYER, which is a different claim from the old one. The
+ *  live camera fits the reader's own container and draws NARROWER than the fallback — measured on
+ *  the world beat, canvas 896 / 640 / 263 px from containers of 1600x900, 1024x768 and 375x667 — so
+ *  a reader of the live map loses more marks than this, not fewer. `scripts/verify-live-map.mjs`
+ *  drives the real camera and prints that number; this is what a producer can be told without a
+ *  browser and without a key. */
 export function drawnWidthAt(containerWidthPx, frame, heightBound = false) {
-  const box = containerWidthPx - PAGE_PADDING_PX;
-  return heightBound ? Math.min(box, frame.width) : box;
+  return drawnWidthInBox(boxAt(viewportFor(containerWidthPx)), frame, heightBound);
 }
 
 /** The map's own frame and drawn rings, read out of the delivered page.
@@ -239,39 +359,57 @@ export function marksStrandedWithNoChannel(html, drawnWidthPx) {
   return { of: drawnMarks.length, stranded, withoutARow, withoutAKeyboardTarget, unreachable };
 }
 
-/** The sentence a producer reads at one container width — the verdict, said the way the
- *  colliding-target verdict already is, because a number nobody is shown is the same as no number. */
+/** The sentence a producer reads at one reading viewport — the verdict, said the way the
+ *  colliding-target verdict already is, because a number nobody is shown is the same as no number.
+ *
+ *  IT NO LONGER SAYS "THIS IS A FLOOR", AND THAT SENTENCE WAS THE DEFECT. It was a positive claim —
+ *  the real count is higher than this — and on a wrapping page it was false: the reading was wrong
+ *  LOW at 1600x900 (36 said, 41 drawn) and wrong HIGH at 768x1024 (50 said, 38 drawn), because the
+ *  drawn width was capped at the plate's own frame and the box's height was never looked at. A
+ *  verdict that names the wrong side of a number is worse than one that names none. What it says
+ *  now is what is true of it: an ESTIMATE of the fallback layer, taken at the shortest box this
+ *  format's own pages are drawn into so that it errs high rather than low, and still a floor against
+ *  the LIVE layer, whose camera is narrower again. */
 export function strandedVerdict(containerWidthPx, found) {
   const marks = found.of;
+  const viewport = viewportFor(containerWidthPx);
+  const at = `${viewport.width}x${viewport.height}`;
   if (found.stranded.length === 0)
-    return `no pointer path at ${containerWidthPx}px: every one of the ${marks} marks is drawn at least one whole pixel of its own`;
+    return `no pointer path at ${at}: every one of the ${marks} marks is drawn at least one whole pixel of its own`;
   const names = found.stranded.slice(0, 6).join(", ");
   return (
-    `no pointer path at ${containerWidthPx}px: ${found.stranded.length} of ${marks} marks are drawn ` +
+    `no pointer path at ${at}: ${found.stranded.length} of ${marks} marks are drawn ` +
     `smaller than a pixel (${names}${found.stranded.length > 6 ? ", …" : ""}) — NO pointer, tap or ` +
     `hover reaches them at this camera and no hit target can be made that does. The keyboard and the ` +
     `accessible table ARE their path. Tighten the camera, add an inset, or accept it knowingly and ` +
-    `say so in the caveat. This is a floor: the live layer fits a narrower canvas than the fallback, ` +
-    `so the real count is higher — scripts/verify-live-map.mjs prints it.`
+    `say so in the caveat. This number is an estimate of the FALLBACK layer at the shortest box this ` +
+    `format's pages take, so it errs high rather than low (measured against Chrome on a 194-region ` +
+    `world beat: 41/41, 49/49, 38/38, 86/87). The LIVE layer fits a narrower canvas still, so a ` +
+    `reader of the live map loses more than this — scripts/verify-live-map.mjs prints that count.`
   );
 }
 
 /** What a render REFUSES over, across every width a reader gets. Returns the message to throw, or
  *  null when every stranded mark still has both of its remaining channels. */
-export function strandedRefusal(html, widths = READING_WIDTHS) {
+export function strandedRefusal(html, viewports = READING_VIEWPORTS) {
   const drawn = drawnRegionsOf(html);
   if (!drawn || drawn.shapes.length === 0) return null;
   const heightBound = plateIsBoundByHeight(html);
   const reasons = [];
-  for (const width of widths) {
-    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, heightBound));
+  // A NUMBER OR A SHAPE, both accepted, because this is called from four copies of `render-web.mjs`
+  // and one of them may still hand it the old width list. A bare width is read as this format's own
+  // window of that width (`viewportFor`), never as a box of unknown height.
+  for (const shape of viewports) {
+    const viewport = typeof shape === "number" ? viewportFor(shape) : shape;
+    const width = `${viewport.width}x${viewport.height}`;
+    const found = marksStrandedWithNoChannel(html, drawnWidthInBox(boxAt(viewport), drawn.frame, heightBound));
     if (found.unreachable.length === 0) continue;
     const rows = found.withoutARow.length > 0 ? `no row in the accessible table for ${found.withoutARow.join(", ")}` : null;
     const keys =
       found.withoutAKeyboardTarget.length > 0
         ? `no keyboard target for ${found.withoutAKeyboardTarget.join(", ")}`
         : null;
-    reasons.push(`at ${width}px — ${[rows, keys].filter(Boolean).join("; ")}`);
+    reasons.push(`at ${width} — ${[rows, keys].filter(Boolean).join("; ")}`);
   }
   if (reasons.length === 0) return null;
   return (

@@ -25,21 +25,31 @@
  * Both halves are measured here against the real page, never against a fixture alone.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { createElement } from "react";
 import { renderMapWeb } from "../scripts/render-web.mjs";
 import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
 import {
+  BOX_BORDER_PX,
+  FURNITURE_HEIGHT_PX,
+  PAGE_PADDING_PX,
+  READING_VIEWPORTS,
   READING_WIDTHS,
+  STAGE_MIN_HEIGHT_PX,
   announcedMarksOf,
+  boxAt,
   plateIsBoundByHeight,
   drawnRegionsOf,
   drawnWidthAt,
+  drawnWidthInBox,
+  furnitureAt,
   marksStrandedWithNoChannel,
   strandedRefusal,
   strandedVerdict,
+  viewportFor,
 } from "../scripts/detect-stranded-marks.mjs";
 import { TWIN, discoverMapWebPages } from "../scripts/discover-pages.mjs";
 
@@ -294,11 +304,18 @@ describe("every delivered page in this format, swept", () => {
     // Luxembourg are all drawn under a pixel here at 1600px; the keyboard and the table are their
     // path, and this beat's own brief no longer claims a reader can hover any of the 42.
     expect(counted.get("proof/mapgen-dot-web/dot-population.html")).toBe(3);
+    // 75 -> 89 on 2026-08-23. The reading did not get stricter; it stopped answering about a box
+    // nobody has. This beat WRAPS, so one world is drawn at the box's HEIGHT times the plate's
+    // aspect and never at the container's width — the browser draws it 894.8px wide in a 1600x900
+    // window and the old reading said 1200, which is the plate's own frame and not a width anything
+    // is drawn at. Measured against Chrome: 89 said against 84 drawn, erring high; before, 75 said
+    // against 84 drawn, erring LOW, which is the direction a count a journalist acts on may not err
+    // in.
     expect(
       counted.get(
         "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",
       ),
-    ).toBe(75);
+    ).toBe(89);
     // 3 -> 2 on 2026-08-23, and the mark that left was never really a speck. `drawnWidthAt` used to
     // cap the drawn width at the plate's own frame and knew nothing about the stage's height, so on
     // this beat at a 1600px container it answered 496px about a map the browser drew 739px wide.
@@ -313,12 +330,15 @@ describe("every delivered page in this format, swept", () => {
     const world = pages.find((page) =>
       page.rel.includes("life-expectancy-2023.html"),
     )!;
+    // 124 -> 148, and this one is EXACT rather than merely better: at 375x667 the stage hits its own
+    // `min-height: 180px`, so the box height is a number the CSS states outright and the census and
+    // the browser both read 148 of 241.
     expect(
       marksStrandedWithNoChannel(
         world.html,
         drawnWidthAt(375, { width: 1200, height: 815 }, true),
       ).stranded.length,
-    ).toBe(124);
+    ).toBe(148);
   });
 
   it("leaves not one of those marks unreachable by every channel", () => {
@@ -426,8 +446,10 @@ describe("the refusal, proven on the real page by taking a channel away", () => 
       "",
     );
     const refusal = strandedRefusal(withoutMonacosRow)!;
-    for (const width of READING_WIDTHS)
-      expect(refusal).toContain(`at ${width}px`);
+    // A SHAPE, NOT A WIDTH. The refusal names the window it read, both axes, because the box's
+    // height is half of what decides whether a mark is drawn at all.
+    for (const viewport of READING_VIEWPORTS)
+      expect(refusal).toContain(`at ${viewport.width}x${viewport.height}`);
   });
 });
 
@@ -461,15 +483,26 @@ describe("the producer is told, at production time", () => {
         drawnWidthAt(1600, { width: 1200, height: 815 }, true),
       ),
     );
-    expect(said).toContain("75 of 241 marks are drawn smaller than a pixel");
+    expect(said).toContain("89 of 241 marks are drawn smaller than a pixel");
     expect(said).toContain("MCO");
     expect(said).toContain(
       "The keyboard and the accessible table ARE their path",
     );
-    // AND THE NUMBER IS SAID TO BE A FLOOR. The live layer fits a narrower canvas than the fallback
-    // — 896px against 1200 at a 1600px container, measured — so the real count is higher (90, not
-    // 75). A producer given a number with no idea which side it errs on cannot act on it.
-    expect(said).toContain("floor");
+    // AND THE NUMBER SAYS WHICH SIDE IT ERRS ON — but no longer the side it used to claim.
+    //
+    // It said "This is a floor". That was a positive statement about the fallback reading and it was
+    // FALSE: measured in Chrome on the rabies world beat, the census read 36 where the browser drew
+    // 41 at 1600x900 and 50 where the browser drew 38 at 768x1024. Wrong in both directions, and
+    // wrong LOW on the two commonest desktop shapes. Recurring shape 3, in a verdict: a claim that
+    // reads as a confirmation rather than as the uncertainty it actually carries.
+    //
+    // What it says now is what is true of it — an ESTIMATE of the fallback, taken at the shortest
+    // box this format's own pages are measured into so it errs high; and STILL a floor against the
+    // LIVE layer, whose camera is narrower again (894.8px of world here against a 1568px stage).
+    expect(said).toContain("estimate of the FALLBACK layer");
+    expect(said).toContain("errs high rather than low");
+    expect(said).toContain("verify-live-map.mjs");
+    expect(said).not.toContain("This is a floor");
   });
 
   it("has nothing to say about a beat whose marks are not regions", () => {
@@ -586,3 +619,228 @@ describe("renderMapWeb refuses to write a page that strands a mark", () => {
     expect(written).toBe(false);
   });
 });
+
+/**
+ * THE GAP BETWEEN WHAT THE CENSUS SAYS AND WHAT A BROWSER DRAWS — established, and then closed.
+ *
+ * The census reported 33 stranded marks on the rabies world beat where the browser measured 40 (36
+ * against 41 once that beat's wrap was fixed). A count that is wrong LOW tells a journalist the map
+ * is better than it is, and the count exists so they can tighten the camera or add an inset. The
+ * cause was one term: the map's DRAWN width was read off the container's width and the plate's own
+ * frame, and on a wrapping page it is neither — one world is drawn at the BOX's height times the
+ * plate's aspect.
+ *
+ * Below: the arithmetic, pinned against real `getBoundingClientRect` readings, and then the
+ * population sweep that keeps the one term this cannot compute honest.
+ */
+describe("the drawn width is the box's arithmetic, not the container's", () => {
+  it("draws one world at the box's height times the plate's aspect when the page wraps", () => {
+    // Chrome, rabies world beat (plate 1400x781, aspect 1.79257), box content heights against the
+    // measured width of one `.mw-world`: 581.5 -> 1042.3, 633.2 -> 1135.0, 178.0 -> 319.1.
+    const frame = { width: 1400, height: 781 };
+    expect(drawnWidthInBox({ width: 1566, height: 581.5 }, frame, true)).toBeCloseTo(1042.3, 0);
+    expect(drawnWidthInBox({ width: 734, height: 633.2 }, frame, true)).toBeCloseTo(1135.0, 0);
+    expect(drawnWidthInBox({ width: 341, height: 178 }, frame, true)).toBeCloseTo(319.1, 0);
+  });
+
+  it("ignores the container's width on a wrapping page, which is the whole defect", () => {
+    // The same box height in a container twice as wide draws the same world. The old reading
+    // returned `min(container - padding, frame.width)` and moved with the container.
+    const frame = { width: 1400, height: 781 };
+    expect(drawnWidthInBox({ width: 700, height: 581.5 }, frame, true)).toBe(
+      drawnWidthInBox({ width: 2900, height: 581.5 }, frame, true),
+    );
+  });
+
+  it("covers the box on a page that does not wrap, and is never narrower than it", () => {
+    // Chrome, `proof/mapgen-dot-web` at 1600x900: box 1566x702 content, one plate drawn 1566.0 wide;
+    // at 768x1024, box 734x731 content, drawn 1624.4 — the height is what decides it there.
+    const frame = { width: 1000, height: 450 };
+    expect(drawnWidthInBox({ width: 1566, height: 702 }, frame, false)).toBeCloseTo(1566, 0);
+    expect(drawnWidthInBox({ width: 734, height: 731 }, frame, false)).toBeCloseTo(1624.4, 0);
+  });
+
+  it("takes the viewport's border off both axes, because a size container measures its CONTENT", () => {
+    // Worth two pixels of arithmetic and three and a half of map: at 1600x900 the border box is
+    // 583.5 tall and every `cqh` inside it resolves against 581.5.
+    const box = boxAt({ width: 1600, height: 900 }, 316.5);
+    expect(box.width).toBe(1600 - PAGE_PADDING_PX - 2 * BOX_BORDER_PX);
+    expect(box.height).toBeCloseTo(583.5 - 2 * BOX_BORDER_PX, 1);
+  });
+
+  it("stops giving up height at the stage's own min-height", () => {
+    // 375x667 with 487px of furniture is exactly the clamp, and five of this format's fourteen
+    // pages sit on it.
+    expect(boxAt({ width: 375, height: 667 }, 600).height).toBe(
+      STAGE_MIN_HEIGHT_PX - 2 * BOX_BORDER_PX,
+    );
+  });
+
+  it("reads an unknown width as this format's own window shape, never as a box of unknown height", () => {
+    expect(viewportFor(1600)).toEqual({ width: 1600, height: 900 });
+    expect(viewportFor(1280)).toEqual({ width: 1280, height: 720 });
+    // And the furniture for it comes from the NEAREST measured width, not from the widest reading.
+    expect(furnitureAt(1280)).toBe(FURNITURE_HEIGHT_PX[1024]);
+    expect(furnitureAt(1590)).toBe(FURNITURE_HEIGHT_PX[1600]);
+  });
+
+  it("derives the reading widths from the reading viewports rather than typing both", () => {
+    expect(READING_WIDTHS).toEqual(READING_VIEWPORTS.map((v) => v.width));
+  });
+});
+
+/**
+ * THE ONE TERM A STRING CANNOT CARRY, KEPT HONEST BY A BROWSER.
+ *
+ * `FURNITURE_HEIGHT_PX` is TYPED — deliberately, so a reader of the script sees the numbers and a
+ * bump is a decision somebody made — but it DESCRIBES a population that moves every time a beat is
+ * rendered or a caption is rewritten. A constant that describes a population and is not derived
+ * from it is this codebase's second-commonest defect shape, and it had already reached the weight
+ * ceiling once. So it is derived here, in Chrome, over every page `discoverMapWebPages()` finds, and
+ * asserted in BOTH directions: the table is exactly the most this format's own pages spend.
+ *
+ * And the assertion the whole census exists for: at those same viewports, the count this format
+ * gives a producer without a browser is NEVER LOWER than the count a browser measures. It was, by
+ * five marks at 1600x900 and by eight at 1024x768, on a real delivered page.
+ */
+describe("the census against the browser, over this format's whole delivered population", () => {
+  const CHROME = resolveChromeForCensus();
+  // THE FURNITURE IS READ OFF EVERY PAGE, THE COUNTS OFF THE ONES THAT DRAW AREAL MARKS. The box
+  // arithmetic belongs to the format, so the allowance it is bounded with is measured over the
+  // format's whole delivered population; a symbol map has no region to strand but its caption takes
+  // room like any other.
+  const pages = discoverMapWebPages();
+
+  type Reading = {
+    rel: string;
+    viewport: { width: number; height: number };
+    furniture: number;
+    measuredWidth: number;
+    measuredCount: number | null;
+    censusCount: number | null;
+  };
+
+  let readings: Reading[] = [];
+
+  it("drives every page at every reading viewport", async () => {
+    // Anti-vacuity: a sweep over an empty population passes while measuring nothing.
+    expect(pages.length).toBeGreaterThan(0);
+    const puppeteer = (await import("puppeteer-core")).default;
+    const browser = await puppeteer.launch({ executablePath: CHROME, headless: true });
+    try {
+      const page = await browser.newPage();
+      for (const found of pages) {
+        const drawn = drawnRegionsOf(found.html);
+        const judged = drawn !== null && drawn.shapes.length > 0;
+        const heightBound = plateIsBoundByHeight(found.html);
+        for (const viewport of READING_VIEWPORTS) {
+          await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
+          await page.goto(pathToFileURL(found.abs).href, { waitUntil: "load" });
+          const measured = await page.evaluate(() => {
+            const rect = (selector: string) => {
+              const el = document.querySelector(selector);
+              return el ? el.getBoundingClientRect() : null;
+            };
+            const box = rect(".mw-viewport");
+            // One painted world on a wrapping page; the whole plate layer on a page that covers.
+            const world = rect(".mw-world") ?? rect("#mw-fallback");
+            return box && world ? { boxHeight: box.height, drawn: world.width } : null;
+          });
+          expect(measured).not.toBeNull();
+          readings.push({
+            rel: found.rel,
+            viewport,
+            furniture: viewport.height - measured!.boxHeight,
+            measuredWidth: measured!.drawn,
+            measuredCount: judged
+              ? marksStrandedWithNoChannel(found.html, measured!.drawn).stranded.length
+              : null,
+            censusCount: judged
+              ? marksStrandedWithNoChannel(
+                  found.html,
+                  drawnWidthAt(viewport.width, drawn!.frame, heightBound),
+                ).stranded.length
+              : null,
+          });
+        }
+      }
+    } finally {
+      await browser.close();
+    }
+    expect(readings.length).toBe(pages.length * READING_VIEWPORTS.length);
+  }, 180_000);
+
+  it("states exactly the most furniture this population spends, at each viewport", () => {
+    const derived: Record<number, number> = {};
+    for (const reading of readings)
+      derived[reading.viewport.width] = Math.max(
+        derived[reading.viewport.width] ?? 0,
+        Number(reading.furniture.toFixed(1)),
+      );
+    expect(derived).toEqual(FURNITURE_HEIGHT_PX);
+  });
+
+  it("never tells a producer materially fewer stranded marks than a reader actually loses", () => {
+    // THE DEFECT, AS AN ASSERTION. Wrong low is the direction that flatters: it says the map is
+    // better than it is, on the one number a journalist tightens a camera over. It was wrong low by
+    // 5 marks at 1600x900 and by 8 at 1024x768 on a real delivered page.
+    //
+    // ONE MARK OF SLACK, AND IT IS NOT A ROUNDING FUDGE — it is PIXEL PHASE, measured. Whether a
+    // shape smaller than a pixel covers a pixel CENTRE depends on where the grid falls under it, not
+    // only on how big it is, so `marksWithNoPointerPath` is NOT monotonic in the drawn width:
+    // driven over the rabies beat between 318 and 330px it reads 82, 86, 87, 86, 85, 84, 87, 88, 86,
+    // 88, 81 — a wider map stranding MORE marks four times in eleven steps. A tenth of a pixel of
+    // disagreement between this arithmetic and a `getBoundingClientRect` can therefore move the
+    // count by one either way, and no box arithmetic closes that. Two marks would hide a real
+    // regression; one is the wobble itself.
+    const low = readings
+      .filter((r) => r.censusCount !== null && r.censusCount < r.measuredCount! - 1)
+      .map(
+        (r) =>
+          `${r.rel} at ${r.viewport.width}x${r.viewport.height}: census ${r.censusCount}, browser ${r.measuredCount} (drawn ${r.measuredWidth.toFixed(1)}px)`,
+      );
+    expect(low).toEqual([]);
+  });
+
+  it("is close enough to be worth acting on, not merely safe", () => {
+    // A census that answered "all of them" would satisfy the assertion above and be useless. Over
+    // this population it is within 6 marks of the browser at every viewport of every page.
+    const judged = readings.filter((r) => r.censusCount !== null);
+    expect(judged.length).toBeGreaterThan(0);
+    const worst = Math.max(...judged.map((r) => r.censusCount! - r.measuredCount!));
+    expect(worst).toBeLessThanOrEqual(6);
+  });
+});
+
+/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — a skill's own
+ *  scripts stay copy-pasteable, so this is not imported from anywhere else. */
+function resolveChromeForCensus(): string {
+  const candidates: string[] = [];
+  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
+  const cache = join(homedir(), ".cache/puppeteer/chrome");
+  if (existsSync(cache))
+    for (const build of readdirSync(cache).sort().reverse())
+      candidates.push(
+        join(
+          cache,
+          build,
+          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(
+          cache,
+          build,
+          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(cache, build, "chrome-linux64/chrome"),
+      );
+  candidates.push(
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+  );
+  const found = candidates.find((path) => path && existsSync(path));
+  if (!found)
+    throw new Error(
+      `no Chrome to measure with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
+    );
+  return found;
+}
