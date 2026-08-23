@@ -2004,6 +2004,19 @@ function extractComparisons(text) {
  * values decide. A column named for a period whose values are not period-shaped is not the period
  * column; a column of period-shaped values is, whatever it is called. A table with neither has no
  * period column, which is an answer — and a better one than a tenure.
+ *
+ * ROUND NINE — THE ORDER OF THE FALLBACKS WAS THE RULE'S OWN EXCEPTION. It read
+ * `named.find(holdsPeriods) ?? named[0] ?? columns.find(holdsPeriods)`, so wherever no NAMED column
+ * held periods the name still decided, and the values-based fallback behind it could not be
+ * reached. WHO's Global Health Observatory publishes 2 919 country-year rows whose period column is
+ * `TimeDim` (integer, 2010-2024) and whose only column named for a period is `Date` — WHO's own
+ * record-modification timestamp, text, five distinct values. `named[0]` returned the timestamp,
+ * `panelShapeOf` reported a 195x15 register as a five-period panel with no entity, the profile said
+ * `panel: null`, and the grounding check told the journalist "this profile carries no period column"
+ * while naming `TimeDim` in its own parenthesis. So the values-based fallback now comes FIRST and
+ * the name-only match is what is left when the table's own values say nothing — which is the rule
+ * the two paragraphs above already state. Measured over the 45 frozen profiles in `stories/` and
+ * `proof/`: one answer changes, and it is that one.
  */
 export function findYearColumn(columns) {
   const holdsPeriods = (c) =>
@@ -2014,7 +2027,7 @@ export function findYearColumn(columns) {
   // this file cannot compare as a number, which is a different fact and one `intake`'s
   // `periodNotASequence` says out loud rather than settling here.
   const named = columns.filter((c) => namesAPeriod(c) && (c.type !== "number" || holdsPeriods(c)));
-  return named.find(holdsPeriods) ?? named[0] ?? columns.find(holdsPeriods) ?? null;
+  return named.find(holdsPeriods) ?? columns.find(holdsPeriods) ?? named[0] ?? null;
 }
 
 // A MEASURE is a numeric column that is not the year column — a table's own x axis is not one of

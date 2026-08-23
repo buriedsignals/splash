@@ -19,7 +19,7 @@
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
-import { profileTable } from "../scripts/profile.mjs";
+import { findYearColumn, profileTable } from "../scripts/profile.mjs";
 import { parseCsv } from "../scripts/csv.mjs";
 
 const STORIES = `${import.meta.dir}/../../../stories`;
@@ -518,5 +518,54 @@ describe("what a profiler cannot decide, said where the journalist reads it", ()
     const incidents = table.columns.find((c) => c.name === "incidents");
     expect(incidents.denominator).toEqual({ column: "residents" });
     expect(incidents.denominatorNotInThisTable).toBeUndefined();
+  });
+});
+
+// =============================================================================================
+// ROUND NINE — THE PERIOD COLUMN IS WHAT A COLUMN DOES, NOT WHAT IT IS CALLED.
+//
+// WHO's Global Health Observatory publishes 2 919 country-year rows of rabies deaths — 195
+// entities x 15 periods, the shape this whole block exists for — and the profile came back
+// `panel: null`. `TimeDim` holds 2010-2024 and is named for nothing; the one column NAMED for a
+// period is `Date`, WHO's own record-modification timestamp, a text column with five distinct
+// values. `findYearColumn`'s own doc comment states the rule it broke: "the name proposes and the
+// values decide". Its order — `named.find(holdsPeriods) ?? named[0] ?? columns.find(holdsPeriods)`
+// — let the NAME decide whenever no name-matched column held periods, short-circuiting the
+// values-based fallback that would have found `TimeDim`.
+// =============================================================================================
+describe("the period column a table's values make, not the one its names promise", () => {
+  const WHO = "r9-map-web-reported-rabies-deaths";
+
+  it("should profile WHO's 195x15 register as the panel it is", () => {
+    const profile = read(WHO);
+    expect(profile.panel).not.toBeNull();
+    expect(profile.panel.period).toBe("TimeDim");
+    expect(profile.panel.entity).toBe("SpatialDim");
+    expect(profile.panel.periods).toBe(15);
+    expect(profile.panel.entities).toBe(195);
+  });
+
+  it("should not let a record TIMESTAMP named 'Date' be the period of a country-year table", () => {
+    const profile = read(WHO);
+    expect(profile.panel.period).not.toBe("Date");
+  });
+
+  it("should still fall back to a column NAMED for a period when no column holds one", () => {
+    // `stress-t-europe-recycling`'s `survey_date` is text — "2025-03-01", "01/03/2025",
+    // "March 2025" — and no column of that table holds period-shaped values. The name is the only
+    // evidence there is, so it still decides. (That table is one row per country and no panel at
+    // all, which is why this asks the decision itself rather than the profile's `panel` field.)
+    const columns = read("stress-t-europe-recycling").columns;
+    expect(findYearColumn(columns)!.name).toBe("survey_date");
+  });
+
+  it("should prefer a column that HOLDS periods over one merely named for them", () => {
+    // The WHO shape, small enough to check by hand: a text column named `Date` carrying a
+    // timestamp, and an unnamed integer column carrying the years.
+    const columns = [
+      { name: "Date", type: "text", min: null, max: null },
+      { name: "TimeDim", type: "number", min: 2010, max: 2024 },
+    ];
+    expect(findYearColumn(columns)!.name).toBe("TimeDim");
   });
 });
