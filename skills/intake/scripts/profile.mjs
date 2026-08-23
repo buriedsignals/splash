@@ -1,4 +1,5 @@
 // twin/skills/intake/scripts/profile.mjs
+import { readHeader } from "./header.mjs";
 
 // A plain decimal literal: optional sign, digits, optional exponent.
 // Deliberately narrower than Number() — Number("0x10") is 16 and Number("Infinity")
@@ -1305,11 +1306,22 @@ const DENOMINATOR_NOT_IN_THIS_TABLE =
   "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be";
 
 export function profileTable(rows, { prose } = {}) {
-  const [rawHeader = [], ...body] = rows;
+  // WHERE THE HEADER IS, AND WHAT ITS BLANK NAMES MEAN — `readHeader`, argued at length in
+  // `scripts/header.mjs`. This used to be `const [rawHeader = [], ...body] = rows`, and round eight
+  // froze two publishers' files that broke it in opposite directions: Destatis's used range
+  // overshoots its table by 16 unnamed, empty columns (profiled as 16 columns named `""`), and the
+  // SLF puts three banner lines above its header (profiled as ONE column named after the institute,
+  // over 1,409 rows, on a file with 21 columns and 1,406 rows). Both wrote a record the bytes deny
+  // and neither could observe it. Nothing is edited here — `freezeSource` writes the publisher's
+  // bytes through untouched — and every change this reading makes to the NAMES is reported on the
+  // profile itself as `header`.
+  //
   // A header name is metadata, not data — trim it. A value's own leading or
   // trailing space stays exactly as written; the journalist's data is not ours
   // to rewrite (e.g. "Netherlands, the" as a value must round-trip untouched).
-  const header = rawHeader.map((name) => name.trim());
+  const reading = readHeader(rows);
+  const header = reading.names;
+  const body = reading.body;
   const columns = header.map((name, index) => {
     const values = body.map((row) => (row[index] ?? "").trim());
     const { type, reason, unit } = typeOf(values);
@@ -1498,6 +1510,22 @@ export function profileTable(rows, { prose } = {}) {
     columns,
     duplicates: findDuplicateRows(body),
     panel,
+    // WHAT READING THIS FILE'S HEADER COST, on the record every later phase reasons from. Absent —
+    // not null, and not an empty object — when the first row was the header and every column
+    // carried a name, so the field only ever appears where there is something to see, and a reader
+    // can tell "nothing to say" from "never asked". `says` is the sentence; `banner`, `dropped` and
+    // `renamed` are what it is a summary of.
+    ...(reading.says
+      ? {
+          header: {
+            says: reading.says,
+            headerAt: reading.headerAt,
+            banner: reading.banner,
+            dropped: reading.dropped,
+            renamed: reading.renamed,
+          },
+        }
+      : {}),
     ...(statedIncompleteness ? { statedIncompleteness } : {}),
   };
 }

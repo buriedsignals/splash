@@ -16,6 +16,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseCsv } from "../../intake/scripts/csv.mjs";
+import { readHeader } from "../../intake/scripts/header.mjs";
 
 const ROOT = join(import.meta.dir, "../../..");
 const STORIES = join(ROOT, "stories");
@@ -51,15 +52,55 @@ describe("every frozen source is the format its own extension claims", () => {
     expect(offenders).toEqual([]);
   });
 
+  // ASKED THROUGH `readHeader`, WHICH IS THE READER INTAKE ITSELF NOW USES — 2026-08-23.
+  //
+  // This used to read `rows[0]` and refuse any header row narrower than two fields or carrying a
+  // blank cell. Round eight froze two publishers' real files and both were red under it, for
+  // reasons that were NOT "this file is not a table":
+  //
+  //   Destatis  21 named columns followed by 16 the workbook's used range overshot into — no
+  //             header, and no value in any of the 327 rows.
+  //   SLF       three banner lines above the header, so `rows[0]` was the institute's name.
+  //
+  // The complaint was right — intake profiled the first as 37 columns, sixteen of them named `""`,
+  // and the second as ONE column over 1,409 rows — but it was a complaint about INTAKE, not about
+  // the bytes. `readHeader` (`intake/scripts/header.mjs`) is the fix: it finds the header under a
+  // banner, drops an unnamed column no row carries a value in, names an unnamed column that DOES
+  // carry values by its position, and REPORTS every one of those on the profile. So this asks the
+  // question through it, and what remains red is a file no reading can make into a table.
+  //
+  // This is NOT the guard being narrowed. It still refuses a header with fewer than two columns, a
+  // table with no row under its header, and a file `readHeader` can find no header in at all —
+  // mutation-checked below with `stress-h-site-photographs`'s own JSON-in-a-.csv, the defect that
+  // earned this whole file, which is still red under the new reading.
   it("should find no .csv that does not parse as a table with a header and a row", () => {
     const offenders: string[] = [];
     for (const path of sources.filter((p) => p.endsWith(".csv"))) {
-      const rows = parseCsv(readFileSync(join(ROOT, path), "utf8").trim());
-      // A real table has a header and at least one row under it, and the header names every column
-      // once. A JSON document read as CSV fails the second: `{` is one column, and so is every
-      // line under it, but the header carries a brace rather than a name.
-      if (rows.length < 2 || rows[0].length < 2 || rows[0].some((name) => name.trim() === ""))
+      const reading = readHeader(parseCsv(readFileSync(join(ROOT, path), "utf8").trim()));
+      if (reading.headerAt === null || reading.names.length < 2 || reading.body.length < 1)
         offenders.push(path);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // AND THE RECORD SAYS SO. A reading that changed what the columns are called, or that skipped a
+  // publisher's banner, is a reading a later phase has to be able to see — `profile.json` is the
+  // only thing every phase after intake reasons from, and both round-eight files reached delivery
+  // with a profile that denied their own bytes in silence. Where the reading has something to say,
+  // the frozen record has to carry it, word for word.
+  it("should find every frozen profile carrying what reading its own header cost", () => {
+    const offenders: string[] = [];
+    for (const path of sources.filter((p) => p.endsWith("/data.csv"))) {
+      const reading = readHeader(parseCsv(readFileSync(join(ROOT, path), "utf8").trim()));
+      if (reading.says === null) continue;
+      const record = path.replace(/data\.csv$/, "profile.json");
+      if (!existsSync(join(ROOT, record))) {
+        offenders.push(`${record}: absent, and its source's header reading says "${reading.says}"`);
+        continue;
+      }
+      const profile = JSON.parse(readFileSync(join(ROOT, record), "utf8"));
+      if (profile.header?.says !== reading.says)
+        offenders.push(`${record}: says ${JSON.stringify(profile.header?.says ?? null)}, reading says ${JSON.stringify(reading.says)}`);
     }
     expect(offenders).toEqual([]);
   });

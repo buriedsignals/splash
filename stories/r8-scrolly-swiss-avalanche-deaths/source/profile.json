@@ -1,11 +1,260 @@
 {
-  "rowCount": 1409,
+  "rowCount": 1406,
   "columns": [
     {
-      "name": "WSL Institute for Snow and Avalanche Research SLF",
+      "name": "avalanche.id",
       "type": "text",
       "missing": 0,
-      "distinct": 1409,
+      "distinct": 1406,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "missing": 0,
+      "distinct": 1156,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "date.quality",
+      "type": "number",
+      "missing": 10,
+      "distinct": 6,
+      "min": 0,
+      "max": 16,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": [
+        3,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "name": "hydrological.year",
+      "type": "text",
+      "missing": 0,
+      "distinct": 88,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "canton",
+      "type": "text",
+      "missing": 0,
+      "distinct": 22,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "municipality",
+      "type": "text",
+      "missing": 0,
+      "distinct": 382,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "start.zone.coordinates.latitude",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1400,
+      "min": 45.85966033,
+      "max": 47.28738669,
+      "sum": 65412.67385006998,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "start.zone.coordinates.longitude",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1400,
+      "min": 6.10356168,
+      "max": 10.44754681,
+      "sum": 11996.66013493,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "coordinates.quality",
+      "type": "number",
+      "missing": 84,
+      "distinct": 5,
+      "min": 0,
+      "max": 1000,
+      "sum": 77750,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "start.zone.elevation",
+      "type": "number",
+      "missing": 60,
+      "distinct": 355,
+      "min": 725,
+      "max": 4341,
+      "sum": 3240991,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "start.zone.slope.aspect",
+      "type": "text",
+      "missing": 77,
+      "distinct": 8,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "start.zone.inclination",
+      "type": "text",
+      "missing": 841,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "forecasted.dangerlevel.rating1",
+      "type": "number",
+      "missing": 1083,
+      "distinct": 4,
+      "min": 1,
+      "max": 4,
+      "sum": 874,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "forecasted.dangerlevel.rating1.subdivision",
+      "type": "text",
+      "missing": 1379,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "forecasted.dangerlevel.rating2",
+      "type": "number",
+      "missing": 1380,
+      "distinct": 3,
+      "min": 2,
+      "max": 4,
+      "sum": 69,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "forecasted.dangerlevel.rating2.subdivision",
+      "type": "text",
+      "missing": 1406,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "forecasted.most.dangerous.aspect.and.elevation",
+      "type": "text",
+      "missing": 1083,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "number.dead",
+      "type": "number",
+      "missing": 0,
+      "distinct": 12,
+      "min": 1,
+      "max": 30,
+      "sum": 2146,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "number.caught",
+      "type": "number",
+      "missing": 0,
+      "distinct": 24,
+      "min": 1,
+      "max": 48,
+      "sum": 4002,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "number.fully.buried",
+      "type": "number",
+      "missing": 0,
+      "distinct": 18,
+      "min": 0,
+      "max": 48,
+      "sum": 2368,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "activity",
+      "type": "text",
+      "missing": 4,
+      "distinct": 9,
       "min": null,
       "max": null,
       "sum": null,
@@ -16,5 +265,4717 @@
     "count": 0,
     "rows": []
   },
-  "panel": null
+  "panel": {
+    "entity": "avalanche.id",
+    "period": "date",
+    "entities": 1406,
+    "periods": 1156,
+    "rowsPerPeriod": {
+      "min": 1,
+      "max": 17
+    },
+    "balanced": false,
+    "says": "one row per entity per period: every (\"avalanche.id\", \"date\") pair in this table is unique, so rowCount (1406) counts readings, never subjects — there are 1406 of those",
+    "decidedBy": "every (\"avalanche.id\", \"date\") pair is unique across all 1406 rows, and \"avalanche.id\" holds no blank",
+    "coverage": {
+      "byPeriod": [
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 6
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 17
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 13
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 5
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 6
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 5
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 6
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 4
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 3
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 1
+        },
+        {
+          "period": null,
+          "entities": 2
+        }
+      ],
+      "fullest": {
+        "period": null,
+        "entities": 17
+      },
+      "thinnest": {
+        "period": null,
+        "entities": 1
+      },
+      "says": "a period's own step being present is not the same as every entity being present in it: the fullest period here carries 17 entities and the thinnest carries 1"
+    },
+    "aggregates": {
+      "says": "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+      "byArithmetic": [],
+      "byStructure": [],
+      "arithmetic": {
+        "ran": false,
+        "reason": "the structural test set no row of this table apart, so there was no candidate to put to the arithmetic — a set of rows that happens to add up to another is a coincidence until something else says that row is different"
+      },
+      "structure": {
+        "answered": false,
+        "reason": "no column of this table holds one stable code per entity with a shape most of them share"
+      }
+    },
+    "periodNotASequence": {
+      "says": "\"date\" was read as the period from its NAME, and this profiler's own typing does not make it a sequence — its gaps are null, so nothing here can say which steps it skips",
+      "column": "date",
+      "type": "date"
+    }
+  },
+  "header": {
+    "says": "this file's header is on line 4; the 3 lines above it are a publisher's banner and are not data",
+    "headerAt": 3,
+    "banner": [
+      [
+        "WSL Institute for Snow and Avalanche Research SLF"
+      ],
+      [
+        "Fatal avalanche accidents in Switzerland since 1936-1937"
+      ],
+      [
+        "Update: 2025-02-10 09:28 (UTC)"
+      ]
+    ],
+    "dropped": [],
+    "renamed": []
+  },
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires"
+    ],
+    "column": "date.quality",
+    "readProse": true,
+    "claims": [],
+    "says": "the frozen prose states no incompleteness in English and French; a dataset that states one in another language is not read here"
+  }
 }

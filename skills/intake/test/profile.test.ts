@@ -66,7 +66,7 @@ describe("profileTable", () => {
     expect(commune.distinct).toBe(2);
   });
 
-  it("should not crash on an entirely empty table", () => {
+  it("should not crash on an entirely empty table, and should say it found no header", () => {
     expect(profileTable([])).toEqual({
       rowCount: 0,
       columns: [],
@@ -74,6 +74,18 @@ describe("profileTable", () => {
       // `null`, never absent: a downstream reader has to be able to tell "this table is not one row
       // per entity per period" from a profile written before the question was asked at all.
       panel: null,
+      // ADDED 2026-08-23 with `readHeader`. An empty file used to profile as a clean table of zero
+      // columns and zero rows — a record that asserts nothing and denies nothing, which is exactly
+      // the silence round eight's two frozen files were written into. It now says what it could not
+      // read. Present here and absent from every profile above, which is the contract: the field
+      // appears only where the reading changed or refused something.
+      header: {
+        says: "no header could be read: no row of this file carries any content",
+        headerAt: null,
+        banner: [],
+        dropped: [],
+        renamed: [],
+      },
     });
   });
 

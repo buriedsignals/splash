@@ -254,166 +254,6 @@
         "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
         "reads": "English, French, Greek and Arabic"
       }
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
-    },
-    {
-      "name": "",
-      "type": "text",
-      "missing": 327,
-      "distinct": 0,
-      "min": null,
-      "max": null,
-      "sum": null,
-      "gaps": null
     }
   ],
   "duplicates": {
@@ -421,22 +261,6 @@
     "rows": [
       {
         "values": [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
           "",
           "",
           "",
@@ -877,6 +701,78 @@
         "reason": "no column of this table holds one stable code per entity with a shape most of them share"
       }
     }
+  },
+  "header": {
+    "says": "16 columns were dropped: the publisher named them nothing and no row carries a value in them (index 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36)",
+    "headerAt": 0,
+    "banner": [],
+    "dropped": [
+      {
+        "index": 21,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 22,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 23,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 24,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 25,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 26,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 27,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 28,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 29,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 30,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 31,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 32,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 33,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 34,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 35,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 36,
+        "says": "the publisher named no column here and no row carries a value in it"
+      }
+    ],
+    "renamed": []
   },
   "statedIncompleteness": {
     "reads": "English and French",

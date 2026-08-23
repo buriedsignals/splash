@@ -28,6 +28,16 @@ reading layer finds the header by the one column name the schema guarantees
 (`headerIndex`, `avalanche-data.ts`); the frozen CSV and the wrong profile are both kept as the
 measurement. `freezeSource` also refuses a second call, so a story cannot re-freeze after noticing.
 
+**CLOSED 2026-08-23.** `intake/scripts/header.mjs` reads the header instead of assuming it: the
+header is the first row as wide as the table itself, everything above it is a publisher's banner
+kept verbatim in the record, and a file whose rows agree on no width is REFUSED rather than handed
+one. `source/profile.json` has been re-derived from the SAME untouched bytes — 21 columns, 1,406
+rows — and carries `header.says`: *"this file's header is on line 4; the 3 lines above it are a
+publisher's banner and are not data"*. The publisher's `data.csv` was not edited and this beat's own
+reader is unchanged. `freezeSource`'s refusal of a second call still stands, and it is no longer the
+reason a story is stuck with a false record: re-deriving the PROFILE is not a re-freeze, because the
+profile is intake's own statement about the bytes and never the bytes.
+
 ## 2 — STORYBOARD/G1. The grounding gate cannot tell a broken profile from a profile with no numbers
 
 **Ran:** `groundTakeaway(takeaway, profile, { csv })` against the frozen profile, then again against

@@ -200,3 +200,13 @@ refuses a header carrying a blank cell, naming the column index; or profileTable
 (col_22 ... col_37) and says it did; or both.
 Cost: one red assertion in skills/splash/test/a-frozen-source-is-what-its-name-says.test.ts,
 reported rather than hidden.
+CLOSED 2026-08-23, and the ruling went the second way. intake/scripts/header.mjs decides it:
+a column the publisher named nothing AND that no row carries a value in is not a column — it is a
+spreadsheet's used range overshooting its own table, so it is DROPPED and the drop is recorded with
+its indices; a column named nothing that DOES carry values cannot be dropped and is named by its
+position, with the record saying the name is the profiler's and not the publisher's. This file's
+source/profile.json has been re-derived from the SAME untouched bytes and now reads 21 columns over
+327 rows, with header.says: "16 columns were dropped: the publisher named them nothing and no row
+carries a value in them (index 21 … 36)". The publisher's data.csv was not edited, and the guard now
+asks its question through the same reader — it is still red for a .csv that holds a JSON document,
+which is mutation-checked in skills/intake/test/header.test.ts.

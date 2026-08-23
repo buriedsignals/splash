@@ -1,5 +1,5 @@
 {
-  "rowCount": 41,
+  "rowCount": 38,
   "columns": [
     {
       "name": "20",
@@ -8,24 +8,90 @@
       "distinct": 1,
       "min": 20,
       "max": 20,
-      "sum": 820,
+      "sum": 760,
       "gaps": null
     },
     {
-      "name": "t",
+      "name": "h",
       "type": "text",
       "missing": 0,
-      "distinct": 6,
+      "distinct": 5,
       "min": null,
       "max": null,
       "sum": null,
       "gaps": null
     },
     {
-      "name": "Honey: Released March 13, 2026, by the National Agricultural Statistics Service (NASS), Agricultural Statistics Board, United States Department of Agriculture (USDA).",
+      "name": "column 3",
       "type": "text",
-      "missing": 9,
-      "distinct": 32,
+      "missing": 8,
+      "distinct": 30,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 4",
+      "type": "text",
+      "reason": "looked numeric but \"Honey\" is not, so the column stays text",
+      "missing": 12,
+      "distinct": 24,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 5",
+      "type": "text",
+      "reason": "looked numeric but \"Yield\" is not, so the column stays text",
+      "missing": 12,
+      "distinct": 23,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 6",
+      "type": "text",
+      "reason": "looked numeric but \"Production\" is not, so the column stays text",
+      "missing": 14,
+      "distinct": 24,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 7",
+      "type": "text",
+      "reason": "looked numeric but \"Stocks\" is not, so the column stays text",
+      "missing": 13,
+      "distinct": 25,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 8",
+      "type": "text",
+      "reason": "looked numeric but \"Average\" is not, so the column stays text",
+      "missing": 12,
+      "distinct": 26,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "column 9",
+      "type": "text",
+      "reason": "looked numeric but \"Value\" is not, so the column stays text",
+      "missing": 12,
+      "distinct": 26,
       "min": null,
       "max": null,
       "sum": null,
@@ -33,26 +99,8 @@
     }
   ],
   "duplicates": {
-    "count": 2,
+    "count": 1,
     "rows": [
-      {
-        "values": [
-          "20",
-          "h",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          ""
-        ],
-        "indices": [
-          2,
-          6
-        ],
-        "occurrences": 2
-      },
       {
         "values": [
           "20",
@@ -66,13 +114,72 @@
           ""
         ],
         "indices": [
-          18,
-          29,
-          31
+          15,
+          26,
+          28
         ],
         "occurrences": 3
       }
     ]
   },
-  "panel": null
+  "panel": null,
+  "header": {
+    "says": "this file's header is on line 4; the 3 lines above it are a publisher's banner and are not data; 7 columns carry values under no name and are named by position here (column 3, column 4, column 5, column 6, column 7, column 8, column 9)",
+    "headerAt": 3,
+    "banner": [
+      [
+        "20",
+        "t",
+        "Honey: Released March 13, 2026, by the National Agricultural Statistics Service (NASS), Agricultural Statistics Board, United States Department of Agriculture (USDA)."
+      ],
+      [
+        "20",
+        "t",
+        "Colonies, Yield, Production, Stocks, Price, and Value � States and United States: 2025"
+      ],
+      [
+        "20",
+        "t",
+        "[Colonies which produced honey in more than one State were counted in each State]"
+      ]
+    ],
+    "dropped": [],
+    "renamed": [
+      {
+        "index": 2,
+        "name": "column 3",
+        "says": "the publisher named no column here, and 30 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 3,
+        "name": "column 4",
+        "says": "the publisher named no column here, and 26 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 4,
+        "name": "column 5",
+        "says": "the publisher named no column here, and 26 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 5,
+        "name": "column 6",
+        "says": "the publisher named no column here, and 24 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 6,
+        "name": "column 7",
+        "says": "the publisher named no column here, and 25 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 7,
+        "name": "column 8",
+        "says": "the publisher named no column here, and 26 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      },
+      {
+        "index": 8,
+        "name": "column 9",
+        "says": "the publisher named no column here, and 26 of 38 rows carry a value in it, so it is named by its position and the name is this profiler's, not the publisher's"
+      }
+    ]
+  }
 }

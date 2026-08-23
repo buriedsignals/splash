@@ -9,8 +9,12 @@
  *      institute's name, the dataset's title, and an update timestamp. `intake`'s own
  *      `profileTable` read the first of those as the header and profiled the whole 21-column table
  *      as ONE text column of 1,409 rows, with 0 missing and 0 duplicates, and refused nothing.
- *      `source/profile.json` still carries that reading; it is kept as the measurement.
  *      `headerIndex` finds the real header by the one column name the file guarantees.
+ *      CLOSED 2026-08-23: `intake/scripts/header.mjs` now READS the header rather than assuming it,
+ *      `source/profile.json` has been re-derived from the same untouched bytes (21 columns, 1,406
+ *      rows), and its own `header.says` states that this file's header is on line 4 and that the
+ *      three lines above it are a publisher's banner. The publisher's file was NOT edited, and this
+ *      reader is unchanged — it still finds the header itself.
  *   2. **THE SAME PLACE IS SPELLED TWO WAYS, TWICE.** One municipality cell arrives with a leading
  *      TAB — `"\tPontresina"` — two rows from a plain `Pontresina`. One canton cell reads `Gl`
  *      where 25 others read `GL`. Untrimmed and un-cased those are a twenty-fourth municipality and
