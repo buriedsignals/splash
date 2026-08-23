@@ -218,6 +218,14 @@ const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 // `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`).
 const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
 
+// A number a human wrote with the SI thousands SPACE — groups of exactly three digits separated by
+// a space, a no-break space, a narrow no-break space or a thin space, with an optional decimal tail
+// written either way. This is the grouping ISO 80000-1 states, and it is how WHO, Eurostat, the
+// ECDC, the EEA and every French-language statistical office print a number. Round nine: nothing in
+// this project read one, so WHO's own "59 000" was two tokens, "59" and "000", and "000" is not a
+// number anybody wrote.
+const SPACED_THOUSANDS_RE = /^[+-]?\d{1,3}([\u0020\u00A0\u202F\u2009]\d{3})+([.,]\d+)?$/;
+
 /**
  * Reads ONE already-isolated numeral token the way this project always reads a number: a
  * thousands-grouped integer ("14,205") is fine, a plain decimal ("1.7") is fine, but a comma this
@@ -227,6 +235,13 @@ const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
  * for itself is its own trailing decimal tail ("14,205.5" settles itself as thousands-grouped,
  * because nobody writes a decimal comma followed by a thousands-grouped period); without one, a
  * comma-grouped token stays ambiguous.
+ *
+ * A SPACE-GROUPED token ("59 000") is read here for the first time in round nine, and it is refused
+ * for the same reason and in the same words: a lone token carries no evidence for itself. Its two
+ * readings are not two ways of reading one numeral, as a comma's are — they are ONE numeral against
+ * TWO numerals side by side — but the answer a token alone can give is the same one, a named
+ * ambiguity quoting both readings rather than a guess. What settles it is the same thing that
+ * settles a comma: the frozen table, one module along, in `settleGroupedNumeral`.
  *
  * Returns `{ value }` for an unambiguous read, `{ ambiguous: true, reason }` for a numeral this
  * function can see but cannot resolve to one value, and `null` for a string that is not a numeral
@@ -242,6 +257,14 @@ export function readNumericToken(raw) {
     return {
       ambiguous: true,
       reason: `"${value}" is ambiguous — could be a thousands-grouped number or a decimal comma, and nothing settles it`,
+    };
+  }
+  if (SPACED_THOUSANDS_RE.test(value)) {
+    const groups = value.split(/[\u0020\u00A0\u202F\u2009]/);
+    if (/[.,]/.test(value)) return { value: Number(groups.join("").replace(",", ".")) };
+    return {
+      ambiguous: true,
+      reason: `"${value}" is ambiguous — could be one number written with the SI thousands space (${Number(groups.join(""))}) or two numerals side by side (${groups.join(" and ")}), and nothing settles it`,
     };
   }
   if (value.includes(",")) {
@@ -364,7 +387,13 @@ export function readFrozenRows(csvText) {
 // against a column's range ON ITS OWN, and could land inside one by coincidence. Every match this
 // regex produces is now handed to `readNumericToken`, which decides whether it is one number or
 // an ambiguity to refuse — never two numbers out of one token.
-const NUMBER_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+[.,]\d+|-?\d+/g;
+// ROUND NINE adds the SPACE-grouped alternative FIRST, for the same reason the comma-grouped one
+// is tried before the loose single-separator form: "59 000" has to be captured whole or it is two
+// matches, "59" and "000", and "000" is not a number anybody wrote. The first group is one to three
+// digits and every later group is exactly three, so "In 2010 500 people were counted" is still two
+// numerals — 2010 is four digits and can start no grouping.
+const NUMBER_RE =
+  /-?\d{1,3}(?:[\u0020\u00A0\u202F\u2009]\d{3})+(?:[.,]\d+)?|-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+[.,]\d+|-?\d+/g;
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // WHAT LANGUAGES THIS FILE'S NAME-BASED LEXICONS READ, AND WHAT THEY DO WHEN THEY MEET ANOTHER.
@@ -969,9 +998,60 @@ function rowHolding(rows, column, value) {
  * (registered in `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`) and it answers a
  * question about a token; this answers a different question, about a token AND a table, and lives
  * only here because only this file has the table.
+ *
+ * THE SPACE GROUP IS THE SAME QUESTION AND GETS THE SAME ANSWER (round nine). WHO writes "59 000",
+ * and so do Eurostat, the ECDC, the EEA and every French-language office — it is the grouping
+ * ISO 80000-1 states. Reported twice, hours apart, by two independent stories: this file scored
+ * "59" and "000" as two separate claims, and "000" is not a claim anybody made.
+ *
+ * One asymmetry is worth stating, because it decides what the table is asked. A comma's two
+ * readings are two ways of reading ONE numeral, and the table is a fair judge between them: 238530
+ * and 238.53 are both single values, and asking which one it holds is symmetric. A space's two
+ * readings are one numeral against TWO numerals side by side, and there the table can only ever
+ * testify for the grouped reading — a fragment of a grouped numeral is a small integer, and any
+ * real register holds all the small integers. Measured on WHO's own frozen table (2 919 rows,
+ * `NumericValue` [0, 2014]): it holds 59, 0, 3 and 21 — every fragment of both numerals this story
+ * quotes — so requiring the fragments to be UNHELD would make this arm fire nowhere on a register
+ * of people. So the space is settled by, in order: its own shape where the shape can only be a
+ * grouping (more than one group, or a later group carrying a leading zero, which no numeral
+ * written on its own ever does), then the frozen table holding the grouped reading. Nothing else
+ * settles it, and what is not settled stays ONE ambiguous claim — never two fragments.
  */
 export function settleGroupedNumeral(raw, columns, rows) {
   const written = String(raw).trim();
+  const numeric = columns.filter((c) => c.type === "number");
+  const heldBy = (candidate) =>
+    numeric.find(
+      (c) =>
+        (Number.isFinite(c.min) && sameNumber(c.min, candidate)) ||
+        (Number.isFinite(c.max) && sameNumber(c.max, candidate)) ||
+        (Number.isFinite(c.sum) && sameNumber(c.sum, candidate)) ||
+        rowHolding(rows, c, candidate) !== null,
+    ) ?? null;
+  if (SPACED_THOUSANDS_RE.test(written) && !/[.,]/.test(written)) {
+    const groups = written.split(/[\u0020\u00A0\u202F\u2009]/);
+    const spaced = Number(groups.join(""));
+    if (groups.length > 2) {
+      return {
+        value: spaced,
+        settledNote: ` (reading "${written}" as ${spaced}: a numeral carrying two space groups can only be a thousands grouping)`,
+      };
+    }
+    const leadingZero = groups.slice(1).find((g) => g.startsWith("0"));
+    if (leadingZero) {
+      return {
+        value: spaced,
+        settledNote: ` (reading "${written}" as ${spaced}: no numeral is written on its own with a leading zero, so "${leadingZero}" can only be a thousands group)`,
+      };
+    }
+    const spacedIn = heldBy(spaced);
+    return spacedIn
+      ? {
+          value: spaced,
+          settledNote: ` (reading "${written}" as ${spaced}: the frozen table holds that number in column "${spacedIn.name}", which is what settles the space)`,
+        }
+      : null;
+  }
   if (!THOUSANDS_RE.test(written) || written.includes(".")) return null;
   const grouped = Number(written.replace(/,/g, ""));
   const commas = (written.match(/,/g) ?? []).length;
@@ -982,15 +1062,6 @@ export function settleGroupedNumeral(raw, columns, rows) {
     };
   }
   const asDecimal = Number(written.replace(",", "."));
-  const numeric = columns.filter((c) => c.type === "number");
-  const heldBy = (candidate) =>
-    numeric.find(
-      (c) =>
-        (Number.isFinite(c.min) && sameNumber(c.min, candidate)) ||
-        (Number.isFinite(c.max) && sameNumber(c.max, candidate)) ||
-        (Number.isFinite(c.sum) && sameNumber(c.sum, candidate)) ||
-        rowHolding(rows, c, candidate) !== null,
-    ) ?? null;
   const groupedIn = heldBy(grouped);
   const decimalIn = heldBy(asDecimal);
   if (groupedIn && !decimalIn) {

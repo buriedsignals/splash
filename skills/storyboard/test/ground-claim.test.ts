@@ -2232,3 +2232,97 @@ describe("a superlative is not decided against a column with no spread", () => {
     expect(claims.find((c) => /highest/.test(c.claim))!.verdict).toBe("supported");
   });
 });
+
+// =============================================================================================
+// ROUND NINE — A SPACE-GROUPED NUMERAL IS ONE NUMERAL.
+//
+// Reported twice, hours apart, by two independent stories: WHO's own fact sheet writes "59 000",
+// and this file scored "59" and "000" as two claims. "000" is not a claim anybody made. The same
+// house style is what Eurostat, the ECDC, the EEA and every French-language statistical office
+// publish in (ISO 80000-1: the group separator is a space, never a comma).
+// =============================================================================================
+describe("ROUND NINE — a space-grouped numeral is ONE numeral (WHO, Eurostat, ECDC, the EEA)", () => {
+  const RABIES = "r9-map-web-reported-rabies-deaths";
+
+  it("should read WHO's own '59 000' as one claim, never as '59' and '000'", () => {
+    const { claims } = grounded(
+      RABIES,
+      "WHO estimates 59 000 people die of rabies every year.",
+    );
+    expect(claims.some((c) => c.claim === "59")).toBe(false);
+    expect(claims.some((c) => c.claim === "000")).toBe(false);
+    const whole = claims.find((c) => c.claim === "59 000");
+    expect(whole).toBeTruthy();
+    // SETTLED, not merely refused whole: "000" is not a numeral anybody writes on its own, so the
+    // grouping is the only reading left, and the sentence says which rule settled it.
+    expect(whole!.detail).toContain("reading \"59 000\" as 59000");
+    expect(whole!.detail).toContain("leading zero");
+  });
+
+  it("should read '3 021' as one claim, never as '3' and '021'", () => {
+    const { claims } = grounded(
+      RABIES,
+      "For 2024 the world's health ministries wrote down 3 021 between them.",
+    );
+    expect(claims.some((c) => c.claim === "021")).toBe(false);
+    const whole = claims.find((c) => c.claim === "3 021");
+    expect(whole).toBeTruthy();
+    expect(whole!.detail).toContain("reading \"3 021\" as 3021");
+    expect(whole!.detail).toContain("leading zero");
+  });
+
+  it("should settle a space-grouped numeral the frozen table holds, naming the column", () => {
+    const { claims } = grounded(
+      "stress-j-partial-year-permits",
+      "Only 14 205 permits were issued.",
+    );
+    const claim = claims.find((c) => c.claim === "14 205");
+    expect(claim).toBeTruthy();
+    expect(claim!.verdict).not.toBe("unverifiable");
+    expect(claim!.detail).toContain("which is what settles the space");
+    expect(claim!.detail).toContain("permits_issued");
+  });
+
+  it("should refuse, as ONE claim, a space group the frozen table cannot settle", () => {
+    const { claims } = grounded(
+      "stress-j-partial-year-permits",
+      "The register holds 5 100 rows.",
+    );
+    expect(claims.some((c) => c.claim === "5")).toBe(false);
+    expect(claims.some((c) => c.claim === "100")).toBe(false);
+    const whole = claims.find((c) => c.claim === "5 100");
+    expect(whole).toBeTruthy();
+    expect(whole!.verdict).toBe("unverifiable");
+    expect(whole!.detail).toContain("5100");
+    expect(whole!.detail).toContain("two numerals");
+  });
+
+  it("should read a NO-BREAK space the same as a plain one, which is what a CMS emits", () => {
+    const { claims } = grounded(
+      RABIES,
+      "WHO estimates 59\u00A0000 people die of rabies every year.",
+    );
+    expect(claims.some((c) => c.claim === "000")).toBe(false);
+    const whole = claims.find((c) => c.claim === "59\u00A0000");
+    expect(whole).toBeTruthy();
+    expect(whole!.detail).toContain("as 59000");
+  });
+
+  it("should read a numeral carrying more than one space group as the grouping it can only be", () => {
+    const { claims } = grounded(
+      RABIES,
+      "The register carries 1 234 567 readings.",
+    );
+    expect(claims.some((c) => c.claim === "1")).toBe(false);
+    const whole = claims.find((c) => c.claim === "1 234 567");
+    expect(whole).toBeTruthy();
+    expect(whole!.detail).toContain("reading \"1 234 567\" as 1234567");
+    expect(whole!.detail).toContain("two space groups");
+  });
+
+  it("should not read two numerals a sentence really does put side by side", () => {
+    const { claims } = grounded(RABIES, "In 2010 500 people were counted.");
+    expect(claims.some((c) => c.claim === "2010 500")).toBe(false);
+    expect(claims.some((c) => c.claim === "500")).toBe(true);
+  });
+});

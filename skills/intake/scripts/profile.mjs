@@ -12,6 +12,14 @@ const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 // Number() is never trusted before this regex either.
 const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
 
+// A number a human wrote with the SI thousands SPACE — groups of exactly three digits separated by
+// a space, a no-break space, a narrow no-break space or a thin space, with an optional decimal tail
+// written either way. This is the grouping ISO 80000-1 states, and it is how WHO, Eurostat, the
+// ECDC, the EEA and every French-language statistical office print a number. Round nine: nothing in
+// this project read one, so WHO's own "59 000" was two tokens, "59" and "000", and "000" is not a
+// number anybody wrote.
+const SPACED_THOUSANDS_RE = /^[+-]?\d{1,3}([\u0020\u00A0\u202F\u2009]\d{3})+([.,]\d+)?$/;
+
 function isNumeric(v) {
   return NUMERIC_RE.test(v) && Number.isFinite(Number(v));
 }
@@ -34,6 +42,13 @@ function stripThousands(v) {
  * because nobody writes a decimal comma followed by a thousands-grouped period); without one, a
  * comma-grouped token stays ambiguous.
  *
+ * A SPACE-GROUPED token ("59 000") is read here for the first time in round nine, and it is refused
+ * for the same reason and in the same words: a lone token carries no evidence for itself. Its two
+ * readings are not two ways of reading one numeral, as a comma's are — they are ONE numeral against
+ * TWO numerals side by side — but the answer a token alone can give is the same one, a named
+ * ambiguity quoting both readings rather than a guess. What settles it is the same thing that
+ * settles a comma: the frozen table, one module along, in `settleGroupedNumeral`.
+ *
  * Returns `{ value }` for an unambiguous read, `{ ambiguous: true, reason }` for a numeral this
  * function can see but cannot resolve to one value, and `null` for a string that is not a numeral
  * at all. Never two numbers out of one token — the defect this exists to close, where a naive
@@ -48,6 +63,14 @@ export function readNumericToken(raw) {
     return {
       ambiguous: true,
       reason: `"${value}" is ambiguous — could be a thousands-grouped number or a decimal comma, and nothing settles it`,
+    };
+  }
+  if (SPACED_THOUSANDS_RE.test(value)) {
+    const groups = value.split(/[\u0020\u00A0\u202F\u2009]/);
+    if (/[.,]/.test(value)) return { value: Number(groups.join("").replace(",", ".")) };
+    return {
+      ambiguous: true,
+      reason: `"${value}" is ambiguous — could be one number written with the SI thousands space (${Number(groups.join(""))}) or two numerals side by side (${groups.join(" and ")}), and nothing settles it`,
     };
   }
   if (value.includes(",")) {
