@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { resolveDatawrapperToken } from "../scripts/produce.mjs";
 import {
   createChart,
   setChartData,
@@ -200,7 +201,17 @@ describe("request deadlines", () => {
 });
 
 describe("against the real Datawrapper API", () => {
-  const token = process.env.DATAWRAPPER_TOKEN ?? "";
+  // THE GATE THAT DECIDES WHETHER A LIVE TEST RUNS, reading the credential the way the SKILL reads it
+  // (2026-08-23). This read `process.env.DATAWRAPPER_TOKEN` while `produce.mjs` declares
+  // `DATAWRAPPER_TOKEN_ALIASES = ["DATAWRAPPER_API_TOKEN"]` and this checkout's root `.env` holds
+  // only the alias — so every live Datawrapper test here printed "skipping, not set" against a
+  // working token, and this format's live path had never once been exercised on this machine. In
+  // `produce.test.ts` the same file already TESTS the resolver a few hundred lines below.
+  //
+  // Fourth sighting of one shape in a week: the map probe read its key with no alias list, then the
+  // GATE deciding whether that probe runs did, then the operation that calls the provider did, and
+  // now the gates that decide whether a test runs. A skip nobody reads is a pass.
+  const token = resolveDatawrapperToken(process.env);
   if (!token) {
     console.log(
       "Skipping real Datawrapper round-trip: DATAWRAPPER_TOKEN is not set in the environment.",
