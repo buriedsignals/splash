@@ -2101,3 +2101,87 @@ describe("ROUND SIX — the two-year comparison reads its direction word whereve
     );
   });
 });
+
+// ROUND EIGHT — A TOTAL IS EQUALLED AT THE NUMERAL'S OWN PRECISION, AND AT NOTHING WIDER.
+//
+// Round five closed the small end of this: a flat 0.5 floor declared 0.61 equal to a sum of 0.482,
+// a window wider than the numbers it compared. It kept a RELATIVE term beside the fix — `|sum| * 1%`
+// — on the reasoning that a big column is allowed a little slack. A real story found the mirror
+// image at the other end of the scale: WHO's measles workbook sums to 126,380, an article's headline
+// said 127,350, and `groundTakeaway` came back `supported` — the verdict that CLOSES G1 — quoting a
+// total 970 away as the thing the number equalled. Bisected at the time: every value from 126,380 to
+// 127,643 "equalled" that sum, so a numeral written to the unit was allowed 2,527x its own precision.
+describe("a total is equalled at the numeral's own precision", () => {
+  const millions = {
+    columns: [{ name: "cases", type: "number", min: 0, max: 60000, sum: 126380 }],
+    rowCount: 53,
+  };
+
+  it("should refuse a headline 970 away from the sum it is offered against", () => {
+    const { claims } = groundTakeaway("Europe recorded 127350 cases in the year.", millions);
+    const numeral = claims.find((c) => c.claim.includes("127350"))!;
+    expect(numeral.verdict).not.toBe("supported");
+  });
+
+  it("should still confirm the sum written exactly", () => {
+    const { claims } = groundTakeaway("Europe recorded 126380 cases in the year.", millions);
+    const numeral = claims.find((c) => c.claim.includes("126380"))!;
+    expect(numeral.verdict).toBe("supported");
+    expect(numeral.detail).toContain("equals the sum");
+  });
+
+  it("should still confirm a numeral whose OWN precision reaches the sum", () => {
+    // "33.8" written to the tenth admits half a tenth; a column summing to 33.83 is inside it. The
+    // numeral says how much rounding it has done, and that is the whole of the window.
+    const small = { columns: [{ name: "tonnes", type: "number", min: 0, max: 20, sum: 33.83 }], rowCount: 4 };
+    const { claims } = groundTakeaway("The four sites together hold 33.8 tonnes.", small);
+    const numeral = claims.find((c) => c.claim.includes("33.8"))!;
+    expect(numeral.verdict).toBe("supported");
+  });
+});
+
+// ROUND EIGHT — AN ENGLISH WORD IS NOT AN ISO CODE.
+//
+// Eurostat's tables key countries by two-letter code, and the caseless fallback that reads a table's
+// own keys out of a sentence is case-insensitive — right for a name ("monaco" should find "Monaco"),
+// wrong for a code. Measured on a real story: "Austria has the highest share in 2024, as seen in the
+// 22.58 % it reports" came back `contradicted` ABOUT ITALY, because the word "it" matched the row
+// key `IT`. Deleting that one word made the same check answer correctly. On a table where the
+// accidentally-matched row holds the extreme, the same reading is a false confirmation.
+describe("a two-letter code is matched as a code, not as a word", () => {
+  const codes = {
+    columns: [
+      { name: "geo", type: "text" },
+      { name: "label", type: "text" },
+      { name: "year", type: "number", min: 2020, max: 2024 },
+      { name: "v", type: "number", min: 19.49, max: 26.5 },
+    ],
+    rows: [
+      { geo: "IT", label: "Italy", year: 2024, v: 19.49 },
+      { geo: "EE", label: "Estonia", year: 2024, v: 22.6 },
+      { geo: "AT", label: "Austria", year: 2020, v: 26.5 },
+    ],
+  };
+
+  it("should not decide about Italy because the sentence contains the word \"it\"", () => {
+    const { claims } = groundTakeaway(
+      "Austria has the highest share in 2024, as seen in the 22.58 % it reports.",
+      codes,
+    );
+    const superlative = claims.find((c) => c.claim.includes("the highest"))!;
+    expect(superlative.detail).not.toContain("IT");
+    expect(superlative.detail).toContain("Austria");
+  });
+
+  it("should still resolve a code written as a code", () => {
+    const { claims } = groundTakeaway("In 2024 EE has the highest share.", codes);
+    const superlative = claims.find((c) => c.claim.includes("the highest"))!;
+    expect(superlative.verdict).toBe("supported");
+  });
+
+  it("should still resolve a full name whatever its case", () => {
+    const { claims } = groundTakeaway("In 2024 estonia has the highest share.", codes);
+    const superlative = claims.find((c) => c.claim.includes("the highest"))!;
+    expect(superlative.verdict).toBe("supported");
+  });
+});

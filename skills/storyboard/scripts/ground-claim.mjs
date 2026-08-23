@@ -515,7 +515,23 @@ function roundingWindowOf(raw) {
  */
 function matchesAggregate(value, sum, roundingWindow) {
   if (sum === null || sum === undefined || !Number.isFinite(sum)) return false;
-  const window = Math.max(roundingWindow ?? 0.5, Math.abs(sum) * AGGREGATE_TOLERANCE);
+  // THE RELATIVE SLACK IS GONE, AND IT WAS THE MIRROR OF THE DEFECT ROUND FIVE CLOSED.
+  //
+  // Round five found a flat 0.5 floor declaring 0.61 equal to a sum of 0.482 — a window wider than
+  // the numbers it compared — and replaced the floor with the numeral's own precision. It kept a
+  // RELATIVE term beside it, `|sum| * 0.01`, on the reasoning that "a big column is allowed 1%".
+  // A real story found what that costs at the other end of the scale: WHO's measles workbook sums
+  // to 126,380 and an article's headline said 127,350, so the window was ±1,263 and the check
+  // answered `supported` — the verdict that CLOSES G1 — for a number the table does not hold,
+  // quoting a total 970 away as the thing it equalled. Bisected: every value from 126,380 to
+  // 127,643 "equalled" that sum. The numeral is written to the unit, so it was allowed 2,527x its
+  // own stated precision.
+  //
+  // A journalist who writes "127350" has claimed the unit. One who has rounded writes "127,000" or
+  // "127 thousand", and `roundingWindowOf` and the multiplier reading already give each of those
+  // the width it actually asks for. So the window is the numeral's own and nothing else, which is
+  // the rule round five stated and then softened by half.
+  const window = roundingWindow ?? 0.5;
   const cannotExceed = Math.min(Math.abs(value), Math.abs(sum));
   return Math.abs(value - sum) <= Math.min(window, cannotExceed);
 }
@@ -1398,6 +1414,31 @@ function resolveEntityWithoutCase(item, rows) {
   return {};
 }
 
+/**
+ * A SHORT ALL-CAPS KEY IS A CODE, AND A CODE IS WRITTEN IN CAPS (round eight, Eurostat organic farming).
+ *
+ * `wordAppearsIn` is case-insensitive, which is right for a NAME — a table holding "Monaco" should
+ * answer a sentence saying "monaco". It is wrong for a two-letter ISO code, and the cost was
+ * measured on a real story: `"Austria has the highest share in 2024, as seen in the 22.58 % it
+ * reports"` came back `contradicted`, about ITALY, because the English word "it" matched the row key
+ * `IT`. Deleting that one word from the sentence made the same check answer correctly. On a table
+ * where the accidentally-matched row happens to hold the extreme, the same reading is a FALSE
+ * CONFIRMATION, which is the worse half.
+ *
+ * So a key of two or three characters that is written in caps and digits only must appear in the
+ * claim written that way too. Nothing else changes: every longer key, and every key with a lowercase
+ * letter in it, is matched exactly as before. This is the limit `resolveEntityWithoutCase`'s own
+ * docstring already warned about — "a table whose key column repeats a common word would resolve
+ * that row for any clause containing the word" — narrowed to the shape that actually collides.
+ */
+const SHORT_CODE_RE = /^[A-Z0-9]{2,3}$/;
+
+function appearsAsThisKey(key, clause) {
+  if (!wordAppearsIn(key, clause)) return false;
+  if (!SHORT_CODE_RE.test(key)) return true;
+  return new RegExp(`(?<![\\p{L}\\p{N}])${key}(?![\\p{L}\\p{N}])`, "u").test(clause);
+}
+
 /** The one row of `rows` whose own key appears in `text` as a word; the longest match wins. */
 function entityNamedIn(clause, rows) {
   if (!clause.trim() || !rows || rows.length === 0) return {};
@@ -1406,7 +1447,7 @@ function entityNamedIn(clause, rows) {
     for (const value of Object.values(row)) {
       if (typeof value !== "string") continue;
       const key = value.trim();
-      if (key.length < 2 || !wordAppearsIn(key, clause)) continue;
+      if (key.length < 2 || !appearsAsThisKey(key, clause)) continue;
       if (!named.has(key)) named.set(key, []);
       named.get(key).push(row);
     }

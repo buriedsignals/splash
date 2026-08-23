@@ -173,14 +173,24 @@ describe("the frozen stories that never recorded it", () => {
       .map((slot: any) => ({ story, slot }));
   });
 
+  // A slot that DOES record a destination is not a counter-example to this block, it is the point of
+  // the field — and asserting that every static slot in the tree records none was true of the frozen
+  // corpus for exactly as long as no new story used the gate. The first one that did (round eight)
+  // reddened this. So the subject is stated in the population instead of in an assertion over it.
+  const withoutOne = staticSlots.filter(({ slot }: any) => slot.destination === undefined);
+  const withOne = staticSlots.filter(({ slot }: any) => slot.destination !== undefined);
+
   it("should have found the six slots this change had to keep working", () => {
-    expect(staticSlots.length).toBeGreaterThanOrEqual(6);
-    expect(
-      staticSlots.every(({ slot }: any) => slot.destination === undefined),
-    ).toBe(true);
+    expect(withoutOne.length).toBeGreaterThanOrEqual(6);
   });
 
-  for (const { story, slot } of staticSlots) {
+  it("should find at least one story that DID record it, or the gate is asking into the void", () => {
+    // The other half, and the one worth more: a field the gate asks for and no story ever carries is
+    // a question nobody answers. This fails the day the last recorded destination leaves the tree.
+    expect(withOne.length).toBeGreaterThanOrEqual(1);
+  });
+
+  for (const { story, slot } of withoutOne) {
     it(`should leave ${story} slot ${slot.id} closed on the fact it does not record`, () => {
       expect(destinationGap(slot.format, slot.destination, slot.id)).toBe(null);
     });
