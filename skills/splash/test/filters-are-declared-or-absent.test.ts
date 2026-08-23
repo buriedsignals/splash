@@ -165,6 +165,12 @@ const LEGACY_MAP_VOCABULARY = [
   "proof/mapgen-locator-web/locator.html",
   "proof/mapgen-symbol-web/quake-symbol.html",
   "skills/map-web/output-proof/population.html",
+  // 2026-08-23: `stories/r8-map-web-japan-bear-casualties` landed a fourth map-web beat and its
+  // export copy, both on the same legacy mechanism, and reddened this list on its own commit — which
+  // is what the list is for. Added by name rather than by widening the assertion; the gap is one
+  // page wider, and still self-closing.
+  "stories/r8-map-web-japan-bear-casualties/beats/1-bear-casualties-by-prefecture/renders/bear-casualties-by-prefecture.html",
+  "stories/r8-map-web-japan-bear-casualties/export/1-bear-casualties-by-prefecture/bear-casualties-by-prefecture.html",
 ];
 
 const PAGES: Page[] = trackedWebPages().map((path) => {

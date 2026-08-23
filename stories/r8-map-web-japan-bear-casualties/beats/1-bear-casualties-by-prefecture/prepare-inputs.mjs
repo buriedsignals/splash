@@ -75,12 +75,33 @@ const REGION_OF = {
   宮崎: "Kyushu", 鹿児島: "Kyushu", 沖縄: "Kyushu",
 };
 
+/** A REAL RFC 4180 READER, not a line-and-comma split. The first version of this file cut every
+ *  row on a bare comma, which is silent corruption against real data — a thousands separator
+ *  ("1,234"), or any field carrying its own comma, tears into two and every column after it is one
+ *  off from there. `skills/splash/test/csv-hand-split.test.ts` walks the whole tree for exactly that
+ *  pair of signals and named this file. This is `stories/real-owid-life-expectancy`'s own reader,
+ *  character by character, carried here rather than imported: a beat directory has to stand on its
+ *  own. */
 function parseCsv(text) {
-  return text
-    .trim()
-    .split("\n")
-    .map((line) => line.split(","));
+  const out = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i++; } else quoted = false;
+      } else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); out.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell.length > 0 || row.length > 0) { row.push(cell); out.push(row); }
+  return out;
 }
+
 
 const storyDir = resolve(HERE, "..", "..");
 const rows = parseCsv(await readFile(join(storyDir, "source", "data.csv"), "utf8"));

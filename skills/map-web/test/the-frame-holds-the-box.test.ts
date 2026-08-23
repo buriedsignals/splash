@@ -95,10 +95,10 @@ describe("deliveryFrame — the frame the delivered box actually needs", () => {
       1600,
       [1.398, 2.768],
     );
-    expect(frame).toEqual({ width: 1600, height: 578 });
+    expect(frame).toEqual({ width: 1600, height: 579 });
     // Japan is drawn 532x578 in the middle of it, and the 1068px it does not use is sea and the
     // Asian and Pacific coasts either side — the picture a newsroom map of Japan actually is.
-    expect(studySet).toEqual({ x: 534, y: 0, width: 532, height: 578 });
+    expect(studySet).toEqual({ x: 534, y: 0, width: 532, height: 579 });
     expect(padding).toEqual({ top: 0, right: 534, bottom: 0, left: 534 });
   });
 

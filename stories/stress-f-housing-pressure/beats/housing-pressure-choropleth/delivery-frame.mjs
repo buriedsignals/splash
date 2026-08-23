@@ -214,7 +214,12 @@ export function deliveryFrame(bounds, width, boxAspects, clearance = NO_CLEARANC
     unitHeight = 1;
   }
   const perUnit = width / unitWidth;
-  const height = Math.max(1, Math.round(perUnit * unitHeight));
+  // CEIL, not round, and it is `frameHeightFor`'s own rounding rather than a preference. A camera
+  // that cannot be covered falls back to exactly the frame that function gives, and the two must
+  // land on the same integer or every downstream reading of the plate's own `frameCorners` moves:
+  // measured on `proof/mapgen-hexgrid-web`, one pixel of frame height (476 against 475) moved the
+  // count of catalogued rows outside the committed corners from 201 to 145.
+  const height = Math.max(1, Math.ceil(perUnit * unitHeight));
   const studyWidth = perUnit * study;
   const studyHeight = perUnit;
   const padX = Math.max(0, Math.round((width - studyWidth) / 2));

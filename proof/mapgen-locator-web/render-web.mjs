@@ -471,7 +471,7 @@ function buildCss({ ground, ink, muted, frame, cannotCover = null }) {
       // The decorative SVG marker too — otherwise a narrowed filter leaves every OTHER category's
       // marker sitting on the plate with no label and no hit target, an ambiguous ghost rather than
       // a genuinely narrower map.
-      `.map-web-page:has(#${id}:checked) svg.map circle[data-group]:not([data-group="${attr}"]) { display: none; }`,
+      `.map-web-page:has(#${id}:checked) svg.map [data-group]:not([data-group="${attr}"]) { display: none; }`,
       `.map-web-page:has(#${id}:checked) .org-table tbody tr:not([data-group="${attr}"]) { display: none; }`,
     ].join("\n");
   }).join("\n");

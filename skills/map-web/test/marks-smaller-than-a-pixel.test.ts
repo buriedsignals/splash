@@ -288,7 +288,12 @@ describe("every delivered page in this format, swept", () => {
     // `mapgen-dot-web` is in that list only because this reading stopped keying off one beat's class
     // name: Liechtenstein and Malta are drawn under a pixel there, on a page whose live hover target
     // is the country fill and whose own brief used to claim a reader could hover any of the 42.
-    expect(counted.get("proof/mapgen-dot-web/dot-population.html")).toBe(2);
+    // 2 -> 3 on 2026-08-23, and the third was there all along. This beat draws 42 country outlines
+    // and `drawnWidthAt` used to answer 1000px about a map the browser drew 704px wide, so a shape
+    // between those two readings counted as reachable when it was not. Liechtenstein, Malta and
+    // Luxembourg are all drawn under a pixel here at 1600px; the keyboard and the table are their
+    // path, and this beat's own brief no longer claims a reader can hover any of the 42.
+    expect(counted.get("proof/mapgen-dot-web/dot-population.html")).toBe(3);
     expect(
       counted.get(
         "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/renders/life-expectancy-2023.html",

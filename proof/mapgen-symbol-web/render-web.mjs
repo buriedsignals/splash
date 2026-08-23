@@ -377,7 +377,7 @@ function buildCss({ ground, accent, ink, muted, groups, frame, cannotCover = nul
         // target and left "M9.1" floating over a mark that was no longer on the map — measured on
         // the delivered page, not deduced. The seed had this rule; this beat did not.
         `.map-web-page:has(#${id}:checked) .point-label:not([data-group="${attr}"]) { display: none; }`,
-        `.map-web-page:has(#${id}:checked) svg.map circle[data-group]:not([data-group="${attr}"]) { display: none; }`,
+        `.map-web-page:has(#${id}:checked) svg.map [data-group]:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) .region-table tbody tr:not([data-group="${attr}"]) { display: none; }`,
       ].join("\n");
     })

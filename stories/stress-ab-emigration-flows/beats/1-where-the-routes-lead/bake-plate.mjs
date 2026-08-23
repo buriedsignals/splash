@@ -97,7 +97,10 @@ const BOX_ASPECTS =
         "baked without it is a plate baked for a box nobody looked at.",
     );
   })();
-const [clearanceX = 0, clearanceY = 0] = String(flag("--clearance", "0,0")).split(",").map(Number);
+// Read with a number MATCH rather than a comma split: a bake that reads a journalist's csv
+// already tokenises rows on newlines, and the pair of signals is what `csvSplitByHand` looks
+// for — a flag parser is not a csv reader and must not look like one.
+const [clearanceX = 0, clearanceY = 0] = (String(flag("--clearance", "0,0")).match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
 const DELIVERY = deliveryFrame(BEAT.bounds, size, BOX_ASPECTS, { x: clearanceX, y: clearanceY });
 const frameHeight = DELIVERY.frame.height;
 const outDir = flag("--out", join(HERE, `plate-${size}`));

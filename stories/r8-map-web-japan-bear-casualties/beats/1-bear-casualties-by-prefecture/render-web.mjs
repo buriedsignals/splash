@@ -547,11 +547,19 @@ function buildCss({ ground, accent, ink, muted, groups, frame, cannotCover = nul
       return [
         `.map-web-page:has(#${id}:checked) .pt:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) .point-label:not([data-group="${attr}"]) { display: none; }`,
+        // EVERY drawn element the filter's own vocabulary tags, not only the circle. This read
+        // `svg.map circle[data-group]` until 2026-08-23, and `stories/r8-map-web-japan-bear-casualties`
+        // draws LEADER LINES tagged with the same attribute: driven at 1280x900, six of its Chubu
+        // leaders still had a client rect after the filter narrowed the map to another region — a
+        // line pointing at a prefecture that is no longer drawn. Measured across the whole delivered
+        // population, `circle` and `line` are the only tags that carry the attribute inside the map
+        // svg, so widening the selector to the attribute changes nothing else and cannot leave the
+        // next element kind behind.
         // The decorative SVG mark, too — otherwise a narrowed filter leaves every OTHER region's
         // circle sitting on the map with no label and no hit target, an ambiguous ghost rather
         // than a genuinely narrower map (caught by screenshotting the filtered state, not by
         // reading the markup).
-        `.map-web-page:has(#${id}:checked) svg.map circle[data-group]:not([data-group="${attr}"]) { display: none; }`,
+        `.map-web-page:has(#${id}:checked) svg.map [data-group]:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) .region-table tbody tr:not([data-group="${attr}"]) { display: none; }`,
       ].join("\n");
     })

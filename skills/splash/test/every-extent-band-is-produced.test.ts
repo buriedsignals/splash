@@ -126,8 +126,25 @@ const CAMERA_CENSUS: Record<
   // tolerance stops being a census.
   "mapgen-hexgrid-web": { band: "planet", km: 39562, bias: 23.3 },
   "mapscrolly-quakes-three-ways": { band: "planet", km: 39693, bias: 32.2 },
-  "mapgen-symbol-web": { band: "hemisphere", km: 8839, bias: 2.8 },
-  "mapgen-dot-web": { band: "hemisphere", km: 4501, bias: 6.7 },
+  // 2026-08-23, and it is FIVE map-web cameras at once, for one reason. The owner ruled that the
+  // graphic takes the whole box its host gives it, on both axes; a plate is never stretched, so the
+  // box is filled by COVER and the bake has to carry real basemap around the study set for the crop
+  // to land on ocean (`map-web/scripts/delivery-frame.mjs`). A FRAME therefore now covers more
+  // ground than the camera's own bounds do, and this census reads the frame. What moved and what
+  // did not:
+  //   mapgen-choropleth-web   4089 -> 8989 km, bias 4.3 -> 6.3   band unchanged
+  //   mapgen-dot-web          4501 -> 10004,  bias 6.7 unchanged  band unchanged (15 km under planet)
+  //   mapgen-symbol-web       8839 -> 23133,  bias 2.8 unchanged  hemisphere -> PLANET
+  //   mapgen-locator-web        11 -> 25,     bias 1.0 unchanged  band unchanged
+  //   mapgen-hexgrid-web     39562, bias 23.3 — a full-turn camera, which cannot be given
+  //                                             horizontal margin at all (`cannotCover`), so it is
+  //                                             back on exactly the frame `frameHeightFor` gives it
+  // The LADDER is unaffected, which is the thing this file exists to protect: planet 5, hemisphere
+  // 3, continent 3, city 3, and `country`/`region` still probe-only. The area bias rising on the two
+  // European cameras is the honest cost — a wider frame reaches further from the equator — and it is
+  // re-recorded rather than tolerated, because a census with a tolerance stops being a census.
+  "mapgen-symbol-web": { band: "planet", km: 23133, bias: 2.8 },
+  "mapgen-dot-web": { band: "hemisphere", km: 10004, bias: 6.7 },
   "mapscrolly-one-map-europe-carbon": {
     band: "hemisphere",
     km: 4152,
@@ -138,7 +155,7 @@ const CAMERA_CENSUS: Record<
   // nothing cropped). The band is unchanged and the AREA BIAS IMPROVED, 5.1 to 4.3 — less Mercator
   // distortion across the frame, which is what dropping the padding buys. Re-recorded rather than
   // widened: a census with a tolerance stops being a census.
-  "mapgen-choropleth-web": { band: "hemisphere", km: 4089, bias: 4.3 },
+  "mapgen-choropleth-web": { band: "hemisphere", km: 8989, bias: 6.3 },
   "mapvid-dot-population": { band: "hemisphere", km: 4126, bias: 4.3 },
   "mapmore-dot-population": { band: "hemisphere", km: 4125, bias: 4.3 },
   "mapgen-flowmap-video": { band: "continent", km: 1873, bias: 1.3 },
@@ -146,7 +163,7 @@ const CAMERA_CENSUS: Record<
   "mapmore-scrolly-danube": { band: "continent", km: 1821, bias: 1.3 },
   "mapvid-locator-geneva": { band: "city", km: 13, bias: 1.0 },
   "map-geneva-locator": { band: "city", km: 11, bias: 1.0 },
-  "mapgen-locator-web": { band: "city", km: 11, bias: 1.0 },
+  "mapgen-locator-web": { band: "city", km: 25, bias: 1.0 },
 };
 
 /**
