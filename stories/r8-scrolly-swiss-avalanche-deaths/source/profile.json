@@ -1,0 +1,20 @@
+{
+  "rowCount": 1409,
+  "columns": [
+    {
+      "name": "WSL Institute for Snow and Avalanche Research SLF",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1409,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": null
+}
