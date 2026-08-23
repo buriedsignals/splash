@@ -26,6 +26,17 @@
 // `real-owid-life-expectancy` each derived it in their own beat directories. Three beats have now
 // written the same four lines; no skill carries them.
 //
+// CLOSED UPSTREAM 2026-08-23 — all four. `skills/scrolly/scripts/bake-plate.mjs` now takes
+// `--centre lon,lat`, `--bounds W,S,E,N`, `--name <basename>` and `--ground #rrggbb`, derives the
+// basemap side from that ground with the same `plateFollowsGround` that will later judge the
+// pairing, and calls `assertCameraReachesBounds` on the bounds path. A beat written after this date
+// does NOT need to copy the four reasons above; it passes four flags. This file is kept as it
+// stands rather than shrunk, and that is a deliberate refusal with a number behind it: this beat's
+// plate is approved and its delivered HTML is byte-bound to the render that embeds it (gate 3), so
+// re-baking to prove a shorter file would mean re-approving a page nothing is wrong with. What this
+// file still carries that the skill's bake does not is the part that IS this beat's: projecting
+// 1,406 accidents into the frame the plate was baked at.
+//
 // Everything else — the boundary-layer hide, the world-fills-the-frame and reaches-the-bounds
 // assertions, the idle/settle gate, the JPEG choice — is the skill's bake, copied rather than
 // imported, because nothing under a skill may be imported across a beat boundary either.
