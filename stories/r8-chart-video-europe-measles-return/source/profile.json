@@ -1,0 +1,358 @@
+{
+  "rowCount": 2910,
+  "columns": [
+    {
+      "name": "Region",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "ISO3",
+      "type": "text",
+      "missing": 0,
+      "distinct": 194,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 194,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 15,
+      "min": 2011,
+      "max": 2025,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
+    },
+    {
+      "name": "January",
+      "type": "number",
+      "missing": 889,
+      "distinct": 358,
+      "min": -7,
+      "max": 50012,
+      "sum": 395062,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "February",
+      "type": "number",
+      "missing": 874,
+      "distinct": 384,
+      "min": 0,
+      "max": 67929,
+      "sum": 453324,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "March",
+      "type": "number",
+      "missing": 879,
+      "distinct": 415,
+      "min": 0,
+      "max": 59761,
+      "sum": 493718,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "April",
+      "type": "number",
+      "missing": 894,
+      "distinct": 384,
+      "min": -2,
+      "max": 23931,
+      "sum": 379935,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "May",
+      "type": "number",
+      "missing": 903,
+      "distinct": 369,
+      "min": 0,
+      "max": 9329,
+      "sum": 307291,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "June",
+      "type": "number",
+      "missing": 932,
+      "distinct": 328,
+      "min": 0,
+      "max": 6427,
+      "sum": 210040,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "July",
+      "type": "number",
+      "missing": 975,
+      "distinct": 288,
+      "min": 0,
+      "max": 5086,
+      "sum": 159132,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "August",
+      "type": "number",
+      "missing": 994,
+      "distinct": 264,
+      "min": -14,
+      "max": 5247,
+      "sum": 137350,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "September",
+      "type": "number",
+      "missing": 1011,
+      "distinct": 263,
+      "min": -31,
+      "max": 5659,
+      "sum": 126380,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "October",
+      "type": "number",
+      "missing": 1047,
+      "distinct": 264,
+      "min": -195,
+      "max": 6721,
+      "sum": 136036,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "November",
+      "type": "number",
+      "missing": 1076,
+      "distinct": 268,
+      "min": 0,
+      "max": 12426,
+      "sum": 158042,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "December",
+      "type": "number",
+      "missing": 1121,
+      "distinct": 247,
+      "min": -5,
+      "max": 15177,
+      "sum": 162688,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": {
+    "entity": "ISO3",
+    "period": "Year",
+    "entities": 194,
+    "periods": 15,
+    "rowsPerPeriod": {
+      "min": 194,
+      "max": 194
+    },
+    "balanced": true,
+    "says": "one row per entity per period: every (\"ISO3\", \"Year\") pair in this table is unique, so rowCount (2910) counts readings, never subjects — there are 194 of those",
+    "decidedBy": "every (\"ISO3\", \"Year\") pair is unique across all 2910 rows, and \"ISO3\" holds no blank",
+    "coverage": {
+      "byPeriod": [
+        {
+          "period": 2011,
+          "entities": 194
+        },
+        {
+          "period": 2012,
+          "entities": 194
+        },
+        {
+          "period": 2013,
+          "entities": 194
+        },
+        {
+          "period": 2014,
+          "entities": 194
+        },
+        {
+          "period": 2015,
+          "entities": 194
+        },
+        {
+          "period": 2016,
+          "entities": 194
+        },
+        {
+          "period": 2017,
+          "entities": 194
+        },
+        {
+          "period": 2018,
+          "entities": 194
+        },
+        {
+          "period": 2019,
+          "entities": 194
+        },
+        {
+          "period": 2020,
+          "entities": 194
+        },
+        {
+          "period": 2021,
+          "entities": 194
+        },
+        {
+          "period": 2022,
+          "entities": 194
+        },
+        {
+          "period": 2023,
+          "entities": 194
+        },
+        {
+          "period": 2024,
+          "entities": 194
+        },
+        {
+          "period": 2025,
+          "entities": 194
+        }
+      ],
+      "fullest": {
+        "period": 2011,
+        "entities": 194
+      },
+      "thinnest": {
+        "period": 2011,
+        "entities": 194
+      },
+      "says": "a period's own step being present is not the same as every entity being present in it: the fullest period here carries 194 entities and the thinnest carries 194"
+    },
+    "aggregates": {
+      "says": "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+      "byArithmetic": [],
+      "byStructure": [],
+      "arithmetic": {
+        "ran": false,
+        "reason": "the structural test set no row of this table apart, so there was no candidate to put to the arithmetic — a set of rows that happens to add up to another is a coincidence until something else says that row is different"
+      },
+      "structure": {
+        "answered": false,
+        "reason": "no column of this table holds one stable code per entity with a shape most of them share"
+      }
+    }
+  },
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires"
+    ],
+    "column": "Year",
+    "readProse": true,
+    "claims": [
+      {
+        "period": 2025,
+        "column": "Year",
+        "word": "preliminary",
+        "sentence": "A total of 38 deaths have been reported, based on preliminary data received as of 6 March 2025."
+      },
+      {
+        "period": 2025,
+        "column": "Year",
+        "word": "incomplete",
+        "sentence": "Reporting for the most recent months is therefore incomplete and provisional, and the table's 2025 rows are the publisher's placeholder zeros, not observations."
+      }
+    ],
+    "says": "the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote, carried here with the sentence that made it, never a fact this profiler checked"
+  }
+}
