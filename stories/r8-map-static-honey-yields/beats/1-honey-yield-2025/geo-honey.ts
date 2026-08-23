@@ -709,26 +709,43 @@ export function deltaE76(a: string, b: string): number {
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
 }
 
-/** OSM Carto's water, the convention rule 7 names first. The HUE this beat keeps, not the value. */
-export const WATER_CONVENTION = "#aad3df";
+/** THE RAMP THIS BEAT DRAWS, AND THE TWO NUMBERS THAT SHAPE IT — here rather than in the render,
+ *  because the BAKE has to know them too.
+ *
+ *  The sea is derived from the band between this story's ground and the nearest thing that carries
+ *  data (`basemapWaterFor`, in `bake-plate.mjs`), and on a choropleth the nearest thing that carries
+ *  data is the ramp's own first class. A bake that could not see the ramp would have to be handed a
+ *  colour by hand, which is precisely how this beat's sea came to sit at 0.1137 relative luminance —
+ *  1.01:1 against its own third class, a sea a reader could read a yield off.
+ *
+ *  FROM IS 0.28 AND NOT THE 0.20 THIS BEAT SHIPPED, and it is a measurement. At 0.20 the first class
+ *  lands at 0.0464 relative luminance and the ground is at 0.0094: a band 0.0370 wide, where a
+ *  surface that is neither the ground nor a class needs two clearances, 0.0400. The derivation
+ *  REFUSES rather than squeezing the sea in, and the answer it names is the one taken here — raise
+ *  the ramp's own low end. At 0.28 the first class is at 0.0709, the band is 0.0615, and the sea
+ *  lands at 0.0405: 15.9 ΔE76 from the nearest class, against the 12.7 that FROM 0.22 would give
+ *  and the 0.0 (1.01:1) the hand-derived tint gave. `assertRampReads` still passes — the smallest
+ *  step between two classes is 0.0307 against its 0.02 floor, and the top class still measures
+ *  5.81:1 against the ground.
+ *
+ *  TO IS 0.68 AND NOT THE SEED'S 0.78 for the reason `HoneyMapStill.tsx` records: on a dark ground
+ *  the ramp's top is bounded by the coastline STROKE, not by the accent. */
+export const HONEY_RAMP_FROM = 0.28;
+export const HONEY_RAMP_TO = 0.68;
 
-/** The separation rule 7a measures on the light plate — `#F7F7F7` land against `#aac9e0` water.
- *  It is the bar this beat's own tint has to reach, and it is not a number chosen for this beat. */
-export const LIGHT_PLATE_LAND_WATER_SEPARATION = 23.77;
-
-/** The water tint for a plate whose own land is `land`: the least step from that land toward the
- *  convention's blue that reaches the light plate's own land/water separation. THROWS if no step
- *  reaches it rather than returning the closest — a coast a reader cannot find is not a smaller
- *  version of a coast they can. */
-export function waterTintFor(land: string, target = LIGHT_PLATE_LAND_WATER_SEPARATION): string {
-  for (let step = 1; step <= 100; step++) {
-    const tint = mixHex(land, WATER_CONVENTION, step / 100);
-    if (deltaE76(tint, land) >= target) return tint;
-  }
-  throw new Error(
-    `no mix of ${land} toward ${WATER_CONVENTION} reaches ${target} ΔE76 of separation — this ` +
-      `plate's land is already the convention's own water colour, and the coast cannot be found ` +
-      `by tint at all on it`,
+/** This beat's ramp, from its own recorded ground toward its own recorded accent. One derivation,
+ *  read by the bake (to place the sea below it) and by the render (to draw it). */
+export function honeyRamp(ground: string, accent: string): string[] {
+  return assertRampReads(
+    sequentialRamp(
+      ground,
+      dataRampEnd(accent, ground),
+      HONEY_BREAKS.length + 1,
+      HONEY_RAMP_FROM,
+      HONEY_RAMP_TO,
+    ),
+    ground,
+    "the honey ramp",
   );
 }
 

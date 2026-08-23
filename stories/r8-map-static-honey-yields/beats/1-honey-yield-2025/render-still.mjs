@@ -32,15 +32,12 @@ import {
   HONEY_BREAKS,
   HONEY_EXPECTED_NO_DATA,
   HONEY_STUDY,
-  assertRampReads,
   claimViolations,
-  dataRampEnd,
   deltaE76,
   joinValues,
   mixHex,
-  sequentialRamp,
   unmatchedValues,
-  waterTintFor,
+  honeyRamp,
   yieldsFromRelease,
 } from "./geo-honey.ts";
 
@@ -114,21 +111,11 @@ console.log(
 
 // ── The colours, derived and then MEASURED ─────────────────────────────────────────────────────
 const furniture = deriveFurniture(PALETTE.ground);
-// TO is 0.68 and not the seed's 0.78 because of the assertion immediately below — see
-// HoneyMapStill.tsx's header for the measurement that fixes it there.
-const RAMP_FROM = 0.2;
-const RAMP_TO = 0.68;
-const ramp = assertRampReads(
-  sequentialRamp(
-    PALETTE.ground,
-    dataRampEnd(PALETTE.accent, PALETTE.ground),
-    HONEY_BREAKS.length + 1,
-    RAMP_FROM,
-    RAMP_TO,
-  ),
-  PALETTE.ground,
-  "the honey ramp",
-);
+// The ramp lives in `geo-honey.ts` because the BAKE has to know it too: the sea is derived from the
+// band between this story's ground and the ramp's own first class, so a bake that could not see the
+// ramp would have to be handed a colour by hand. See `honeyRamp`'s own header for what FROM 0.28
+// buys and what FROM 0.20 cost.
+const ramp = honeyRamp(PALETTE.ground, PALETTE.accent);
 
 /** GEO-DISCIPLINE RULE 7a, AS ARITHMETIC RATHER THAN AS A PARAGRAPH.
  *
@@ -157,7 +144,17 @@ function assertCoastlineIsDrawn(stroke, classes, water, land) {
   return { nearest, worst };
 }
 const PLATE_LAND = "#292929";
-const waterTint = waterTintFor(PLATE_LAND);
+// THE SEA THE PLATE WAS ACTUALLY BAKED WITH, off the plate's own record — never re-derived here.
+// Two derivations of one colour, one in the bake and one in the render, is two colours the day
+// either moves; the bake writes what it painted and this reads it back.
+const geometryRecord = JSON.parse(await readFile(join(plateDir, "geometry.json"), "utf8"));
+const waterTint = geometryRecord.water?.fill;
+if (typeof waterTint !== "string")
+  throw new Error(
+    `${plateDir}/geometry.json records no water fill, so this render has no sea to measure its own ` +
+      `ramp and coastline against. Re-bake with bake-plate.mjs, which derives the tint from this ` +
+      `story's own PALETTE.md and writes it into the plate's own record.`,
+  );
 const coast = assertCoastlineIsDrawn(furniture.ink, ramp, waterTint, PLATE_LAND);
 console.log(
   `colour   → ramp ${ramp.join(" ")}; water ${waterTint}; nearest class to water ` +
@@ -167,7 +164,7 @@ console.log(
 );
 
 // ── The draw ───────────────────────────────────────────────────────────────────────────────────
-const geometry = JSON.parse(await readFile(join(plateDir, "geometry.json"), "utf8"));
+const geometry = geometryRecord;
 const plate = `data:image/png;base64,${(await readFile(join(plateDir, "plate.png"))).toString("base64")}`;
 
 const props = {
