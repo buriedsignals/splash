@@ -7,7 +7,7 @@
 //
 // Usage: bun stories/r8-map-static-honey-yields/beats/1-honey-yield-2025/render-still.mjs
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
@@ -194,11 +194,13 @@ const props = {
   noDataLabel: "not reported separately",
   alt:
     "A map of the lower forty-eight United States. Twenty states are shaded by the honey their " +
-    "hives yielded in 2025, from 27 pounds per colony in Oregon to 89 in Mississippi. Mississippi, " +
-    "outlined and labelled, is the darkest; Montana at 85 and North Dakota at 67 are next. " +
-    "Twenty-nine states and the District of Columbia carry a hatch instead of a value, because " +
-    "USDA does not report them separately. A vertical legend marks the 48-pound United States " +
-    "average between the third and fourth class.",
+    "hives yielded in 2025, from 27 pounds per colony in Oregon to 89 in Mississippi. The map is " +
+    "drawn on a charcoal ground, so the more a state yielded the LIGHTER it is. Mississippi, " +
+    "outlined and labelled in gold in the deep south, is in the top class; Montana at 85 and " +
+    "North Dakota at 67 are with it. Twenty-nine states and the District of Columbia carry a " +
+    "diagonal hatch instead of a value, because USDA does not report them separately. A " +
+    "horizontal class bar puts the 48-pound United States average on the boundary between the " +
+    "third and fourth class, and eight of the twenty published states are above it.",
   ground: PALETTE.ground,
   accent: PALETTE.accent,
   ink: furniture.ink,
@@ -214,6 +216,13 @@ const props = {
   comparisonLabel: "U.S. average",
   comparisonValue: usAverage.yield,
 };
+
+// THE ALT TEXT HAS A RECORDED HOME AND THIS PRODUCER WRITES IT — `deliver`'s own
+// `resolveRecordedAlt` says out loud that "no producing skill writes `ALT.md` yet", so delivery has
+// been reading the sentence back out of the render or taking it from whatever the caller typed. It
+// is the SAME string the component puts in its `<desc>`, written from one variable, so the two
+// cannot disagree.
+await writeFile(join(HERE, "ALT.md"), `${props.alt}\n`);
 
 const element = createElement(HoneyMapStill, props);
 const markup = renderToStaticMarkup(element);

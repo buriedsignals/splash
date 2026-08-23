@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "review-1-honey-yield-2025-2",
+  "outputId": "1-honey-yield-2025",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:6fbd67dca118068963f97dcb6db7b3943c4570cf67b84a492a5ab18f0ad99a7a",
+  "findingIds": [
+    "takeaway-1"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-honey-yield-2025",
+      "planVersion": 1,
+      "draftDigest": "sha256:6fbd67dca118068963f97dcb6db7b3943c4570cf67b84a492a5ab18f0ad99a7a",
+      "findingIds": [
+        "takeaway-1"
+      ],
+      "id": "qa-1-honey-yield-2025-2",
+      "status": "passed",
+      "completedAt": "2026-08-23T09:05:35.964Z"
+    }
+  ],
+  "angleEvidenceBrief": "The delivered PNG was opened and looked at at 1920x1080. The takeaway is carried in three agreeing places (title, accent outline and label on the map, accent caret on the class bar); the 48-pound national average is a boundary on the scale rather than a sentence; the twenty-nine unreported states and DC carry a named hatch. The class scale was verified against the delivered pixels: ten interior points projected from the bake own frameCorners and sampled out of the PNG agree with binIndexLowerInclusive over the publisher own values, ten of ten. The alt text was corrected against the picture in this pass: it said the subject was the DARKEST state and named a VERTICAL legend, and on a charcoal ground the subject is the lightest and the legend is horizontal.",
+  "decision": "approve",
+  "reviewer": "round-eight map-static run (standing in for the journalist at G3)",
+  "decidedAt": "2026-08-23T09:05:35.964Z",
+  "notes": "The lowest class sits 10.9 dE76 from the basemap own land, so seven states are separated from unpainted ground by the white coastline stroke rather than by their fill; that stroke is asserted at render time at 3.04:1 worst case. geo-discipline rule 7a first branch is unreachable on this palette (nearest class 15.13 dE76 from the water tint against 23.77 required) and the second branch is what carries the coast. Mississippi is about 40px wide at this camera and is located by its outline and label, not by its fill.",
+  "replacesReviewId": "review-1-honey-yield-2025-1"
+}
