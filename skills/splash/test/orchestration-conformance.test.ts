@@ -409,6 +409,43 @@ describe("authoritative Splash orchestration", () => {
     await expect(whereIs(storyDir)).rejects.toThrow(/export|ancestor|story/);
   });
 
+  it("keeps a dead reserved owner retryable in a fresh session", async () => {
+    await freezeAndRender();
+    await unlink(join(beatDir, "renders", "rainfall.svg"));
+    const spec = "{}\n";
+    await writeFile(join(beatDir, "spec.json"), spec);
+    const owner = Bun.spawn([process.execPath, "-e", ""], {
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    await owner.exited;
+    await writeFile(
+      join(beatDir, "PRODUCTION-ATTEMPTS.json"),
+      `${JSON.stringify({
+        schemaVersion: 1,
+        operation: "datawrapper-produce",
+        outputId: OUTPUT_ID,
+        inputPath: "spec.json",
+        inputDigest: sha256(spec),
+        attempts: 1,
+        status: "reserved",
+        reason: "production attempt 1 is already running",
+        reservationId: "dead-owner",
+        pid: owner.pid,
+      })}\n`,
+    );
+
+    // Cache-bust the known module because fresh-session recovery is the observable contract.
+    const freshResolver = await import(
+      `../scripts/where.mjs?fresh=dead-owner-${owner.pid}`,
+    );
+    const resumed = await freshResolver.whereIs(storyDir);
+    expect({ phase: resumed.phase, status: resumed.status }).toEqual({
+      phase: "production",
+      status: undefined,
+    });
+  });
+
   it("blocks the real production dispatcher after exactly three failures and resumes blocked", async () => {
     await freezeAndRender();
     await unlink(join(beatDir, "renders", "rainfall.svg"));

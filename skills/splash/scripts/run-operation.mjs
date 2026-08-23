@@ -6,6 +6,10 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { runPreflight } from "./preflight.mjs";
 import { probeCloudflare, probeDatawrapper, probeMapTiler } from "./keys.mjs";
 import { bakeMapContract } from "./sealed-map-bake.mjs";
+import {
+  isLiveProductionReservation,
+  processIsAlive,
+} from "./production-reservation.mjs";
 
 export const OPERATION_IDS = Object.freeze([
   "runtime-smoke",
@@ -263,16 +267,6 @@ function wait(milliseconds) {
   return new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
 }
 
-function processIsAlive(pid) {
-  if (!Number.isSafeInteger(pid) || pid < 1) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error?.code === "EPERM";
-  }
-}
-
 async function readLockOwner(path) {
   try {
     return JSON.parse(await readFile(path, "utf8"));
@@ -365,6 +359,14 @@ async function runManagedProductionAttempt({
   const receiptPath = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
   const reservation = await withProductionLock(beatDir, async () => {
     const previousReceipt = await readProductionAttempts(receiptPath);
+    if (
+      isLiveProductionReservation(
+        previousReceipt,
+        processIsAlive(previousReceipt?.pid),
+      )
+    ) {
+      return { blocked: blockedProductionResult(previousReceipt) };
+    }
     const currentReceipt =
       previousReceipt?.operation === operation &&
       previousReceipt.outputId === outputId &&
@@ -375,24 +377,22 @@ async function runManagedProductionAttempt({
     if (currentReceipt?.status === "blocked") {
       return { blocked: blockedProductionResult(currentReceipt) };
     }
-    if (currentReceipt?.status === "reserved") {
-      if (processIsAlive(currentReceipt.pid)) {
-        return { blocked: blockedProductionResult(currentReceipt) };
-      }
-      if (currentReceipt.attempts === MAX_PRODUCTION_ATTEMPTS) {
-        const blocked = {
-          schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
-          operation,
-          outputId,
-          inputPath,
-          inputDigest,
-          attempts: currentReceipt.attempts,
-          status: "blocked",
-          reason: `production attempt ${currentReceipt.attempts} ended before reconciliation; attempt limit reached`,
-        };
-        await writeProductionAttempts(receiptPath, blocked);
-        return { blocked: blockedProductionResult(blocked) };
-      }
+    if (
+      currentReceipt?.status === "reserved" &&
+      currentReceipt.attempts === MAX_PRODUCTION_ATTEMPTS
+    ) {
+      const blocked = {
+        schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+        operation,
+        outputId,
+        inputPath,
+        inputDigest,
+        attempts: currentReceipt.attempts,
+        status: "blocked",
+        reason: `production attempt ${currentReceipt.attempts} ended before reconciliation; attempt limit reached`,
+      };
+      await writeProductionAttempts(receiptPath, blocked);
+      return { blocked: blockedProductionResult(blocked) };
     }
 
     const attempts = (currentReceipt?.attempts ?? 0) + 1;
@@ -612,6 +612,10 @@ export async function runOperation(
       const parameters = requireParameters(request, ["format", "size"]);
       const { storiesRoot, story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
+      const beatDir = await realDirectory(
+        resolve(story, "beats", outputId),
+        "Datawrapper beat",
+      );
       if (!["static", "web"].includes(parameters.format))
         throw new Error("Datawrapper format must be static or web");
       if (!["landscape", "square", "portrait"].includes(parameters.size))
@@ -624,7 +628,7 @@ export async function runOperation(
       );
       return runManagedProductionAttempt({
         operation,
-        beatDir: dirname(specPath),
+        beatDir,
         outputId,
         inputPath,
         inputDigest: productionInputDigest(await readFile(specPath)),

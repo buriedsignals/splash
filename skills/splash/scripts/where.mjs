@@ -3,6 +3,10 @@
 import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
+import {
+  isLiveProductionReservation,
+  processIsAlive,
+} from "./production-reservation.mjs";
 
 async function list(path) {
   try { return await readdir(path); } catch { return []; }
@@ -908,12 +912,29 @@ async function blockedProductionState(beats) {
       !nonEmptyText(receipt.reason) ||
       (receipt.status === "blocked" && receipt.attempts !== MAX_PRODUCTION_ATTEMPTS) ||
       (receipt.status === "failed" && receipt.attempts === MAX_PRODUCTION_ATTEMPTS) ||
-      (receipt.status === "reserved" && !nonEmptyText(receipt.reservationId))
+      (receipt.status === "reserved" &&
+        (!nonEmptyText(receipt.reservationId) || !positiveInteger(receipt.pid)))
     ) {
       throw new Error(`production attempt receipt is invalid at ${path}`);
     }
-    if (!["blocked", "reserved"].includes(receipt.status)) continue;
-    if ((await fileDigest(join(beatDir, receipt.inputPath))) !== receipt.inputDigest) continue;
+    if (receipt.status === "failed") continue;
+    const liveReservation = isLiveProductionReservation(
+      receipt,
+      processIsAlive(receipt.pid),
+    );
+    if (
+      !liveReservation &&
+      (await fileDigest(join(beatDir, receipt.inputPath))) !== receipt.inputDigest
+    ) {
+      continue;
+    }
+    if (
+      receipt.status === "reserved" &&
+      !liveReservation &&
+      receipt.attempts < MAX_PRODUCTION_ATTEMPTS
+    ) {
+      continue;
+    }
     return {
       phase: "production",
       status: "blocked",

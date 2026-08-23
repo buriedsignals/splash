@@ -7,6 +7,7 @@ import {
   readdir,
   realpath,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
@@ -275,6 +276,61 @@ describe("closed Splash operation runner", () => {
     });
   });
 
+  test("keeps a symlinked spec attempt owned by the requested beat", async () => {
+    const fixture = await storyFixture();
+    const requestedBeat = join(fixture.story, "beats", "chart");
+    const targetBeat = join(fixture.story, "beats", "other");
+    await mkdir(requestedBeat, { recursive: true });
+    await mkdir(targetBeat, { recursive: true });
+    const targetSpec = join(targetBeat, "spec.json");
+    await writeFile(targetSpec, "{}\n");
+    await symlink(targetSpec, join(requestedBeat, "spec.json"));
+    let dispatches = 0;
+
+    const outcome = await runOperation(
+      "datawrapper-produce",
+      {
+        ...fixture.request,
+        outputId: "chart",
+        parameters: { format: "static", size: "landscape" },
+      },
+      {
+        runSkillEntrypointFn: async () => {
+          dispatches++;
+          throw new Error("requested beat failed");
+        },
+      },
+    ).then(
+      () => "resolved",
+      (error) => String(error),
+    );
+    const requestedReceiptPath = join(
+      requestedBeat,
+      "PRODUCTION-ATTEMPTS.json",
+    );
+    const requestedReceipt = (await Bun.file(requestedReceiptPath).exists())
+      ? JSON.parse(await readFile(requestedReceiptPath, "utf8"))
+      : null;
+
+    expect({
+      dispatches,
+      outcome,
+      requestedReceipt,
+      targetReceiptExists: await Bun.file(
+        join(targetBeat, "PRODUCTION-ATTEMPTS.json"),
+      ).exists(),
+    }).toEqual({
+      dispatches: 1,
+      outcome: "Error: requested beat failed",
+      requestedReceipt: expect.objectContaining({
+        outputId: "chart",
+        attempts: 1,
+        status: "failed",
+      }),
+      targetReceiptExists: false,
+    });
+  });
+
   test("map production dispatches only a story-bound declarative contract through the managed browser", async () => {
     const fixture = await storyFixture();
     const beatDir = join(fixture.story, "beats", "map");
@@ -414,6 +470,60 @@ describe("closed Splash operation runner", () => {
         join(result.beatDir, "PRODUCTION-ATTEMPTS.json"),
       ).exists(),
     ).toBe(false);
+  });
+
+  test("keeps a live reservation authoritative when its input changes", async () => {
+    const fixture = await storyFixture();
+    const outputId = "chart";
+    const beatDir = join(fixture.story, "beats", outputId);
+    const specPath = join(beatDir, "spec.json");
+    await mkdir(beatDir, { recursive: true });
+    await writeFile(specPath, "{}\n");
+    const admitted = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    let dispatches = 0;
+    const request = {
+      ...fixture.request,
+      outputId,
+      parameters: { format: "static", size: "landscape" },
+    };
+    const active = runOperation("datawrapper-produce", request, {
+      runSkillEntrypointFn: async () => {
+        dispatches++;
+        admitted.resolve();
+        await release.promise;
+        return {
+          format: "static",
+          chartId: "active",
+          publicUrl: "https://example.test/active",
+        };
+      },
+    });
+    await admitted.promise;
+    await writeFile(specPath, '{"changed":true}\n');
+
+    const competing = await runOperation("datawrapper-produce", request, {
+      runSkillEntrypointFn: async () => {
+        dispatches++;
+        return {
+          format: "static",
+          chartId: "competing",
+          publicUrl: "https://example.test/competing",
+        };
+      },
+    });
+    release.resolve();
+    await active;
+
+    expect({
+      dispatches,
+      status: competing.status,
+      attempts: competing.attempts,
+    }).toEqual({
+      dispatches: 1,
+      status: "blocked",
+      attempts: 1,
+    });
   });
 
   test("recovers a dead reservation without resetting the attempt budget", async () => {
