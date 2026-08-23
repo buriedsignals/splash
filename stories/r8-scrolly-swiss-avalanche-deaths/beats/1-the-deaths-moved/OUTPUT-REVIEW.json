@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "review-r8-scrolly-1",
+  "outputId": "1-the-deaths-moved",
+  "planVersion": 1,
+  "draftRef": "renders/",
+  "draftDigest": "sha256:a9dc0a0d1ac83fb8e0489e195a2384a204dd17b1beb72ca30b32ffeee6399ab6",
+  "findingIds": [
+    "R8-SCROLLY-1-avalanche-terrain-shift"
+  ],
+  "qaRuns": [
+    {
+      "schemaVersion": 1,
+      "outputId": "1-the-deaths-moved",
+      "planVersion": 1,
+      "draftDigest": "sha256:a9dc0a0d1ac83fb8e0489e195a2384a204dd17b1beb72ca30b32ffeee6399ab6",
+      "findingIds": [
+        "R8-SCROLLY-1-avalanche-terrain-shift"
+      ],
+      "id": "qa-r8-scrolly-1-verify-scrolly",
+      "status": "passed",
+      "completedAt": "2026-08-23T09:20:51.603Z"
+    }
+  ],
+  "angleEvidenceBrief": "One country, three media, one scroll: 1,406 fatal avalanche start zones on a baked dark basemap, a schematic of the two terrains the SLF counts in, the two counts across 88 winters, and the forecast danger level on the 323 accidents that carry one. Every figure is recomputed from the frozen EnviDat register by the beat own reading layer and again by test/facts.test.ts. verify-scrolly.mjs reports 0 failures at 1600x900, 1280x800 and 375x812, and a continuous down-then-up pass at three widths paints every frame in both directions.",
+  "decision": "approve",
+  "reviewer": "journalist",
+  "decidedAt": "2026-08-23T09:20:51.603Z",
+  "notes": "Approved with three named limits, all in APPROVED.md: with JavaScript off the graphic never changes, so three of four steps are read against the map; the fitted map is short on a phone; and the two series accents are 1.75:1 against each other, which nothing in this toolchain measures."
+}

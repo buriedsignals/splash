@@ -1,0 +1,15 @@
+{
+  "operationId": "12c8c353-5c75-4995-b6af-02d3d4651285",
+  "reviewId": "review-r8-scrolly-1",
+  "planVersion": 1,
+  "draftDigest": "sha256:a9dc0a0d1ac83fb8e0489e195a2384a204dd17b1beb72ca30b32ffeee6399ab6",
+  "findingIds": [
+    "R8-SCROLLY-1-avalanche-terrain-shift"
+  ],
+  "form": "owned-file",
+  "format": "scrolly",
+  "createdAt": "2026-08-23T09:21:31.083Z",
+  "schemaVersion": 1,
+  "outputId": "1-the-deaths-moved",
+  "state": "complete"
+}
