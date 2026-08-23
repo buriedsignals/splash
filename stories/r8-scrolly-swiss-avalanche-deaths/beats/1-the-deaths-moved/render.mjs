@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { deriveFurniture, readPalette } from "#shared/chart-beat/render-still.mjs";
 import { creditLine, parseStoryboard } from "../../../../skills/storyboard/scripts/storyboard.mjs";
 import { renderScrolly } from "../../../../skills/scrolly/scripts/render-scrolly.mjs";
-import { parseAccidents, deriveFacts, group } from "./avalanche-data.ts";
+import { parseAccidents, deriveFacts, group, cantonName } from "./avalanche-data.ts";
 import { MapFrame, DiagramFrame, SeriesFrame, DangerFrame } from "./AvalancheFrames.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -45,24 +45,23 @@ const STEPS_META = [
     id: "where",
     frameKind: "map",
     prose: (facts) => [
-      `Since the winter of ${facts.firstWinter} the SLF has recorded every avalanche in Switzerland that killed somebody. There have been ${group(facts.accidents)} of them, and they have killed ${group(facts.dead)} people — an average of ${facts.meanPerWinter} a winter across ${group(facts.winters)} winters.`,
-      `Each dot is one avalanche, at the point where it started. ${facts.cantons.top[0].canton} and ${facts.cantons.top[1].canton} hold ${facts.cantons.topShare} per cent of the dead between them.`,
+      `Since ${facts.firstWinter} the SLF has recorded every Swiss avalanche that killed somebody: ${group(facts.accidents)} of them, ${group(facts.dead)} dead, ${facts.meanPerWinter} a winter.`,
+      `${cantonName(facts.cantons.top[0].canton)} and ${cantonName(facts.cantons.top[1].canton)} hold ${facts.cantons.topShare} per cent of them.`,
     ],
   },
   {
     id: "two-terrains",
     frameKind: "drawn",
     prose: (facts) => [
-      "The SLF records where each person was, not only that they died. Inside or beside a building, on a road, a railway or a ski run, the terrain is controlled: somebody is responsible for it, and it can be closed, blasted or built against.",
-      `On tour or off-piste, nobody is. ${group(facts.uncontrolled)} of the deaths are on that side of the line and ${group(facts.controlled)} on the other. ${group(facts.mixed + facts.unattributed)} sit on neither and are counted as neither.`,
+      `The SLF records where each person was. In controlled terrain — a building, a road, a railway, a ski run — ${group(facts.controlled)} have died. On tour or off-piste, ${group(facts.uncontrolled)}.`,
     ],
   },
   {
     id: "crossover",
     frameKind: "series",
     prose: (facts) => [
-      `In the first ${facts.first20.winters} winters on record, ${group(facts.first20.controlled)} of ${group(facts.first20.total)} deaths were in controlled terrain. In the last ${facts.last20.winters}, ${group(facts.last20.controlled)} of ${group(facts.last20.total)}.`,
-      `The toll itself barely moved. What moved was where it fell — and ${facts.worstWinter.winter}, the worst winter on record at ${group(facts.worstWinter.total)} dead, ${group(facts.worstWinter.controlled)} of them indoors or on a road, is the kind of winter Switzerland has not had since.`,
+      `First ${facts.first20.winters} winters: ${group(facts.first20.controlled)} of ${group(facts.first20.total)} deaths in controlled terrain. Last ${facts.last20.winters}: ${group(facts.last20.controlled)} of ${group(facts.last20.total)}.`,
+      "The toll barely moved. Where it fell did.",
     ],
   },
   {
@@ -70,10 +69,9 @@ const STEPS_META = [
     frameKind: "danger",
     prose: (facts) => {
       const worst = facts.danger.levels.reduce((a, b) => (b.accidents > a.accidents ? b : a));
-      const high = facts.danger.levels.find((l) => l.level === 4);
       return [
-        `The national avalanche bulletin has forecast a danger level since long before most of these accidents. On the ${group(facts.danger.withLevel)} fatal avalanches that carry one, the level most often forecast was ${worst.level}, ${worst.label}: ${group(worst.accidents)} of them.${high ? ` Level 4, high, accounts for ${group(high.accidents)}.` : ""}`,
-        "The SLF's own warning about this reading, verbatim: “this graph does not correspond to an individual’s risk because only the absolute numbers of accidents are shown without reference to the sizes of the risk populations surveyed in each category.” Most people are out on a considerable day because most days are considerable.",
+        `On the ${group(facts.danger.withLevel)} fatal avalanches carrying a forecast, the level was most often ${worst.level}, ${worst.label}: ${group(worst.accidents)}.`,
+        "That is not a reading of personal risk. It counts accidents, not the people out on each kind of day.",
       ];
     },
   },

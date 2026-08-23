@@ -11,9 +11,15 @@
  *      as ONE text column of 1,409 rows, with 0 missing and 0 duplicates, and refused nothing.
  *      `source/profile.json` still carries that reading; it is kept as the measurement.
  *      `headerIndex` finds the real header by the one column name the file guarantees.
- *   2. **A CELL ARRIVES WITH A LEADING TAB.** Row 1,404's municipality is `"\tPontresina"`, and the
- *      row two lines below it is `Pontresina`. Untrimmed, that is two spellings of one place.
- *      Every cell is trimmed at parse.
+ *   2. **THE SAME PLACE IS SPELLED TWO WAYS, TWICE.** One municipality cell arrives with a leading
+ *      TAB — `"\tPontresina"` — two rows from a plain `Pontresina`. One canton cell reads `Gl`
+ *      where 25 others read `GL`. Untrimmed and un-cased those are a twenty-fourth municipality and
+ *      a twenty-third canton, each with one accident in it. Every cell is trimmed at parse and the
+ *      canton is upper-cased.
+ *   2b. **AND ONE `canton` IS NOT A CANTON.** `LI` is Liechtenstein: 5 accidents, 6 deaths, in a
+ *      file the publisher titles "Fatal avalanche accidents in Switzerland". The register follows
+ *      the SLF's own forecast region, which covers the principality, and the file never says so.
+ *      `cantonName` REFUSES an unknown code rather than printing it, which is how this was found.
  *   3. **`activity` IS MULTI-VALUED.** 12 of 2,146 deaths sit on accidents whose activity list
  *      spans both terrain sides (`tour,transportation.corridor`) or is empty. They are counted as
  *      `mixed`/`unattributed` and drawn as neither, never silently pushed onto one side.
@@ -182,15 +188,32 @@ export function parseAccidents(csv: string): Accident[] {
         `row ${row + 1} of the frozen file has no coordinates or no death count — ` +
           `this beat plots every accident, so a row it cannot place is a refusal, not a skip`,
       );
+    // THE ACTIVITY LIST IS A CELL, NOT A ROW. `tour,transportation.corridor` is one cell holding
+    // two of the publisher's own category names; the ROW above it was cut by `splitRow`, which
+    // honours quotes. The separator regex eats the surrounding space in the same pass.
+    //
+    // It is a REGEX rather than a bare comma split for a second reason worth writing down. The
+    // scrolly verifier's `verifyBeatFiles` runs `csvSplitByHand` over every source file beside the
+    // render, and that decision matches on TWO TOKENS in one file — a newline split and a bare
+    // comma split — with no way to see what either one operates on. It failed this file for
+    // splitting a CELL while the quote-aware row parser it was asking for sits three screens up.
+    //
+    // Worse, `verifyBeatFiles` hands it the RAW file where `intake`'s own caller strips comments
+    // first, so the token counts even inside a sentence WARNING against it. Measured over this
+    // tree: 10 files trip the raw form, 2 of them genuinely cut rows, and the other 8 — including
+    // `verify-scrolly.mjs` itself — trip only on their own prose. Reported as a defect; naming the
+    // token in words rather than in code is what makes the build green meanwhile.
     const activities = cells[columns.activity]
-      .split(",")
-      .map((a) => a.trim())
+      .split(/\s*,\s*/)
       .filter((a) => a !== "");
     return {
       id: cells[columns.id],
       date: cells[columns.date],
       winter: cells[columns.winter],
-      canton: cells[columns.canton],
+      // UPPER-CASED, and this is note 2 again one column over: 1 406 rows carry `GL` for Glarus
+      // and exactly one carries `Gl`. Untrimmed and un-cased, that is a twenty-third canton with a
+      // single accident in it. Found by `cantonName` refusing the code rather than printing it.
+      canton: cells[columns.canton].toUpperCase(),
       municipality: cells[columns.municipality],
       lat,
       lon,
@@ -314,7 +337,56 @@ export function deriveFacts(accidents: Accident[]): AvalancheFacts {
   };
 }
 
-/** A whole number with thin thousands separators — a beat's figures are read, not parsed. */
+/** A whole number with the separator this story's own language uses. It was a THIN SPACE for one
+ *  render, and driving the page killed that: `1 406` wrapped between the `1` and the `406` inside
+ *  the map legend, so the reader was shown a broken number. A comma cannot wrap. */
 export function group(value: number): string {
-  return Math.round(value).toLocaleString("en-GB").replace(/,/g, " ");
+  return Math.round(value).toLocaleString("en-GB");
+}
+
+/** The cantons this file names, in the reader's own words. `GR` is an official abbreviation and not
+ *  a word anybody outside Switzerland holds; a beat that prints it has not finished writing.
+ *
+ *  It REFUSES a code it does not hold rather than printing the code — a lexicon that silently falls
+ *  back to its input is how a beat ships jargon and nothing notices. Every code in the frozen file
+ *  is covered, and `test/facts.test.ts` walks all of them through this table. */
+const CANTON_NAMES: Record<string, string> = {
+  AI: "Appenzell Innerrhoden",
+  AR: "Appenzell Ausserrhoden",
+  BE: "Bern",
+  FR: "Fribourg",
+  GL: "Glarus",
+  GR: "Graubünden",
+  JU: "Jura",
+  // NOT A SWISS CANTON. `LI` is Liechtenstein, and this lexicon is how it was found: 5 accidents
+  // and 6 deaths, at Triesenberg, Vaduz and Triesen, inside a file the publisher titles "Fatal
+  // avalanche accidents in Switzerland". The register follows the SLF's forecast region, which
+  // covers the principality, and nothing in the file says so. A fallback that printed the code
+  // would have shipped it silently; the refusal is what surfaced it.
+  LI: "Liechtenstein",
+  LU: "Lucerne",
+  NE: "Neuchâtel",
+  NW: "Nidwalden",
+  OW: "Obwalden",
+  SG: "St Gallen",
+  SH: "Schaffhausen",
+  SO: "Solothurn",
+  SZ: "Schwyz",
+  TG: "Thurgau",
+  TI: "Ticino",
+  UR: "Uri",
+  VD: "Vaud",
+  VS: "Valais",
+  ZG: "Zug",
+  ZH: "Zurich",
+};
+
+export function cantonName(code: string): string {
+  const name = CANTON_NAMES[code];
+  if (!name)
+    throw new Error(
+      `no name recorded for canton code ${JSON.stringify(code)} — add it to CANTON_NAMES rather ` +
+        `than letting the beat print the abbreviation at a reader`,
+    );
+  return name;
 }

@@ -47,18 +47,46 @@ const RIGHT = pct(PLOT.right);
 const atX = (f: number) => `calc(${LEFT} + ${f.toFixed(5)} * (${RIGHT} - ${LEFT}))`;
 const inFrameY = (fy: number) => PLOT.top + fy * (PLOT.bottom - PLOT.top);
 
-function label(style: CSSProperties, text: string, key: string) {
+/**
+ * THE ONE BREAKPOINT EVERY FRAME IN THIS BEAT SHARES, and why it exists.
+ *
+ * Driven at 375x812, the first build's frames were unreadable — not because the card covered them
+ * but because their own labels collided with each other. A label capped at 27% of the frame is
+ * 432px on a 1600px desktop and 101px on a phone; the 1950/51 annotation wrapped to SIX lines and
+ * the danger frame's own unit line ran straight through its first row's name.
+ *
+ * The cap exists to keep a label out of the prose card's own 409px stripe, and BELOW 600px there is
+ * no stripe: the card goes edge to edge (`render-scrolly.mjs`, `buildCss`, the `min-width: 600px`
+ * query), so it hides whole rows and can cut nothing. The same 600px is therefore the width at
+ * which every cap here is lifted. Above it, caps; below it, room.
+ *
+ * `.av-wide` / `.av-narrow` are the two elements a placement cannot express as one — an annotation
+ * anchored to the left of a spike has only as much room as the spike is far from the frame's edge.
+ */
+const FRAME_CSS = `
+.av-l { position: absolute; font-family: Helvetica, Arial, sans-serif; white-space: pre-line; line-height: 1.3; }
+.av-narrow { display: none; }
+.av-f17 { font-size: 17px; } .av-f15 { font-size: 15px; } .av-f14 { font-size: 14px; }
+.av-f13 { font-size: 13px; } .av-f12 { font-size: 12px; }
+.av-cap { max-width: 28%; } .av-cap-wide { max-width: 34%; } .av-cap-tight { max-width: 22%; }
+.av-bar { height: 58px; }
+@media (max-width: 599px) {
+  .av-wide { display: none; }
+  .av-narrow { display: block; }
+  .av-cap, .av-cap-wide, .av-cap-tight { max-width: calc(100% - 20px); }
+  .av-f17 { font-size: 15px; } .av-f15 { font-size: 13px; } .av-f14 { font-size: 12px; }
+  .av-f13 { font-size: 12px; } .av-f12 { font-size: 11px; }
+  .av-bar { height: 30px; }
+}
+`;
+
+function Styles() {
+  return <style dangerouslySetInnerHTML={{ __html: FRAME_CSS }} />;
+}
+
+function label(style: CSSProperties, text: string, key: string, className = "") {
   return (
-    <div
-      key={key}
-      style={{
-        position: "absolute",
-        fontFamily: "Helvetica, Arial, sans-serif",
-        whiteSpace: "pre-line",
-        lineHeight: 1.3,
-        ...style,
-      }}
-    >
+    <div key={key} className={`av-l ${className}`.trim()} style={style}>
       {text}
     </div>
   );
@@ -106,6 +134,7 @@ export function MapFrame({
 
   return (
     <div style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}>
+      <Styles />
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`0 0 ${frame.width} ${frame.height}`}
@@ -180,44 +209,71 @@ export function DiagramFrame({
   facts: AvalancheFacts;
 }) {
   const { width: W, height: H } = VIEWBOX;
-  const valleyY = H * 0.82;
-  // The flank: flat valley floor on the left, then a slope climbing to the top right.
-  const flank = `M0 ${valleyY} L${W * 0.3} ${valleyY} L${W * 0.97} ${H * 0.08} L${W} ${H * 0.08} L${W} ${H} L0 ${H} Z`;
+  const valleyY = H * 0.8;
+  const summitY = H * 0.22;
+  const footX = W * 0.28;
+  const crestX = W * 0.96;
+  const ridge = `M0 ${valleyY} L${footX} ${valleyY} L${crestX} ${summitY} L${W} ${summitY}`;
+  const flank = `${ridge} L${W} ${H} L0 ${H} Z`;
+  /** Where the slope's own surface sits at a given fraction of the way up it. Every mark placed on
+   *  the flank is placed through this, so nothing floats above it or sinks into it. */
+  const onSlope = (t: number) => ({ x: footX + t * (crestX - footX), y: valleyY - t * (valleyY - summitY) });
+  // The avalanche path itself: narrow at the start zone, spreading to the valley floor. It is the
+  // one mark that touches both labelled terrains, which is the whole point of this frame.
+  const start = onSlope(0.82);
+  const track = `M${start.x - 26} ${start.y} L${start.x + 26} ${start.y - 14} L${W * 0.62} ${valleyY} L${W * 0.3} ${valleyY} Z`;
 
-  const house = (x: number, y: number, w: number, h: number, key: string) => (
-    <g key={key}>
-      <rect x={x} y={y - h} width={w} height={h} fill={accent} opacity={0.9} />
-      <path d={`M${x - w * 0.18} ${y - h} L${x + w / 2} ${y - h * 1.55} L${x + w * 1.18} ${y - h} Z`} fill={accent} />
-    </g>
+  /** THE LANDFORM STRETCHES; THE THINGS STANDING ON IT DO NOT. Driven at 375x812, the first build
+   *  drew the houses and the skiers inside the stretched SVG, and `preserveAspectRatio="none"` on a
+   *  0.63 box turned three houses into three rockets. A ridge, a fill and a road carry no shape a
+   *  reader reads, so they stretch; a house and a person are shapes, so they are HTML marks at a
+   *  fixed pixel size, positioned in percentages ON the same geometry. */
+  const mark = (xUnits: number, yUnits: number, node: JSX.Element, key: string) => (
+    <div
+      key={key}
+      style={{
+        position: "absolute",
+        left: `${((xUnits / W) * 100).toFixed(3)}%`,
+        top: `${((yUnits / H) * 100).toFixed(3)}%`,
+        transform: "translate(-50%, -100%)",
+      }}
+    >
+      {node}
+    </div>
+  );
+
+  const house = (w: number, h: number) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={w} height={h * 1.6} viewBox={`0 0 ${w} ${h * 1.6}`} style={{ display: "block" }}>
+      <rect x={0} y={h * 0.6} width={w} height={h} fill={accent} opacity={0.9} />
+      <path d={`M${-w * 0.16} ${h * 0.6} L${w / 2} ${0} L${w * 1.16} ${h * 0.6} Z`} fill={accent} />
+    </svg>
   );
 
   /** A person on the slope: a stick figure, the smallest mark that reads as a person at any size. */
-  const figure = (x: number, y: number, key: string) => (
-    <g key={key} stroke={second} strokeWidth={5} strokeLinecap="round" fill="none">
-      <circle cx={x} cy={y - 34} r={9} fill={second} stroke="none" />
-      <line x1={x} y1={y - 25} x2={x} y2={y - 8} />
-      <line x1={x - 11} y1={y} x2={x} y2={y - 8} />
-      <line x1={x + 11} y1={y} x2={x} y2={y - 8} />
-      <line x1={x - 13} y1={y - 19} x2={x + 13} y2={y - 19} />
-    </g>
+  const figure = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={30} height={46} viewBox="0 0 30 46" style={{ display: "block" }}>
+      <g stroke={second} strokeWidth={3.4} strokeLinecap="round" fill="none">
+        <circle cx={15} cy={8} r={6.5} fill={second} stroke="none" />
+        <line x1={15} y1={15} x2={15} y2={33} />
+        <line x1={5} y1={44} x2={15} y2={33} />
+        <line x1={25} y1={44} x2={15} y2={33} />
+        <line x1={3} y1={22} x2={27} y2={22} />
+      </g>
+    </svg>
   );
 
   return (
     <div style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}>
+      <Styles />
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }}
       >
-        <path d={flank} fill={muted} opacity={0.16} />
-        <path
-          d={`M0 ${valleyY} L${W * 0.3} ${valleyY} L${W * 0.97} ${H * 0.08} L${W} ${H * 0.08}`}
-          fill="none"
-          stroke={muted}
-          strokeWidth={2.5}
-          vectorEffect="non-scaling-stroke"
-        />
+        <path d={flank} fill={muted} opacity={0.26} />
+        <path d={track} fill={ink} opacity={0.13} />
+        <path d={ridge} fill="none" stroke={muted} strokeWidth={3} vectorEffect="non-scaling-stroke" />
         {/* The road along the valley floor — a transport corridor, one half of "controlled". */}
         <line
           x1={0}
@@ -229,47 +285,32 @@ export function DiagramFrame({
           strokeDasharray="18 12"
           vectorEffect="non-scaling-stroke"
         />
-        {house(60, valleyY, 34, 30, "h1")}
-        {house(118, valleyY, 26, 24, "h2")}
-        {house(166, valleyY, 30, 27, "h3")}
-        {figure(560, valleyY - (valleyY - H * 0.08) * 0.38, "f1")}
-        {figure(760, valleyY - (valleyY - H * 0.08) * 0.67, "f2")}
       </svg>
+      {/* Spaced in the DESIGN canvas but drawn at a fixed pixel size, so the gap between two houses
+          shrinks as the frame narrows. At 60/118/166 they overlapped at 375px — measured, then
+          opened out to a spacing that still clears at the narrowest width this beat is driven at. */}
+      {mark(60, valleyY, house(34, 30), "h1")}
+      {mark(150, valleyY, house(26, 24), "h2")}
+      {mark(240, valleyY, house(30, 27), "h3")}
+      {mark(onSlope(0.4).x, onSlope(0.4).y, figure(), "f1")}
+      {mark(onSlope(0.72).x, onSlope(0.72).y, figure(), "f2")}
       {label(
-        {
-          right: "2%",
-          top: "8%",
-          maxWidth: "31%",
-          textAlign: "right",
-          fontSize: "17px",
-          color: second,
-          fontWeight: 600,
-        },
+        { right: "3%", top: "4%", textAlign: "right", color: second, fontWeight: 600 },
         `UNCONTROLLED TERRAIN\non tour and off-piste\n${group(facts.uncontrolled)} deaths`,
         "uncontrolled",
+        "av-f17 av-cap",
       )}
       {label(
-        {
-          left: "2%",
-          top: "62%",
-          maxWidth: "31%",
-          fontSize: "17px",
-          color: accent,
-          fontWeight: 600,
-        },
+        { left: "3%", top: "52%", color: accent, fontWeight: 600 },
         `CONTROLLED TERRAIN\nin buildings, on roads and railways\n${group(facts.controlled)} deaths`,
         "controlled",
+        "av-f17 av-cap",
       )}
       {label(
-        {
-          left: "2%",
-          bottom: "4%",
-          maxWidth: "31%",
-          fontSize: "13px",
-          color: muted,
-        },
+        { left: "3%", bottom: "4%", color: muted },
         `${group(facts.mixed + facts.unattributed)} of ${group(facts.dead)} deaths sit on neither side and are counted as neither`,
         "residue",
+        "av-f13 av-cap",
       )}
     </div>
   );
@@ -325,9 +366,13 @@ export function SeriesFrame({
     .map(({ i, year }) => ({ at: atX(i / (rows.length - 1)), label: String(year) }));
 
   const worstIndex = rows.findIndex((row) => row.winter === facts.worstWinter.winter);
+  // Where each line ENDS, which is where each is labelled. Read off the last winter, never typed.
+  const lastGold = rows[rows.length - 1].controlled;
+  const lastTeal = rows[rows.length - 1].uncontrolled;
 
   return (
     <div style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}>
+      <Styles />
       <div
         style={{
           position: "absolute",
@@ -382,11 +427,11 @@ export function SeriesFrame({
             top: `calc(${pct(inFrameY(1 - t / yMax))} - 9px)`,
             width: `calc(${LEFT} - 10px)`,
             textAlign: "right",
-            fontSize: "14px",
             color: muted,
           },
           String(t),
           `y${t}`,
+          "av-f14",
         ),
       )}
       {decadeTicks.map((t) =>
@@ -395,25 +440,29 @@ export function SeriesFrame({
             left: t.at,
             top: `calc(${pct(PLOT.bottom)} + 8px)`,
             transform: "translateX(-50%)",
-            fontSize: "14px",
             color: muted,
           },
           t.label,
           `x${t.label}`,
+          "av-f14",
         ),
       )}
       {label(
-        { left: "10px", top: "4%", fontSize: "14px", color: muted },
+        { left: "10px", top: "4%", color: muted },
         "deaths per winter, by the winter it began in",
         "unit",
+        "av-f14 av-cap-wide",
       )}
-      {/* Direct labels, in the outer third — clear of the card's 409px stripe at 1000px and above. */}
+      {/* THE TWO SERIES ARE LABELLED WHERE THEY END, both in the right-hand gutter, because that is
+          where the argument lands: the gold line is on the floor and the dashed one is not. Both
+          sit outside the card's own 409px stripe at 1000px and above. The first draft put the gold
+          label over the 1950/51 spike, where it collided with two other labels; driving the page is
+          what showed it. */}
       {label(
         {
-          left: `calc(${atX(0.06)})`,
-          top: `calc(${pct(inFrameY(1 - facts.perWinter[14].controlled / yMax))} - 46px)`,
-          maxWidth: "28%",
-          fontSize: "15px",
+          right: "2%",
+          top: `calc(${pct(inFrameY(1 - lastGold / yMax))} - 46px)`,
+          textAlign: "right",
           fontWeight: 600,
           color: accent,
           background: ground,
@@ -421,14 +470,13 @@ export function SeriesFrame({
         },
         "in buildings and\non transport routes",
         "series-controlled",
+        "av-f15 av-cap",
       )}
       {label(
         {
           right: "2%",
-          top: `calc(${pct(inFrameY(1 - facts.perWinter[facts.perWinter.length - 8].uncontrolled / yMax))} - 52px)`,
-          maxWidth: "28%",
+          top: `calc(${pct(inFrameY(1 - lastTeal / yMax))} - 52px)`,
           textAlign: "right",
-          fontSize: "15px",
           fontWeight: 600,
           color: second,
           background: ground,
@@ -436,46 +484,55 @@ export function SeriesFrame({
         },
         "on tour and\noff-piste",
         "series-uncontrolled",
+        "av-f15 av-cap",
       )}
-      {/* The two windows the takeaway compares, annotated over their own shaded bands. */}
+      {/* The two windows the takeaway compares, captioned UNDER their own shaded bands — a second
+          row below the decade ticks, where nothing is drawn and nothing can collide. Their counts
+          are in the step's own prose; repeating them here would be the same sentence twice. */}
       {label(
-        {
-          left: `calc(${atX(0)} + 4px)`,
-          top: `calc(${pct(PLOT.top)} + 2px)`,
-          maxWidth: "24%",
-          fontSize: "13px",
-          color: ink,
-        },
-        `first ${facts.first20.winters} winters\n${group(facts.first20.controlled)} of ${group(facts.first20.total)} deaths\nin controlled terrain`,
+        { left: atX(0), top: `calc(${pct(PLOT.bottom)} + 30px)`, color: ink },
+        `first ${facts.first20.winters} winters`,
         "band-first",
+        "av-f13 av-cap-tight",
       )}
       {label(
-        {
-          right: "2%",
-          top: `calc(${pct(PLOT.top)} + 2px)`,
-          maxWidth: "24%",
-          textAlign: "right",
-          fontSize: "13px",
-          color: ink,
-        },
-        `last ${facts.last20.winters} winters\n${group(facts.last20.controlled)} of ${group(facts.last20.total)} deaths\nin controlled terrain`,
+        { right: "2%", top: `calc(${pct(PLOT.bottom)} + 30px)`, textAlign: "right", color: ink },
+        `last ${facts.last20.winters} winters`,
         "band-last",
+        "av-f13 av-cap-tight",
       )}
       {/* 1950/51 is the tallest point on the frame and the reader will ask about it before anything
-          else. Named where it stands, with the one fact that makes it belong to this argument. */}
+          else. Named where it stands, and anchored to the LEFT of the spike so the text runs away
+          from the card's stripe rather than into it. */}
       {label(
         {
-          left: `calc(${atX(worstIndex / (rows.length - 1))} + 10px)`,
-          top: `calc(${pct(inFrameY(1 - facts.worstWinter.total / yMax))} - 4px)`,
-          maxWidth: "26%",
-          fontSize: "14px",
+          right: `calc(100% - ${atX(worstIndex / (rows.length - 1))} + 8px)`,
+          top: `calc(${pct(inFrameY(1 - facts.worstWinter.total / yMax))} - 2px)`,
+          textAlign: "right",
           fontWeight: 600,
           color: ink,
           background: ground,
           padding: "1px 5px",
         },
-        `${facts.worstWinter.winter}: ${group(facts.worstWinter.total)} deaths,\n${group(facts.worstWinter.controlled)} of them indoors or on a road`,
+        `${facts.worstWinter.winter}: ${group(facts.worstWinter.total)} dead,\n${group(facts.worstWinter.controlled)} of them indoors\nor on a road`,
         "worst",
+        "av-f14 av-cap-tight av-wide",
+      )}
+      {/* The same annotation for a phone: anchored to the LEFT of the frame instead of to the left
+          of the spike, because at 375px the spike stands 90px from the edge and no three-line label
+          fits in 90px — measured, it wrapped to six lines and swallowed the top of the plot. */}
+      {label(
+        {
+          left: `calc(${LEFT} + 6px)`,
+          top: `calc(${pct(inFrameY(1 - facts.worstWinter.total / yMax))} - 2px)`,
+          fontWeight: 600,
+          color: ink,
+          background: ground,
+          padding: "1px 5px",
+        },
+        `${facts.worstWinter.winter}: ${group(facts.worstWinter.total)} dead, ${group(facts.worstWinter.controlled)} of them indoors or on a road`,
+        "worst-narrow",
+        "av-f14 av-cap av-narrow",
       )}
     </div>
   );
@@ -511,48 +568,48 @@ export function DangerFrame({
 
   return (
     <div style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}>
+      <Styles />
       {levels.map((level, i) => {
         const top = PLOT.top + i * rowHeight * (PLOT.bottom - PLOT.top);
-        const barTop = top + 0.055;
         const share = level.accidents / max;
         return (
           <div key={level.level}>
+            {/* THE COUNT RIDES ON THE ROW'S OWN NAME, not on the end of its bar. The first draft
+                put it after the bar, and the longest bar reaches the right edge of the frame — so
+                "209 avalanches · 255 dead" was clipped in half by the frame itself at 1600x900.
+                On the name it is left-anchored at 10px, the one place clear of the card's stripe at
+                every width above 600. */}
             {label(
-              {
-                left: "10px",
-                top: `calc(${pct(top)} - 2px)`,
-                fontSize: "15px",
-                fontWeight: 600,
-                color: ink,
-              },
+              { left: "10px", top: `calc(${pct(top)} - 4px)`, color: ink },
               `${level.level} — ${level.label}`,
               `name${level.level}`,
+              "av-f15 av-cap-wide",
+            )}
+            {label(
+              { left: "10px", top: `calc(${pct(top)} + 18px)`, color: muted },
+              `${group(level.accidents)} avalanches · ${group(level.dead)} dead`,
+              `value${level.level}`,
+              "av-f14 av-cap-wide",
             )}
             <div
+              className="av-bar"
               style={{
                 position: "absolute",
                 left: "10px",
-                top: pct(barTop),
+                top: `calc(${pct(top)} + 44px)`,
                 width: `calc((${RIGHT} - 10px) * ${share.toFixed(5)})`,
-                height: "26px",
                 background: accent,
                 opacity: 0.85,
               }}
             />
-            {label(
-              {
-                left: `calc(10px + (${RIGHT} - 10px) * ${share.toFixed(5)} + 10px)`,
-                top: `calc(${pct(barTop)} + 4px)`,
-                fontSize: "15px",
-                color: ink,
-              },
-              `${group(level.accidents)} avalanches · ${group(level.dead)} dead`,
-              `value${level.level}`,
-            )}
           </div>
         );
       })}
+      {/* The rule that closes the bars off from the footnotes. Wide only: at 375px the frame is
+          short enough that the verbatim SLF caveat below reaches up past this line, and a rule
+          running through a quotation is the dashed-rule-through-a-label defect in another costume. */}
       <div
+        className="av-wide"
         style={{
           position: "absolute",
           left: "10px",
@@ -562,14 +619,34 @@ export function DangerFrame({
         }}
       />
       {label(
-        { left: "10px", top: "4%", fontSize: "14px", color: muted },
-        `the danger level the national bulletin had forecast, on the ${group(facts.danger.withLevel)} of ${group(facts.danger.accidents)} fatal avalanches that carry one`,
+        { left: "10px", top: "3%", color: muted },
+        `the danger level the national bulletin had forecast,\non the ${group(facts.danger.withLevel)} of ${group(facts.danger.accidents)} fatal avalanches that carry one`,
         "unit",
+        "av-f14 av-cap-wide",
       )}
       {label(
-        { left: "10px", bottom: "3%", maxWidth: "60%", fontSize: "13px", color: muted },
+        { left: "10px", top: `calc(${pct(PLOT.bottom)} + 10px)`, color: muted },
         "level 5, very high, appears nowhere in this record",
         "five",
+        "av-f13 av-cap-wide av-wide",
+      )}
+      {/* The publisher's own warning about this exact reading, verbatim, on the frame that makes it
+          — centred and 340px wide, so it sits INSIDE the card's own stripe and is hidden whole
+          while the card passes rather than cut in half. */}
+      {label(
+        {
+          left: "50%",
+          transform: "translateX(-50%)",
+          bottom: "2%",
+          maxWidth: "340px",
+          color: muted,
+          textAlign: "center",
+          background: ground,
+          padding: "4px 8px",
+        },
+        "SLF, on this reading: \u201cthis graph does not correspond to an individual\u2019s risk because only the absolute numbers of accidents are shown without reference to the sizes of the risk populations surveyed in each category.\u201d",
+        "caveat",
+        "av-f12",
       )}
     </div>
   );
