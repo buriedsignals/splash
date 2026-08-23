@@ -10,6 +10,7 @@
     "reads-a-provider-credential",
     "materialises-a-beat",
     "reads-a-journalists-csv",
-    "joins-values-to-shapes"
+    "joins-values-to-shapes",
+    "paints-a-region-with-no-reading"
   ]
 }

@@ -49,6 +49,7 @@ red the day it witnesses one.
 | frame-covers-the-box |  |  |  |  |  |  |  |  | **R** |  |  |  |  |  |
 | every-painted-world-answers-a-pointer |  |  |  |  |  |  |  |  | **R** |  |  |  |  |  |
 | every-painted-world-carries-the-marks |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| no-data-reads-as-not-data |  |  |  |  |  |  |  |  | **R** |  |  |  |  |  |
 
 ## capability
 
@@ -124,22 +125,22 @@ WHY a rule reaches a skill, not restated from the matrices above: the traits
 `skills/doctrine/test/traits.test.ts` proves against each skill's own files. A rule REQUIRES
 some of these; a skill that carries all of them is reachable, computed, never typed.
 
-| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential | materialises-a-beat |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |
-| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  | ✓ |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
-| deliver |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
-| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ | ✓ |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
-| intake |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |
-| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| newsroom-charter |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| palette |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |
-| splash |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
-| storyboard |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |
+| skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | paints-a-region-with-no-reading | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential | materialises-a-beat |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |
+| chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  |  | ✓ |  | ✓ |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  |  | ✓ |  | ✓ |
+| deliver |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
+| dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  |  | ✓ | ✓ |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  |  | ✓ |  | ✓ |
+| intake |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |
+| map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ |  | ✓ | ✓ | ✓ | ✓ |
+| map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| newsroom-charter |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| palette |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ | ✓ |
+| splash |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
+| storyboard |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |
 
 ## What each rule refuses, and the defect that earned it
 
@@ -430,3 +431,9 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 **Earned by:** the same 2026-08-23 ruling every-painted-world-answers-a-pointer was earned by — a world camera fills its box by repeating the world east and west — read onto the one channel a scroll-driven vehicle has. map-web answered the ruling with a pointer census because its own defect was ONE set of hit targets over three painted worlds; a scrolly has no hit targets at all, so the copy a reader can be cheated of is a copy they can SEE the ground of and not the evidence. That defect is photographed in this tree: proof/mapscrolly-quakes-three-ways/drive/1600x900-worldcopies-bare.png, Australia and New Zealand painted a second time in the side band with not one of this beat's 14,057 dots on them, beside a paragraph reading "every earthquake … 14,057 of them, one dot each" — the emptiest coasts in the picture being the most seismically active on earth. The live layer had already been fixed for it; the NO-JAVASCRIPT page had not, and letterboxed instead: measured 2026-08-23 with the script off, the plate covered 82.0% of a 1600x900 box, 88.7% of the owner's own 2990x1718 and 88.1% of 1280x800, while the live map beside it filled all three edge to edge. Both substrates tile now and the census is driven at every step and every width: at 1600x900 copy -1 answers 18/18, the primary 64/64 and copy +1 7/7. Three mutations were built and all three go red — the plate repeating while the marks do not (16 failures, naming each copy and its count), the marks repeating 0.9 of a tile from the plate (16), and a world camera shipping no tiles at all, which the browser reading alone CANNOT see because a page with no copies has no copy to be about: that one is caught off disk from the camera's own longitude span, so the population is derived from geometry rather than typed. Measured across every plate in the tree, one beat in this vehicle spans a full turn and the other eight span 0.1° to 59°.
 
 **Also reached by:** nothing else yet. The trait pair that reaches this rule is bakes-a-plate + ships-standalone-html, which today is map-web and scrolly and no one else — map-beat bakes a plate and ships a PNG, chart-web ships a page and has no plate. The rule is written against what is PAINTED of the world rather than against this vehicle's own markup, so the next format that grows both traits inherits it without re-earning it.
+
+### no-data-reads-as-not-data — `assertSurfacesRead`
+
+**Refuses:** a choropleth whose page, sea, no-data fill and classes a reader cannot tell apart: any surface carrying no reading within 3:1 of any class, any surface within one ramp step of the page, a sea and a no-data fill separated by neither a step nor a hue, or two classes closer than one step of their own ramp — all measured in CONTRAST, never in a luminance gap
+
+**Earned by:** a world choropleth of rabies deaths REPORTED to WHO, whose whole editorial point is that 94 countries filed nothing and 44 filed a real zero, drew the two silences so they read the same: the no-data fill measured 1.28:1 against class 1 on the dark ground the story shipped on, the sea 1.30:1 against the same class, and the sea against the no-data fill 1.015:1. The owner saw it on the first draft, before anything was measured. TWO MECHANISMS PRODUCED IT AND NEITHER WAS A TUNING SLIP. Both surfaces were placed at the ARITHMETIC MIDPOINT of the band between the ground and class 1, whose contrast against the upper end climbs toward 2.00:1 and is under it everywhere — a cap BY CONSTRUCTION, so no ground, no ramp low end and no class count could ever have bought this case more; and the retired rule it was measured by, assertSurfacesRead, held each surface 0.02 of relative LUMINANCE clear of the nearest class, which is 1.338:1 beside a #16191B ground and 1.017:1 beside white. A floor seventeen times stricter on the dark ground than on the light one: it refused this newsroom's own charter fourteen times out of fourteen, short by 0.0015, and passed the WHITE ground's worse picture at 1.192:1. The 0.0015 was never real — the comparison was wrong, and wrong in a direction that flattered white. The replacement measures every pair a reader must tell apart in contrast, against two DERIVED floors: KIND_FLOOR, the 3:1 of WCAG 2.2 SC 1.4.11 that assertRampReads already sets for the top class, between things that differ in kind; and stepFloorFor(classes) = 3 ** (1 / classes), one step of the smallest ramp this family permits, between things a reader orders. A longer ramp is therefore the CHEAPER ask — 15.588:1 of range for two classes against 10.168:1 for nine — which is the opposite of what the typed low end assumed. contrastRamp starts the ramp where the sea and the no-data fill leave off instead of at a positional constant, and refuses with the bill itemised: this newsroom's second recorded accent #5B8A8A reaches 8.473:1 against its own ground where a six-class choropleth needs 10.808:1, and no class count up to twelve fits. assertRampReads is REPLACED here rather than widened, because its own step rule is the same wrong unit: on the ramp this derives for #FFFFFF and #B2182B the smallest step is 0.0188 of luminance and 1.221:1 of contrast — legible, and refused — while 0.02 at the light end of that same ramp would pass a step of 1.02:1 nobody can see. Sixteen files carry it under @parity and the symbol, hex and forest cores still call it, so it is left byte-identical and a choropleth stops calling it. map-beat does not reach this rule and the blankness is structural rather than argued: Co2MapStill.tsx paints its no-data regions with a 45 degree hatch over the ground under its own comment, 'No-data is a TEXTURE, not another shade: any shade is a shade the ramp could have used (geo-discipline.md rule 7)'. The static genre had the answer the web genre did not

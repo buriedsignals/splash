@@ -423,6 +423,14 @@ export const RECORDED_UNWIRED_DEBT = [
  *  `splash/test/guard-copies-parity.test.ts` is what holds that copy to this skill's. */
 export const RECORDED_BEAT_SUBSTRATE = [
   { name: "unmatchedValues", calledBy: "stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/render-web.mjs" },
+  // `assertSurfacesRead` needs a RAMP, a ground and the two surfaces derived beside it — a
+  // choropleth's whole colour decision. This skill's seed is a symbol map: it has one accent and no
+  // classes, so there is nothing here for the decision to measure and giving it something means
+  // inventing a ramp to ask about. `mapgen-choropleth-web` is the worked beat this skill's own
+  // SKILL.md tells a journalist to copy, and its `choroplethSurfaces` calls the decision on every
+  // path that paints — the bake, the server-rendered page and the live plan all come through it, so
+  // the three cannot disagree about what colour a country with no reading is.
+  { name: "assertSurfacesRead", calledBy: "proof/mapgen-choropleth-web/ChoroplethWeb.tsx" },
 ];
 
 /** CATEGORY 3 — DECISIONS DRIVEN BY THIS FORMAT'S OWN SUITE, on purpose.

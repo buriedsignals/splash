@@ -40,12 +40,20 @@ export const GUARDS = [
   "csvSplitByHand",
   "unmatchedValues",
   "labelPlacementIssues",
+  // THE FOURTH THE POLYGON CORE BROUGHT, and the one it earned rather than inherited (2026-08-23).
+  // A choropleth is the only thing this format paints that has to say "this region filed nothing"
+  // in the same colour space it says "this region filed a zero" — see `no-data-reads-as-not-data`.
+  "assertSurfacesRead",
 ];
 
 // `unmatchedValues` and `labelPlacementIssues` are the actual decisions and they live beside the
 // arithmetic they judge, in `assets/geo-choropleth.ts` — re-exported here only so `carriedBy` can
 // read the name, which is exactly the shape `map-beat/scripts/verify-map.mjs` uses for its own two.
-export { unmatchedValues, labelPlacementIssues } from "../assets/geo-choropleth.ts";
+export {
+  unmatchedValues,
+  labelPlacementIssues,
+  assertSurfacesRead,
+} from "../assets/geo-choropleth.ts";
 
 /** Every credential name this skill's own scripts read straight off `env`/`process.env` by its
  *  literal CANONICAL property name — `MAPTILER_KEY`, `DATAWRAPPER_TOKEN` — never a name built at

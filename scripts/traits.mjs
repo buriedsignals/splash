@@ -249,6 +249,30 @@ export const TRAITS = [
       }),
   },
   {
+    id: "paints-a-region-with-no-reading",
+    describes: "it fills a region that has no value with a COLOUR derived from the same palette its classes are, so that fill can be confused with a class",
+    // THE RISK, NOT THE RULE. A skill reaches this trait by deriving a colour for a region that
+    // filed nothing — `noDataFor` — because a derived colour is a colour that can land on top of a
+    // reading, which is exactly what happened on the rabies world map (1.28:1 from class 1, on the
+    // ground the story shipped on).
+    //
+    // `map-beat` does NOT reach it, and that is a real editorial difference rather than a gap:
+    // `assets/Co2MapStill.tsx` paints its no-data regions with `url(#no-data)`, a 45° hatch over the
+    // ground, under its own comment — *"No-data is a TEXTURE, not another shade: any shade is a
+    // shade the ramp could have used (`geo-discipline.md` rule 7)"*. A texture cannot be read as a
+    // class whatever the palette does, so the reading this rule makes has nothing to fire on there.
+    // The static genre had the answer the web genre did not.
+    //
+    // Witnessed by the DERIVATION and not by the guard: deleting `noDataFor` to escape the rule
+    // would mean the skill no longer derives a no-data colour at all, which is a change to what it
+    // paints and not a way of hiding from a check — unlike a `verify-*` function, which is why the
+    // usual `verify`/`detect` exclusion is applied here too.
+    witness: (skill) =>
+      anySource(skill, /export function noDataFor\(/, {
+        exclude: /^(verify|detect)-.*\.mjs$/,
+      }),
+  },
+  {
     id: "joins-values-to-shapes",
     describes: "it matches a source's per-key readings onto a fixed set of shapes it must fully account for",
     // Witnessed by the export itself, not a description of it — `joinValues` is the mechanism, and a
