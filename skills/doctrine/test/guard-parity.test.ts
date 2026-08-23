@@ -25,6 +25,7 @@ import {
   readCatalogue,
   unreachableRows,
   walkedByExists,
+  cataloguedSkills,
   PRODUCING_SKILLS,
 } from "../../../scripts/guards.mjs";
 
@@ -48,7 +49,7 @@ describe("the guard catalogue", () => {
   it("declares a state for every skill it names, and names only real skills", () => {
     for (const rule of readCatalogue().rules)
       for (const [skill, state] of Object.entries(rule.states)) {
-        expect(PRODUCING_SKILLS).toContain(skill);
+        expect(cataloguedSkills()).toContain(skill);
         expect(["carried", "owed"]).toContain(state);
       }
   });
@@ -93,7 +94,7 @@ describe("the guard catalogue", () => {
     const declared = new Set(
       readCatalogue().rules.map((rule) => rule.decidedBy ?? rule.detectedBy),
     );
-    for (const skill of PRODUCING_SKILLS)
+    for (const skill of cataloguedSkills())
       for (const name of carriedBy(skill))
         expect([...declared]).toContain(name);
   });
@@ -104,7 +105,7 @@ describe("the guard catalogue", () => {
   // prose required. A cell here is a claim with a reason attached, not a restatement of a trait.
   it("gives a real reason for every cell whose blankness was argued", () => {
     for (const row of unreachableRows(readCatalogue())) {
-      expect(PRODUCING_SKILLS).toContain(row.skill);
+      expect(cataloguedSkills()).toContain(row.skill);
       expect(row.reason.length).toBeGreaterThan(20);
     }
   });
@@ -121,7 +122,7 @@ describe("the guard catalogue", () => {
   // will be checked by on the day one is added.
   it("can enumerate what every format still owes", () => {
     for (const row of owedRows(readCatalogue())) {
-      expect(PRODUCING_SKILLS).toContain(row.skill);
+      expect(cataloguedSkills()).toContain(row.skill);
       expect(row.rule.length).toBeGreaterThan(0);
     }
   });
@@ -139,8 +140,36 @@ describe("the guard catalogue", () => {
   // The way OUT of a red here is never to blank the cell: it is to carry the guard, or to argue in
   // `exceptions` — in prose the next reader can disagree with — that the defect cannot happen
   // there, which is a claim with a name attached and a measurement behind it.
-  it("owes nothing: every reachable format carries every guard it can reach", () => {
-    expect(owedRows(readCatalogue())).toEqual([]);
+  //
+  // AND WHAT WIDENING THE POPULATION DID TO IT, on 2026-08-23. Until that day the catalogue could
+  // only ask the eight skills that DRAW, and their debt had been paid to zero, so one `toEqual([])`
+  // said everything there was to say. Asking the whole tree made four cells visible that had never
+  // been asked of anybody — `csv-split-by-hand` on the two skills that read the frozen table,
+  // `credential-alias-reconciled` on the two that read a live credential — and each one is real,
+  // measured debt rather than an exception: `splash/scripts/run-operation.mjs` and
+  // `deliver/scripts/deploy-embed.mjs` both read `env.CLOUDFLARE_API_TOKEN` with no alias list
+  // declared anywhere in the skill, which is precisely the shape that rule refuses, and the defect
+  // that EARNED it names `splash` by name.
+  //
+  // Blanking those cells is the one move this whole mechanism exists to forbid. Letting the single
+  // assertion go red instead would teach a reader to ignore red — the reason `owed` was allowed to
+  // pass at all while the first debt was being paid. So it splits, and the second half is STRICTER
+  // than the one thing it replaced rather than weaker: the skills that draw still owe NOTHING, and
+  // the debt the widening exposed is pinned to an exact list. A fifth owed cell anywhere in the
+  // tree — a new skill, a new trait, a rule reaching one more place — is red on the day it appears.
+  it("owes nothing among the skills that DRAW: no creation process is weaker than its neighbour", () => {
+    expect(
+      owedRows(readCatalogue()).filter((row) => PRODUCING_SKILLS.includes(row.skill)),
+    ).toEqual([]);
+  });
+
+  it("owes exactly the cells widening the population made visible, and not one more", () => {
+    expect(owedRows(readCatalogue())).toEqual([
+      { rule: "csv-split-by-hand", skill: "intake" },
+      { rule: "csv-split-by-hand", skill: "storyboard" },
+      { rule: "credential-alias-reconciled", skill: "deliver" },
+      { rule: "credential-alias-reconciled", skill: "splash" },
+    ]);
   });
 });
 
@@ -202,7 +231,7 @@ describe("the generated state says what a reader needs", () => {
     const section =
       nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading);
 
-    for (const skill of PRODUCING_SKILLS) {
+    for (const skill of cataloguedSkills()) {
       const row = section
         .split("\n")
         .find((line) => line.startsWith(`| ${skill} |`));

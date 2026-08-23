@@ -9,69 +9,81 @@ means it can happen there and nothing checks it yet; blank means it cannot happe
 — and where that blankness is a genuine exception rather than a missing trait, the argument is
 written out below the tables.
 
+The columns are every skill in this tree, not only the ones that draw. Until 2026-08-23 they
+were the eight producers, so the skills that shape and ship a beat were asked nothing at all and
+every fix made in them was local by construction.
+
+**`doctrine` has no column, permanently, and this is the reason** — read it here rather than
+as an exception repeated under every rule: the registry itself, not a skill the registry can judge: one 90-line script exporting two pure string functions over a markdown table, no story directory, no gate, no lexicon, no probe, no proposal — it witnesses no trait in this vocabulary, and it is where the catalogue and the tests that hold the catalogue honest already live. The exclusion is held to that: it
+stands only while the skill witnesses no trait at all, and `doctrine/test/traits.test.ts` goes
+red the day it witnesses one.
+
 ## guard
 
-| guard | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| duplicated-payload |  |  |  |  | **R** | **R** | **R** | **R** |
-| projection-pairing |  |  |  |  |  |  |  | **R** |
-| plate-geometry-pairing |  |  |  |  | **R** | **R** |  | **R** |
-| plate-follows-theme |  |  |  | **R** | **R** | **R** |  | **R** |
-| screen-space-dash | **R** | **R** | **R** |  | **R** | **R** |  | **R** |
-| reached-mark-declares |  |  |  |  |  |  |  | **R** |
-| step-redraws |  |  |  |  |  |  |  | **R** |
-| scrub-not-slideshow |  |  |  |  |  |  |  | **R** |
-| model-declared |  |  |  |  |  |  |  | **R** |
-| reveal-completes |  |  | **R** |  | **R** |  |  |  |
-| csv-split-by-hand |  |  | **R** | **R** | **R** | **R** |  | **R** |
-| unmatched-value-hides |  |  |  |  | **R** | **R** |  |  |
-| sub-pixel-marks-keep-a-channel |  |  |  |  |  | **R** |  |  |
-| value-labels-collide-or-clip |  |  |  |  | **R** | **R** |  |  |
-| page-declares-story-language |  | **R** |  | **R** |  | **R** |  | **R** |
-| credential-alias-reconciled |  |  |  | **R** | **R** | **R** |  | **R** |
-| reveal-fills-the-frame |  |  |  |  |  |  |  | **R** |
-| label-fits-inside-the-plate |  |  |  |  | **R** | **R** |  | **R** |
-| reveal-order-is-earned |  |  | **R** |  | **R** |  |  |  |
-| guard-wired-to-run | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| labels-name-their-own-row | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
-| rtl-runs-carry-their-direction | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
-| accent-survives-delegation |  |  |  | **R** |  |  |  |  |
+| guard | chart-beat | chart-video | chart-web | deliver | dw-beat | image-beat | intake | map-beat | map-web | newsroom-charter | palette | scrolly | splash | storyboard |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| duplicated-payload |  |  |  |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| projection-pairing |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| plate-geometry-pairing |  |  |  |  |  |  |  | **R** | **R** |  |  | **R** |  |  |
+| plate-follows-theme |  |  |  |  | **R** |  |  | **R** | **R** |  |  | **R** |  |  |
+| screen-space-dash | **R** | **R** | **R** |  |  |  |  | **R** | **R** |  |  | **R** |  |  |
+| reached-mark-declares |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| step-redraws |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| scrub-not-slideshow |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| model-declared |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| reveal-completes |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |  |
+| csv-split-by-hand |  | **R** |  |  | **R** |  | · | **R** | **R** |  |  | **R** |  | · |
+| unmatched-value-hides |  |  |  |  |  |  |  | **R** | **R** |  |  |  |  |  |
+| sub-pixel-marks-keep-a-channel |  |  |  |  |  |  |  |  | **R** |  |  |  |  |  |
+| value-labels-collide-or-clip |  |  |  |  |  |  |  | **R** | **R** |  |  |  |  |  |
+| page-declares-story-language |  |  | **R** |  | **R** |  |  |  | **R** |  |  | **R** |  |  |
+| credential-alias-reconciled |  |  |  | · | **R** |  |  | **R** | **R** |  |  | **R** | · |  |
+| reveal-fills-the-frame |  |  |  |  |  |  |  |  |  |  |  | **R** |  |  |
+| label-fits-inside-the-plate |  |  |  |  |  |  |  | **R** | **R** |  |  | **R** |  |  |
+| reveal-order-is-earned |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |  |
+| guard-wired-to-run | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| labels-name-their-own-row | **R** | **R** | **R** |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| rtl-runs-carry-their-direction | **R** | **R** | **R** |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| accent-survives-delegation |  |  |  |  | **R** |  |  |  |  |  |  |  |  |  |
 
 ## capability
 
-| capability | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| same-facts-without-the-picture |  | **R** |  |  |  | **R** |  |  |
-| reachable-by-keyboard |  | **R** |  |  |  | **R** |  |  |
-| honours-reduced-motion |  | **R** |  |  |  |  |  |  |
-| degrades-without-javascript |  | **R** |  |  |  | **R** |  |  |
-| weight-has-a-ceiling |  |  |  |  | **R** | **R** | **R** | **R** |
-| every-photo-says-what-it-shows |  |  |  |  |  |  | **R** |  |
-| framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |
-| fills-its-frame | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| storyboard-gate-is-visible | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| example-runners-are-called | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| runner-answer-can-be-believed | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| denominator-reading-is-stated | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| credit-traces-to-the-record | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
-| double-hyphen-reaches-a-reader | **R** | **R** | **R** | **R** | **R** | **R** | **R** | **R** |
+| capability | chart-beat | chart-video | chart-web | deliver | dw-beat | image-beat | intake | map-beat | map-web | newsroom-charter | palette | scrolly | splash | storyboard |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| same-facts-without-the-picture |  |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |
+| reachable-by-keyboard |  |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |
+| honours-reduced-motion |  |  | **R** |  |  |  |  |  |  |  |  |  |  |  |
+| degrades-without-javascript |  |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |
+| weight-has-a-ceiling |  |  |  |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| every-photo-says-what-it-shows |  |  |  |  |  | **R** |  |  |  |  |  |  |  |  |
+| framing-is-measured | **R** | **R** | **R** |  |  |  |  |  |  |  |  |  |  |  |
+| fills-its-frame | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| storyboard-gate-is-visible | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| example-runners-are-called | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| runner-answer-can-be-believed | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| denominator-reading-is-stated | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| credit-traces-to-the-record | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| double-hyphen-reaches-a-reader | **R** | **R** | **R** |  | **R** | **R** |  | **R** | **R** |  |  | **R** |  |  |
 
 ## discipline
 
-| discipline | chart-beat | chart-web | chart-video | dw-beat | map-beat | map-web | image-beat | scrolly |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cartographic-rules |  |  |  |  | **R** | **R** |  | **R** |
-| motion-grammar |  |  | **R** |  | **R** |  |  |  |
-| static-discipline | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
-| palette-names-its-source | **R** | **R** | **R** |  | **R** | **R** | **R** | **R** |
-| framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |
-| typeface-is-recorded |  |  |  |  |  | **R** | **R** | **R** |
+| discipline | chart-beat | chart-video | chart-web | deliver | dw-beat | image-beat | intake | map-beat | map-web | newsroom-charter | palette | scrolly | splash | storyboard |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cartographic-rules |  |  |  |  |  |  |  | **R** | **R** |  |  | **R** |  |  |
+| motion-grammar |  | **R** |  |  |  |  |  | **R** |  |  |  |  |  |  |
+| static-discipline | **R** | **R** | **R** |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| palette-names-its-source | **R** | **R** | **R** |  |  | **R** |  | **R** | **R** |  |  | **R** |  |  |
+| framing-serves-the-point | **R** | **R** | **R** |  |  |  |  |  |  |  |  |  |  |  |
+| typeface-is-recorded |  |  |  |  |  | **R** |  |  | **R** |  |  | **R** |  |  |
 
 Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.
 
-## What is still owed — 0 cells
+## What is still owed — 4 cells
 
-Nothing. Every format carries every rule it can reach.
+- `intake` owes **csv-split-by-hand**
+- `storyboard` owes **csv-split-by-hand**
+- `deliver` owes **credential-alias-reconciled**
+- `splash` owes **credential-alias-reconciled**
 
 ## Why a cell is blank, where the blankness was argued — 22 of them
 
@@ -111,13 +123,19 @@ some of these; a skill that carries all of them is reachable, computed, never ty
 | skill | draws-own-geometry | bakes-a-plate | delegates-rendering | owns-a-surface-it-did-not-choose | timed-build-that-ends | reader-driven-reveal | ships-standalone-html | inlines-its-assets | embeds-reader-photos | reads-a-journalists-csv | joins-values-to-shapes | reads-a-palette | reads-a-provider-credential | materialises-a-beat |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | chart-beat | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |
-| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
 | chart-video | ✓ |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |  | ✓ |
+| chart-web | ✓ |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  | ✓ |
+| deliver |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
 | dw-beat |  |  | ✓ | ✓ |  |  | ✓ |  |  | ✓ |  |  | ✓ | ✓ |
+| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
+| intake |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |
 | map-beat | ✓ | ✓ |  | ✓ | ✓ |  |  | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
 | map-web | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| image-beat | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  | ✓ |  | ✓ |
+| newsroom-charter |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| palette |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | scrolly | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ | ✓ |
+| splash |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |
+| storyboard |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |
 
 ## What each rule refuses, and the defect that earned it
 

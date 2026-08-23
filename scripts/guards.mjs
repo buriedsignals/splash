@@ -7,7 +7,13 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PRODUCING_SKILLS, TRAITS, traitsOf } from "./traits.mjs";
+import {
+  OUTSIDE_THE_CATALOGUE,
+  PRODUCING_SKILLS,
+  TRAITS,
+  cataloguedSkills,
+  traitsOf,
+} from "./traits.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -15,8 +21,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
  *  a beat; they never draw one, so a guard about a drawing cannot reach them.
  *
  *  Defined in `traits.mjs` (a fact about skills, which is what that module is about) and re-exported
- *  here so every existing importer of this module keeps working unchanged. */
-export { PRODUCING_SKILLS };
+ *  here so every existing importer of this module keeps working unchanged.
+ *
+ *  IT IS NO LONGER THE CATALOGUE'S POPULATION. Until 2026-08-23 `reachable()` iterated this list, so
+ *  a rule could only ever reach a skill that draws, and the seven that shape and ship a beat were
+ *  asked nothing. `cataloguedSkills()` is that population now — derived from the tree, not typed —
+ *  and this constant keeps its name and its narrower meaning, which is what the guard-wiring sweep
+ *  and the render ladder still need it for. */
+export { PRODUCING_SKILLS, cataloguedSkills, OUTSIDE_THE_CATALOGUE };
 
 export function readCatalogue() {
   return JSON.parse(
@@ -87,9 +99,15 @@ export function walkedByExists(skill, rule) {
  *  COMPUTED, NEVER TYPED. The hand-typed version of this shipped on 2026-08-19 and had already
  *  failed by the next morning: `reveal-completes` named `chart-video` because that is the skill
  *  someone was working in, while `map-beat` — same timing contract, six video beats on disk — was
- *  not named and therefore owed nothing. A set nobody derives is a set nobody notices. */
+ *  not named and therefore owed nothing. A set nobody derives is a set nobody notices.
+ *
+ *  AND THE POPULATION IT FILTERS IS DERIVED TOO (2026-08-23). This used to iterate
+ *  `PRODUCING_SKILLS` — the eight skills that draw — which meant the same failure one level up:
+ *  `splash`, `storyboard`, `deliver`, `intake`, `palette` and `newsroom-charter` were never asked
+ *  anything, so no rule could reach them however many traits they proved, and every fix made in them
+ *  was local by construction. `cataloguedSkills()` reads the tree instead. */
 export function reachable(rule) {
-  return PRODUCING_SKILLS.filter((skill) => {
+  return cataloguedSkills().filter((skill) => {
     const traits = traitsOf(skill);
     return rule.requires.every((id) => traits.includes(id));
   }).sort();
@@ -161,7 +179,7 @@ function matrixFor(catalogue, kind, skills, cell) {
 }
 
 export function renderGuardsDoc(catalogue) {
-  const skills = PRODUCING_SKILLS;
+  const skills = cataloguedSkills();
   const cell = (rule, skill) =>
     rule.states[skill] === "carried" ? "**R**" : rule.states[skill] === "owed" ? "·" : "";
   const owed = owedRows(catalogue);
@@ -177,6 +195,17 @@ export function renderGuardsDoc(catalogue) {
     "— and where that blankness is a genuine exception rather than a missing trait, the argument is",
     "written out below the tables.",
     "",
+    "The columns are every skill in this tree, not only the ones that draw. Until 2026-08-23 they",
+    "were the eight producers, so the skills that shape and ship a beat were asked nothing at all and",
+    "every fix made in them was local by construction.",
+    "",
+    ...Object.entries(OUTSIDE_THE_CATALOGUE).flatMap(([skill, reason]) => [
+      `**\`${skill}\` has no column, permanently, and this is the reason** — read it here rather than`,
+      "as an exception repeated under every rule: " + reason + ". The exclusion is held to that: it",
+      "stands only while the skill witnesses no trait at all, and `doctrine/test/traits.test.ts` goes",
+      "red the day it witnesses one.",
+      "",
+    ]),
     ...KIND_ORDER.flatMap((kind) => matrixFor(catalogue, kind, skills, cell)),
     "Disciplines are checked for PRESENCE where an author reads them, and are not mechanically verified.",
     "",
