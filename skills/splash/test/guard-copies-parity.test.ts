@@ -221,6 +221,13 @@ const COPIES: Record<string, string[]> = {
     // `reads-a-journalists-csv`, so this rule reaches it. Its own driver calls it over the runner
     // that produced the page being driven.
     "map-web/scripts/verify-guards.mjs",
+    // THE SEVENTH AND EIGHTH, 2026-08-23, and the first two carried by skills that do not DRAW.
+    // The rule's own `earnedBy` names `intake/scripts/csv.mjs` as the real reader nobody used; the
+    // catalogue could not ask either of the two skills that read a journalist's FROZEN table
+    // outside a render until its population stopped being "the eight that draw". Each runs it from
+    // its own `check-frozen-csv.mjs` over the files the skill ships.
+    "intake/scripts/verify-frozen-csv.mjs",
+    "storyboard/scripts/verify-frozen-csv.mjs",
   ],
   // FINDING 1 (stress round two): a delivered page's own `<html lang>` used to be a literal baked
   // in for its first caller — every skill that ships a standalone page can carry the same defect,
@@ -235,18 +242,60 @@ const COPIES: Record<string, string[]> = {
   // canonical name with no declared alias list is the exact gap that let a real, present token
   // under the root's own name (DATAWRAPPER_API_TOKEN) read back as "not set". Carried by every
   // producing skill whose own scripts read a provider credential at all.
+  // 2026-08-23: the fifth and sixth copies, and the first carried by skills that do not draw. The
+  // defect that EARNED this rule names `splash/scripts/run-operation.mjs` by name, and the rule had
+  // never once been asked of `splash` — a rule earned by a skill it could not reach. `deliver` was
+  // the live one: with the root's `.env` holding the MapTiler key under the engine's own names, its
+  // hand-written two-name fallback substituted nothing and every delivered map shipped a dead tile
+  // layer.
   credentialNamesRead: [
     "dw-beat/scripts/verify-owned.mjs",
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
     "scrolly/scripts/verify-scrolly.mjs",
+    "splash/scripts/verify-credentials.mjs",
+    "deliver/scripts/verify-credentials.mjs",
   ],
   credentialReadsWithoutAlias: [
     "dw-beat/scripts/verify-owned.mjs",
     "map-beat/scripts/verify-map.mjs",
     "map-web/scripts/verify-guards.mjs",
     "scrolly/scripts/verify-scrolly.mjs",
+    "splash/scripts/verify-credentials.mjs",
+    "deliver/scripts/verify-credentials.mjs",
   ],
+  // THE READ THE TWO NON-DRAWING SKILLS ROUTE EVERY CREDENTIAL THROUGH, and the reason it is walked
+  // rather than left as two similar helpers: `constantsBehind` follows the SHOUTING_CASE names
+  // inside the compared span, so the alias table and both alias lists travel with the function. A
+  // copy that dropped `REMOTION_MAPTILER_KEY` would answer "no key" where its neighbour answers
+  // with the key — which is the exact defect `credential-alias-reconciled` was earned by, recreated
+  // between two skills instead of inside one.
+  resolveEnvKey: ["splash/scripts/keys.mjs", "deliver/scripts/env-keys.mjs"],
+  // The SWEEP the two of them run the decision from, and the reader under it. Both take the skill
+  // as a parameter and nothing in either is skill-specific. `credentialReadings` is where the
+  // stricter of the two questions lives — a skill that ships a resolver reads NO canonical name off
+  // the environment — and a copy that quietly dropped it would leave one of the two answering only
+  // the question the catalogue's decision goes blind on.
+  shippedSource: ["splash/scripts/verify-credentials.mjs", "deliver/scripts/verify-credentials.mjs"],
+  credentialReadings: [
+    "splash/scripts/verify-credentials.mjs",
+    "deliver/scripts/verify-credentials.mjs",
+  ],
+  // The sweep `csvSplitByHand` is run from in the two skills that read a frozen table. It strips
+  // comments before deciding, and that is the part that must not drift: the guard's own doc comment
+  // spells both halves of the pattern it refuses, so a copy that stopped stripping would report the
+  // guard itself as the offender and its owner would delete the rule rather than the prose.
+  handSplitCsvReaders: [
+    "intake/scripts/verify-frozen-csv.mjs",
+    "storyboard/scripts/verify-frozen-csv.mjs",
+  ],
+  // ONE READER FOR ONE FROZEN TABLE. `intake` freezes `source/data.csv` and `storyboard` reads
+  // values back out of it to decide whether the article's own superlative is grounded; until
+  // 2026-08-23 they used two different readers, and the second was line-oriented — a quoted field
+  // carrying its own newline became a whole extra row whose first column read as an entity name.
+  // `csvSplitByHand` is green on that defect and always was: there is no bare comma split in a
+  // per-character splitter. This registry entry is what the guard could not be.
+  parseCsv: ["intake/scripts/csv.mjs", "storyboard/scripts/ground-claim.mjs"],
   // Not a guard but a READER, and it drifted within one afternoon: the style-object form was added
   // to one copy and not the other, and the copy without it returned a mark with no offset and passed
   // it. Walked for the same reason as the decisions.
