@@ -1,0 +1,285 @@
+// A MARK SMALLER THAN A PIXEL HAS NO POINTER PATH, AND THE TWO CHANNELS LEFT ARE NOT OPTIONAL.
+//
+// THE MEASUREMENT THIS EXISTS FOR. A ruling asked this format to replace `collidingPointerTargets`'s
+// invariant with a live one about `queryRenderedFeatures`. Driven with a real key against the
+// committed 241-region world beat, that invariant was red for 90 of 241 marks at 1600x900 and 149 of
+// 241 at 375x667, and nothing this format can do turns it green: at that camera the live map draws
+// 896px for 360° of longitude, so one pixel is about 26 km and Monaco is about a thirteenth of one.
+// The collision was never the problem — of the 105 marks a neighbour's button covers, 46 are not
+// served by the live pointer either. A mark smaller than a pixel has no pointer path and no target
+// engineering creates one.
+//
+// So the pointer is not a channel every mark has, and this format has said in prose since it was
+// written that the keyboard and the accessible table are two channels a reader PICKS BETWEEN. For
+// these marks there is nothing to pick between: those two ARE the path. That turns an opt-out into a
+// refusal — a beat that strands a mark under a pixel and then ships without a row for it, or without
+// a keyboard target for it, has produced a mark no reader can reach by any means.
+//
+// READS THE ARTEFACT, NEVER THE COMPONENT, the same rule `detect-accessible-table.mjs` states: the
+// delivered page carries its own frame (the map `<svg>`'s `viewBox`), its own drawn rings (a keyed
+// `<path>`), its own marks (`data-detail`), its own keyboard targets and its own table. Every input
+// this decision needs is in the file that ships, so it judges what shipped rather than what a render
+// step meant to write.
+//
+// WHAT IT CANNOT SEE, SAID OUT LOUD AND BOUNDED IN CODE rather than left as prose. This measures a
+// FILLED areal shape stated in frame units, which is what a choropleth region, a dot map's country
+// outline and a hex bin all are. Three things are therefore refused rather than measured wrongly:
+// a `fill="none"` path, whose pointer target is a STROKE WIDTH and not an enclosed area; a path
+// under an SVG `transform`, whose rings are not where it is drawn; and a `d` carrying any command
+// beyond `M`/`L`/`Z`, since a curve's control points are not vertices. The first two were found on
+// real committed pages (`stress-ab-emigration-flows`'s route ribbons and arrowheads), and the keys
+// dropped for the second are RETURNED so a caller can say so — a silence reported as a clean bill is
+// the shape this project keeps finding. A page whose marks carry no areal geometry at all — the
+// symbol seed's circles, a locator's pins — gets an empty answer, which is the honest one.
+// `test/marks-smaller-than-a-pixel.test.ts` pins that several pages in this format's own delivered
+// population DO strand marks, so an empty sweep can never read as a pass.
+
+import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
+import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
+
+/** The capability this script carries, read by `scripts/guards.mjs` and checked against
+ *  `doctrine/references/guard-catalogue.json` by `doctrine/test/guard-parity.test.ts`. */
+export const GUARDS = ["marksStrandedWithNoChannel"];
+
+/** The container widths a producer is answered at. Four, not one, because the answer changes with
+ *  the container — measured on the world beat: 75 marks with no pointer path at the widest and 124
+ *  at the narrowest, over the same geometry. The narrow end is where a world map stops being a map
+ *  and becomes a table, and a producer who is only told the desktop number never learns that. */
+export const READING_WIDTHS = [1600, 1024, 768, 375];
+
+/** The page padding this format's own stage spends before the map is drawn — `.map-web-page`'s own,
+ *  stated here rather than parsed out of the CSS, exactly as `render-web.mjs`'s colliding-target
+ *  verdict states it. */
+export const PAGE_PADDING_PX = 32;
+
+/** Is this delivered page's plate bound by the container's HEIGHT rather than by its width?
+ *
+ *  One page shape in this format is, and it is derived rather than guessed: a camera that already
+ *  spans a full turn of longitude cannot be given horizontal margin (`delivery-frame.mjs`,
+ *  `cannotCover`), so its page fills the box by drawing the plate at exactly the box's HEIGHT and
+ *  REPEATING it east and west (the owner's wrap ruling, 2026-08-23). One world is then
+ *  `boxHeight × plateAspect` wide, which is narrower than the container the moment the box is wider
+ *  than the world — the opposite of the cover case below, where the plate is at least as wide as
+ *  the box.
+ *
+ *  The marker is the RULE that does it, `height: 100cqh` on the two plate layers, which
+ *  `render-web.mjs` emits only on the wrapping branch (the cover branch writes
+ *  `height: max(100cqh, …)`). A declaration, not a word: the prose above it in the same stylesheet
+ *  quotes the expressions it replaced, so a looser match would read the explanation as the thing it
+ *  explains. It replaces `containsItsPlate`, whose marker — `container-type: normal` — was the
+ *  CONTAINED layout the ruling removed; the reading it fed is unchanged, and the name is now what
+ *  the page actually does. */
+export function plateIsBoundByHeight(html) {
+  return /\.mw-fallback,\s*\.mw-overlay\s*\{[^}]*\bheight:\s*100cqh;/.test(html);
+}
+
+/** How wide the map is DRAWN at a given container width, in the fallback layer: the container less
+ *  this format's page padding.
+ *
+ *  THE CAP CAME OFF ON 2026-08-23, and taking it off made this reading CORRECT rather than merely
+ *  larger. It used to be `Math.min(container - padding, frame.width)`, because the plate was fitted
+ *  INSIDE the box and `preserveAspectRatio` stopped scaling it up past its own frame. Two things
+ *  were wrong with that even then: the box was ALSO bounded by the stage's height, which this never
+ *  knew about, so on a near-square plate in a wide window it reported the frame's own width when the
+ *  real drawn width was much smaller — measured on `proof/mapgen-dot-web` at 1600px, it answered
+ *  1000px about a map drawn 704px wide, 42% too generous, and the specks it missed were real.
+ *
+ *  Under the rule the owner set (`delivery-frame.mjs`), the box IS the container on both axes and
+ *  the plate is scaled to COVER it, so the plate is drawn `max(boxWidth, boxHeight × plateAspect)`
+ *  wide — never less than the box. `container - padding` is therefore a true floor at every box
+ *  shape, and it is exact whenever the box is no wider than the plate.
+ *
+ *  IT IS STILL A FLOOR, AND THE FLOOR IS STILL NAMED. The LIVE layer fits its camera to the reader's
+ *  own container and draws NARROWER than this — measured on the world beat, canvas 896 / 640 / 263 px
+ *  from containers of 1600x900, 1024x768 and 375x667. So the count this feeds is the fewest marks a
+ *  reader loses, not the most. `scripts/verify-live-map.mjs` drives the real camera and prints the
+ *  real number; this is what a producer can be told without a browser and without a key.
+ *
+ *  `heightBound` is the WRAPPING page shape (`plateIsBoundByHeight` above): there one world is drawn
+ *  at the box's height times the plate's aspect and never scales with the container's width, so the
+ *  plate's own frame width is the cap — the same arithmetic the contained layout needed, for the
+ *  same reason and about the same pixels. Measured on `real-owid-life-expectancy` at a 1600px
+ *  container: this returns 1200 and one world is drawn 898px wide. It is optimistic by exactly that
+ *  much, because the stage's height is not a thing a string can be read for; naming it is better
+ *  than silently answering 1568, which is what a single uncapped reading would do — and the error
+ *  runs in the safe direction, since a too-generous width can only UNDER-report a stranded mark on a
+ *  page whose keyboard and table are what this then checks. */
+export function drawnWidthAt(containerWidthPx, frame, heightBound = false) {
+  const box = containerWidthPx - PAGE_PADDING_PX;
+  return heightBound ? Math.min(box, frame.width) : box;
+}
+
+/** The map's own frame and drawn rings, read out of the delivered page.
+ *
+ *  The frame is the map `<svg class="map">`'s own `viewBox`, which IS the frame every ring in it was
+ *  projected into — never a second number derived somewhere else. The rings are parsed back out of
+ *  the `d` attribute `pathFromRings` wrote (`M x yL x y…Z`, one subpath per ring), so what is
+ *  measured is the geometry the reader's browser actually paints. Returns `null` for a page with no
+ *  map svg at all, and an empty `shapes` for one that draws no keyed areal geometry.
+ *
+ *  A SHAPE IS A `<path>` THAT NAMES A KEY, not a `<path class="region">`, and the difference was a
+ *  false negative on a real page. The first version keyed off the choropleth's own class and
+ *  therefore reported ZERO stranded marks on `proof/mapgen-dot-web` — a beat whose live hover layer
+ *  is the country FILL (`mw-countries`, `hover: true`) and whose own prose claimed a reader could
+ *  hover any of its 42 countries, while Liechtenstein and Malta are drawn under a pixel at every
+ *  width. A guard that only recognises one beat's class name confirms every beat that spells it
+ *  differently. `marksStrandedWithNoChannel` intersects these keys with the ones the page ANNOUNCES,
+ *  so a context outline that is not a mark is still not judged as one.
+ *
+ *  PARTS ARE MERGED BY KEY: a country drawn as several `<path>` elements is one mark, and asking
+ *  whether its smallest island is sub-pixel would report a reachable country as stranded. */
+export function drawnRegionsOf(html) {
+  const svg = /<svg[^>]*class="map"[^>]*>/.exec(html)?.[0];
+  const viewBox = svg && /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  if (!viewBox) return null;
+  const byKey = new Map();
+  const skipped = new Set();
+  for (const path of html.matchAll(/<path\b[^>]*>/g)) {
+    const key = /\bdata-key="([^"]+)"/.exec(path[0])?.[1];
+    const d = /\bd="([^"]+)"/.exec(path[0])?.[1];
+    if (!key || !d) continue;
+    // FILLED GEOMETRY ONLY, and this is a correctness bound rather than a convenience. A STROKED
+    // path — `stories/stress-ab-emigration-flows`'s route flows, `fill="none"` with a stroke-width
+    // of 30 down to 3.1 — is pointed at through its STROKE, and the area its open curve happens to
+    // enclose is not a thing the map paints or hit-tests. Measured on that page: eight route keys
+    // parse as "shapes" and the even-odd spans of an open curve answered a question nobody asked.
+    // A mark whose target is a stroke width is a different measurement and this is not it.
+    if ((/\bfill="([^"]*)"/.exec(path[0])?.[1] ?? "none").toLowerCase() === "none") continue;
+    // AND NOTHING THIS FUNCTION CANNOT PLACE. A `transform` composes a matrix onto the path's own
+    // coordinates and this reads frame units off the `d` attribute alone, so a transformed shape's
+    // rings are not where it is drawn. Skipped and RECORDED rather than measured wrongly or dropped
+    // in silence: found on `stories/stress-ab-emigration-flows`, whose eight route ARROWHEADS carry
+    // the route's `data-key` on a translated-and-rotated triangle. That triangle is decoration; the
+    // route's own pointer target is a 35px transparent stroke (`.fm-hit`), which is a stroke-width
+    // question and not this one.
+    if (/\btransform="/.test(path[0])) {
+      skipped.add(key);
+      continue;
+    }
+    // AND NOTHING WHOSE `d` IS NOT A POLYGON. `pathFromRings` writes `M x yL x y…Z` and nothing
+    // else; a `C`, `Q` or `A` in there means the outline has control points that are not vertices,
+    // and reading them as vertices would answer a different shape's question.
+    if (/[^\s\d.,\-MLZ]/.test(d)) {
+      skipped.add(key);
+      continue;
+    }
+    const rings = byKey.get(key) ?? [];
+    for (const subpath of d.split("M")) {
+      if (!subpath.trim()) continue;
+      const ring = subpath
+        .replace(/Z\s*$/, "")
+        .split("L")
+        .map((pair) => pair.trim().split(/\s+/).map(Number))
+        .filter((point) => point.length === 2 && point.every(Number.isFinite));
+      if (ring.length >= 3) rings.push(ring);
+    }
+    if (rings.length > 0) byKey.set(key, rings);
+  }
+  return {
+    frame: { width: Number(viewBox[1]), height: Number(viewBox[2]) },
+    shapes: [...byKey].map(([key, rings]) => ({ key, rings })),
+    // The keys this reading could not place, so a caller can say so rather than report a silence as
+    // a clean bill. `render-web.mjs` prints them.
+    unplaceable: [...skipped].filter((key) => !byKey.has(key)).sort(),
+  };
+}
+
+/** Every mark the page announces, keyed: `data-key` → the `data-detail` it carries, and whether the
+ *  element carrying it is a KEYBOARD TARGET.
+ *
+ *  A keyboard target is a native `<button>` that is not `disabled`, or anything with a
+ *  `tabindex` of 0 or more — and it must also carry a non-empty accessible name (`aria-label`,
+ *  falling back to `title`), which is `keyboardReachesEveryMark`'s own second half: focus that
+ *  arrives with nothing to say is not a path to a value. Read from the markup rather than driven,
+ *  because this decision runs at RENDER time, before there is a page to Tab through — the live Tab
+ *  sequence is `test/keyboard-reach.test.ts`'s job and it drives the same pages. */
+export function announcedMarksOf(html) {
+  const marks = new Map();
+  for (const element of html.matchAll(/<([a-zA-Z][\w-]*)\b[^>]*\bdata-detail="([^"]*)"[^>]*>/g)) {
+    const [tag, tagName, detail] = element;
+    const key = /\bdata-key="([^"]+)"/.exec(tag)?.[1];
+    if (!key) continue;
+    const tabIndex = /\btabindex="(-?\d+)"/i.exec(tag)?.[1];
+    const focusable =
+      (tagName.toLowerCase() === "button" && !/\bdisabled\b/.test(tag)) ||
+      (tabIndex != null && Number(tabIndex) >= 0);
+    const name = (/\baria-label="([^"]*)"/.exec(tag)?.[1] ?? /\btitle="([^"]*)"/.exec(tag)?.[1] ?? "").trim();
+    marks.set(key, { detail, keyboardTarget: focusable && name.length > 0 });
+  }
+  return marks;
+}
+
+/**
+ * THE MARKS THIS PAGE STRANDS, and which of the two remaining channels each one is missing.
+ *
+ * `stranded` — announced marks the map draws no pixel of their own for at `drawnWidthPx`, so no
+ * pointer, no tap and no `queryRenderedFeatures` reaches them. `withoutARow` — of those, the ones
+ * the accessible table does not carry, decided by this format's own `tableCarriesTheMarks` rather
+ * than by a second table reader written here, so the two can never disagree about what a row is.
+ * `withoutAKeyboardTarget` — of those, the ones with no focusable, named element of their own.
+ * `unreachable` — the union: a mark with no pointer path AND a missing channel, which is a fact this
+ * beat has drawn and no reader can get to.
+ *
+ * THE UNION, NOT THE INTERSECTION, and `map-web-discipline.md`'s "Two channels, not one" is why:
+ * the table restores the FACTS in a linear order and the keyboard restores reading the MAP mark by
+ * mark, and that file already rules that neither substitutes for the other. Requiring both is what
+ * the ruling asks for; requiring either would let a beat drop the table on a camera where the table
+ * is the only complete reading there is.
+ */
+export function marksStrandedWithNoChannel(html, drawnWidthPx) {
+  const drawn = drawnRegionsOf(html);
+  const announced = announcedMarksOf(html);
+  if (!drawn) return { of: 0, stranded: [], withoutARow: [], withoutAKeyboardTarget: [], unreachable: [] };
+  const drawnMarks = drawn.shapes.filter((shape) => announced.has(shape.key));
+  const stranded = marksWithNoPointerPath(drawnMarks, drawn.frame, drawnWidthPx);
+  const missingRows = new Set(tableCarriesTheMarks(html).missing);
+  const withoutARow = stranded.filter((key) => missingRows.has(announced.get(key).detail));
+  const withoutAKeyboardTarget = stranded.filter((key) => !announced.get(key).keyboardTarget);
+  const unreachable = [...new Set([...withoutARow, ...withoutAKeyboardTarget])].sort();
+  return { of: drawnMarks.length, stranded, withoutARow, withoutAKeyboardTarget, unreachable };
+}
+
+/** The sentence a producer reads at one container width — the verdict, said the way the
+ *  colliding-target verdict already is, because a number nobody is shown is the same as no number. */
+export function strandedVerdict(containerWidthPx, found) {
+  const marks = found.of;
+  if (found.stranded.length === 0)
+    return `no pointer path at ${containerWidthPx}px: every one of the ${marks} marks is drawn at least one whole pixel of its own`;
+  const names = found.stranded.slice(0, 6).join(", ");
+  return (
+    `no pointer path at ${containerWidthPx}px: ${found.stranded.length} of ${marks} marks are drawn ` +
+    `smaller than a pixel (${names}${found.stranded.length > 6 ? ", …" : ""}) — NO pointer, tap or ` +
+    `hover reaches them at this camera and no hit target can be made that does. The keyboard and the ` +
+    `accessible table ARE their path. Tighten the camera, add an inset, or accept it knowingly and ` +
+    `say so in the caveat. This is a floor: the live layer fits a narrower canvas than the fallback, ` +
+    `so the real count is higher — scripts/verify-live-map.mjs prints it.`
+  );
+}
+
+/** What a render REFUSES over, across every width a reader gets. Returns the message to throw, or
+ *  null when every stranded mark still has both of its remaining channels. */
+export function strandedRefusal(html, widths = READING_WIDTHS) {
+  const drawn = drawnRegionsOf(html);
+  if (!drawn || drawn.shapes.length === 0) return null;
+  const heightBound = plateIsBoundByHeight(html);
+  const reasons = [];
+  for (const width of widths) {
+    const found = marksStrandedWithNoChannel(html, drawnWidthAt(width, drawn.frame, heightBound));
+    if (found.unreachable.length === 0) continue;
+    const rows = found.withoutARow.length > 0 ? `no row in the accessible table for ${found.withoutARow.join(", ")}` : null;
+    const keys =
+      found.withoutAKeyboardTarget.length > 0
+        ? `no keyboard target for ${found.withoutAKeyboardTarget.join(", ")}`
+        : null;
+    reasons.push(`at ${width}px — ${[rows, keys].filter(Boolean).join("; ")}`);
+  }
+  if (reasons.length === 0) return null;
+  return (
+    `this beat draws marks smaller than a pixel and leaves them nothing to be reached by: ` +
+    `${reasons.join(" · ")}. A mark under a pixel has no pointer path at all, so the accessible ` +
+    `table and the keyboard are the only paths it has left and neither is optional here — a beat ` +
+    `that strands a mark and drops one of them has drawn a fact no reader can reach by any means. ` +
+    `Keep the table on (renderMapWeb's own default), keep every mark's own focusable target, or ` +
+    `bake a camera at which those marks are drawn.`
+  );
+}

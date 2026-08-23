@@ -1,0 +1,27 @@
+{
+  "indicator": "WHO GHO NTD_RAB2 — Reported number of human rabies deaths",
+  "year": "2024",
+  "shapes": "Natural Earth 1:50m Admin 0 Countries, joined on ADM0_A3",
+  "countriesInTheWhoRowForThisYear": 195,
+  "reportedANumber": 101,
+  "reportedZero": 44,
+  "filedNothing": 94,
+  "totalReported": 3021,
+  "totalDrawn": 3018,
+  "aliases": [
+    {
+      "who": "SSD",
+      "naturalEarth": "SDS",
+      "name": "South Sudan"
+    }
+  ],
+  "readingsThatLandOnNoShape": [
+    {
+      "code": "GUF",
+      "name": "French Guiana",
+      "value": 3
+    }
+  ],
+  "silencesThatLandOnNoShape": [],
+  "drawn": 194
+}
