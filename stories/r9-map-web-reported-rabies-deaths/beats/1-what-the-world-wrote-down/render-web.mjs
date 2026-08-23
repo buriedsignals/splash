@@ -33,6 +33,22 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
 import { worldCopiesFor } from "./delivery-frame.mjs";
+// A beat reaches into the skill for the DECISION it is judged by, never for a second copy of it —
+// the ceiling this prints against is the one `map-web/test/weight-ceiling.test.ts` derives from
+// every delivered page in the format, so the verdict and the test can never disagree.
+import {
+  CEILING_BYTES,
+  weightAgainstCeiling,
+} from "./detect-weight-has-a-ceiling.mjs";
+import {
+  READING_WIDTHS,
+  drawnRegionsOf,
+  drawnWidthAt,
+  marksStrandedWithNoChannel,
+  plateIsBoundByHeight,
+  strandedRefusal,
+  strandedVerdict,
+} from "./detect-stranded-marks.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
@@ -360,6 +376,89 @@ export function cameraOf(geometry) {
 }
 
 /**
+ * WHAT THE LIVE LAYER'S GEOMETRY IS ALLOWED TO COST, derived from the deepest zoom this beat's own
+ * leash reaches rather than from a number that felt safe.
+ *
+ * DEFECT 15: this page weighed 3 758 184 bytes against a 2 605 355 ceiling, and 2 624 775 of it —
+ * 69.8% — was `<script>`. 1 781 738 of THAT was this plan: 194 countries in lon/lat, at the full
+ * precision of the source file, for a layer nobody can see more than a screenful of at a time.
+ *
+ * THE ZOOM THAT DECIDES IT. `leash()` (`live-map.mjs`) sets `maxZoom = fitted + max(headroom,
+ * minZoomHeadroom)`, and for a world camera `headroom` is 0 — the study set already fills the frame
+ * — so this beat's own `minZoomHeadroom` governs: `log2(HIT_TARGET_PX / smallestDrawn)` = 5.544, the
+ * headroom a reader needs to bring the smallest region up to a pointer target. `fitted` is bounded
+ * by the box's HEIGHT on a world plate; at the widest box this format is measured into (2990x1718,
+ * box 2958x1441) that is `log2(1441/512)` = 1.493. So the deepest reachable zoom is 7.037, where one
+ * CSS pixel spans `360 / (512 * 2^7.037)` = 0.00535 degrees, and one device pixel on a 2x screen
+ * spans 0.00268.
+ *
+ * SO: three decimals (0.001 deg, 111 m) quantises to 0.37 of a device pixel, and a Douglas-Peucker
+ * tolerance of 0.001 deg moves no vertex further than half a device pixel. Together they are under
+ * one device pixel at the deepest zoom a reader can reach, which is the whole of what "costs nothing
+ * in capability" can mean for a coastline.
+ *
+ * WHAT IT BOUGHT, measured on this beat's 194 shapes: the regions layer 1 703 165 -> 1 465 844 bytes
+ * (-13.9%), 90 067 vertices -> 86 574 (-3.9%). Almost all of the saving is the fourth decimal, not
+ * the thinning — which is the finding: at the tolerance this leash requires, the source geometry is
+ * ALREADY near its floor. The weight is what the leash costs, not slack.
+ *
+ * AND WHAT IT DID NOT BUY. Coarser tolerances were measured and refused because each one is visible
+ * at a zoom this page's own leash lets a reader reach: 0.008 deg saves 501 KB and moves a coastline
+ * 1.5 device pixels; 0.015 deg saves 769 KB and moves it 2.8; 0.05 deg saves 1 247 KB and moves it
+ * 9.3. Buying weight with a staircase along every coast is the trade `liveRings` already refused
+ * once when it declined to unproject the plate's own pixel paths.
+ */
+const LIVE_RING_DECIMALS = 3;
+const LIVE_RING_TOLERANCE_DEG = 0.001;
+
+/** Douglas-Peucker, iteratively, on a closed ring: the vertex furthest from the chord between two
+ *  kept vertices survives when it is further than `toleranceDeg`, and everything under it goes.
+ *
+ *  ITERATIVE, NOT RECURSIVE, and that is not a style choice: a country's outer ring here runs to
+ *  several thousand vertices and a recursive split blows the stack on the worst-shaped of them.
+ *
+ *  A RING NEVER FALLS BELOW FOUR POINTS. Three points and a closing point is the least that is still
+ *  a polygon; anything thinner is a shape that has stopped being one, and a country that thin should
+ *  be culled by `keepRing`, not silently flattened here. */
+export function simplifyRing(ring, toleranceDeg) {
+  if (!Array.isArray(ring) || ring.length <= 4 || !(toleranceDeg > 0)) return ring;
+  const keep = new Uint8Array(ring.length);
+  keep[0] = 1;
+  keep[ring.length - 1] = 1;
+  const pending = [[0, ring.length - 1]];
+  while (pending.length > 0) {
+    const [from, to] = pending.pop();
+    const [ax, ay] = ring[from];
+    const [bx, by] = ring[to];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const span = dx * dx + dy * dy;
+    let furthest = -1;
+    let distance = 0;
+    for (let at = from + 1; at < to; at++) {
+      const [px, py] = ring[at];
+      let d;
+      if (span === 0) d = Math.hypot(px - ax, py - ay);
+      else {
+        const t = ((px - ax) * dx + (py - ay) * dy) / span;
+        d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      }
+      if (d > distance) {
+        distance = d;
+        furthest = at;
+      }
+    }
+    if (distance > toleranceDeg && furthest > 0) {
+      keep[furthest] = 1;
+      pending.push([from, furthest], [furthest, to]);
+    }
+  }
+  const thinned = [];
+  for (let at = 0; at < ring.length; at++) if (keep[at]) thinned.push(ring[at]);
+  return thinned.length >= 4 ? thinned : ring;
+}
+
+/**
  * The live layer's own geometry: the SAME 41 shapes, in lon/lat, joined out of `countries.geojson`
  * exactly the way `bake-plate.mjs` joins them — `ADM0_A3`, never `ISO_A3` (`geo-discipline.md` rule
  * 5), and a MultiPolygon flattened to its own parts' rings, which is safe because the fill is
@@ -402,7 +501,11 @@ export function liveRings(collection, keys, geometry) {
     );
 
   const round = (ring) =>
-    ring.map(([lon, lat]) => [Number(lon.toFixed(4)), Number(lat.toFixed(4))]);
+    ring.map(([lon, lat]) => [
+      Number(lon.toFixed(LIVE_RING_DECIMALS)),
+      Number(lat.toFixed(LIVE_RING_DECIMALS)),
+    ]);
+  const thin = (ring) => simplifyRing(ring, LIVE_RING_TOLERANCE_DEG);
 
   const shapes = new Map();
   for (const key of keys) {
@@ -414,7 +517,7 @@ export function liveRings(collection, keys, geometry) {
       // construction and travel with it or not at all.
       const [outer, ...holes] = part;
       if (!outer || !keepRing(outer.map(project), frame)) continue;
-      kept.push([round(outer), ...holes.map(round)]);
+      kept.push([round(thin(outer)), ...holes.map((hole) => round(thin(hole)))]);
     }
     if (kept.length === 0)
       throw new Error(
@@ -981,6 +1084,30 @@ ${liveBlock}
 </html>
 `;
 
+  // THE SUB-PIXEL CENSUS, ON THE PAGE THAT IS ABOUT TO BE WRITTEN — the guard's own reading, called
+  // rather than restated (see the note in `render()` for the hand-inlined copy this replaces).
+  const drawn = drawnRegionsOf(html);
+  if (drawn && drawn.unplaceable.length > 0)
+    console.log(
+      `no pointer path: ${drawn.unplaceable.length} mark(s) draw their geometry under an SVG ` +
+        `transform (${drawn.unplaceable.join(", ")}) — this reading works in frame units and cannot ` +
+        `place them, so nothing below counted them either way`,
+    );
+  if (drawn && drawn.shapes.length > 0) {
+    for (const width of READING_WIDTHS)
+      console.log(
+        strandedVerdict(
+          width,
+          marksStrandedWithNoChannel(
+            html,
+            drawnWidthAt(width, drawn.frame, plateIsBoundByHeight(html)),
+          ),
+        ),
+      );
+    const refusal = strandedRefusal(html);
+    if (refusal) throw new Error(refusal);
+  }
+
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
@@ -1003,7 +1130,32 @@ ${liveBlock}
         `map-web/scripts/verify-wraps-the-world.mjs.`
       : null;
   if (limit) console.log(limit);
-  return { outPath, limit };
+  // WHAT THE PAGE WEIGHS, SAID BY THE PRODUCER THAT WROTE IT — defect 15, and the half of it that
+  // was a mechanism rather than a number. `weightAgainstCeiling` and `map-web/test/weight-ceiling.
+  // test.ts` both existed and the test reddens AFTER THE FACT; no producer ever called the
+  // decision, so the render printed the pointer census and the wrap verdict and said nothing at all
+  // about weight while writing a file 1.44x this format's own ceiling.
+  //
+  // A VERDICT AND NOT A REFUSAL, deliberately. The ceiling is DERIVED from what this format has
+  // already delivered (`ceilingFromPopulation`), so a beat that is genuinely heavier than every
+  // page before it is news about the population and not necessarily a defect in the beat — and a
+  // refusal here would stop a journalist delivering their own work over a number nobody has yet
+  // decided is wrong. The producer is told, in the units the ceiling is in, with the largest thing
+  // in the file named so the next move is obvious.
+  const weight = weightAgainstCeiling(Buffer.byteLength(html), CEILING_BYTES);
+  const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].reduce(
+    (bytes, found) => bytes + Buffer.byteLength(found[0]),
+    0,
+  );
+  console.log(
+    `weight: ${weight.bytes.toLocaleString("en")} bytes against this format's own ceiling of ` +
+      `${weight.ceiling.toLocaleString("en")} — ${weight.over ? "OVER" : "under"} it. ` +
+      `${scripts.toLocaleString("en")} of that (${((100 * scripts) / weight.bytes).toFixed(1)}%) is ` +
+      `<script>: the inlined map library, and this beat's own regions in lon/lat for the live layer. ` +
+      `The ceiling is derived from every delivered page this format holds, so a page over it is ` +
+      `either a beat to lighten or a population to re-record — never a number to raise on its own.`,
+  );
+  return { outPath, limit, weight };
 }
 
 /** Strips the `export` keyword from each top-level declaration — see `interaction.mjs`'s own
@@ -1468,19 +1620,18 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
   // this is the count a journalist can actually act on — tighten the camera, add an inset, or accept
   // it knowingly and say so in the caveat. `marksWithNoPointerPath` reads the same rings the plate
   // draws; `skills/map-web/scripts/detect-stranded-marks.mjs` is where it becomes a refusal.
-  for (const width of [1600, 1024, 768, 375]) {
-    const drawn = Math.min(width - 32, geometry.frame.width);
-    const gone = marksWithNoPointerPath(named, geometry.frame, drawn);
-    console.log(
-      gone.length === 0
-        ? `no pointer path at ${width}px: every one of the ${named.length} marks is drawn at least one whole pixel of its own`
-        : `no pointer path at ${width}px: ${gone.length} of ${named.length} marks are drawn smaller than ` +
-          `a pixel (${gone.slice(0, 6).join(", ")}${gone.length > 6 ? ", …" : ""}) — NO pointer, tap or ` +
-          `hover reaches them at this camera and no hit target can be made that does. The keyboard and ` +
-          `the accessible table ARE their path. This is a floor: the live layer fits a narrower canvas ` +
-          `than the fallback, so the real count is higher — verify-live-map.mjs prints it.`,
-    );
-  }
+  //
+  // A THIRD COPY OF THE DECISION, INLINED BY HAND, IS WHY THIS BEAT WAS TOLD THE WRONG NUMBER
+  // (2026-08-23). A loop stood here computing its own drawn width as
+  // `Math.min(width - 32, geometry.frame.width)` and printing its own sentence, so when the census
+  // in `detect-stranded-marks.mjs` was corrected — the drawn width is the BOX's height times the
+  // plate's aspect on a wrapping page, not the container's width capped at the plate's own frame —
+  // the correction reached the guard and not the verdict a journalist reads. It printed 36 where
+  // the browser draws 41, and said "This is a floor" about a reading that was wrong low.
+  //
+  // The verdict now comes from the guard itself, in `renderMapWeb` where the page it judges exists,
+  // exactly as `map-web/scripts/render-web.mjs` does it. The numbers a producer reads, the numbers
+  // the refusal fires on and the numbers the test pins are one function.
 
   const collection = JSON.parse(await readFile(shapesPath, "utf8"));
   const rings = liveRings(collection, RABIES_2024_STUDY, geometry);

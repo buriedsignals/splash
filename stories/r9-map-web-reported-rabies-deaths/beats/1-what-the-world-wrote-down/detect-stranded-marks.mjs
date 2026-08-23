@@ -34,7 +34,15 @@
 // `test/marks-smaller-than-a-pixel.test.ts` pins that several pages in this format's own delivered
 // population DO strand marks, so an empty sweep can never read as a pass.
 
-import { marksWithNoPointerPath } from "../assets/geo-choropleth.ts";
+// A BEAT'S COPY, and the two import lines are the only bytes that differ from
+// `map-web/scripts/detect-stranded-marks.mjs` — a beat keeps its own files flat beside it, the way
+// `r8-map-web-japan-bear-casualties`'s copy already did.
+//
+// THIS COPY WAS BYTE-IDENTICAL TO THE SKILL'S UNTIL 2026-08-23, INCLUDING THESE TWO PATHS, so it
+// could not be imported from where it sat — and the beat's own runner therefore re-implemented the
+// census by hand and printed a number the guard did not agree with. A copy nothing can load is not
+// a copy, it is a decision waiting to drift.
+import { marksWithNoPointerPath } from "./geo-choropleth.ts";
 import { tableCarriesTheMarks } from "./detect-accessible-table.mjs";
 
 /** The capability this script carries, read by `scripts/guards.mjs` and checked against
