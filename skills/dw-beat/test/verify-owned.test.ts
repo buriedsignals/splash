@@ -260,6 +260,19 @@ describe("the guard a delegated producer still carries", () => {
   });
 });
 
+// A WALL-CLOCK BUDGET IS NOT AN ASSERTION (2026-08-23). Every test in the block below drives the real
+// `produce()` behind a fake transport: no network, but real file work, real PNG decoding and real
+// image measurement. Alone they answer in about 110ms each. In the full 300-file run, on a machine
+// also spawning browsers and rasterisers for the example-runner sweeps, one of them hit bun's
+// default 5s budget and went red — 5005ms, against 114ms alone.
+//
+// Raising the budget rather than the assertion is right HERE and would be wrong almost anywhere
+// else, so the reasoning is written down: nothing in this block waits on a condition, polls, or
+// races. The 5s ceiling was measuring how busy the machine was, and a test that goes red because
+// its neighbours are working is a test people learn to re-run — which is the same silence as no
+// test. Same reasoning as `runExampleRunners`' re-ask, one layer up.
+const PRODUCE_BUDGET_MS = 30_000;
+
 describe("the guard runs inside produce, not only inside a test", () => {
   const spec = SPEC;
 
@@ -279,7 +292,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
       }),
     ).rejects.toThrow(/opposite side/);
     expect(existsSync(join(beatDir, "renders", "chart.png"))).toBe(false);
-  });
+  }, PRODUCE_BUDGET_MS);
 
   it("writes the export when the story's ground and the artefact agree", async () => {
     const { beatDir, root } = storyTree("story", "#FFFFFF");
@@ -296,7 +309,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
     });
     expect(result.pngPath).toBe(join(beatDir, "renders", "chart.png"));
     expect(readFileSync(result.pngPath).length).toBeGreaterThan(0);
-  });
+  }, PRODUCE_BUDGET_MS);
 
   /**
    * FINDING 5 (round-three stress): `format: "interactive"` used to return before this guard
@@ -335,7 +348,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
     expect(calls).toHaveLength(0);
     expect(existsSync(join(beatDir, "renders", "chart.html"))).toBe(false);
     expect(existsSync(join(beatDir, "DATAWRAPPER.json"))).toBe(false);
-  });
+  }, PRODUCE_BUDGET_MS);
 
   // The static branch is the one that CAN be asked, so a dark-ground newsroom is served rather than
   // refused: the export request carries `dark=true`, measured live on chart `cc6eK` to come back on
@@ -356,7 +369,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
     expect(readFileSync(result.pngPath).length).toBeGreaterThan(0);
     const exportCall = calls.find((call) => call.url.includes("/export/png"));
     expect(exportCall.url).toContain("dark=true");
-  });
+  }, PRODUCE_BUDGET_MS);
 
   it("asks for no surface at all when the story declared a light ground", async () => {
     const { root } = storyTree("story", "#FFFFFF");
@@ -373,7 +386,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
     });
     const exportCall = calls.find((call) => call.url.includes("/export/png"));
     expect(exportCall.url).not.toContain("dark");
-  });
+  }, PRODUCE_BUDGET_MS);
 
   it("writes the web branch's iframe page when the story's ground and the exported probe agree", async () => {
     const { beatDir, root } = storyTree("story", "#FFFFFF");
@@ -392,7 +405,7 @@ describe("the guard runs inside produce, not only inside a test", () => {
     );
     expect(result.htmlPath).toBe(join(beatDir, "renders", "chart.html"));
     expect(readFileSync(result.htmlPath, "utf8")).toContain("<iframe");
-  });
+  }, PRODUCE_BUDGET_MS);
 });
 
 /**
