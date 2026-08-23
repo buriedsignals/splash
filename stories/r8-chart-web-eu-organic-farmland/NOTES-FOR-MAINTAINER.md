@@ -235,3 +235,38 @@ not resolve" about a font the page carries with it.
 
 Cost: nothing on this run. Recorded because the proposal's own text ("this machine does not have
 it") is read as an answer about the delivered page, and for a web beat it is not one.
+
+## Found at production
+
+PRODUCTION (chart-web) — a derived population with a hand-typed length, and delivering one beat
+turns five tests red at once.
+
+Ran: `bun test skills/chart-web/test` after this beat's page landed in
+`stories/<slug>/beats/<beat>/renders/`.
+
+Came back: `176 pass, 5 fail`. All five are the same assertion in five sibling files —
+`accessible-table.test.ts:180`, `degrades-without-javascript.test.ts:123`,
+`keyboard-reach.test.ts:130`, `reduced-motion.test.ts:144`, `weight-ceiling.test.ts:85` — each
+`expect(files.length).toBe(24)`, each reporting `Expected: 24  Received: 25`.
+
+Measured: `deliveredPages(root)` returns 25 pages, and exactly one of them is new — this beat's.
+Run in isolation, `keyboard-reach.test.ts` is `4 pass, 1 fail`: the capability walk itself passes on
+the new page (27 of 27 marks reached by Tab, 27 named), and only the COUNT fails. The same holds for
+the other four; the format's own driven verifier reports every one of these capabilities green on
+this page.
+
+Not fixed, and deliberately: this round's brief is do not edit `skills/**`, it measures the
+toolchain rather than repairing it. Recorded because of the shape rather than the red.
+
+`deliveredPages` exists precisely so the population is DERIVED — its own doc-comment says the four
+walks used to start at `proof/` and stop there, so six beats under `stories/` had never been put to
+any of them. The list is derived and the LENGTH is typed, in five places, and the comment above it
+instructs the next author to hand-edit all five. Eight agents delivered into `stories/` this round;
+that is five files edited eight times, and every one of those edits is indistinguishable from the
+edit that would paper over a page silently dropping out of the walk — which is the exact failure the
+number is there to catch.
+
+What the number is protecting is real (a count that creeps DOWN must fail loudly) and it does not
+need a magic literal: the walk's own result committed as a manifest beside the tests, or an
+assertion that every page a previous run saw is still in the walk, keeps the loud failure on the
+disappearance and stops charging a story for existing.
