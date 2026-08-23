@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "review-3",
+  "id": "review-4",
   "outputId": "1-what-the-world-wrote-down",
   "planVersion": 1,
   "draftRef": "renders/",
-  "draftDigest": "sha256:5d5336b8687a2a983309687f4fce84750438ab4d46289a1caadf977837ad6e29",
+  "draftDigest": "sha256:a51feaac776ab2ce13dfd3c2ab5ad3288dc9a58f05c03e1d10342b5932b650d1",
   "findingIds": [
     "takeaway-3021-written-down-against-an-estimated-59000",
     "94-of-194-filed-nothing-and-are-not-drawn-as-zero",
@@ -17,7 +17,7 @@
       "schemaVersion": 1,
       "outputId": "1-what-the-world-wrote-down",
       "planVersion": 1,
-      "draftDigest": "sha256:5d5336b8687a2a983309687f4fce84750438ab4d46289a1caadf977837ad6e29",
+      "draftDigest": "sha256:a51feaac776ab2ce13dfd3c2ab5ad3288dc9a58f05c03e1d10342b5932b650d1",
       "findingIds": [
         "takeaway-3021-written-down-against-an-estimated-59000",
         "94-of-194-filed-nothing-and-are-not-drawn-as-zero",
@@ -25,14 +25,14 @@
         "every-sub-pixel-mark-keeps-a-keyboard-target-and-a-table-row",
         "french-guianas-3-are-declared-rather-than-folded-into-france"
       ],
-      "id": "qa-driven-wrapped-2026-08-23c",
+      "id": "qa-driven-derived-scale-2026-08-23d",
       "status": "passed",
-      "completedAt": "2026-08-23T17:50:00.000Z"
+      "completedAt": "2026-08-23T21:20:00.000Z"
     }
   ],
   "angleEvidenceBrief": "The angle is that the published count of human rabies deaths is a count of reporting. The evidence is WHO's own Global Health Observatory indicator NTD_RAB2 frozen as downloaded, one year of it, joined to Natural Earth 1:50m on ADM0_A3 with every silence declared: 1 alias (SSD to SDS, a country that reported 249), 94 countries whose own cell reads No data, and 1 reading that lands on no shape at all (French Guiana, 3). Of the 195 countries in WHO's 2024 row, 57 reported at least one death, 44 reported zero and 94 filed nothing; the 101 that filed reported 3021 between them, 3018 of which this map can put on a shape. WHO's own fact sheet puts the annual toll at about 59000. Nothing on the page is divided by anything: the file carries no population, and the beat's brief records reading raw with the reason.",
   "decision": "approve",
   "reviewer": "journalist",
-  "decidedAt": "2026-08-23T17:55:00.000Z",
-  "notes": "Re-approved against the WRAPPED render: the box is covered 100.0 percent on both axes at 1600x900, 1280x800 and 375x812, three world copies are painted, every copy answers a pointer for every mark it draws, and the Tab order and the accessible table stay at 194. Also carries the legend names the two silences in words: the first class tick reads 0 - filed, reported none and the no-data swatch reads No return filed - 94 countries. Not a zero. The colour could not carry that distinction: the derived no-data fill measures 1.28:1 against the ramp first class here and 1.32:1 on the white ground the worked beat ships on, under a 3:1 floor, and no palette fixes it. Driven at 1600x900, 2990x1718 and 375x812, live with a real key and again with JavaScript disabled. Three things accepted knowingly and written into APPROVED.md: the subject cannot be hovered in the fallback layer, the map fills 66.6 percent of its box on the width at 1600x900, and the page is 1.39 times the format's own weight ceiling."
+  "decidedAt": "2026-08-23T21:25:00.000Z",
+  "notes": "Re-approved against the DERIVED-SCALE render. The previous approval recorded that the colour could not carry the distinction this map is about -- the no-data fill measured 1.28:1 against the ramp's first class here and 1.32:1 on the white ground the worked beat ships on, under a 3:1 floor, and no palette fixed it. That was true of the derivation in place at the time and is no longer true of any: the midpoint rule that produced it capped the separation at 2:1 by construction, and the rule meant to catch it measured luminance gaps rather than contrast. Both replaced. On this render the 94 countries that filed nothing are #363636, 3.03:1 clear of #8b7e62, the class the 44 countries that filed a real zero are drawn in, and 1.462:1 off the page; the sea is #0e2a42, 3.68:1 clear of that same class, 1.216:1 off the no-data fill and carrying 0.200 of chroma so it still reads as water. The ramp runs #8b7e62 #9b8c6b #ac9a76 #bea980 #d1b98c #e5cb98 with steps of 1.209 1.201 1.201 1.202 1.208 against a floor of 1.201, ending on the colour #D4A853 reaches. Looked at at 1600x900: India, China, Russia and Australia read as a different KIND of grey from Canada, the United States and Brazil, which is the sentence in the headline. Everything the previous approval established is unchanged and was re-checked on this render: the box is covered 100.0 percent, three world copies are painted, the Tab order and the accessible table stay at 194, and the legend still names both silences in words -- the first tick reads 0 - filed, reported none and the swatch reads No return filed - 94 countries. Not a zero. The words stay because they say what colour cannot: which of the two silences is which. The three things accepted knowingly in APPROVED.md are unchanged, except that the plate was re-baked (same frame, same camera, water #2c343b to #0e2a42) so the fallback plate and the live layer paint one ocean."
 }
