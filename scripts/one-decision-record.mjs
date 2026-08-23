@@ -27,8 +27,8 @@
  * ── THE FIVE DEFECTS, AND WHICH OF THEM THIS RECORD'S OWN READINGS SEE ────────────────────────
  *
  * Each was reconstructed in a scratch tree at the commit before its fix and the readings were run
- * over it. Three of the five go red, by name; two do not, and the measurement is here rather than
- * an omission.
+ * over it. All five states go red. FOUR of the five families are named by their own defect; one is
+ * not, and the measurement is here rather than an omission.
  *
  *   1. THE CREDENTIAL ALIAS — CAUGHT, at every stage of its travel.
  *      · at `03cef221` (before `f57f5dae`, the GATE): R1 names
@@ -42,18 +42,26 @@
  *        `proof/mapscrolly-quakes-three-ways/drive.mjs`, and `verify-live-tiles.mjs` in
  *        `mapscrolly-quakes-three-ways`, `mapscrolly-one-map-europe-carbon` and
  *        `mapmore-scrolly-danube`.
- *      89 divergences at `03cef221`, 88 at `527f910c` and 203 at `9ab1fdff` against 138 today;
+ *      89 divergences at `03cef221`, 88 at `527f910c` and 203 at `9ab1fdff` against 135 today;
  *      16, 15 and 68 of them are not in this record, so the ratchet goes red on all three.
  *
- *   2. THE DERIVED SEA — NOT CAUGHT, and this is the measurement. At `2bebe261` (before
- *      `7d04218d`) the sea derivation lived in `geo-choropleth.ts` and was ABSENT from
- *      `geo-symbol.ts`, `geo-hex.ts`, `geo-dot.ts` and `map-beat/assets/geo.ts`. It is pure
- *      absence between vendored geometry helpers, which is the one population where absence cannot
- *      be read: the general lineage-hole detector fires 889 times on this tree, because a hexgrid's
- *      `geo-hex.ts` legitimately does not carry a choropleth's `waterFor`. R4 reads absence only
- *      inside a population an ARTEFACT defines, and a `geo-*.ts` emits no artefact. Of the 128
- *      divergences at `2bebe261`, 9 are not in this record, so the ratchet DOES go red there — for
- *      other drifts. Not one of the 9 is the sea, and a red for the wrong reason is not a catch.
+ *   2. THE DERIVED SEA — CAUGHT WHERE IT IS STILL OPEN, NOT WHERE IT WAS CLOSED, and both halves
+ *      of that are the measurement.
+ *      · NOT at `2bebe261` (before `7d04218d`). There the sea derivation lived in
+ *        `geo-choropleth.ts` and was absent from `geo-symbol.ts`, `geo-hex.ts`, `geo-dot.ts` and
+ *        `map-beat/assets/geo.ts` — pure absence between VENDORED GEOMETRY HELPERS, the one
+ *        population where absence cannot be read. The general lineage-hole detector fires 889 times
+ *        on this tree because a hexgrid's `geo-hex.ts` legitimately does not carry a choropleth's
+ *        `waterFor`. Of the 128 divergences at `2bebe261`, 9 are not in this record, so the ratchet
+ *        does go red there — for OTHER drifts. Not one of the 9 is the sea, and a red for the wrong
+ *        reason is not a catch.
+ *      · BUT R4 names the same fix's own unfinished half on TODAY's tree, unprompted:
+ *        `waterFillOf` — the reader that refuses a plate whose `geometry.json` records no derived
+ *        water — is declared by `skills/map-web/scripts/render-web.mjs`, carried by ONE of the ten
+ *        files that assemble a map-web page
+ *        (`stories/r8-map-web-japan-bear-casualties/.../render-web.mjs`), and absent from the other
+ *        eight. That is the same fix, in the same week, having reached two places of ten. It is
+ *        recorded below as DEBT, not as an exemption.
  *
  *   3. THE BASEMAP THEME — CAUGHT, on today's tree, because it has never been fixed. R2 names 32
  *      files carrying `dataviz-dark` or `dataviz-light` as a literal while
@@ -67,7 +75,7 @@
  *   4. THE WORLD WRAP — CAUGHT. At `bc133d1e` (before `a1e79ad4`) R4 names `repeatWorlds`,
  *      `requireBoxAspects` and `worldTilingCss` as absent from seven of the ten files that assemble
  *      a map-web page, including `stories/r9-map-web-reported-rabies-deaths/...`, the story written
- *      hours later that shipped the old behaviour. 198 divergences there against 138 today,
+ *      hours later that shipped the old behaviour. 198 divergences there against 135 today,
  *      63 of them not in this record and 21 of those 63 the wrap itself.
  *
  *   5. THE SPACE-GROUPED NUMERAL — NOT CAUGHT, and it is not a travel defect. `THOUSANDS_RE` is
@@ -83,7 +91,7 @@
  *      `skills/intake/scripts/profile.mjs` and `skills/storyboard/scripts/ground-claim.mjs`, both
  *      owned by other agents at the time of writing.
  *
- * ── WHAT THE 138 ARE ──────────────────────────────────────────────────────────────────────────
+ * ── WHAT THE 135 ARE ──────────────────────────────────────────────────────────────────────────
  *
  * R1 (15) · a credential named in a file that never names its alias list. Twelve are `test/` files
  *   feeding a synthetic credential to watch a refusal fire, which is legitimate and which no static
@@ -103,7 +111,10 @@
  *   is the hand-typed population this whole file exists to replace.
  *
  * R4 (28) · a capability the `map-web` skill declares, carried by some assemblers of its page and
- *   not others. The wrap is not among them any more; these are the ones that were never propagated.
+ *   not others. The wrap is not among them any more — it travelled on `a1e79ad4`. Eight of the 28
+ *   are `waterFillOf`, which is defect 2 still open (above); the other twenty are
+ *   `assertRecordedLanguage` (7), `separationHeadroom` (6), `assertDistinctSlugs` (6) and
+ *   `renderMapWeb` (1), none of which has been ruled on.
  *
  * ── HOW TO RE-RECORD ──────────────────────────────────────────────────────────────────────────
  *
@@ -114,7 +125,7 @@
  */
 
 /** THE CEILING. MAY ONLY BE LOWERED. Measured 2026-08-23 over 1 230 source files. */
-export const CEILING = 138;
+export const CEILING = 135;
 
 /** Every divergence this tree carries today, as `<reading> <what>` lines, sorted. */
 export const RECORDED_DIVERGENCES = [
@@ -208,9 +219,6 @@ export const RECORDED_DIVERGENCES = [
   "R3 parseCsvRows  stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/geo-choropleth.ts",
   "R3 parseCsvRows  stories/stress-t-europe-recycling/beats/europe-recycling-map/geo-recycling.ts",
   "R3 parseEnvFile  skills/map-web/scripts/verify-live-map.mjs",
-  "R3 renderMapWeb  proof/mapgen-dot-web/render-web.mjs",
-  "R3 renderMapWeb  stories/real-owid-life-expectancy/beats/1-life-expectancy-2023/render-web.mjs",
-  "R3 renderMapWeb  stories/stress-f-housing-pressure/beats/housing-pressure-choropleth/render-web.mjs",
   "R3 renderStill  skills/scrolly/scripts/render-still.mjs",
   "R3 resolveChrome  skills/map-web/scripts/verify-interaction.mjs",
   "R3 resolveChrome  skills/map-web/scripts/verify-live-map.mjs",
