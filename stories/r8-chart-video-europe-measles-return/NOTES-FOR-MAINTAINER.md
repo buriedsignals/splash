@@ -94,3 +94,124 @@ full OBSERVATION coverage.
 
 Cost: the 2024 undercount had to be measured by hand before the takeaway could be written safely.
 It is what decided the direction of the beat's caveat.
+
+## Found at production
+
+**This format's guards walk `proof/` and never `stories/` — the directory the orchestrator itself
+creates.** `chart-video/test/verify-video.test.ts`'s `videoComponents()` (line 167) builds its
+population from exactly two places:
+
+    const found = [join(SKILL, "assets", "EmissionsVideo.tsx")];
+    for (const entry of readdirSync(PROOF, ...))   // PROOF = join(TWIN, "proof")
+
+Measured on this tree: **25 `*Video.tsx` under `proof/`, 5 under `stories/`** (electricity-mix,
+regional-migration, forest-loss, rail-punctuality, europe-recycling) — and 6 with this beat. Not
+one of the six is walked, so `revealDashInScreenSpace` and `neverArrives` cannot fire on a
+journalist's beat. The floors in that test (`files >= 20`, `marks >= 15`) are satisfied by
+`proof/` alone, so it will stay green whatever `stories/` contains.
+
+`splash/test/video-first-frame-not-empty.test.ts` has the same shape (`PROOF_ROOT`, line 97) —
+and that one guards the POSTER FRAME, which for a social video is the most consequential frame
+there is. **25 mp4s under `proof/` are checked; 12 under `stories/` are not.**
+
+Recurring shape 4: a requirement that cannot fire. The population is typed as a path constant, and
+the path it names is the one place a journalist's work never lands.
+
+## Found at production
+
+**Two of this format's three wired guards are unreachable from a story beat, because `shared/`
+does not carry them.** A story consumes the root through `#shared/*` — that is the settled rule
+and `proof/life-expectancy/render.mjs` follows it. `shared/chart-video/` holds exactly three
+files: `detect-reveal-order.mjs`, `sizes.mjs`, `timing.ts`.
+
+`bun skills/chart-video/scripts/check-guard-wiring.mjs` says 3 of 15 declared names are wired.
+Of those three, a story beat can call ONE:
+
+| guard | wired into | vendored to `shared/` | reachable from a story beat |
+| --- | --- | --- | --- |
+| `staggerLacksAnOrder` | `render-video.mjs` | yes | **yes** — this beat calls it |
+| `graphicFillsItsFrame` | `render-video.mjs` | **no** | no |
+| `declarationsWithoutACaller` | `check-guard-wiring.mjs` | n/a | n/a |
+
+So round six's `fills-its-frame` fix — the one whose own SKILL.md paragraph says "a discipline
+that cannot observe its own violation is theatre" — is wired into the SEED's renderer and into
+nothing a journalist's beat can reach. Neither of `proof/life-expectancy/render.mjs` nor
+`proof/migration/render.mjs` calls it either; they are the files a beat author is pointed at.
+
+Cost, measured: this beat's `graphicFillsItsFrame` (76.53% against a 35.15% floor),
+`revealDashInScreenSpace` (1 mark, 0 failures) and `neverArrives` (6 ramps, 0 offenders) all had
+to be run from a scratch script outside the repository, importing `skills/chart-video/scripts/`
+directly — which is exactly the cross-boundary reach the architecture forbids in runtime code. The
+numbers are in `APPROVED.md`; the build itself never ran them.
+
+## Found at production
+
+**The video path never reads `TYPEFACE.md`.** `chart-video/scripts/render-video.mjs` imports
+`{ deriveFurniture, readPalette }` and nothing else from its own `render-still.mjs` — which
+also exports `readTypeface` and `useTypeface`. The seed's `EmissionsVideo.tsx`,
+`proof/life-expectancy/LifeExpectancyVideo.tsx` and `proof/migration/MigrationVideo.tsx` each
+carry `export const FONT_FAMILY = "Helvetica, Arial, sans-serif"` as their only family.
+
+So the answer the journalist gives at movement 9 has **no effect on a video beat**. `PALETTE.md`
+REFUSES when absent, by design — "a beat with no recorded answer refuses to render rather than pick
+a colour nobody chose". `TYPEFACE.md` is written by the same exchange, for the same stated reason,
+and is then ignored by this format entirely.
+
+It is silent here only because this story's recorded answer happens to equal the literal. Had the
+journalist answered option 2 (Courier New, which `proposeTypeface` offers and this machine has),
+the video would have rendered in Helvetica and nothing anywhere would have said so.
+
+Also structural rather than accidental: `useTypeface` reassigns a module-level `let` inside the
+resvg script, which a browser composition cannot reach. Closing this needs a props channel, which
+is six lines. This beat's own `render.mjs` and `MeaslesReturnVideo.tsx` carry those six lines as
+a demonstration — `readTypeface` in node, `fontFamily` passed in, used to DRAW and to MEASURE
+(measuring in one family and drawing in another silently mis-wraps every string).
+
+## Found at delivery
+
+**`writeOutputReview` derives `planVersion`; `offerForms` refuses without it.** The first
+`offerForms` call of this run, with the same argument set that had just written the review, threw:
+
+    error: current planVersion must be a positive integer: it is this beat's own review revision —
+    ... `writeOutputReview` derives it from the review already on disk when a caller names none ...
+
+The message explains, at length, that the field is derived when a caller names none — inside the
+refusal for not naming it. Two ends of one field, one optional and one required, and the required
+end quotes the optional end's rule as its own justification. `approvalAgainstCurrent` is reading
+the record that already holds `planVersion: 1`; it could take it from there, or the refusal could
+say "pass the `planVersion` from the review on disk". Cost: one failed call and a read of
+`output-review.mjs`.
+
+## Found at delivery
+
+**The other-subjects offer tells the journalist something the machine does not do.** Its own text
+(`formatSubjectOffer`) reads:
+
+    "Taking one starts a new visual in this story, from the beginning — you frame it, you see it,
+     you approve it, and it is delivered on its own, beside the one you already have."
+
+The format offer beside it is careful and correct in the opposite direction: "This receipt records
+the request only; it does not schedule production."
+
+Measured: after `recordSubjectAnswer({answer: "taken", subject: "measles-where-2024"})`,
+`whereIs` returns `{"phase":"done","missing":[]}`. Nothing was started, nothing is pending, and
+the taken request exists only as the string `taken measles-where-2024` in a dotfile no later phase
+reads. A journalist who took the offer at its word believes a second beat is under way.
+
+## Found at production
+
+**Nothing compares the DELIVERED mp4's last frame with the still that was approved.** The render
+ladder's rung 2a renders the composition's final frame to PNG and the beat is reviewed on it; rung
+2b then encodes 240 frames to H.264. The two are different pictures and no check reads them
+together.
+
+Measured on this beat, still versus `ffmpeg`-extracted frame 239:
+
+    comparePngBuffers -> same: false, 85 850 / 1 166 400 pixels (7.36%) over tolerance 6
+    mean absolute channel difference 1.77/255, max 95, 0.059% of channels off by more than 32
+
+Here it is ordinary codec loss at type edges and the picture is the same one. The point is that
+nothing measured that: a CRF change, a scale filter or a pixel-format change would land the same
+way, and the artifact the newsroom receives would differ from the artifact that was approved with
+nothing in the ladder noticing. `compare-png.mjs` already exists in this skill and decides
+exactly this question on decoded pixels.
