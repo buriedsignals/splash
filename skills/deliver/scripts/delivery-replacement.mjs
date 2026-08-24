@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { hostname } from "node:os";
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
@@ -137,6 +137,38 @@ async function removeDirectory(path, label) {
   if ((await directory(path, label)) !== null) await rm(path, { recursive: true, force: true });
 }
 
+async function deliveryArtifacts(directoryPath) {
+  const artifacts = [];
+
+  async function walk(directory, prefix) {
+    const entries = (await readdir(directory, { withFileTypes: true })).sort(
+      (left, right) =>
+        left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+    );
+    for (const entry of entries) {
+      const path = join(directory, entry.name);
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const stat = await lstat(path);
+      if (stat.isSymbolicLink()) {
+        throw new Error(`delivery staging must not contain a symbolic link: ${path}`);
+      }
+      if (stat.isDirectory()) {
+        await walk(path, relativePath);
+      } else if (stat.isFile()) {
+        artifacts.push({
+          path: relativePath,
+          digest: `sha256:${createHash("sha256").update(await readFile(path)).digest("hex")}`,
+        });
+      } else {
+        throw new Error(`delivery staging must not contain a special file: ${path}`);
+      }
+    }
+  }
+
+  await walk(directoryPath, "");
+  return artifacts;
+}
+
 async function manifestFor(directoryPath) {
   if ((await directory(directoryPath, "delivery directory")) === null) return null;
   const path = join(directoryPath, DELIVERY_MANIFEST_FILE);
@@ -249,6 +281,7 @@ export async function publishStagedDelivery({
 
   const completeManifest = {
     ...manifest,
+    artifacts: await deliveryArtifacts(stagingDir),
     schemaVersion: REPLACEMENT_SCHEMA_VERSION,
     outputId: artifacts.outputId,
     state: "complete",

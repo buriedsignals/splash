@@ -6,6 +6,8 @@ export const HOST_ACCEPTANCE = Object.freeze({
   recordedAt: "2026-08-14",
   sourceFiles: {
     "source/article.md": "Heat-pump article",
+    "source/data.csv":
+      "country,adoption_2021,adoption_2025\nFrance,38.2,71.4\nGermany,41.0,74.9\n",
     "source/profile.json": "{}",
     "source/context.md": "Prefer a full-width web treatment with a static fallback.",
   },
@@ -63,18 +65,42 @@ The confirmed framing, before the publication-format decision.
 +    format: web
 +    reachable: yes
  ---`,
-  whereBefore: { phase: "storyboard", gate: "G2b", awaiting: "format", slotId: "1" },
-  whereAfter: { phase: "storyboard", gate: "G2-reference", awaiting: "reference" },
+  whereBefore: {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: [
+      "the reference loop's answer",
+      "slot 1: no format was ever chosen",
+      "slot 1: this medium and format were never confirmed reachable",
+      "slot 1: nothing chosen",
+    ],
+    attempts: 0,
+    resume: "Stop at G2b for slot 1; the journalist must provide format.",
+  },
+  whereAfter: {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: [
+      "the reference loop's answer",
+      "slot 1: nothing chosen",
+    ],
+    attempts: 0,
+    resume: "Stop at G2-reference; the journalist must provide reference.",
+  },
   emptyDirectories: ["beats", "export"],
   manifestBefore: {
     "STORYBOARD.md": "df8f381171c9f43ceeb16ab8059ca66230d5a590b802bc9f779a66a195329d48",
     "source/article.md": "35448dd3ba8764c8a52e9e36682b1b848ebe4680be1330608349abb28cb41414",
+    "source/data.csv": "a75b898f8f7794b99078f92a61335f93cee8f95d3a9e2f9b9b549ba8e0d5f750",
     "source/context.md": "59bd53e92bf2af9c418a59c0f989840ff626372a6511629badddf8caf5916f9d",
     "source/profile.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
   },
   manifestAfter: {
     "STORYBOARD.md": "8df95015c8fbc198d8ac15c5a0795aa0c75bb987a746c927753c7a98924fdfe6",
     "source/article.md": "35448dd3ba8764c8a52e9e36682b1b848ebe4680be1330608349abb28cb41414",
+    "source/data.csv": "a75b898f8f7794b99078f92a61335f93cee8f95d3a9e2f9b9b549ba8e0d5f750",
     "source/context.md": "59bd53e92bf2af9c418a59c0f989840ff626372a6511629badddf8caf5916f9d",
     "source/profile.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
   },

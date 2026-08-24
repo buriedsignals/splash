@@ -3,13 +3,17 @@ import { lstat, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import catalog from "../../catalog/visual-catalog.json" with { type: "json" };
 import {
+  EXPORT_SIZES,
   mutateStoryboardRevisioned,
   parseStoryboard,
+  REQUIRED_SCALARS,
+  SIZED_FORMATS,
   storyboardRevision,
 } from "../../skills/storyboard/scripts/storyboard.mjs";
 import {
   confirmProducerChoice,
   datawrapperMatch,
+  producerGap,
 } from "../../skills/storyboard/scripts/producer-gate.mjs";
 import { whereIs } from "../../skills/splash/scripts/where.mjs";
 
@@ -212,18 +216,73 @@ function deliveryImplications(ids, capabilities, catalogue) {
   });
 }
 
-function activeSlot(parsed, state) {
+const DECISION_PREREQUISITES = REQUIRED_SCALARS.filter(
+  (field) => field !== "reference",
+);
+
+function deriveCurrentDecision(state, parsed) {
+  if (
+    state.phase !== "storyboard" ||
+    DECISION_PREREQUISITES.some((field) => !parsed.meta[field])
+  ) {
+    return null;
+  }
   const slots = parsed.meta.slots ?? [];
-  if (!state.slotId) return null;
-  return slots.find((slot) => String(slot.id) === String(state.slotId)) ?? null;
+  if (slots.length === 0) return { id: "G2a", awaiting: "slot" };
+
+  for (const [index, slot] of slots.entries()) {
+    const slotId = String(slot.id ?? index + 1);
+    if (!slot.id) return { id: "G2a", awaiting: "id", slotId };
+    if (!slot.proves) return { id: "G2a", awaiting: "proves", slotId };
+    if (!slot.medium) return { id: "G2a", awaiting: "medium", slotId };
+    if (!slot.format) return { id: "G2b", awaiting: "format", slotId };
+    if (slot.reachable !== "yes") {
+      return { id: "G2b", awaiting: "reachability", slotId };
+    }
+    if (SIZED_FORMATS.includes(slot.format) && !slot.size) {
+      return { id: "G2c", awaiting: "size", slotId };
+    }
+    if (!SIZED_FORMATS.includes(slot.format) && slot.size) {
+      return { id: "G2c", awaiting: "size-removal", slotId };
+    }
+    if (slot.size && !EXPORT_SIZES.includes(slot.size)) {
+      return { id: "G2c", awaiting: "size", slotId };
+    }
+  }
+
+  if (!parsed.meta.reference) {
+    return { id: "G2-reference", awaiting: "reference" };
+  }
+  for (const [index, slot] of slots.entries()) {
+    const slotId = String(slot.id ?? index + 1);
+    if (
+      !slot.chosen ||
+      !Array.isArray(slot.candidates) ||
+      !slot.candidates.includes(slot.chosen)
+    ) {
+      return { id: "G2-treatment", awaiting: "treatment", slotId };
+    }
+    if (producerGap(slot)) {
+      return { id: "G2-producer", awaiting: "producer", slotId };
+    }
+  }
+  return null;
 }
 
-function choicesFor({ catalogue, capabilities, parsed, state }) {
-  const slot = activeSlot(parsed, state);
+function activeSlot(parsed, decision) {
+  const slots = parsed.meta.slots ?? [];
+  if (!decision?.slotId) return null;
+  return (
+    slots.find((slot) => String(slot.id) === String(decision.slotId)) ?? null
+  );
+}
+
+function choicesFor({ catalogue, capabilities, parsed, decision }) {
+  const slot = activeSlot(parsed, decision);
   const pairs = new Map(
     catalogue.formatPairs.map((row) => [`${row.medium}/${row.format}`, row]),
   );
-  if (state.gate === "G2a" && state.awaiting === "medium") {
+  if (decision?.id === "G2a" && decision.awaiting === "medium") {
     return catalogue.mediums.map((medium) => {
       const pairRows = catalogue.formatPairs.filter(
         (row) => row.medium === medium.id,
@@ -257,8 +316,8 @@ function choicesFor({ catalogue, capabilities, parsed, state }) {
   }
   if (!slot) return [];
   if (
-    state.gate === "G2b" &&
-    (state.awaiting === "format" || state.awaiting === "reachability")
+    decision?.id === "G2b" &&
+    (decision.awaiting === "format" || decision.awaiting === "reachability")
   ) {
     return catalogue.formats.flatMap((format) => {
       const pair = pairs.get(`${slot.medium}/${format.id}`);
@@ -296,10 +355,10 @@ function choicesFor({ catalogue, capabilities, parsed, state }) {
       ];
     });
   }
-  if (state.gate === "G2c") {
+  if (decision?.id === "G2c") {
     const pair = pairs.get(`${slot.medium}/${slot.format}`);
     if (!pair) return [];
-    if (state.awaiting === "size-removal") {
+    if (decision.awaiting === "size-removal") {
       return [
         option({
           id: "size.none",
@@ -320,7 +379,7 @@ function choicesFor({ catalogue, capabilities, parsed, state }) {
       }),
     );
   }
-  if (state.gate === "G2-treatment") {
+  if (decision?.id === "G2-treatment") {
     const pair = pairs.get(`${slot.medium}/${slot.format}`);
     if (!pair) return [];
     const candidateLabels =
@@ -356,7 +415,7 @@ function choicesFor({ catalogue, capabilities, parsed, state }) {
         ),
       );
   }
-  if (state.gate === "G2-producer") {
+  if (decision?.id === "G2-producer") {
     const match = datawrapperMatch({
       medium: slot.medium,
       format: slot.format,
@@ -529,7 +588,8 @@ export function createSelectionService({
       throw new Error("the bound story returned no canonical phase state");
     const parsed = parseStoryboard(after.text);
     const capabilities = normalizeCapabilities(providedCapabilities);
-    const slot = activeSlot(parsed, state);
+    const decision = deriveCurrentDecision(state, parsed);
+    const slot = activeSlot(parsed, decision);
     const model = {
       schemaVersion: SELECTION_SCHEMA_VERSION,
       story: {
@@ -537,8 +597,8 @@ export function createSelectionService({
         canonicalPath: descriptor.canonicalPath,
       },
       phase: state.phase,
-      gate: state.gate
-        ? { id: state.gate, awaiting: state.awaiting ?? null }
+      gate: decision
+        ? { id: decision.id, awaiting: decision.awaiting }
         : null,
       slot: publicSlot(slot),
       evidence: publicEvidence(parsed, slot),
@@ -553,7 +613,7 @@ export function createSelectionService({
       catalogue: providedCatalogue,
       capabilities,
       parsed,
-      state,
+      decision,
     });
     return model;
   }

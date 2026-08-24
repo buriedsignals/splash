@@ -1,8 +1,128 @@
 // The state of a story is its directory. Nothing is remembered between sessions.
 
 import { createHash } from "node:crypto";
-import { lstat, readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { lstat, readdir, readFile, realpath } from "node:fs/promises";
+import { isAbsolute, join, relative, sep } from "node:path";
+import {
+  classifyProductionReservation,
+  describeProductionOperation,
+  isProductionReceiptApplicable,
+  processIsAlive,
+  PRODUCTION_ATTEMPTS_FILE,
+  readProductionAttempts,
+} from "./production-reservation.mjs";
+
+const CRAFT_SKILLS = Object.freeze({
+  chart: Object.freeze({
+    static: "chart-beat",
+    web: "chart-web",
+    video: "chart-video",
+    scrolly: "scrolly",
+  }),
+  map: Object.freeze({
+    static: "map-beat",
+    web: "map-web",
+    video: "map-beat",
+    scrolly: "scrolly",
+  }),
+  image: Object.freeze({
+    static: "image-beat",
+    scrolly: "scrolly",
+  }),
+});
+
+function createOwner(kind, id) {
+  return Object.freeze({ kind, id });
+}
+
+const OWNER_REGISTRY = Object.freeze([
+  Object.freeze({ phase: "intake", owner: createOwner("skill", "intake") }),
+  Object.freeze({ phase: "framing", owner: createOwner("persona", "editor") }),
+  Object.freeze({ phase: "storyboard", owner: createOwner("skill", "storyboard") }),
+  Object.freeze({ phase: "production", step: "analysis", owner: createOwner("skill", "analyst") }),
+  Object.freeze({ phase: "production", step: "review", owner: createOwner("persona", "designer") }),
+  Object.freeze({ phase: "delivery", owner: createOwner("skill", "deliver") }),
+  Object.freeze({ phase: "done", owner: null }),
+]);
+
+function isCraftProductionStep(state) {
+  return state.phase === "production" && state.step === "craft";
+}
+
+function craftOwner(slot) {
+  const id =
+    slot?.medium === "chart" && slot.producer === "datawrapper"
+      ? "dw-beat"
+      : CRAFT_SKILLS[slot?.medium]?.[slot?.format];
+  return id ? createOwner("skill", id) : null;
+}
+
+function unsupportedCraftDiagnostic(slot) {
+  return `no Splash craft owner for ${JSON.stringify(slot?.medium)}/${JSON.stringify(slot?.format)}`;
+}
+
+function selectOwner(state) {
+  if (state.status === "blocked") return null;
+  if (isCraftProductionStep(state)) return craftOwner(state.slot);
+  const entry = OWNER_REGISTRY.find(
+    (candidate) =>
+      candidate.phase === state.phase &&
+      (!candidate.step || candidate.step === state.step),
+  );
+  if (!entry) {
+    throw new Error(
+      `no Splash owner registered for ${JSON.stringify(state.phase)}/${JSON.stringify(state.step ?? null)}`,
+    );
+  }
+  return entry.owner
+    ? createOwner(entry.owner.kind, entry.owner.id)
+    : null;
+}
+
+function resumeDetail(state, owner, status) {
+  const details = [];
+  if (state.resume) details.push(state.resume);
+  if (state.gate) {
+    const slot = state.slotId ? ` for slot ${state.slotId}` : "";
+    details.push(`Stop at ${state.gate}${slot}; the journalist must provide ${state.awaiting}.`);
+  }
+  if (state.revision?.reason === "editor-feedback") {
+    details.push(`Revise editor feedback for beats ${state.revision.beats.join(", ")}.`);
+  }
+  if (state.legacy) details.push("Resume from the migrated legacy publication-format field.");
+  if (details.length > 0) return details.join(" ");
+  if (status === "done") return "Story is complete; stop.";
+  if (!owner) return "Stop and return control to the journalist.";
+  const missing = state.missing.length > 0
+    ? ` Missing: ${state.missing.join("; ")}.`
+    : "";
+  return `Invoke ${owner.id} for the ${state.phase} phase.${missing}`;
+}
+
+function projectResolverResult(state) {
+  let status = state.status ?? (state.phase === "done" ? "done" : "ready");
+  const missing = Array.isArray(state.missing) ? [...state.missing] : [];
+  const normalized = { ...state, missing };
+  const owner = selectOwner(normalized);
+  if (!owner && status !== "blocked" && isCraftProductionStep(state)) {
+    status = "blocked";
+    missing.push(unsupportedCraftDiagnostic(state.slot));
+  }
+  return Object.freeze({
+    phase: state.phase,
+    status,
+    owner,
+    missing: Object.freeze(missing),
+    attempts: state.attempts ?? 0,
+    resume: resumeDetail(normalized, owner, status),
+  });
+}
+
+function managedProductionOperation(slot) {
+  if (slot?.medium === "map") return "map-bake";
+  if (slot?.medium === "chart") return "datawrapper-produce";
+  return null;
+}
 
 async function list(path) {
   try { return await readdir(path); } catch { return []; }
@@ -61,6 +181,14 @@ function scalarFieldValue(frontmatter, field) {
   const match = frontmatter.match(new RegExp(`^${field}:[ \\t]*([^\\n]+)$`, "m"));
   if (!match) return null;
   return scalarValue(match[1]);
+}
+
+function exactScalarFieldValue(frontmatter, field) {
+  if (!frontmatter) return null;
+  const matches = [
+    ...frontmatter.matchAll(new RegExp(`^${field}:[ \\t]*([^\\n]*)$`, "gm")),
+  ];
+  return matches.length === 1 ? scalarValue(matches[0][1]) : null;
 }
 
 // The six hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
@@ -432,49 +560,155 @@ function orderedStoryboardGate(frontmatter, slots) {
   return null;
 }
 
-// G3 CLOSES INTO A FILE, like every other gate. A beat leaves `production` only when the beat
-// directory that holds renders also holds `APPROVED.md` — the journalist having been shown the
-// artifact and having said yes.
-//
-// It used to leave on the mere EXISTENCE of a render, so nobody was ever asked. In the run the
-// renders were read into the model's context and the journalist received prose; the Gate-3
-// question — "the beat, as you see it. Do you validate?" — presupposed sight in a turn where
-// nothing had been put in front of anyone to open.
-//
-// Returns the beats that have rendered and not been approved, so `missing` names them. A directory
-// read, which is all this file has ever done, and it needs no slot-to-beat mapping.
-async function renderedBeats(storyDir) {
-  const rendered = [];
-  for (const beat of await list(join(storyDir, "beats"))) {
-    if ((await list(join(storyDir, "beats", beat, "renders"))).length > 0) rendered.push(beat);
-  }
-  return rendered;
+function isBeneath(root, candidate) {
+  const path = relative(root, candidate);
+  return path !== "" && path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path);
 }
 
-async function beatsAwaitingApproval(storyDir) {
-  const waiting = [];
-  for (const beat of await renderedBeats(storyDir)) {
-    if ((await read(join(storyDir, "beats", beat, "APPROVED.md"))) === null) waiting.push(beat);
+async function containedStoryDirectory(storyRoot, storyDir, segments, label, optional = false) {
+  let path = storyDir;
+  for (const segment of segments) {
+    path = join(path, segment);
+    let stat;
+    try {
+      stat = await lstat(path);
+    } catch (error) {
+      if (optional && error?.code === "ENOENT") return null;
+      throw error;
+    }
+    if (stat.isSymbolicLink()) throw new Error(`${label} has a symbolic-link ancestor: ${path}`);
+    if (!stat.isDirectory()) throw new Error(`${label} must be a real directory: ${path}`);
   }
-  return waiting;
+  if (!isBeneath(storyRoot, await realpath(path))) {
+    throw new Error(`${label} resolves outside the story: ${path}`);
+  }
+  return path;
 }
 
-// G4 CLOSES INTO A FILE, exactly as G3 does one phase earlier, and the file is the hand-over:
-// `export/<beat>/HANDOVER.md`. `deliver`'s `exportDirFor` writes that directory — one per beat,
-// because a story-level one made each delivery destroy the last — and `materialise` refuses a
-// delivery with no hand-over payload rather than writing files nobody was told what to do with.
-//
-// The weaker rule this replaces was "any file exists anywhere under `export/`", which is how a
-// two-beat story reported itself finished while its second beat sat rendered and unapproved, and how
-// a delivery of two filenames and two sizes — no placement, no alt text, no credit line — counted as
-// a closed gate. A11 is the item that names that delivery.
-async function beatsAwaitingDelivery(storyDir, beats) {
-  const waiting = [];
+async function currentBeats(storyRoot, storyDir, slots) {
+  const beatsRoot = await containedStoryDirectory(
+    storyRoot,
+    storyDir,
+    ["beats"],
+    "beat directory",
+    true,
+  );
+  const names = beatsRoot ? await list(beatsRoot) : [];
+  const beats = [];
+  for (const [index, slot] of slots.entries()) {
+    const id = String(slot.id ?? index + 1);
+    const matches = names.filter(
+      (candidate) => candidate === id || candidate.startsWith(`${id}-`),
+    );
+    if (matches.length > 1) {
+      throw new Error(`multiple beat directories match storyboard slot ${id}`);
+    }
+    const name = matches[0] ?? null;
+    const path = name
+      ? await containedStoryDirectory(storyRoot, storyDir, ["beats", name], `beat ${name}`)
+      : null;
+    beats.push({ id, medium: slot.medium, name, path, slot });
+  }
+  return { beats, names };
+}
+
+async function unrenderedBeats(beats) {
+  const unrendered = [];
   for (const beat of beats) {
-    const handover = await read(join(storyDir, "export", beat, "HANDOVER.md"));
-    if (handover === null) waiting.push(beat);
+    if (!beat.path) {
+      unrendered.push(beat.id);
+      continue;
+    }
+    const rendersPath = join(beat.path, "renders");
+    let stat;
+    try {
+      stat = await lstat(rendersPath);
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        unrendered.push(beat.name);
+        continue;
+      }
+      throw error;
+    }
+    if (stat.isSymbolicLink() || !stat.isDirectory()) {
+      throw new Error(`the rendered draft must be a real directory: ${rendersPath}`);
+    }
+    if ((await readdir(rendersPath)).length === 0) unrendered.push(beat.name);
   }
-  return waiting;
+  return unrendered;
+}
+
+// The analyst pre-step of production. A chosen chart or map slot has no chart-ready data until
+// `analyst` has written `beats/<id>/data.json` beside the beat — the file artifact every craft
+// skill reads instead of the frozen CSV. Image slots carry no data contract, so they never
+// appear here. Beat directories are `<id>-<slug>` (`new-story`/craft convention), so the lookup
+// accepts the bare id or the prefixed form, exactly the way a human scans `beats/`.
+//
+// This sits ABOVE `beatsAwaitingApproval` in `whereIs`, which changes nothing about that gate's
+// primacy: the approval rule stays the first thing consulted once anything has rendered, and
+// nothing about `export/` may shorten the walk past it (see that comment). The analyst check can
+// only fire while a beat has nothing produced yet — the moment `data.json` exists the question
+// closes and the walk proceeds exactly as before.
+const ANALYST_MEDIUMS = new Set(["chart", "map"]);
+
+async function analystState(storyDir, beats) {
+  const waiting = [];
+  const stale = [];
+  for (const beat of beats) {
+    if (!ANALYST_MEDIUMS.has(beat.medium)) continue;
+    if (!beat.path || !(await regularFileStat(join(beat.path, "data.json")))) {
+      waiting.push(beat.name ?? beat.id);
+      continue;
+    }
+    let hashes = null;
+    try {
+      const record = JSON.parse(await readFile(join(beat.path, "data.json"), "utf8"));
+      if (record?.meta?.hashes && typeof record.meta.hashes === "object" && !Array.isArray(record.meta.hashes)) {
+        hashes = record.meta.hashes;
+      }
+    } catch {
+      hashes = null;
+    }
+    if (!hashes) {
+      stale.push(beat.name);
+      continue;
+    }
+    for (const [key, relativePath] of ANALYST_HASH_INPUTS) {
+      const current = await fileDigest(join(storyDir, relativePath));
+      if (!SHA256.test(hashes[key] ?? "") || current === null || hashes[key] !== current) {
+        stale.push(beat.name);
+        break;
+      }
+    }
+  }
+  return { waiting, stale };
+}
+
+const ANALYST_HASH_INPUTS = [
+  ["storyboard", "STORYBOARD.md"],
+  ["profile", "source/profile.json"],
+  ["sourceData", "source/data.csv"],
+];
+
+async function fileDigest(path) {
+  try {
+    return `sha256:${createHash("sha256").update(await readFile(path)).digest("hex")}`;
+  } catch {
+    return null;
+  }
+}
+
+
+// S6: the inverse walk of `beatsAwaitingData`, which goes slots→dirs. A directory under
+// `beats/` that no longer matches any slot id in STORYBOARD.md is an orphan — its slot was
+// removed from the storyboard while the beat directory stayed behind. It is reported, not
+// silently walked past, because a producer dispatched by directory listing would otherwise
+// render work the storyboard no longer asks for.
+function orphanedBeats(names, slots) {
+  const ids = slots.map((slot, index) => String(slot.id ?? index + 1));
+  return names.filter(
+    (beat) => !ids.some((id) => beat === id || beat.startsWith(`${id}-`)),
+  );
 }
 
 function nonEmptyText(value) {
@@ -493,6 +727,22 @@ function stringSet(value) {
 
 function sameStrings(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+async function currentBriefBinding(beatDir) {
+  const path = join(beatDir, "BRIEF.md");
+  if (!(await regularFileStat(path))) return null;
+  const frontmatter = extractFrontmatter(await readFile(path, "utf8"));
+  const planVersionValue = exactScalarFieldValue(frontmatter, "planVersion");
+  const findingIds = stringSet(exactScalarFieldValue(frontmatter, "findingIds"));
+  if (
+    typeof planVersionValue !== "string" ||
+    !/^[1-9][0-9]*$/.test(planVersionValue) ||
+    !Number.isSafeInteger(Number(planVersionValue)) ||
+    !findingIds
+  ) {
+    return null;
+  }
+  return { planVersion: Number(planVersionValue), findingIds };
 }
 
 function addDigestFrame(hash, kind, relativePath, bytes = null) {
@@ -589,6 +839,30 @@ function validateRevisionReview(review, beat, path) {
   return { findingIds, passingBoundQa };
 }
 
+function manifestArtifacts(value, path) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`delivery manifest artifacts are invalid at ${path}`);
+  }
+  const artifacts = [];
+  const paths = new Set();
+  for (const artifact of value) {
+    const relativePath = artifact?.path;
+    if (
+      !nonEmptyText(relativePath) ||
+      relativePath.includes("\\") ||
+      relativePath.startsWith("/") ||
+      relativePath.split("/").some((segment) => segment === "" || segment === "." || segment === "..") ||
+      !SHA256.test(artifact?.digest ?? "") ||
+      paths.has(relativePath)
+    ) {
+      throw new Error(`delivery manifest artifact binding is invalid at ${path}`);
+    }
+    paths.add(relativePath);
+    artifacts.push({ path: relativePath, digest: artifact.digest });
+  }
+  return artifacts;
+}
+
 function validateRevisionManifest(manifest, beat, path) {
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) throw new Error(`delivery manifest must be an object: ${path}`);
   if (manifest.schemaVersion !== DELIVERY_MANIFEST_SCHEMA_VERSION || manifest.state !== "complete") {
@@ -606,64 +880,193 @@ function validateRevisionManifest(manifest, beat, path) {
   if (manifest.feedbackDigest !== undefined && !SHA256.test(manifest.feedbackDigest)) {
     throw new Error(`delivery manifest feedbackDigest is invalid at ${path}`);
   }
-  return { findingIds };
+  return { artifacts: manifestArtifacts(manifest.artifacts, path), findingIds };
 }
 
-// A durable editor-feedback trigger. FEEDBACK.md remains as the editorial record; its content
-// digest opens a revision until a valid current OutputReview binds that exact request. The delivery
-// manifest then proves that review, render, findings, and feedback digest were rematerialised.
-async function feedbackRevisionState(storyDir, beats) {
+async function currentExportArtifacts(exportDir) {
+  const artifacts = [];
+
+  async function walk(directory, prefix) {
+    const entries = (await readdir(directory, { withFileTypes: true })).sort((left, right) =>
+      left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+    );
+    for (const entry of entries) {
+      if (!prefix && entry.name === ".delivery-manifest.json") continue;
+      const path = join(directory, entry.name);
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const stat = await lstat(path);
+      if (stat.isSymbolicLink()) {
+        throw new Error(`delivery export must not contain a symbolic link: ${path}`);
+      }
+      if (stat.isDirectory()) {
+        await walk(path, relativePath);
+      } else if (stat.isFile()) {
+        artifacts.push({ path: relativePath, digest: await fileDigest(path) });
+      } else {
+        throw new Error(`delivery export must not contain a special file: ${path}`);
+      }
+    }
+  }
+
+  await walk(exportDir, "");
+  return artifacts;
+}
+
+function artifactsAreCurrent(current, recorded) {
+  const left = [...current].sort((first, second) => first.path.localeCompare(second.path));
+  const right = [...recorded].sort((first, second) => first.path.localeCompare(second.path));
+  return (
+    right.some((artifact) => artifact.path === "HANDOVER.md") &&
+    left.length === right.length &&
+    left.every(
+      (artifact, index) =>
+        artifact.path === right[index].path && artifact.digest === right[index].digest,
+    )
+  );
+}
+
+// Every current storyboard beat follows the same review and delivery walk. FEEDBACK.md only adds
+// the revision label and digest; it never selects a stronger validation path.
+async function completionState(storyRoot, storyDir, beats) {
   const production = [];
   const delivery = [];
-  for (const beat of beats) {
-    const beatDir = join(storyDir, "beats", beat);
+  const feedbackProduction = [];
+  const feedbackDelivery = [];
+  for (const currentBeat of beats) {
+    const beat = currentBeat.name;
+    const beatDir = currentBeat.path;
     const feedbackDigest = await currentFeedbackDigest(beatDir);
-    if (!feedbackDigest) continue;
     const reviewPath = join(beatDir, "OUTPUT-REVIEW.json");
     const reviewStat = await regularFileStat(reviewPath);
-    const review = reviewStat ? await json(reviewPath) : null;
     if (!reviewStat) {
       production.push(beat);
+      if (feedbackDigest) feedbackProduction.push(beat);
       continue;
     }
+    const review = await json(reviewPath);
     const reviewBinding = validateRevisionReview(review, beat, reviewPath);
+    const briefBinding = await currentBriefBinding(beatDir);
     const renderDigest = await currentRenderDigest(beatDir);
     if (
-      review.decision !== "approve" || review.draftDigest !== renderDigest ||
-      review.feedbackDigest !== feedbackDigest || !reviewBinding.passingBoundQa
+      !briefBinding ||
+      review.planVersion !== briefBinding.planVersion ||
+      !sameStrings(reviewBinding.findingIds, briefBinding.findingIds) ||
+      review.decision !== "approve" ||
+      review.draftDigest !== renderDigest ||
+      (review.feedbackDigest ?? null) !== feedbackDigest ||
+      !reviewBinding.passingBoundQa
     ) {
       production.push(beat);
+      if (feedbackDigest) feedbackProduction.push(beat);
       continue;
     }
-    const manifestPath = join(storyDir, "export", beat, ".delivery-manifest.json");
-    const manifestStat = await regularFileStat(manifestPath);
-    if (!manifestStat) {
+
+    const exportDir = await containedStoryDirectory(
+      storyRoot,
+      storyDir,
+      ["export", beat],
+      `export ${beat}`,
+      true,
+    );
+    if (!exportDir) {
       delivery.push(beat);
+      if (feedbackDigest) feedbackDelivery.push(beat);
+      continue;
+    }
+    const currentArtifacts = await currentExportArtifacts(exportDir);
+    const manifestPath = join(exportDir, ".delivery-manifest.json");
+    const manifestStat = await regularFileStat(manifestPath);
+    const handoverStat = await regularFileStat(join(exportDir, "HANDOVER.md"));
+    if (!manifestStat || !handoverStat) {
+      delivery.push(beat);
+      if (feedbackDigest) feedbackDelivery.push(beat);
       continue;
     }
     const manifest = await json(manifestPath);
     const manifestBinding = validateRevisionManifest(manifest, beat, manifestPath);
     if (
-      manifest.reviewId !== review.id || manifest.planVersion !== review.planVersion ||
-      manifest.draftDigest !== review.draftDigest || manifest.feedbackDigest !== feedbackDigest ||
-      !sameStrings(manifestBinding.findingIds, reviewBinding.findingIds)
+      manifest.reviewId !== review.id ||
+      manifest.planVersion !== review.planVersion ||
+      manifest.draftDigest !== review.draftDigest ||
+      (manifest.feedbackDigest ?? null) !== feedbackDigest ||
+      !sameStrings(manifestBinding.findingIds, reviewBinding.findingIds) ||
+      !artifactsAreCurrent(currentArtifacts, manifestBinding.artifacts)
     ) {
       delivery.push(beat);
+      if (feedbackDigest) feedbackDelivery.push(beat);
     }
   }
-  return { production, delivery };
+  return { production, delivery, feedbackProduction, feedbackDelivery };
 }
 
-export async function whereIs(storyDir) {
-  const source = await list(join(storyDir, "source"));
-  if (!source.includes("article.md") || !source.includes("profile.json")) {
-    return { phase: "intake", missing: ["source/article.md", "source/profile.json"].filter((f) => !source.includes(f.split("/")[1])) };
+async function productionReservationState(beats) {
+  let retryable = null;
+  for (const currentBeat of [...beats].sort((left, right) =>
+    left.id.localeCompare(right.id)
+  )) {
+    if (!currentBeat.path) continue;
+    const receiptPath = join(currentBeat.path, PRODUCTION_ATTEMPTS_FILE);
+    const receipt = await readProductionAttempts(receiptPath, currentBeat.name);
+    if (!receipt) continue;
+    const classification = classifyProductionReservation(
+      receipt,
+      receipt.status === "reserved" && processIsAlive(receipt.pid),
+    );
+    const operation = managedProductionOperation(currentBeat.slot);
+    const currentOperation = operation
+      ? describeProductionOperation(operation, currentBeat.name)
+      : null;
+    const inputDigest = currentOperation
+      ? await fileDigest(join(currentBeat.path, currentOperation.inputPath))
+      : null;
+    if (
+      classification.state !== "live" &&
+      !isProductionReceiptApplicable(receipt, currentOperation, inputDigest)
+    ) {
+      continue;
+    }
+
+    const state = {
+      phase: "production",
+      status: classification.status,
+      step: "craft",
+      slot: currentBeat.slot,
+      attempts: classification.attempts,
+      resume: classification.resume,
+      missing: [],
+    };
+    if (
+      classification.state === "live" ||
+      classification.state === "exhausted"
+    ) {
+      return state;
+    }
+    retryable ??= state;
   }
+  return retryable;
+}
+
+async function resolveStoryState(storyDir) {
+  const source = await list(join(storyDir, "source"));
+  // S5 parity: `intake` freezes THREE artifacts (article.md, data.csv, profile.json — see that
+  // skill's own SKILL.md), so the gate refuses to leave `intake` until all three exist. Two of
+  // three used to pass, which let a story reach production whose craft work would read a CSV
+  // that was never frozen.
+  const FROZEN = ["article.md", "data.csv", "profile.json"];
+  const unfrozen = FROZEN.filter((f) => !source.includes(f));
+  if (unfrozen.length > 0)
+    return { phase: "intake", missing: unfrozen.map((f) => `source/${f}`) };
 
   const storyboard = await read(join(storyDir, "STORYBOARD.md"));
   if (storyboard === null) return { phase: "framing", missing: ["STORYBOARD.md"] };
 
   const frontmatter = extractFrontmatter(storyboard);
+  // S4: a file that opens a `---` block and never closes it is ONE diagnosable fact. Reporting
+  // every scalar as missing instead would send a resumed session back through nine gates to fix
+  // one truncated write.
+  if (frontmatter === null && storyboard.startsWith("---")) {
+    return { phase: "storyboard", missing: ["STORYBOARD.md frontmatter unterminated"] };
+  }
   const gateState = missingForGate2(frontmatter);
   const legacyState = gateState.legacy ? { legacy: true } : {};
   if (gateState.gaps.length > 0) {
@@ -675,57 +1078,104 @@ export async function whereIs(storyDir) {
     };
   }
 
-  const rendered = await renderedBeats(storyDir);
-  const exported = await list(join(storyDir, "export"));
+  const storyRoot = await realpath(storyDir);
+  const current = await currentBeats(storyRoot, storyDir, gateState.slots);
+  const exportRoot = await containedStoryDirectory(
+    storyRoot,
+    storyDir,
+    ["export"],
+    "export directory",
+    true,
+  );
 
-  if (rendered.length === 0) {
-    // A file in `export/` with nothing rendered anywhere is not a finished story, it is an
-    // inconsistent one — something was delivered that no producer in this directory made.
-    if (exported.length > 0) return { phase: "production", ...legacyState, missing: ["no renders exist in any beat"] };
-    return { phase: "production", ...legacyState, missing: [] };
-  }
-
-  // APPROVAL IS ASKED FIRST, and nothing about `export/` may shorten the walk past it.
-  //
-  // It used to be the other way round: `if (exported.length > 0) return {phase:"done"}` sat ABOVE
-  // this check, so ANY file under `export/` ended the story. A two-beat story that delivered beat 1
-  // therefore reported `{"phase":"done","missing":[]}` while beat 2 sat rendered and unapproved —
-  // one reading announcing a later phase than the check that owns the question, which is the exact
-  // class (twin/FEEDBACK-2026-08-10.md, A14) this whole file was rewritten to make impossible. The
-  // approval gate was real; it was simply placed downstream of a story-level short-circuit that
-  // predated it, and every test exercised it with `export/` empty.
-  const waiting = await beatsAwaitingApproval(storyDir);
-  if (waiting.length > 0) {
+  // Analyst/source drift is earlier than review or delivery, so it always reopens production even
+  // when the story once reached done.
+  const analyst = await analystState(storyDir, current.beats);
+  const dataMissing = analyst.waiting.map((id) => `beat ${id}: run analyst (data.json)`);
+  const staleMissing = analyst.stale.map(
+    (beat) => `beat ${beat}: analyst data stale — rebuild`,
+  );
+  const orphanMissing = orphanedBeats(current.names, gateState.slots).map(
+    (beat) => `beat ${beat}: orphaned — slot removed from storyboard`,
+  );
+  const analystMissing = [...dataMissing, ...staleMissing, ...orphanMissing];
+  if (analystMissing.length > 0) {
     return {
       phase: "production",
+      step: "analysis",
       ...legacyState,
-      missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
+      missing: analystMissing,
     };
   }
 
-  const revisions = await feedbackRevisionState(storyDir, rendered);
-  if (revisions.production.length > 0) {
+  const reservation = await productionReservationState(current.beats);
+  if (reservation?.status === "blocked") {
+    return { ...reservation, ...legacyState };
+  }
+
+  const unrendered = await unrenderedBeats(current.beats);
+  if (unrendered.length > 0) {
+    const exported = exportRoot ? await list(exportRoot) : [];
+    const renderedCount = current.beats.length - unrendered.length;
+    const missing = renderedCount === 0
+      ? (exported.length > 0 ? ["no renders exist in any beat"] : [])
+      : unrendered.map((beat) => `beat ${beat}: no current render`);
+    const nextBeat = current.beats.find(
+      (beat) => unrendered.includes(beat.name ?? beat.id),
+    );
     return {
       phase: "production",
+      step: "craft",
+      slot: nextBeat?.slot,
       ...legacyState,
-      revision: { reason: "editor-feedback", beats: revisions.production },
-      missing: [],
+      ...reservation,
+      missing,
     };
   }
-  if (revisions.delivery.length > 0) {
+
+  const completion = await completionState(storyRoot, storyDir, current.beats);
+  if (completion.production.length > 0) {
+    const feedback = new Set(completion.feedbackProduction);
+    const missing = completion.production
+      .filter((beat) => !feedback.has(beat))
+      .map((beat) => `beat ${beat}: rendered but not currently approved`);
+    const revision = completion.feedbackProduction.length > 0
+      ? {
+          reason: "editor-feedback",
+          beats: completion.feedbackProduction,
+        }
+      : null;
+    const nextBeat = current.beats.find((beat) =>
+      (revision?.beats ?? completion.production).includes(beat.name)
+    );
+    return {
+      phase: "production",
+      step: revision ? "craft" : "review",
+      slot: nextBeat?.slot,
+      ...legacyState,
+      ...(revision ? { revision } : {}),
+      missing,
+    };
+  }
+  if (completion.delivery.length > 0) {
     return {
       phase: "delivery",
       ...legacyState,
-      revision: { reason: "editor-feedback", beats: revisions.delivery },
+      ...(completion.feedbackDelivery.length > 0
+        ? {
+            revision: {
+              reason: "editor-feedback",
+              beats: completion.feedbackDelivery,
+            },
+          }
+        : {}),
       missing: [],
     };
   }
 
-  // Every rendered beat has been approved. The story is done only when every one of them has also
-  // been DELIVERED — per beat, into its own `export/<beat>/`. `missing` stays empty because
-  // `delivery` is a phase with work left to dispatch, not a blocked state to report and stop on.
-  const undelivered = await beatsAwaitingDelivery(storyDir, rendered);
-  if (undelivered.length > 0) return { phase: "delivery", ...legacyState, missing: [] };
-
   return { phase: "done", ...legacyState, missing: [] };
+}
+
+export async function whereIs(storyDir) {
+  return projectResolverResult(await resolveStoryState(storyDir));
 }

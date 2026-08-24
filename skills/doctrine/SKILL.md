@@ -92,6 +92,7 @@ skill's own output has to survive.
 | Targets | `references/reference-set.md` | Verified, published, standalone newsroom graphics, each indexed by its **argument structure** — the key the reference loop looks a row up by — and carrying a link, a locator, and one transferable lesson |
 | Check | `scripts/check-reference-set.mjs` | `checkReferenceSet(markdown)` — the list of reasons a reference table is not usable; empty means every row is |
 | Motion | `references/motion-grammar.md` | The video format only — data arriving is the motion event, chronological or argumentative order, the pause on the baseline, the subject as a distinct event, the conclusion after its evidence, the final hold, and the editorial timing contract |
+| Design gate | `references/design-rubric.md` | The PASS/FAIL criteria a rendered beat is judged against before G3 approval — mark and text contrast, zero-baseline honesty, annotation ink, single-hue encoding — each criterion citing the floor it restates, with its detect hint |
 
 ## How it works (the shape)
 
@@ -180,6 +181,10 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
   the fixed-gutter class (a reserved text space sized as a constant instead of measured against the
   real string about to be drawn — the second most independently-rediscovered defect in this
   project's history, and the reason "measured" is itself a claim this file teaches how to check).
+- `references/design-rubric.md` — the G3 design-review checklist: five PASS/FAIL criteria, each
+  citing the floor it restates (SC 1.4.11's 3:1 for marks and annotations, SC 1.4.3's 4.5:1 for
+  text, the bars-vs-lines zero rule from `chart-beat`'s static discipline, the one-accent colour
+  grammar) with a detect hint naming how each is measured on the delivered artifact.
 - `references/reference-set.md` — **eight** rows, past the original six-row target. The floor in
   `test/reference-set.test.ts` tracks that reality (`8`) so the suite stays green against what is
   actually true rather than standing permanently red against an unmet aspiration or, just as bad,

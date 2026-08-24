@@ -227,6 +227,12 @@ its canonical geometry is.
    geometry, opacity and colour; it cannot see a label colliding with a line, a clipped mark, or a
    plot that is technically fine and visually squat. Every defect this format has shipped that a
    script could not have caught was caught by an eye on a frame.
+  Before the beat is surfaced for approval (G3), apply `doctrine`'s design rubric
+  (`doctrine/references/design-rubric.md`) to what you just looked at: mark contrast at 3:1,
+  text at 4.5:1, zero-baseline honesty for length-encoded marks, annotation ink measured over
+  what it crosses, one accent carrying the subject. Each criterion is PASS or FAIL with its
+  measurement named — a FAIL is fixed before the journalist is asked, never presented as a
+  question.
 
 ## Quick start
 

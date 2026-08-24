@@ -15,6 +15,9 @@ import {
   datawrapperTypesForTreatment,
   whereIs,
 } from "../../splash/scripts/where.mjs";
+import { buildData } from "../../analyst/scripts/build-data.mjs";
+import { parseCsv } from "../../analyst/scripts/csv.mjs";
+import { profileTable } from "../../analyst/scripts/profile.mjs";
 
 const TYPES = [
   "column-chart",
@@ -207,6 +210,17 @@ describe("the post-treatment producer question", () => {
   });
 });
 
+function expectedStoryboardState(resume: string) {
+  return {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: expect.any(Array),
+    attempts: 0,
+    resume,
+  };
+}
+
 describe("persisted producer state", () => {
   let storyDir: string;
   let path: string;
@@ -215,9 +229,24 @@ describe("persisted producer state", () => {
     storyDir = await mkdtemp(join(tmpdir(), "producer-gate-"));
     path = join(storyDir, "STORYBOARD.md");
     for (const child of ["source", "beats", "export"]) await mkdir(join(storyDir, child));
+    // S5 parity: `whereIs` leaves intake only when all three frozen files exist.
     await writeFile(join(storyDir, "source", "article.md"), "article");
+    await writeFile(join(storyDir, "source", "data.csv"), "country,value\nFrance,1\n");
     await writeFile(join(storyDir, "source", "profile.json"), "{}");
   });
+
+  // The analyst pre-step of production: a chosen chart slot does not leave for craft until
+  // `beats/<id>/data.json` exists, so a story that has genuinely advanced to production has
+  // already run it. Seeded with the real builder over a frozen source pair.
+  async function runAnalyst() {
+    const csv = ["country,value", "France,1", "Germany,2"].join("\n");
+    await writeFile(join(storyDir, "source", "data.csv"), csv);
+    await writeFile(
+      join(storyDir, "source", "profile.json"),
+      JSON.stringify(profileTable(parseCsv(csv))),
+    );
+    await buildData({ storyDir, slotId: "1" });
+  }
 
   afterEach(async () => {
     await rm(storyDir, { recursive: true, force: true });
@@ -228,21 +257,21 @@ describe("persisted producer state", () => {
     expect(checkStoryboard(parseStoryboard(await readFile(path, "utf8")).meta)).toContain(
       "slot 1: custom or Datawrapper was never chosen after the treatment selection",
     );
-    expect(await whereIs(storyDir)).toMatchObject({
-      phase: "storyboard",
-      gate: "G2-producer",
-      awaiting: "producer",
-      slotId: "1",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-producer for slot 1; the journalist must provide producer.",
+      ),
+    );
   });
 
   it("never asks the producer question before treatment selection", async () => {
     const text = storyboard().replace('    chosen: "Slope (slopegraph)"\n', "");
     await writeFile(path, text);
-    expect(await whereIs(storyDir)).toMatchObject({
-      gate: "G2-treatment",
-      awaiting: "treatment",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-treatment for slot 1; the journalist must provide treatment.",
+      ),
+    );
   });
 
   it("asks for slot one's producer before moving to slot two's treatment", async () => {
@@ -258,11 +287,11 @@ describe("persisted producer state", () => {
 `,
     );
     await writeFile(path, twoSlots);
-    expect(await whereIs(storyDir)).toMatchObject({
-      gate: "G2-producer",
-      awaiting: "producer",
-      slotId: "1",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-producer for slot 1; the journalist must provide producer.",
+      ),
+    );
   });
 
   it("writes the human choice atomically and then advances to production", async () => {
@@ -276,8 +305,10 @@ describe("persisted producer state", () => {
     await mutateStoryboard(path, { slot: { id: 1, fields } });
     const slot = parseStoryboard(await readFile(path, "utf8")).meta.slots[0];
     expect(slot).toMatchObject({ producer: "datawrapper", datawrapperType: "d3-lines" });
+    await runAnalyst();
     expect(await whereIs(storyDir)).toMatchObject({ phase: "production", missing: [] });
   });
+
 
   for (const existing of [
     { producer: "custom" },
@@ -295,11 +326,11 @@ describe("persisted producer state", () => {
       const slot = parseStoryboard(await readFile(path, "utf8")).meta.slots[0];
       expect(slot.producer).toBeUndefined();
       expect(slot.datawrapperType).toBeUndefined();
-      expect(await whereIs(storyDir)).toMatchObject({
-        phase: "storyboard",
-        gate: "G2-producer",
-        awaiting: "producer",
-      });
+      expect(await whereIs(storyDir)).toEqual(
+        expectedStoryboardState(
+          "Stop at G2-producer for slot 1; the journalist must provide producer.",
+        ),
+      );
     });
   }
 
@@ -318,6 +349,7 @@ describe("persisted producer state", () => {
       storyboard({ treatment: "Histogram", candidates: ["Histogram", "Box plot"] }),
     );
     expect(checkStoryboard(parseStoryboard(await readFile(path, "utf8")).meta)).toEqual([]);
+    await runAnalyst();
     expect(await whereIs(storyDir)).toMatchObject({ phase: "production", missing: [] });
   });
 

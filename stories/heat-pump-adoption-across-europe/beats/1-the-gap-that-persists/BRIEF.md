@@ -1,3 +1,8 @@
+---
+planVersion: 1
+findingIds: [slope-universal-increase-gap-persists]
+---
+
 # Brief — The gap that persists
 
 ## Takeaway

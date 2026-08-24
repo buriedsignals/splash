@@ -85,7 +85,9 @@ beforeEach(async () => {
   await mkdir(join(storyPath, "beats"));
   await mkdir(join(storyPath, "export"));
   await writeFile(join(storyPath, "AGENTS.md"), "# Story instructions\n");
+  // S5 parity: `whereIs` leaves intake only when all three frozen files exist.
   await writeFile(join(storyPath, "source", "article.md"), "Article\n");
+  await writeFile(join(storyPath, "source", "data.csv"), "country,value\nFrance,1\n");
   await writeFile(join(storyPath, "source", "profile.json"), "{}\n");
   await writeFile(join(storyPath, "STORYBOARD.md"), formatGate());
   const randomValues = [

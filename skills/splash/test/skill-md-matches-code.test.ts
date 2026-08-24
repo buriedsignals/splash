@@ -581,3 +581,4 @@ describe("every SKILL.md's structural claims about code hold true", () => {
     expect(offenders).toEqual([]);
   });
 });
+

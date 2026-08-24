@@ -130,6 +130,25 @@ its own schema version, ID, status, completion time, and the same output/render/
 QA receipt; it does not run QA or manufacture that receipt. Unknown schema versions fail closed and
 remain untouched on disk.
 
+## Recovering a published output for editor feedback
+
+A delivered output is never dead: it is recoverable, and the recovery path runs back through this
+skill. Every story carries its own `AGENTS.md`, which records one stable relationship a fresh
+session reads off disk: `beats/<outputId>/` is the **editable production source**; `export/<outputId>/`
+is the **current delivery** and is never edited as source.
+
+- Record feedback in the beat (the durable trigger is updating the beat's `FEEDBACK.md`, which
+  reopens production, then delivery). Change the canonical source — the bespoke component, or a
+  Datawrapper beat's persisted `spec.json` — then rerender.
+- A changed render needs a NEW bound `OUTPUT-REVIEW.json` for exactly that draft; the old review
+  binds the old digest and cannot approve the new pixels. Then rematerialise the same form:
+  hosted deliveries redeploy to the same project, so existing embeds keep their address while
+  `DEPLOYMENT.json` records the new immutable version; the deployment receipt names the editable
+  source and the stable public URL beside `EMBED_URL.txt`, `EMBED_CODE.html`, and `HANDOVER.md`.
+- A custom Cloudflare output keeps its per-output project URL across revisions. A Datawrapper
+  output reuses the chart ID recorded in its `DATAWRAPPER.json` when production reruns with the same
+  `beatDir` — a second chart ID for the same slot is a defect, not an update.
+
 ## How it works (the shape)
 
 1. **`offerForms({medium, format, storiesRoot, storyId, outputId, planVersion, findingIds,

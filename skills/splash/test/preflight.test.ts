@@ -353,8 +353,14 @@ describe("runPreflight — capabilities, not a verdict", () => {
   //              yet built: this row is hardcoded closed, never probed |"
   //   (fail) should not claim in prose that a capability it probes is never probed
   it("should not claim in prose that a capability it probes is never probed", async () => {
-    const skill = readFileSync(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
-    const rows = skill
+    // The spine rewrite moved the capability table into the preflight/install reference; the guard
+    // follows it — the table must exist somewhere the dispatcher's prose owns, and must never
+    // claim a probed capability is closed.
+    const doc = readFileSync(
+      join(import.meta.dirname, "..", "references", "preflight-and-install.md"),
+      "utf8",
+    );
+    const rows = doc
       .split(/\r?\n/)
       .filter((line) => /^\| *(`MAPTILER_KEY`|`DATAWRAPPER_TOKEN`|Cloudflare Pages)/.test(line));
     expect(rows.length).toBe(3);

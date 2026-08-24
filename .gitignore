@@ -32,3 +32,6 @@ newsroom.json
 # for: the defect is invisible from inside a working install, where the file is supposed to exist.
 NEWSROOM-PROFILE.md
 brand.json
+
+# Jeff orchestration state (lite records stay local; see spotlight convention)
+.jeff/

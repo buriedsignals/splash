@@ -39,8 +39,10 @@ describe("createStory", () => {
 
   it("should make scaffolding mandatory before phase recovery in the orchestration contract", async () => {
     const skill = await readFile(join(import.meta.dirname, "..", "SKILL.md"), "utf8");
-    const createStep = skill.indexOf("createStory({root, title})` exactly once before intake");
-    const recoverStep = skill.indexOf("**Recover the phase.**");
+    // The spine rewrite moved the two steps into one When-to-use bullet; the guard keeps pinning
+    // their order — scaffolding is documented before phase recovery.
+    const createStep = skill.indexOf("`createStory({root, title})` first create");
+    const recoverStep = skill.indexOf("then call `whereIs` for the first time");
     expect(createStep).toBeGreaterThan(-1);
     expect(recoverStep).toBeGreaterThan(createStep);
   });
