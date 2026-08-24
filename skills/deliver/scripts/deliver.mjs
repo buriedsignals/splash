@@ -16,9 +16,11 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import { tmpdir } from "node:os";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
@@ -41,6 +43,8 @@ import {
 } from "./delivery-replacement.mjs";
 import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
+
+const execFileAsync = promisify(execFile);
 
 const REACT_VERSION = "^19.1.0";
 
@@ -647,7 +651,7 @@ async function repositoryRootFor(storiesRoot) {
       if (error?.code !== "ENOENT") throw error;
     }
     const parent = dirname(candidate);
-    if (parent === candidate) return storiesRoot;
+    if (parent === candidate) return null;
     candidate = parent;
   }
 }
@@ -660,10 +664,52 @@ function isWithin(root, candidate) {
   );
 }
 
+async function pathExists(path) {
+  try {
+    await lstat(path);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir, storiesRoot }) {
+  if (form !== "owned-file") return;
+
+  const sourceKeyedDir = join(rendersDir, "keyed");
+  if (await pathExists(sourceKeyedDir)) {
+    throw new Error(
+      `delivery reserves the keyed namespace and refuses the colliding source path ${sourceKeyedDir}`,
+    );
+  }
+
+  const repositoryRoot = await repositoryRootFor(storiesRoot);
+  if (repositoryRoot === null) return;
+  const finalKeyedDir = join(exportDir, "keyed");
+  const { stdout } = await execFileAsync(
+    "git",
+    [
+      "--literal-pathspecs",
+      "ls-files",
+      "-z",
+      "--",
+      relative(repositoryRoot, finalKeyedDir),
+    ],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  );
+  const trackedPath = stdout.split("\0").find(Boolean);
+  if (trackedPath) {
+    throw new Error(
+      `delivery reserves the keyed namespace and refuses its pretracked destination ${trackedPath}`,
+    );
+  }
+}
+
 async function hostedTemporaryRoot(env, storiesRoot) {
   const selectedRoot = env.TMPDIR || env.TMP || env.TEMP || tmpdir();
   const canonicalRoot = await realpath(selectedRoot);
-  const repositoryRoot = await repositoryRootFor(storiesRoot);
+  const repositoryRoot = (await repositoryRootFor(storiesRoot)) ?? storiesRoot;
   if (isWithin(repositoryRoot, canonicalRoot)) {
     throw new Error("hosted delivery temporary material must be outside the repository");
   }
@@ -912,7 +958,7 @@ ${JSON.stringify(insertion, null, 2)}
     if (entry.isSymbolicLink()) {
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env, states });
+      await copyTree(srcPath, destPath, written, { env: {}, states });
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
@@ -990,6 +1036,12 @@ export async function materialise(options) {
   return withDeliveryLock(
     paths.exportDir,
     async () => {
+      await refuseKeyedNamespaceCollision({
+        form,
+        rendersDir: paths.rendersDir,
+        exportDir: paths.exportDir,
+        storiesRoot: paths.storiesRoot,
+      });
       await reconcileDeliveryReplacement(paths.exportDir);
       await refuseToWipeAnotherBeat(paths.exportDir, paths.outputId);
       const approval = requireApprovedOutput({

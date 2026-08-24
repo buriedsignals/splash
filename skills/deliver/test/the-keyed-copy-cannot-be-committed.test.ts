@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { exportDirFor, materialise } from "../scripts/deliver.mjs";
@@ -25,6 +25,7 @@ const handover = {
 
 let repo: string;
 let storiesRoot: string;
+let beatDir: string;
 let exportDir: string;
 
 function git(...args: string[]): string {
@@ -63,7 +64,7 @@ beforeEach(async () => {
   git("config", "user.name", "Test");
 
   storiesRoot = join(repo, "stories");
-  const beatDir = join(storiesRoot, "story", "beats", "1-map");
+  beatDir = join(storiesRoot, "story", "beats", "1-map");
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "map.html"), MAP_PAGE);
   await approveCurrentOutput(beatDir);
@@ -114,5 +115,82 @@ describe("owned-file keyed delivery boundary", () => {
     const keyedPath = `stories/story/export/1-map/${KEYED_DELIVERY_DIR}/map.html`;
     expect(committablePaths()).toContain(keyedPath);
     expect(await readFile(join(repo, keyedPath), "utf8")).toContain(SENTINEL_CREDENTIAL);
+  });
+
+  it("refuses a source renders/keyed collision before replacing the prior export", async () => {
+    const sourceKeyedDir = join(beatDir, "renders", KEYED_DELIVERY_DIR);
+    await mkdir(sourceKeyedDir);
+    await writeFile(join(sourceKeyedDir, ".gitignore"), "!*\n");
+    await writeFile(join(sourceKeyedDir, "nested.html"), MAP_PAGE);
+    await approveCurrentOutput(beatDir);
+    await mkdir(exportDir, { recursive: true });
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+    git("add", "-A");
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+    expect(git("show", ":stories/story/export/1-map/previous.txt")).toBe("last-good");
+    expect(git("diff", "--name-only", "--", "stories/story/export/1-map")).toBe("");
+    for (const path of committablePaths()) {
+      expect(await readFile(join(repo, path), "utf8")).not.toContain(SENTINEL_CREDENTIAL);
+    }
+  });
+
+  it("refuses a pretracked final keyed path before modifying its working tree or index bytes", async () => {
+    const trackedPath = "stories/story/export/1-map/keyed/map.html";
+    const trackedAbsolutePath = join(repo, trackedPath);
+    const lastGoodKeyedPage = MAP_PAGE.replace("basic", "last-good");
+    await mkdir(join(exportDir, KEYED_DELIVERY_DIR), { recursive: true });
+    await writeFile(join(exportDir, "map.html"), MAP_PAGE);
+    await writeFile(trackedAbsolutePath, lastGoodKeyedPage);
+    git("add", "-A");
+    expect(git("ls-files", "--error-unmatch", trackedPath).trim()).toBe(trackedPath);
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    expect(await readFile(trackedAbsolutePath, "utf8")).toBe(lastGoodKeyedPage);
+    expect(git("show", `:${trackedPath}`)).toBe(lastGoodKeyedPage);
+    expect(git("show", `:${trackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
+    expect(git("diff", "--name-only", "--", trackedPath)).toBe("");
+  });
+});
+
+describe("source-bundle credential custody", () => {
+  it("keeps nested HTML placeholder-only, committable, and outside the keyed namespace", async () => {
+    const nestedSource = join(beatDir, "assets", "previews", "map.html");
+    await mkdir(join(beatDir, "assets", "previews"), { recursive: true });
+    await writeFile(nestedSource, MAP_PAGE);
+
+    await materialise({
+      form: "source-bundle",
+      format: "web",
+      storiesRoot,
+      storyId: "story",
+      outputId: "1-map",
+      env: { MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL },
+      handover,
+      planVersion: TEST_PLAN_VERSION,
+      findingIds: TEST_FINDING_IDS,
+    });
+
+    const bundledPath = "stories/story/export/1-map/assets/previews/map.html";
+    const bundledHtml = await readFile(join(repo, bundledPath), "utf8");
+    expect(bundledHtml).toContain(MAP_KEY_PLACEHOLDER);
+    expect(bundledHtml).not.toContain(SENTINEL_CREDENTIAL);
+    expect(await readdir(exportDir)).not.toContain(KEYED_DELIVERY_DIR);
+    expect(committablePaths()).toContain(bundledPath);
+    for (const path of committablePaths()) {
+      expect(await readFile(join(repo, path), "utf8")).not.toContain(SENTINEL_CREDENTIAL);
+    }
+
+    git("add", "-A");
+    const staged = git("diff", "--cached", "--name-only", "-z")
+      .split("\0")
+      .filter(Boolean);
+    expect(staged).toContain(bundledPath);
+    for (const path of staged) {
+      expect(git("show", `:${path}`)).not.toContain(SENTINEL_CREDENTIAL);
+    }
   });
 });
