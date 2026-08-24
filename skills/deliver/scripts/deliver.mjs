@@ -43,6 +43,7 @@ import {
 } from "./delivery-replacement.mjs";
 import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
+import { gitAuthorityFor } from "./git-authority.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -641,21 +642,6 @@ export function embedCodeFor(url, title, options = {}) {
   );
 }
 
-async function repositoryRootFor(storiesRoot) {
-  let candidate = storiesRoot;
-  while (true) {
-    try {
-      await lstat(join(candidate, ".git"));
-      return candidate;
-    } catch (error) {
-      if (error?.code !== "ENOENT") throw error;
-    }
-    const parent = dirname(candidate);
-    if (parent === candidate) return null;
-    candidate = parent;
-  }
-}
-
 function isWithin(root, candidate) {
   const fromRoot = relative(root, candidate);
   return (
@@ -674,7 +660,7 @@ async function pathExists(path) {
   }
 }
 
-async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir, storiesRoot }) {
+async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir }) {
   if (form !== "owned-file") return;
 
   const sourceKeyedDir = join(rendersDir, "keyed");
@@ -684,21 +670,10 @@ async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir, stor
     );
   }
 
-  const repositoryRoot = await repositoryRootFor(storiesRoot);
-  if (repositoryRoot === null) return;
   const finalKeyedDir = join(exportDir, "keyed");
-  const { stdout } = await execFileAsync(
-    "git",
-    [
-      "--literal-pathspecs",
-      "ls-files",
-      "-z",
-      "--",
-      relative(repositoryRoot, finalKeyedDir),
-    ],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  );
-  const trackedPath = stdout.split("\0").find(Boolean);
+  const authority = await gitAuthorityFor(finalKeyedDir);
+  if (authority === null) return;
+  const [trackedPath] = await authority.trackedPathsUnder(finalKeyedDir);
   if (trackedPath) {
     throw new Error(
       `delivery reserves the keyed namespace and refuses its pretracked destination ${trackedPath}`,
@@ -709,7 +684,7 @@ async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir, stor
 async function hostedTemporaryRoot(env, storiesRoot) {
   const selectedRoot = env.TMPDIR || env.TMP || env.TEMP || tmpdir();
   const canonicalRoot = await realpath(selectedRoot);
-  const repositoryRoot = (await repositoryRootFor(storiesRoot)) ?? storiesRoot;
+  const repositoryRoot = (await gitAuthorityFor(storiesRoot))?.worktreeRoot ?? storiesRoot;
   if (isWithin(repositoryRoot, canonicalRoot)) {
     throw new Error("hosted delivery temporary material must be outside the repository");
   }
@@ -1040,7 +1015,6 @@ export async function materialise(options) {
         form,
         rendersDir: paths.rendersDir,
         exportDir: paths.exportDir,
-        storiesRoot: paths.storiesRoot,
       });
       await reconcileDeliveryReplacement(paths.exportDir);
       await refuseToWipeAnotherBeat(paths.exportDir, paths.outputId);

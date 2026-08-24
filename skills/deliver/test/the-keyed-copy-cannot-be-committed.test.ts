@@ -1,19 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { exportDirFor, materialise } from "../scripts/deliver.mjs";
 import {
   approveCurrentOutput,
   TEST_FINDING_IDS,
   TEST_PLAN_VERSION,
 } from "./output-review-fixture";
+import {
+  gitCommand,
+  hostileExcludeEnvironment,
+  type GitCommand,
+} from "./git-authority-fixture";
 
 const SENTINEL_CREDENTIAL = "OwnedFile7xK4mP9qR2vN6tH3";
 const MAP_KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 const KEYED_DELIVERY_DIR = "keyed";
 const MAP_PAGE = `<!doctype html><html><body><script>fetch("https://api.maptiler.com/maps/basic/style.json?key=${MAP_KEY_PLACEHOLDER}")</script></body></html>`;
+const LAST_GOOD_KEYED_PAGE = MAP_PAGE.replace("basic", "last-good");
+const LAST_GOOD_EXPORT = "last-good-export";
+const MATERIALISE_RUNNER = fileURLToPath(
+  new URL("./materialise-with-ambient-git.mjs", import.meta.url),
+);
 
 const handover = {
   language: "en",
@@ -27,10 +38,9 @@ let repo: string;
 let storiesRoot: string;
 let beatDir: string;
 let exportDir: string;
-
-function git(...args: string[]): string {
-  return execFileSync("git", args, { cwd: repo, encoding: "utf8" });
-}
+let git: GitCommand;
+let fixtureAmbientGitEnvironment: NodeJS.ProcessEnv;
+let additionalRoots: string[];
 
 function committablePaths(): string[] {
   const paths = (args: string[]) =>
@@ -56,14 +66,7 @@ async function deliverOwnedFile(): Promise<void> {
     findingIds: TEST_FINDING_IDS,
   });
 }
-
-beforeEach(async () => {
-  repo = await mkdtemp(join(tmpdir(), "keyed-delivery-boundary-"));
-  git("init", "-q");
-  git("config", "user.email", "test@example.invalid");
-  git("config", "user.name", "Test");
-
-  storiesRoot = join(repo, "stories");
+async function setupReviewedStory(): Promise<void> {
   beatDir = join(storiesRoot, "story", "beats", "1-map");
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await writeFile(join(beatDir, "renders", "map.html"), MAP_PAGE);
@@ -73,10 +76,74 @@ beforeEach(async () => {
     storyId: "story",
     outputId: "1-map",
   });
+}
+
+async function prepareTrackedKeyedDestination(
+  ownerGit: GitCommand,
+  trackedPath: string,
+): Promise<void> {
+  await mkdir(join(exportDir, KEYED_DELIVERY_DIR), { recursive: true });
+  await writeFile(join(exportDir, "map.html"), MAP_PAGE);
+  await writeFile(join(exportDir, "previous.txt"), LAST_GOOD_EXPORT);
+  await writeFile(join(exportDir, KEYED_DELIVERY_DIR, "map.html"), LAST_GOOD_KEYED_PAGE);
+  ownerGit("add", "-A");
+  expect(ownerGit("ls-files", "--error-unmatch", trackedPath).trim()).toBe(trackedPath);
+}
+
+async function expectPriorExportAndIndex(
+  ownerGit: GitCommand,
+  trackedPath: string,
+): Promise<void> {
+  expect(await readFile(join(exportDir, "previous.txt"), "utf8").catch(() => null)).toBe(
+    LAST_GOOD_EXPORT,
+  );
+  expect(
+    await readFile(join(exportDir, KEYED_DELIVERY_DIR, "map.html"), "utf8").catch(
+      () => null,
+    ),
+  ).toBe(LAST_GOOD_KEYED_PAGE);
+  expect(ownerGit("show", `:${trackedPath}`)).toBe(LAST_GOOD_KEYED_PAGE);
+  expect(ownerGit("show", `:${trackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
+  expect(ownerGit("diff", "--name-only", "--", trackedPath)).toBe("");
+}
+
+function runWithAmbientGitSelectors(selectors: NodeJS.ProcessEnv) {
+  return spawnSync(process.execPath, [MATERIALISE_RUNNER], {
+    encoding: "utf8",
+    env: {
+      ...fixtureAmbientGitEnvironment,
+      ...selectors,
+      SPLASH_TEST_MAP_KEY: SENTINEL_CREDENTIAL,
+      SPLASH_TEST_STORIES_ROOT: storiesRoot,
+    },
+  });
+}
+
+beforeEach(async () => {
+  additionalRoots = [];
+  repo = await mkdtemp(join(tmpdir(), "keyed-delivery-boundary-"));
+  const bootstrapGit = gitCommand(repo);
+  bootstrapGit("init", "-q");
+
+  const excludesFile = join(repo, ".git", "host-excludes");
+  const systemConfig = join(repo, ".git", "host-system-config");
+  const globalConfig = join(repo, ".git", "host-global-config");
+  await writeFile(excludesFile, "stories/**\n");
+  const hostileConfig = `[core]\n\texcludesFile = ${JSON.stringify(excludesFile)}\n`;
+  await writeFile(systemConfig, hostileConfig);
+  await writeFile(globalConfig, hostileConfig);
+  fixtureAmbientGitEnvironment = hostileExcludeEnvironment(systemConfig, globalConfig);
+  git = gitCommand(repo, fixtureAmbientGitEnvironment);
+  git("config", "user.email", "test@example.invalid");
+  git("config", "user.name", "Test");
+
+  storiesRoot = join(repo, "stories");
+  await setupReviewedStory();
 });
 
 afterEach(async () => {
   await rm(repo, { recursive: true, force: true });
+  await Promise.all(additionalRoots.map((root) => rm(root, { recursive: true, force: true })));
 });
 
 describe("owned-file keyed delivery boundary", () => {
@@ -94,7 +161,7 @@ describe("owned-file keyed delivery boundary", () => {
     expect((await stat(keyedPath)).mode & 0o777).toBe(0o600);
   });
 
-  it("cannot select key-bearing bytes with git add -A", async () => {
+  it("keeps fixture committability authoritative under matching system and global excludes", async () => {
     await deliverOwnedFile();
 
     git("add", "-A");
@@ -139,20 +206,70 @@ describe("owned-file keyed delivery boundary", () => {
 
   it("refuses a pretracked final keyed path before modifying its working tree or index bytes", async () => {
     const trackedPath = "stories/story/export/1-map/keyed/map.html";
-    const trackedAbsolutePath = join(repo, trackedPath);
-    const lastGoodKeyedPage = MAP_PAGE.replace("basic", "last-good");
-    await mkdir(join(exportDir, KEYED_DELIVERY_DIR), { recursive: true });
-    await writeFile(join(exportDir, "map.html"), MAP_PAGE);
-    await writeFile(trackedAbsolutePath, lastGoodKeyedPage);
-    git("add", "-A");
-    expect(git("ls-files", "--error-unmatch", trackedPath).trim()).toBe(trackedPath);
+    await prepareTrackedKeyedDestination(git, trackedPath);
 
     await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
 
-    expect(await readFile(trackedAbsolutePath, "utf8")).toBe(lastGoodKeyedPage);
-    expect(git("show", `:${trackedPath}`)).toBe(lastGoodKeyedPage);
-    expect(git("show", `:${trackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
-    expect(git("diff", "--name-only", "--", trackedPath)).toBe("");
+    await expectPriorExportAndIndex(git, trackedPath);
+  });
+
+  it("ignores foreign GIT_DIR, GIT_WORK_TREE, and GIT_INDEX_FILE selectors", async () => {
+    const trackedPath = "stories/story/export/1-map/keyed/map.html";
+    await prepareTrackedKeyedDestination(git, trackedPath);
+
+    const foreignRepo = await mkdtemp(join(tmpdir(), "foreign-git-authority-"));
+    additionalRoots.push(foreignRepo);
+    const foreignGit = gitCommand(foreignRepo, fixtureAmbientGitEnvironment);
+    foreignGit("init", "-q");
+    await writeFile(join(foreignRepo, "seed.txt"), "foreign-index");
+    foreignGit("add", "seed.txt");
+
+    const result = runWithAmbientGitSelectors({
+      GIT_DIR: join(foreignRepo, ".git"),
+      GIT_WORK_TREE: foreignRepo,
+      GIT_INDEX_FILE: join(foreignRepo, ".git", "index"),
+    });
+
+    await expectPriorExportAndIndex(git, trackedPath);
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/keyed/i);
+  });
+
+  it("uses the nested story repository that owns the final keyed destination", async () => {
+    const storyDir = join(storiesRoot, "story");
+    const nestedGit = gitCommand(storyDir, fixtureAmbientGitEnvironment);
+    nestedGit("init", "-q");
+    nestedGit("config", "user.email", "test@example.invalid");
+    nestedGit("config", "user.name", "Test");
+    const trackedPath = "export/1-map/keyed/map.html";
+    await prepareTrackedKeyedDestination(nestedGit, trackedPath);
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    await expectPriorExportAndIndex(nestedGit, trackedPath);
+  });
+
+  it("uses a nested linked worktree that owns the final keyed destination", async () => {
+    await rm(join(storiesRoot, "story"), { recursive: true, force: true });
+    const ownerRepo = await mkdtemp(join(tmpdir(), "nested-worktree-owner-"));
+    additionalRoots.push(ownerRepo);
+    const ownerGit = gitCommand(ownerRepo, fixtureAmbientGitEnvironment);
+    ownerGit("init", "-q");
+    ownerGit("config", "user.email", "test@example.invalid");
+    ownerGit("config", "user.name", "Test");
+    await writeFile(join(ownerRepo, "seed.txt"), "worktree-owner");
+    ownerGit("add", "seed.txt");
+    ownerGit("commit", "--no-gpg-sign", "-m", "seed");
+    ownerGit("worktree", "add", "--detach", join(storiesRoot, "story"));
+    await setupReviewedStory();
+
+    const worktreeGit = gitCommand(join(storiesRoot, "story"), fixtureAmbientGitEnvironment);
+    const trackedPath = "export/1-map/keyed/map.html";
+    await prepareTrackedKeyedDestination(worktreeGit, trackedPath);
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    await expectPriorExportAndIndex(worktreeGit, trackedPath);
   });
 });
 

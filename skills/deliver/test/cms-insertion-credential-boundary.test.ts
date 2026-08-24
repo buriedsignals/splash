@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
 import {
   chmod,
   mkdtemp,
@@ -19,6 +18,11 @@ import {
   TEST_FINDING_IDS,
   TEST_PLAN_VERSION,
 } from "./output-review-fixture";
+import {
+  gitCommand,
+  hostileExcludeEnvironment,
+  type GitCommand,
+} from "./git-authority-fixture";
 
 const SENTINEL_CREDENTIAL = "CmsBoundary7xK4mP9qR2vN6tH3";
 const MAP_KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
@@ -36,11 +40,9 @@ let repo: string;
 let storiesRoot: string;
 let beatDir: string;
 let exportDir: string;
+let git: GitCommand;
 
 let controlledTempRoot: string;
-function git(...args: string[]): string {
-  return execFileSync("git", args, { cwd: repo, encoding: "utf8" });
-}
 
 function committablePaths(): string[] {
   const paths = (args: string[]) =>
@@ -266,7 +268,18 @@ async function materialiseCms(kind: "we-publish" | "livingdocs"): Promise<void> 
 beforeEach(async () => {
   repo = await mkdtemp(join(tmpdir(), "cms-credential-boundary-"));
   controlledTempRoot = await mkdtemp(join(tmpdir(), "cms-hosted-temp-root-"));
-  git("init", "-q");
+  const bootstrapGit = gitCommand(repo);
+  bootstrapGit("init", "-q");
+
+  const excludesFile = join(repo, ".git", "host-excludes");
+  const systemConfig = join(repo, ".git", "host-system-config");
+  const globalConfig = join(repo, ".git", "host-global-config");
+  await writeFile(excludesFile, "stories/**\n");
+  const hostileConfig = `[core]\n\texcludesFile = ${JSON.stringify(excludesFile)}\n`;
+  await writeFile(systemConfig, hostileConfig);
+  await writeFile(globalConfig, hostileConfig);
+  const ambient = hostileExcludeEnvironment(systemConfig, globalConfig);
+  git = gitCommand(repo, ambient);
   git("config", "user.email", "test@example.invalid");
   git("config", "user.name", "Test");
 
@@ -289,7 +302,7 @@ afterEach(async () => {
 
 describe("CMS insertion credential boundary", () => {
   for (const kind of ["we-publish", "livingdocs"] as const) {
-    it(`keeps the ${kind} prepared mutation and every committable delivery artifact placeholder-only`, async () => {
+    it(`keeps the ${kind} prepared mutation and every committable delivery artifact placeholder-only under matching system and global excludes`, async () => {
       await materialiseCms(kind);
 
       const preparedMutation = await readFile(join(exportDir, "CMS-INSERTION.md"), "utf8");
