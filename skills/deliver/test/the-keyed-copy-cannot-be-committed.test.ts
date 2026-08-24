@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -212,6 +221,23 @@ describe("owned-file keyed delivery boundary", () => {
 
     await expectPriorExportAndIndex(git, trackedPath);
   });
+  it("refuses a symlinked final keyed directory before consulting the wrong Git owner", async () => {
+    const trackedPath = "stories/story/export/1-map/keyed/map.html";
+    await prepareTrackedKeyedDestination(git, trackedPath);
+    const target = await mkdtemp(join(tmpdir(), "symlinked-keyed-target-"));
+    additionalRoots.push(target);
+    await writeFile(join(target, "map.html"), LAST_GOOD_KEYED_PAGE);
+    await rm(join(exportDir, KEYED_DELIVERY_DIR), { recursive: true, force: true });
+    await symlink(target, join(exportDir, KEYED_DELIVERY_DIR), "dir");
+    const statusBefore = git("status", "--porcelain=v1");
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/symlinked destination ancestor/i);
+
+    expect(await readFile(join(target, "map.html"), "utf8")).toBe(LAST_GOOD_KEYED_PAGE);
+    expect(git("show", `:${trackedPath}`)).toBe(LAST_GOOD_KEYED_PAGE);
+    expect(git("status", "--porcelain=v1")).toBe(statusBefore);
+  });
+
 
   it("ignores foreign GIT_DIR, GIT_WORK_TREE, and GIT_INDEX_FILE selectors", async () => {
     const trackedPath = "stories/story/export/1-map/keyed/map.html";

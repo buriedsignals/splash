@@ -51,7 +51,7 @@
  *   | mutation                                                   | before | after |
  *   |------------------------------------------------------------|--------|-------|
  *   | key in a tracked `proof/mapgen-symbol-web/leak.html`        | red    | red   |
- *   | the same file left UNTRACKED                                | green  | green |
+ *   | the same file left UNTRACKED                                | green  | red   |
  *   | key in a tracked 9 MB `.html`                               | GREEN  | red   |
  *   | key in a tracked `leak.png`                                 | GREEN  | red   |
  *   | a different 32-char key in a tracked page's style URL       | GREEN  | red   |
@@ -70,6 +70,7 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
+import { controlledGitEnvironment } from "../../deliver/test/git-authority-fixture";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const ENV = join(TWIN, ".env");
@@ -100,14 +101,22 @@ function keysFromEnv(): { name: string; value: string }[] {
 
 /** Every path a `git add -A` could commit, relative to this repository. */
 function committableFiles(): string[] {
-  const listing = (args: string[]) =>
-    execFileSync("git", args, { cwd: TWIN, encoding: "utf8" })
-      .split("\0")
-      .filter(Boolean);
-  return [
-    ...listing(["ls-files", "-z", "--", "."]),
-    ...listing(["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
-  ].filter((rel) => existsSync(join(TWIN, rel)));
+  const options = {
+    cwd: TWIN,
+    encoding: "utf8",
+    env: controlledGitEnvironment(),
+  } as const;
+  const tracked = execFileSync("git", ["ls-files", "-z", "--", "."], options)
+    .split("\0")
+    .filter(Boolean);
+  const untracked = execFileSync(
+    "git",
+    ["ls-files", "-z", "--others", "--exclude-standard", "--", "."],
+    options,
+  )
+    .split("\0")
+    .filter(Boolean);
+  return [...tracked, ...untracked].filter((rel) => existsSync(join(TWIN, rel)));
 }
 
 /**
@@ -160,7 +169,7 @@ function scannablePaths(): string[] {
 
 const keys = keysFromEnv();
 
-describe("R1b — no tracked file carries a real MapTiler key", () => {
+describe("R1b — no committable file carries a real MapTiler key", () => {
   it("should have a key to look for, or say plainly that it is not looking", () => {
     if (keys.length === 0)
       console.log(
@@ -173,7 +182,7 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
   });
 
   for (const name of KEY_NAMES)
-    it(`should not find ${name} in any tracked file`, () => {
+    it(`should not find ${name} in any committable file`, () => {
       const key = keys.find((k) => k.name === name);
       if (!key) return;
       const offenders = scannablePaths().filter((rel) =>
@@ -186,11 +195,10 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
    * The value-independent half, and the only one that can see a key nobody wrote into `.env`.
    *
    * Every live map × web page requests `https://api.maptiler.com/maps/<style>/style.json?key=…`.
-   * The committed artifact must carry the placeholder there — that IS R1b's clause 1, and until
-   * this check existed nothing asserted it on a real file (the audit found the placeholder
-   * "correct and unexercised", because no live page was committed at all).
+   * Every committable artifact must carry the placeholder there — that IS R1b's clause 1, and until
+   * this check existed nothing asserted it on a real file.
    */
-  it("should find the placeholder, and never a key, in every committed MapTiler style URL", () => {
+  it("should find the placeholder, and never a key, in every committable MapTiler style URL", () => {
     const offenders: string[] = [];
     for (const rel of scannablePaths()) {
       if (!fileContains(join(TWIN, rel), "api.maptiler.com")) continue;
@@ -210,15 +218,14 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
     }
     expect(
       offenders,
-      "a tracked file requests MapTiler with something other than the delivery placeholder. R1b: " +
-        "the key enters the file at delivery (deliver's substituteKeys) and nowhere earlier.",
+      "a committable file requests MapTiler with something other than the delivery placeholder. " +
+        "R1b: the key enters only a private keyed delivery or hosted send, never a committable file.",
     ).toEqual([]);
   });
 
-  it("should be looking at the committed live pages rather than at nothing", () => {
-    // Anti-vacuity for the check above: it passes trivially in a tree with no live map in it, which
-    // is exactly the tree the audit found. At least one committed page must actually request
-    // MapTiler and carry the placeholder, or the assertion proves nothing.
+  it("should be looking at committable live-page records rather than at nothing", () => {
+    // Anti-vacuity for the check above: it passes trivially in a tree with no live map record.
+    // At least one committable page must request MapTiler with the placeholder.
     const live = scannablePaths().filter(
       (rel) =>
         rel.endsWith(".html") &&

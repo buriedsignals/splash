@@ -46,6 +46,22 @@ describe("formatHandover — what the journalist reads", () => {
     expect(doc).toContain("linking the live output to its editable source");
     expect(doc).not.toContain("`EMBED_CODE.html`** — the page itself");
   });
+  for (const [language, recordRole, liveRole] of [
+    ["en", "the placeholder record", "the live page — publish this file"],
+    ["fr", "le fichier témoin avec son placeholder", "la page en direct — publiez ce fichier"],
+  ] as const) {
+    it(`should distinguish the committable record from the publishable keyed page in ${language}`, () => {
+      const doc = formatHandover({
+        ...VALID,
+        language,
+        format: "web",
+        files: ["/tmp/story/export/map.html", "keyed/map.html"],
+        liveTiles: "restricted",
+      });
+      expect(doc).toContain(`\`map.html\`** — ${recordRole}`);
+      expect(doc).toContain(`\`keyed/map.html\`** — ${liveRole}`);
+    });
+  }
 
   // The article page's companion script (`skills/deliver/assets/splash-iframe-scroller.js`) is
   // installed ONCE on the site's own template, never once per visual — the generic "delivered with

@@ -1724,7 +1724,8 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(readme).toContain("development");
     expect(readme).toContain("100% of its spending limit");
     expect(readme).toContain("MAPTILER_DELIVERY_KEY");
-    expect(readme).toContain("`keyed/map.html`");
+    expect(readme).toContain("`map.html`** — the placeholder record");
+    expect(readme).toContain("`keyed/map.html`** — the live page — publish this file");
     expect(readme).not.toContain("development-key");
   });
 

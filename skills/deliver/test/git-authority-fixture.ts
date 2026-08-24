@@ -1,6 +1,13 @@
 import { execFileSync } from "node:child_process";
 
-const GIT_SELECTORS = ["GIT_COMMON_DIR", "GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"] as const;
+const GIT_SELECTORS = [
+  "GIT_CEILING_DIRECTORIES",
+  "GIT_COMMON_DIR",
+  "GIT_DIR",
+  "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+  "GIT_INDEX_FILE",
+  "GIT_WORK_TREE",
+] as const;
 
 type GitEnvironment = NodeJS.ProcessEnv;
 export type GitCommand = (...args: string[]) => string;
@@ -8,6 +15,8 @@ export type GitCommand = (...args: string[]) => string;
 export function controlledGitEnvironment(ambient: GitEnvironment = process.env): GitEnvironment {
   const env = { ...ambient };
   for (const selector of GIT_SELECTORS) delete env[selector];
+  delete env.GIT_CONFIG_PARAMETERS;
+  delete env.GIT_CONFIG_SYSTEM;
   for (const name of Object.keys(env)) {
     if (name === "GIT_CONFIG_COUNT" || /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(name)) delete env[name];
   }
@@ -23,6 +32,8 @@ export function controlledGitEnvironment(ambient: GitEnvironment = process.env):
     GIT_CONFIG_VALUE_1: "false",
     GIT_CONFIG_KEY_2: "core.hooksPath",
     GIT_CONFIG_VALUE_2: "/dev/null",
+    GIT_OPTIONAL_LOCKS: "0",
+    LC_ALL: "C",
     GIT_TERMINAL_PROMPT: "0",
   };
 }
@@ -41,10 +52,9 @@ export function hostileExcludeEnvironment(
   globalConfig: string,
   ambient: GitEnvironment = process.env,
 ): GitEnvironment {
-  const env = { ...ambient };
-  delete env.GIT_CONFIG_NOSYSTEM;
   return {
-    ...env,
+    ...ambient,
+    GIT_CONFIG_PARAMETERS: `'core.excludesFile'='${globalConfig}'`,
     GIT_CONFIG_SYSTEM: systemConfig,
     GIT_CONFIG_GLOBAL: globalConfig,
   };

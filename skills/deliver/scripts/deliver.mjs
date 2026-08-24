@@ -16,11 +16,9 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { execFile } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import { tmpdir } from "node:os";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
@@ -45,7 +43,6 @@ import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
 import { gitAuthorityFor } from "./git-authority.mjs";
 
-const execFileAsync = promisify(execFile);
 
 const REACT_VERSION = "^19.1.0";
 
@@ -684,9 +681,13 @@ async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir }) {
 async function hostedTemporaryRoot(env, storiesRoot) {
   const selectedRoot = env.TMPDIR || env.TMP || env.TEMP || tmpdir();
   const canonicalRoot = await realpath(selectedRoot);
-  const repositoryRoot = (await gitAuthorityFor(storiesRoot))?.worktreeRoot ?? storiesRoot;
-  if (isWithin(repositoryRoot, canonicalRoot)) {
-    throw new Error("hosted delivery temporary material must be outside the repository");
+  const [storiesAuthority, temporaryAuthority] = await Promise.all([
+    gitAuthorityFor(storiesRoot),
+    gitAuthorityFor(canonicalRoot),
+  ]);
+  const repositoryRoot = storiesAuthority?.worktreeRoot ?? storiesRoot;
+  if (temporaryAuthority !== null || isWithin(repositoryRoot, canonicalRoot)) {
+    throw new Error("hosted delivery temporary material must be outside every Git repository");
   }
   return canonicalRoot;
 }

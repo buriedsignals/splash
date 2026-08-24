@@ -39,8 +39,11 @@ async function nearestExistingAncestor(destination) {
   let candidate = destination;
   while (true) {
     try {
-      await lstat(candidate);
-      return candidate;
+      const stat = await lstat(candidate);
+      if (stat.isSymbolicLink()) {
+        throw new Error(`Git authority refuses the symlinked destination ancestor ${candidate}`);
+      }
+      if (stat.isDirectory()) return candidate;
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }

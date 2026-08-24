@@ -386,6 +386,44 @@ describe("CMS insertion credential boundary", () => {
     expect(await filesContaining(SENTINEL_CREDENTIAL)).toEqual([]);
   });
 
+  it("refuses a temporary root owned by a different Git worktree", async () => {
+    const foreignRepo = await mkdtemp(join(tmpdir(), "foreign-hosted-temp-"));
+    try {
+      const foreignGit = gitCommand(foreignRepo);
+      foreignGit("init", "-q");
+      foreignGit("config", "user.email", "test@example.invalid");
+      foreignGit("config", "user.name", "Test");
+      const foreignTempRoot = join(foreignRepo, "provider-temp");
+      await mkdir(foreignTempRoot);
+      const provider = fakeCloudflareAtBoundary({ tempRoot: foreignTempRoot });
+
+      await expect(
+        materialise({
+          form: "embed",
+          format: "web",
+          storiesRoot,
+          storyId: "story",
+          outputId: "1-map",
+          env: {
+            MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+            CLOUDFLARE_ACCOUNT_ID: "account",
+            CLOUDFLARE_API_TOKEN: "cloudflare-token",
+            TMPDIR: foreignTempRoot,
+          },
+          fetchFn: provider.fetchFn,
+          handover,
+          planVersion: TEST_PLAN_VERSION,
+          findingIds: TEST_FINDING_IDS,
+        }),
+      ).rejects.toThrow(/outside every Git repository/i);
+
+      expect(provider.state.calls).toBe(0);
+      expect(await readdir(foreignTempRoot)).toEqual([]);
+    } finally {
+      await rm(foreignRepo, { recursive: true, force: true });
+    }
+  });
+
   it("refuses an injected TMPDIR inside the repository before writing or sending key-bearing bytes", async () => {
     const repositoryTempRoot = join(repo, "provider-temp");
     await mkdir(repositoryTempRoot);
