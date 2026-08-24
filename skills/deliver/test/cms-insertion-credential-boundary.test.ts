@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
 import {
+  chmod,
   mkdtemp,
   mkdir,
   readFile,
   readdir,
+  realpath,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { exportDirFor, materialise } from "../scripts/deliver.mjs";
 import {
   approveCurrentOutput,
@@ -34,6 +37,7 @@ let storiesRoot: string;
 let beatDir: string;
 let exportDir: string;
 
+let controlledTempRoot: string;
 function git(...args: string[]): string {
   return execFileSync("git", args, { cwd: repo, encoding: "utf8" });
 }
@@ -77,6 +81,166 @@ async function filesContaining(needle: string): Promise<string[]> {
   return offenders;
 }
 
+type SendObservation = {
+  uploadedBytes: string;
+  directories: string[];
+  files: string[];
+  directoryPath?: string;
+  filePath?: string;
+  directoryMode?: number;
+  fileMode?: number;
+};
+
+async function observeTemporaryUpload(
+  tempRoot: string,
+  uploadedBytes: string,
+): Promise<SendObservation> {
+  const directories = (await readdir(tempRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  const observation: SendObservation = {
+    uploadedBytes,
+    directories,
+    files: [],
+  };
+  if (directories.length !== 1) return observation;
+
+  const directoryPath = await realpath(join(tempRoot, directories[0]!));
+  const files = (await readdir(directoryPath, { withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .sort();
+  observation.directoryPath = directoryPath;
+  observation.directoryMode = (await stat(directoryPath)).mode & 0o777;
+  observation.files = files;
+  if (files.length === 1) {
+    observation.filePath = await realpath(join(directoryPath, files[0]!));
+    observation.fileMode = (await stat(observation.filePath)).mode & 0o777;
+  }
+  return observation;
+}
+
+function fakeCloudflareAtBoundary({
+  tempRoot,
+  failSentinelUpload = false,
+}: {
+  tempRoot: string;
+  failSentinelUpload?: boolean;
+}) {
+  let deploymentNumber = 0;
+  const deployments = new Map<string, { url: string; commitHash: string }>();
+  const state: { calls: number; observation: SendObservation | null } = {
+    calls: 0,
+    observation: null,
+  };
+  const fetchFn = async (url: string, init?: RequestInit) => {
+    state.calls++;
+    const path = new URL(url).pathname;
+    if (path.endsWith("/upload-token")) {
+      return new Response(
+        JSON.stringify({ success: true, result: { jwt: "fake-jwt" } }),
+      );
+    }
+    if (path === "/client/v4/pages/assets/check-missing") {
+      const body = JSON.parse(init!.body as string);
+      return new Response(
+        JSON.stringify({ success: true, result: body.hashes }),
+      );
+    }
+    if (path === "/client/v4/pages/assets/upload") {
+      const uploadedBytes = (
+        JSON.parse(init!.body as string) as Array<{ value: string }>
+      )
+        .map(({ value }) => Buffer.from(value, "base64").toString("utf8"))
+        .join("");
+      if (uploadedBytes.includes(SENTINEL_CREDENTIAL)) {
+        state.observation = await observeTemporaryUpload(tempRoot, uploadedBytes);
+        if (failSentinelUpload) {
+          throw new Error("deterministic provider upload failure");
+        }
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: { successful_key_count: 1, unsuccessful_keys: [] },
+        }),
+      );
+    }
+    if (path.endsWith("/deployments") && init?.method === "POST") {
+      deploymentNumber++;
+      const parts = path.split("/");
+      const projectName = parts[parts.indexOf("projects") + 1]!;
+      const id = `deployment-${deploymentNumber}`;
+      const url = `https://deploy-${deploymentNumber}.${projectName}.pages.dev`;
+      deployments.set(id, {
+        url,
+        commitHash: (init!.body as FormData).get("commit_hash") as string,
+      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: {
+            id,
+            url,
+            aliases: [`https://${projectName}.pages.dev`],
+          },
+        }),
+      );
+    }
+    const deploymentMatch = path.match(/\/deployments\/(deployment-\d+)$/);
+    if (deploymentMatch && init?.method !== "POST") {
+      const deployment = deployments.get(deploymentMatch[1]!);
+      if (!deployment) throw new Error(`missing ${deploymentMatch[1]}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: {
+            id: deploymentMatch[1],
+            url: deployment.url,
+            deployment_trigger: {
+              metadata: { commit_hash: deployment.commitHash },
+            },
+          },
+        }),
+      );
+    }
+    if (path.endsWith("/projects") && init?.method === "POST") {
+      return new Response(JSON.stringify({ success: true, result: {} }));
+    }
+    throw new Error(`unhandled provider call ${init?.method ?? "GET"} ${path}`);
+  };
+  return { fetchFn, state };
+}
+
+async function expectPrivateExternalSend(
+  observation: SendObservation | null,
+): Promise<void> {
+  if (!observation) throw new Error("provider did not receive the sentinel upload");
+  expect(observation.uploadedBytes).toContain(SENTINEL_CREDENTIAL);
+  expect(observation.directories).toHaveLength(1);
+  expect(observation.files).toHaveLength(1);
+  if (!observation.directoryPath || !observation.filePath) {
+    throw new Error("controlled temporary root did not contain one send file");
+  }
+
+  const canonicalRepo = await realpath(repo);
+  const canonicalTempRoot = await realpath(controlledTempRoot);
+  const fromRepository = relative(canonicalRepo, observation.filePath);
+  expect(fromRepository === ".." || fromRepository.startsWith(`..${sep}`)).toBe(
+    true,
+  );
+  const fromControlledRoot = relative(
+    canonicalTempRoot,
+    observation.directoryPath,
+  );
+  expect(fromControlledRoot).not.toBe("");
+  expect(fromControlledRoot.startsWith(`..${sep}`)).toBe(false);
+  expect(isAbsolute(fromControlledRoot)).toBe(false);
+  expect(observation.directoryMode).toBe(0o700);
+  expect(observation.fileMode).toBe(0o600);
+}
+
 async function materialiseCms(kind: "we-publish" | "livingdocs"): Promise<void> {
   await materialise({
     form: "cms-insertion",
@@ -101,6 +265,7 @@ async function materialiseCms(kind: "we-publish" | "livingdocs"): Promise<void> 
 
 beforeEach(async () => {
   repo = await mkdtemp(join(tmpdir(), "cms-credential-boundary-"));
+  controlledTempRoot = await mkdtemp(join(tmpdir(), "cms-hosted-temp-root-"));
   git("init", "-q");
   git("config", "user.email", "test@example.invalid");
   git("config", "user.name", "Test");
@@ -119,6 +284,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(repo, { recursive: true, force: true });
+  await rm(controlledTempRoot, { recursive: true, force: true });
 });
 
 describe("CMS insertion credential boundary", () => {
@@ -148,8 +314,39 @@ describe("CMS insertion credential boundary", () => {
     });
   }
 
-  it("keeps key-bearing remote-send material outside the repository and removes it when the send fails", async () => {
-    let keyBearingFilesAtSend: string[] | null = null;
+  it("uploads substituted bytes from a private canonical path outside the repository and cleans it after success", async () => {
+    const provider = fakeCloudflareAtBoundary({
+      tempRoot: controlledTempRoot,
+    });
+
+    await materialise({
+      form: "embed",
+      format: "web",
+      storiesRoot,
+      storyId: "story",
+      outputId: "1-map",
+      env: {
+        MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+        CLOUDFLARE_ACCOUNT_ID: "account",
+        CLOUDFLARE_API_TOKEN: "cloudflare-token",
+        TMPDIR: controlledTempRoot,
+      },
+      fetchFn: provider.fetchFn,
+      handover,
+      planVersion: TEST_PLAN_VERSION,
+      findingIds: TEST_FINDING_IDS,
+    });
+
+    expect(await readdir(controlledTempRoot)).toEqual([]);
+    await expectPrivateExternalSend(provider.state.observation);
+    expect(await filesContaining(SENTINEL_CREDENTIAL)).toEqual([]);
+  });
+
+  it("cleans the private external send material after a deterministic provider failure", async () => {
+    const provider = fakeCloudflareAtBoundary({
+      tempRoot: controlledTempRoot,
+      failSentinelUpload: true,
+    });
 
     await expect(
       materialise({
@@ -162,18 +359,50 @@ describe("CMS insertion credential boundary", () => {
           MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
           CLOUDFLARE_ACCOUNT_ID: "account",
           CLOUDFLARE_API_TOKEN: "cloudflare-token",
+          TMPDIR: controlledTempRoot,
         },
-        fetchFn: async () => {
-          keyBearingFilesAtSend = await filesContaining(SENTINEL_CREDENTIAL);
-          throw new Error("sentinel remote-send failure");
-        },
+        fetchFn: provider.fetchFn,
         handover,
         planVersion: TEST_PLAN_VERSION,
         findingIds: TEST_FINDING_IDS,
       }),
-    ).rejects.toThrow("sentinel remote-send failure");
+    ).rejects.toThrow("deterministic provider upload failure");
 
-    expect(keyBearingFilesAtSend).toEqual([]);
+    expect(await readdir(controlledTempRoot)).toEqual([]);
+    await expectPrivateExternalSend(provider.state.observation);
+    expect(await filesContaining(SENTINEL_CREDENTIAL)).toEqual([]);
+  });
+
+  it("refuses an injected TMPDIR inside the repository before writing or sending key-bearing bytes", async () => {
+    const repositoryTempRoot = join(repo, "provider-temp");
+    await mkdir(repositoryTempRoot);
+    await chmod(repositoryTempRoot, 0o500);
+    const provider = fakeCloudflareAtBoundary({
+      tempRoot: repositoryTempRoot,
+    });
+
+    await expect(
+      materialise({
+        form: "embed",
+        format: "web",
+        storiesRoot,
+        storyId: "story",
+        outputId: "1-map",
+        env: {
+          MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+          CLOUDFLARE_ACCOUNT_ID: "account",
+          CLOUDFLARE_API_TOKEN: "cloudflare-token",
+          TMPDIR: repositoryTempRoot,
+        },
+        fetchFn: provider.fetchFn,
+        handover,
+        planVersion: TEST_PLAN_VERSION,
+        findingIds: TEST_FINDING_IDS,
+      }),
+    ).rejects.toThrow(/temporary.*outside.*repository/i);
+
+    expect(provider.state.calls).toBe(0);
+    expect(await readdir(repositoryTempRoot)).toEqual([]);
     expect(await filesContaining(SENTINEL_CREDENTIAL)).toEqual([]);
   });
 });

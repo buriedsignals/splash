@@ -257,13 +257,17 @@ const COPY = {
 };
 
 function baseName(path) {
-  const parts = path.split(/[\\/]/);
+  const normalized = path.replace(/\\/g, "/");
+  if (normalized.startsWith("keyed/")) return normalized;
+  const parts = normalized.split("/");
   return parts[parts.length - 1];
 }
 
 /**
- * Markdown for `export/HANDOVER.md`. `files` are the paths `materialise` actually wrote — named by
- * basename, because an absolute path on the machine that built it means nothing in a newsroom.
+ * Markdown for `export/HANDOVER.md`. `files` are the paths `materialise` actually wrote — normally
+ * named by basename so an absolute machine path cannot reach the newsroom. A private keyed working
+ * copy is named relative to the export root so the journalist can distinguish it from its
+ * placeholder record.
  *
  * Throws when a required field is missing rather than rendering a document with a blank where the
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it

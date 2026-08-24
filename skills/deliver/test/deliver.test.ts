@@ -1702,10 +1702,7 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(substituteKeys(mapPage, {})).toContain("__MAPTILER" + "_KEY__");
   });
 
-  it("should deliver a MAP beat on a development key, and say so in the hand-over", async () => {
-    // R1: the delivered HTML carries the key, knowingly. R1b prefers the restricted one. The
-    // journalist gets the delivery AND the statement of what it costs — never a refusal instead of
-    // both.
+  it("should keep a placeholder record, deliver a development-key copy, and explain both", async () => {
     await rm(join(beatDir, "renders", "still.png"));
     await rm(join(beatDir, "renders", "still.svg"));
     await writeFile(join(beatDir, "renders", "map.html"), mapPage);
@@ -1719,13 +1716,16 @@ describe("the key rule reads the artifact, not the environment", () => {
       handover,
     });
 
-    expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(
+    expect(await readFile(join(exportDir, "map.html"), "utf8")).toBe(mapPage);
+    expect(await readFile(join(exportDir, "keyed", "map.html"), "utf8")).toBe(
       'style.json?key=development-key"',
     );
     const readme = await readFile(join(exportDir, "HANDOVER.md"), "utf8");
     expect(readme).toContain("development");
     expect(readme).toContain("100% of its spending limit");
     expect(readme).toContain("MAPTILER_DELIVERY_KEY");
+    expect(readme).toContain("`keyed/map.html`");
+    expect(readme).not.toContain("development-key");
   });
 
   it("should say the map is not live when no key was recorded at all", async () => {
