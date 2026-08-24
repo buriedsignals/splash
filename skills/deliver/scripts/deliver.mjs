@@ -41,8 +41,7 @@ import {
 } from "./delivery-replacement.mjs";
 import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
-import { gitAuthorityFor } from "./git-authority.mjs";
-
+import { gitAuthoritiesFor, gitAuthorityFor } from "./git-authority.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -668,13 +667,13 @@ async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir }) {
   }
 
   const finalKeyedDir = join(exportDir, "keyed");
-  const authority = await gitAuthorityFor(finalKeyedDir);
-  if (authority === null) return;
-  const [trackedPath] = await authority.trackedPathsUnder(finalKeyedDir);
-  if (trackedPath) {
-    throw new Error(
-      `delivery reserves the keyed namespace and refuses its pretracked destination ${trackedPath}`,
-    );
+  for (const authority of await gitAuthoritiesFor(finalKeyedDir)) {
+    const [trackedPath] = await authority.trackedPathsUnder(finalKeyedDir);
+    if (trackedPath) {
+      throw new Error(
+        `delivery reserves the keyed namespace and refuses its pretracked destination ${trackedPath}`,
+      );
+    }
   }
 }
 

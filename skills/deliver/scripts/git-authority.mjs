@@ -105,3 +105,26 @@ export async function gitAuthorityFor(destination, ambient = process.env) {
     },
   });
 }
+
+/**
+ * Return every Git index that can own the lexical destination, nearest first.
+ * A nested repository does not remove an enclosing repository's existing index entries.
+ */
+export async function gitAuthoritiesFor(destination, ambient = process.env) {
+  const authorities = [];
+  const seen = new Set();
+  let probe = destination;
+
+  while (true) {
+    const authority = await gitAuthorityFor(probe, ambient);
+    if (authority === null || seen.has(authority.worktreeRoot)) break;
+    authorities.push(authority);
+    seen.add(authority.worktreeRoot);
+
+    const parent = dirname(authority.worktreeRoot);
+    if (parent === authority.worktreeRoot) break;
+    probe = parent;
+  }
+
+  return Object.freeze(authorities);
+}

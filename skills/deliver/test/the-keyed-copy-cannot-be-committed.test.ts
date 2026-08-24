@@ -274,6 +274,26 @@ describe("owned-file keyed delivery boundary", () => {
 
     await expectPriorExportAndIndex(nestedGit, trackedPath);
   });
+  it("checks an enclosing index after a nested story repository becomes the nearest owner", async () => {
+    const outerTrackedPath = "stories/story/export/1-map/keyed/map.html";
+    await prepareTrackedKeyedDestination(git, outerTrackedPath);
+    const storyDir = join(storiesRoot, "story");
+    const nestedGit = gitCommand(storyDir, fixtureAmbientGitEnvironment);
+    nestedGit("init", "-q");
+    nestedGit("config", "user.email", "test@example.invalid");
+    nestedGit("config", "user.name", "Test");
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(LAST_GOOD_EXPORT);
+    expect(await readFile(join(exportDir, KEYED_DELIVERY_DIR, "map.html"), "utf8")).toBe(
+      LAST_GOOD_KEYED_PAGE,
+    );
+    expect(git("show", `:${outerTrackedPath}`)).toBe(LAST_GOOD_KEYED_PAGE);
+    expect(git("show", `:${outerTrackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
+    expect(nestedGit("ls-files", "--", "export/1-map/keyed/map.html")).toBe("");
+  });
+
 
   it("uses a nested linked worktree that owns the final keyed destination", async () => {
     await rm(join(storiesRoot, "story"), { recursive: true, force: true });
