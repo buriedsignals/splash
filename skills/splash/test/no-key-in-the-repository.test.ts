@@ -12,13 +12,13 @@
  * It matters more than the usual key leak because MapTiler **invalidates ALL of an account's keys
  * at 100% of its spending limit**. One abused key blanks the maps in articles already published.
  *
- * So: committed artifacts carry a placeholder, `deliver` substitutes the real key at the
- * moment a file goes to a newsroom, and THIS reddens before the mistake is committed rather than
- * after.
+ * So: committed and other committable artifacts carry a placeholder, `deliver` substitutes the real
+ * key only into material git cannot commit, and THIS reddens before the mistake is committed rather
+ * than after.
  *
- * It scans TRACKED files only — `git ls-files`. An untracked scratch file with a key in it is not a
- * leak; a staged one is. That distinction is the whole point, and it is why this cannot be written
- * as a directory walk.
+ * It scans every path a `git add -A` could commit: tracked files plus untracked files that are not
+ * ignored. A genuinely ignored delivery file is outside the commit boundary; an untracked export is
+ * not. That distinction is the whole point, and it is why this cannot be a plain directory walk.
  *
  * ## THE THREE HOLES THE AUDIT WATCHED GO GREEN, AND HOW EACH IS CLOSED
  *
@@ -98,15 +98,16 @@ function keysFromEnv(): { name: string; value: string }[] {
   return found;
 }
 
-/** Tracked files under `twin/`, relative to it, as git itself sees them. */
-function trackedFiles(): string[] {
-  return execFileSync("git", ["ls-files", "-z", "--", "."], {
-    cwd: TWIN,
-    encoding: "utf8",
-  })
-    .split("\0")
-    .filter(Boolean)
-    .filter((rel) => existsSync(join(TWIN, rel)));
+/** Every path a `git add -A` could commit, relative to this repository. */
+function committableFiles(): string[] {
+  const listing = (args: string[]) =>
+    execFileSync("git", args, { cwd: TWIN, encoding: "utf8" })
+      .split("\0")
+      .filter(Boolean);
+  return [
+    ...listing(["ls-files", "-z", "--", "."]),
+    ...listing(["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
+  ].filter((rel) => existsSync(join(TWIN, rel)));
 }
 
 /**
@@ -140,11 +141,11 @@ function fileContains(path: string, needle: string): boolean {
   }
 }
 
-/** Every tracked path that is a real file — a tracked symlink to a directory or a submodule would
- *  otherwise throw EISDIR mid-scan instead of reporting anything at all. */
+/** Every committable path that is a real file — a tracked symlink to a directory or a submodule
+ *  would otherwise throw EISDIR mid-scan instead of reporting anything at all. */
 function scannablePaths(): string[] {
   const paths = [];
-  for (const rel of trackedFiles()) {
+  for (const rel of committableFiles()) {
     const path = join(TWIN, rel);
     let stat;
     try {
@@ -228,6 +229,6 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
   });
 
   it("should confirm the env file itself is untracked, which is what makes the key safe to hold", () => {
-    expect(trackedFiles()).not.toContain(".env");
+    expect(committableFiles()).not.toContain(".env");
   });
 });

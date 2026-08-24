@@ -4,9 +4,10 @@
 // id that happens to exist under one format is not automatically valid for another; the check
 // is always on the {form, format} pair, never on the form id alone.
 
-import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, join, relative } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
@@ -658,10 +659,6 @@ async function materialiseInto({
       );
     }
     const fileName = await singleOwnedFile(beatDir);
-    // The hosted copy carries the key too, or a live map beat would deploy a page whose live layer
-    // can never boot. Written into the export directory first so what is deployed is a real file on
-    // disk that can be inspected, never a string only this function ever saw.
-    const stagedPath = join(exportDir, fileName);
     const sourcePath = join(beatDir, "renders", fileName);
     const hosted = await readFile(sourcePath, "utf8");
     const confirmedBytes = await readFile(sourcePath, "utf8");
@@ -676,23 +673,32 @@ async function materialiseInto({
       throw new Error("the hosted render review changed before remote publication");
     }
     states.push(mapKeyState(hosted, env));
-    await writeFile(stagedPath, substituteKeys(hosted, env));
-    const deployment = await deployFile({
-      accountId: creds.accountId,
-      apiToken: creds.apiToken,
-      projectName,
-      filePath: stagedPath,
-      fileName,
-      recordDir: hostedOperation.recordDir,
-      outputId: hostedOperation.outputId,
-      reviewId: hostedOperation.reviewId,
-      draftDigest: hostedOperation.draftDigest,
-      deliveryOperationId: hostedOperation.deliveryOperationId,
-      timeoutMs: hostedOperation.timeoutMs,
-      fetchFn,
-    });
+
+    // The provider needs a real file, but a key-bearing copy must never enter the repository-owned
+    // delivery staging tree. Keep it in a private OS temporary directory for only the remote send.
+    const sendDir = await mkdtemp(join(tmpdir(), "splash-hosted-send-"));
+    const sendPath = join(sendDir, fileName);
+    let deployment;
+    try {
+      await writeFile(sendPath, substituteKeys(hosted, env), { mode: 0o600 });
+      deployment = await deployFile({
+        accountId: creds.accountId,
+        apiToken: creds.apiToken,
+        projectName,
+        filePath: sendPath,
+        fileName,
+        recordDir: hostedOperation.recordDir,
+        outputId: hostedOperation.outputId,
+        reviewId: hostedOperation.reviewId,
+        draftDigest: hostedOperation.draftDigest,
+        deliveryOperationId: hostedOperation.deliveryOperationId,
+        timeoutMs: hostedOperation.timeoutMs,
+        fetchFn,
+      });
+    } finally {
+      await rm(sendDir, { recursive: true, force: true });
+    }
     hostedOperation.result = deployment;
-    await rm(stagedPath, { force: true });
     // A hosted embed has no local file to keep — the URL IS the delivery. Mirrors the sibling
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
@@ -763,8 +769,8 @@ async function materialiseInto({
   if (form === "cms-insertion") {
     const fileName = await ownedFileForInsertion(beatDir, format);
     const inserted = await readFile(join(beatDir, "renders", fileName), "utf8");
-    states.push(mapKeyState(inserted, env));
-    const insertionHtml = substituteKeys(inserted, env);
+    states.push(mapKeyState(inserted, {}));
+    const insertionHtml = inserted;
 
     // Without a live CMS to fetch a real article from, this form demonstrates its own mechanics
     // against a clearly-labelled placeholder rather than pretending to have read a real article —
