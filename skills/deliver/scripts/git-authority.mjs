@@ -9,7 +9,11 @@ const GIT_SELECTORS = [
   "GIT_COMMON_DIR",
   "GIT_DIR",
   "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+  "GIT_GLOB_PATHSPECS",
+  "GIT_ICASE_PATHSPECS",
   "GIT_INDEX_FILE",
+  "GIT_LITERAL_PATHSPECS",
+  "GIT_NOGLOB_PATHSPECS",
   "GIT_WORK_TREE",
 ];
 
@@ -29,6 +33,7 @@ function controlledGitEnvironment(ambient) {
     GIT_CONFIG_COUNT: "1",
     GIT_CONFIG_KEY_0: "core.excludesFile",
     GIT_CONFIG_VALUE_0: "/dev/null",
+    GIT_DISCOVERY_ACROSS_FILESYSTEM: "1",
     GIT_OPTIONAL_LOCKS: "0",
     GIT_TERMINAL_PROMPT: "0",
     LC_ALL: "C",
@@ -65,6 +70,14 @@ function isNotRepository(error) {
   return error?.code === 128 && String(error.stderr).includes("not a git repository");
 }
 
+function gitPathKey(path) {
+  return path
+    .split(sep)
+    .join("/")
+    .normalize("NFKC")
+    .toLowerCase();
+}
+
 /**
  * Resolve the worktree and index that own a destination, then keep every query bound to them.
  * Git itself interprets normal repositories, nested repositories and linked-worktree `.git` files.
@@ -95,19 +108,19 @@ export async function gitAuthorityFor(destination, ambient = process.env) {
       if (!isWithin(worktreeRoot, candidate)) {
         throw new Error(`Git owner ${worktreeRoot} does not contain ${candidate}`);
       }
-      const pathspec = relative(worktreeRoot, candidate);
+      const candidateKey = gitPathKey(relative(worktreeRoot, candidate));
       const result = await execFileAsync(
         "git",
-        [
-          "ls-files",
-          "--full-name",
-          "-z",
-          "--",
-          `:(icase,literal)${pathspec}`,
-        ],
+        ["ls-files", "--full-name", "-z"],
         { cwd: worktreeRoot, encoding: "utf8", env },
       );
-      return result.stdout.split("\0").filter(Boolean);
+      return result.stdout
+        .split("\0")
+        .filter(Boolean)
+        .filter((path) => {
+          const trackedKey = gitPathKey(path);
+          return trackedKey === candidateKey || trackedKey.startsWith(`${candidateKey}/`);
+        });
     },
   });
 }

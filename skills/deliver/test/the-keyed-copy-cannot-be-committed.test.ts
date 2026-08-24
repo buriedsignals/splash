@@ -239,6 +239,27 @@ describe("owned-file keyed delivery boundary", () => {
     expect(git("show", `:${trackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
   });
 
+  it("refuses a Unicode-equivalent tracked keyed path on every filesystem", async () => {
+    const trackedPath = "stories/story/export/1-map/Keyed/map.html";
+    const unicodeVariantDir = join(exportDir, "Keyed");
+    await mkdir(unicodeVariantDir, { recursive: true });
+    await writeFile(join(exportDir, "map.html"), MAP_PAGE);
+    await writeFile(join(exportDir, "previous.txt"), LAST_GOOD_EXPORT);
+    await writeFile(join(unicodeVariantDir, "map.html"), LAST_GOOD_KEYED_PAGE);
+    git("add", "-A");
+    expect(git("ls-files", "-z", "--error-unmatch", trackedPath).split("\0")[0]).toBe(
+      trackedPath,
+    );
+
+    await expect(deliverOwnedFile()).rejects.toThrow(/keyed/i);
+
+    expect(await readFile(join(unicodeVariantDir, "map.html"), "utf8")).toBe(
+      LAST_GOOD_KEYED_PAGE,
+    );
+    expect(git("show", `:${trackedPath}`)).toBe(LAST_GOOD_KEYED_PAGE);
+    expect(git("show", `:${trackedPath}`)).not.toContain(SENTINEL_CREDENTIAL);
+  });
+
   it("refuses a symlinked final keyed directory before consulting the wrong Git owner", async () => {
     const trackedPath = "stories/story/export/1-map/keyed/map.html";
     await prepareTrackedKeyedDestination(git, trackedPath);
