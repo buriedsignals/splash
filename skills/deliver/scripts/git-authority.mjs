@@ -98,7 +98,13 @@ export async function gitAuthorityFor(destination, ambient = process.env) {
       const pathspec = relative(worktreeRoot, candidate);
       const result = await execFileAsync(
         "git",
-        ["--literal-pathspecs", "ls-files", "--full-name", "-z", "--", pathspec],
+        [
+          "ls-files",
+          "--full-name",
+          "-z",
+          "--",
+          `:(icase,literal)${pathspec}`,
+        ],
         { cwd: worktreeRoot, encoding: "utf8", env },
       );
       return result.stdout.split("\0").filter(Boolean);
