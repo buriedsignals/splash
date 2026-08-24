@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -10,12 +9,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   OUTSIDE_THE_CATALOGUE,
-  TRAITS,
   allSkills,
   cataloguedSkills,
   exclusionProblems,
   provenTraits,
-  traitsOf,
 } from "../../../scripts/traits.mjs";
 
 const scratch: string[] = [];
@@ -31,12 +28,40 @@ function fixtureRoot() {
   return root;
 }
 
-function writeSkill(root: string, name: string, traits: string[] = []) {
+function writeSkill(root: string, name: string) {
   const dir = join(root, "skills", name);
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(join(dir, "scripts"), { recursive: true });
   writeFileSync(join(dir, "SKILL.md"), `# ${name}\n`);
-  writeFileSync(join(dir, "TRAITS.json"), `${JSON.stringify({ traits }, null, 2)}\n`);
   return dir;
+}
+
+function writeInertWitness(skill: string) {
+  writeFileSync(
+    join(skill, "scripts", "trait-witness.mjs"),
+    "export function witnessInlinedAssets() { return []; }\n",
+  );
+}
+
+function writeConsumedInlineWitness(skill: string) {
+  writeFileSync(
+    join(skill, "scripts", "render-web.mjs"),
+    [
+      "export function renderInlineAsset(bytes) {",
+      '  return `<img src="data:image/png;base64,${Buffer.from(bytes).toString("base64")}">`;',
+      "}",
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(
+    join(skill, "scripts", "trait-witness.mjs"),
+    [
+      'import { renderInlineAsset } from "./render-web.mjs";',
+      "export function witnessInlinedAssets() {",
+      "  return [renderInlineAsset(Uint8Array.of(1, 2, 3))];",
+      "}",
+      "",
+    ].join("\n"),
+  );
 }
 
 describe("the catalogue inventory is derived from shipped skills", () => {
@@ -53,47 +78,99 @@ describe("the catalogue inventory is derived from shipped skills", () => {
     ).toEqual(allSkills({ root }));
   });
 
-  it("has one explicit exclusion and invalidates it when that skill grows a witnessed mechanism", () => {
+  it("has one explicit exclusion and invalidates it when that skill gains a witnessed mechanism", async () => {
     const root = fixtureRoot();
     const doctrine = writeSkill(root, "doctrine");
 
     expect(Object.keys(OUTSIDE_THE_CATALOGUE)).toEqual(["doctrine"]);
-    expect(exclusionProblems({ root })).toEqual([]);
+    expect(await exclusionProblems({ root })).toEqual([]);
 
-    mkdirSync(join(doctrine, "scripts"));
-    writeFileSync(join(doctrine, "scripts", "render-still.mjs"), "export function renderStill() {}\n");
+    writeConsumedInlineWitness(doctrine);
 
-    expect(exclusionProblems({ root })).toEqual([
-      { skill: "doctrine", traits: ["materialises-a-beat"] },
+    expect(await exclusionProblems({ root })).toEqual([
+      { skill: "doctrine", traits: ["inlines-its-assets"] },
     ]);
   });
 });
 
 describe("traits are witnessed mechanisms", () => {
-  it("does not let guard, detector or verification code satisfy its own trait", () => {
+  it("ignores data-URI text in comments and dead literals", async () => {
     const root = fixtureRoot();
     const skill = writeSkill(root, "alpha");
-    mkdirSync(join(skill, "scripts"));
-    writeFileSync(
-      join(skill, "scripts", "verify-guards.mjs"),
-      'export const GUARDS = ["duplicatedPayload"];\nexport const sample = "data:image/png;base64,guard-only";\n',
-    );
-
-    expect(provenTraits("alpha", { root })).not.toContain("inlines-its-assets");
-
     writeFileSync(
       join(skill, "scripts", "render-web.mjs"),
-      'export const image = "data:image/png;base64,delivered";\n',
+      [
+        "// data:image/png;base64,comment-only",
+        'const unused = "data:image/png;base64,dead-literal";',
+        "export function render() { return '<p>no inline asset</p>'; }",
+        "",
+      ].join("\n"),
     );
-    expect(provenTraits("alpha", { root })).toContain("inlines-its-assets");
+    writeFileSync(
+      join(skill, "scripts", "trait-witness.mjs"),
+      [
+        "/* data:image/png;base64,witness-comment */",
+        'const unused = "data:image/png;base64,witness-dead-literal";',
+        "export function witnessInlinedAssets() { return []; }",
+        "",
+      ].join("\n"),
+    );
+
+    expect(await provenTraits("alpha", { root })).not.toContain(
+      "inlines-its-assets",
+    );
   });
 
-  it("keeps every real declaration equal to the mechanisms its own files prove", () => {
-    const known = new Set(TRAITS.map((trait) => trait.id));
-    for (const skill of cataloguedSkills()) {
-      expect(existsSync(join(import.meta.dirname, "..", "..", skill, "TRAITS.json"))).toBe(true);
-      expect(traitsOf(skill).every((trait) => known.has(trait))).toBe(true);
-      expect([...traitsOf(skill)].sort()).toEqual([...provenTraits(skill)].sort());
+  it("ignores verify, detect, guard and check-guard role sources independently", async () => {
+    const root = fixtureRoot();
+    const skill = writeSkill(root, "alpha");
+    writeInertWitness(skill);
+
+    for (const filename of [
+      "verify-policy.mjs",
+      "detect-inline.mjs",
+      "guard-policy.mjs",
+      "check-delivered-guards.mjs",
+    ]) {
+      const path = join(skill, "scripts", filename);
+      writeFileSync(
+        path,
+        'export const sample = "data:image/png;base64,guard-only";\n',
+      );
+      expect(await provenTraits("alpha", { root })).not.toContain(
+        "inlines-its-assets",
+      );
+      rmSync(path);
     }
+  });
+
+  it("ignores guard code hidden under an ordinary production filename", async () => {
+    const root = fixtureRoot();
+    const skill = writeSkill(root, "alpha");
+    writeInertWitness(skill);
+    writeFileSync(
+      join(skill, "scripts", "render-web.mjs"),
+      [
+        'export const GUARDS = ["duplicatedPayload"];',
+        "export function duplicatedPayload(source) {",
+        "  return /data:image\\/png;base64,/.test(source);",
+        "}",
+        "",
+      ].join("\n"),
+    );
+
+    expect(await provenTraits("alpha", { root })).not.toContain(
+      "inlines-its-assets",
+    );
+  });
+
+  it("accepts evidence consumed through the executable production witness", async () => {
+    const root = fixtureRoot();
+    const skill = writeSkill(root, "alpha");
+    writeConsumedInlineWitness(skill);
+
+    expect(await provenTraits("alpha", { root })).toContain(
+      "inlines-its-assets",
+    );
   });
 });

@@ -34,6 +34,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, contrast, readPalette } from "./render-still.mjs";
+import { toDataUri } from "./inline-asset.mjs";
 import {
   STEPS_META,
   ImageFrame,
@@ -598,8 +599,8 @@ async function render({ outDir, name = OUTPUT_NAME }) {
   const furniture = deriveFurniture(SEED.ground);
 
   const ctx = {
-    photoDataUri: `data:image/png;base64,${photoBuffer.toString("base64")}`,
-    plateDataUri: `data:image/jpeg;base64,${plateBuffer.toString("base64")}`,
+    photoDataUri: toDataUri(photoBuffer, "image/png"),
+    plateDataUri: toDataUri(plateBuffer, "image/jpeg"),
     plate: JSON.parse(plateGeometry),
     station,
     readings,

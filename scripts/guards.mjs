@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import {
   carriedBy,
   copiedDecisionDrift,
+  decisionProblems,
   exceptedRows,
   owedRows,
   readCatalogue,
-  reachable,
   strayRows,
   unstatedRows,
   walkedByProblems,
@@ -17,14 +17,21 @@ import {
   TRAITS,
   cataloguedSkills,
   exclusionProblems,
-  traitsOf,
+  witnessedTraits,
 } from "./traits.mjs";
 
 export * from "./guard-model.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-export function catalogueProblems(catalogue, options = {}) {
+async function modelOptions(options) {
+  return options.witnesses
+    ? options
+    : { ...options, witnesses: await witnessedTraits(options) };
+}
+
+export async function catalogueProblems(catalogue, options = {}) {
+  const model = await modelOptions(options);
   const knownTraits = new Set(TRAITS.map((trait) => trait.id));
   const decisions = new Set(
     catalogue.rules.map((rule) => rule.decidedBy ?? rule.detectedBy),
@@ -34,7 +41,8 @@ export function catalogueProblems(catalogue, options = {}) {
     !Array.isArray(rule.requires) ||
     rule.requires.length === 0 ||
     rule.requires.some((trait) => !knownTraits.has(trait)) ||
-    !(rule.decidedBy ?? rule.detectedBy)
+    !(rule.decidedBy ?? rule.detectedBy) ||
+    (rule.kind === "capability" && typeof rule.walkedBy !== "string")
       ? [{ rule: rule.id }]
       : [],
   );
@@ -43,38 +51,38 @@ export function catalogueProblems(catalogue, options = {}) {
       .filter(([, state]) => !["carried", "owed"].includes(state))
       .map(([skill]) => ({ rule: rule.id, skill })),
   );
-  const missingDecisions = catalogue.rules.flatMap((rule) => {
-    const decision = rule.decidedBy ?? rule.detectedBy;
-    return reachable(rule, options)
-      .filter(
-        (skill) =>
-          rule.states?.[skill] === "carried" &&
-          !carriedBy(skill, options).includes(decision),
-      )
-      .map((skill) => ({ rule: rule.id, skill }));
-  });
-  const unlistedDeclarations = cataloguedSkills(options).flatMap((skill) =>
-    carriedBy(skill, options)
+  const unlistedDeclarations = cataloguedSkills(model).flatMap((skill) =>
+    carriedBy(skill, model)
       .filter((decision) => !decisions.has(decision))
       .map((decision) => ({ skill, decision })),
   );
+  const [excluded, stray, unstated, missing, drift, walkers] =
+    await Promise.all([
+      exclusionProblems(model),
+      strayRows(catalogue, model),
+      unstatedRows(catalogue, model),
+      decisionProblems(catalogue, model),
+      copiedDecisionDrift(catalogue, model),
+      walkedByProblems(catalogue, model),
+    ]);
   return [
     ...invalidRules,
     ...invalidStates,
-    ...missingDecisions,
     ...unlistedDeclarations,
-    ...exclusionProblems(options),
-    ...strayRows(catalogue, options),
-    ...unstatedRows(catalogue, options),
+    ...excluded,
+    ...stray,
+    ...unstated,
     ...owedRows(catalogue),
     ...exceptedRows(catalogue),
-    ...copiedDecisionDrift(catalogue, options),
-    ...walkedByProblems(catalogue, options),
+    ...missing,
+    ...drift,
+    ...walkers,
   ];
 }
 
-export function renderGuardsDoc(catalogue, options = {}) {
-  const skills = cataloguedSkills(options);
+export async function renderGuardsDoc(catalogue, options = {}) {
+  const model = await modelOptions(options);
+  const skills = cataloguedSkills(model);
   const ruleRows = catalogue.rules.map(
     (rule) =>
       `| ${rule.id} | ${rule.kind} | ${rule.requires.join(", ")} | ${skills
@@ -82,7 +90,7 @@ export function renderGuardsDoc(catalogue, options = {}) {
         .join(" | ")} |`,
   );
   const traitRows = skills.map((skill) => {
-    const traits = traitsOf(skill, options);
+    const traits = model.witnesses.get(skill);
     return `| ${skill} | ${TRAITS.map((trait) =>
       traits.includes(trait.id) ? "yes" : ""
     ).join(" | ")} |`;
@@ -108,19 +116,22 @@ export function renderGuardsDoc(catalogue, options = {}) {
 }
 
 if (import.meta.main) {
-  const unknown = process.argv.slice(2).filter((argument) => argument !== "--check");
+  const unknown = process.argv
+    .slice(2)
+    .filter((argument) => argument !== "--check");
   if (unknown.length > 0) {
     console.error(`unknown argument(s): ${unknown.join(" ")}`);
     process.exit(2);
   }
   const catalogue = readCatalogue();
-  const problems = catalogueProblems(catalogue);
+  const options = { witnesses: await witnessedTraits() };
+  const problems = await catalogueProblems(catalogue, options);
   if (problems.length > 0) {
     console.error(`guard catalogue is not closed: ${JSON.stringify(problems)}`);
     process.exit(1);
   }
   const path = join(ROOT, "GUARDS.md");
-  const wanted = renderGuardsDoc(catalogue);
+  const wanted = await renderGuardsDoc(catalogue, options);
   if (process.argv.includes("--check")) {
     if (!existsSync(path) || readFileSync(path, "utf8") !== wanted) {
       console.error("GUARDS.md has drifted from the catalogue — run `bun run guards`");

@@ -2,23 +2,6 @@
   "$comment": "The bounded trait-derived guard catalogue. Applicability comes only from required traits; skill names record the derived cell state, never the population.",
   "rules": [
     {
-      "id": "duplicated-payload",
-      "kind": "guard",
-      "requires": [
-        "inlines-its-assets"
-      ],
-      "decidedBy": "duplicatedPayload",
-      "refuses": "an asset inlined more than once into one delivered file",
-      "earnedBy": "a delivered scrolly repeated one basemap plate in each step frame",
-      "states": {
-        "image-beat": "carried",
-        "map-beat": "carried",
-        "map-web": "carried",
-        "scrolly": "carried"
-      },
-      "exceptions": {}
-    },
-    {
       "id": "weight-has-a-ceiling",
       "kind": "capability",
       "requires": [

@@ -31,6 +31,8 @@ jobs:
             skills/intake/test \
             skills/newsroom-charter/test \
             skills/palette/test \
+            skills/doctrine/test/traits.test.ts \
+            skills/doctrine/test/guard-parity.test.ts \
             skills/storyboard/test \
             skills/splash/test/skill-md-matches-code.test.ts \
             skills/splash/test/phases.test.ts \
