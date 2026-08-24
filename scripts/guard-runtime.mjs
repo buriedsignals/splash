@@ -1,26 +1,28 @@
+import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
-  existsSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  statSync,
-} from "node:fs";
-import { dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const projectRoot = (options = {}) => resolve(options.root ?? DEFAULT_ROOT);
-const skillDir = (skill, options) => join(projectRoot(options), "skills", skill);
+  containedPath,
+  projectRoot,
+  skillDirectory,
+} from "./traits.mjs";
 
 function scriptRecords(skill, options = {}) {
-  const dir = join(skillDir(skill, options), "scripts");
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
+  const root = projectRoot(options);
+  const base = skillDirectory(skill, { root });
+  const scriptsPath = join(base, "scripts");
+  if (!lstatSync(scriptsPath, { throwIfNoEntry: false })) return [];
+  const directory = containedPath(scriptsPath, { root }, "directory");
+  return readdirSync(directory, { withFileTypes: true })
     .sort((left, right) => left.name.localeCompare(right.name))
-    .map((entry) => {
-      const path = join(dir, entry.name);
-      return { path, source: readFileSync(path, "utf8") };
+    .flatMap((entry) => {
+      if (!entry.name.endsWith(".mjs") || !entry.isFile()) {
+        if (entry.name.endsWith(".mjs") && entry.isSymbolicLink())
+          throw new Error(`${join(directory, entry.name)}: symlinks are not allowed`);
+        return [];
+      }
+      const path = containedPath(join(directory, entry.name), { root });
+      return [{ path, source: readFileSync(path, "utf8") }];
     });
 }
 
@@ -51,6 +53,22 @@ function exportedFunction(source, name) {
   return null;
 }
 
+function effectiveTuning(loaded) {
+  return Object.entries(loaded)
+    .filter(
+      ([name, value]) =>
+        /^[A-Z][A-Z0-9_]*$/.test(name) &&
+        (value === null ||
+          ["boolean", "bigint", "number", "string"].includes(typeof value)),
+    )
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => {
+      const rendered =
+        typeof value === "string" ? JSON.stringify(value) : String(value);
+      return `export ${name} = ${typeof value}:${rendered}`;
+    });
+}
+
 function decisionRecord(skill, decision, options) {
   return scriptRecords(skill, options).find((record) =>
     declaredGuards(record.source).includes(decision),
@@ -65,7 +83,12 @@ export function carriedBy(skill, options = {}) {
 }
 
 export async function decisionImplementation(skill, decision, options = {}) {
-  const record = decisionRecord(skill, decision, options);
+  let record;
+  try {
+    record = decisionRecord(skill, decision, options);
+  } catch (error) {
+    return { problem: `cannot read ${decision}: ${error.message}` };
+  }
   if (!record) return { problem: `missing ${decision} declaration` };
   let loaded;
   try {
@@ -90,24 +113,41 @@ export async function decisionImplementation(skill, decision, options = {}) {
     )
     .map((match) => `const ${match[1]} = ${match[2].trim()};`);
   return {
-    source: [...constants, body].join("\n").replaceAll("\r\n", "\n"),
+    detector: loaded[decision],
+    source: [...constants, ...effectiveTuning(loaded), body]
+      .join("\n")
+      .replaceAll("\r\n", "\n"),
   };
 }
 
 function containedWalker(skill, walkedBy, options) {
-  const base = skillDir(skill, options);
-  const path = resolve(base, walkedBy ?? "");
-  if (!walkedBy || !path.startsWith(`${base}${sep}`) || !existsSync(path))
+  if (!walkedBy) return null;
+  const root = projectRoot(options);
+  const base = skillDirectory(skill, { root });
+  const path = resolve(base, walkedBy);
+  const offset = relative(base, path);
+  if (
+    offset === "" ||
+    offset === ".." ||
+    offset.startsWith(`..${sep}`) ||
+    isAbsolute(offset)
+  )
     return null;
-  const realBase = realpathSync(base);
-  const realPath = realpathSync(path);
-  return realPath.startsWith(`${realBase}${sep}`) && statSync(realPath).isFile()
-    ? realPath
-    : null;
+  return containedPath(path, { root });
 }
 
-export async function inspectWalker(skill, walkedBy, options = {}) {
-  const path = containedWalker(skill, walkedBy, options);
+export async function inspectWalker(
+  skill,
+  walkedBy,
+  detectedBy,
+  options = {},
+) {
+  let path;
+  try {
+    path = containedWalker(skill, walkedBy, options);
+  } catch (error) {
+    return { problem: `missing or uncontained walker: ${error.message}` };
+  }
   if (!path) return { problem: "missing or uncontained walker" };
   let loaded;
   try {
@@ -118,16 +158,58 @@ export async function inspectWalker(skill, walkedBy, options = {}) {
   if (typeof loaded.verifyDeliveredArtifacts !== "function")
     return { problem: "walker does not export verifyDeliveredArtifacts" };
 
-  let problems;
+  const implementation = await decisionImplementation(
+    skill,
+    detectedBy,
+    options,
+  );
+  if (implementation.problem)
+    return {
+      problem: `cannot bind walker to ${detectedBy}: ${implementation.problem}`,
+    };
+
+  let detectorCalls = 0;
+  const detector = (...arguments_) => {
+    detectorCalls += 1;
+    return implementation.detector(...arguments_);
+  };
+  let result;
   try {
-    problems = await loaded.verifyDeliveredArtifacts(projectRoot(options));
+    result = await loaded.verifyDeliveredArtifacts(
+      projectRoot(options),
+      detector,
+    );
   } catch (error) {
     return { problem: `walker threw: ${error.message}` };
   }
-  if (!Array.isArray(problems) || problems.some((problem) => typeof problem !== "string"))
-    return { problem: "walker must return an array of problem strings" };
+  if (
+    !result ||
+    typeof result !== "object" ||
+    !Array.isArray(result.inspectedArtifacts) ||
+    result.inspectedArtifacts.some((path) => typeof path !== "string") ||
+    !Array.isArray(result.problems) ||
+    result.problems.some((problem) => typeof problem !== "string")
+  )
+    return {
+      problem:
+        "walker must return inspectedArtifacts and problems string arrays",
+    };
+  if (result.inspectedArtifacts.length === 0 && result.problems.length === 0)
+    return { problem: "walker inspected no delivered artifacts" };
+  if (detectorCalls < result.inspectedArtifacts.length)
+    return {
+      problem: `walker must invoke ${detectedBy} for every inspected artifact`,
+    };
+
+  try {
+    for (const artifact of result.inspectedArtifacts)
+      containedPath(artifact, options);
+  } catch (error) {
+    return { problem: `walker reported an uncontained artifact: ${error.message}` };
+  }
   return {
     source: readFileSync(path, "utf8").replaceAll("\r\n", "\n"),
-    problems,
+    inspectedArtifacts: result.inspectedArtifacts,
+    problems: result.problems,
   };
 }

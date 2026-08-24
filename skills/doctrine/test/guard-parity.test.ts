@@ -251,6 +251,42 @@ describe("shared implementations fail closed", () => {
     ]);
   });
 
+  it("reports drift in effective exported detector tuning", async () => {
+    const root = fixtureRoot();
+    const alpha = writeSkill(root, "alpha");
+    const beta = writeSkill(root, "beta");
+    writeSkill(root, "doctrine");
+    writeInlineWitness(alpha);
+    writeInlineWitness(beta);
+    const detector = (rawLimit: number) =>
+      [
+        'export const GUARDS = ["weightAgainstCeiling"];',
+        "export function weightAgainstCeiling(bytes, ceiling) {",
+        "  return { bytes, ceiling, over: bytes > ceiling };",
+        "}",
+        `export const RAW_LIMIT_BYTES = ${rawLimit};`,
+        "export const BASE64_INFLATION = 4 / 3;",
+        "export const CEILING_BYTES = Math.ceil(",
+        "  RAW_LIMIT_BYTES * BASE64_INFLATION,",
+        ");",
+        "",
+      ].join("\n");
+    writeFileSync(join(alpha, "scripts", "verify.mjs"), detector(20));
+    writeFileSync(join(beta, "scripts", "verify.mjs"), detector(19));
+    const catalogue = {
+      rules: [
+        {
+          ...rule("weight", { alpha: "carried", beta: "carried" }),
+          decidedBy: "weightAgainstCeiling",
+        },
+      ],
+    };
+
+    expect(await copiedDecisionDrift(catalogue, { root })).toEqual([
+      { rule: "weight", skill: "beta", canonicalSkill: "alpha" },
+    ]);
+  });
+
   it("has no drift among the shipped catalogue's deliberate copies", async () => {
     expect(await copiedDecisionDrift(readCatalogue())).toEqual([]);
   });

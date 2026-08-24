@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import {
   cataloguedSkills,
+  containedPath,
+  projectRoot,
+  skillDirectory,
   witnessedTraits,
 } from "./traits.mjs";
 import {
@@ -10,9 +12,6 @@ import {
   decisionImplementation,
   inspectWalker,
 } from "./guard-runtime.mjs";
-
-const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const projectRoot = (options = {}) => resolve(options.root ?? DEFAULT_ROOT);
 
 export { carriedBy } from "./guard-runtime.mjs";
 
@@ -23,15 +22,18 @@ async function modelOptions(options) {
 }
 
 export function readCatalogue(options = {}) {
-  return JSON.parse(
-    readFileSync(
-      join(
-        projectRoot(options),
-        "skills/doctrine/references/guard-catalogue.json",
-      ),
-      "utf8",
-    ),
+  const root = projectRoot(options);
+  const doctrine = skillDirectory("doctrine", { root });
+  const references = containedPath(
+    join(doctrine, "references"),
+    { root },
+    "directory",
   );
+  const path = containedPath(
+    join(references, "guard-catalogue.json"),
+    { root },
+  );
+  return JSON.parse(readFileSync(path, "utf8"));
 }
 
 export async function reachable(rule, options = {}) {
@@ -155,7 +157,12 @@ export async function walkedByProblems(catalogue, options = {}) {
         const inspections = await Promise.all(
           skills.map(async (skill) => ({
             skill,
-            inspection: await inspectWalker(skill, rule.walkedBy, model),
+            inspection: await inspectWalker(
+              skill,
+              rule.walkedBy,
+              rule.detectedBy,
+              model,
+            ),
           })),
         );
         const failures = inspections.flatMap(({ skill, inspection }) => {
