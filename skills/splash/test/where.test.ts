@@ -8,6 +8,7 @@ import {
   REQUIRED_SCALARS as WHERE_SCALARS,
   REQUIRED_SLOT_FIELDS as WHERE_SLOT_FIELDS,
 } from "../scripts/where.mjs";
+import { invokeResolvedOwner } from "../scripts/orchestration.mjs";
 // A test-only cross-skill import, permitted specifically for this purpose: asserting that two
 // independent implementations of the same rule agree. Runtime code in this branch never imports
 // across a skill boundary (see the gotcha in ../SKILL.md); this file does, once, to prove
@@ -231,9 +232,9 @@ describe("whereIs", () => {
   });
 
   // The analyst precondition must not erase the later gate's explicit diagnosis. Once the
-  // analyst artifact exists, an unapproved render remains named rather than becoming an empty
-  // production state.
-  it("should name an unapproved render after the analyst precondition is satisfied", async () => {
+  // analyst artifact exists, an unapproved render selects independent design review, and that
+  // bounded review cannot supply the journalist's approval.
+  it("should select designer for an unapproved render without closing the human gate", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
@@ -241,11 +242,31 @@ describe("whereIs", () => {
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
     await writeFile(join(dir, "beats", "1-rainfall", "renders", "still.png"), "x");
-    const state = await whereIs(dir);
-    expect(state.phase).toBe("production");
-    expect(state.missing).toEqual([
-      "beat 1-rainfall: rendered but not currently approved",
-    ]);
+    const before = await whereIs(dir);
+    expect(before).toMatchObject({
+      phase: "production",
+      status: "ready",
+      owner: { kind: "persona", id: "designer" },
+      missing: ["beat 1-rainfall: rendered but not currently approved"],
+    });
+
+    const calls: string[] = [];
+    const outcome = await invokeResolvedOwner(dir, {
+      persona: async (id: string) => {
+        calls.push(id);
+        return "review returned to journalist";
+      },
+    });
+
+    expect({
+      calls,
+      outcome,
+      after: await whereIs(dir),
+    }).toEqual({
+      calls: ["designer"],
+      outcome: "review returned to journalist",
+      after: before,
+    });
   });
 
   it("should stay in storyboard when the takeaway and hand fields are confirmed but no slot exists — the resumed-session case", async () => {
@@ -570,27 +591,44 @@ describe("whereIs", () => {
     const feedbackPath = join(beatDir, "FEEDBACK.md");
     await writeFile(feedbackPath, "Move the annotation above the line.");
 
-    expect(await whereIs(dir)).toMatchObject({
+    expect(await whereIs(dir)).toEqual({
       phase: "production",
-      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+      status: "ready",
+      owner: { kind: "skill", id: "chart-beat" },
       missing: [],
+      attempts: 0,
+      resume: "Revise editor feedback for beats 1-rainfall.",
     });
 
     await writeFile(join(beatDir, "renders", "still.png"), "revised render");
     const review = await approveCurrentOutput(beatDir, { reviewId: "review-new" });
-    expect(await whereIs(dir)).toMatchObject({
+    expect(await whereIs(dir)).toEqual({
       phase: "delivery",
-      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+      status: "ready",
+      owner: { kind: "skill", id: "deliver" },
       missing: [],
+      attempts: 0,
+      resume: "Revise editor feedback for beats 1-rainfall.",
     });
 
     await deliver(dir, "1-rainfall", "rainfall.png", review);
-    expect(await whereIs(dir)).toMatchObject({ phase: "done", missing: [] });
+    expect(await whereIs(dir)).toEqual({
+      phase: "done",
+      status: "done",
+      owner: null,
+      missing: [],
+      attempts: 0,
+      resume: "Story is complete; stop.",
+    });
 
     await writeFile(feedbackPath, "Move the annotation below the line instead.");
-    expect(await whereIs(dir)).toMatchObject({
+    expect(await whereIs(dir)).toEqual({
       phase: "production",
-      revision: { reason: "editor-feedback", beats: ["1-rainfall"] },
+      status: "ready",
+      owner: { kind: "skill", id: "chart-beat" },
+      missing: [],
+      attempts: 0,
+      resume: "Revise editor feedback for beats 1-rainfall.",
     });
   });
 
@@ -855,7 +893,11 @@ const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
   },
 ];
 
-const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
+const GATE2_FIXTURES: Array<{
+  name: string;
+  text: string;
+  expectedResolverDiagnostic?: RegExp;
+}> = [
   { name: "complete: every scalar, every slot field", text: build() },
   { name: "no slots", text: build(SCALARS, null) },
 ];
@@ -890,6 +932,8 @@ for (const field of SLOT_FIELDS) {
     GATE2_FIXTURES.push({
       name: `slot field "${field}" set to ${OUT_OF_VOCABULARY[field]}`,
       text: build(SCALARS, { ...SLOT, [field]: OUT_OF_VOCABULARY[field] }),
+      expectedResolverDiagnostic:
+        field === "medium" ? /no Splash craft owner for "hologram"\/"static"/ : undefined,
     });
   }
 }
@@ -942,18 +986,30 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
     }
   });
 
-  for (const { name, text } of GATE2_FIXTURES) {
+  for (const { name, text, expectedResolverDiagnostic } of GATE2_FIXTURES) {
     it(`should agree on: ${name}`, async () => {
       await writeFile(join(dir, "source", "article.md"), "text");
       await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
       await writeFile(join(dir, "STORYBOARD.md"), text);
 
-      const whereIsClosed = (await whereIs(dir)).phase !== "storyboard";
-
+      const state = await whereIs(dir);
       const { meta } = parseStoryboard(text);
-      const checkStoryboardClosed = checkStoryboard(meta).length === 0;
+      if (expectedResolverDiagnostic) {
+        expect(checkStoryboard(meta)).toEqual([]);
+        expect(state).toEqual({
+          phase: "production",
+          status: "blocked",
+          owner: null,
+          missing: [expect.stringMatching(expectedResolverDiagnostic)],
+          attempts: 0,
+          resume: "Stop and return control to the journalist.",
+        });
+        return;
+      }
 
+      const whereIsClosed = state.phase !== "storyboard";
+      const checkStoryboardClosed = checkStoryboard(meta).length === 0;
       expect(whereIsClosed).toBe(checkStoryboardClosed);
     });
   }

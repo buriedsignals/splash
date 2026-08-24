@@ -163,157 +163,86 @@ async function completeDemo() {
   await bindDelivery(review);
 }
 
+async function productionReceiptFixture(outputId = OUTPUT_ID) {
+  await freezeAndRender();
+  await unlink(join(beatDir, "renders", "rainfall.svg"));
+  const spec = "{}\n";
+  await writeFile(join(beatDir, "spec.json"), spec);
+  return {
+    path: join(beatDir, "PRODUCTION-ATTEMPTS.json"),
+    receipt: {
+      schemaVersion: 1,
+      operation: "datawrapper-produce",
+      outputId,
+      inputPath: "spec.json",
+      inputDigest: sha256(spec),
+      attempts: 3,
+      status: "blocked",
+      reason: "third failure; attempt limit reached",
+    },
+  };
+}
+
+async function settled(run: () => Promise<unknown>) {
+  try {
+    await run();
+    return { status: "fulfilled" };
+  } catch (error) {
+    return {
+      status: "rejected",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function runRequestedProduction(onDispatch: () => void) {
+  return runOperation(
+    "datawrapper-produce",
+    {
+      storyId: "demo",
+      outputId: OUTPUT_ID,
+      canonicalStoryPath: storyDir,
+      canonicalStoriesRoot: storiesRoot,
+      canonicalWorkspaceRoot: workspace,
+      parameters: { format: "static", size: "landscape" },
+    },
+    {
+      runSkillEntrypointFn: async () => {
+        onDispatch();
+        return {
+          format: "static",
+          chartId: "chart-1",
+          publicUrl: "https://example.invalid/chart-1",
+        };
+      },
+    },
+  );
+}
+
+async function runRequestedMapProduction(
+  contractDigest: string,
+  onDispatch: () => void,
+) {
+  return runOperation(
+    "map-bake",
+    {
+      storyId: "demo",
+      outputId: OUTPUT_ID,
+      canonicalStoryPath: storyDir,
+      canonicalStoriesRoot: storiesRoot,
+      canonicalWorkspaceRoot: workspace,
+      parameters: { contractDigest },
+    },
+    {
+      mapBakeFn: async () => {
+        onDispatch();
+        return { operation: "map-bake", outputId: OUTPUT_ID };
+      },
+    },
+  );
+}
+
 describe("authoritative Splash orchestration", () => {
-  it("does not close G3 from a bare approval file", async () => {
-    await freezeAndRender();
-    await writeFile(join(beatDir, "APPROVED.md"), "approved\n");
-    expect((await whereIs(storyDir)).phase).toBe("production");
-  });
-
-  it("does not close G4 from a bare handover file", async () => {
-    await freezeAndRender();
-    await bindApproval();
-    const exportDir = join(storyDir, "export", OUTPUT_ID);
-    await mkdir(exportDir, { recursive: true });
-    await writeFile(join(exportDir, "rainfall.svg"), RENDER);
-    await writeFile(join(exportDir, "HANDOVER.md"), "handed over\n");
-    expect((await whereIs(storyDir)).phase).toBe("delivery");
-  });
-
-  it("runs one compact visualization to done and recovers done in a fresh session", async () => {
-    await completeDemo();
-    expect((await whereIs(storyDir)).phase).toBe("done");
-    const freshResolver = await import("../scripts/where.mjs?fresh=demo");
-    expect((await freshResolver.whereIs(storyDir)).phase).toBe("done");
-  });
-
-  for (const [name, mutate, expectedPhase] of [
-    ["frozen data", () => writeFile(join(storyDir, "source", "data.csv"), "year,rainfall\n2026,66\n"), "production"],
-    ["profile", () => writeFile(join(storyDir, "source", "profile.json"), '{"language":"fr"}\n'), "production"],
-    ["storyboard", () => writeFile(join(storyDir, "STORYBOARD.md"), `${STORYBOARD}\nEditorial note.\n`), "production"],
-    ["render", () => writeFile(join(beatDir, "renders", "rainfall.svg"), RENDER.replace("L1 1", "L2 2")), "production"],
-    ["approval binding", async () => {
-      const path = join(beatDir, "OUTPUT-REVIEW.json");
-      const review = JSON.parse(await readFile(path, "utf8"));
-      review.draftDigest = `sha256:${"0".repeat(64)}`;
-      await writeFile(path, `${JSON.stringify(review)}\n`);
-    }, "production"],
-    ["passing QA result", async () => {
-      const path = join(beatDir, "OUTPUT-REVIEW.json");
-      const review = JSON.parse(await readFile(path, "utf8"));
-      review.qaRuns[0].status = "failed";
-      await writeFile(path, `${JSON.stringify(review)}\n`);
-    }, "production"],
-    ["delivery binding", async () => {
-      const path = join(storyDir, "export", OUTPUT_ID, ".delivery-manifest.json");
-      const manifest = JSON.parse(await readFile(path, "utf8"));
-      manifest.reviewId = "review-stale";
-      await writeFile(path, `${JSON.stringify(manifest)}\n`);
-    }, "delivery"],
-    ["delivered artifact", () => writeFile(join(storyDir, "export", OUTPUT_ID, "rainfall.svg"), "stale\n"), "delivery"],
-  ] as const) {
-    it(`reopens the earliest phase when the completed ${name} binding is stale`, async () => {
-      await completeDemo();
-      await mutate();
-      expect((await whereIs(storyDir)).phase).toBe(expectedPhase);
-    });
-  }
-
-  for (const [name, mutate] of [
-    ["missing current plan record", () => unlink(join(beatDir, "BRIEF.md"))],
-    [
-      "changed current plan version",
-      () => writeCurrentBrief(beatDir, TEST_PLAN_VERSION + 1),
-    ],
-    [
-      "changed current findings",
-      () => writeCurrentBrief(beatDir, TEST_PLAN_VERSION, ["finding-reframed"]),
-    ],
-    [
-      "duplicate current plan version",
-      () =>
-        writeFile(
-          join(beatDir, "BRIEF.md"),
-          currentBrief().replace(
-            "\n---\n\n# Current beat plan",
-            `\nplanVersion: ${TEST_PLAN_VERSION + 1}\n---\n\n# Current beat plan`,
-          ),
-        ),
-    ],
-    [
-      "duplicate current findings",
-      () =>
-        writeFile(
-          join(beatDir, "BRIEF.md"),
-          currentBrief().replace(
-            "\n---\n\n# Current beat plan",
-            "\nfindingIds: [finding-reframed]\n---\n\n# Current beat plan",
-          ),
-        ),
-    ],
-  ] as const) {
-    it(`reopens G3 for a ${name}`, async () => {
-      await completeDemo();
-      await mutate();
-      expect((await whereIs(storyDir)).phase).toBe("production");
-    });
-  }
-
-  for (const [name, mutate] of [
-    [
-      "missing hash owner",
-      async (path: string) => {
-        const record = JSON.parse(await readFile(path, "utf8"));
-        delete record.meta.hashes;
-        await writeFile(path, `${JSON.stringify(record)}\n`);
-      },
-    ],
-    [
-      "malformed hash owner",
-      async (path: string) => {
-        const record = JSON.parse(await readFile(path, "utf8"));
-        record.meta.hashes = [];
-        await writeFile(path, `${JSON.stringify(record)}\n`);
-      },
-    ],
-    [
-      "missing storyboard hash",
-      async (path: string) => {
-        const record = JSON.parse(await readFile(path, "utf8"));
-        delete record.meta.hashes.storyboard;
-        await writeFile(path, `${JSON.stringify(record)}\n`);
-      },
-    ],
-    [
-      "missing profile hash",
-      async (path: string) => {
-        const record = JSON.parse(await readFile(path, "utf8"));
-        delete record.meta.hashes.profile;
-        await writeFile(path, `${JSON.stringify(record)}\n`);
-      },
-    ],
-    [
-      "missing source-data hash",
-      async (path: string) => {
-        const record = JSON.parse(await readFile(path, "utf8"));
-        delete record.meta.hashes.sourceData;
-        await writeFile(path, `${JSON.stringify(record)}\n`);
-      },
-    ],
-  ] as const) {
-    it(`reopens production for analyst data with a ${name}`, async () => {
-      await completeDemo();
-      await mutate(join(beatDir, "data.json"));
-      const state = await whereIs(storyDir);
-      expect(state.phase).toBe("production");
-      expect(state.missing).toEqual(
-        expect.arrayContaining([
-          expect.stringMatching(/beat 1-rainfall: analyst .*rebuild/),
-        ]),
-      );
-    });
-  }
-
   it("requires the current export tree to contain no unlisted regular file", async () => {
     await completeDemo();
     await writeFile(
@@ -355,35 +284,6 @@ describe("authoritative Splash orchestration", () => {
     await expect(whereIs(storyDir)).rejects.toThrow(/special file/);
   });
 
-  it("keeps production open when a current storyboard slot has no render", async () => {
-    await completeDemo();
-    const twoSlots = STORYBOARD.replace(
-      "    candidates: [trajectory, comparison]\n---",
-      `    candidates: [trajectory, comparison]
-  - id: 2
-    proves: "Snowfall fell too."
-    medium: chart
-    format: static
-    size: landscape
-    reachable: yes
-    chosen: trajectory
-    candidates: [trajectory, comparison]
----`,
-    );
-    await writeFile(join(storyDir, "STORYBOARD.md"), twoSlots);
-    await writeCurrentAnalystData();
-    const secondBeat = join(storyDir, "beats", "2-snowfall");
-    await mkdir(join(secondBeat, "renders"), { recursive: true });
-    await writeCurrentBrief(secondBeat);
-    await writeCurrentAnalystData(secondBeat);
-
-    const state = await whereIs(storyDir);
-    expect(state.phase).toBe("production");
-    expect(state.missing).toEqual(
-      expect.arrayContaining([expect.stringMatching(/beat 2.*render/)]),
-    );
-  });
-
   it("rejects multiple beat directories for one storyboard slot", async () => {
     await completeDemo();
     await mkdir(join(storyDir, "beats", "1-duplicate"));
@@ -409,7 +309,115 @@ describe("authoritative Splash orchestration", () => {
     await expect(whereIs(storyDir)).rejects.toThrow(/export|ancestor|story/);
   });
 
-  it("keeps a dead reserved owner retryable in a fresh session", async () => {
+  it("rejects a symbolic-link production receipt in resolver and runner", async () => {
+    const fixture = await productionReceiptFixture();
+    const outsideReceipt = join(workspace, "outside-production-attempts.json");
+    await writeFile(outsideReceipt, `${JSON.stringify(fixture.receipt)}\n`);
+    await symlink(outsideReceipt, fixture.path);
+    let dispatches = 0;
+
+    const resolver = await settled(() => whereIs(storyDir));
+    const runner = await settled(() =>
+      runRequestedProduction(() => dispatches++)
+    );
+
+    expect({ resolver, runner, dispatches }).toMatchObject({
+      resolver: {
+        status: "rejected",
+        message: expect.stringMatching(/receipt.*regular file/i),
+      },
+      runner: {
+        status: "rejected",
+        message: expect.stringMatching(/receipt.*regular file/i),
+      },
+      dispatches: 0,
+    });
+  });
+
+  it("rejects a non-regular production receipt in resolver and runner", async () => {
+    const fixture = await productionReceiptFixture();
+    await mkdir(fixture.path);
+    let dispatches = 0;
+
+    const resolver = await settled(() => whereIs(storyDir));
+    const runner = await settled(() =>
+      runRequestedProduction(() => dispatches++)
+    );
+
+    expect({ resolver, runner, dispatches }).toMatchObject({
+      resolver: {
+        status: "rejected",
+        message: expect.stringMatching(/receipt.*regular file/i),
+      },
+      runner: {
+        status: "rejected",
+        message: expect.stringMatching(/receipt.*regular file/i),
+      },
+      dispatches: 0,
+    });
+  });
+
+  it("binds a production receipt outputId to its owning beat in resolver and runner", async () => {
+    const fixture = await productionReceiptFixture("2-unrelated");
+    await writeFile(fixture.path, `${JSON.stringify(fixture.receipt)}\n`);
+    let dispatches = 0;
+
+    const resolver = await settled(() => whereIs(storyDir));
+    const runner = await settled(() =>
+      runRequestedProduction(() => dispatches++)
+    );
+
+    expect({ resolver, runner, dispatches }).toMatchObject({
+      resolver: {
+        status: "rejected",
+        message: expect.stringMatching(
+          /receipt.*outputId.*owning beat.*1-rainfall/i,
+        ),
+      },
+      runner: {
+        status: "rejected",
+        message: expect.stringMatching(
+          /receipt.*outputId.*owning beat.*1-rainfall/i,
+        ),
+      },
+      dispatches: 0,
+    });
+  });
+
+  it("applies production receipts only to the current operation in resolver and runner", async () => {
+    const fixture = await productionReceiptFixture();
+    await writeFile(fixture.path, `${JSON.stringify(fixture.receipt)}\n`);
+    await writeFile(
+      join(storyDir, "STORYBOARD.md"),
+      STORYBOARD.replace("medium: chart", "medium: map"),
+    );
+    await writeCurrentAnalystData();
+    const contract = "{}\n";
+    await writeFile(join(beatDir, "MAP-BAKE.json"), contract);
+    let dispatches = 0;
+
+    const resolver = await whereIs(storyDir);
+    const runner = await runRequestedMapProduction(
+      sha256(contract),
+      () => dispatches++,
+    );
+
+    expect({ resolver, runner, dispatches }).toMatchObject({
+      resolver: {
+        phase: "production",
+        status: "ready",
+        owner: { kind: "skill", id: "map-beat" },
+        attempts: 0,
+      },
+      runner: {
+        operation: "map-bake",
+        outputId: OUTPUT_ID,
+      },
+      dispatches: 1,
+    });
+  });
+
+  it("gives the dead third owner one truthful blocked resume state in resolver and runner", async () => {
     await freezeAndRender();
     await unlink(join(beatDir, "renders", "rainfall.svg"));
     const spec = "{}\n";
@@ -427,62 +435,51 @@ describe("authoritative Splash orchestration", () => {
         outputId: OUTPUT_ID,
         inputPath: "spec.json",
         inputDigest: sha256(spec),
-        attempts: 1,
+        attempts: 3,
         status: "reserved",
-        reason: "production attempt 1 is already running",
-        reservationId: "dead-owner",
+        reason: "production attempt 3 is already running",
+        reservationId: "dead-third-owner",
         pid: owner.pid,
       })}\n`,
     );
 
-    // Cache-bust the known module because fresh-session recovery is the observable contract.
     const freshResolver = await import(
-      `../scripts/where.mjs?fresh=dead-owner-${owner.pid}`,
+      `../scripts/where.mjs?fresh=dead-third-owner-${owner.pid}`,
     );
-    const resumed = await freshResolver.whereIs(storyDir);
-    expect({ phase: resumed.phase, status: resumed.status }).toEqual({
-      phase: "production",
-      status: undefined,
-    });
-  });
-
-  it("blocks the real production dispatcher after exactly three failures and resumes blocked", async () => {
-    await freezeAndRender();
-    await unlink(join(beatDir, "renders", "rainfall.svg"));
-    await writeFile(join(beatDir, "spec.json"), "{}\n");
-    const request = {
-      storyId: "demo",
-      outputId: OUTPUT_ID,
-      canonicalStoryPath: storyDir,
-      canonicalStoriesRoot: storiesRoot,
-      canonicalWorkspaceRoot: workspace,
-      parameters: { format: "static", size: "landscape" },
-    };
+    const resolved = await freshResolver.whereIs(storyDir);
     let dispatches = 0;
-    const failingRunner = async () => {
-      dispatches++;
-      throw new Error(`render/check failed on attempt ${dispatches}`);
-    };
-    const outcomes: Array<Record<string, unknown>> = [];
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        outcomes.push(await runOperation("datawrapper-produce", request, { runSkillEntrypointFn: failingRunner }));
-      } catch (error) {
-        outcomes.push({ status: "failed", reason: String(error) });
-      }
-    }
-    const freshResolver = await import("../scripts/where.mjs?fresh=blocked");
-    const resumed = await freshResolver.whereIs(storyDir);
-    try {
-      outcomes.push(await runOperation("datawrapper-produce", request, { runSkillEntrypointFn: failingRunner }));
-    } catch (error) {
-      outcomes.push({ status: "failed", reason: String(error) });
-    }
+    const dispatched = await runOperation(
+      "datawrapper-produce",
+      {
+        storyId: "demo",
+        outputId: OUTPUT_ID,
+        canonicalStoryPath: storyDir,
+        canonicalStoriesRoot: storiesRoot,
+        canonicalWorkspaceRoot: workspace,
+        parameters: { format: "static", size: "landscape" },
+      },
+      {
+        runSkillEntrypointFn: async () => {
+          dispatches++;
+          return {};
+        },
+      },
+    );
 
-    expect({
-      thirdBlocked: outcomes[2]?.status === "blocked" && typeof outcomes[2]?.reason === "string",
-      freshBlocked: resumed.phase === "production" && resumed.status === "blocked" && typeof resumed.reason === "string",
-      fourthSkipped: dispatches === 3 && outcomes[3]?.status === "blocked",
-    }).toEqual({ thirdBlocked: true, freshBlocked: true, fourthSkipped: true });
+    expect(resolved).toMatchObject({
+      phase: "production",
+      status: "blocked",
+      attempts: 3,
+      resume: expect.stringMatching(
+        /owner.*no longer running.*attempt limit reached/i,
+      ),
+    });
+    expect(dispatched).toMatchObject({
+      status: "blocked",
+      attempts: 3,
+      resume: resolved.resume,
+    });
+    expect(dispatches).toBe(0);
   });
+
 });

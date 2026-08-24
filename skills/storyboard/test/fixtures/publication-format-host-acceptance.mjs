@@ -65,8 +65,30 @@ The confirmed framing, before the publication-format decision.
 +    format: web
 +    reachable: yes
  ---`,
-  whereBefore: { phase: "storyboard", gate: "G2b", awaiting: "format", slotId: "1" },
-  whereAfter: { phase: "storyboard", gate: "G2-reference", awaiting: "reference" },
+  whereBefore: {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: [
+      "the reference loop's answer",
+      "slot 1: no format was ever chosen",
+      "slot 1: this medium and format were never confirmed reachable",
+      "slot 1: nothing chosen",
+    ],
+    attempts: 0,
+    resume: "Stop at G2b for slot 1; the journalist must provide format.",
+  },
+  whereAfter: {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: [
+      "the reference loop's answer",
+      "slot 1: nothing chosen",
+    ],
+    attempts: 0,
+    resume: "Stop at G2-reference; the journalist must provide reference.",
+  },
   emptyDirectories: ["beats", "export"],
   manifestBefore: {
     "STORYBOARD.md": "df8f381171c9f43ceeb16ab8059ca66230d5a590b802bc9f779a66a195329d48",

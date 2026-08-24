@@ -41,6 +41,17 @@ const OPTIONS = [
 let storyDir: string;
 let storyboardPath: string;
 
+function expectedStoryboardState(resume: string) {
+  return {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: expect.any(Array),
+    attempts: 0,
+    resume,
+  };
+}
+
 async function fixtureManifest(root: string, paths: string[]) {
   return Object.fromEntries(
     await Promise.all(
@@ -135,7 +146,7 @@ describe("the G2b assistant turn", () => {
 
     const manifestPaths = Object.keys(HOST_ACCEPTANCE.manifestBefore);
     expect(await fixtureManifest(storyDir, manifestPaths)).toEqual(HOST_ACCEPTANCE.manifestBefore);
-    expect(await whereIs(storyDir)).toMatchObject(HOST_ACCEPTANCE.whereBefore);
+    expect(await whereIs(storyDir)).toEqual(HOST_ACCEPTANCE.whereBefore);
 
     const completeHostTurn = formatPublicationFormatGate({
       recommended: "web",
@@ -156,7 +167,7 @@ describe("the G2b assistant turn", () => {
       HOST_ACCEPTANCE.storyboardDiff,
     );
     expect(await fixtureManifest(storyDir, manifestPaths)).toEqual(HOST_ACCEPTANCE.manifestAfter);
-    expect(await whereIs(storyDir)).toMatchObject(HOST_ACCEPTANCE.whereAfter);
+    expect(await whereIs(storyDir)).toEqual(HOST_ACCEPTANCE.whereAfter);
     expect(parseStoryboard(await readFile(storyboardPath, "utf8")).meta.slots[0].size).toBeUndefined();
     for (const directory of HOST_ACCEPTANCE.emptyDirectories) {
       expect(await readdir(join(storyDir, directory))).toEqual([]);
@@ -260,18 +271,24 @@ describe("active fixture migration", () => {
         feedbackDigest: review.feedbackDigest,
       },
     });
-    expect(await whereIs(migratedStory)).toEqual({ phase: "done", missing: [] });
+    expect(await whereIs(migratedStory)).toEqual({
+      phase: "done",
+      status: "done",
+      owner: null,
+      missing: [],
+      attempts: 0,
+      resume: "Story is complete; stop.",
+    });
   });
 });
 
 describe("ordered persisted state across the format reply", () => {
   it("reports the pending publication-format decision directly", async () => {
-    expect(await whereIs(storyDir)).toMatchObject({
-      phase: "storyboard",
-      gate: "G2b",
-      awaiting: "format",
-      slotId: "1",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2b for slot 1; the journalist must provide format.",
+      ),
+    );
   });
 
   for (const format of ["web", "scrolly"]) {
@@ -285,11 +302,11 @@ describe("ordered persisted state across the format reply", () => {
         reachable: "yes",
       });
       expect(parseStoryboard(written).meta.slots[0].size).toBeUndefined();
-      expect(await whereIs(storyDir)).toMatchObject({
-        phase: "storyboard",
-        gate: "G2-reference",
-        awaiting: "reference",
-      });
+      expect(await whereIs(storyDir)).toEqual(
+        expectedStoryboardState(
+          "Stop at G2-reference; the journalist must provide reference.",
+        ),
+      );
     });
   }
 
@@ -298,12 +315,11 @@ describe("ordered persisted state across the format reply", () => {
       await mutateStoryboard(storyboardPath, {
         slot: { id: 1, fields: { format, reachable: "yes" } },
       });
-      expect(await whereIs(storyDir)).toMatchObject({
-        phase: "storyboard",
-        gate: "G2c",
-        awaiting: "size",
-        slotId: "1",
-      });
+      expect(await whereIs(storyDir)).toEqual(
+        expectedStoryboardState(
+          "Stop at G2c for slot 1; the journalist must provide size.",
+        ),
+      );
     });
   }
 
@@ -318,18 +334,34 @@ describe("ordered persisted state across the format reply", () => {
 ---`,
     );
     await writeFile(storyboardPath, twoSlots);
-    expect(await whereIs(storyDir)).toMatchObject({ gate: "G2a", awaiting: "medium", slotId: "2" });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2a for slot 2; the journalist must provide medium.",
+      ),
+    );
 
     await mutateStoryboard(storyboardPath, { slot: { id: 2, fields: { medium: "chart" } } });
-    expect(await whereIs(storyDir)).toMatchObject({ gate: "G2b", awaiting: "format", slotId: "2" });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2b for slot 2; the journalist must provide format.",
+      ),
+    );
 
     await mutateStoryboard(storyboardPath, {
       slot: { id: 2, fields: { format: "static", reachable: "yes" } },
     });
-    expect(await whereIs(storyDir)).toMatchObject({ gate: "G2c", awaiting: "size", slotId: "2" });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2c for slot 2; the journalist must provide size.",
+      ),
+    );
 
     await mutateStoryboard(storyboardPath, { slot: { id: 2, fields: { size: "landscape" } } });
-    expect(await whereIs(storyDir)).toMatchObject({ gate: "G2-reference", awaiting: "reference" });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-reference; the journalist must provide reference.",
+      ),
+    );
     expect(parseStoryboard(await readFile(storyboardPath, "utf8")).meta.slots.map((s: any) => s.id)).toEqual([
       "1",
       "2",
@@ -357,8 +389,13 @@ describe("the two independent persisted-state readers", () => {
       expect(parsed.meta.slots[0].format).toBe("web");
       expect(parsed.meta.slots[0].genre).toBeUndefined();
       expect(parsed.legacy).toBe(fixture.legacy);
-      expect(Boolean((state as any).legacy)).toBe(fixture.legacy);
-      expect(state).toMatchObject({ gate: "G2-reference", awaiting: "reference" });
+      expect(state).toEqual(
+        expectedStoryboardState(
+          fixture.legacy
+            ? "Stop at G2-reference; the journalist must provide reference. Resume from the migrated legacy publication-format field."
+            : "Stop at G2-reference; the journalist must provide reference.",
+        ),
+      );
     }
   });
 

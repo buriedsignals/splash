@@ -560,13 +560,44 @@ evidence remains executable in
 `skills/storyboard/test/publication-format-gate.test.ts`.
 
 That fixture records a fresh Codex-host run from 2026-08-14. Before the journalist replied,
-`whereIs` reported `storyboard`, `G2b`, `awaiting: format`, and slot `1`; the complete assistant turn
-recommended Interactive web, presented all four publication formats, asked which to make first, and
-stopped. The journalist replied `Interactive web.` The only Storyboard additions were
-`format: web` and `reachable: yes`; `whereIs` then advanced to `G2-reference`, while size,
-reference, treatment, beats, and exports remained absent. The fixture pins the complete assistant
-turn, both Storyboard states, their exact diff, and pre/post file digests. The current full Splash
-suite continues to exercise that record.
+`whereIs` returned exactly these six fields:
+
+```js
+{
+  phase: "storyboard",
+  status: "ready",
+  owner: { kind: "skill", id: "storyboard" },
+  missing: [
+    "the reference loop's answer",
+    "slot 1: no format was ever chosen",
+    "slot 1: this medium and format were never confirmed reachable",
+    "slot 1: nothing chosen",
+  ],
+  attempts: 0,
+  resume: "Stop at G2b for slot 1; the journalist must provide format.",
+}
+```
+
+The complete assistant turn recommended Interactive web, presented all four publication formats,
+asked which to make first, and stopped. The journalist replied `Interactive web.` The only
+Storyboard additions were `format: web` and `reachable: yes`; `whereIs` then returned exactly:
+
+```js
+{
+  phase: "storyboard",
+  status: "ready",
+  owner: { kind: "skill", id: "storyboard" },
+  missing: [
+    "the reference loop's answer",
+    "slot 1: nothing chosen",
+  ],
+  attempts: 0,
+  resume: "Stop at G2-reference; the journalist must provide reference.",
+}
+```
+
+The fixture pins the complete assistant turn, both Storyboard states, their exact diff, and pre/post
+file digests. The current full Splash suite continues to exercise that record.
 
 The cleanup audit did not classify production or proof assets as stale. In particular,
 `apps/goose/compatibility/` remains referenced by Splash's host-contract tests and Engine's runtime

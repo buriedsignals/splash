@@ -14,6 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { whereIs } from "../scripts/where.mjs";
+import { invokeResolvedOwner } from "../scripts/orchestration.mjs";
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 import type { BoundReviewFixture } from "../../deliver/test/output-review-fixture";
 import {
@@ -187,6 +188,148 @@ describe("the orchestrator's prose and its code agree", () => {
   it("should exercise, and the prose should name, every one of the six documented phases — not a subset", async () => {
     const observed = await driveEveryPhase(dir);
     expect(observed).toEqual(new Set(PHASES));
+  });
+
+  it("returns one owner and keeps intake, analysis, and delivery on existing skills", async () => {
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "intake",
+      status: "ready",
+      owner: { kind: "skill", id: "intake" },
+      missing: ["source/article.md", "source/data.csv", "source/profile.json"],
+      attempts: 0,
+      resume: expect.stringMatching(/intake|source/i),
+    });
+
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), confirmedStoryboard);
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "production",
+      owner: { kind: "skill", id: "analyst" },
+    });
+
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
+      recursive: true,
+    });
+    await analyseBound(dir, "1-rainfall");
+    await writeFile(
+      join(dir, "beats", "1-rainfall", "renders", "still.png"),
+      "x",
+    );
+    await approveCurrentOutput(join(dir, "beats", "1-rainfall"));
+    expect(await whereIs(dir)).toMatchObject({
+      phase: "delivery",
+      owner: { kind: "skill", id: "deliver" },
+    });
+  });
+
+  it("returns only the exact deeply immutable six-field resolver result", async () => {
+    const resolved = await whereIs(dir);
+    const snapshot = JSON.parse(JSON.stringify(resolved));
+
+    expect(Reflect.ownKeys(resolved)).toEqual([
+      "phase",
+      "status",
+      "owner",
+      "missing",
+      "attempts",
+      "resume",
+    ]);
+    expect([
+      Object.isFrozen(resolved),
+      Object.isFrozen(resolved.owner),
+      Object.isFrozen(resolved.missing),
+    ]).toEqual([true, true, true]);
+
+    Reflect.set(resolved, "phase", "delivery");
+    Reflect.set(resolved, "status", "blocked");
+    Reflect.set(resolved, "owner", { kind: "skill", id: "deliver" });
+    Reflect.set(resolved, "missing", []);
+    Reflect.set(resolved, "attempts", 3);
+    Reflect.set(resolved, "resume", "Forged resume.");
+    Reflect.set(resolved.owner, "id", "deliver");
+    Reflect.set(resolved.missing, 0, "forged requirement");
+
+    expect(resolved).toEqual(snapshot);
+  });
+
+  it("does not expose a low-level resolver-result issuer", async () => {
+    // Dynamic import is intentional: this test observes the module's public export boundary.
+    const orchestration = await import(
+      "../scripts/orchestration.mjs?public-surface"
+    );
+
+    expect("createResolverResult" in orchestration).toBe(false);
+  });
+
+  it("re-resolves filesystem state at invocation and dispatches only the current owner", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    const stale = await whereIs(dir);
+    expect(stale.owner).toEqual({ kind: "persona", id: "editor" });
+
+    await writeFile(join(dir, "STORYBOARD.md"), confirmedStoryboard);
+    const current = await whereIs(dir);
+    expect(current.owner).toEqual({ kind: "skill", id: "analyst" });
+
+    const calls: Array<{ id: string; phase: string; owner: unknown }> = [];
+    const outcome = await invokeResolvedOwner(dir, {
+      skill: async (id: string, resolved: typeof current) => {
+        calls.push({ id, phase: resolved.phase, owner: resolved.owner });
+        return "analysis returned";
+      },
+    });
+
+    expect({ calls, outcome }).toEqual({
+      calls: [{ id: "analyst", phase: "production", owner: current.owner }],
+      outcome: "analysis returned",
+    });
+  });
+
+  it("resolves, invokes one owner, stops at the human gate, and resolves again", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    const before = await whereIs(dir);
+    expect(before).toMatchObject({
+      phase: "framing",
+      status: "ready",
+      owner: { kind: "persona", id: "editor" },
+      missing: ["STORYBOARD.md"],
+    });
+
+    const calls: string[] = [];
+    const outcome = await invokeResolvedOwner(dir, {
+      persona: async (id: string) => {
+        calls.push(id);
+        return "proposal returned to journalist";
+      },
+    });
+    const after = await whereIs(dir);
+
+    expect({
+      calls,
+      outcome,
+      after,
+    }).toEqual({
+      calls: ["editor"],
+      outcome: "proposal returned to journalist",
+      after: before,
+    });
+  });
+
+  it("exposes exactly the editor and designer personas", async () => {
+    const personaFiles = (
+      await readdir(new URL("../../../agents/", import.meta.url), {
+        withFileTypes: true,
+      })
+    )
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+      .map((entry) => entry.name)
+      .sort();
+    expect(personaFiles).toEqual(["designer.md", "editor.md"]);
   });
 
   it("should carry the anti-improvisation rule verbatim", async () => {

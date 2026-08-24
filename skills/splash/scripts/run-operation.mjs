@@ -7,8 +7,16 @@ import { runPreflight } from "./preflight.mjs";
 import { probeCloudflare, probeDatawrapper, probeMapTiler } from "./keys.mjs";
 import { bakeMapContract } from "./sealed-map-bake.mjs";
 import {
-  isLiveProductionReservation,
+  classifyProductionReservation,
+  describeProductionOperation,
+  isProductionReceiptApplicable,
+  productionFailureStatus,
   processIsAlive,
+  PRODUCTION_ATTEMPTS_FILE,
+  PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+  PRODUCTION_ATTEMPTS_LOCK,
+  readProductionAttempts,
+  validateProductionAttempts,
 } from "./production-reservation.mjs";
 
 export const OPERATION_IDS = Object.freeze([
@@ -191,60 +199,10 @@ async function existingStoryFile(story, relativePath, label) {
   return canonical;
 }
 
-const PRODUCTION_ATTEMPTS_FILE = "PRODUCTION-ATTEMPTS.json";
-const PRODUCTION_ATTEMPTS_SCHEMA_VERSION = 1;
-const MAX_PRODUCTION_ATTEMPTS = 3;
 const SHA256 = /^sha256:[0-9a-f]{64}$/;
-const PRODUCTION_ATTEMPTS_LOCK = `.${PRODUCTION_ATTEMPTS_FILE}.lock`;
 
 function productionInputDigest(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-}
-
-function validateProductionAttempts(record, path) {
-  if (
-    !record ||
-    typeof record !== "object" ||
-    Array.isArray(record) ||
-    record.schemaVersion !== PRODUCTION_ATTEMPTS_SCHEMA_VERSION ||
-    !["map-bake", "datawrapper-produce"].includes(record.operation) ||
-    typeof record.outputId !== "string" ||
-    typeof record.inputPath !== "string" ||
-    !SHA256.test(record.inputDigest ?? "") ||
-    !Number.isSafeInteger(record.attempts) ||
-    record.attempts < 1 ||
-    record.attempts > MAX_PRODUCTION_ATTEMPTS ||
-    !["failed", "blocked", "reserved"].includes(record.status) ||
-    typeof record.reason !== "string" ||
-    record.reason.length === 0 ||
-    (record.status === "blocked" && record.attempts !== MAX_PRODUCTION_ATTEMPTS) ||
-    (record.status === "failed" && record.attempts === MAX_PRODUCTION_ATTEMPTS) ||
-    (record.status === "reserved" &&
-      (typeof record.reservationId !== "string" ||
-        record.reservationId.length === 0 ||
-        !Number.isSafeInteger(record.pid) ||
-        record.pid < 1))
-  ) {
-    throw new Error(`production attempt receipt is invalid at ${path}`);
-  }
-  return record;
-}
-
-async function readProductionAttempts(path) {
-  try {
-    return validateProductionAttempts(
-      JSON.parse(await readFile(path, "utf8")),
-      path,
-    );
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    if (error instanceof SyntaxError) {
-      throw new Error(`production attempt receipt is not valid JSON at ${path}`, {
-        cause: error,
-      });
-    }
-    throw error;
-  }
 }
 
 async function writeProductionAttempts(path, record) {
@@ -263,6 +221,7 @@ async function writeProductionAttempts(path, record) {
     throw error;
   }
 }
+
 function wait(milliseconds) {
   return new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
 }
@@ -338,61 +297,72 @@ async function withProductionLock(beatDir, task) {
   }
 }
 
-function blockedProductionResult(record) {
+function blockedProductionResult(record, classification) {
   return {
     operation: record.operation,
     outputId: record.outputId,
     status: "blocked",
-    reason: record.reason,
-    attempts: record.attempts,
+    reason: classification.reason,
+    attempts: classification.attempts,
+    resume: classification.resume,
   };
 }
 
 async function runManagedProductionAttempt({
-  operation,
+  currentOperation,
   beatDir,
-  outputId,
-  inputPath,
   inputDigest,
   run,
 }) {
+  const { operation, outputId, inputPath } = currentOperation;
   const receiptPath = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
   const reservation = await withProductionLock(beatDir, async () => {
-    const previousReceipt = await readProductionAttempts(receiptPath);
-    if (
-      isLiveProductionReservation(
-        previousReceipt,
-        processIsAlive(previousReceipt?.pid),
-      )
-    ) {
-      return { blocked: blockedProductionResult(previousReceipt) };
-    }
-    const currentReceipt =
-      previousReceipt?.operation === operation &&
-      previousReceipt.outputId === outputId &&
-      previousReceipt.inputPath === inputPath &&
-      previousReceipt.inputDigest === inputDigest
-        ? previousReceipt
-        : null;
-    if (currentReceipt?.status === "blocked") {
-      return { blocked: blockedProductionResult(currentReceipt) };
-    }
-    if (
-      currentReceipt?.status === "reserved" &&
-      currentReceipt.attempts === MAX_PRODUCTION_ATTEMPTS
-    ) {
-      const blocked = {
-        schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
-        operation,
-        outputId,
-        inputPath,
-        inputDigest,
-        attempts: currentReceipt.attempts,
-        status: "blocked",
-        reason: `production attempt ${currentReceipt.attempts} ended before reconciliation; attempt limit reached`,
+    const previousReceipt = await readProductionAttempts(receiptPath, outputId);
+    const previousClassification = classifyProductionReservation(
+      previousReceipt,
+      previousReceipt?.status === "reserved" && processIsAlive(previousReceipt.pid),
+    );
+    if (previousClassification.state === "live") {
+      return {
+        blocked: blockedProductionResult(
+          previousReceipt,
+          previousClassification,
+        ),
       };
-      await writeProductionAttempts(receiptPath, blocked);
-      return { blocked: blockedProductionResult(blocked) };
+    }
+    const currentReceipt = isProductionReceiptApplicable(
+      previousReceipt,
+      currentOperation,
+      inputDigest,
+    )
+      ? previousReceipt
+      : null;
+    const currentClassification = classifyProductionReservation(
+      currentReceipt,
+      false,
+    );
+    if (currentClassification.state === "exhausted") {
+      const blocked = currentReceipt.status === "blocked"
+        ? currentReceipt
+        : {
+            schemaVersion: PRODUCTION_ATTEMPTS_SCHEMA_VERSION,
+            operation,
+            outputId,
+            inputPath,
+            inputDigest,
+            attempts: currentReceipt.attempts,
+            status: "blocked",
+            reason: currentClassification.reason,
+          };
+      if (blocked !== currentReceipt) {
+        await writeProductionAttempts(receiptPath, blocked);
+      }
+      return {
+        blocked: blockedProductionResult(
+          blocked,
+          currentClassification,
+        ),
+      };
     }
 
     const attempts = (currentReceipt?.attempts ?? 0) + 1;
@@ -416,7 +386,7 @@ async function runManagedProductionAttempt({
   try {
     const result = await run();
     await withProductionLock(beatDir, async () => {
-      const current = await readProductionAttempts(receiptPath);
+      const current = await readProductionAttempts(receiptPath, outputId);
       if (current?.status === "reserved" && current.reservationId === reservation.reservationId) {
         await rm(receiptPath, { force: true });
       }
@@ -424,7 +394,7 @@ async function runManagedProductionAttempt({
     return result;
   } catch (error) {
     const receipt = await withProductionLock(beatDir, async () => {
-      const current = await readProductionAttempts(receiptPath);
+      const current = await readProductionAttempts(receiptPath, outputId);
       if (current?.status !== "reserved" || current.reservationId !== reservation.reservationId) {
         return null;
       }
@@ -435,13 +405,18 @@ async function runManagedProductionAttempt({
         inputPath,
         inputDigest,
         attempts: reservation.attempts,
-        status: reservation.attempts === MAX_PRODUCTION_ATTEMPTS ? "blocked" : "failed",
+        status: productionFailureStatus(reservation.attempts),
         reason: error instanceof Error ? error.message : String(error),
       };
       await writeProductionAttempts(receiptPath, failed);
       return failed;
     });
-    if (receipt?.status === "blocked") return blockedProductionResult(receipt);
+    if (receipt?.status === "blocked") {
+      return blockedProductionResult(
+        receipt,
+        classifyProductionReservation(receipt, false),
+      );
+    }
     throw error;
   }
 }
@@ -582,7 +557,8 @@ export async function runOperation(
       }
       const { story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
-      const inputPath = "MAP-BAKE.json";
+      const currentOperation = describeProductionOperation(operation, outputId);
+      const { inputPath } = currentOperation;
       const contractPath = await existingStoryFile(
         story,
         join("beats", outputId, inputPath),
@@ -593,10 +569,8 @@ export async function runOperation(
       }
       const beatDir = dirname(contractPath);
       return runManagedProductionAttempt({
-        operation,
+        currentOperation,
         beatDir,
-        outputId,
-        inputPath,
         inputDigest: parameters.contractDigest,
         run: () =>
           mapBakeFn({
@@ -612,6 +586,7 @@ export async function runOperation(
       const parameters = requireParameters(request, ["format", "size"]);
       const { storiesRoot, story } = await storyBoundary(request);
       const outputId = requireSegment(request.outputId, "outputId");
+      const currentOperation = describeProductionOperation(operation, outputId);
       const beatDir = await realDirectory(
         resolve(story, "beats", outputId),
         "Datawrapper beat",
@@ -620,17 +595,15 @@ export async function runOperation(
         throw new Error("Datawrapper format must be static or web");
       if (!["landscape", "square", "portrait"].includes(parameters.size))
         throw new Error("Datawrapper size is unsupported");
-      const inputPath = "spec.json";
+      const { inputPath } = currentOperation;
       const specPath = await existingStoryFile(
         story,
         join("beats", outputId, inputPath),
         "Datawrapper spec",
       );
       return runManagedProductionAttempt({
-        operation,
+        currentOperation,
         beatDir,
-        outputId,
-        inputPath,
         inputDigest: productionInputDigest(await readFile(specPath)),
         run: async () => {
           const result = await runSkillEntrypointFn(

@@ -4,9 +4,125 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import {
-  isLiveProductionReservation,
+  classifyProductionReservation,
+  describeProductionOperation,
+  isProductionReceiptApplicable,
   processIsAlive,
+  PRODUCTION_ATTEMPTS_FILE,
+  readProductionAttempts,
 } from "./production-reservation.mjs";
+
+const CRAFT_SKILLS = Object.freeze({
+  chart: Object.freeze({
+    static: "chart-beat",
+    web: "chart-web",
+    video: "chart-video",
+    scrolly: "scrolly",
+  }),
+  map: Object.freeze({
+    static: "map-beat",
+    web: "map-web",
+    video: "map-beat",
+    scrolly: "scrolly",
+  }),
+  image: Object.freeze({
+    static: "image-beat",
+    scrolly: "scrolly",
+  }),
+});
+
+function createOwner(kind, id) {
+  return Object.freeze({ kind, id });
+}
+
+const OWNER_REGISTRY = Object.freeze([
+  Object.freeze({ phase: "intake", owner: createOwner("skill", "intake") }),
+  Object.freeze({ phase: "framing", owner: createOwner("persona", "editor") }),
+  Object.freeze({ phase: "storyboard", owner: createOwner("skill", "storyboard") }),
+  Object.freeze({ phase: "production", step: "analysis", owner: createOwner("skill", "analyst") }),
+  Object.freeze({ phase: "production", step: "review", owner: createOwner("persona", "designer") }),
+  Object.freeze({ phase: "delivery", owner: createOwner("skill", "deliver") }),
+  Object.freeze({ phase: "done", owner: null }),
+]);
+
+function isCraftProductionStep(state) {
+  return state.phase === "production" && state.step === "craft";
+}
+
+function craftOwner(slot) {
+  const id =
+    slot?.medium === "chart" && slot.producer === "datawrapper"
+      ? "dw-beat"
+      : CRAFT_SKILLS[slot?.medium]?.[slot?.format];
+  return id ? createOwner("skill", id) : null;
+}
+
+function unsupportedCraftDiagnostic(slot) {
+  return `no Splash craft owner for ${JSON.stringify(slot?.medium)}/${JSON.stringify(slot?.format)}`;
+}
+
+function selectOwner(state) {
+  if (state.status === "blocked") return null;
+  if (isCraftProductionStep(state)) return craftOwner(state.slot);
+  const entry = OWNER_REGISTRY.find(
+    (candidate) =>
+      candidate.phase === state.phase &&
+      (!candidate.step || candidate.step === state.step),
+  );
+  if (!entry) {
+    throw new Error(
+      `no Splash owner registered for ${JSON.stringify(state.phase)}/${JSON.stringify(state.step ?? null)}`,
+    );
+  }
+  return entry.owner
+    ? createOwner(entry.owner.kind, entry.owner.id)
+    : null;
+}
+
+function resumeDetail(state, owner, status) {
+  const details = [];
+  if (state.resume) details.push(state.resume);
+  if (state.gate) {
+    const slot = state.slotId ? ` for slot ${state.slotId}` : "";
+    details.push(`Stop at ${state.gate}${slot}; the journalist must provide ${state.awaiting}.`);
+  }
+  if (state.revision?.reason === "editor-feedback") {
+    details.push(`Revise editor feedback for beats ${state.revision.beats.join(", ")}.`);
+  }
+  if (state.legacy) details.push("Resume from the migrated legacy publication-format field.");
+  if (details.length > 0) return details.join(" ");
+  if (status === "done") return "Story is complete; stop.";
+  if (!owner) return "Stop and return control to the journalist.";
+  const missing = state.missing.length > 0
+    ? ` Missing: ${state.missing.join("; ")}.`
+    : "";
+  return `Invoke ${owner.id} for the ${state.phase} phase.${missing}`;
+}
+
+function projectResolverResult(state) {
+  let status = state.status ?? (state.phase === "done" ? "done" : "ready");
+  const missing = Array.isArray(state.missing) ? [...state.missing] : [];
+  const normalized = { ...state, missing };
+  const owner = selectOwner(normalized);
+  if (!owner && status !== "blocked" && isCraftProductionStep(state)) {
+    status = "blocked";
+    missing.push(unsupportedCraftDiagnostic(state.slot));
+  }
+  return Object.freeze({
+    phase: state.phase,
+    status,
+    owner,
+    missing: Object.freeze(missing),
+    attempts: state.attempts ?? 0,
+    resume: resumeDetail(normalized, owner, status),
+  });
+}
+
+function managedProductionOperation(slot) {
+  if (slot?.medium === "map") return "map-bake";
+  if (slot?.medium === "chart") return "datawrapper-produce";
+  return null;
+}
 
 async function list(path) {
   try { return await readdir(path); } catch { return []; }
@@ -491,7 +607,7 @@ async function currentBeats(storyRoot, storyDir, slots) {
     const path = name
       ? await containedStoryDirectory(storyRoot, storyDir, ["beats", name], `beat ${name}`)
       : null;
-    beats.push({ id, medium: slot.medium, name, path });
+    beats.push({ id, medium: slot.medium, name, path, slot });
   }
   return { beats, names };
 }
@@ -883,71 +999,54 @@ async function completionState(storyRoot, storyDir, beats) {
   return { production, delivery, feedbackProduction, feedbackDelivery };
 }
 
-const PRODUCTION_ATTEMPTS_FILE = "PRODUCTION-ATTEMPTS.json";
-const PRODUCTION_ATTEMPTS_SCHEMA_VERSION = 1;
-const MAX_PRODUCTION_ATTEMPTS = 3;
-
-async function blockedProductionState(beats) {
-  for (const currentBeat of [...beats].sort((left, right) => left.id.localeCompare(right.id))) {
+async function productionReservationState(beats) {
+  let retryable = null;
+  for (const currentBeat of [...beats].sort((left, right) =>
+    left.id.localeCompare(right.id)
+  )) {
     if (!currentBeat.path) continue;
-    const beat = currentBeat.name;
-    const beatDir = currentBeat.path;
-    const path = join(beatDir, PRODUCTION_ATTEMPTS_FILE);
-    if (!(await regularFileStat(path))) continue;
-    const receipt = await json(path);
-    const expectedInputPath = receipt?.operation === "map-bake"
-      ? "MAP-BAKE.json"
-      : receipt?.operation === "datawrapper-produce"
-      ? "spec.json"
+    const receiptPath = join(currentBeat.path, PRODUCTION_ATTEMPTS_FILE);
+    const receipt = await readProductionAttempts(receiptPath, currentBeat.name);
+    if (!receipt) continue;
+    const classification = classifyProductionReservation(
+      receipt,
+      receipt.status === "reserved" && processIsAlive(receipt.pid),
+    );
+    const operation = managedProductionOperation(currentBeat.slot);
+    const currentOperation = operation
+      ? describeProductionOperation(operation, currentBeat.name)
+      : null;
+    const inputDigest = currentOperation
+      ? await fileDigest(join(currentBeat.path, currentOperation.inputPath))
       : null;
     if (
-      receipt?.schemaVersion !== PRODUCTION_ATTEMPTS_SCHEMA_VERSION ||
-      receipt.outputId !== beat ||
-      receipt.inputPath !== expectedInputPath ||
-      !SHA256.test(receipt.inputDigest ?? "") ||
-      !Number.isSafeInteger(receipt.attempts) ||
-      receipt.attempts < 1 ||
-      receipt.attempts > MAX_PRODUCTION_ATTEMPTS ||
-      !["failed", "blocked", "reserved"].includes(receipt.status) ||
-      !nonEmptyText(receipt.reason) ||
-      (receipt.status === "blocked" && receipt.attempts !== MAX_PRODUCTION_ATTEMPTS) ||
-      (receipt.status === "failed" && receipt.attempts === MAX_PRODUCTION_ATTEMPTS) ||
-      (receipt.status === "reserved" &&
-        (!nonEmptyText(receipt.reservationId) || !positiveInteger(receipt.pid)))
-    ) {
-      throw new Error(`production attempt receipt is invalid at ${path}`);
-    }
-    if (receipt.status === "failed") continue;
-    const liveReservation = isLiveProductionReservation(
-      receipt,
-      processIsAlive(receipt.pid),
-    );
-    if (
-      !liveReservation &&
-      (await fileDigest(join(beatDir, receipt.inputPath))) !== receipt.inputDigest
+      classification.state !== "live" &&
+      !isProductionReceiptApplicable(receipt, currentOperation, inputDigest)
     ) {
       continue;
     }
-    if (
-      receipt.status === "reserved" &&
-      !liveReservation &&
-      receipt.attempts < MAX_PRODUCTION_ATTEMPTS
-    ) {
-      continue;
-    }
-    return {
+
+    const state = {
       phase: "production",
-      status: "blocked",
-      reason: receipt.reason,
-      attempts: receipt.attempts,
-      beat,
+      status: classification.status,
+      step: "craft",
+      slot: currentBeat.slot,
+      attempts: classification.attempts,
+      resume: classification.resume,
       missing: [],
     };
+    if (
+      classification.state === "live" ||
+      classification.state === "exhausted"
+    ) {
+      return state;
+    }
+    retryable ??= state;
   }
-  return null;
+  return retryable;
 }
 
-export async function whereIs(storyDir) {
+async function resolveStoryState(storyDir) {
   const source = await list(join(storyDir, "source"));
   // S5 parity: `intake` freezes THREE artifacts (article.md, data.csv, profile.json — see that
   // skill's own SKILL.md), so the gate refuses to leave `intake` until all three exist. Two of
@@ -1001,11 +1100,18 @@ export async function whereIs(storyDir) {
   );
   const analystMissing = [...dataMissing, ...staleMissing, ...orphanMissing];
   if (analystMissing.length > 0) {
-    return { phase: "production", ...legacyState, missing: analystMissing };
+    return {
+      phase: "production",
+      step: "analysis",
+      ...legacyState,
+      missing: analystMissing,
+    };
   }
 
-  const blocked = await blockedProductionState(current.beats);
-  if (blocked) return { ...blocked, ...legacyState };
+  const reservation = await productionReservationState(current.beats);
+  if (reservation?.status === "blocked") {
+    return { ...reservation, ...legacyState };
+  }
 
   const unrendered = await unrenderedBeats(current.beats);
   if (unrendered.length > 0) {
@@ -1014,7 +1120,17 @@ export async function whereIs(storyDir) {
     const missing = renderedCount === 0
       ? (exported.length > 0 ? ["no renders exist in any beat"] : [])
       : unrendered.map((beat) => `beat ${beat}: no current render`);
-    return { phase: "production", ...legacyState, missing };
+    const nextBeat = current.beats.find(
+      (beat) => unrendered.includes(beat.name ?? beat.id),
+    );
+    return {
+      phase: "production",
+      step: "craft",
+      slot: nextBeat?.slot,
+      ...legacyState,
+      ...reservation,
+      missing,
+    };
   }
 
   const completion = await completionState(storyRoot, storyDir, current.beats);
@@ -1023,17 +1139,21 @@ export async function whereIs(storyDir) {
     const missing = completion.production
       .filter((beat) => !feedback.has(beat))
       .map((beat) => `beat ${beat}: rendered but not currently approved`);
+    const revision = completion.feedbackProduction.length > 0
+      ? {
+          reason: "editor-feedback",
+          beats: completion.feedbackProduction,
+        }
+      : null;
+    const nextBeat = current.beats.find((beat) =>
+      (revision?.beats ?? completion.production).includes(beat.name)
+    );
     return {
       phase: "production",
+      step: revision ? "craft" : "review",
+      slot: nextBeat?.slot,
       ...legacyState,
-      ...(completion.feedbackProduction.length > 0
-        ? {
-            revision: {
-              reason: "editor-feedback",
-              beats: completion.feedbackProduction,
-            },
-          }
-        : {}),
+      ...(revision ? { revision } : {}),
       missing,
     };
   }
@@ -1054,4 +1174,8 @@ export async function whereIs(storyDir) {
   }
 
   return { phase: "done", ...legacyState, missing: [] };
+}
+
+export async function whereIs(storyDir) {
+  return projectResolverResult(await resolveStoryState(storyDir));
 }

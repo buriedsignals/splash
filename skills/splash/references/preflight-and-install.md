@@ -1,9 +1,8 @@
 # Preflight, the newsroom profile, and the Engine-managed install
 
 Owned by `scripts/preflight.mjs`, `scripts/newsroom.mjs`, `scripts/keys.mjs`, and
-`installer/configure.mjs`. The dispatcher's `## Operating contract` carries the one-paragraph rule;
-this reference keeps the detail that used to live in SKILL.md so no behavioral rule was lost when
-the dispatcher shrank to the spine's seven sections.
+`installer/configure.mjs`. Splash's operating contract carries the one-paragraph rule; this
+reference keeps the detailed preflight and installation behavior beside its owning scripts.
 
 ## Preflight establishes what is possible — it does not validate an environment
 

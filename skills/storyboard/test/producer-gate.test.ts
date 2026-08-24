@@ -210,6 +210,17 @@ describe("the post-treatment producer question", () => {
   });
 });
 
+function expectedStoryboardState(resume: string) {
+  return {
+    phase: "storyboard",
+    status: "ready",
+    owner: { kind: "skill", id: "storyboard" },
+    missing: expect.any(Array),
+    attempts: 0,
+    resume,
+  };
+}
+
 describe("persisted producer state", () => {
   let storyDir: string;
   let path: string;
@@ -246,21 +257,21 @@ describe("persisted producer state", () => {
     expect(checkStoryboard(parseStoryboard(await readFile(path, "utf8")).meta)).toContain(
       "slot 1: custom or Datawrapper was never chosen after the treatment selection",
     );
-    expect(await whereIs(storyDir)).toMatchObject({
-      phase: "storyboard",
-      gate: "G2-producer",
-      awaiting: "producer",
-      slotId: "1",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-producer for slot 1; the journalist must provide producer.",
+      ),
+    );
   });
 
   it("never asks the producer question before treatment selection", async () => {
     const text = storyboard().replace('    chosen: "Slope (slopegraph)"\n', "");
     await writeFile(path, text);
-    expect(await whereIs(storyDir)).toMatchObject({
-      gate: "G2-treatment",
-      awaiting: "treatment",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-treatment for slot 1; the journalist must provide treatment.",
+      ),
+    );
   });
 
   it("asks for slot one's producer before moving to slot two's treatment", async () => {
@@ -276,11 +287,11 @@ describe("persisted producer state", () => {
 `,
     );
     await writeFile(path, twoSlots);
-    expect(await whereIs(storyDir)).toMatchObject({
-      gate: "G2-producer",
-      awaiting: "producer",
-      slotId: "1",
-    });
+    expect(await whereIs(storyDir)).toEqual(
+      expectedStoryboardState(
+        "Stop at G2-producer for slot 1; the journalist must provide producer.",
+      ),
+    );
   });
 
   it("writes the human choice atomically and then advances to production", async () => {
@@ -315,11 +326,11 @@ describe("persisted producer state", () => {
       const slot = parseStoryboard(await readFile(path, "utf8")).meta.slots[0];
       expect(slot.producer).toBeUndefined();
       expect(slot.datawrapperType).toBeUndefined();
-      expect(await whereIs(storyDir)).toMatchObject({
-        phase: "storyboard",
-        gate: "G2-producer",
-        awaiting: "producer",
-      });
+      expect(await whereIs(storyDir)).toEqual(
+        expectedStoryboardState(
+          "Stop at G2-producer for slot 1; the journalist must provide producer.",
+        ),
+      );
     });
   }
 

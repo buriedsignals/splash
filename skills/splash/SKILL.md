@@ -5,18 +5,37 @@ description: Use to run the doctrine twin end to end — recover a story's phase
 
 # splash — the orchestrator, sequencing and nothing else
 
-One thin dispatcher, per the orchestration spine (`ORCHESTRATION-SPINE.md` §1): it sequences phases
-and refuses jumps — nothing else. `whereIs(storyDir)` (`scripts/where.mjs`) reads a story's own
-directory and returns the one phase it is actually in, so two sessions reading the same `storyDir`
-— three days apart, or in different runtimes — recover the same phase a human would read off the
-filesystem by eye. Everything an owning unit does below is that unit's own SKILL.md; this document
-duplicates no child-skill body.
+Splash follows one product-owned loop: resolve durable state, select one owner, dynamically invoke
+only that owner, let it perform one bounded responsibility, seal or stop at the human gate, then
+resolve from disk again. `whereIs(storyDir)` (`scripts/where.mjs`) is the side-effect-free resolver.
+Every call returns exactly:
+
+```js
+{
+  phase,
+  status,
+  owner: { kind, id } | null,
+  missing,
+  attempts,
+  resume,
+}
+```
+
+`ready` means the selected owner may perform its one responsibility. `blocked` selects no owner;
+`resume` distinguishes a live producer from exhausted attempts. `done` selects no owner and stops.
+`attempts` is the selected production beat's durable attempt count, or zero outside that retry path.
+
+Two sessions reading the same `storyDir` — three days apart, or in different runtimes — recover the
+same state a human would read off the filesystem by eye. Everything an owner does is defined by that
+owner's own skill or persona brief; this document duplicates no owner body.
 
 ## When to use
 
-- At the start of every turn for an **existing** story, call `whereIs(storyDir)` and let its
-  `phase` decide what runs next. Resume by re-running `whereIs` — never from conversation memory,
-  never from what a previous turn was doing. For a new story, preflight and
+- At the start of every turn for an **existing** story, call `whereIs(storyDir)` to report current
+  state, then pass `storyDir` to `invokeResolvedOwner(storyDir, adapters)`. The invocation boundary
+  immediately resolves from disk again and loads only that fresh result's owner. After every
+  result, failure, or approval, call `whereIs` again — never continue from conversation memory or
+  from what a previous turn was doing. For a new story, preflight and
   `createStory({root, title})` first create the canonical directory and its local `AGENTS.md`;
   then call `whereIs` for the first time.
 - When a caller (human or agent) asks to skip a phase — refuse, report `missing` verbatim, and
@@ -53,21 +72,31 @@ duplicates no child-skill body.
 7. **Resume from the last completed gate file**, not from remembered intent: `whereIs` walks the
    directory and lands on the open gate, which is where work resumes.
 
-## Dispatch table
+## Owner registry
 
-| Phase / state            | Owning unit (`invoke-skill`)                                                                                                                                                                                                                          | Persona (`spawn-agent`, when bound)                                                                                              |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `intake`                 | `intake` — freezes `source/article.md`, `source/data.csv`, `source/profile.json`, silently                                                                                                                                                            | `archivist` (`agents/archivist.md`)                                                                                               |
-| `framing`, `storyboard`  | `storyboard` — the editorial exchange through G1, G2a/b/c, G2-treatment, G2-producer; reads `doctrine`'s reference set for the reference loop                                                                                                          | `editor` (`agents/editor.md`) — prepares framing material; the gates stay human                                                    |
-| `production` (pre-step)  | `analyst`, per chart/map beat while `beats/<id>/data.json` is missing — `whereIs` reports `beat <id>: run analyst (data.json)`; a data.json whose recorded hashes no longer match the frozen inputs reports `beat <id>: analyst data stale — rebuild` (re-run `analyst` with `--rebuild`); a beat directory no slot claims reports `beat <id>: orphaned — slot removed from storyboard`; image beats skip the data contract                                                                                                    | `analyst` (`agents/analyst.md`)                                                                                                    |
-| `production` (craft)     | the craft skill matching the chosen candidate's medium AND format: `chart-beat` (`chart`/`static`), `chart-web` (`chart`/`web`), `chart-video` (`chart`/`video`), `map-beat` (`map`/`static`, `map`/`video`), `map-web` (`map`/`web`), `image-beat` (`image`/`static`), `scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `dw-beat` when a chart slot records `producer: datawrapper` with its persisted `datawrapperType` | — no persona: pixels come from deterministic craft code |
-| `production` (review)    | `doctrine`'s `references/design-rubric.md` informs the G3 checklist inside each craft skill                                                                                                                                                             | `designer` (`agents/designer.md`) — read-only judge; informs, never answers G3                                                     |
-| `delivery`               | `deliver` — per beat, into that beat's own `export/<beat>/`                                                                                                                                                                                            | `courier` (`agents/courier.md`)                                                                                                    |
-| `done`                   | nothing — report completion and stop                                                                                                                                                                                                                   | —                                                                                                                                 |
+`scripts/where.mjs` owns the single private phase/state-to-owner registry and the exact resolver
+result projection. `scripts/orchestration.mjs` is only the invocation boundary: it accepts
+`storyDir`, re-resolves immediately, and invokes the resulting current owner. Intake, analysis,
+storyboard and delivery invoke their existing skills directly. Only editorial framing and
+independent visual review select personas.
 
-One row per unit; what a unit does internally is its own SKILL.md. Both dispatch paths
-(`invoke-skill` today, `spawn-agent` where a runtime binds it) execute the same child-skill body;
-the persona brief adds the return contract, not a second behavior.
+| Phase / state | Selected owner |
+| --- | --- |
+| `intake` | `skill:intake` — freezes `source/article.md`, `source/data.csv` and `source/profile.json` |
+| `framing` | `persona:editor` — prepares framing material; the journalist still closes the gate |
+| `storyboard` | `skill:storyboard` — conducts G1, G2a/b/c, G2-treatment and G2-producer |
+| `production` / analysis required | `skill:analyst` — writes bound `data.json` for chart/map beats |
+| `production` / craft | The exact existing craft skill selected from the slot's medium, format and producer |
+| `production` / current render review | `persona:designer` — independent read-only review; the journalist still closes G3 |
+| `delivery` | `skill:deliver` — materialises the journalist's selected form per beat |
+| `done` or exhausted attempts | no owner — report and stop |
+
+The craft mapping remains Splash-owned in the filesystem resolver: `chart-beat`, `chart-web`,
+`chart-video`, `map-beat`, `map-web`, `image-beat`, `scrolly`, or `dw-beat`. The parent invokes
+`invokeResolvedOwner(storyDir, adapters)`, never preloads alternatives, and resolves from disk again
+after the outcome.
+Catching a human boundary ends the turn; neither `editor` nor `designer` may write the durable
+journalist approval that closes it.
 
 ## Gates
 
@@ -99,25 +128,6 @@ is G1, not G2: `missingForGate2` holds the story in `storyboard` until the takea
 field, every slot's choice among its own candidates, and any conditional producer preference are
 recorded — enforced mechanically by `scripts/where.mjs` and pinned test-by-test in
 `test/where.test.ts`.
-
-## Verbs
-
-The abstract registry (runtime adapter binds these to native tools):
-
-| Verb            | Used here? | Notes                                                                                                |
-| --------------- | ---------- | ----------------------------------------------------------------------------------------------------- |
-| `read-file`     | yes        | the story's directory tree via `whereIs`, `NEWSROOM.md`                                               |
-| `write-file`    | no         | belongs to the units dispatched to (`intake` freezes source, `deliver` writes exports)                 |
-| `execute-shell` | yes        | the dependency check                                                                                  |
-| `fetch`         | yes        | the MapTiler and Datawrapper probes                                                                   |
-| `search`        | no         | belongs to `doctrine`'s reference loop                                                                |
-| `invoke-skill`  | yes        | every dispatch in the table above                                                                     |
-| `spawn-agent`   | documented | when a runtime binds it: spawn the persona brief from `agents/<name>.md` with its return contract     |
-| `wait-agent`    | documented | block on that persona's structured JSON return                                                        |
-
-When `spawn-agent`/`wait-agent` are unbound, reach the same unit through `invoke-skill` — the same
-SKILL.md body executes either way. An unsupported verb is **reported as unsupported**, never
-silently substituted.
 
 ## Never-list
 
@@ -153,14 +163,12 @@ silently substituted.
 
 | Want                                                                                | Knob                                                                                                 | Where                                        |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| How many sections this dispatcher has, in spine order                               | `7`                                                                                                   | this document                                |
 | How many phases the state machine recognises                                        | `6` (`intake`, `framing`, `storyboard`, `production`, `delivery`, `done`)                              | `scripts/where.mjs`                          |
 | Source files intake must freeze before leaving `intake`                             | `3` (`article.md`, `data.csv`, `profile.json`)                                                         | `whereIs`, `scripts/where.mjs`               |
 | Hand-of-the-journalist fields required before leaving `storyboard`                  | `6` (`HAND.length`, mirroring `storyboard`'s `HAND`)                                                   | `scripts/where.mjs`                          |
 | What a beat needs before the story can be `done`                                    | Current `BRIEF.md` plan and findings; approved `OUTPUT-REVIEW.json` bound to that plan, those findings, the render, passing QA, and feedback; plus `HANDOVER.md` and a complete `.delivery-manifest.json` bound to that review and the exact current export artifact digests | `completionState`, `scripts/where.mjs` |
 | Production cycles a beat gets before the status is `blocked`                        | `3`                                                                                                   | Operating contract clause 5, this document   |
-| Abstract verbs in the registry                                                      | `8`                                                                                                   | Verbs, this document                         |
-| Personas briefed under `agents/`                                                     | `5` (`archivist`, `editor`, `analyst`, `designer`, `courier`)                                          | `agents/`, repo root; parity-tested in `test/skill-md-matches-code.test.ts` |
+| Personas briefed under `agents/`                                                     | `2` (`editor`, `designer`)                                                                             | `agents/`, repo root                            |
 | Hard stops preflight recognises                                                     | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them                         | `runPreflight`, `scripts/preflight.mjs`      |
 | Capabilities preflight reports                                                      | `3` (`map`, `datawrapper`, `hostedEmbed`)                                                              | `runPreflight`, `scripts/preflight.mjs`      |
 | Newsroom identity outcomes                                                          | `4` (`pass`, `missing`, `declined`, `fail`) — `pass`/`declined` both count as answered                  | `checkNewsroom`, `scripts/preflight.mjs`     |
