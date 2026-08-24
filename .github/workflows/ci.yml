@@ -42,6 +42,15 @@ jobs:
       - name: Verify the type survey
         run: bun run survey:check
 
+      - name: Verify the visual catalogue derivative
+        run: bun run catalog:check
+
+      - name: Verify trait-derived guard coverage
+        run: bun run guards:check
+
+      - name: Verify the landing inventory
+        run: bun run landing:check
+
   render-map:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
