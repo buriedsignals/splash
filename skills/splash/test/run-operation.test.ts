@@ -602,7 +602,7 @@ await runOperation("datawrapper-produce", request, {
     });
   });
 
-  test("map delivery writes the client-publishable key only to the final artifact", async () => {
+  test("map delivery keeps a placeholder record and writes the key only to the keyed artifact", async () => {
     const fixture = await storyFixture();
     const beat = join(fixture.story, "beats", "map");
     const input = join(beat, "renders", "source.html");
@@ -627,11 +627,18 @@ await runOperation("datawrapper-produce", request, {
         planVersion: TEST_PLAN_VERSION,
       },
     });
-    const final = await readFile(
+    const record = await readFile(
       join(fixture.story, "export", "map", "source.html"),
       "utf8",
     );
-    expect(final).toContain("restricted-delivery-canary-12345");
+    const keyed = await readFile(
+      join(fixture.story, "export", "map", "keyed", "source.html"),
+      "utf8",
+    );
+    expect(record).toContain("__MAPTILER_KEY__");
+    expect(record).not.toContain("restricted-delivery-canary-12345");
+    expect(keyed).toContain("restricted-delivery-canary-12345");
+    expect(keyed).not.toContain("__MAPTILER_KEY__");
     expect(await readFile(input, "utf8")).not.toContain(
       "restricted-delivery-canary-12345",
     );

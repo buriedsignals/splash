@@ -194,18 +194,18 @@ is the **current delivery** and is never edited as source.
    fails. Only a successful build and hand-over replace the previous export; ordinary failures
    remove staging and preserve the last good delivery. Inside staging it writes the beat's receipt
    and:
-   - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
-     subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
-     throws on it).
-   - `"source-bundle"` copies every entry of `beatDir` *except* `renders/` (the raster output
-     belongs to the other form, not this one) into `exportDir`, then writes a real `build.ts`
-     — a script that finds the copied `.tsx` files and bundles them with `Bun.build`, the
-     bundler built into the Bun runtime itself, no added dependency — and a `package.json`
-     naming it as the `build` script. `bun install && bun run build` in the delivered folder
-     genuinely executes; it bundles the component source it was actually given, not a
-     rebuild of the raster pipeline that made the owned PNG/SVG (that pipeline lives in the
-     chart-beat skill, and copying it here would be exactly the shared-utility coupling this
-     codebase's skills avoid).
+   - `"owned-file"` copies every entry of `<beatDir>/renders/` into the committable export record,
+     walking subdirectories with `copyTree`. Placeholder-bearing HTML stays unchanged there. Its
+     live substituted counterpart goes under the private, mode-restricted, self-ignored
+     `export/<outputId>/keyed/` directory; `HANDOVER.md` identifies that keyed page as the file to
+     publish and the root page as the placeholder record not to publish. Delivery reserves the
+     `renders/keyed` source namespace and refuses any final keyed path already tracked by the Git
+     worktree that owns that destination, before staging or substituting bytes.
+   - `"source-bundle"` copies every entry of `beatDir` *except* `renders/` into `exportDir`, then
+     writes a real `build.ts` and `package.json` build script. Nested HTML remains byte-for-byte
+     placeholder-only: source custody is not a second credential lifecycle. `bun install && bun run
+     build` bundles the component source it was actually given, not a rebuild of the raster pipeline
+     that made the owned PNG/SVG.
    - **`"embed"` — implemented; live verification is credential-gated.** Requires both Cloudflare
      env vars (throws naming which is missing if a caller bypasses `offerForms`'s disabled row).
      Requires `<beatDir>/renders/` to hold exactly one file (`singleOwnedFile` — ambiguity is
@@ -317,36 +317,32 @@ is the **current delivery** and is never edited as source.
 
 ### The MapTiler key — the ARTIFACT decides, never the environment
 
-A map × web beat renders with a documented placeholder where its MapTiler key belongs, and
-`substituteKeys` puts the real key in at delivery and nowhere earlier (ruling R1b: every beat commits
-its own HTML, so a key in a rendered file is a key in the repository).
+A map × web beat renders with a documented placeholder where its MapTiler key belongs. Delivery
+keeps every committable artifact placeholder-only and creates key-bearing bytes only inside one
+explicit custody boundary:
+
+- an owned-file delivery keeps the placeholder record at the export root and writes the live page
+  under the private, self-ignored `keyed/` directory;
+- a hosted delivery substitutes into a `0700`/`0600` temporary file outside every Git worktree,
+  sends it to the provider, then removes it on success or failure;
+- CMS preparation and source bundles remain placeholder-only.
 
 **`carriesMapKey(html)` is asked first, and it reads the FILE.** An artifact with no key slot is not
-a map delivery: it is copied through untouched, and nothing about MapTiler is decided, said or
-refused for it. This was measured the hard way — in the owner's own run the delivery step refused an
-HTML beat that was not a map at all (zero occurrences of `maptiler`, no key slot in the file), purely
-because a `MAPTILER_KEY` sat in the environment. A rule that fires where it cannot be protecting
-anything teaches its reader to route around it, and that is exactly what the run then did.
+a map delivery: it is copied through untouched, and nothing about MapTiler is decided or said for
+it. An artifact that does carry the slot receives one of four `mapKeyState` values:
 
-**It recommends; it does not block.** For an artifact that DOES carry the slot, `mapKeyState` names
-one of four states and `substituteKeys` puts the best available key in — there is **no refusal left
-in this path**:
+| state | private/live behavior | committable behavior | what the hand-over says |
+| --- | --- | --- | --- |
+| `none` | no substitution | copied unchanged | nothing — it is not a map delivery |
+| `restricted` | `MAPTILER_DELIVERY_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; its key is restricted to newsroom domains |
+| `development` | `MAPTILER_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; the development key is readable and billed by usage, plus how to record a restricted key |
+| `unkeyed` | no live page is produced | placeholder travels through | the baked layer works, but the map does not pan or zoom |
 
-| state | what happens | what the hand-over says |
-| --- | --- | --- |
-| `none` | no key slot in the file; nothing is substituted | nothing — it is not a map delivery |
-| `restricted` | `MAPTILER_DELIVERY_KEY` goes in | the live map's key is restricted to the newsroom's own domains |
-| `development` | `MAPTILER_KEY` goes in | the page carries a development key: readable by any reader, billed by usage, and MapTiler switches off **every** key on an account at 100% of its spending limit — plus how to record a restricted one |
-| `unkeyed` | the placeholder travels through | the page shows its baked map layer; it does not pan or zoom |
-
-The `development` row used to **throw**, which is stricter than the ruling that governs it. R1: *"la
-carte doit rester interactive tout le temps… On a le droit d'utiliser pleinement MapTiler. Et garder
-l'export du HTML pas grave pour la clé."* The owner accepted, having been shown the cost, that the
-delivered HTML carries the key. R1b's clause 4 says the delivered key *should* be a second,
-origin-restricted one — a recommendation, and a hard block turned it into a wall a journalist could
-not deliver their own work past. The recommendation is now actually MADE, in the file the newsroom
-keeps: `formatHandover` renders it from a **closed** four-state vocabulary (an unknown state throws
-rather than silently saying nothing), so it can never be forgotten and can never become free text.
+The key-state recommendation does not itself block delivery. Custody checks do: owned-file delivery
+fails closed when `keyed/` collides with source material, a Git index already tracks the final keyed
+path, or Git ownership cannot be established safely. Hosted delivery refuses a temporary root inside
+any Git worktree. These refusals protect where credential bytes may exist; they never turn a
+development-key recommendation into a prohibition on publishing the journalist's work.
 
 ### A refusal states the situation. It never names a way around itself.
 

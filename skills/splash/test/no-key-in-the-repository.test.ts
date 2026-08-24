@@ -12,13 +12,13 @@
  * It matters more than the usual key leak because MapTiler **invalidates ALL of an account's keys
  * at 100% of its spending limit**. One abused key blanks the maps in articles already published.
  *
- * So: committed artifacts carry a placeholder, `deliver` substitutes the real key at the
- * moment a file goes to a newsroom, and THIS reddens before the mistake is committed rather than
- * after.
+ * So: committed and other committable artifacts carry a placeholder, `deliver` substitutes the real
+ * key only into material git cannot commit, and THIS reddens before the mistake is committed rather
+ * than after.
  *
- * It scans TRACKED files only — `git ls-files`. An untracked scratch file with a key in it is not a
- * leak; a staged one is. That distinction is the whole point, and it is why this cannot be written
- * as a directory walk.
+ * It scans every path a `git add -A` could commit: tracked files plus untracked files that are not
+ * ignored. A genuinely ignored delivery file is outside the commit boundary; an untracked export is
+ * not. That distinction is the whole point, and it is why this cannot be a plain directory walk.
  *
  * ## THE THREE HOLES THE AUDIT WATCHED GO GREEN, AND HOW EACH IS CLOSED
  *
@@ -51,7 +51,7 @@
  *   | mutation                                                   | before | after |
  *   |------------------------------------------------------------|--------|-------|
  *   | key in a tracked `proof/mapgen-symbol-web/leak.html`        | red    | red   |
- *   | the same file left UNTRACKED                                | green  | green |
+ *   | the same file left UNTRACKED                                | green  | red   |
  *   | key in a tracked 9 MB `.html`                               | GREEN  | red   |
  *   | key in a tracked `leak.png`                                 | GREEN  | red   |
  *   | a different 32-char key in a tracked page's style URL       | GREEN  | red   |
@@ -70,6 +70,7 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
+import { controlledGitEnvironment } from "../../deliver/test/git-authority-fixture";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const ENV = join(TWIN, ".env");
@@ -98,15 +99,24 @@ function keysFromEnv(): { name: string; value: string }[] {
   return found;
 }
 
-/** Tracked files under `twin/`, relative to it, as git itself sees them. */
-function trackedFiles(): string[] {
-  return execFileSync("git", ["ls-files", "-z", "--", "."], {
+/** Every path a `git add -A` could commit, relative to this repository. */
+function committableFiles(): string[] {
+  const options = {
     cwd: TWIN,
     encoding: "utf8",
-  })
+    env: controlledGitEnvironment(),
+  } as const;
+  const tracked = execFileSync("git", ["ls-files", "-z", "--", "."], options)
     .split("\0")
-    .filter(Boolean)
-    .filter((rel) => existsSync(join(TWIN, rel)));
+    .filter(Boolean);
+  const untracked = execFileSync(
+    "git",
+    ["ls-files", "-z", "--others", "--exclude-standard", "--", "."],
+    options,
+  )
+    .split("\0")
+    .filter(Boolean);
+  return [...tracked, ...untracked].filter((rel) => existsSync(join(TWIN, rel)));
 }
 
 /**
@@ -140,11 +150,11 @@ function fileContains(path: string, needle: string): boolean {
   }
 }
 
-/** Every tracked path that is a real file — a tracked symlink to a directory or a submodule would
- *  otherwise throw EISDIR mid-scan instead of reporting anything at all. */
+/** Every committable path that is a real file — a tracked symlink to a directory or a submodule
+ *  would otherwise throw EISDIR mid-scan instead of reporting anything at all. */
 function scannablePaths(): string[] {
   const paths = [];
-  for (const rel of trackedFiles()) {
+  for (const rel of committableFiles()) {
     const path = join(TWIN, rel);
     let stat;
     try {
@@ -159,7 +169,7 @@ function scannablePaths(): string[] {
 
 const keys = keysFromEnv();
 
-describe("R1b — no tracked file carries a real MapTiler key", () => {
+describe("R1b — no committable file carries a real MapTiler key", () => {
   it("should have a key to look for, or say plainly that it is not looking", () => {
     if (keys.length === 0)
       console.log(
@@ -172,7 +182,7 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
   });
 
   for (const name of KEY_NAMES)
-    it(`should not find ${name} in any tracked file`, () => {
+    it(`should not find ${name} in any committable file`, () => {
       const key = keys.find((k) => k.name === name);
       if (!key) return;
       const offenders = scannablePaths().filter((rel) =>
@@ -185,11 +195,10 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
    * The value-independent half, and the only one that can see a key nobody wrote into `.env`.
    *
    * Every live map × web page requests `https://api.maptiler.com/maps/<style>/style.json?key=…`.
-   * The committed artifact must carry the placeholder there — that IS R1b's clause 1, and until
-   * this check existed nothing asserted it on a real file (the audit found the placeholder
-   * "correct and unexercised", because no live page was committed at all).
+   * Every committable artifact must carry the placeholder there — that IS R1b's clause 1, and until
+   * this check existed nothing asserted it on a real file.
    */
-  it("should find the placeholder, and never a key, in every committed MapTiler style URL", () => {
+  it("should find the placeholder, and never a key, in every committable MapTiler style URL", () => {
     const offenders: string[] = [];
     for (const rel of scannablePaths()) {
       if (!fileContains(join(TWIN, rel), "api.maptiler.com")) continue;
@@ -209,15 +218,14 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
     }
     expect(
       offenders,
-      "a tracked file requests MapTiler with something other than the delivery placeholder. R1b: " +
-        "the key enters the file at delivery (deliver's substituteKeys) and nowhere earlier.",
+      "a committable file requests MapTiler with something other than the delivery placeholder. " +
+        "R1b: the key enters only a private keyed delivery or hosted send, never a committable file.",
     ).toEqual([]);
   });
 
-  it("should be looking at the committed live pages rather than at nothing", () => {
-    // Anti-vacuity for the check above: it passes trivially in a tree with no live map in it, which
-    // is exactly the tree the audit found. At least one committed page must actually request
-    // MapTiler and carry the placeholder, or the assertion proves nothing.
+  it("should be looking at committable live-page records rather than at nothing", () => {
+    // Anti-vacuity for the check above: it passes trivially in a tree with no live map record.
+    // At least one committable page must request MapTiler with the placeholder.
     const live = scannablePaths().filter(
       (rel) =>
         rel.endsWith(".html") &&
@@ -228,6 +236,6 @@ describe("R1b — no tracked file carries a real MapTiler key", () => {
   });
 
   it("should confirm the env file itself is untracked, which is what makes the key safe to hold", () => {
-    expect(trackedFiles()).not.toContain(".env");
+    expect(committableFiles()).not.toContain(".env");
   });
 });

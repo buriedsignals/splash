@@ -194,8 +194,23 @@ const ROLE_BY_BASENAME = {
       "le script compagnon de la page — installé une seule fois sur le gabarit du site, pas une fois par visuel ; il centre cet embed et raccompagne le lecteur à la fin d'un scrolly",
   },
 };
+const KEYED_ROLE = {
+  en: {
+    record: "the placeholder record — safe to keep with the story; do not publish this file",
+    live: "the live page — publish this file; it contains the configured client-side map key and must not be committed",
+  },
+  fr: {
+    record:
+      "le fichier témoin avec son placeholder — à conserver avec l'histoire ; ne publiez pas ce fichier",
+    live:
+      "la page en direct — publiez ce fichier ; il contient la clé cartographique côté client configurée et ne doit pas être commitée",
+  },
+};
 
-function roleFor(name, written) {
+
+function roleFor(name, written, keyedNames) {
+  if (name.startsWith("keyed/")) return KEYED_ROLE[written].live;
+  if (keyedNames.has(`keyed/${name}`)) return KEYED_ROLE[written].record;
   const named = ROLE_BY_BASENAME[written][name];
   if (named) return named;
   const dot = name.lastIndexOf(".");
@@ -257,13 +272,17 @@ const COPY = {
 };
 
 function baseName(path) {
-  const parts = path.split(/[\\/]/);
+  const normalized = path.replace(/\\/g, "/");
+  if (normalized.startsWith("keyed/")) return normalized;
+  const parts = normalized.split("/");
   return parts[parts.length - 1];
 }
 
 /**
- * Markdown for `export/HANDOVER.md`. `files` are the paths `materialise` actually wrote — named by
- * basename, because an absolute path on the machine that built it means nothing in a newsroom.
+ * Markdown for `export/HANDOVER.md`. `files` are the paths `materialise` actually wrote — normally
+ * named by basename so an absolute machine path cannot reach the newsroom. A private keyed working
+ * copy is named relative to the export root so the journalist can distinguish it from its
+ * placeholder record.
  *
  * Throws when a required field is missing rather than rendering a document with a blank where the
  * credit line should be: a hand-over that silently omits the credit is worse than none, because it
@@ -321,9 +340,10 @@ export function formatHandover({ files, placement, alt, credit, caveat, format, 
     "",
   ];
 
-  for (const file of files) {
-    const name = baseName(file);
-    lines.push(`- **\`${name}\`** — ${roleFor(name, scaffold.written)}`);
+  const names = files.map(baseName);
+  const keyedNames = new Set(names.filter((name) => name.startsWith("keyed/")));
+  for (const name of names) {
+    lines.push(`- **\`${name}\`** — ${roleFor(name, scaffold.written, keyedNames)}`);
   }
 
   lines.push(

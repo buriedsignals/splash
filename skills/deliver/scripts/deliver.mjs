@@ -4,9 +4,21 @@
 // id that happens to exist under one format is not automatically valid for another; the check
 // is always on the {form, format} pair, never on the form id alone.
 
-import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  copyFile,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
   cloudflareProjectName,
@@ -29,6 +41,7 @@ import {
 } from "./delivery-replacement.mjs";
 import { markHostedDeploymentLocalComplete } from "./hosted-deployment.mjs";
 import { deliveryDestinations, resolveDeliveryIdentity } from "./delivery-identity.mjs";
+import { gitAuthoritiesFor, gitAuthorityFor } from "./git-authority.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -222,7 +235,17 @@ export function offerForms(options) {
 // not throw EISDIR.
 // `states` collects one `mapKeyState` per HTML file copied, so the hand-over can state what the
 // delivery actually carries rather than what the environment happens to hold.
-async function copyTree(srcDir, destDir, written, { env = process.env, states = [] } = {}) {
+async function copyTree(
+  srcDir,
+  destDir,
+  written,
+  {
+    env = process.env,
+    states = [],
+    keyedRoot,
+    recordRoot = destDir,
+  } = {},
+) {
   await mkdir(destDir, { recursive: true });
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name);
@@ -230,12 +253,27 @@ async function copyTree(srcDir, destDir, written, { env = process.env, states = 
     if (entry.isSymbolicLink()) {
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env, states });
+      await copyTree(srcPath, destPath, written, {
+        env,
+        states,
+        keyedRoot,
+        recordRoot,
+      });
     } else if (entry.name.endsWith(".html")) {
       const html = await readFile(srcPath, "utf8");
+      const substituted = substituteKeys(html, env);
       states.push(mapKeyState(html, env));
-      await writeFile(destPath, substituteKeys(html, env));
+      await writeFile(destPath, keyedRoot ? html : substituted);
       written.push(destPath);
+
+      if (keyedRoot && substituted !== html) {
+        const keyedPath = join(keyedRoot, relative(recordRoot, destPath));
+        await mkdir(keyedRoot, { recursive: true, mode: 0o700 });
+        await writeFile(join(keyedRoot, ".gitignore"), "*\n", { mode: 0o600 });
+        await mkdir(dirname(keyedPath), { recursive: true, mode: 0o700 });
+        await writeFile(keyedPath, substituted, { mode: 0o600 });
+        written.push(keyedPath);
+      }
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
@@ -498,9 +536,18 @@ function validateHandover(handover, format) {
 async function withHandover(written, { exportDir, format, handover, states = [] }) {
   if (!handover) throw new Error(HANDOVER_REQUIRED);
   const path = join(exportDir, "HANDOVER.md");
+  const handoverFiles = written.map((file) => {
+    const fromExport = relative(exportDir, file);
+    return fromExport.startsWith(`keyed${sep}`) ? fromExport : file;
+  });
   await writeFile(
     path,
-    formatHandover({ ...handover, format, files: written, liveTiles: costliestState(states) }),
+    formatHandover({
+      ...handover,
+      format,
+      files: handoverFiles,
+      liveTiles: costliestState(states),
+    }),
   );
   written.push(path);
   return written;
@@ -591,11 +638,65 @@ export function embedCodeFor(url, title, options = {}) {
   );
 }
 
+function isWithin(root, candidate) {
+  const fromRoot = relative(root, candidate);
+  return (
+    fromRoot === "" ||
+    (fromRoot !== ".." && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot))
+  );
+}
+
+async function pathExists(path) {
+  try {
+    await lstat(path);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function refuseKeyedNamespaceCollision({ form, rendersDir, exportDir }) {
+  if (form !== "owned-file") return;
+
+  const sourceKeyedDir = join(rendersDir, "keyed");
+  if (await pathExists(sourceKeyedDir)) {
+    throw new Error(
+      `delivery reserves the keyed namespace and refuses the colliding source path ${sourceKeyedDir}`,
+    );
+  }
+
+  const finalKeyedDir = join(exportDir, "keyed");
+  for (const authority of await gitAuthoritiesFor(finalKeyedDir)) {
+    const [trackedPath] = await authority.trackedPathsUnder(finalKeyedDir);
+    if (trackedPath) {
+      throw new Error(
+        `delivery reserves the keyed namespace and refuses its pretracked destination ${trackedPath}`,
+      );
+    }
+  }
+}
+
+async function hostedTemporaryRoot(env, storiesRoot) {
+  const selectedRoot = env.TMPDIR || env.TMP || env.TEMP || tmpdir();
+  const canonicalRoot = await realpath(selectedRoot);
+  const [storiesAuthority, temporaryAuthority] = await Promise.all([
+    gitAuthorityFor(storiesRoot),
+    gitAuthorityFor(canonicalRoot),
+  ]);
+  const repositoryRoot = storiesAuthority?.worktreeRoot ?? storiesRoot;
+  if (temporaryAuthority !== null || isWithin(repositoryRoot, canonicalRoot)) {
+    throw new Error("hosted delivery temporary material must be outside every Git repository");
+  }
+  return canonicalRoot;
+}
+
 async function materialiseInto({
   form,
   format,
   beatDir,
   exportDir,
+  storiesRoot,
   env = process.env,
   fetchFn = fetch,
   projectName,
@@ -642,7 +743,12 @@ async function materialiseInto({
   const states = [];
 
   if (form === "owned-file") {
-    await copyTree(join(beatDir, "renders"), exportDir, written, { env, states });
+    await copyTree(join(beatDir, "renders"), exportDir, written, {
+      env,
+      states,
+      keyedRoot: join(exportDir, "keyed"),
+      recordRoot: exportDir,
+    });
     return withHandover(written, { exportDir, format, handover, states });
   }
 
@@ -658,10 +764,6 @@ async function materialiseInto({
       );
     }
     const fileName = await singleOwnedFile(beatDir);
-    // The hosted copy carries the key too, or a live map beat would deploy a page whose live layer
-    // can never boot. Written into the export directory first so what is deployed is a real file on
-    // disk that can be inspected, never a string only this function ever saw.
-    const stagedPath = join(exportDir, fileName);
     const sourcePath = join(beatDir, "renders", fileName);
     const hosted = await readFile(sourcePath, "utf8");
     const confirmedBytes = await readFile(sourcePath, "utf8");
@@ -676,23 +778,48 @@ async function materialiseInto({
       throw new Error("the hosted render review changed before remote publication");
     }
     states.push(mapKeyState(hosted, env));
-    await writeFile(stagedPath, substituteKeys(hosted, env));
-    const deployment = await deployFile({
-      accountId: creds.accountId,
-      apiToken: creds.apiToken,
-      projectName,
-      filePath: stagedPath,
-      fileName,
-      recordDir: hostedOperation.recordDir,
-      outputId: hostedOperation.outputId,
-      reviewId: hostedOperation.reviewId,
-      draftDigest: hostedOperation.draftDigest,
-      deliveryOperationId: hostedOperation.deliveryOperationId,
-      timeoutMs: hostedOperation.timeoutMs,
-      fetchFn,
-    });
+
+    // The provider needs a real file, but a key-bearing copy must never enter the repository-owned
+    // delivery staging tree. Keep it under the injected private temporary root for only the remote
+    // send, and canonically refuse a root inside the repository before writing substituted bytes.
+    const sendRoot = await hostedTemporaryRoot(env, storiesRoot);
+    const sendDir = await mkdtemp(join(sendRoot, "splash-hosted-send-"));
+    const sendPath = join(sendDir, fileName);
+    let deployment;
+    let sendError;
+    try {
+      await chmod(sendDir, 0o700);
+      await writeFile(sendPath, substituteKeys(hosted, env), { mode: 0o600 });
+      deployment = await deployFile({
+        accountId: creds.accountId,
+        apiToken: creds.apiToken,
+        projectName,
+        filePath: sendPath,
+        fileName,
+        recordDir: hostedOperation.recordDir,
+        outputId: hostedOperation.outputId,
+        reviewId: hostedOperation.reviewId,
+        draftDigest: hostedOperation.draftDigest,
+        deliveryOperationId: hostedOperation.deliveryOperationId,
+        timeoutMs: hostedOperation.timeoutMs,
+        fetchFn,
+      });
+    } catch (error) {
+      sendError = error;
+    }
+    try {
+      await rm(sendDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      if (sendError) {
+        throw new AggregateError(
+          [sendError, cleanupError],
+          `hosted delivery failed and its temporary directory could not be removed at ${sendDir}`,
+        );
+      }
+      throw cleanupError;
+    }
+    if (sendError) throw sendError;
     hostedOperation.result = deployment;
-    await rm(stagedPath, { force: true });
     // A hosted embed has no local file to keep — the URL IS the delivery. Mirrors the sibling
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
@@ -763,8 +890,8 @@ async function materialiseInto({
   if (form === "cms-insertion") {
     const fileName = await ownedFileForInsertion(beatDir, format);
     const inserted = await readFile(join(beatDir, "renders", fileName), "utf8");
-    states.push(mapKeyState(inserted, env));
-    const insertionHtml = substituteKeys(inserted, env);
+    states.push(mapKeyState(inserted, {}));
+    const insertionHtml = inserted;
 
     // Without a live CMS to fetch a real article from, this form demonstrates its own mechanics
     // against a clearly-labelled placeholder rather than pretending to have read a real article —
@@ -806,7 +933,7 @@ ${JSON.stringify(insertion, null, 2)}
     if (entry.isSymbolicLink()) {
       throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
     } else if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written, { env, states });
+      await copyTree(srcPath, destPath, written, { env: {}, states });
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
@@ -884,6 +1011,11 @@ export async function materialise(options) {
   return withDeliveryLock(
     paths.exportDir,
     async () => {
+      await refuseKeyedNamespaceCollision({
+        form,
+        rendersDir: paths.rendersDir,
+        exportDir: paths.exportDir,
+      });
       await reconcileDeliveryReplacement(paths.exportDir);
       await refuseToWipeAnotherBeat(paths.exportDir, paths.outputId);
       const approval = requireApprovedOutput({
@@ -912,6 +1044,7 @@ export async function materialise(options) {
           ...options,
           beatDir: paths.beatDir,
           exportDir: stagingDir,
+          storiesRoot: paths.storiesRoot,
           projectName: hostedProjectName,
           deploymentNamespace,
           outputId: paths.outputId,
