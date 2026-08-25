@@ -56,7 +56,42 @@ function publicCredential(value, brokerAvailable) {
   };
 }
 
+const NEWSROOM_DECISIONS = new Map([
+  ["pass", "complete"],
+  ["declined", "declined"],
+  ["missing", "missing"],
+  ["fail", "invalid"],
+]);
+
+function publicNewsroom(check) {
+  const decision = NEWSROOM_DECISIONS.get(check?.status) ?? "unknown";
+  const profile = check?.status === "pass" && check?.profile && typeof check.profile === "object"
+    ? check.profile
+    : {};
+  const account = typeof profile.cloudflareAccountId === "string" ? profile.cloudflareAccountId : "";
+  const normalizedAccount = /^[0-9a-f]{32}$/i.test(account) ? account.toLowerCase() : null;
+  return {
+    decision,
+    name: text(profile.name, 160) || null,
+    url: text(profile.url, 2048) || null,
+    languages: Array.isArray(profile.languages)
+      ? profile.languages.slice(0, 16).map((tag) => text(tag, 32)).filter(Boolean)
+      : [],
+    brandColor: /^#[0-9a-fA-F]{6}$/.test(profile.brandColor ?? "") ? profile.brandColor : null,
+    ground: /^#[0-9a-fA-F]{6}$/.test(profile.ground ?? "") ? profile.ground : null,
+    accents: Array.isArray(profile.accents)
+      ? profile.accents.filter((value) => /^#[0-9a-fA-F]{6}$/.test(value ?? "")).slice(0, 16)
+      : [],
+    typefaces: text(profile.typefaces, 512) || null,
+    credit: text(profile.credit, 512) || null,
+    cloudflareAccountId: normalizedAccount,
+  };
+}
+
 export function buildPublicStatus({ preflight, keyList, credentials = [] } = {}) {
+  const rawChecks = Array.isArray(preflight?.checks) ? preflight.checks : [];
+  const newsroomCheck = rawChecks.find((check) => check?.id === "newsroom-profile") ?? null;
+  const dependenciesPass = rawChecks.some((check) => check?.id === "dependencies" && check?.status === "pass");
   const checks = (preflight?.checks ?? []).map(publicCheck).filter(Boolean);
   const blockers = (preflight?.blockers ?? []).map(publicCheck).filter(Boolean);
   const brokerAvailable = keyList?.ok === true && keyList?.broker?.status !== "unavailable";
@@ -70,12 +105,16 @@ export function buildPublicStatus({ preflight, keyList, credentials = [] } = {})
   const byID = new Map(credentials.map((row) => [row?.id, row]));
   const listed = new Map((keyList?.keys ?? []).map((row) => [row?.id, row]));
   const credentialRows = CREDENTIAL_IDS.map((id) => publicCredential(byID.get(id) ?? listed.get(id) ?? { id }, brokerAvailable));
+  // Runtime health is the installed checkout's ability to run at all (dependencies). The
+  // newsroom's identity is an editorial question: unanswered it blocks readiness but is never a
+  // runtime repair.
   const runtimeStatus = preflight
-    ? preflight.ready === true ? "ready" : "repair-required"
+    ? dependenciesPass ? "ready" : "repair-required"
     : "repair-required";
   return {
-    schemaVersion: "splash-app/v1",
+    schemaVersion: "splash-app/v2",
     runtime: { status: runtimeStatus },
+    newsroom: publicNewsroom(newsroomCheck),
     readiness: {
       ready: preflight?.ready === true,
       checks,
@@ -90,7 +129,13 @@ export function buildPublicStatus({ preflight, keyList, credentials = [] } = {})
 
 export function textSummary(status) {
   if (status?.runtime?.status !== "ready") return "Splash needs repair before production work can continue.";
-  if (!status?.readiness?.ready) return `Splash has ${status?.readiness?.blockers?.length ?? 0} pre-flight blocker(s).`;
+  if (!status?.readiness?.ready) {
+    const decision = status?.newsroom?.decision;
+    if (decision === "missing" || decision === "invalid" || decision === "unknown") {
+      return "Splash is installed and runnable; record the newsroom identity (or an explicit decline) in setup.";
+    }
+    return `Splash has ${status?.readiness?.blockers?.length ?? 0} pre-flight blocker(s).`;
+  }
   const availableStates = new Set(["ready", "partially-verified", "saved-unverified"]);
   const unavailable = status.credentials?.filter((row) => !availableStates.has(row.state)).length ?? 0;
   return unavailable > 0

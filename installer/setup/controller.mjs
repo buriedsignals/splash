@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
+import { CREDENTIAL_IDS, ENGINE_SPLASH_CONTRACT_MIN } from "../../apps/goose/contract.mjs";
+import { CREDENTIAL_CONTRACT_MESSAGE } from "./engine-bridge.mjs";
 import {
   inspectLegacyEnv,
   readLegacyCandidate,
@@ -9,15 +11,11 @@ import {
 import { readNewsroom, updateNewsroom, NEWSROOM_MANAGED_FIELDS } from "./newsroom-store.mjs";
 import { createOutboundFetchPolicy } from "./outbound-fetch.mjs";
 import { deriveCharter } from "../../skills/newsroom-charter/scripts/derive-charter.mjs";
+import { validateNewsroom } from "../../skills/splash/scripts/newsroom.mjs";
 
 const BODY_LIMIT = 32 << 10;
 const REQUEST_TIMEOUT_MS = 10_000;
-const CREDENTIAL_IDS = new Set([
-  "MAPTILER_KEY",
-  "MAPTILER_DELIVERY_KEY",
-  "DATAWRAPPER_TOKEN",
-  "CLOUDFLARE_API_TOKEN",
-]);
+const CREDENTIAL_ID_SET = new Set(CREDENTIAL_IDS);
 
 function randomCapability() {
   return randomBytes(32).toString("base64url");
@@ -131,6 +129,60 @@ function safeError(error) {
 
 function boundedText(value, limit = 2048) {
   return typeof value === "string" ? value.slice(0, limit) : "";
+}
+function retainedCredentialContract(value) {
+  const broker = value?.broker?.status === "available"
+    ? Object.freeze({ status: "available" })
+    : Object.freeze({
+        status: "unavailable",
+        reasonCode: boundedText(value?.broker?.reasonCode, 80) || "engine-outdated",
+        message: CREDENTIAL_CONTRACT_MESSAGE,
+      });
+  const keys = Array.isArray(value?.keys)
+    ? value.keys.map((row) => Object.freeze({
+        ...row,
+        metadata: row?.metadata && typeof row.metadata === "object"
+          ? Object.freeze({ ...row.metadata })
+          : null,
+      }))
+    : [];
+  return Object.freeze({
+    contractVersion: Number.isSafeInteger(value?.contractVersion)
+      ? value.contractVersion
+      : ENGINE_SPLASH_CONTRACT_MIN,
+    broker,
+    credentialIndependentPathsAvailable: true,
+    keys: Object.freeze(keys),
+  });
+}
+
+function candidateMaxBytes(contract, id) {
+  const bound = contract?.keys?.find((row) => row?.id === id)?.metadata?.candidateMaxBytes;
+  return Number.isSafeInteger(bound) && bound > 0 ? bound : 0;
+}
+
+function hasCompatibleCredentialContract(contract) {
+  return contract?.broker?.status === "available"
+    && CREDENTIAL_IDS.every((id) => candidateMaxBytes(contract, id) > 0);
+}
+
+function isCandidateWithinContract(contract, id, candidate) {
+  return typeof candidate === "string"
+    && Buffer.byteLength(candidate, "utf8") <= candidateMaxBytes(contract, id);
+}
+function isStoredReplacement(result, expectedGeneration) {
+  return result?.ok === true
+    && result.stored === true
+    && Number.isSafeInteger(result.generation)
+    && result.generation > expectedGeneration;
+}
+
+
+function sendCredentialContractRefusal(response) {
+  return sendJson(response, 409, {
+    code: "credential-contract-unavailable",
+    message: CREDENTIAL_CONTRACT_MESSAGE,
+  });
 }
 
 async function deriveNewsroomProposal(url) {
@@ -254,6 +306,7 @@ export async function startSetupController({
 
   let capability = randomCapability();
   let session = "";
+  let sessionCredentialContract = null;
   let active = true;
   let origin = "";
   let expectedHost = "";
@@ -294,16 +347,34 @@ export async function startSetupController({
   }
 
   async function publicStatus() {
-    const listed = await engineBridge.list();
-    const rows = listed.ok
+    const listed = sessionCredentialContract;
+    const rows = hasCompatibleCredentialContract(listed)
       ? await Promise.all(listed.keys.map(async (row) => {
-          const status = await engineBridge.status(row.id);
-          return status.ok ? status : { ...row, ...status, generation: row.generation ?? 0 };
+          try {
+            const status = await engineBridge.status(row.id);
+            return status.ok ? status : { ...row, ...status, generation: row.generation ?? 0 };
+          } catch {
+            return {
+              ...row,
+              ok: false,
+              status: "status-unavailable",
+              stored: row.stored === true,
+              generation: Number.isSafeInteger(row.generation) ? row.generation : 0,
+              validation: null,
+            };
+          }
         }))
-      : [];
+      : listed.keys;
     const newsroom = await readNewsroom(newsroomPath);
     const legacy = legacyEnvPath ? await inspectLegacyEnv(legacyEnvPath) : null;
-    return { credentials: rows, broker: listed.broker ?? null, newsroom, legacy };
+    return {
+      contractVersion: listed.contractVersion,
+      credentials: rows,
+      broker: listed.broker,
+      credentialIndependentPathsAvailable: true,
+      newsroom,
+      legacy,
+    };
   }
 
   async function handler(request, response) {
@@ -321,6 +392,13 @@ export async function startSetupController({
         const body = exactObject(await readJson(request), ["capability"], "session request");
         if (!active || !capability || body.capability !== capability) return sendJson(response, 403, { code: "expired-capability", message: "This setup link has expired." });
         capability = "";
+        let listed;
+        try {
+          listed = await engineBridge.list();
+        } catch {
+          listed = null;
+        }
+        sessionCredentialContract = retainedCredentialContract(listed);
         session = randomCapability();
         resetIdle();
         lifecycle("session-opened");
@@ -335,7 +413,11 @@ export async function startSetupController({
       }
       if (url.pathname === "/api/credential/replace") {
         const body = exactObject(await readJson(request), ["id", "candidate", "expectedGeneration", "validationContext"], "credential replacement");
-        if (!CREDENTIAL_IDS.has(body.id)) throw new Error("unsupported credential id");
+        if (!CREDENTIAL_ID_SET.has(body.id)) throw new Error("unsupported credential id");
+        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
+        if (!isCandidateWithinContract(sessionCredentialContract, body.id, body.candidate)) {
+          throw new Error("credential candidate exceeds the retained Engine contract");
+        }
         const result = await runMutation(() => engineBridge.replace(body.id, {
           candidate: body.candidate,
           expectedGeneration: body.expectedGeneration,
@@ -345,7 +427,8 @@ export async function startSetupController({
       }
       if (url.pathname === "/api/credential/remove") {
         const body = exactObject(await readJson(request), ["id", "expectedGeneration"], "credential removal");
-        if (!CREDENTIAL_IDS.has(body.id)) throw new Error("unsupported credential id");
+        if (!CREDENTIAL_ID_SET.has(body.id)) throw new Error("unsupported credential id");
+        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
         const result = await runMutation(() => engineBridge.remove(body.id, { expectedGeneration: body.expectedGeneration }));
         return sendJson(response, result.ok ? 200 : result.status === "conflict" ? 409 : 422, result);
       }
@@ -365,19 +448,25 @@ export async function startSetupController({
           "credentialId", "expectedEnvRevision", "assignmentId", "expectedGeneration",
           "validationContext", "confirmRemoval",
         ], "legacy credential migration");
-        if (!CREDENTIAL_IDS.has(body.credentialId) || typeof body.confirmRemoval !== "boolean") throw new Error("legacy credential migration is invalid");
+        if (!CREDENTIAL_ID_SET.has(body.credentialId) || typeof body.confirmRemoval !== "boolean") throw new Error("legacy credential migration is invalid");
+        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
         const result = await runMutation(async () => {
           const legacy = await readLegacyCandidate(legacyEnvPath, {
             credentialId: body.credentialId,
             expectedRevision: body.expectedEnvRevision,
             assignmentId: body.assignmentId,
           });
+          if (!isCandidateWithinContract(sessionCredentialContract, body.credentialId, legacy.candidate)) {
+            throw new Error("legacy credential candidate exceeds the retained Engine contract");
+          }
           const stored = await engineBridge.replace(body.credentialId, {
             candidate: legacy.candidate,
             expectedGeneration: body.expectedGeneration,
             validationContext: body.validationContext,
           });
-          if (!stored.ok) return { ok: false, credential: stored, legacyRemoval: { status: "retained" } };
+          if (!isStoredReplacement(stored, body.expectedGeneration)) {
+            return { ok: false, credential: stored, legacyRemoval: { status: "retained" } };
+          }
           if (!body.confirmRemoval) return { ok: true, credential: stored, legacyRemoval: { status: "awaiting-confirmation" } };
           try {
             const legacyStatus = await removeLegacyAssignments(legacyEnvPath, {
@@ -429,6 +518,22 @@ export async function startSetupController({
         if (inFlightMutations > 0) {
           return sendJson(response, 409, { code: "operation-in-flight", message: "A save is still finishing. Wait for its result before closing setup." });
         }
+        if (url.pathname === "/api/done") {
+          // "Done" claims onboarding is complete: the newsroom identity must be ANSWERED — a
+          // complete valid profile or a recorded decline. "Close" stays available for leaving
+          // with onboarding incomplete; installation success never depends on either.
+          const snapshot = await readNewsroom(newsroomPath);
+          const answered = snapshot.declined === true
+            || (snapshot.exists === true
+              && snapshot.profile
+              && validateNewsroom(snapshot.profile).length === 0);
+          if (!answered) {
+            return sendJson(response, 409, {
+              code: "newsroom-required",
+              message: "Record the newsroom profile (or an explicit decline) before finishing setup.",
+            });
+          }
+        }
         sendJson(response, 200, { ok: true, state: url.pathname === "/api/done" ? "done" : "closed" });
         queueMicrotask(() => shutdown(url.pathname === "/api/done" ? "done" : "closed"));
         return;
@@ -464,6 +569,7 @@ export async function startSetupController({
     active = false;
     capability = "";
     session = "";
+    sessionCredentialContract = null;
     clearTimeout(idleTimer);
     clearTimeout(overallTimer);
     if (inFlightMutations > 0) {

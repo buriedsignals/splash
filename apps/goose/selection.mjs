@@ -56,9 +56,16 @@ export function capabilitySnapshotFromStatus(status, catalogue = catalog) {
       (row) => [row?.id, row],
     ),
   );
+  // The hosted-delivery setting is satisfied only by a Cloudflare receipt whose validated
+  // account matches the CURRENT newsroom profile; a token bound to a previous account must
+  // close the capability until it is revalidated against the recorded account.
+  const currentAccountId = /^[0-9a-f]{32}$/.test(status?.newsroom?.cloudflareAccountId ?? "")
+    ? status.newsroom.cloudflareAccountId
+    : null;
   const settingAvailable = new Set();
   for (const row of credentials.values()) {
-    if (row?.validation?.evidence?.cloudflareAccountId) {
+    const receiptAccount = row?.validation?.evidence?.cloudflareAccountId;
+    if (receiptAccount && currentAccountId && receiptAccount === currentAccountId) {
       settingAvailable.add("cloudflare-account-id");
     }
   }
@@ -84,6 +91,10 @@ export function capabilitySnapshotFromStatus(status, catalogue = catalog) {
     })),
     runtime: status?.runtime?.status ?? null,
     readiness: status?.readiness?.ready === true,
+    newsroom: {
+      decision: status?.newsroom?.decision ?? null,
+      cloudflareAccountId: currentAccountId,
+    },
   };
   return {
     generation: `sha256:${createHash("sha256")

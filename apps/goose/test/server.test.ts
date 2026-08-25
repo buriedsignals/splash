@@ -281,8 +281,10 @@ describe("production Splash MCP App shell", () => {
     });
     const wire = JSON.stringify(opened);
     expect(opened.structuredContent).toMatchObject({
-      schemaVersion: "splash-app/v1",
-      runtime: { status: "repair-required" },
+      schemaVersion: "splash-app/v2",
+      // The installed checkout runs (dependencies pass); the unanswered newsroom blocks
+      // readiness, not runtime health.
+      runtime: { status: "ready" },
     });
     expect(wire).not.toContain("app-only-capability");
     expect(wire).toContain("view was requested");
