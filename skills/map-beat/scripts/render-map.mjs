@@ -35,6 +35,7 @@ import {
   useTypeface,
   assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
+import { toDataUri } from "./inline-asset.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
 import {
   CO2_ALIAS,
@@ -154,7 +155,7 @@ const ramp = assertRampReads(
 async function plateOf(dir) {
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));
   const png = await readFile(join(dir, "plate.png"));
-  return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
+  return { geometry, plate: toDataUri(png, "image/png") };
 }
 
 const shared = {

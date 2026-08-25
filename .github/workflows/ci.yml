@@ -31,16 +31,31 @@ jobs:
             skills/intake/test \
             skills/newsroom-charter/test \
             skills/palette/test \
+            skills/doctrine/test/traits.test.ts \
+            skills/doctrine/test/guard-parity.test.ts \
+            skills/doctrine/test/guard-walker-contract.test.ts \
+            skills/doctrine/test/guard-path-boundaries.test.ts \
+            skills/doctrine/test/guard-walker-bounds.test.ts \
+            skills/doctrine/test/guard-cli-failure.test.ts \
             skills/storyboard/test \
             skills/splash/test/skill-md-matches-code.test.ts \
             skills/splash/test/phases.test.ts \
-            skills/splash/test/where.test.ts
-
+            skills/splash/test/where.test.ts \
+            skills/splash/test/landing-matches-the-catalogue.test.ts
       - name: Verify the capability matrix
         run: bun run matrix:check
 
       - name: Verify the type survey
         run: bun run survey:check
+
+      - name: Verify the visual catalogue derivative
+        run: bun run catalog:check
+
+      - name: Verify trait-derived guard coverage
+        run: bun run guards:check
+
+      - name: Verify the landing inventory
+        run: bun run landing:check
 
   render-map:
     if: github.event_name == 'workflow_dispatch'

@@ -7,6 +7,9 @@
   },
   "scripts": {
     "test": "bun test",
+    "guards": "bun scripts/guards.mjs",
+    "guards:check": "bun scripts/guards.mjs --check",
+    "landing:check": "bun scripts/landing.mjs --check",
     "matrix": "bun scripts/matrix.mjs",
     "matrix:check": "bun scripts/matrix.mjs --check",
     "survey": "bun scripts/type-survey.mjs",

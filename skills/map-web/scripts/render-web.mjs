@@ -33,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
+import { toDataUri } from "./inline-asset.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { groupsOf, markLayers, maxZoomForStudySet, radiusScale, slugOf } from "../assets/geo-symbol.ts";
 
@@ -743,7 +744,7 @@ async function ensurePlate(plateDir) {
 async function loadPlate(plateDir) {
   const geometry = JSON.parse(await readFile(join(plateDir, "geometry.json"), "utf8"));
   const png = await readFile(join(plateDir, "plate.png"));
-  return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
+  return { geometry, plate: toDataUri(png, "image/png") };
 }
 
 /** The seed beat's own runner: bakes the plate if missing, reads the seed's own points, hands the
