@@ -251,7 +251,7 @@ export async function startSplashApp({
   }
 
   function render(next) {
-    if (!next || next.schemaVersion !== "splash-app/v1") return;
+    if (!next || next.schemaVersion !== "splash-app/v2") return;
     status = next;
     const runtime = documentRef.querySelector("#runtime-state");
     runtime.textContent = statusText(next.runtime?.status);
@@ -268,6 +268,20 @@ export async function startSplashApp({
       item.textContent = "No hard pre-flight blockers.";
       blockers.append(item);
     }
+    const newsroom = next.newsroom ?? {};
+    const newsroomItem = documentRef.createElement("li");
+    const newsroomLabel = {
+      complete: "Newsroom profile complete",
+      declined: "Newsroom declined a house profile",
+      missing: "Newsroom identity not recorded yet",
+      invalid: "Recorded newsroom profile is invalid",
+      unknown: "Newsroom identity not read yet",
+    }[newsroom.decision] ?? "Newsroom identity not read yet";
+    const newsroomCopy = [newsroom.name, Array.isArray(newsroom.languages) && newsroom.languages.length ? newsroom.languages.join(", ") : ""]
+      .filter(Boolean)
+      .join(" · ");
+    newsroomItem.append(card(newsroomLabel, newsroomCopy || "Use setup to record it or record an explicit decline.", newsroom.decision === "complete" || newsroom.decision === "declined" ? "pass" : "missing"));
+    blockers.append(newsroomItem);
     const credentials = documentRef.querySelector("#credentials");
     credentials.replaceChildren();
     for (const row of next.credentials ?? []) {
@@ -326,7 +340,7 @@ export async function startSplashApp({
   route();
 
   app.ontoolresult = (result) => {
-    if (result?.structuredContent?.schemaVersion === "splash-app/v1") {
+    if (result?.structuredContent?.schemaVersion === "splash-app/v2") {
       render(result.structuredContent);
       announce("Current Splash status loaded.");
     }

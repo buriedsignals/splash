@@ -81,7 +81,34 @@ fi
     --bsig "$BSIG_PATH"
 )
 
-"$BSIG_PATH" doctor --product splash || true
+# Surface real doctor findings instead of swallowing them: a nonzero result warns loudly but
+# does not abort, because the Engine apply transaction above already gated activation on smoke.
+DOCTOR_EXIT=0
+"$BSIG_PATH" doctor --product splash || DOCTOR_EXIT=$?
+if [ "$DOCTOR_EXIT" -ne 0 ]; then
+  printf '\nWarning: bsig doctor reported problems (exit %s). Run it again with --json for details.\n' "$DOCTOR_EXIT" >&2
+fi
 
-printf '\nSplash development setup is active from %s.\n' "$ROOT"
+# Spotlight-style onboarding: after a successful apply, open the SAME protected setup page the
+# Readiness app uses. It collects optional credentials and the newsroom identity through Engine's
+# broker; closing it early never uninstalls or damages the install — onboarding just stays
+# incomplete and can be reopened from Splash Readiness at any time.
+SPLASH_SETUP_STATE="skipped"
+if [ "${SPLASH_SKIP_SETUP:-}" != "1" ]; then
+  SETUP_EXIT=0
+  bun --no-env-file "$ROOT/installer/configure.mjs" \
+    --root "$ROOT" --bsig "$BSIG_PATH" || SETUP_EXIT=$?
+  if [ "$SETUP_EXIT" -eq 0 ]; then
+    SPLASH_SETUP_STATE="closed"
+  else
+    printf '\nSetup ended early (exit %s). Nothing was damaged.\n' "$SETUP_EXIT"
+  fi
+fi
+
+printf '\nSplash is installed from %s.\n' "$ROOT"
+if [ "$SPLASH_SETUP_STATE" = "closed" ]; then
+  printf 'Onboarding page closed — saves made there are kept. Reopen anytime via Splash Readiness → “Set up credentials and newsroom”.\n'
+else
+  printf 'Onboarding is incomplete: credentials and the newsroom identity are still unset. Open Splash Readiness → “Set up credentials and newsroom” when ready.\n'
+fi
 printf 'Rerun this same command after intentional source or lockfile changes.\n'

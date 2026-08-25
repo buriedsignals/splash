@@ -279,6 +279,10 @@ describe("public readiness to selection capability adapter", () => {
     const base = {
       runtime: { status: "ready" },
       readiness: { ready: true },
+      newsroom: {
+        decision: "complete",
+        cloudflareAccountId: "0123456789abcdef0123456789abcdef",
+      },
       credentials: [
         { id: "MAPTILER_KEY", state: "ready", generation: 2 },
         {
@@ -304,6 +308,27 @@ describe("public readiness to selection capability adapter", () => {
     expect(first.reasons.datawrapper).toContain("Datawrapper");
     expect(first.generation).toMatch(/^sha256:[0-9a-f]{64}$/);
 
+    // A receipt validated against a DIFFERENT account than the current newsroom profile closes
+    // hosted delivery until the token is revalidated against the recorded account.
+    const mismatched = capabilitySnapshotFromStatus({
+      ...base,
+      newsroom: {
+        decision: "complete",
+        cloudflareAccountId: "ffffffffffffffffffffffffffffffff",
+      },
+    });
+    expect(mismatched.available).toEqual(["map", "map-delivery"]);
+    expect(mismatched.generation).not.toBe(first.generation);
+
+    // An unanswered newsroom leaves no current account to match against.
+    const unanswered = capabilitySnapshotFromStatus({
+      ...base,
+      newsroom: { decision: "missing", cloudflareAccountId: null },
+    });
+    expect(unanswered.available).toEqual(["map", "map-delivery"]);
+    expect(unanswered.generation).not.toBe(first.generation);
+
+    // Datawrapper opening still moves the generation.
     const changed = capabilitySnapshotFromStatus({
       ...base,
       credentials: base.credentials.map((row) =>

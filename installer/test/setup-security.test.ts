@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { CREDENTIAL_IDS, ENGINE_SPLASH_CONTRACT_MIN } from "../../apps/goose/contract.mjs";
 import { randomUUID } from "node:crypto";
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, open, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { readNewsroom, updateNewsroom } from "../setup/newsroom-store.mjs";
 import { acquireTargetLock } from "../setup/target-lock.mjs";
 import { createEngineBridge } from "../setup/engine-bridge.mjs";
@@ -16,6 +17,13 @@ afterEach(async () => {
   for (const controller of controllers.splice(0)) controller.close("test-cleanup");
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
+const DECLINED_NEWSROOM = `---
+decision: declined
+---
+
+A recorded decline, not a missing default.
+`;
+
 
 async function fixture() {
   const root = await realpath(await mkdtemp(join(tmpdir(), "splash-setup-store-")));
@@ -374,27 +382,749 @@ async function openSession(controller: Awaited<ReturnType<typeof startSetupContr
   return { response, cookie };
 }
 
+const CREDENTIAL_POLICIES = {
+  MAPTILER_KEY: ["provider-request-required", "validate-before-atomic-replacement"],
+  MAPTILER_DELIVERY_KEY: ["saved-unverified-origin-attestation", "attest-before-atomic-replacement"],
+  DATAWRAPPER_TOKEN: ["authenticated-account-request", "validate-before-atomic-replacement"],
+  CLOUDFLARE_API_TOKEN: ["token-and-account-verified-pages-scope-attested", "validate-before-atomic-replacement"],
+} as const;
+type CredentialListFixture = {
+  contractVersion: number;
+  broker: { status: string; reasonCode?: string; message?: string };
+  credentialIndependentPathsAvailable: boolean;
+  keys: Array<{
+    id: string;
+    name: string;
+    validatable: boolean;
+    storageKind: string;
+    stored: boolean;
+    generation: number | null;
+    validation: null;
+    metadata: {
+      contractVersion: number;
+      id: string;
+      name: string;
+      purpose: string;
+      acquisitionUrl: string;
+      storageKind: string;
+      validatorPolicy: string;
+      replacementBehavior: string;
+      validatorAvailable: boolean;
+      candidateMaxBytes: number;
+    };
+  }>;
+};
+
+
+function compatibleCredentialList(): CredentialListFixture {
+  return {
+    contractVersion: ENGINE_SPLASH_CONTRACT_MIN,
+    broker: { status: "available" },
+    credentialIndependentPathsAvailable: true,
+    keys: CREDENTIAL_IDS.map((id) => {
+      const [validatorPolicy, replacementBehavior] = CREDENTIAL_POLICIES[id as keyof typeof CREDENTIAL_POLICIES];
+      return {
+        id,
+        name: id,
+        validatable: true,
+        storageKind: "record",
+        stored: false,
+        generation: null,
+        validation: null,
+        metadata: {
+          contractVersion: ENGINE_SPLASH_CONTRACT_MIN,
+          id,
+          name: id,
+          purpose: `${id} fixture`,
+          acquisitionUrl: `https://credentials.example.test/${id}`,
+          storageKind: "record",
+          validatorPolicy,
+          replacementBehavior,
+          validatorAvailable: true,
+          candidateMaxBytes: 1024,
+        },
+      };
+    }),
+  };
+}
+
+function engineResult(data: unknown) {
+  return { exitCode: 0, stderr: "", events: [{ event: "result", data }] };
+}
+
+function operationResult(
+  listData: CredentialListFixture,
+  id: string,
+  {
+    status,
+    stored,
+    generation,
+    ...overrides
+  }: {
+    status: string;
+    stored: boolean;
+    generation: number;
+    [key: string]: unknown;
+  },
+) {
+  const metadata = listData.keys.find((row) => row.id === id)?.metadata;
+  return {
+    id,
+    status,
+    contractVersion: listData.contractVersion,
+    stored,
+    generation,
+    metadata,
+    validation: stored ? { status: "verified", dimensions: [] } : null,
+    broker: { status: "available" },
+    credentialIndependentPathsAvailable: true,
+    ...overrides,
+  };
+}
+
+
+function contractBridge(listData: CredentialListFixture, calls: Array<{ args: string[]; input: string }>) {
+  return createEngineBridge({
+    executable: "/fixture/bsig",
+    async invoke(_executable: string, args: string[], input: string) {
+      calls.push({ args, input });
+      if (args[1] === "list") return engineResult(listData);
+      const id = args[2];
+      if (args[1] === "remove") {
+        return engineResult(operationResult(listData, id, {
+          status: "removed",
+          stored: false,
+          generation: 2,
+        }));
+      }
+      if (args[1] === "replace") {
+        return engineResult(operationResult(listData, id, {
+          status: "stored",
+          stored: true,
+          generation: 1,
+        }));
+      }
+      return engineResult(operationResult(listData, id, {
+        status: "not-stored",
+        stored: false,
+        generation: 0,
+      }));
+    },
+  });
+}
+
 function stubBridge(overrides: Record<string, unknown> = {}) {
   return {
     async list() {
-      return {
-        ok: true,
-        broker: { status: "available" },
-        keys: [{ id: "MAPTILER_KEY", stored: false, metadata: { id: "MAPTILER_KEY", name: "MapTiler", acquisitionUrl: "https://cloud.maptiler.com/account/keys/" } }],
-      };
+      return { ok: true, ...compatibleCredentialList() };
     },
     async status(id: string) {
-      return { ok: true, id, stored: false, generation: 0, metadata: { id, name: "MapTiler", acquisitionUrl: "https://cloud.maptiler.com/account/keys/" } };
+      const metadata = compatibleCredentialList().keys.find((row) => row.id === id)?.metadata;
+      return { ok: true, id, stored: false, generation: 0, metadata };
     },
     async replace(id: string) {
-      return { ok: true, id, stored: true, generation: 1, metadata: { id, name: "MapTiler" } };
+      return { ok: true, id, stored: true, generation: 1, metadata: { id, name: id } };
     },
     async remove(id: string) {
-      return { ok: true, id, stored: false, generation: 2, metadata: { id, name: "MapTiler" } };
+      return { ok: true, id, stored: false, generation: 2, metadata: { id, name: id } };
     },
     ...overrides,
   };
 }
+
+describe("protected setup Engine credential contract", () => {
+  test("opens a compatible session after one handshake and reuses its contract for mutations", async () => {
+    const listData = compatibleCredentialList();
+    listData.contractVersion = ENGINE_SPLASH_CONTRACT_MIN + 1;
+    for (const row of listData.keys) row.metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN + 1;
+    const calls: Array<{ args: string[]; input: string }> = [];
+    const controller = await controllerFixture(contractBridge(listData, calls));
+    const { response, cookie } = await openSession(controller);
+
+    expect(response.status).toBe(200);
+    expect(calls.filter(({ args }) => args[1] === "list")).toHaveLength(1);
+
+    const replaced = await fetch(`${controller.origin}/api/credential/replace`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({ id: "DATAWRAPPER_TOKEN", candidate: "compatible-candidate", expectedGeneration: 0, validationContext: {} }),
+    });
+    const removed = await fetch(`${controller.origin}/api/credential/remove`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({ id: "DATAWRAPPER_TOKEN", expectedGeneration: 1 }),
+    });
+
+    expect(replaced.status).toBe(200);
+    expect(removed.status).toBe(200);
+    expect(calls.filter(({ args }) => args[1] === "list")).toHaveLength(1);
+  });
+
+  const incompatibleContracts: Array<{
+    name: string;
+    change: (data: CredentialListFixture) => void;
+  }> = [
+    { name: "missing record", change: (data) => { data.keys.pop(); } },
+    { name: "duplicate record", change: (data) => { data.keys.push(structuredClone(data.keys[0])); } },
+    { name: "lower envelope version", change: (data) => { data.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
+    { name: "lower record version", change: (data) => { data.keys[3].metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
+    { name: "wrong row storage", change: (data) => { data.keys[1].storageKind = "raw"; } },
+    { name: "wrong metadata storage", change: (data) => { data.keys[2].metadata.storageKind = "raw"; } },
+    {
+      name: "missing validator",
+      change: (data) => {
+        data.keys[3].validatable = false;
+        data.keys[3].metadata.validatorAvailable = false;
+      },
+    },
+    { name: "wrong validator policy", change: (data) => { data.keys[0].metadata.validatorPolicy = "weaker-policy"; } },
+    { name: "wrong replacement policy", change: (data) => { data.keys[3].metadata.replacementBehavior = "replace-without-validation"; } },
+    { name: "mismatched metadata identity", change: (data) => { data.keys[2].metadata.id = "MAPTILER_KEY"; } },
+    { name: "malformed candidate bound", change: (data) => { data.keys[1].metadata.candidateMaxBytes = 0; } },
+  ];
+
+  for (const { name, change } of incompatibleContracts) {
+    test(`${name} publishes bounded repair status and disables replacement`, async () => {
+      const listData = compatibleCredentialList();
+      change(listData);
+      const calls: Array<{ args: string[]; input: string }> = [];
+      const controller = await controllerFixture(contractBridge(listData, calls));
+      const { response, cookie } = await openSession(controller);
+      const statusResponse = await fetch(`${controller.origin}/api/status`, {
+        method: "POST",
+        headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+        body: "{}",
+      });
+      const replacement = await fetch(`${controller.origin}/api/credential/replace`, {
+        method: "POST",
+        headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+        body: JSON.stringify({ id: "MAPTILER_KEY", candidate: "refused-candidate", expectedGeneration: 0, validationContext: {} }),
+      });
+      const status = await statusResponse.json();
+
+      expect(response.status).toBe(200);
+      expect(statusResponse.status).toBe(200);
+      expect(status).toMatchObject({
+        contractVersion: ENGINE_SPLASH_CONTRACT_MIN,
+        broker: { status: "unavailable", reasonCode: "engine-outdated" },
+        credentialIndependentPathsAvailable: true,
+        newsroom: { exists: false },
+      });
+      expect(typeof status.broker.message).toBe("string");
+      expect(status.broker.message.length).toBeLessThanOrEqual(2048);
+      expect(replacement.status).toBe(409);
+    });
+  }
+
+  test("broker refusal keeps newsroom work available and reaches no Engine mutation boundary", async () => {
+    const candidate = "refused-secret-canary-12345";
+    const listData = compatibleCredentialList();
+    listData.broker = {
+      status: "unavailable",
+      reasonCode: "secure-store-unavailable",
+      message: `raw /private/tmp/bsig diagnostic ${candidate}`,
+    };
+    const calls: Array<{ args: string[]; input: string }> = [];
+    const controller = await controllerFixture(contractBridge(listData, calls));
+    const { response, cookie } = await openSession(controller);
+    const statusResponse = await fetch(`${controller.origin}/api/status`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    const status = await statusResponse.json();
+    const newsroom = await fetch(`${controller.origin}/api/newsroom`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedRevision: status.newsroom.revision,
+        changes: {},
+        decline: true,
+        confirmDecline: true,
+        confirmReplaceDecline: false,
+      }),
+    });
+    const replacement = await fetch(`${controller.origin}/api/credential/replace`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({ id: "MAPTILER_KEY", candidate, expectedGeneration: 0, validationContext: {} }),
+    });
+    const removal = await fetch(`${controller.origin}/api/credential/remove`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({ id: "MAPTILER_KEY", expectedGeneration: 1 }),
+    });
+    const migration = await fetch(`${controller.origin}/api/legacy/migrate-credential`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        credentialId: "MAPTILER_KEY",
+        expectedEnvRevision: "unused",
+        assignmentId: "unused",
+        expectedGeneration: 0,
+        validationContext: {},
+        confirmRemoval: false,
+      }),
+    });
+    const refusal = await replacement.json();
+
+    expect(response.status).toBe(200);
+    expect(status).toMatchObject({
+      contractVersion: ENGINE_SPLASH_CONTRACT_MIN,
+      broker: { status: "unavailable", reasonCode: "secure-store-unavailable" },
+      credentialIndependentPathsAvailable: true,
+    });
+    expect(newsroom.status).toBe(200);
+    expect([replacement.status, removal.status, migration.status]).toEqual([409, 409, 409]);
+    expect(refusal).toEqual({
+      code: "credential-contract-unavailable",
+      message: "Update or repair Engine before changing Splash credentials.",
+    });
+    expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
+    expect(calls.some(({ input }) => input.includes(candidate))).toBe(false);
+    const publicOutput = JSON.stringify({ status, refusal });
+    expect(publicOutput).not.toContain(candidate);
+    expect(publicOutput).not.toContain("/private/tmp");
+    expect(publicOutput).not.toContain("/fixture/bsig");
+  });
+
+  test("keeps status and newsroom access available when one post-handshake status read fails", async () => {
+    const listData = compatibleCredentialList();
+    const diagnostic = "post-handshake-secret-canary-24680 at /private/tmp/swapped-bsig";
+    const bridge = createEngineBridge({
+      executable: "/fixture/bsig",
+      async invoke(_executable: string, args: string[]) {
+        if (args[1] === "list") return engineResult(listData);
+        if (args[1] === "status" && args[2] === "DATAWRAPPER_TOKEN") throw new Error(diagnostic);
+        return engineResult(operationResult(listData, args[2], {
+          status: "not-stored",
+          stored: false,
+          generation: 0,
+        }));
+      },
+    });
+    const controller = await controllerFixture(bridge);
+    const { cookie } = await openSession(controller);
+    const statusResponse = await fetch(`${controller.origin}/api/status`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    const status = await statusResponse.json();
+
+    expect(statusResponse.status).toBe(200);
+    expect(status.credentials).toHaveLength(CREDENTIAL_IDS.length);
+    expect(status.credentials.find(({ id }: { id: string }) => id === "DATAWRAPPER_TOKEN")?.ok).toBe(false);
+    expect(status.newsroom).toMatchObject({ exists: false });
+    const publicOutput = JSON.stringify(status);
+    expect(publicOutput.length).toBeLessThanOrEqual(16_384);
+    expect(publicOutput).not.toContain("post-handshake-secret-canary");
+    expect(publicOutput).not.toContain("/private/tmp");
+
+    const newsroom = await fetch(`${controller.origin}/api/newsroom`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        expectedRevision: status.newsroom.revision,
+        changes: {},
+        decline: true,
+        confirmDecline: true,
+        confirmReplaceDecline: false,
+      }),
+    });
+    expect(newsroom.status).toBe(200);
+  });
+
+  test("closes and bounds list, status, replacement, and removal diagnostics", async () => {
+    const listData = compatibleCredentialList();
+    const diagnostic = "untrusted-engine-secret-canary-13579";
+    const executablePath = "/private/tmp/untrusted-bsig";
+    const longDiagnostic = `${diagnostic} ${executablePath} ${"x".repeat(5_000)}`;
+    const bridge = createEngineBridge({
+      executable: "/fixture/bsig",
+      async invoke(_executable: string, args: string[]) {
+        if (args[1] === "list") return engineResult(listData);
+        if (args[1] === "status") {
+          return engineResult(operationResult(listData, args[2], {
+            status: "stored",
+            stored: true,
+            generation: 1,
+            validation: {
+              status: "verified",
+              dimensions: [{ id: "provider", status: "verified", reason: longDiagnostic }],
+              raw: longDiagnostic,
+            },
+          }));
+        }
+        return {
+          exitCode: 1,
+          stderr: "",
+          events: [{
+            event: "error",
+            data: {
+              id: args[2],
+              status: "rejected",
+              outcome: longDiagnostic,
+              reason: longDiagnostic,
+              expectedGeneration: 1,
+              previousRecord: "unchanged",
+              written: false,
+            },
+          }],
+        };
+      },
+    });
+    await bridge.list();
+    const status = await bridge.status("MAPTILER_KEY");
+    const replacement = await bridge.replace("MAPTILER_KEY", {
+      candidate: "safe-replacement-candidate",
+      expectedGeneration: 0,
+      validationContext: {},
+    });
+    const removal = await bridge.remove("MAPTILER_KEY", { expectedGeneration: 1 });
+
+    const unavailableList = compatibleCredentialList();
+    unavailableList.broker = {
+      status: "unavailable",
+      reasonCode: "secure-store-unavailable",
+      message: longDiagnostic,
+    };
+    const listFailure = await createEngineBridge({
+      executable: "/fixture/bsig",
+      async invoke() {
+        return engineResult(unavailableList);
+      },
+    }).list();
+
+    for (const output of [listFailure, status, replacement, removal]) {
+      const serialized = JSON.stringify(output);
+      expect(serialized.length).toBeLessThanOrEqual(4_096);
+      expect(serialized).not.toContain(diagnostic);
+      expect(serialized).not.toContain(executablePath);
+    }
+  });
+
+  const invalidOperationSuccesses: Array<{
+    name: string;
+    operation: "status" | "replace" | "remove";
+    expectedGeneration: number;
+    response: {
+      status: string;
+      stored: boolean;
+      generation: number;
+      [key: string]: unknown;
+    };
+  }> = [
+    {
+      name: "status reports a removal",
+      operation: "status",
+      expectedGeneration: 0,
+      response: { status: "removed", stored: false, generation: 1 },
+    },
+    {
+      name: "replacement reports not stored",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: { status: "not-stored", stored: false, generation: 1 },
+    },
+    {
+      name: "replacement does not advance generation",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: { status: "stored", stored: true, generation: 0 },
+    },
+    {
+      name: "replacement reports a lower contract",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: {
+        status: "stored",
+        stored: true,
+        generation: 1,
+        contractVersion: ENGINE_SPLASH_CONTRACT_MIN - 1,
+      },
+    },
+    {
+      name: "replacement omits the operation contract version",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: {
+        status: "stored",
+        stored: true,
+        generation: 1,
+        contractVersion: undefined,
+      },
+    },
+    {
+      name: "replacement reports a non-numeric operation contract version",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: {
+        status: "stored",
+        stored: true,
+        generation: 1,
+        contractVersion: "2",
+      },
+    },
+    {
+      name: "replacement reports an unavailable broker",
+      operation: "replace",
+      expectedGeneration: 0,
+      response: {
+        status: "stored",
+        stored: true,
+        generation: 1,
+        broker: { status: "unavailable", reasonCode: "secure-store-unavailable" },
+      },
+    },
+    {
+      name: "removal reports the credential still stored",
+      operation: "remove",
+      expectedGeneration: 1,
+      response: { status: "stored", stored: true, generation: 2 },
+    },
+    {
+      name: "removal does not advance generation",
+      operation: "remove",
+      expectedGeneration: 1,
+      response: { status: "removed", stored: false, generation: 1 },
+    },
+  ];
+
+  for (const { name, operation, expectedGeneration, response } of invalidOperationSuccesses) {
+    test(`${name} cannot become a public success`, async () => {
+      const listData = compatibleCredentialList();
+      const bridge = createEngineBridge({
+        executable: "/fixture/bsig",
+        async invoke(_executable: string, args: string[]) {
+          if (args[1] === "list") return engineResult(listData);
+          return engineResult(operationResult(listData, "MAPTILER_KEY", response));
+        },
+      });
+      await bridge.list();
+      let result: { ok?: unknown } | null = null;
+      try {
+        result = operation === "status"
+          ? await bridge.status("MAPTILER_KEY")
+          : operation === "replace"
+            ? await bridge.replace("MAPTILER_KEY", {
+                candidate: "operation-invariant-candidate",
+                expectedGeneration,
+                validationContext: {},
+              })
+            : await bridge.remove("MAPTILER_KEY", { expectedGeneration });
+      } catch {
+        // A closed rejection and a normalized failure both satisfy the no-success contract.
+      }
+      expect(result?.ok).not.toBe(true);
+    });
+  }
+
+  test("keeps legacy plaintext when Engine does not prove the replacement was stored", async () => {
+    const { root, path } = await fixture();
+    const envPath = join(root, ".env");
+    const candidate = "legacy-preservation-canary-86420";
+    await writeFile(path, PROFILE);
+    await writeFile(envPath, `MAPTILER_API_KEY=${candidate}\nUNRELATED=keep\n`, { mode: 0o600 });
+    const listData = compatibleCredentialList();
+    const bridge = createEngineBridge({
+      executable: "/fixture/bsig",
+      async invoke(_executable: string, args: string[]) {
+        if (args[1] === "list") return engineResult(listData);
+        if (args[1] === "status") {
+          return engineResult(operationResult(listData, args[2], {
+            status: "not-stored",
+            stored: false,
+            generation: 0,
+          }));
+        }
+        return engineResult(operationResult(listData, args[2], {
+          status: "not-stored",
+          stored: false,
+          generation: 1,
+        }));
+      },
+    });
+    const controller = await startSetupController({
+      engineBridge: bridge,
+      newsroomPath: path,
+      legacyEnvPath: envPath,
+      idleMs: 10_000,
+      overallMs: 20_000,
+    });
+    controllers.push(controller);
+    const { cookie } = await openSession(controller);
+    const statusResponse = await fetch(`${controller.origin}/api/status`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    const status = await statusResponse.json();
+    const legacy = status.legacy.credentials[0];
+    const migration = await fetch(`${controller.origin}/api/legacy/migrate-credential`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        credentialId: legacy.id,
+        expectedEnvRevision: status.legacy.revision,
+        assignmentId: legacy.assignmentId,
+        expectedGeneration: 0,
+        validationContext: {},
+        confirmRemoval: true,
+      }),
+    });
+
+    expect(migration.status).not.toBe(200);
+    expect(await readFile(envPath, "utf8")).toBe(`MAPTILER_API_KEY=${candidate}\nUNRELATED=keep\n`);
+    expect(JSON.stringify(await migration.json())).not.toContain(candidate);
+  });
+
+  test("sends zero candidate bytes when the executable target changes after the handshake", async () => {
+    const root = await realpath(await mkdtemp(join(tmpdir(), "splash-engine-identity-")));
+    roots.push(root);
+    const compatibleTarget = join(root, "bsig-compatible");
+    const swappedTarget = join(root, "bsig-swapped");
+    const executable = join(root, "bsig");
+    const capturedInput = join(root, "captured-input");
+    const listData = compatibleCredentialList();
+    const compatibleEvent = JSON.stringify({ event: "result", data: listData });
+    const swappedEvent = JSON.stringify({
+      event: "result",
+      data: operationResult(listData, "MAPTILER_KEY", {
+        status: "stored",
+        stored: true,
+        generation: 1,
+      }),
+    });
+    await writeFile(
+      compatibleTarget,
+      `#!/usr/bin/env bun\nconsole.log(${JSON.stringify(compatibleEvent)});\n`,
+      { mode: 0o700 },
+    );
+    await writeFile(
+      swappedTarget,
+      `#!/usr/bin/env bun\nconst input = await new Response(Bun.stdin.stream()).text();\nawait Bun.write(${JSON.stringify(capturedInput)}, input);\nconsole.log(${JSON.stringify(swappedEvent)});\n`,
+      { mode: 0o700 },
+    );
+    await chmod(compatibleTarget, 0o700);
+    await chmod(swappedTarget, 0o700);
+    await symlink(compatibleTarget, executable);
+    const bridge = createEngineBridge({ executable });
+    await bridge.list();
+    await rm(executable);
+    await symlink(swappedTarget, executable);
+    let result: { ok?: unknown } | null = null;
+    try {
+      result = await bridge.replace("MAPTILER_KEY", {
+        candidate: "identity-swap-candidate-canary",
+        expectedGeneration: 0,
+        validationContext: {},
+      });
+    } catch {
+      // Refusal before transmission is the required outcome.
+    }
+
+    let transmitted = "";
+    try {
+      transmitted = await readFile(capturedInput, "utf8");
+    } catch {
+      // A target rejected before spawn leaves no capture file.
+    }
+    expect(transmitted).toBe("");
+    expect(result?.ok).not.toBe(true);
+  });
+
+
+  test("sends zero candidate bytes when the executable is rewritten in place after the handshake", async () => {
+    const root = await realpath(await mkdtemp(join(tmpdir(), "splash-engine-content-")));
+    roots.push(root);
+    const executable = join(root, "bsig");
+    const capturedInput = join(root, "captured-input");
+    const listData = compatibleCredentialList();
+    const listEvent = JSON.stringify({ event: "result", data: listData });
+    const storedEvent = JSON.stringify({
+      event: "result",
+      data: operationResult(listData, "MAPTILER_KEY", {
+        status: "stored",
+        stored: true,
+        generation: 1,
+      }),
+    });
+    const captureAndStore = `cat > ${JSON.stringify(capturedInput)}\nprintf '%s\\n' '${storedEvent}'\n`;
+    await writeFile(
+      executable,
+      `#!/bin/sh\nif [ "$2" = "keys" ] && [ "$3" = "list" ]; then\n  printf '%s\\n' '${listEvent}'\nelif [ "$2" = "keys" ] && [ "$3" = "replace" ]; then\n  ${captureAndStore}else\n  printf '%s\\n' '{"event":"error","data":{"status":"unsupported"}}'\n  exit 1\nfi\n`,
+      { mode: 0o700 },
+    );
+    const bridge = createEngineBridge({ executable });
+    expect((await bridge.list()).ok).toBe(true);
+
+    // Rewrite the SAME inode in place with hostile bytes that capture stdin. A path/device/inode
+    // comparison alone would pass here; the content digest must refuse before any spawn.
+    const handle = await open(executable, "r+");
+    try {
+      await handle.truncate(0);
+      await handle.write(Buffer.from(`#!/bin/sh\n${captureAndStore}`), 0);
+    } finally {
+      await handle.close();
+    }
+
+    let result: { ok?: unknown } | null = null;
+    try {
+      result = await bridge.replace("MAPTILER_KEY", {
+        candidate: "content-swap-candidate-canary",
+        expectedGeneration: 0,
+        validationContext: {},
+      });
+    } catch {
+      // Refusal before transmission is the required outcome.
+    }
+    let transmitted = "";
+    try {
+      transmitted = await readFile(capturedInput, "utf8");
+    } catch {
+      // Refusal before spawn leaves no capture file.
+    }
+    expect(transmitted).toBe("");
+    expect(result?.ok).not.toBe(true);
+  });
+
+  test("a compatible session accepts the declared candidate byte boundary and refuses one byte over it", async () => {
+    const listData = compatibleCredentialList();
+    const candidateMaxBytes = listData.keys[2].metadata.candidateMaxBytes;
+    const calls: Array<{ args: string[]; input: string }> = [];
+    const controller = await controllerFixture(contractBridge(listData, calls));
+    const { cookie } = await openSession(controller);
+    const accepted = await fetch(`${controller.origin}/api/credential/replace`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: "DATAWRAPPER_TOKEN",
+        candidate: "x".repeat(candidateMaxBytes),
+        expectedGeneration: 0,
+        validationContext: {},
+      }),
+    });
+    const oversized = await fetch(`${controller.origin}/api/credential/replace`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: "DATAWRAPPER_TOKEN",
+        candidate: `oversized-canary-${"x".repeat(candidateMaxBytes)}`,
+        expectedGeneration: 1,
+        validationContext: {},
+      }),
+    });
+
+    expect(accepted.status).toBe(200);
+    expect(oversized.status).toBe(400);
+    expect(await oversized.json()).toEqual({
+      code: "invalid-request",
+      message: "The request was refused without changing setup state.",
+    });
+    expect(calls.some(({ input }) => input.includes("oversized-canary"))).toBe(false);
+  });
+});
 
 describe("token-bound loopback setup controller", () => {
   test("serves no-store CSP HTML and rejects wrong origin, cookie, and capability", async () => {
@@ -444,12 +1174,26 @@ describe("token-bound loopback setup controller", () => {
   test("keeps candidate bodies out of lifecycle control events and invalidates on Done", async () => {
     const lifecycle: unknown[] = [];
     let observed = "";
-    const controller = await controllerFixture(stubBridge({
-      async replace(_id: string, request: any) {
-        observed = request.candidate;
-        return { ok: true, id: "MAPTILER_KEY", stored: true, generation: 1, metadata: { id: "MAPTILER_KEY" } };
-      },
-    }), (event) => lifecycle.push(event));
+    const { root, path } = await fixture();
+    // Done requires an answered newsroom identity; a decline is an answer.
+    await writeFile(path, DECLINED_NEWSROOM);
+    const controller = await startSetupController({
+      engineBridge: stubBridge({
+        async replace(_id: string, request: unknown) {
+          let candidate: unknown;
+          if (typeof request === "object" && request !== null && "candidate" in request) {
+            candidate = request.candidate; // `in` narrows to unknown; validated below
+          }
+          observed = typeof candidate === "string" ? candidate : "";
+          return { ok: true, id: "MAPTILER_KEY", stored: true, generation: 1, metadata: { id: "MAPTILER_KEY" } };
+        },
+      }),
+      newsroomPath: path,
+      legacyEnvPath: join(root, ".env"),
+      idleMs: 10_000,
+      overallMs: 20_000,
+    });
+    controllers.push(controller);
     const { cookie } = await openSession(controller);
     const saved = await fetch(`${controller.origin}/api/credential/replace`, {
       method: "POST",
@@ -503,6 +1247,53 @@ describe("token-bound loopback setup controller", () => {
     });
     expect(closed.status).toBe(200);
     expect(await controller.closed).toEqual({ reason: "closed" });
+  });
+
+  test("Done refuses an unanswered newsroom and Close stays honestly incomplete", async () => {
+    const lifecycle: unknown[] = [];
+    const controller = await controllerFixture(stubBridge(), (event) => lifecycle.push(event));
+    const { cookie } = await openSession(controller);
+
+    const refused = await fetch(`${controller.origin}/api/done`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ code: "newsroom-required" });
+
+    // Close remains available: installation succeeds with onboarding incomplete.
+    const closed = await fetch(`${controller.origin}/api/close`, {
+      method: "POST",
+      headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(closed.status).toBe(200);
+    expect((await closed.json()).state).toBe("closed");
+    expect(await controller.closed).toEqual({ reason: "closed" });
+  });
+
+  test("Done accepts a complete profile or a recorded decline as the answered identity", async () => {
+    for (const answer of [PROFILE, DECLINED_NEWSROOM]) {
+      const { root, path } = await fixture();
+      await writeFile(path, answer);
+      const controller = await startSetupController({
+        engineBridge: stubBridge(),
+        newsroomPath: path,
+        legacyEnvPath: join(root, ".env"),
+        idleMs: 10_000,
+        overallMs: 20_000,
+      });
+      controllers.push(controller);
+      const { cookie } = await openSession(controller);
+      const done = await fetch(`${controller.origin}/api/done`, {
+        method: "POST",
+        headers: { origin: controller.origin, cookie, "content-type": "application/json" },
+        body: "{}",
+      });
+      expect(done.status).toBe(200);
+      expect(await controller.closed).toEqual({ reason: "done" });
+    }
   });
 
   test("moves an inspected legacy credential through Engine before exact confirmed removal", async () => {
@@ -634,6 +1425,8 @@ describe("configure.mjs Engine-default entrypoint", () => {
     const newsroomRoot = join(home, ".config", "splash");
     await mkdir(installRoot, { recursive: true });
     await mkdir(newsroomRoot, { recursive: true });
+    // Done requires an answered identity; the decline stub is the smallest answer here.
+    await writeFile(join(newsroomRoot, "NEWSROOM.md"), DECLINED_NEWSROOM);
     const bsig = join(root, "bsig-fixture");
     await writeFile(bsig, `#!/bin/sh
 if [ "$2" = "keys" ] && [ "$3" = "list" ]; then
@@ -695,15 +1488,18 @@ exit 1
     const { root } = await fixture();
     const newsroomRoot = join(root, "newsroom");
     await mkdir(newsroomRoot);
+    // Done requires an answered identity; the decline stub is the smallest answer here.
+    await writeFile(join(newsroomRoot, "NEWSROOM.md"), DECLINED_NEWSROOM);
     const bsig = join(root, "bsig-child-fixture");
+    const listEvent = JSON.stringify({ event: "result", data: compatibleCredentialList() });
     await writeFile(bsig, `#!/bin/sh
 if [ "$2" = "keys" ] && [ "$3" = "list" ]; then
-  printf '%s\\n' '{"event":"result","data":{"broker":{"status":"available"},"credentialIndependentPathsAvailable":true,"keys":[{"id":"MAPTILER_KEY","stored":false,"generation":null,"metadata":{"id":"MAPTILER_KEY","name":"MapTiler"}}]}}'
+  printf '%s\\n' '${listEvent}'
 elif [ "$2" = "keys" ] && [ "$3" = "status" ]; then
-  printf '%s\\n' '{"event":"result","data":{"id":"MAPTILER_KEY","status":"not-stored","stored":false,"generation":0,"metadata":{"id":"MAPTILER_KEY","name":"MapTiler"},"broker":{"status":"available"},"credentialIndependentPathsAvailable":true}}'
+  printf '%s\\n' '{"event":"result","data":{"id":"MAPTILER_KEY","status":"not-stored","stored":false,"generation":0,"contractVersion":${ENGINE_SPLASH_CONTRACT_MIN},"metadata":{"id":"MAPTILER_KEY","name":"MapTiler"},"broker":{"status":"available"},"credentialIndependentPathsAvailable":true}}'
 elif [ "$2" = "keys" ] && [ "$3" = "replace" ]; then
   IFS= read -r request_body
-  printf '%s\\n' '{"event":"result","data":{"id":"MAPTILER_KEY","status":"stored","stored":true,"generation":1,"metadata":{"id":"MAPTILER_KEY","name":"MapTiler"},"validation":{"status":"verified","dimensions":[]},"broker":{"status":"available"},"credentialIndependentPathsAvailable":true}}'
+  printf '%s\\n' '{"event":"result","data":{"id":"MAPTILER_KEY","status":"stored","stored":true,"generation":1,"contractVersion":${ENGINE_SPLASH_CONTRACT_MIN},"metadata":{"id":"MAPTILER_KEY","name":"MapTiler"},"validation":{"status":"verified","dimensions":[]},"broker":{"status":"available"},"credentialIndependentPathsAvailable":true}}'
 else
   printf '%s\\n' '{"event":"error","data":{"status":"unsupported"}}'
   exit 1
