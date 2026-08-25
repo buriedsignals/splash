@@ -444,6 +444,23 @@
   }
   .foot-meta .brand-mini { display: flex; align-items: center; gap: 9px; }
   .foot-meta .brand-mini svg { width: 13px; height: 13px; opacity: 0.8; }
+  .foot-fund {
+    max-width: 1120px; margin: 36px auto 0; padding-top: 28px;
+    border-top: 1px solid rgba(245, 242, 237, 0.16);
+  }
+  .foot-fund-label {
+    font-family: var(--grot); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(245, 242, 237, 0.45); margin: 0 0 10px;
+  }
+  .foot-fund a { display: inline-block; }
+  .foot-fund img {
+    height: 32px; width: auto;
+    filter: grayscale(1) invert(1);
+    opacity: 0.72;
+    transition: opacity 0.2s;
+  }
+  .foot-fund a:hover img { opacity: 1; }
   @media (max-width: 760px) {
     .foot-grid { grid-template-columns: 1fr; gap: 20px; }
     .foot-links { justify-content: flex-start; }
@@ -938,6 +955,12 @@
       <a href="https://buriedsignals.com/consulting" target="_blank" rel="noopener">Work with me ↗</a>
       <a href="https://buriedsignals.com" target="_blank" rel="noopener">Buried Signals ↗</a>
     </div>
+  </div>
+  <div class="foot-fund">
+    <p class="foot-fund-label">Funded by</p>
+    <a href="https://www.imj-fjm.ch/" target="_blank" rel="noopener">
+      <img src="logo_imj_schwarz.svg" alt="IMJ" width="86" height="53" />
+    </a>
   </div>
   <div class="foot-meta">
     <span class="brand-mini">
