@@ -204,7 +204,10 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     const state = await whereIs(dir);
     expect(state.phase).toBe("framing");
-    expect(state.missing).toContain("STORYBOARD.md");
+    expect(state.missing).toEqual(["a confirmed takeaway"]);
+    expect(state.resume).toBe(
+      "Stop at G1; the journalist must provide a confirmed takeaway.",
+    );
   });
 
   it("should report production once every Gate-2 scalar and every slot field is resolved", async () => {

@@ -83,7 +83,7 @@ independent visual review select personas.
 | Phase / state | Selected owner |
 | --- | --- |
 | `intake` | `skill:intake` — freezes `source/article.md`, `source/data.csv` and `source/profile.json` |
-| `framing` | `persona:editor` — prepares framing material; the journalist still closes the gate |
+| `framing` | `persona:editor` — prepares framing material; `missing` is `a confirmed takeaway`, not `STORYBOARD.md` |
 | `storyboard` | `skill:storyboard` — conducts G1, G2a/b/c, G2-treatment and G2-producer |
 | `production` / analysis required | `skill:analyst` — writes bound `data.json` for chart/map beats |
 | `production` / craft | The exact existing craft skill selected from the slot's medium, format and producer |
@@ -123,11 +123,12 @@ treatment, `storyboard` checks its pinned Datawrapper mapping: when a faithful i
 for the chosen format, ask Datawrapper or custom and end the turn; when none exists, ask nothing and
 continue with the custom producer. Never ask for the producer before the treatment.
 
-`missing` names decisions and files, never fields the user cannot act on. A confirmed takeaway alone
-is G1, not G2: `missingForGate2` holds the story in `storyboard` until the takeaway, every hand
-field, every slot's choice among its own candidates, and any conditional producer preference are
-recorded — enforced mechanically by `scripts/where.mjs` and pinned test-by-test in
-`test/where.test.ts`.
+`missing` names decisions and files, never fields the user cannot act on. Frozen source with no
+`STORYBOARD.md` stays in `framing` and reports `a confirmed takeaway` (G1), not the file. A
+confirmed takeaway alone is still not G2: `missingForGate2` holds the story in `storyboard` until
+the takeaway, every hand field, every slot's choice among its own candidates, and any conditional
+producer preference are recorded — enforced mechanically by `scripts/where.mjs` and pinned
+test-by-test in `test/where.test.ts`.
 
 ## Never-list
 

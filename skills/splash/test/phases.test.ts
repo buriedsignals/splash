@@ -298,7 +298,7 @@ describe("the orchestrator's prose and its code agree", () => {
       phase: "framing",
       status: "ready",
       owner: { kind: "persona", id: "editor" },
-      missing: ["STORYBOARD.md"],
+      missing: ["a confirmed takeaway"],
     });
 
     const calls: string[] = [];

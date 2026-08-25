@@ -1129,7 +1129,17 @@ async function resolveStoryState(storyDir) {
     return { phase: "intake", missing: unfrozen.map((f) => `source/${f}`) };
 
   const storyboard = await read(join(storyDir, "STORYBOARD.md"));
-  if (storyboard === null) return { phase: "framing", missing: ["STORYBOARD.md"] };
+  // Frozen source with no storyboard is still G1: name the journalist decision, not the
+  // file. `missing: ["STORYBOARD.md"]` sent models to write a storyboard instead of asking
+  // for a takeaway. Unterminated frontmatter stays a file diagnosis below.
+  if (storyboard === null) {
+    return {
+      phase: "framing",
+      gate: "G1",
+      awaiting: SCALAR_GAP.takeaway,
+      missing: [SCALAR_GAP.takeaway],
+    };
+  }
 
   const frontmatter = extractFrontmatter(storyboard);
   // S4: a file that opens a `---` block and never closes it is ONE diagnosable fact. Reporting
