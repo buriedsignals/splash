@@ -10,7 +10,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { sizeGap } from "../scripts/storyboard.mjs";
+import { PUBLICATION_DESTINATIONS, destinationGap, sizeGap } from "../scripts/storyboard.mjs";
 import { proposeSizes } from "../scripts/propose.mjs";
 
 const EXCHANGE = readFileSync(
@@ -90,6 +90,27 @@ describe("the exchange keeps its documented order", () => {
       for (const size of sizes) expect(sizeGap(format, size, 1)).toBeNull();
       if (sizes.length === 0) expect(sizeGap(format, undefined, 1)).toBeNull();
     }
+  });
+
+  // ROUND SEVEN, D11. A turn nothing tells the model to send is a turn nobody sends, which is the
+  // shape `surfaceGap` had — a seam written so a thing could be said in words, called by nothing but
+  // its own test. Movement ⑦ is where the destination question lives, and this pins that it says so,
+  // that the two values it tells a model to record are the two both gates accept, and that it does
+  // not quietly turn an optional field into a requirement six frozen stories would fail.
+  //
+  // RED, in a copy of the tree under /tmp, with `destination: paper` written into ⑦:
+  //   expect(received).toEqual(expected)   Expected: ["screen","print"]  Received: ["screen","paper"]
+  it("should tell a model to ask a static beat where it is published, in the words the gate records", () => {
+    const seven = EXCHANGE.slice(EXCHANGE.indexOf("## ⑦"), EXCHANGE.indexOf("## ⑧"));
+    expect(seven).toContain("formatPublicationDestinationGate");
+    const stated = [...seven.matchAll(/^ {4}destination: (.+)$/gm)].map((m) => m[1].trim());
+    expect(stated).toEqual([...PUBLICATION_DESTINATIONS]);
+    for (const destination of stated)
+      expect(destinationGap("static", destination, 1)).toBeNull();
+    // The optionality is part of the instruction, not a footnote: a model told to require this
+    // field would refuse the six static slots that predate it.
+    expect(seven).toContain("optional");
+    expect(destinationGap("static", undefined, 1)).toBeNull();
   });
 
   it("should ask five hand questions and no more, all of them medium-neutral", () => {

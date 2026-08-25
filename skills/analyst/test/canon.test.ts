@@ -103,6 +103,7 @@ credit: "Data: MeteoSwiss"
 effectiveDate: "2026-08-01"
 grounding: supported
 reference: "The Pudding, redraft — mid-table deviation"
+language: en
 slots:
 ${slot}
 ---

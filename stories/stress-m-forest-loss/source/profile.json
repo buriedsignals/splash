@@ -1,0 +1,49 @@
+{
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "loss_ha",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 39000,
+      "max": 1120000,
+      "sum": 2702000,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 2025,
+      "max": 2025,
+      "sum": 14175,
+      "gaps": []
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

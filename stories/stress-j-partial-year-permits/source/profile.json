@@ -1,0 +1,39 @@
+{
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 2020,
+      "max": 2026,
+      "sum": 14161,
+      "gaps": []
+    },
+    {
+      "name": "permits_issued",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 14205,
+      "max": 58990,
+      "sum": 339775,
+      "gaps": null
+    },
+    {
+      "name": "months_covered",
+      "type": "number",
+      "missing": 0,
+      "distinct": 2,
+      "min": 3,
+      "max": 12,
+      "sum": 75,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

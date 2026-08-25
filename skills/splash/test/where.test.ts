@@ -49,6 +49,7 @@ const SCALARS: Record<string, string> = {
   effectiveDate: '"2026-08-01"',
   grounding: "supported",
   reference: '"The Pudding, redraft — mid-table deviation"',
+  language: "en",
 };
 
 // `id` first: it is the line the slot list item opens on.

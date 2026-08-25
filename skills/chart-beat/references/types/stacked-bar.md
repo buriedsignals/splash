@@ -19,6 +19,8 @@ can't. It also stops working past roughly five series, where the stack turns int
 ribbon — group the smallest into "Other" rather than adding a sixth colour — and it isn't the right
 tool for a part-to-whole breakdown of a SINGLE total, which is a pie's job, or a single bar's.
 
+<!-- limit: series > 5 -->
+
 ## Where it goes wrong
 
 Asking the chart to support a comparison it structurally can't make, and not saying so. A stack

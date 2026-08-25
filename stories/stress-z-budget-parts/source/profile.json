@@ -1,0 +1,39 @@
+{
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "poste",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "montant_meur",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": -104.6,
+      "max": 412.5,
+      "sum": 1083.7,
+      "gaps": null
+    },
+    {
+      "name": "part_pct",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": -9.7,
+      "max": 38.1,
+      "sum": 100,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

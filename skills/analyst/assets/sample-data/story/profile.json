@@ -8,7 +8,9 @@
       "distinct": 11,
       "min": 2015,
       "max": 2025,
-      "sum": 22220
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
     },
     {
       "name": "station",
@@ -17,7 +19,8 @@
       "distinct": 1,
       "min": null,
       "max": null,
-      "sum": null
+      "sum": null,
+      "gaps": null
     },
     {
       "name": "rainfall_mm",
@@ -26,7 +29,21 @@
       "distinct": 11,
       "min": 604,
       "max": 912,
-      "sum": 8424
+      "sum": 8424,
+      "gaps": null,
+      "classBreaks": {
+        "breaks": [
+          750,
+          1000
+        ],
+        "counts": [
+          5,
+          6,
+          0
+        ],
+        "over": "every row this column carries (11)",
+        "says": "a PROPOSAL, never a decision: quantiles of the 11 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
     },
     {
       "name": "days_of_rain",
@@ -35,7 +52,72 @@
       "distinct": 10,
       "min": 109,
       "max": 152,
-      "sum": 1336
+      "sum": 1336,
+      "gaps": null,
+      "classBreaks": {
+        "breaks": [
+          150
+        ],
+        "counts": [
+          8,
+          2
+        ],
+        "over": "every row this column carries (10)",
+        "says": "a PROPOSAL, never a decision: quantiles of the 10 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
     }
-  ]
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": null,
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "underreported",
+      "under-reported",
+      "underreporting",
+      "under-reporting",
+      "undercount",
+      "undercounted",
+      "undercounting",
+      "under-count",
+      "under-counted",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires",
+      "sous-déclaration",
+      "sous-déclarations",
+      "sous-déclaré",
+      "sous-déclarés",
+      "sous-déclarée",
+      "sous-déclarées",
+      "sous-notification",
+      "sous-notifications",
+      "sous-notifié",
+      "sous-notifiés"
+    ],
+    "column": "year",
+    "readProse": false,
+    "claims": [],
+    "unplaced": [],
+    "says": "no prose was handed to this profiler, so nothing was read: this is not a statement that the \"year\" column is complete"
+  }
 }

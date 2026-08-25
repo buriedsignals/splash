@@ -265,6 +265,54 @@ The render speaks the journalist's language, furniture included. `no data 2019`,
 grouping and date format are all part of the beat, not incidental strings. A language leak in the
 furniture is a defect even when every number is right.
 
+## `framing-serves-the-point` — the picture is reconsidered before it is drawn
+
+Two stress beats were checked mechanically before this rule existed: every number they printed was
+true, the direction was verified against the frozen data, and neither picture argued its own point.
+
+- **`stories/stress-c-vacant-homes`** draws a real fall — 8.4% to 7.2%, verified to fall every
+  year — on a zero baseline. The fall is **14%** of the column's own 0–8.4 extent
+  (`spreadAgainstExtent`), so four columns read as nearly level. The title says "fell every year";
+  the picture, at a glance, does not.
+- **`stories/stress-a-energy-bills`** draws Denmark's reported price at **~44x** the group's own
+  median (`largestAgainstMedian`). Kept zero-based and unbroken — correctly, `bar-and-column.md`'s
+  own rule — Denmark's bar reaches the frame and the other six compress to slivers a reader cannot
+  compare against each other, even though every one of their own values is printed beside its bar.
+
+**Neither beat is wrong to keep its data.** Dropping Denmark, breaking the axis or log-scaling
+either chart would each cross a rule this discipline already states elsewhere on this page (a
+broken value axis is the exact truncation forbidden for a length encoding; a log axis breaks a
+bar's linear correspondence between length and value). The rule this section adds is upstream of
+all of that: **before** a treatment is chosen, ask whether the takeaway's own values will read
+against the extent they are about to be drawn on — and when they will not, reconsider the
+TREATMENT, not the honesty of the numbers:
+
+- a spread invisible against its own baseline is a candidate for a slope chart, a dumbbell, a
+  break disclosed as a break (never a silent one), or a second panel zoomed to the range that
+  matters, with the full range kept somewhere a reader can still find it;
+- one mark dwarfing the rest is a candidate for a log scale (when every value is positive and the
+  comparison is genuinely multiplicative), two panels, or — as both stress beats chose — keeping
+  the true linear shape and rescuing the compressed marks with a printed value outside every bar,
+  so the reader who cannot read the bar can still read the number.
+
+**The beat records which it chose, and why**, the same way `stories/stress-a-energy-bills/beats/
+energy-bills-by-country/BRIEF.md` and `stories/stress-c-vacant-homes/beats/1-vacant-homes-fell/
+BRIEF.md` already do — "The outlier (decision, not a default)" and the direction-verification
+section respectively. A beat that never asked the question has nothing to record; a beat that
+asked and kept the plain shape anyway has a paragraph, not a silence.
+
+**Why this is a discipline and not a guard that refuses.** Measured across 57 chart-type beats
+already delivered under `proof/` (143 numeric series, identifier-shaped columns excluded): 41
+series across 24 beats already carry a value more than 10x their own group's median, several
+correctly — a grouped bar of CO₂ emissions per capita ships a genuine 0.69-to-22.2 spread, 32x, and
+narrowing it would misstate the world, not fix a chart. A guard firing on ordinary, legitimate work
+teaches a reader to ignore it; the invisible-spread shape, by contrast, was measured as genuinely
+rare (3 false-positive flags in the same corpus, from a heuristic mis-applied outside its own
+domain — a lollipop's own year-like column, and a waterfall's per-step component read as a
+zero-baseline series). Neither number licenses a refusal. Both license a question asked before the
+geometry is chosen, and a printed reading (`framing-is-measured`, below) so the question has an
+answer in front of it rather than a guess.
+
 ## Verification
 
 Applied to the pixels. Not to the source, not to the bundle, not to the config — grepping a bundle

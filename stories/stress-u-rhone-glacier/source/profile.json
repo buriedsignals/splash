@@ -1,0 +1,49 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 1990,
+      "max": 2025,
+      "sum": 16060,
+      "gaps": []
+    },
+    {
+      "name": "area_km2",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 0.61,
+      "max": 1.82,
+      "sum": 10.499999999999998,
+      "gaps": null
+    },
+    {
+      "name": "volume_km3",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 0.019,
+      "max": 0.094,
+      "sum": 0.482,
+      "gaps": null
+    },
+    {
+      "name": "note",
+      "type": "text",
+      "missing": 8,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

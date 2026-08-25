@@ -19,6 +19,8 @@ let "it has an x and a y" fool you into scattering a time series. If you find yo
 label most of the points, the chart has already told you it isn't a scatter's job to carry — that
 many labels is a table's job, or a dot-strip's.
 
+<!-- limit: rows < 8 -->
+
 ## The one thing that goes wrong
 
 Bubble size lies the moment someone maps a value to RADIUS instead of AREA. A bubble twice the value

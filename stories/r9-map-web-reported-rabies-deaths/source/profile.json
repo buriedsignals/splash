@@ -1,0 +1,291 @@
+{
+  "rowCount": 2919,
+  "columns": [
+    {
+      "name": "Id",
+      "type": "number",
+      "missing": 0,
+      "distinct": 2919,
+      "min": 2221,
+      "max": 9786256,
+      "sum": 15958093956,
+      "gaps": null
+    },
+    {
+      "name": "IndicatorCode",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "SpatialDimType",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "SpatialDim",
+      "type": "text",
+      "missing": 0,
+      "distinct": 195,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "TimeDimType",
+      "type": "text",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "ParentLocationCode",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "ParentLocation",
+      "type": "text",
+      "missing": 0,
+      "distinct": 6,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Dim1Type",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "TimeDim",
+      "type": "number",
+      "missing": 0,
+      "distinct": 15,
+      "min": 2010,
+      "max": 2024,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
+    },
+    {
+      "name": "Dim1",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Dim2Type",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Dim2",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Dim3Type",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Dim3",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "DataSourceDimType",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "DataSourceDim",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Value",
+      "type": "text",
+      "reason": "looked numeric but \"No data\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 138,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "NumericValue",
+      "type": "number",
+      "missing": 1296,
+      "distinct": 137,
+      "min": 0,
+      "max": 2014,
+      "sum": 33732,
+      "gaps": null
+    },
+    {
+      "name": "Low",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "High",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Comments",
+      "type": "text",
+      "missing": 2919,
+      "distinct": 0,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Date",
+      "type": "text",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "TimeDimensionValue",
+      "type": "number",
+      "missing": 0,
+      "distinct": 15,
+      "min": 2010,
+      "max": 2024,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
+    },
+    {
+      "name": "TimeDimensionBegin",
+      "type": "text",
+      "missing": 0,
+      "distinct": 15,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "TimeDimensionEnd",
+      "type": "text",
+      "missing": 0,
+      "distinct": 15,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": null,
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires"
+    ],
+    "column": "TimeDim",
+    "readProse": true,
+    "claims": [],
+    "says": "the frozen prose states no incompleteness in English and French; a dataset that states one in another language is not read here"
+  }
+}

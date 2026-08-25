@@ -19,7 +19,22 @@ between many origin-destination pairs on this type produces a tangle of
 overlapping accent-coloured lines that stops reading as an ordered journey
 the moment there's more than one of them competing for the same visual
 channel; that's a different chart entirely (an OD flow diagram, not a route
-map), with its own legend logic for volume and direction.
+map), with its own legend logic for volume and direction. THIS TOOLCHAIN HOLDS NO SHEET AND NO
+PRODUCER FOR AN OD FLOW DIAGRAM, so naming one here is naming a type nobody can build: an
+origin-destination table is carried instead by a proportional-symbol map of the total leaving each
+origin (or arriving at each destination), by a matrix heatmap of origin against destination where
+the pairs themselves are the claim, or by a chart of the largest corridors — and the map's
+geography is then a locator, not a bundle of routes.
+AND THIS TYPE HAS NO PRODUCER FOR THE WEB. A route reads on a static frame and in a video, where
+the journey is revealed rather than interrogated, and both of those are built here. `map-web`
+draws proportional symbols, choropleths, dot density, hex grids and locators; it holds no flow
+machinery — no seed, no pure core, no live-plan builder, no interaction model — so a route asked
+for as an interactive page is a route somebody has to write from nothing, off doctrine, inside a
+story. Measured once, in round six: 29 defects, the highest of any beat in six rounds, and five
+silent failures every one of which was found by driving the page and none by a test. The format
+gate refuses the pair now rather than offering it (`storyboard/scripts/format-gate.mjs`,
+`TREATMENT_FORMAT_GAPS`); if the interaction is what the story needs, the reading that carries it
+is one of the three above, all of which this toolchain does produce on the web.
 
 ## The one thing that goes wrong
 

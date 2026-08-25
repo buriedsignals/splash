@@ -44,8 +44,17 @@ reader to notice — a slope chart where every line is accented has no accent at
 signal that told the reader where to look is gone. Category labels sit in the side gutters at each
 end and need vertical de-collision when lines land close together — spread them apart just enough to
 stop overlapping, and if two labels still won't fit at full size shrink both together (never truncate)
-before resorting to that. Each period needs its own caption stating what it is (a year, a stage of a
-survey) — a slope chart with unlabelled ends is a chart of direction with no stated "from when to
+before resorting to that. **Do not write that pass by hand: call `decollide` from
+`render-still.mjs`**, the same module the measurer comes from. It is there because this paragraph
+required a decision no skill offered, so the first beat that needed it wrote its own twice and
+shipped two data-integrity bugs — a stack that inverted two regions' rank, and a delivered chart
+that printed a value against the wrong row. `decollide` cannot do either: it returns rows in the
+caller's own indexing, in its anchors' own order, so a chart with labels at BOTH ends calls it ONCE,
+on the ranking it wants read down the page, and every gutter of row `i` takes `placed[i].y`. A label
+it reports as `moved` owes the reader a leader line back to its own mark. `mislabelledRows`
+(`detect-label-rows.mjs`) reads the delivered file and refuses a stack that broke either property.
+
+Each period needs its own caption stating what it is (a year, a stage of a survey) — a slope chart with unlabelled ends is a chart of direction with no stated "from when to
 when," which is half the claim.
 
 ## The accessibility trap

@@ -97,7 +97,7 @@
       "label": "Datawrapper",
       "producer": "dw-beat",
       "capability": "datawrapper",
-      "medium": "chart",
+      "media": ["chart", "map"],
       "formats": ["static", "web"]
     }
   ],

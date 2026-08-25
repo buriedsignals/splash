@@ -28,7 +28,8 @@ limits: "A synthetic sample"
 placement: "after the third paragraph"
 credit: "Source: Splash Test Desk"
 effectiveDate: "2026-08-14"
-grounding: supported`;
+grounding: supported
+language: en`;
 
 function storyboard(slot: string, { reference = false } = {}) {
   return `---

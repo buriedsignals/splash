@@ -1,6 +1,11 @@
 import catalog from "../references/datawrapper-chart-types.json" with { type: "json" };
 
+// Datawrapper renders a fixed picture or a hosted embed; it makes no video and drives no scroll.
 const SUPPORTED_FORMATS = new Set(["static", "web"]);
+/** The media the delegated provider has types for. A treatment declares its own — the gate used to
+ *  hard-code `chart`, which closed the map path end to end while the pinned inventory carried three
+ *  map types the whole time. */
+const SUPPORTED_MEDIA = new Set(["chart", "map"]);
 const PRODUCERS = new Set(["custom", "datawrapper"]);
 
 export function normalizeTreatment(value) {
@@ -15,6 +20,63 @@ export function normalizeTreatment(value) {
     .replace(/\s+/g, " ");
 }
 
+/** Words that name a MEDIUM rather than a treatment. A name made of nothing else — a bare "map" —
+ *  names no treatment at all, and one of these at either end of a name is furniture a journalist
+ *  appended ("choropleth map", "slope chart") rather than part of the type. */
+const GENERIC_TREATMENT_WORDS = new Set(["map", "chart", "plot", "graph", "diagram", "graphic"]);
+
+/**
+ * EVERY NAME A TREATMENT ANSWERS TO, DERIVED FROM ITS OWN TITLE — never read out of a list somebody
+ * remembered to extend.
+ *
+ * ROUND SEVEN, D7, on `stories/real-gwis-wildfire-counts`. The slot wrote its treatment as
+ * "Stacked area", which is the natural name for it and literally half of that type's own sheet
+ * title, "Area (and stacked area)". `datawrapperMatch` returned `null` — and null here is not a
+ * neutral outcome, it REMOVES A GATE: the caller reads it as "not delegated", so the
+ * custom-or-Datawrapper question is never asked and the beat goes custom with nobody consulted.
+ * Only the exact catalogue string and the bare word "area" opened it. The same hole was measured
+ * one movement earlier, where five of fifteen provider names matched no survey row at all.
+ *
+ * The fix is the rule, not the five renames it would have taken to hide it. A title is a small
+ * grammar and each of its pieces is a name: the head ("Area"), the whole title with its brackets
+ * flattened ("area and stacked area"), whatever a parenthetical holds ("slopegraph", "range plot",
+ * "bridge"), and each alternative either side of a "/" or an "and" ("stacked area", "bubble",
+ * "isoline"). Each of those again with a leading or trailing generic medium word dropped, because
+ * "choropleth map" and "slope chart" are how people write them.
+ *
+ * MEASURED ACROSS THE FORTY TYPE SHEETS: no two sheets of one medium share a derived name, and
+ * exactly one name is shared across media — "bubble", which a bubble chart (a scatter) and a bubble
+ * map (proportional symbols) both legitimately answer to. Every caller supplies the medium, which
+ * is precisely what tells those two apart, so the collision is the right answer rather than a
+ * defect. Reproduce both counts with `treatmentNames` over `readTypeSheets()`.
+ */
+export function treatmentNames(value) {
+  const raw = String(value ?? "");
+  const parts = [raw.replace(/[()]/g, " "), raw.split("(")[0]];
+  for (const paren of raw.matchAll(/\(([^)]*)\)/g)) parts.push(paren[1]);
+  const names = new Set();
+  for (const part of parts) {
+    for (const piece of [part, ...part.split(/\s*[/,;]\s*|\s+(?:and|or)\s+/iu)]) {
+      const name = normalizeTreatment(piece.replace(/[()]/g, " ")).replace(/^(?:and|or) /u, "");
+      if (!name) continue;
+      names.add(name);
+      const words = name.split(" ");
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[words.length - 1])) words.pop();
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[0])) words.shift();
+      if (!GENERIC_TREATMENT_WORDS.has(words[0])) names.add(words.join(" "));
+    }
+  }
+  return [...names];
+}
+
+/** The names one provider mapping opens on: its treatment's own, plus any spelling DECLARED beside
+ *  it because no title can yield it. A declared alias is therefore a claim about the rule — that it
+ *  cannot reach this word — and `validateCatalog` refuses one the rule already derives, so the list
+ *  can never again hide a matching rule that does not work. */
+function namesFor(mapping) {
+  return [...new Set([mapping.treatment, ...(mapping.aliases ?? [])].flatMap(treatmentNames))];
+}
+
 function validateCatalog(value) {
   if (value?.schemaVersion !== 1) throw new Error("unsupported Datawrapper catalogue schema");
   const types = new Set();
@@ -24,15 +86,35 @@ function validateCatalog(value) {
     types.add(row.id);
   }
   for (const mapping of value.splashTreatments ?? []) {
-    if (!mapping?.treatment || !Array.isArray(mapping.aliases) || mapping.aliases.length === 0) {
+    if (!mapping?.treatment || !Array.isArray(mapping.aliases)) {
       throw new Error("Datawrapper catalogue has an incomplete Splash treatment mapping");
     }
+    if (!SUPPORTED_MEDIA.has(mapping.medium)) {
+      throw new Error(
+        `Datawrapper treatment ${JSON.stringify(mapping.treatment)} declares no medium the provider serves`,
+      );
+    }
+    const derived = new Set(treatmentNames(mapping.treatment));
     for (const alias of mapping.aliases) {
-      const normalized = normalizeTreatment(alias);
-      if (!normalized || aliases.has(normalized)) {
-        throw new Error(`Datawrapper catalogue has a missing or duplicate treatment alias ${JSON.stringify(alias)}`);
+      const own = treatmentNames(alias);
+      if (own.length === 0) {
+        throw new Error(`Datawrapper catalogue declares an empty treatment alias for ${JSON.stringify(mapping.treatment)}`);
       }
-      aliases.add(normalized);
+      if (own.some((name) => derived.has(name))) {
+        throw new Error(
+          `Datawrapper catalogue declares alias ${JSON.stringify(alias)}, which ${JSON.stringify(mapping.treatment)} already answers to by its own name — a declared alias is only for a spelling the rule cannot reach`,
+        );
+      }
+    }
+    // Names are unique WITHIN A MEDIUM, not across the whole file: a bubble chart is a scatter and
+    // a bubble map is proportional symbols, and the medium every caller supplies is what tells
+    // those two apart.
+    for (const name of namesFor(mapping)) {
+      const key = `${mapping.medium}/${name}`;
+      if (aliases.has(key)) {
+        throw new Error(`Datawrapper catalogue has two ${mapping.medium} treatments answering to ${JSON.stringify(name)}`);
+      }
+      aliases.add(key);
     }
     for (const type of mapping.datawrapperTypes ?? []) {
       if (!types.has(type)) {
@@ -45,15 +127,38 @@ function validateCatalog(value) {
 
 export const DATAWRAPPER_CATALOG = validateCatalog(catalog);
 
-const BY_ALIAS = new Map(
-  DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) =>
-    mapping.aliases.map((alias) => [normalizeTreatment(alias), mapping]),
-  ),
+const NAMES_BY_MAPPING = new Map(
+  DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping, new Set(namesFor(mapping))]),
 );
 
+/**
+ * THE LONGEST SHARED NAME WINS, AND A WINNER IN ANOTHER MEDIUM IS NO MATCH.
+ *
+ * "bubble" is one word two treatments legitimately answer to — a bubble chart is a scatter, a
+ * bubble map is proportional symbols — so a rule that took ANY shared name would hand a map slot
+ * asking for "Scatter and bubble" a symbol map, and a chart slot asking for "bubble map" a scatter.
+ * Both were `null` before this rule and must stay `null`: the most specific reading of "bubble map"
+ * is the map, and the caller said chart. So the best match is chosen across ALL media by how many
+ * words the shared name has, ties go to the medium asked for, and a best match belonging to the
+ * other medium is refused rather than downgraded to a weaker one. A treatment answers for its OWN
+ * medium: "locator" is a map and nothing else.
+ */
 export function datawrapperMatch({ medium, format, treatment }) {
-  if (medium !== "chart" || !SUPPORTED_FORMATS.has(format)) return null;
-  return BY_ALIAS.get(normalizeTreatment(treatment)) ?? null;
+  if (!SUPPORTED_MEDIA.has(medium) || !SUPPORTED_FORMATS.has(format)) return null;
+  const asked = treatmentNames(treatment);
+  let best = null;
+  for (const [mapping, names] of NAMES_BY_MAPPING) {
+    for (const name of asked) {
+      if (!names.has(name)) continue;
+      const words = name.split(" ").length;
+      const wins =
+        !best ||
+        words > best.words ||
+        (words === best.words && best.mapping.medium !== medium && mapping.medium === medium);
+      if (wins) best = { mapping, words };
+    }
+  }
+  return best?.mapping.medium === medium ? best.mapping : null;
 }
 
 export function producerGap(slot) {
@@ -87,8 +192,40 @@ export function producerGap(slot) {
   return null;
 }
 
-export function confirmProducerChoice({ medium, format, treatment, producer, datawrapperType }) {
+/**
+ * WHAT PREFLIGHT ALREADY MEASURED ABOUT THE SURFACE A DELEGATED RENDER COMES BACK ON, read here
+ * rather than re-derived — `null` when nothing was measured, which is not the same as "it is fine".
+ *
+ * ROUND SEVEN, on `stories/real-owid-life-expectancy`. `runPreflight` returned
+ * `capabilities.datawrapper.surface = {ground: "#16191B", static: true, web: false}`: a published
+ * Datawrapper embed follows the READER's own colour scheme and defaults to light, so it is the one
+ * form no request can steer, while a static export can be asked for the matching side. Round five
+ * moved that question early precisely so a later phase could offer honestly. Then this gate — the
+ * phase that asks "Datawrapper or custom?" — took `{treatment, match}` and had no seam for
+ * capabilities at all, so it offered the embed anyway; and `surfaceGap`, the seam written to say it
+ * in words, was called by NOTHING but its own test. A journalist who answered "Datawrapper" got a
+ * live published chart on the newsroom's account and a refusal at export.
+ *
+ * This function does not re-decide anything. `surface[format]` is preflight's own boolean, read as
+ * it stands; only the sentence is this gate's, because a gate must say what it withdraws in the
+ * words of the question it is asking.
+ */
+function surfaceRefusal({ format, capabilities }) {
+  const surface = capabilities?.datawrapper?.surface;
+  if (!surface || !format || surface[format] !== false) return null;
+  return (
+    `Datawrapper cannot carry a ${format} beat on this newsroom's ground (${surface.ground}), which ` +
+    `preflight measured before this story existed: a published Datawrapper embed follows the ` +
+    `reader's own colour scheme and defaults to light, so it is the one form no request can steer. ` +
+    `A static Datawrapper beat still can — its export is requested on the matching surface — and so ` +
+    `can any producer that draws its own ground.`
+  );
+}
+
+export function confirmProducerChoice({ medium, format, treatment, producer, datawrapperType, capabilities }) {
   if (!PRODUCERS.has(producer)) throw new Error("producer must be custom or datawrapper");
+  const refusal = producer === "datawrapper" ? surfaceRefusal({ format, capabilities }) : null;
+  if (refusal) throw new Error(refusal);
   const match = datawrapperMatch({ medium, format, treatment });
   if (!match) {
     if (producer === "datawrapper") {
@@ -108,8 +245,21 @@ export function confirmProducerChoice({ medium, format, treatment, producer, dat
   return { producer, datawrapperType: resolvedType };
 }
 
-export function formatProducerGate({ treatment, match }) {
+export function formatProducerGate({ treatment, match, format, capabilities }) {
   if (!match) throw new Error("formatProducerGate needs a Datawrapper-supported treatment");
+  const refusal = surfaceRefusal({ format, capabilities });
+  if (refusal) {
+    // NOT A QUESTION. There is one production path left, so this states the measurement and says
+    // what it leaves — asking "Datawrapper or custom?" here would be offering an answer the next
+    // call refuses, which is the shape that put a live chart on a newsroom account.
+    return [
+      `The selected **${treatment}** treatment is available in Datawrapper, but not for this beat.`,
+      "",
+      `${refusal}`,
+      "",
+      "So this beat is **custom** — a bespoke Splash component with full control over geometry and interaction, drawn on the ground this newsroom recorded.",
+    ].join("\n");
+  }
   const providerLabels = match.datawrapperTypes
     .map((id) => DATAWRAPPER_CATALOG.visualizationTypes.find((row) => row.id === id)?.label ?? id)
     .join(" / ");

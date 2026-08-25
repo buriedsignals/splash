@@ -8,10 +8,12 @@ import {
   datawrapperMatch,
   formatProducerGate,
   normalizeTreatment,
+  treatmentNames,
 } from "../scripts/producer-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
 import {
   DATAWRAPPER_TREATMENTS,
+  DATAWRAPPER_TREATMENT_MEDIA,
   datawrapperTypesForTreatment,
   whereIs,
 } from "../../splash/scripts/where.mjs";
@@ -58,6 +60,7 @@ function storyboard({
 } = {}) {
   const sized = format === "static" || format === "video" ? "    size: landscape\n" : "";
   return `---
+language: "en"
 takeaway: "Every country increased while the gap remained wide."
 subject: "Ten countries"
 comparison: "2021 against 2025"
@@ -91,24 +94,37 @@ describe("the Datawrapper catalogue", () => {
   it("matches selected Splash treatments only after medium and format are known", () => {
     expect(
       datawrapperMatch({ medium: "chart", format: "web", treatment: "Slope (slopegraph)" }),
-    ).toMatchObject({ treatment: "Slope", datawrapperTypes: ["d3-lines"] });
+    ).toMatchObject({ treatment: "Slope (slopegraph)", datawrapperTypes: ["d3-lines"] });
     expect(datawrapperMatch({ medium: "chart", format: "video", treatment: "Slope" })).toBeNull();
     expect(datawrapperMatch({ medium: "map", format: "web", treatment: "Slope" })).toBeNull();
     expect(datawrapperMatch({ medium: "chart", format: "web", treatment: "Histogram" })).toBeNull();
   });
 
-  it("keeps the state reader's carried mapping in parity with every catalogue alias", () => {
+  it("keeps the state reader's carried mapping in parity with the catalogue itself", () => {
     const expected = new Map(
-      DATAWRAPPER_CATALOG.splashTreatments.flatMap((mapping) =>
-        mapping.aliases.map((alias) => [normalizeTreatment(alias), mapping.datawrapperTypes]),
-      ),
+      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.datawrapperTypes]),
     );
     expect([...DATAWRAPPER_TREATMENTS.entries()]).toEqual([...expected.entries()]);
+    const media = new Map(
+      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.medium]),
+    );
+    expect([...DATAWRAPPER_TREATMENT_MEDIA.entries()]).toEqual([...media.entries()]);
     for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
-      for (const alias of mapping.aliases) {
+      for (const name of [...treatmentNames(mapping.treatment), ...mapping.aliases]) {
         expect(
-          datawrapperTypesForTreatment({ medium: "chart", format: "web", treatment: alias }),
+          datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: name }),
         ).toEqual(mapping.datawrapperTypes);
+        expect(
+          datawrapperMatch({ medium: mapping.medium, format: "web", treatment: name }),
+        ).toMatchObject({ treatment: mapping.treatment });
+        if (name === "bubble") continue;
+        expect(
+          datawrapperTypesForTreatment({
+            medium: mapping.medium === "chart" ? "map" : "chart",
+            format: "web",
+            treatment: name,
+          }),
+        ).toBeNull();
       }
     }
     for (const treatment of ["Histogram", "Treemap", "Diverging stacked bar"]) {

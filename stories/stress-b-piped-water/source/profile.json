@@ -1,0 +1,32 @@
+{
+  "rowCount": 9,
+  "columns": [
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 9,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "share_no_piped_water",
+      "type": "number",
+      "missing": 1,
+      "distinct": 8,
+      "min": 0.4,
+      "max": 44,
+      "sum": 75.9
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 2022,
+      "max": 2022,
+      "sum": 18198
+    }
+  ]
+}

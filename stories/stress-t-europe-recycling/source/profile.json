@@ -1,0 +1,64 @@
+{
+  "rowCount": 12,
+  "columns": [
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 11,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "recycling_rate",
+      "type": "number",
+      "missing": 0,
+      "distinct": 11,
+      "min": 18.4,
+      "max": 67.8,
+      "sum": 566.9,
+      "gaps": null
+    },
+    {
+      "name": "collected_kt",
+      "type": "number",
+      "missing": 0,
+      "distinct": 11,
+      "min": 190,
+      "max": 15420,
+      "sum": 73270,
+      "gaps": null
+    },
+    {
+      "name": "survey_date",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"March 2025\" has one, \"2025-03-01\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 0,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 1,
+    "rows": [
+      {
+        "values": [
+          "Sweden",
+          "48.7",
+          "1980",
+          "2025-03-01"
+        ],
+        "indices": [
+          10,
+          11
+        ],
+        "occurrences": 2
+      }
+    ]
+  }
+}

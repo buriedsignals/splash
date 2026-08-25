@@ -1,0 +1,29 @@
+{
+  "rowCount": 26,
+  "columns": [
+    {
+      "name": "canton",
+      "type": "text",
+      "missing": 0,
+      "distinct": 26,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "taux",
+      "type": "number",
+      "missing": 0,
+      "distinct": 26,
+      "min": 1.7,
+      "max": 6.4,
+      "sum": 93.8,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

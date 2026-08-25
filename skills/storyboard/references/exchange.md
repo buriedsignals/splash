@@ -24,8 +24,11 @@ One non-skippable question: *if the reader keeps one sentence from this visual, 
 Confirmed **verbatim** and written into `STORYBOARD.md`'s `takeaway:` field. It is the only anchor
 that later makes a drifting title detectable — the twin's predecessor's most recurrent failure.
 
-**Then ground it, here, before anything is picked.** Run `resolveGrounding(takeaway, profile)`
-(`scripts/propose.mjs`) against the frozen profile and record `groundingScalar(resolved)` as
+**Then ground it, here, before anything is picked.** Run
+`resolveGrounding(takeaway, profile, { csv })` (`scripts/propose.mjs`) against the frozen profile —
+and hand it the text of the story's own frozen `source/data.csv`, which is where the ROW-level
+facts a superlative needs come from, since no `profile.json` carries rows — then record
+`groundingScalar(resolved)` as
 `grounding:`. Three values close this gate: `supported`, `unverifiable`, or
 `overridden — "<reason>"`. **`contradicted` is not a closing value**: a claim the data refutes is
 either corrected with the journalist, or overridden by them with a reason THEY give —
@@ -35,15 +38,69 @@ choice they had already made.
 
 **How the many become the one.** `groundTakeaway` returns a verdict PER CLAIM and `grounding:` is a
 single word, so the collapse is written down rather than left to whoever is running the exchange:
-**any refuted claim → `contradicted`** · **at least one confirmed and none refuted → `supported`** ·
-**nothing placeable at all → `unverifiable`**. So `supported` means "every claim this check could
-resolve, it resolved in favour", NOT "every number was verified" — a takeaway carrying five numbers
-typically resolves one and cannot place four, because every bare integer is range-tested, years and
-counts included.
+**any refuted claim → `contradicted`** · **at least one CONFIRMED claim, none refuted, and every
+sentence of the takeaway read → `supported`** · **anything less → `unverifiable`**.
+
+Two things deliberately do NOT make a takeaway `supported`, both because a check that cannot fail is
+not support. A numeral that merely falls inside a column's range comes back `consistent` — placed,
+not confirmed (`233` sits inside `incidents [96, 412]`, and so does the `100` of "100k"). And a
+takeaway one of whose sentences produced no claim at all is one this check did not read the whole
+of, so it withholds `supported` and names the sentence it never saw.
+
+A numeral is placed against the column its own SENTENCE names, never against whichever column
+happens to contain it, so a takeaway naming two measures gets a refusal naming both rather than a
+placement nobody chose; and a bare calendar year is read as a period, not as a measurement. Where
+the sentence states a scale word ("1.12 million") the numeral is read both ways — as written and
+multiplied — because the column's own unit may already carry the scale.
 
 Whichever verdict lands, say what the check could and could not see — `resolved.detail` carries
-both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as
+both halves, including WHY each unplaced claim could not be placed. An `unverifiable` claim is information, not a refusal, and it must not be presented as
 one.
+
+### The second question at G1 — what SHAPE is this claim? (round six, task LANG)
+
+Every superlative pattern behind `resolveGrounding` is a regex written by hand, one language at a
+time, because a superlative is **grammar, not vocabulary**: `أكثر من غيرها`, `the most`, `le plus`,
+`najwięcej`, `το περισσότερο`. No table of labels gives morphology and word order, so this hole
+cannot be closed by data at all — `stress-ad-polish-hospital-beds` asserts a Polish superlative and
+the check produced **no claim at all**, which reads exactly like a takeaway with nothing in it.
+
+So ask the journalist, about the sentence they have just confirmed:
+
+> **Is this a maximum, a minimum, a comparison between two named things, a total, or none of those
+> — and about which column?** (If it is a comparison: which two, and which of them is ahead.)
+
+They are reading their own sentence, so the question is language-independent by construction.
+Record the answer in `STORYBOARD.md`'s own front matter, beside `grounding:`:
+
+    claimShape: "maximum"                 maximum · minimum · comparison · total · none
+    claimColumn: "łóżka_szpitalne"
+    claimEntity: "Mazowieckie"
+    claimVersus: "Śląskie"                comparison only
+    claimDirection: "greater"             comparison only — greater · less
+
+and pass it to the grounding call: `resolveGrounding(takeaway, profile, { csv, recorded })` at G1,
+or `{ csv, storyboard: meta }` on any later re-grounding, which reads it back out of the file.
+
+Three rules govern what the answer then does, and the third is the one that matters:
+
+1. **The guess stays as the default.** A journalist who answers nothing gets exactly the behaviour
+   this check had before. Never invent an answer on their behalf; `claimShape` absent is a complete
+   and ordinary state.
+2. **The recorded shape wins.** A journalist who answers is not second-guessed by a regex.
+3. **The disagreement is REPORTED.** Where the check's own patterns read a different shape for the
+   same sentence and the same entity, that reading is taken out of the claims it may decide with and
+   printed in `resolved.detail` — *"N reading(s) by this check's own patterns disagreed and were set
+   aside — each one is a defect in those patterns, not in the takeaway"*. **Say that sentence out
+   loud to the journalist.** It is the only way a defect in those patterns will ever surface: a
+   parser silently overruled is a parser nobody can audit. Measured on
+   `stress-u-rhone-glacier`, whose "the lowest since 1990" the patterns read as a comparison and
+   confirmed — true here, and the next one will not be.
+
+A half-recorded answer is refused by gate 2 rather than half-used: a shape with no column, a
+comparison with only one side or no direction. That state is the one in which nobody can tell
+whether the journalist was asked and declined or was never asked at all, which is the silence the
+whole of this movement exists to remove.
 
 ## ③ The journalist's hand — five questions, each with a destination
 
@@ -69,7 +126,7 @@ medium existed.
 | *"What does the reader compare it to — last year, the average, the announced target, the next town?"* | the editorially meaningful reference point | **the reference the reader measures against** — the mechanism that carries it is chosen with the medium, not here. A number alone says nothing |
 | *"What does this data NOT let you conclude?"* | the boundary the journalist knows and the data never states (sample, correlation vs causation, scope) | the anti-overclaim check on the title, and what an annotation is allowed to assert |
 | *"Which paragraph does this visual follow — and what does the text already say next to it?"* | what is already written | **do not duplicate** (if the axis carries `2024`, the callout gives the value, not the year) |
-| *"How do you credit it, and as of what date?"* | the house convention and the effective date | the visible source line, and traceability |
+| *"Who does this data come from, how do you credit them, and as of what date?"* | the SOURCE, credited — or, said plainly, that there is none | the visible source line, and traceability. **`unattributed` is a legitimate answer** and prints `Source: not stated` on the artefact |
 
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
 
@@ -104,9 +161,25 @@ Per question, on absence:
   no placement decided, propose one from the article's own structure — *"this follows the paragraph
   that first states the divergence, which argues for mid-article placement"* — and say what that
   placement implies for the questions still to come, so the proposal is a reason, not a guess.
-- **Credit** — propose the newsroom's standing convention (`NEWSROOM.md`, whose `credit` field
-  preflight has already read back) and today's date as the effective date; the journalist confirms
-  or corrects rather than dictating both from nothing.
+- **Credit** — **`unattributed` is a legitimate answer, and it is the DEFAULT one.** Run
+  `proposeCredit({ newsroom, article })` (`scripts/storyboard.mjs`): it reads the article's own
+  attributing sentences back — verbatim, never rewritten — offers the newsroom's standing convention
+  from `NEWSROOM.md` beside them, and always carries a third option whose recorded value is
+  `unattributed` and whose printed line is `Source: not stated`. It recommends the article's own
+  words where the article has any, and `none` where it has none. **A line the article MARKED as its
+  source outranks a sentence that merely carries a cue**, and what is offered is what the marker
+  points at, not the label with it: `real-ember-renewables-share` writes *"Source line, verbatim
+  from the file's metadata: Ember (2026) and other sources – with major processing by Our World in
+  Data"*, and the proposal that missed it recommended the article's opening narrative sentence,
+  newline and all, as the line that would print under the chart. Every proposed value is one line —
+  a credit prints on one. It never recommends the house
+  convention on its own, because that convention is a TEMPLATE with `{source}` where the story's
+  source goes, and filling that hole from nothing is exactly the failure this rule was written for:
+  `stress-p-transport-ridership` shipped three delivered beats reading *"Source: city network
+  figures for 2025, compiled by Buried Signals"* — an article that attributes nothing, and the
+  newsroom's own name in `NEWSROOM.md` doing duty as a data source it never touched. A credit is
+  the one hand field that names a THIRD PARTY, so an invented one is not a weak answer, it is a
+  false statement about somebody else. Today's date is still proposed as the effective date.
 
 None of this is a re-ask. The question was asked once; what follows an "I don't know" is a proposal
 the journalist disposes of in one move, exactly as movement ⑩ already does for slots and candidates
@@ -138,10 +211,16 @@ after editorial fit, so an unproven type is reported as unproven rather than qui
 weaker form. Do not ask the journalist to operate or override the ranking.
 
 Genuinely different ways of seeing the same numbers, not three treatments of one. `assertDistinctWays`
-refuses a candidate set whose candidates all name the same type — the run offered three and all
+refuses a candidate set whose candidates are not one idea each — the run offered three and all
 three were stacked-or-grouped bars of the same three numbers. If the honest answer is that this data
 supports two ways of seeing and no more, say two: what is refused is not "fewer than three", it is
 several labels over one idea.
+
+It counts IDEAS, not labels. A type resolves to whatever type its own sheet says it already is —
+`types/lollipop.md` opens by calling itself "a bar chart's thin sibling: same job … 'a bar, minus
+the fill'", so a menu offering a bar and a lollipop is one idea twice and is refused. The kinship is
+declared in the sheet (`<!-- same idea as: … -->`) and generated into `references/type-survey.md`;
+a sheet that declares kinship in prose without declaring it machine-readably fails the generator.
 
 ## ⑤ The medium — G2a
 
@@ -152,6 +231,30 @@ formats it reaches, the type sheets this toolchain holds for it, and — if the 
 it — the sentence saying so.
 
 Lands in the slot's `medium:`.
+
+**And when the answer is "several" — one slot, not several slots.** A scroll-driven piece is a
+VEHICLE: it assembles different media behind one narrative, and round six ran one that was a chart,
+then two photographs, then a locator map, in that order, as one beat. Its slot recorded
+`medium: chart` and said underneath, in its own prose, that this "is a compromise, not a reading",
+because a slot carried exactly one medium and the record had no way to say what the beat IS.
+
+So a slot on an assembling format also records **`assembles:`** — the media in the order the reader
+meets them, opening on the slot's own `medium`:
+
+    medium: chart
+    format: scrolly
+    assembles: [chart, image, map]
+
+The list is the ORDER, not a set, and its first entry IS `medium:` — which stays the single key
+production dispatches on, and stops being a compromise. It is recorded **only** on a format that
+carries several behind one narrative (`scrolly` today); a static or a video beat draws one medium,
+and a static slot listing two is refused with the answer: that is one slot per medium. A scrolly
+that genuinely draws one medium records no `assembles:` at all, and a list of ONE is refused,
+because it says nothing the `medium:` field does not.
+
+**It does NOT become several slots.** A slot is one claim, one beat directory, one brief, one
+approval and one delivery. Splitting that beat into three would have been three of each for one
+visual — which is exactly what the journalist did not ask for.
 
 ## ⑥ The format — G2b
 
@@ -194,11 +297,50 @@ compares this line against both, so it cannot drift into naming a value the gate
     web: none
     scrolly: none
 
+**And a journalist may want more than one of them, for one argument.** Round six: *portrait for the
+stories, and square for the feed* — one claim, one beat, two frames. The record held one size, so
+the only shape the contract offered was a second slot, which is a second beat, a second brief, a
+second approval and a second delivery for one visual; the producer pinned one size on the slot and
+registered two compositions inside the beat, leaving the record saying one thing and the delivery
+doing another.
+
+So `size:` takes a LIST when they ask for more than one:
+
+    size: [portrait, square]
+
+Ask the question once, and record every frame they name. Both Gate-2 readings check each entry
+against the set above and refuse the same frame recorded twice (*"a slot exports each frame once"*).
+A format that takes no size takes no list either.
+
 `proposeSizes(format)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
 state it and say so** — "this ships landscape; portrait and square are not built yet" — rather than
 staging a question with one answer. Where it has more, ask. Where it is EMPTY the format takes no
 size at all and none is recorded. Either way widening the set later widens a set and re-plumbs
 nothing.
+
+**And a STATIC beat is asked one thing more here: where it is published.** Gate 2b's own label is
+*"Static / print"* — one option and two publications — and a static graphic lands either on a screen
+(an embedded image in the article) or on paper (the printed edition). Nothing in this toolchain ever
+asked which, so it was guessed: `stress-ad-polish-hospital-beds` shipped a 2.20:1 accent onto a
+printed page while its own gate turn recorded *"because the destination is a printed page"*, in
+prose nothing reads.
+
+Render that turn with `formatPublicationDestinationGate({format})`
+(`scripts/format-gate.mjs`), send it unchanged, and record the answer on the slot:
+
+    destination: screen
+    destination: print
+
+Ask it here, not at ⑥: the G2b turn is pinned byte for byte against a recorded host acceptance and
+must stop before every later movement. Ask it of a static beat only — a web, video or scrolly beat
+is read on a display whatever else is true of it, and both Gate-2 readings refuse the field on those
+formats (*"a web beat is read on a display, so it records no destination — leave the field out"*).
+
+The field is **optional**, and that is deliberate rather than lax: six `format: static` slots across
+five frozen stories were recorded before it existed, and requiring it would refuse all six for a
+question nobody asked them. Absence is an answer — *not recorded* — and it is never a default. What
+refuses is the phase that needs the fact: `palette`'s `proposePalette` cannot resolve a ground for a
+static beat without it and names this field, this movement and this question when it says so.
 
 ## ⑧ The reference loop, shown
 
@@ -217,7 +359,7 @@ It is the one point in the journey where taste travels both ways: the model gain
 instead of an abstract rule, and the journalist gains vocabulary for saying what they want. This is
 quality lever number one.
 
-## ⑨ The palette — subject first, newsroom second, journalist third
+## ⑨ The palette and the typeface — subject first, newsroom second, journalist third
 
 `palette`'s `proposePalette` proposes in that order and recommends in that order. A convention
 the reader already holds (blue for water, green for renewables) beats house colours for THIS chart,
@@ -227,14 +369,51 @@ option with no explanation, which is what the run did.
 
 Lands in `PALETTE.md`.
 
+**And the same question for the TYPE, in the same movement.** `palette`'s `proposeTypeface({
+newsroom, resolves, sample })` offers every face `NEWSROOM.md` records, in the newsroom's own order,
+plus the substrate's own stack as an explicit option — each one MEASURED on the machine that will
+render, because resvg draws the fallback for a face it does not have and reports nothing. **Pass
+`sample`**: the strings this story will actually draw, category labels and all. Without it every
+answer is about a Latin probe, which on a Greek or Arabic story is an answer to another question —
+and the proposal's own `sampleLimit` says which of the two you are reading.
+`writeTypeface` records the answer. Lands in `TYPEFACE.md`, beside `PALETTE.md`.
+
+It is asked here, at the movement where the newsroom's own charter is already open, and not left to
+the render: five render paths refuse without that file, and until round four nothing anywhere wrote
+one — so a story reached its first render with a refusal naming three ways out and no way to take
+any of them. There is always an answer: a face this machine does not have is refused rather than
+swapped, and `origin: default` records the stated fallback as a choice with the gap named.
+
 ## ⑩ The storyboard proposal, and the beat brief
 
 Slots and candidates, presented **as readable narrative, not a table of specs**: what each proves,
 its medium, its format, its size, and one line of why. `formatCandidates({medium, candidates,
-capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate carries
-the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that way,
-which is required, because a candidate with no reason is a name in a list. A candidate whose pair the
-catalog refuses cannot be rendered at all. When a candidate departs from the chooser's first
+profile, capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate
+carries the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that
+way, which is required, because a candidate with no reason is a name in a list. A candidate whose
+pair the catalog refuses cannot be rendered at all.
+
+**A candidate is an object, and this is the shape both functions accept:**
+
+```js
+{ type: "Beeswarm", why: "every country as its own mark", format: "static", marks: 211 }
+```
+
+`type` and `why` are required; `format` and `marks` are optional. `marks` is how many marks THIS
+beat would draw. A bare treatment name, a candidate with no reason, an unknown key, or a `marks`
+that is not a whole count are each refused by name — `assertDistinctWays` and `formatCandidates`
+read the same shape through the same reader, so a set that passes one cannot throw in the other.
+
+**AND EACH CARRIES THE OTHER HALF OF ITS OWN SHEET.** Every candidate line names when NOT to reach
+for that type, in the sheet's own words, because a slot once closed on a Scatter of six rows while
+`types/scatter.md` refused exactly that on disk. **A sheet's limit in ROWS is about the MARKS the
+beat draws, never the source table's row count**: pass `marks` on the candidate and this THROWS
+rather than renders; leave it out and the limit travels to the journalist as a by-hand check with
+the row count printed beside it, so the difference is visible. On a long-form panel those two
+numbers are nothing like each other — 7,585 rows for a beat drawing 211 marks — and the version
+that assumed they were the same quoted `beeswarm.md`'s own sentence at the journalist as though it
+were about their beat. A limit in any other unit (slices, levels) is handed to the journalist to
+check by hand for the same reason. When a candidate departs from the chooser's first
 surviving type, its reason also says why. The journalist drops, reorders, adds, vetoes.
 Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly this gate,
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate
@@ -249,8 +428,13 @@ check it with `datawrapperMatch({medium, format, treatment})` from
 - No mapping, or a format Datawrapper cannot fulfil: ask nothing. The absence of producer fields is
   the canonical custom state for an unmapped treatment; continue because Datawrapper was never a
   faithful option for this chosen treatment.
-- A faithful mapping: render `formatProducerGate(...)`, ask whether the journalist prefers
-  Datawrapper or a custom build, and **end the turn**. Do not run production in the same turn.
+- A faithful mapping: render `formatProducerGate({treatment, match, format, capabilities})`, ask
+  whether the journalist prefers Datawrapper or a custom build, and **end the turn**. Do not run
+  production in the same turn.
+- A faithful mapping the newsroom's GROUND cannot carry in this format: the same call states what
+  preflight measured — the ground, and that a published Datawrapper embed follows the reader's own
+  colour scheme — and names custom as the path that remains. There is no question there, because
+  the Datawrapper answer to it is one `confirmProducerChoice` refuses.
 - On the next reply: persist `producer: custom`, or persist `producer: datawrapper` together with
   the catalogue's exact `datawrapperType`. Validate it through `confirmProducerChoice(...)`.
 
@@ -268,6 +452,26 @@ type name is not a reason to draw something. It is read back at the very end of 
 against the story as it then stands, and offered: *"Ou même le relancer sur des sous-sujets de son
 article qui seraient intéressants à transformer en visuel"* (the owner, 2026-08-10). Nothing here is
 invented for the record — an article that yielded one angle records one.
+
+**And the call is not optional, because GATE 2 ITSELF refuses without it.** This movement used to
+say `recordSurveyedSubjects` is called before it ends, and nothing checked: the reader at the end of
+the run read a MISSING `SUBJECTS.md` as an empty survey and told the journalist their article's other
+angles had been looked at when none ever had. `readSurveyedSubjects` throws for that, naming this
+movement and this call. An article that genuinely yielded nothing else is recorded as the empty
+survey — `subjects: []` — because "there was nothing else" is an answer, and an answer is written
+down.
+
+**But a refusal at the END of the run is not a gate, it is a wall.** The throw arrived after the
+storyboard, the palette, the component, the render, the approval and the hand-over, and six formats
+across two rounds each hit it and each wrote the file retroactively, from memory of a survey that had
+already happened — the exact failure the file exists to prevent, happening around the file itself.
+So **gate 2 closes into TWO files**: `STORYBOARD.md` and `SUBJECTS.md`. `surveyGap(storyDir)` is the
+one decision that says so, exported by `storyboard/scripts/storyboard.mjs` for this phase to run on
+itself beside `checkStoryboard`, and carried byte-identically by `splash/scripts/where.mjs`, whose
+`whereIs` reports the gap as `G2-subjects` and keeps the story in the `storyboard` phase until this
+movement has actually happened. `checkStoryboard` stays pure over the front matter and takes no
+second argument; the file question is a directory question and is asked by the function that owns
+it.
 
 Then `BRIEF.md`, before any code: evidence hierarchy, reveal order, single accent, source, the
 anti-patterns of this case. Derived from the nine previous movements, so never conjured from nowhere.

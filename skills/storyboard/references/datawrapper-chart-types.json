@@ -37,64 +37,94 @@
   ],
   "splashTreatments": [
     {
-      "treatment": "Area and stacked area",
-      "aliases": ["area", "area and stacked area"],
+      "treatment": "Area (and stacked area)",
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-area"]
     },
     {
       "treatment": "Bar and column",
-      "aliases": ["bar", "column", "bar and column"],
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-bars", "column-chart"]
     },
     {
       "treatment": "Bullet",
-      "aliases": ["bullet"],
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-bars-bullet"]
     },
     {
-      "treatment": "Dumbbell",
-      "aliases": ["dumbbell", "range plot"],
+      "treatment": "Dumbbell (range plot)",
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-range-plot"]
     },
     {
       "treatment": "Grouped bar",
-      "aliases": ["grouped bar", "grouped column"],
+      "medium": "chart",
+      "aliases": ["grouped column"],
       "datawrapperTypes": ["d3-bars-grouped", "grouped-column-chart"]
     },
     {
       "treatment": "Line",
-      "aliases": ["line"],
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-lines"]
     },
     {
       "treatment": "Pie and donut",
-      "aliases": ["pie", "donut", "pie and donut"],
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-pies", "d3-donuts"]
     },
     {
       "treatment": "Population pyramid",
-      "aliases": ["population pyramid"],
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-bars-split"]
     },
     {
-      "treatment": "Scatter and bubble",
-      "aliases": ["scatter", "scatter and bubble"],
+      "treatment": "Scatter (and bubble)",
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-scatter-plot"]
     },
     {
-      "treatment": "Slope",
-      "aliases": ["slope", "slopegraph", "slope chart"],
+      "treatment": "Slope (slopegraph)",
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["d3-lines"]
     },
     {
       "treatment": "Stacked bar",
-      "aliases": ["stacked bar", "stacked column"],
+      "medium": "chart",
+      "aliases": ["stacked column"],
       "datawrapperTypes": ["d3-bars-stacked", "stacked-column-chart"]
     },
     {
-      "treatment": "Waterfall",
-      "aliases": ["waterfall", "waterfall bridge"],
+      "treatment": "Waterfall (bridge)",
+      "medium": "chart",
+      "aliases": [],
       "datawrapperTypes": ["waterfall"]
+    },
+    {
+      "treatment": "Choropleth",
+      "medium": "map",
+      "aliases": [],
+      "datawrapperTypes": ["d3-maps-choropleth"]
+    },
+    {
+      "treatment": "Proportional symbol (symbol / bubble map)",
+      "medium": "map",
+      "aliases": [],
+      "datawrapperTypes": ["d3-maps-symbols"]
+    },
+    {
+      "treatment": "Locator",
+      "medium": "map",
+      "aliases": [],
+      "datawrapperTypes": ["locator-map"]
     }
   ]
 }

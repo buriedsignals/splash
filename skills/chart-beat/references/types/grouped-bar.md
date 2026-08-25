@@ -19,6 +19,8 @@ continuous trend across many periods is a line chart wearing this type's clothes
 shape is between the periods, not within a handful of them, this is the wrong tool regardless of
 how many series are involved.
 
+<!-- limit: series > 3 -->
+
 ## Where it goes wrong
 
 A series that swaps position or colour between groups. The entire type runs on a reader learning,

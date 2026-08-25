@@ -1,0 +1,49 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "województwo",
+      "type": "text",
+      "missing": 0,
+      "distinct": 8,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "łóżka_szpitalne",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 7900,
+      "max": 21400,
+      "sum": 100800,
+      "gaps": null
+    },
+    {
+      "name": "ludność",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 2050000,
+      "max": 5510000,
+      "sum": 26550000,
+      "gaps": null
+    },
+    {
+      "name": "lekarze_na_10tys",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 24.9,
+      "max": 32.1,
+      "sum": 229.60000000000002,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

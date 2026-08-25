@@ -1,0 +1,50 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "﻿country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": " price_eur ",
+      "type": "text",
+      "missing": 2,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "ref_code",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "period",
+      "type": "text",
+      "missing": 0,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null
+    },
+    {
+      "name": "households",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 2700000,
+      "max": 41200000,
+      "sum": 160700000
+    }
+  ]
+}
