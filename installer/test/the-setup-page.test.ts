@@ -27,7 +27,6 @@
  *      without a scheme check "read my newsroom's site" would read any file this process can reach.
  *      MUTATION: drop the `httpUrl` check in `derive` and pass the raw url through.
  *        (fail) the derivation > should refuse a scheme it will not fetch, and read no local file
- *        error: expect(received).toBe(expected) · Expected: false · Received: true
  *
  *   4. A SITE THAT DOES NOT ANSWER IS A READABLE MESSAGE, NOT A HANG AND NOT AN EMPTY SUCCESS.
  *      MUTATION: return `{ok: true, applied: [], questions: []}` on the failure branch.
@@ -49,6 +48,9 @@
  * They were driven by hand against a running page; a headless-browser guard for them is not here.
  */
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+
+/** Live credential for real-network assertions — skipped, never faked, when absent. */
+const liveMapTilerKey = process.env.MAPTILER_KEY ?? "";
 import { createServer } from "node:http";
 import {
   existsSync,
@@ -259,6 +261,36 @@ describe("the CMS credential", () => {
     expect(verified.rejected.sort()).toEqual(["CMS_ENDPOINT", "CMS_KIND"]);
     expect(existsSync(join(root, ".env"))).toBe(false);
   });
+
+  it("should re-validate provider keys at /submit itself, not trust the browser's /verify call", async () => {
+    // The browser sequences /verify then /submit, but a POST on a socket does not have to follow
+    // that order. A bad key posted straight to the writing endpoint must be rejected by the
+    // server's own provider probes — and nothing may land in .env.
+    const submitted = await post("/submit", {
+      MAPTILER_KEY: "never-validated-canary",
+      DATAWRAPPER_TOKEN: "also-never-validated",
+    });
+    expect(submitted.ok).toBe(false);
+    const joined = submitted.lines.join("\n");
+    expect(joined).toContain("MAPTILER_KEY: REJECTED");
+    expect(joined).toContain("DATAWRAPPER_TOKEN: REJECTED");
+    expect(existsSync(join(root, ".env"))).toBe(false);
+  });
+
+  it.skipIf(!liveMapTilerKey)(
+    "should write a provider-validated key through the server-side check",
+    async () => {
+      // House convention (keys.test.ts): a real-network assertion is skipped, never faked,
+      // when no live credential is present. With one, /submit must accept it only because the
+      // server's own probe passed.
+      const result = await post("/submit", { MAPTILER_KEY: liveMapTilerKey });
+      expect(result.ok).toBe(true);
+      expect(result.lines.join("\n")).toContain("wrote MAPTILER_KEY");
+      expect(readFileSync(join(root, ".env"), "utf8")).toContain(
+        `MAPTILER_KEY=${liveMapTilerKey}`,
+      );
+    },
+  );
 
   it("should never claim the credential was checked, unlike every probed key", async () => {
     const verified = await post("/verify", {

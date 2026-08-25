@@ -706,6 +706,31 @@ async function submit(payload) {
   const cms = verifyCms(payload);
   if (cms.rejected.length > 0) return { ok: false, lines: cms.lines };
 
+  // Provider keys are re-validated HERE for the same reason. The page sequences /verify then
+  // /submit, but a POST on a socket does not have to follow that order, so every probed key is
+  // re-checked against its real provider before anything is written. MAPTILER_DELIVERY_KEY stays
+  // unprobed by design (an origin-restricted key cannot be honestly probed from this machine);
+  // CLOUDFLARE_ACCOUNT_ID is validated together with its token.
+  let rejected = false;
+  const validated = [];
+  for (const field of KEY_FIELDS) {
+    const value = (payload[field.name] ?? "").trim();
+    if (!value) continue;
+    let result;
+    if (field.name === "MAPTILER_KEY") result = await probeMapTiler(value, fetch);
+    else if (field.name === "DATAWRAPPER_TOKEN") result = await probeDatawrapper(value, fetch);
+    else if (field.name === "CLOUDFLARE_API_TOKEN")
+      result = await probeCloudflare((payload.CLOUDFLARE_ACCOUNT_ID ?? "").trim(), value, fetch);
+    else continue;
+    if (!result.ok) {
+      lines.push(`${field.name}: REJECTED — ${result.detail}`);
+      rejected = true;
+    } else {
+      validated.push(field.name);
+    }
+  }
+  if (rejected) return { ok: false, lines };
+
   for (const field of [...KEY_FIELDS, ...CMS_FIELDS]) {
     const value = (payload[field.name] ?? "").trim();
     if (!value) continue;
