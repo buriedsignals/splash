@@ -106,6 +106,37 @@
   .nav .links a.ext:hover { text-decoration: none; opacity: 0.75; }
   @media (max-width: 640px) { .nav .links a.plain { display: none; } }
 
+  /* ---------------- install card (above the fold) ---------------- */
+  .install-card {
+    margin: 34px auto 0; max-width: 560px;
+    border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+    border-radius: 10px; background: #fff;
+    box-shadow: 0 10px 30px rgba(28,33,38,0.08);
+    text-align: left; overflow: hidden;
+  }
+  .install-card .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-bottom: 1px solid rgba(28,33,38,0.08);
+    font-family: var(--grot); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .install-card pre {
+    margin: 0; padding: 14px 16px; overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre;
+  }
+  .install-card .copy {
+    font-family: var(--grot); font-weight: 500; font-size: 11px;
+    border: 1px solid rgba(28,33,38,0.25); border-radius: 6px;
+    background: transparent; color: var(--ink);
+    padding: 4px 10px; cursor: pointer;
+  }
+  .install-card .copy:hover { background: rgba(28,33,38,0.06); }
+  .install-prereq {
+    margin-top: 10px; font-family: var(--grot); font-size: 11.5px;
+    color: var(--ink-soft); letter-spacing: 0.01em;
+  }
+
   /* ---------------- hero ---------------- */
   .hero {
     position: relative; min-height: 100svh;
@@ -562,8 +593,7 @@
   </a>
   <div class="links">
     <a class="plain" href="#menu">The menu</a>
-    <a class="plain" href="https://buriedsignals.com" target="_blank" rel="noopener">Buried Signals ↗</a>
-    <a class="ext" href="https://github.com/buriedsignals/splash">Explore the skills</a>
+    <a class="ext" href="https://github.com/buriedsignals/splash">GitHub ↗</a>
   </div>
 </nav>
 
@@ -593,6 +623,12 @@
     <p class="standfirst">Comparisons become paragraphs. Places are described instead of mapped.
     Change over time is written out instead of shown. The internet does not need another wall of words;
     it needs evidence readers can see.</p>
+    <div class="install-card" id="install" role="group" aria-label="Install Splash">
+      <div class="bar"><span>Install</span><button type="button" class="copy" data-copy>Copy</button></div>
+      <pre><code id="install-cmd">git clone https://github.com/buriedsignals/splash.git
+cd splash &amp;&amp; bash installer/install.sh</code></pre>
+    </div>
+    <p class="install-prereq">macOS or Linux · requires <a href="https://bun.sh" target="_blank" rel="noopener">Bun</a> and the Engine CLI (<code>bsig</code>) · your newsroom owns the files it produces</p>
     <div class="scrollcue" aria-hidden="true"><span class="line"></span>Scroll</div>
   </div>
 </header>
@@ -1592,6 +1628,34 @@
   })();
 
 })();
+</script>
+<script>
+  (function () {
+    "use strict";
+    var button = document.querySelector("[data-copy]");
+    var command = document.getElementById("install-cmd");
+    if (!button || !command) return;
+    button.addEventListener("click", function () {
+      var text = command.textContent.replace(/^\$\s/gm, "");
+      var done = function () {
+        button.textContent = "Copied";
+        setTimeout(function () { button.textContent = "Copy"; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(area);
+        done();
+      }
+    });
+  })();
 </script>
 </body>
 </html>
