@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Splash public installer — one static, reviewable script:
-#
-#   curl -fsSL https://buriedsignals.github.io/splash/install.sh | bash
-#
+# Splash Pages installer — retired as the journalist product.
+# Journalists install Splash through Indicator Labs (https://buriedsignals.com/join).
+# Contributors use a clone and `bash installer/install.sh`.
+# This script remains in-tree for old pipes; GitHub Pages no longer ships it.
 # Fetches the signed public-installer bootstrap from GitHub release assets,
 # verifies its SHA-256 against a digest pinned below, and runs the applicator
 # to create a managed Splash checkout. Then installs Bun dependencies, the

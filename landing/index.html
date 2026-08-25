@@ -120,18 +120,17 @@
     font-family: var(--grot); font-weight: 700; font-size: 11px;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft);
   }
-  .install-card pre {
-    margin: 0; padding: 14px 16px; overflow-x: auto;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre;
+  .install-card .install-join {
+    margin: 0; padding: 16px;
   }
-  .install-card .copy {
-    font-family: var(--grot); font-weight: 500; font-size: 11px;
-    border: 1px solid rgba(28,33,38,0.25); border-radius: 6px;
-    background: transparent; color: var(--ink);
-    padding: 4px 10px; cursor: pointer;
+  .install-card a.cta-install {
+    display: inline-block;
+    font-family: var(--grot); font-weight: 700; font-size: 13px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ink); text-decoration: none;
+    border: 1px solid var(--ink); padding: 10px 14px; border-radius: 8px;
   }
-  .install-card .copy:hover { background: rgba(28,33,38,0.06); }
+  .install-card a.cta-install:hover { background: rgba(28,33,38,0.06); }
   .install-prereq {
     margin-top: 10px; font-family: var(--grot); font-size: 11.5px;
     color: var(--ink-soft); letter-spacing: 0.01em;
@@ -444,23 +443,6 @@
   }
   .foot-meta .brand-mini { display: flex; align-items: center; gap: 9px; }
   .foot-meta .brand-mini svg { width: 13px; height: 13px; opacity: 0.8; }
-  .foot-fund {
-    max-width: 1120px; margin: 36px auto 0; padding-top: 28px;
-    border-top: 1px solid rgba(245, 242, 237, 0.16);
-  }
-  .foot-fund-label {
-    font-family: var(--grot); font-weight: 700; font-size: 11px;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    color: rgba(245, 242, 237, 0.45); margin: 0 0 10px;
-  }
-  .foot-fund a { display: inline-block; }
-  .foot-fund img {
-    height: 32px; width: auto;
-    filter: grayscale(1) invert(1);
-    opacity: 0.72;
-    transition: opacity 0.2s;
-  }
-  .foot-fund a:hover img { opacity: 1; }
   @media (max-width: 760px) {
     .foot-grid { grid-template-columns: 1fr; gap: 20px; }
     .foot-links { justify-content: flex-start; }
@@ -641,10 +623,10 @@
     Change over time is written out instead of shown. The internet does not need another wall of words;
     it needs evidence readers can see.</p>
     <div class="install-card" id="install" role="group" aria-label="Install Splash">
-      <div class="bar"><span>Install</span><button type="button" class="copy" data-copy>Copy</button></div>
-      <pre><code id="install-cmd">curl -fsSL https://buriedsignals.github.io/splash/install.sh | bash</code></pre>
+      <div class="bar"><span>Install</span></div>
+      <p class="install-join"><a class="cta-install" href="https://buriedsignals.com/join">Install Splash in Indicator Labs</a></p>
     </div>
-    <p class="install-prereq">macOS or Linux · requires git · your newsroom owns the files it produces · <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">source on GitHub</a></p>
+    <p class="install-prereq">Journalist install is Indicator Labs on Mac or Windows · <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">source on GitHub</a></p>
     <div class="scrollcue" aria-hidden="true"><span class="line"></span>Scroll</div>
   </div>
 </header>
@@ -955,12 +937,6 @@
       <a href="https://buriedsignals.com/consulting" target="_blank" rel="noopener">Work with me ↗</a>
       <a href="https://buriedsignals.com" target="_blank" rel="noopener">Buried Signals ↗</a>
     </div>
-  </div>
-  <div class="foot-fund">
-    <p class="foot-fund-label">Funded by</p>
-    <a href="https://www.imj-fjm.ch/" target="_blank" rel="noopener">
-      <img src="logo_imj_schwarz.svg" alt="IMJ" width="86" height="53" />
-    </a>
   </div>
   <div class="foot-meta">
     <span class="brand-mini">
@@ -1650,34 +1626,6 @@
   })();
 
 })();
-</script>
-<script>
-  (function () {
-    "use strict";
-    var button = document.querySelector("[data-copy]");
-    var command = document.getElementById("install-cmd");
-    if (!button || !command) return;
-    button.addEventListener("click", function () {
-      var text = command.textContent.replace(/^\$\s/gm, "");
-      var done = function () {
-        button.textContent = "Copied";
-        setTimeout(function () { button.textContent = "Copy"; }, 1600);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, done);
-      } else {
-        var area = document.createElement("textarea");
-        area.value = text;
-        area.style.position = "fixed";
-        area.style.opacity = "0";
-        document.body.appendChild(area);
-        area.select();
-        try { document.execCommand("copy"); } catch (e) {}
-        document.body.removeChild(area);
-        done();
-      }
-    });
-  })();
 </script>
 </body>
 </html>

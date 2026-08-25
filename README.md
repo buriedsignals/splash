@@ -108,17 +108,21 @@ delivery keeps the prior export intact until replacement completes.
 ## Credentials
 
 Credentials are stored through Engine's operating-system credential broker —
-never in MCP arguments, model context, or committed files. The Splash
-Readiness interface links to each provider's key page and accepts values on a
-separate loopback-only setup page. Map craft's provider-bearing bake is a
-fixed Engine operation: each beat supplies a strict story-local
+never in MCP arguments, model context, or committed files. The Splash studio
+is a loopback-only page: Goose opens it with `open_splash`, other harnesses
+run `apps/goose/studio/open.mjs`. It links to each provider's key page and
+accepts values on a separate setup page. Map craft's provider-bearing bake is
+a fixed Engine operation: each beat supplies a strict story-local
 `MAP-BAKE.json`, and Engine verifies camera, GeoJSON/data digests, managed
 browser, and installed runtime before hydrating `MAPTILER_KEY`.
 
 ## Install
 
-Prerequisites: macOS or Linux, an installed `bsig` Engine, and
-[Bun](https://bun.sh/).
+Journalist install is Indicator Labs on Mac or Windows. Join at
+[buriedsignals.com/join](https://buriedsignals.com/join). Secrets enter
+through the operating-system credential prompt, not a website form.
+
+Contributor / development checkout:
 
 ```bash
 git clone https://github.com/buriedsignals/splash.git
