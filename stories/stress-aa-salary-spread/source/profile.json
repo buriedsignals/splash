@@ -1,0 +1,49 @@
+{
+  "rowCount": 240,
+  "columns": [
+    {
+      "name": "employee_id",
+      "type": "text",
+      "missing": 0,
+      "distinct": 240,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "department",
+      "type": "text",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "annual_salary_eur",
+      "type": "number",
+      "missing": 6,
+      "distinct": 234,
+      "min": 14664,
+      "max": 238530,
+      "sum": 8544834,
+      "gaps": null
+    },
+    {
+      "name": "years_service",
+      "type": "number",
+      "missing": 0,
+      "distinct": 35,
+      "min": 0,
+      "max": 34,
+      "sum": 3973,
+      "gaps": []
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

@@ -129,13 +129,13 @@
     "delegatedProducer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "producer", "capability", "medium", "formats"],
+      "required": ["id", "label", "producer", "capability", "media", "formats"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "label": { "$ref": "#/$defs/nonEmptyString" },
         "producer": { "$ref": "#/$defs/id" },
         "capability": { "$ref": "#/$defs/id" },
-        "medium": { "$ref": "#/$defs/id" },
+        "media": { "$ref": "#/$defs/idArray" },
         "formats": { "$ref": "#/$defs/idArray" }
       }
     },

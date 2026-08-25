@@ -1,0 +1,56 @@
+{
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 0,
+      "distinct": 8,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "country",
+      "type": "text",
+      "missing": 0,
+      "distinct": 8,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "value",
+      "type": "number",
+      "missing": 0,
+      "distinct": 8,
+      "min": 17.2,
+      "max": 1880,
+      "sum": 5212.299999999999,
+      "gaps": null,
+      "mixedUnits": {
+        "column": "unit",
+        "groups": [
+          "clinics",
+          "per 100k"
+        ]
+      }
+    },
+    {
+      "name": "unit",
+      "type": "text",
+      "missing": 0,
+      "distinct": 2,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "المحافظة",
+      "type": "text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "استهلاك_المياه_م3",
+      "type": "text",
+      "reason": "looked numeric but \"٨٩٠٠٠٠٠٠\" is not, so the column stays text",
+      "missing": 0,
+      "distinct": 7,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "السكان",
+      "type": "number",
+      "missing": 0,
+      "distinct": 7,
+      "min": 374000,
+      "max": 1056000,
+      "sum": 4984000,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

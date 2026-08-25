@@ -1,0 +1,812 @@
+{
+  "rowCount": 327,
+  "columns": [
+    {
+      "name": "Statistik",
+      "type": "text",
+      "missing": 186,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Gebiet",
+      "type": "text",
+      "missing": 186,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Masseinheit",
+      "type": "text",
+      "missing": 186,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Ortschaft",
+      "type": "text",
+      "missing": 186,
+      "distinct": 3,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Jahr",
+      "type": "number",
+      "missing": 186,
+      "distinct": 47,
+      "min": 1979,
+      "max": 2025,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
+    },
+    {
+      "name": "Getoetete_Insgesamt",
+      "type": "number",
+      "missing": 186,
+      "distinct": 139,
+      "min": 746,
+      "max": 15558,
+      "sum": 673274,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Kraftraeder_Versicherungskennzeichen",
+      "type": "number",
+      "missing": 186,
+      "distinct": 103,
+      "min": 20,
+      "max": 1135,
+      "sum": 24038,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Elektrokleinstfahrzeuge",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 12,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_Kraftraeder_amtliches_Kennzeichen",
+      "type": "number",
+      "missing": 186,
+      "distinct": 133,
+      "min": 69,
+      "max": 1786,
+      "sum": 84408,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Pkw",
+      "type": "number",
+      "missing": 186,
+      "distinct": 138,
+      "min": 130,
+      "max": 7039,
+      "sum": 350954,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Busse",
+      "type": "number",
+      "missing": 186,
+      "distinct": 35,
+      "min": 1,
+      "max": 58,
+      "sum": 1828,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Landwirtschaftliche_Zugmaschinen",
+      "type": "number",
+      "missing": 186,
+      "distinct": 44,
+      "min": 1,
+      "max": 71,
+      "sum": 2478,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Gueterkraftfahrzeuge",
+      "type": "number",
+      "missing": 186,
+      "distinct": 109,
+      "min": 2,
+      "max": 316,
+      "sum": 18718,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_sonstige_Kraftfahrzeuge",
+      "type": "number",
+      "missing": 186,
+      "distinct": 32,
+      "min": 2,
+      "max": 47,
+      "sum": 2320,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    },
+    {
+      "name": "Getoetete_Fahrraeder_ohne_Elektroantrieb_ab_2014",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 36,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_Pedelecs_ab_2014",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 32,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_Fahrraeder_bis_2013",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 97,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_andere_Fahrzeuge_ab_1991",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 17,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_sonstige_Personen_ab_1991",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 22,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_andere_Fahrzeuge_und_sonstige_Personen_bis_1990",
+      "type": "text",
+      "reason": "looked numeric but \"-\" is not, so the column stays text",
+      "missing": 186,
+      "distinct": 23,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "Getoetete_Fussgaenger_innen",
+      "type": "number",
+      "missing": 186,
+      "distinct": 135,
+      "min": 84,
+      "max": 3885,
+      "sum": 122114,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      }
+    }
+  ],
+  "duplicates": {
+    "count": 1,
+    "rows": [
+      {
+        "values": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "indices": [
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285,
+          286,
+          287,
+          288,
+          289,
+          290,
+          291,
+          292,
+          293,
+          294,
+          295,
+          296,
+          297,
+          298,
+          299,
+          300,
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          307,
+          308,
+          309,
+          310,
+          311,
+          312,
+          313,
+          314,
+          315,
+          316,
+          317,
+          318,
+          319,
+          320,
+          321,
+          322,
+          323,
+          324,
+          325,
+          326
+        ],
+        "occurrences": 186
+      }
+    ]
+  },
+  "panel": {
+    "entity": "Ortschaft",
+    "period": "Jahr",
+    "entities": 3,
+    "periods": 48,
+    "rowsPerPeriod": {
+      "min": 3,
+      "max": 3
+    },
+    "balanced": false,
+    "says": "one row per entity per period: every (\"Ortschaft\", \"Jahr\") pair in this table is unique, so rowCount (327) counts readings, never subjects — there are 3 of those",
+    "decidedBy": "every (\"Ortschaft\", \"Jahr\") pair is unique across all 327 rows, and \"Ortschaft\" holds no blank",
+    "coverage": {
+      "byPeriod": [
+        {
+          "period": 1979,
+          "entities": 3
+        },
+        {
+          "period": 1980,
+          "entities": 3
+        },
+        {
+          "period": 1981,
+          "entities": 3
+        },
+        {
+          "period": 1982,
+          "entities": 3
+        },
+        {
+          "period": 1983,
+          "entities": 3
+        },
+        {
+          "period": 1984,
+          "entities": 3
+        },
+        {
+          "period": 1985,
+          "entities": 3
+        },
+        {
+          "period": 1986,
+          "entities": 3
+        },
+        {
+          "period": 1987,
+          "entities": 3
+        },
+        {
+          "period": 1988,
+          "entities": 3
+        },
+        {
+          "period": 1989,
+          "entities": 3
+        },
+        {
+          "period": 1990,
+          "entities": 3
+        },
+        {
+          "period": 1991,
+          "entities": 3
+        },
+        {
+          "period": 1992,
+          "entities": 3
+        },
+        {
+          "period": 1993,
+          "entities": 3
+        },
+        {
+          "period": 1994,
+          "entities": 3
+        },
+        {
+          "period": 1995,
+          "entities": 3
+        },
+        {
+          "period": 1996,
+          "entities": 3
+        },
+        {
+          "period": 1997,
+          "entities": 3
+        },
+        {
+          "period": 1998,
+          "entities": 3
+        },
+        {
+          "period": 1999,
+          "entities": 3
+        },
+        {
+          "period": 2000,
+          "entities": 3
+        },
+        {
+          "period": 2001,
+          "entities": 3
+        },
+        {
+          "period": 2002,
+          "entities": 3
+        },
+        {
+          "period": 2003,
+          "entities": 3
+        },
+        {
+          "period": 2004,
+          "entities": 3
+        },
+        {
+          "period": 2005,
+          "entities": 3
+        },
+        {
+          "period": 2006,
+          "entities": 3
+        },
+        {
+          "period": 2007,
+          "entities": 3
+        },
+        {
+          "period": 2008,
+          "entities": 3
+        },
+        {
+          "period": 2009,
+          "entities": 3
+        },
+        {
+          "period": 2010,
+          "entities": 3
+        },
+        {
+          "period": 2011,
+          "entities": 3
+        },
+        {
+          "period": 2012,
+          "entities": 3
+        },
+        {
+          "period": 2013,
+          "entities": 3
+        },
+        {
+          "period": 2014,
+          "entities": 3
+        },
+        {
+          "period": 2015,
+          "entities": 3
+        },
+        {
+          "period": 2016,
+          "entities": 3
+        },
+        {
+          "period": 2017,
+          "entities": 3
+        },
+        {
+          "period": 2018,
+          "entities": 3
+        },
+        {
+          "period": 2019,
+          "entities": 3
+        },
+        {
+          "period": 2020,
+          "entities": 3
+        },
+        {
+          "period": 2021,
+          "entities": 3
+        },
+        {
+          "period": 2022,
+          "entities": 3
+        },
+        {
+          "period": 2023,
+          "entities": 3
+        },
+        {
+          "period": 2024,
+          "entities": 3
+        },
+        {
+          "period": 2025,
+          "entities": 3
+        }
+      ],
+      "fullest": {
+        "period": 1979,
+        "entities": 3
+      },
+      "thinnest": {
+        "period": 1979,
+        "entities": 3
+      },
+      "says": "a period's own step being present is not the same as every entity being present in it: the fullest period here carries 3 entities and the thinnest carries 3"
+    },
+    "aggregates": {
+      "says": "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+      "byArithmetic": [],
+      "byStructure": [],
+      "arithmetic": {
+        "ran": false,
+        "reason": "the structural test set no row of this table apart, so there was no candidate to put to the arithmetic — a set of rows that happens to add up to another is a coincidence until something else says that row is different"
+      },
+      "structure": {
+        "answered": false,
+        "reason": "no column of this table holds one stable code per entity with a shape most of them share"
+      }
+    }
+  },
+  "header": {
+    "says": "16 columns were dropped: the publisher named them nothing and no row carries a value in them (index 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36)",
+    "headerAt": 0,
+    "banner": [],
+    "dropped": [
+      {
+        "index": 21,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 22,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 23,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 24,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 25,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 26,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 27,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 28,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 29,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 30,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 31,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 32,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 33,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 34,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 35,
+        "says": "the publisher named no column here and no row carries a value in it"
+      },
+      {
+        "index": 36,
+        "says": "the publisher named no column here and no row carries a value in it"
+      }
+    ],
+    "renamed": []
+  },
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires"
+    ],
+    "column": "Jahr",
+    "readProse": true,
+    "claims": [
+      {
+        "period": 2025,
+        "column": "Jahr",
+        "word": "preliminary",
+        "sentence": "— *as Destatis reports, in 2025, according to preliminary results, one in six (16.4%) people killed in road traffic was travelling by bicycle."
+      }
+    ],
+    "says": "the frozen prose states that a period this table holds is incomplete — a CLAIM the journalist wrote, carried here with the sentence that made it, never a fact this profiler checked"
+  }
+}

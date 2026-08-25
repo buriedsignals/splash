@@ -19,6 +19,8 @@ how the story is framed; group the smallest into "Other," filter to what the hea
 about, or move to a dot plot or small multiples instead of shrinking every bar until none of them
 is legible.
 
+<!-- limit: periods > 8 -->
+
 ## Where it goes wrong
 
 A truncated baseline. Bars encode value by length, so starting the value axis at 80 when every

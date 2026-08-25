@@ -1,0 +1,23 @@
+{
+  "rowCount": 4,
+  "columns": [
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 4,
+      "min": 2019,
+      "max": 2022,
+      "sum": 8082
+    },
+    {
+      "name": "vacant_homes_pct",
+      "type": "number",
+      "missing": 0,
+      "distinct": 4,
+      "min": 7.2,
+      "max": 8.4,
+      "sum": 31.3
+    }
+  ]
+}

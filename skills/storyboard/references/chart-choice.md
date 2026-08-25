@@ -47,6 +47,46 @@ generic preference such as "more engaging" is not a reason.
   weak underlying chart choice, and every panel must keep the same scale.
 - The subject named by the journalist receives emphasis. The largest value does not become the
   subject by default.
+- **Row count is evidence, and a column's type is not a story.** A comparison, a series, an axis or
+  an order needs more than one observation before any type in this document is a candidate: a time
+  axis with one moment is not an axis, and a series of one point is not a series. An unknown row
+  count is not evidence either. `requirementFinding` (`scripts/propose.mjs`) enforces this for the
+  scored path; state it in words for the editorial one.
+- **A table's own x axis is not one of the things it measures.** A plain (year, value) table
+  carries ONE measure, not two, so it supports no intent that needs two — this was the state of 9
+  of the 21 frozen stories. The skill has one answer to which column is the year and which are the
+  measures, `ground-claim.mjs`'s `findYearColumn` / `measureColumns`, and both modules read it.
+- **A part-to-whole table is written long, and the mechanism now reads it that way.** For six
+  rounds and twenty-seven stories, `part-to-whole` asked for two or more numeric COLUMNS — the wide
+  form, one row per whole — while a composition table is ordinarily one column naming the parts and
+  one carrying their values. Not one of the five treatments that depend on it (diverging stacked
+  bar, marimekko, pie and donut, stacked bar, treemap) was ever chosen, and that absence read as
+  taste. It was arithmetic. `requirementFinding` reads both forms now: two or more measures, or one
+  measure beside a category column that names each row EXACTLY ONCE. A category repeated down the
+  rows is a table of observations, not of parts.
+- **The profile can see the shape of a whole; only you can see that the whole is real.** Whether the
+  categories exhaust one total, without overlap, is not a fact any column profile carries — seven
+  countries' forest loss composes a total, seven cantons' unemployment RATES do not, and the two
+  tables are identical in profile. The scored path says so in its own matched evidence rather than
+  claiming the stronger fact. That judgement stays here, with the rule above it: a whole must be
+  real.
+- **A negative member is not a part, and no widening changes that.** `stress-z-budget-parts` carries
+  a −9.7 provision write-back whose column still sums to 100 — the parts CANCEL rather than compose
+  — and `stress-e-electricity-mix` carries −4.1 for net imports. No slice, band or tile can draw
+  either. The refusal names the column, its value and the form that CAN carry it (a diverging bar, a
+  waterfall), because "part-to-whole" printed in a list of unmet requirements is a name, not a
+  reason.
+- **A distribution is a count of observations, and five of them is not one.** `raw-observations` and
+  `distribution` are the only two requirements in the vocabulary that consult a count, and both read
+  the ROW count at a floor of five. A blank cell is not an observation: `stress-aa-salary-spread` is
+  240 rows and 234 salaries. Both floors now come from the sheets themselves — eight raw
+  observations (`scatter.md`'s own declared `rows < 8`) and twenty for a distribution (`histogram.md`
+  works in "about ten roughly-round bins", and a bin holding one reading shows no shape).
+- **A candidate must survive its own type sheet's refusals, not only its purpose sentence.** Read
+  the sheet's "when NOT to reach for it" before proposing it; `references/type-survey.md` carries
+  that sentence verbatim beside the purpose, and where the sheet states a count in rows,
+  `formatCandidates` refuses the candidate rather than rendering it. A slot once closed on a
+  scatter of six rows while the scatter sheet refused exactly that on disk.
 
 ## Intent: rank or compare one value per category
 
@@ -214,7 +254,7 @@ generic preference such as "more engaging" is not a reason.
 |---:|---|---|---|
 | 1 | [Hex grid](../../map-beat/references/types/hex-grid.md) | Many real point events should be aggregated into comparable spatial cells. | Recognised boundaries matter, the point count is small, or aggregate mode cannot be stated. |
 | 2 | [Dot density](../../map-beat/references/types/dot-density.md) | A quantity's within-region concentration and texture matter, with each dot representing a stated unit. | Individual dot locations would be mistaken for real addresses, or a single regional rate is the claim. |
-| 3 | [Contour and isoline](../../map-beat/references/types/contour-isoline.md) | Dense samples support a continuous field and threshold lines or gradient shape are the claim. | Samples are sparse or the source values belong to discrete regions. This type has no shipped implementation here, so every render needs fresh verification. |
+| 3 | [Contour / isoline](../../map-beat/references/types/contour-isoline.md) | Dense samples support a continuous field and threshold lines or gradient shape are the claim. | Samples are sparse or the source values belong to discrete regions. This type has no shipped implementation here, so every render needs fresh verification. |
 | 4 | [Choropleth](../../map-beat/references/types/choropleth.md) | The quantity is already a rate attached to named regions. | Interpolation or within-region variation is the finding. |
 
 ## Intent: show a geographic journey

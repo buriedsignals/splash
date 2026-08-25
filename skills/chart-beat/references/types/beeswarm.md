@@ -22,6 +22,13 @@ overlap doesn't need resolving because the points are naturally sparse along the
 strip does the same job for less layout cost — reserve the collision simulation for datasets dense
 enough to actually need it.
 
+<!-- limit: rows > 150 -->
+
+<!-- A beeswarm draws one mark per raw observation, so a point IS a row of the frozen table.
+     That is why this ceiling is declared in `rows`, the one unit `source/profile.json` carries and
+     the one unit `formatCandidates` enforces: a swarm of 234 salaries was offered once, and the
+     sentence above had refused it on disk the whole time. -->
+
 ## The one thing that goes wrong
 
 A beeswarm has exactly one colour channel to spend when it's rendering a single distribution (not

@@ -74,7 +74,9 @@ const delegatedProducer = z.strictObject({
   label: nonEmpty,
   producer: id,
   capability: id,
-  medium: id,
+  // MEDIA, plural: the delegated provider has three map types as well as its charts, and a single
+  // `medium` here is what kept them unreachable while the pinned inventory carried them.
+  media: idArray,
   formats: idArray,
 });
 const sizeRule = z.discriminatedUnion("kind", [
@@ -321,9 +323,10 @@ export function validateVisualCatalog(
       fail(
         `delegated producer ${row.id} names unknown capability ${JSON.stringify(row.capability)}`,
       );
-    if (!mediums.has(row.medium))
-      fail(
-        `delegated producer ${row.id} names unknown medium ${JSON.stringify(row.medium)}`,
+    for (const medium of row.media)
+      if (!mediums.has(medium))
+        fail(
+          `delegated producer ${row.id} names unknown medium ${JSON.stringify(medium)}`,
       );
     if (!row.formats.length)
       fail(`delegated producer ${row.id} has no publication format`);
@@ -491,13 +494,37 @@ export function validateVisualCatalog(
     }
   }
 
+  // WHERE THE PROVIDER TABLE'S NAMES COME FROM (round seven, D7). `datawrapperMatch` derives every
+  // name a treatment answers to from the NAME IT IS GIVEN — so that name has to be the type sheet's
+  // own title, or the derivation runs over a spelling nobody reviewed and the names it yields are
+  // whatever that spelling happened to contain. Measured before this check existed: five of the
+  // fifteen provider names were not any sheet's title ("Slope" for `Slope (slopegraph)`, "Waterfall"
+  // for `Waterfall (bridge)`, and three more), so "slopegraph" and "bridge" — words those sheets put
+  // in their own titles — opened no gate at all. Bound here, where the sheets are already read, so a
+  // retitled sheet turns this red instead of silently narrowing what the gate recognises.
+  if (checkFilesystem) {
+    for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
+      const titled = sheets.filter(
+        (sheet) => sheet.medium === mapping.medium && sheet.title === mapping.treatment,
+      );
+      if (titled.length !== 1) {
+        fail(
+          `Datawrapper treatment mapping ${JSON.stringify(mapping.treatment)} is not the title of exactly one current ${mapping.medium} type sheet (found ${titled.length}); the provider table names treatments by their sheet's own title, because that title is what every name the gate matches on is derived from`,
+        );
+      }
+    }
+  }
+
   const delegatedWithMappings = catalog.delegatedProducers.map((row) => {
     if (row.id !== "datawrapper")
       fail(`delegated producer ${row.id} has no maintained mapping adapter`);
     const usedMappings = new Set();
     const mappings = [];
-    for (const treatmentRow of treatmentsWithProof.filter(
-      (candidate) => candidate.medium === row.medium,
+    // The delegated provider serves more than one medium: it has three map types as well as its
+    // charts, and declaring a single `medium` here is what kept them unreachable while the pinned
+    // inventory carried them the whole time.
+    for (const treatmentRow of treatmentsWithProof.filter((candidate) =>
+      row.media.includes(candidate.medium),
     )) {
       for (const format of row.formats) {
         const match = datawrapperMatch({

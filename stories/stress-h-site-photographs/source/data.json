@@ -1,0 +1,7 @@
+{
+  "photos": [
+    { "file": "wide.png", "alt": "A wide view of the yard", "credit": "Field team" },
+    { "file": "tall.png", "alt": "", "credit": "Field team" },
+    { "file": "huge.png", "alt": "The full site from the ridge" }
+  ]
+}

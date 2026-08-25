@@ -1,0 +1,9 @@
+﻿country, price_eur ,ref_code,period,households
+Germany,"1,234.5",0x1F,2023-01,41200000
+France, 987.25 ,0x2A,2023-01,30100000
+Italy,,0x3B,2023-01,26000000
+Spain,712.0,0x4C,01/2023,18900000
+Spain,712.0,0x4C,01/2023,18900000
+Denmark,48210.75,0x5D,2023-01,2700000
+"Netherlands, the",1102.4,0x6E,2023-01,8100000
+Poland,,0x7F,2023-01,14800000

@@ -22,6 +22,8 @@ practice, produced two different response levels sharing the same hue — a sile
 collision, not a stylistic compromise. Collapse a longer scale to five buckets first, or reach for a
 different type.
 
+<!-- limit: levels > 5 -->
+
 ## The one thing that goes wrong
 
 Two things, both real and both silent. First, the neutral straddle point has to be explicit — which

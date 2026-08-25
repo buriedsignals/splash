@@ -21,6 +21,8 @@ type as automatically the better choice once a viewer actually needs numbers off
 seven series, the bands compress into visual mush regardless of the wiggle-minimising layout; trim to
 the series that matter or facet instead.
 
+<!-- limit: series > 7 -->
+
 ## The one thing that goes wrong
 
 Because there is no axis a reader can look values up against, every in-band label has to state its

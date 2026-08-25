@@ -1,0 +1,39 @@
+{
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "district",
+      "type": "text",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "incidents",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 96,
+      "max": 412,
+      "sum": 1372,
+      "gaps": null
+    },
+    {
+      "name": "residents",
+      "type": "number",
+      "missing": 0,
+      "distinct": 5,
+      "min": 52000,
+      "max": 455000,
+      "sum": 1106000,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

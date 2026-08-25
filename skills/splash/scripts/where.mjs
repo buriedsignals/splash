@@ -212,7 +212,7 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 //
 // The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
 // loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
 export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
 
 // Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
@@ -270,44 +270,71 @@ const SCALAR_GAP = {
   takeaway: "a confirmed takeaway",
   grounding: "the G1 grounding verdict",
   reference: "the reference loop's answer",
+  language: "the language this story's own delivery is written in",
 };
 
-const SCALAR_VOCABULARY = { grounding: isResolvedGrounding };
+const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
+
+function isLanguageTag(value) {
+  return typeof value === "string" && LANGUAGE_TAG.test(value.trim());
+}
+
+const SCALAR_VOCABULARY = { grounding: isResolvedGrounding, language: isLanguageTag };
 const SCALAR_VOCABULARY_GAP = {
   grounding: (value) => `a resolved grounding verdict (found ${JSON.stringify(value)})`,
+  language: (value) => `a language code such as fr or de-CH, not a language's name (found ${JSON.stringify(value)})`,
 };
 
 const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
 
 // Carried copy of storyboard/scripts/producer-gate.mjs's treatment eligibility. Splash skills are
 // installed independently, so the state reader cannot import another skill at runtime. The parity
-// test imports both copies and compares every catalogue alias, including the negative cases.
+// test imports both copies and compares the catalogue table, the media, and every name the shared
+// derivation yields, including the negative cases.
+//
+// KEYED BY THE TYPE SHEET'S OWN TITLE, not by a list of spellings (round seven, D7). This table
+// used to carry thirty hand-typed aliases and still missed "Stacked area" — the natural name for
+// the treatment and half of `chart-beat/references/types/area.md`'s own title — which silently
+// removed the custom-or-Datawrapper human gate on a real story. A list somebody has to remember to
+// extend is the shape; the answer is that a treatment answers to every name its own TITLE yields,
+// derived by `treatmentNames` below, which is byte-identical to the storyboard copy and held so by
+// the producer-gate parity test.
 export const DATAWRAPPER_TREATMENTS = new Map([
-  ["area", ["d3-area"]],
-  ["area and stacked area", ["d3-area"]],
-  ["bar", ["d3-bars", "column-chart"]],
-  ["column", ["d3-bars", "column-chart"]],
-  ["bar and column", ["d3-bars", "column-chart"]],
-  ["bullet", ["d3-bars-bullet"]],
-  ["dumbbell", ["d3-range-plot"]],
-  ["range plot", ["d3-range-plot"]],
-  ["grouped bar", ["d3-bars-grouped", "grouped-column-chart"]],
-  ["grouped column", ["d3-bars-grouped", "grouped-column-chart"]],
-  ["line", ["d3-lines"]],
-  ["pie", ["d3-pies", "d3-donuts"]],
-  ["donut", ["d3-pies", "d3-donuts"]],
-  ["pie and donut", ["d3-pies", "d3-donuts"]],
-  ["population pyramid", ["d3-bars-split"]],
-  ["scatter", ["d3-scatter-plot"]],
-  ["scatter and bubble", ["d3-scatter-plot"]],
-  ["slope", ["d3-lines"]],
-  ["slopegraph", ["d3-lines"]],
-  ["slope chart", ["d3-lines"]],
-  ["stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
-  ["stacked column", ["d3-bars-stacked", "stacked-column-chart"]],
-  ["waterfall", ["waterfall"]],
-  ["waterfall bridge", ["waterfall"]],
+  ["Area (and stacked area)", ["d3-area"]],
+  ["Bar and column", ["d3-bars", "column-chart"]],
+  ["Bullet", ["d3-bars-bullet"]],
+  ["Dumbbell (range plot)", ["d3-range-plot"]],
+  ["Grouped bar", ["d3-bars-grouped", "grouped-column-chart"]],
+  ["Line", ["d3-lines"]],
+  ["Pie and donut", ["d3-pies", "d3-donuts"]],
+  ["Population pyramid", ["d3-bars-split"]],
+  ["Scatter (and bubble)", ["d3-scatter-plot"]],
+  ["Slope (slopegraph)", ["d3-lines"]],
+  ["Stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
+  ["Waterfall (bridge)", ["waterfall"]],
+  ["Choropleth", ["d3-maps-choropleth"]],
+  ["Proportional symbol (symbol / bubble map)", ["d3-maps-symbols"]],
+  ["Locator", ["locator-map"]],
 ]);
+
+/** Spellings no title can yield, declared beside the treatment that owns them. */
+const DATAWRAPPER_DECLARED_ALIASES = new Map([
+  ["grouped column", "Grouped bar"],
+  ["stacked column", "Stacked bar"],
+]);
+
+const MAP_TREATMENTS = new Set([
+  "Choropleth",
+  "Proportional symbol (symbol / bubble map)",
+  "Locator",
+]);
+
+export const DATAWRAPPER_TREATMENT_MEDIA = new Map(
+  [...DATAWRAPPER_TREATMENTS.keys()].map((treatment) => [
+    treatment,
+    MAP_TREATMENTS.has(treatment) ? "map" : "chart",
+  ]),
+);
 
 function normalizeTreatment(value) {
   return String(value ?? "")
@@ -321,9 +348,53 @@ function normalizeTreatment(value) {
     .replace(/\s+/g, " ");
 }
 
+const GENERIC_TREATMENT_WORDS = new Set(["map", "chart", "plot", "graph", "diagram", "graphic"]);
+
+export function treatmentNames(value) {
+  const raw = String(value ?? "");
+  const parts = [raw.replace(/[()]/g, " "), raw.split("(")[0]];
+  for (const paren of raw.matchAll(/\(([^)]*)\)/g)) parts.push(paren[1]);
+  const names = new Set();
+  for (const part of parts) {
+    for (const piece of [part, ...part.split(/\s*[/,;]\s*|\s+(?:and|or)\s+/iu)]) {
+      const name = normalizeTreatment(piece.replace(/[()]/g, " ")).replace(/^(?:and|or) /u, "");
+      if (!name) continue;
+      names.add(name);
+      const words = name.split(" ");
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[words.length - 1])) words.pop();
+      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[0])) words.shift();
+      if (!GENERIC_TREATMENT_WORDS.has(words[0])) names.add(words.join(" "));
+    }
+  }
+  return [...names];
+}
+
+function namesForTreatment(treatment) {
+  const declared = [...DATAWRAPPER_DECLARED_ALIASES]
+    .filter(([, owner]) => owner === treatment)
+    .map(([alias]) => alias);
+  return new Set([treatment, ...declared].flatMap(treatmentNames));
+}
+
 export function datawrapperTypesForTreatment({ medium, format, treatment }) {
-  if (medium !== "chart" || (format !== "static" && format !== "web")) return null;
-  return DATAWRAPPER_TREATMENTS.get(normalizeTreatment(treatment)) ?? null;
+  if ((medium !== "chart" && medium !== "map") || (format !== "static" && format !== "web"))
+    return null;
+  const asked = treatmentNames(treatment);
+  let best = null;
+  for (const [candidate, types] of DATAWRAPPER_TREATMENTS) {
+    const own = namesForTreatment(candidate);
+    const candidateMedium = DATAWRAPPER_TREATMENT_MEDIA.get(candidate);
+    for (const name of asked) {
+      if (!own.has(name)) continue;
+      const words = name.split(" ").length;
+      const wins =
+        !best ||
+        words > best.words ||
+        (words === best.words && best.medium !== medium && candidateMedium === medium);
+      if (wins) best = { types, words, medium: candidateMedium };
+    }
+  }
+  return best?.medium === medium ? best.types : null;
 }
 
 function producerGapFor(slot) {

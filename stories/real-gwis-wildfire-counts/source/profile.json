@@ -1,0 +1,49 @@
+{
+  "rowCount": 3900,
+  "columns": [
+    {
+      "name": "entity",
+      "type": "text",
+      "missing": 0,
+      "distinct": 260,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 15,
+      "distinct": 259,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 15,
+      "min": 2012,
+      "max": 2026,
+      "sum": 7874100,
+      "gaps": []
+    },
+    {
+      "name": "events",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1552,
+      "min": 0,
+      "max": 1148499,
+      "sum": 42410733,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

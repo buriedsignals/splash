@@ -10,6 +10,8 @@ grows in, a lollipop reads as lighter without giving up a single thing a bar cha
 it as "a bar, minus the fill" rather than as a different chart type with its own rules — because
 that's exactly what it is.
 
+<!-- same idea as: Bar and column -->
+
 ## When NOT to use it, and what to use instead
 
 If the categories are few (say, under five) and the point is simple magnitude comparison, a plain

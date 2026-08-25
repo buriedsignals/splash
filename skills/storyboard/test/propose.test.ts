@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   resolveGrounding,
@@ -14,6 +14,9 @@ import {
   formatCandidates,
   recommendVisualChoice,
 } from "../scripts/propose.mjs";
+// The period rule itself, so this file measures the population the skill derives rather than
+// re-typing the rule and drifting from it.
+import { findYearColumn } from "../scripts/ground-claim.mjs";
 
 // The frozen profile shape `intake`'s `profileTable` produces, with the run's own numbers:
 // three components of a melt total, 14 + 11 + 9 = 34.
@@ -141,6 +144,80 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
     expect(resolved.verdict).toBe("contradicted");
     expect(resolved.detail).toContain("the data refutes");
   });
+
+  // `groundTakeaway` now returns `{ claims, coverage }` (round-three stress redesign); this is the
+  // ONE caller `coverage.unevaluated` is written for (see `ground-claim.mjs`'s own header). A
+  // sentence that produced no claim at all is named in `detail`, not silently dropped alongside
+  // the sentence that WAS checked.
+  it("should fold coverage.unevaluated into the detail, naming the untouched sentence", () => {
+    const resolved = resolveGrounding(
+      "En 2024, 34 Mt de glace ont fondu. Renewables overtook coal as the main source.",
+      meltProfile,
+    );
+    expect(resolved.coverage.unevaluated).toEqual(["Renewables overtook coal as the main source."]);
+    expect(resolved.detail).toContain("Renewables overtook coal as the main source");
+  });
+});
+
+// =============================================================================================
+// ROUND FOUR (2026-08-21), finding 4 — the scalar stops discarding its own coverage.
+//
+// `stress-s-unspent-fund` closed G1 `supported` on ONE match: the incidental `2026`, inside a
+// `year` column whose min and max are both 2026 — a check that cannot fail. The two numbers the
+// sentence actually asserts, 4.1 and 0, both came back unverifiable. One incidental numeral
+// outvoted the two load-bearing ones and closed the editorial gate.
+//
+// Run against the story's OWN frozen profile and CSV, not a fixture built to fail.
+const storyFile = (relative) =>
+  readFileSync(new URL(`../../../stories/${relative}`, import.meta.url), "utf8");
+const storyProfile = (story) => JSON.parse(storyFile(`${story}/source/profile.json`));
+const storyCsv = (story) => storyFile(`${story}/source/data.csv`);
+
+describe("resolveGrounding — a scalar that reflects what the data actually decided", () => {
+  const STRESS_S_TAKEAWAY =
+    "Of the €4.1 billion allocated to the regional resilience fund, €0 had been disbursed by the end of June 2026.";
+
+  it("should refuse to close G1 supported on a tautological match, on the real frozen story", () => {
+    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
+      csv: storyCsv("stress-s-unspent-fund"),
+    });
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(groundingScalar(resolved)).toBe("unverifiable");
+    expect(resolved.supported.length).toBe(0);
+    expect(resolved.consistent.length).toBe(1);
+    expect(resolved.detail).toContain("placed but not confirmed");
+    expect(resolved.detail).toContain("CANNOT FAIL");
+  });
+
+  it("should report the decided fraction of the takeaway in every detail it writes", () => {
+    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
+      csv: storyCsv("stress-s-unspent-fund"),
+    });
+    expect(resolved.coverage.decided).toBe(0);
+    expect(resolved.detail).toContain("0 of 1 sentence(s)");
+  });
+
+  it("should close supported on a real story whose superlative the frozen table confirms", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.verdict).toBe("supported");
+    expect(groundingScalar(resolved)).toBe("supported");
+    expect(resolved.coverage.decided).toBe(1);
+  });
+
+  it("should refuse to close supported while a sentence of the takeaway produced no claim at all", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most. Renewables overtook coal as the main source.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.supported.length).toBe(1);
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(resolved.detail).toContain("did not read the whole");
+  });
 });
 
 describe("groundingScalar — contradicted never closes G1", () => {
@@ -198,14 +275,30 @@ describe("the survey — what could be made of this data", () => {
     const rows = readTypeSurvey(
       [
         "## Chart types",
-        "| type | what it is for | proven formats | sheet |",
-        "|---|---|---|---|",
-        "| **Beeswarm** | Every raw observation on one axis. | — none rendered here yet | `chart-beat/references/types/beeswarm.md` |",
-        "| **Bar and column** | One value per category. | static, web | `chart-beat/references/types/bar-and-column.md` |",
+        "| type | what it is for | when NOT to reach for it | refuses when | same idea as | proven formats | sheet |",
+        "|---|---|---|---|---|---|---|",
+        "| **Beeswarm** | Every raw observation on one axis. | Not past a few hundred points. | — | — | — none rendered here yet | `chart-beat/references/types/beeswarm.md` |",
+        "| **Bar and column** | One value per category. | Not for a real time series. | — | — | static, web | `chart-beat/references/types/bar-and-column.md` |",
       ].join("\n"),
     );
     expect(rows[0].provenFormats).toEqual([]);
     expect(rows[1].provenFormats).toEqual(["static", "web"]);
+  });
+
+  // Round four, finding 24. Both halves of every sheet reach the exchange now: the survey used to
+  // carry the purpose sentence alone, so nothing anywhere could say a type refuses this table.
+  it("should carry every sheet's own refusal sentence and its stated limits", () => {
+    const rows = typeSurvey();
+    for (const row of rows) {
+      expect(row.refusal.length).toBeGreaterThan(20);
+    }
+    const scatter = rows.find((r) => r.type === "Scatter (and bubble)")!;
+    expect(scatter.refusal).toContain("fewer than about eight or ten points");
+    expect(scatter.limits).toEqual([{ unit: "rows", op: "<", value: 8 }]);
+    const lollipop = rows.find((r) => r.type === "Lollipop")!;
+    expect(lollipop.sameIdeaAs).toBe("Bar and column");
+    const pie = rows.find((r) => r.type === "Pie and donut")!;
+    expect(pie.limits).toEqual([{ unit: "slices", op: ">", value: 5 }]);
   });
 });
 
@@ -303,9 +396,9 @@ describe("the candidates are genuinely different ways of seeing it", () => {
   it("should refuse a candidate set that is one idea wearing three labels", () => {
     expect(() =>
       assertDistinctWays([
-        { type: "Bar and column" },
-        { type: "bar and column" },
-        { type: "Bar and column" },
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "bar and column", why: "one way of seeing it" },
+        { type: "Bar and column", why: "one way of seeing it" },
       ]),
     ).toThrow(/1 way\(s\) of seeing this data, not 3/);
   });
@@ -313,8 +406,8 @@ describe("the candidates are genuinely different ways of seeing it", () => {
   it("should accept two genuinely different types, because two honest ways beat three fake ones", () => {
     expect(
       assertDistinctWays([
-        { type: "Stacked bar" },
-        { type: "Waterfall (bridge)" },
+        { type: "Stacked bar", why: "one way of seeing it" },
+        { type: "Waterfall (bridge)", why: "one way of seeing it" },
       ]),
     ).toBe(true);
   });
@@ -323,7 +416,7 @@ describe("the candidates are genuinely different ways of seeing it", () => {
     expect(() =>
       assertDistinctWays([
         { why: "it looks nice" },
-        { type: "Bar and column" },
+        { type: "Bar and column", why: "one way of seeing it" },
       ]),
     ).toThrow(/must name the type/);
   });
@@ -380,6 +473,347 @@ describe("the candidates are genuinely different ways of seeing it", () => {
         ],
       }),
     ).toThrow(/not one this toolchain can produce or deliver yet/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND FOUR (2026-08-21), finding 24 — A TREATMENT WAS NEVER CHECKED AGAINST ITS OWN SHEET.
+//
+// `stress-p-transport-ridership`'s slot 2 first closed on a SCATTER of six rows.
+// `types/scatter.md` refuses that outright, in the sheet's own words, and had done all along:
+// "If there are fewer than about eight or ten points, a scatter is an expensive way to draw what
+// a labelled dot-strip or a small table would show just as well — a cloud needs enough members to
+// have a shape." `checkStoryboard` returned `[]` and `whereIs` said `production`, because
+// `formatCandidates` lifted each sheet's *What it is for* sentence and never read its *When NOT to
+// use it*. Its neighbour: `assertDistinctWays` compared NAMES, so it accepted a bar and a lollipop
+// as two ways of seeing one table, though `types/lollipop.md` calls itself "a bar, minus the fill".
+// ---------------------------------------------------------------------------------------------
+
+describe("a candidate is checked against its own sheet's refusal", () => {
+  const sixRows = { rowCount: 6, columns: [] };
+
+  it("should refuse a six-row scatter, in the sheet's own words", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: sixRows,
+        candidates: [
+          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/fewer than about eight or ten points/);
+  });
+
+  // The same six rows, measured off the frozen story the slot actually closed on.
+  it("should refuse that scatter on the frozen story it was proposed for", () => {
+    const profile = frozenProfile("stress-p-transport-ridership");
+    expect(profile.rowCount).toBe(6);
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile,
+        candidates: [
+          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/refuses 6 mark\(s\)/);
+  });
+
+  it("should render every candidate with the sheet's own refusal beside its purpose", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 13, columns: [] },
+      candidates: [
+        { type: "Bar and column", format: "static", why: "schools per region, ranked" },
+        { type: "Dot strip", format: "static", why: "the spread of the same thirteen" },
+      ],
+    });
+    const sheet = typeSurvey().find(
+      (r) => r.medium === "chart" && r.type === "Bar and column",
+    )!;
+    expect(text).toContain(sheet.refusal);
+  });
+
+  // A limit the frozen profile cannot answer is CARRIED, not silently enforced against a number
+  // that does not mean what the sheet means: a profile counts rows, never slices.
+  it("should hand a limit it cannot check to the journalist rather than guessing", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 13, columns: [] },
+      candidates: [
+        { type: "Pie and donut", format: "static", why: "the shares of one whole" },
+        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+      ],
+    });
+    expect(text).toContain("slices > 5");
+    expect(text).toMatch(/check.*by hand/i);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX (2026-08-22), AB2 — THE SENTENCE THAT WOULD HAVE STOPPED THE WORST BEAT OF SIX
+  // ROUNDS WAS THE ONE THE SURVEY DROPPED.
+  //
+  // `stress-ab-emigration-flows` is eight rows of origin -> destination pairs: six origins, five
+  // destinations, many-to-many. It was built as a flow map on the web and came back with 29
+  // defects, the highest count of any beat in six rounds. `flow-map.md` refuses exactly that
+  // table — in its SECOND sentence, and the survey lifted only the first.
+  // -------------------------------------------------------------------------------------------
+  it("should carry flow-map's many-to-many refusal to the menu, on the frozen story it was chosen for", () => {
+    const profile = frozenProfile("stress-ab-emigration-flows");
+    const origins = profile.columns.find((c: any) => c.name === "origin");
+    const destinations = profile.columns.find((c: any) => c.name === "destination");
+    // Not a fixture: six origins and five destinations over eight rows is many-to-many.
+    expect(origins.distinct).toBeGreaterThan(1);
+    expect(destinations.distinct).toBeGreaterThan(1);
+    const text = formatCandidates({
+      medium: "map",
+      profile,
+      candidates: [
+        { type: "Flow map (route)", format: "web", why: "where the people who left went" },
+        { type: "Proportional symbol (symbol / bubble map)", format: "web", why: "how many left each district" },
+      ],
+    });
+    expect(text).toContain("not a many-to-many flow");
+    expect(text).toContain("OD flow diagram");
+    // And the refusal names a type this toolchain does not hold, so it says that too rather than
+    // sending the journalist after a producer that does not exist.
+    expect(text).toContain("NO SHEET AND NO PRODUCER FOR AN OD FLOW DIAGRAM");
+    expect(text).toContain("proportional-symbol map");
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX (2026-08-22), AA1 and the fourth of Z's "rest, as reported" — A CEILING STATED IN
+  // PROSE NEVER REACHES THE MACHINE, AND A TYPE NAME NOTHING RESOLVES DISABLES THE ONE LIMIT THAT
+  // DOES.
+  //
+  // A beeswarm was offered on `stress-aa-salary-spread`'s 234 salaries. `beeswarm.md` refuses that
+  // on disk — "Past roughly a hundred and fifty points the collision-avoidance layout stops
+  // helping" — and the scored path cannot read prose. Same shape as round four's scatter-on-six-
+  // rows, one type over. And the limit that IS enforced is enforced only for a candidate whose
+  // name finds its sheet: a name that resolves to nothing rendered a bare line, with no purpose,
+  // no refusal and no row limit, and said nothing about any of the three.
+  // -------------------------------------------------------------------------------------------
+  it("should refuse a beeswarm of 240 rows on the frozen story it was offered for", () => {
+    const profile = frozenProfile("stress-aa-salary-spread");
+    expect(profile.rowCount).toBe(240);
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile,
+        candidates: [
+          { type: "Beeswarm", format: "static", marks: 240, why: "every salary as its own mark" },
+          { type: "Histogram", format: "static", why: "the shape of the spread" },
+        ],
+      }),
+    ).toThrow(/refuses 240 mark\(s\)/);
+  });
+
+  it("should still allow the same beeswarm under its own stated ceiling", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 90, columns: [] },
+      candidates: [
+        { type: "Beeswarm", format: "static", marks: 90, why: "every reading as its own mark" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).toContain("**Beeswarm**");
+  });
+
+  it("should refuse a candidate whose type name resolves to no sheet at all", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: { rowCount: 6, columns: [] },
+        candidates: [
+          { type: "Sunburst", format: "static", why: "the shares of one whole, nested" },
+          { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+        ],
+      }),
+    ).toThrow(/Sunburst/);
+  });
+
+  // THIS CASE USED TO BE THE ONE ABOVE, and it changed sides on purpose (round seven, D7). "Pie
+  // chart" was read as a name resolving to nothing, so the menu refused it — although
+  // `chart-beat/references/types/pie-and-donut.md` is exactly the sheet a journalist writing those
+  // two words means, and the only thing standing between them was the word "chart". `treatmentNames`
+  // drops a generic medium word at either end, so the sheet's refusal and its stated slice ceiling
+  // now travel with the candidate instead of the candidate being thrown out.
+  it("should resolve a type named with a generic medium word appended to its sheet", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: { rowCount: 6, columns: [] },
+      candidates: [
+        { type: "Pie chart", format: "static", why: "the shares of one whole" },
+        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+      ],
+    });
+    expect(text).toContain("**Pie chart**");
+    expect(text).toContain("slices > 5");
+  });
+
+  it("should resolve every catalogued treatment name to a sheet, for every medium that has sheets", () => {
+    const catalogue = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "references", "visual-catalog.json"),
+        "utf8",
+      ),
+    );
+    const survey = typeSurvey();
+    const mediumsWithSheets = new Set(survey.map((row) => row.medium));
+    expect([...mediumsWithSheets].sort()).toEqual(["chart", "map"]);
+    const unresolved = catalogue.treatments
+      .filter((treatment: any) => mediumsWithSheets.has(treatment.medium))
+      .filter(
+        (treatment: any) =>
+          !survey.some(
+            (row) =>
+              row.medium === treatment.medium &&
+              row.type.toLowerCase() === treatment.label.trim().toLowerCase(),
+          ),
+      )
+      .map((treatment: any) => `${treatment.id} ("${treatment.label}")`);
+    // A catalogued name the survey cannot resolve is a candidate whose refusal and whose row limit
+    // both silently vanish at the menu.
+    expect(unresolved).toEqual([]);
+    // And the one medium that holds no sheets is named rather than assumed: an image beat's
+    // candidate says out loud that no sheet can state what it refuses.
+    const photographs = formatCandidates({
+      medium: "image",
+      profile: { rowCount: 0, columns: [] },
+      candidates: [{ type: "Photograph sequence", why: "the quay before and after" }],
+    });
+    expect(photographs).toMatch(/no type sheet/i);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // ROUND SIX — FIVE OF FIFTEEN DATAWRAPPER TREATMENT NAMES MATCHED NO SURVEY ROW.
+  //
+  // Measured on `references/datawrapper-chart-types.json`, the file the producer gate reads:
+  // "Area and stacked area", "Dumbbell", "Scatter and bubble", "Slope" and "Waterfall" resolve
+  // through `normalizeTreatment` at the producer gate and matched NOTHING at the menu, because the
+  // menu compared the sheet's full title character for character — "Area (and stacked area)",
+  // "Dumbbell (range plot)", "Scatter (and bubble)", "Slope (slopegraph)", "Waterfall (bridge)".
+  // A name the survey cannot resolve takes the sheet's refusal and its row limit with it, and the
+  // row limit is the only one this menu mechanically enforces.
+  //
+  // One skill, one answer to "is this the same treatment name": `normalizeTreatment`, which the
+  // producer gate has used all along.
+  // -------------------------------------------------------------------------------------------
+  it("should resolve every treatment name the Datawrapper gate accepts to its own sheet", () => {
+    const catalogue = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "references", "datawrapper-chart-types.json"),
+        "utf8",
+      ),
+    );
+    expect(catalogue.splashTreatments.length).toBe(15);
+    const unresolved: string[] = [];
+    for (const mapping of catalogue.splashTreatments) {
+      const line = (() => {
+        try {
+          return formatCandidates({
+            medium: mapping.medium,
+            profile: { rowCount: 12, columns: [] },
+            candidates: [{ type: mapping.treatment, why: "the delegated producer's own name for it" }],
+          });
+        } catch (error) {
+          unresolved.push(`${mapping.treatment}: ${(error as Error).message}`);
+          return "";
+        }
+      })();
+      if (line && !line.includes("Not for:")) unresolved.push(`${mapping.treatment}: rendered with no refusal`);
+    }
+    expect(unresolved).toEqual([]);
+  });
+
+  it("should enforce a sheet's row limit through the delegated producer's spelling of the type", () => {
+    // `stress-p-transport-ridership`, six rows — the story whose slot once closed on a scatter.
+    // Under the Datawrapper spelling, "Scatter and bubble", the refusal used to be unreachable.
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: frozenProfile("stress-p-transport-ridership"),
+        candidates: [
+          { type: "Scatter and bubble", format: "static", marks: 6, why: "population against trips" },
+          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+        ],
+      }),
+    ).toThrow(/refuses 6 mark\(s\)/);
+  });
+
+  // The other file an agent reads a treatment NAME out of. Its ranking tables spell types the
+  // editorial way — "Waterfall", "Slope", "Scatter and bubble" — and a name it offers that the
+  // survey cannot resolve is the same silent detachment one file over.
+  it("should resolve every treatment the chart chooser names to its own sheet", () => {
+    const text = readFileSync(
+      join(import.meta.dirname, "..", "references", "chart-choice.md"),
+      "utf8",
+    );
+    const named = [
+      ...text.matchAll(
+        /^\|\s*\d+\s*\|\s*\[([^\]]+)\]\(\.\.\/\.\.\/(chart-beat|map-beat)\//gm,
+      ),
+    ].map((match) => [match[1], match[2] === "chart-beat" ? "chart" : "map"] as const);
+    expect(named.length).toBeGreaterThan(30);
+    const unresolved = [
+      ...new Map(named.map((row) => [row.join("|"), row])).values(),
+    ].filter(([name, medium]) => {
+      try {
+        return !formatCandidates({
+          medium,
+          profile: { rowCount: 12, columns: [] },
+          candidates: [{ type: name, why: "the chooser's own name for it" }],
+        }).includes("Not for:");
+      } catch {
+        return true;
+      }
+    });
+    expect(unresolved).toEqual([]);
+  });
+
+  // ROUND FIVE, V14, reported again in round six as AB5. The two functions took two different
+  // candidate shapes — `formatCandidates` an object, `assertDistinctWays` an object OR a bare
+  // string — and the loose one checked nothing: a type in no sheet and no catalogue became its own
+  // "idea" and passed, which is how a treatment nobody holds reaches a menu in the first place.
+  it("should take one candidate shape, and refuse a bare string", () => {
+    expect(() =>
+      assertDistinctWays(["Bar and column", "Dot strip"] as any),
+    ).toThrow(/shape|object/i);
+  });
+
+  it("should refuse a candidate naming a treatment no sheet and no catalogue holds", () => {
+    expect(() =>
+      assertDistinctWays([{ type: "OD flow diagram", why: "one way of seeing it" }, { type: "Choropleth", why: "one way of seeing it" }]),
+    ).toThrow(/OD flow diagram/);
+  });
+
+  it("should still accept a catalogued treatment whose medium holds no sheets", () => {
+    expect(
+      assertDistinctWays([{ type: "Photograph sequence", why: "one way of seeing it" }, { type: "Bar and column", why: "one way of seeing it" }]),
+    ).toBe(true);
+  });
+
+  it("should refuse two labels for one idea, because the sheet says they are one idea", () => {
+    expect(() =>
+      assertDistinctWays([
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "Lollipop", why: "one way of seeing it" },
+        { type: "Treemap", why: "one way of seeing it" },
+      ]),
+    ).toThrow(/Lollipop/);
+  });
+
+  it("should still accept three types that are genuinely three ideas", () => {
+    expect(
+      assertDistinctWays([
+        { type: "Bar and column", why: "one way of seeing it" },
+        { type: "Dot strip", why: "one way of seeing it" },
+        { type: "Treemap", why: "one way of seeing it" },
+      ]),
+    ).toBe(true);
   });
 });
 
@@ -480,5 +914,546 @@ describe("advisory graphical ranking", () => {
     });
     expect(changed.profileRevision).not.toBe(first.profileRevision);
     expect(changed.revision).not.toBe(first.revision);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND FOUR (2026-08-21), findings 22 and 23 — THE RECOMMENDER READ A COLUMN'S TYPE AS EVIDENCE
+// THAT A STORY EXISTS.
+//
+// Reproduced by the controller against `stress-s-unspent-fund`'s frozen profile — one row,
+// `year=2026`, `fund=1`:
+//
+//   recommended: chart.streamgraph | tied: false
+//      6 chart.streamgraph      | unresolved: 0
+//      4 chart.area             | unresolved: 0
+//
+// Not a tie broken by catalogue order and not a "conservative fallback" — a confident top pick
+// with NO unresolved requirement at all, on a table that supports no comparison whatsoever. Two
+// causes, both closed below, both measured on frozen stories rather than on a fixture built to
+// fail.
+// ---------------------------------------------------------------------------------------------
+
+const STORIES = join(import.meta.dirname, "..", "..", "..", "stories");
+
+function frozenProfile(story: string) {
+  return JSON.parse(
+    readFileSync(join(STORIES, story, "source", "profile.json"), "utf8"),
+  );
+}
+
+function everyTreatment() {
+  const catalogue = JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, "..", "references", "visual-catalog.json"),
+      "utf8",
+    ),
+  );
+  return {
+    schemaVersion: "splash-selection/v1",
+    revisions: {
+      story: "sha256:story",
+      catalogue: catalogue.catalogRevision,
+      capabilities: "sha256:capabilities",
+    },
+    evidence: {},
+    choices: catalogue.treatments.map((treatment: any) => ({
+      id: treatment.id,
+      kind: "treatment",
+      enabled: treatment.state === "selectable",
+      dataShape: treatment.dataShape,
+    })),
+  };
+}
+
+describe("row count is evidence, and a column type is not a story", () => {
+  it("should recommend nothing for a one-row table, and say why", () => {
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: frozenProfile("stress-s-unspent-fund"),
+    });
+    expect(result.recommendedOptionId).toBeNull();
+    expect(result.refusal).toMatch(/one row|1 row/i);
+    expect(result.ranking.every((row) => row.unresolvedRequirements.length > 0)).toBe(true);
+  });
+
+  it("should refuse to call a single moment an ordered axis", () => {
+    const oneMoment = {
+      rowCount: 1,
+      columns: [
+        { name: "year", type: "number", distinct: 1, min: 2026, max: 2026 },
+        { name: "fund", type: "number", distinct: 1, min: 1, max: 1 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      profile: oneMoment,
+      model: {
+        ...everyTreatment(),
+        choices: [
+          {
+            id: "chart.line",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["ordered-axis"] },
+          },
+        ],
+      },
+    });
+    expect(result.ranking[0].unresolvedRequirements).toContain("ordered-axis");
+  });
+
+  // Finding 23. `ground-claim.mjs` has always excluded the year column from the measures — a
+  // table's own x axis is not one of the things it measures. `requirementFinding` counted it in
+  // `facts.numeric` AND `facts.temporal`, so a plain (year, value) table claimed TWO measures and
+  // satisfied `multiple-series` on the strength of its own x axis.
+  it("should not count the year column as one of the measures", () => {
+    const yearAndValue = {
+      rowCount: 30,
+      columns: [
+        { name: "year", type: "number", distinct: 30, min: 1995, max: 2024 },
+        { name: "forest_loss_ha", type: "number", distinct: 30, min: 10, max: 900 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      profile: yearAndValue,
+      model: {
+        ...everyTreatment(),
+        choices: [
+          {
+            id: "chart.streamgraph",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["multiple-series"] },
+          },
+          {
+            id: "chart.scatter",
+            kind: "treatment",
+            enabled: true,
+            dataShape: { requires: ["numeric-pair"] },
+          },
+        ],
+      },
+    });
+    expect(result.ranking[0].unresolvedRequirements).toContain("multiple-series");
+    expect(result.ranking[1].unresolvedRequirements).toContain("numeric-pair");
+    expect(result.recommendedOptionId).toBeNull();
+  });
+
+  // The corpus measurement the raw findings file recorded: NINE of the twenty-one frozen stories
+  // carry a year column beside exactly one measure, and every one of them claimed two.
+  it("should stop the nine year-column stories claiming two measures", () => {
+    const stories = readdirSync(STORIES).filter((name) =>
+      existsSync(join(STORIES, name, "source", "profile.json")),
+    );
+    expect(stories.length).toBeGreaterThan(20);
+    const model = {
+      ...everyTreatment(),
+      choices: [
+        {
+          id: "chart.streamgraph",
+          kind: "treatment",
+          enabled: true,
+          dataShape: { requires: ["multiple-series"] },
+        },
+      ],
+    };
+    const claiming = stories.filter((story) => {
+      const profile = frozenProfile(story);
+      const numbers = (profile.columns ?? []).filter((c: any) => c.type === "number");
+      // THE POPULATION IS DERIVED, not re-typed here. This used to re-implement the period rule as
+      // `/year|date|ann[ée]e/` over the numeric columns — the rule `findYearColumn` had at the time
+      // — and it drifted the moment that rule learned that a numeric column named for a period must
+      // hold periods. `stress-aa-salary-spread`'s `years_service [0, 34]` is a tenure, one of the
+      // two things that table measures, and it is not this test's subject: a (period, value) table
+      // is.
+      const period = findYearColumn(profile.columns ?? []);
+      if (!period || period.type !== "number" || numbers.length !== 2) return false;
+      const result = recommendVisualChoice({ model, profile });
+      return result.ranking[0].unresolvedRequirements.length === 0;
+    });
+    expect(claiming).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND SIX (2026-08-22), Z1 — A REQUIREMENT THAT CANNOT FIRE IS WORSE THAN A MISSING ONE,
+// BECAUSE IT READS AS COVERED.
+//
+//     "part-to-whole": [measures.length >= 2 && nonnegative, "two or more non-negative measures"]
+//
+// Two or more numeric COLUMNS. A part-to-whole table is long-form by nature — one category column,
+// one value column — so the canonical shape carries ONE measure and the requirement failed by
+// construction. Five treatments depend on it (Diverging stacked bar, Marimekko, Pie and donut,
+// Stacked bar, Treemap) and in six rounds and twenty-seven stories not one of them was ever
+// chosen. That absence read as taste. It was arithmetic.
+//
+// The second half is the half that must survive the widening: `stress-z-budget-parts` carries a
+// NEGATIVE part (-9.7, a provision write-back the French nomenclature allows) and so does
+// `stress-e-electricity-mix` (-4.1, net imports). A pie cannot draw either, and the refusal has to
+// SAY so — "part-to-whole" printed in a list of unmet requirement names is a name, not a reason.
+// ---------------------------------------------------------------------------------------------
+describe("a part-to-whole table can reach a part-to-whole treatment", () => {
+  const partToWholeTreatments = [
+    "chart.diverging-stacked-bar",
+    "chart.marimekko",
+    "chart.pie-and-donut",
+    "chart.stacked-bar",
+    "chart.treemap",
+  ];
+
+  function rowFor(result: any, optionId: string) {
+    return result.ranking.find((row: any) => row.optionId === optionId)!;
+  }
+
+  it("should satisfy part-to-whole on the long form the shape is actually written in", () => {
+    // Seven countries, one non-negative measure, hectares of forest lost. The canonical long-form
+    // part-to-whole, and until now the shape that could never satisfy the requirement named after it.
+    const profile = frozenProfile("stress-m-forest-loss");
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const pie = rowFor(result, "chart.pie-and-donut");
+    expect(pie.unresolvedRequirements).not.toContain("part-to-whole");
+    expect(JSON.stringify(pie.matchedEvidence)).toContain("part to whole");
+  });
+
+  it("should refuse a table with a negative part, and say that is why", () => {
+    for (const story of ["stress-z-budget-parts", "stress-e-electricity-mix"]) {
+      const profile = frozenProfile(story);
+      const negative = profile.columns.filter(
+        (column: any) => column.type === "number" && column.min < 0,
+      );
+      expect(negative.length).toBeGreaterThan(0);
+      const result = recommendVisualChoice({ model: everyTreatment(), profile });
+      for (const id of partToWholeTreatments) {
+        const row = rowFor(result, id);
+        expect(row.unresolvedRequirements).toContain("part-to-whole");
+        // The reason, in words, not the requirement's name: which column, which value, and what a
+        // slice cannot do with it.
+        const why = row.unresolvedReasons.join(" ");
+        expect(why).toContain(negative[0].name);
+        expect(why).toContain(String(negative[0].min));
+        expect(why).toMatch(/negative/i);
+      }
+    }
+  });
+
+  it("should not read a table of repeated observations as a table of parts", () => {
+    // Ten countries over five years: 50 rows, and "country" names each of them five times. A
+    // category that repeats is a table of observations, not of parts, and a share drawn from it
+    // would be a share of one country counted five times.
+    const profile = frozenProfile("heat-pump-adoption-across-europe");
+    expect(profile.rowCount).toBe(50);
+    expect(profile.columns.find((c: any) => c.name === "country").distinct).toBe(10);
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const pie = rowFor(result, "chart.pie-and-donut");
+    expect(pie.unresolvedRequirements).toContain("part-to-whole");
+    expect(pie.unresolvedReasons.join(" ")).toMatch(/names each row exactly once|one row per part/);
+  });
+
+  it("should stop reporting zero part-to-whole tables across the whole corpus", () => {
+    const stories = readdirSync(STORIES).filter((name) =>
+      existsSync(join(STORIES, name, "source", "profile.json")),
+    );
+    expect(stories.length).toBeGreaterThan(27);
+    const reaching = stories.filter((story) => {
+      const result = recommendVisualChoice({
+        model: everyTreatment(),
+        profile: frozenProfile(story),
+      });
+      return partToWholeTreatments.some(
+        (id) => !rowFor(result, id).unresolvedRequirements.includes("part-to-whole"),
+      );
+    });
+    // Measured before this fix: zero. A requirement no table in the corpus can satisfy is a
+    // requirement nobody can see failing.
+    expect(reaching.length).toBeGreaterThan(0);
+    expect(reaching).toContain("stress-m-forest-loss");
+    // And the two tables with a negative part are NOT among them.
+    expect(reaching).not.toContain("stress-z-budget-parts");
+    expect(reaching).not.toContain("stress-e-electricity-mix");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// ROUND SIX (2026-08-22), AA2 — THE ONLY TWO REQUIREMENTS THAT CONSULT A COUNT READ THE WRONG ONE,
+// AT A FLOOR OF FIVE.
+//
+// `stress-aa-salary-spread` is the first table in six rounds with a real distribution in it: 240
+// rows, 234 salaries, 6 blank. `raw-observations` and `distribution` both read `rowCount` — 240,
+// including the six rows that carry no salary at all — and both were satisfied at five. Five
+// readings are not a distribution; `boxplot.md` says so on disk, in the sentence about "five points
+// wearing a distribution's costume".
+// ---------------------------------------------------------------------------------------------
+describe("a distribution is a count of observations, and five of them is not one", () => {
+  it("should let the first real distribution in the corpus reach a distribution type", () => {
+    const profile = frozenProfile("stress-aa-salary-spread");
+    const salary = profile.columns.find((c: any) => c.name === "annual_salary_eur");
+    expect(profile.rowCount).toBe(240);
+    expect(salary.missing).toBe(6);
+    const result = recommendVisualChoice({ model: everyTreatment(), profile });
+    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    expect(histogram.unresolvedRequirements).toEqual([]);
+    // WHAT THIS NUMBER IS, and why it moved. The evidence reports the observations of the
+    // best-observed measure. This table has TWO measures — a salary with six blanks and a tenure
+    // with none — and it took six rounds to see the second, because `years_service` was read as the
+    // table's own period by a rule that tested the column's NAME and never its values. So the
+    // count is 240, the tenure's, and the salary's own 234 is one measure down the same list.
+    expect(JSON.stringify(histogram.matchedEvidence)).toContain("240 observation(s)");
+
+    // The claim underneath it — a row is not an observation — measured where nothing coincides:
+    // every measure here carries blanks, so no reading of it can return the row count.
+    const allBlank = {
+      rowCount: 240,
+      columns: [
+        { name: "region", type: "text", missing: 0, distinct: 12, min: null, max: null, sum: null, gaps: null },
+        { name: "annual_salary_eur", type: "number", missing: 6, min: 14664, max: 238530, sum: 1, gaps: null },
+        { name: "monthly_hours", type: "number", missing: 11, min: 10, max: 190, sum: 1, gaps: null },
+      ],
+    };
+    const blanks = recommendVisualChoice({ model: everyTreatment(), profile: allBlank });
+    const evidence = JSON.stringify(blanks.ranking.find((row: any) => row.optionId === "chart.histogram")!.matchedEvidence);
+    expect(evidence).toContain("234 observation(s)");
+    expect(evidence).not.toContain("240 observation(s)");
+  });
+
+  it("should refuse to call five readings a distribution", () => {
+    const fiveReadings = {
+      rowCount: 5,
+      columns: [
+        { name: "district", type: "text", distinct: 5, missing: 0 },
+        { name: "rent_eur", type: "number", distinct: 5, missing: 0, min: 700, max: 1900 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: fiveReadings,
+    });
+    const boxplot = result.ranking.find((row: any) => row.optionId === "chart.boxplot")!;
+    expect(boxplot.unresolvedRequirements).toContain("distribution");
+    expect(boxplot.unresolvedReasons.join(" ")).toMatch(/5 observation/);
+  });
+
+  it("should count a measure's blanks out of its observations", () => {
+    const mostlyBlank = {
+      rowCount: 240,
+      columns: [
+        { name: "employee", type: "text", distinct: 240, missing: 0 },
+        { name: "salary_eur", type: "number", distinct: 7, missing: 233, min: 20000, max: 90000 },
+      ],
+    };
+    const result = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: mostlyBlank,
+    });
+    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    // 240 rows, 7 readings. The rows are not the evidence; the readings are.
+    expect(histogram.unresolvedRequirements).toContain("distribution");
+    expect(histogram.unresolvedReasons.join(" ")).toMatch(/7 observation/);
+  });
+});
+
+// ROUND FIVE. `detail` counted the claims the check could not place and never said WHY it could
+// not place them, so every refusal reached the journalist as one number. The reasons carry the
+// column names, the ranges and the profiler's own refusals now, which is the half of the answer
+// that tells a journalist what to do next.
+describe("resolveGrounding — an unplaced claim says why, not just that it was unplaced", () => {
+  it("should name the reason a claim could not be placed, not only how many were not", () => {
+    const resolved = resolveGrounding("Le glacier a perdu 120 km2 de surface", {
+      columns: [{ name: "surface", type: "number", min: 40, max: 90, sum: 500 }],
+    });
+    expect(resolved.verdict).toBe("unverifiable");
+    expect(resolved.detail).toContain("nothing was confirmed and nothing was refuted");
+    // The column it was put to, and the range it missed — not just "1 could not be placed".
+    expect(resolved.detail).toContain("surface");
+    expect(resolved.detail).toContain("[40, 90]");
+  });
+});
+
+// ROUND SEVEN, D8 ON `stories/real-ember-renewables-share` — THE LIMIT IS ABOUT THE DRAWING.
+//
+// `types/beeswarm.md` says it wants at most 150 points. The frozen table is a long-form PANEL:
+// 7,585 rows, 246 entities × 126 years. The beat draws ONE year's slice — 211 marks — and the menu
+// refused with
+//
+//     "Beeswarm" refuses 7585 row(s): its own sheet says it wants at most 150
+//
+// a number 36× the one the sheet is about, with the sheet's own sentence quoted at the journalist
+// as though it were about their beat. Here the refusal was coincidentally right (211 > 150 too);
+// on a panel whose slice is small — 27 EU countries out of 7,585 rows — the same code refuses a
+// type the data comfortably supports. `rowCount` is a fact about the SOURCE TABLE, and a row limit
+// in a type sheet is a fact about the MARKS. They are the same number only for a tidy table with
+// one row per mark, and nothing checked whether this was one.
+//
+// So the beat says how many marks it would draw, and where nobody says, the limit travels to the
+// journalist as something to check by hand — named, quantified, and with the row count beside it
+// so the difference is visible — rather than being enforced against a number that is not it.
+describe("a row limit is measured against the marks a beat draws", () => {
+  const panel = { rowCount: 7585, columns: [] };
+
+  it("refuses when the marks the beat declares exceed the sheet's own ceiling", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        profile: panel,
+        candidates: [
+          { type: "Beeswarm", format: "static", marks: 211, why: "every country as its own mark" },
+          { type: "Histogram", format: "static", why: "the shape of the spread" },
+        ],
+      }),
+    ).toThrow(/211 mark\(s\)/);
+  });
+
+  it("allows the same type on the same table when the beat draws few enough marks", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: panel,
+      candidates: [
+        { type: "Beeswarm", format: "static", marks: 27, why: "the EU twenty-seven, one mark each" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).toContain("**Beeswarm**");
+  });
+
+  it("never quotes the source table's row count as the number the sheet refuses", () => {
+    const text = formatCandidates({
+      medium: "chart",
+      profile: panel,
+      candidates: [
+        { type: "Beeswarm", format: "static", why: "every country as its own mark" },
+        { type: "Histogram", format: "static", why: "the shape of the spread" },
+      ],
+    });
+    expect(text).not.toMatch(/refuses 7585/);
+    expect(text).toContain("rows > 150");
+    expect(text).toContain("7585 row(s)");
+    expect(text).toMatch(/marks/i);
+  });
+});
+
+// ROUND SEVEN, D12. Both functions took `{ type, why, format }` objects and threw on anything else,
+// and `SKILL.md` and `references/exchange.md` both described candidates as treatment NAMES. Two
+// failed calls to find out. Worse, the two functions disagreed with each other: `formatCandidates`
+// required `why` and `assertDistinctWays` did not, so a set that passed the distinctness check
+// still threw one call later. One shape, described where it is called, and refused by name when it
+// is not the shape.
+describe("one candidate shape, and the mechanism refuses what it does not accept", () => {
+  it("names the shape to write when a candidate is a bare string", () => {
+    expect(() => assertDistinctWays(["Line", "Treemap"])).toThrow(/\{ type, why, format \}/);
+  });
+
+  it("asks for the reason in the distinctness check too, not only when the menu renders", () => {
+    expect(() =>
+      assertDistinctWays([{ type: "Line" }, { type: "Treemap", why: "the parts of the whole" }]),
+    ).toThrow(/carries no reason/);
+  });
+
+  it("refuses a key it does not know, rather than ignoring it", () => {
+    expect(() =>
+      formatCandidates({
+        medium: "chart",
+        candidates: [
+          { type: "Line", why: "the trajectory", rows: 40 },
+          { type: "Treemap", why: "the parts of the whole" },
+        ],
+      }),
+    ).toThrow(/rows/);
+  });
+
+  it("refuses a mark count that is not a count", () => {
+    for (const marks of ["211", -1, 1.5])
+      expect(() =>
+        formatCandidates({
+          medium: "chart",
+          candidates: [
+            { type: "Line", why: "the trajectory", marks },
+            { type: "Treemap", why: "the parts of the whole" },
+          ],
+        }),
+      ).toThrow(/marks/);
+  });
+});
+
+// =============================================================================================
+// ROUND NINE — THE TWO THINGS G1 KNEW AND DID NOT SAY.
+//
+// WHO's rabies register decided 0 of 1, and the verdict a journalist read gave a per-claim reason
+// ("the claim names none of them") without ever saying what those five refusals had in common:
+// this check joins prose to table by column NAME, and a real publisher's API names its columns for
+// its own schema. That is a limit of the join, not evidence against the takeaway, and a journalist
+// cannot act on it unless it is written down.
+//
+// And `intake` had already carried the publisher's own statement that the register is underreported
+// onto the profile — a field measured, at the time this was written, to be read by NO script in the
+// tree (`grep -rn statedIncompleteness skills/` returned `intake` and its own tests). A claim
+// carried onto a profile nobody reads is a claim nobody made.
+// =============================================================================================
+describe("resolveGrounding — the limits of the check, on the verdict the journalist reads", () => {
+  const RABIES = "r9-map-web-reported-rabies-deaths";
+  const WHO_TAKEAWAY =
+    "WHO estimates 59 000 people die of rabies every year. For 2024 the world's health ministries wrote down 3 021 between them.";
+
+  it("should name the JOIN as the reason, not leave five refusals looking like five defects", () => {
+    const resolved = resolveGrounding(WHO_TAKEAWAY, storyProfile(RABIES), {
+      csv: storyCsv(RABIES),
+    });
+    expect(resolved.detail).toContain("by column NAME");
+    expect(resolved.detail).toContain("its publisher's own schema");
+    expect(resolved.detail).toContain("3 021");
+  });
+
+  it("should say nothing about a join that was never the problem", () => {
+    const resolved = resolveGrounding(
+      "Germany has the most.",
+      storyProfile("stress-l-mixed-unit-clinics"),
+      { csv: storyCsv("stress-l-mixed-unit-clinics") },
+    );
+    expect(resolved.detail).not.toContain("by column NAME");
+  });
+
+  it("should carry a stated incompleteness the profile holds onto the G1 verdict", () => {
+    const profile = {
+      rowCount: 3,
+      columns: [{ name: "deaths", type: "number", min: 1, max: 9, sum: 12 }],
+      statedIncompleteness: {
+        claims: [],
+        unplaced: [
+          {
+            column: "year",
+            word: "underreporting",
+            sentence:
+              "Globally there are an estimated 59 000 deaths from rabies annually; however, due to underreporting, documented case numbers often differ from the estimate.",
+          },
+        ],
+      },
+    };
+    const resolved = resolveGrounding("Deaths reached 12.", profile);
+    expect(resolved.detail).toContain("states an incompleteness");
+    expect(resolved.detail).toContain("due to underreporting");
+    expect(resolved.detail).toContain("REPORTED");
+  });
+
+  it("should carry a period-tied incompleteness the same way", () => {
+    const profile = {
+      rowCount: 3,
+      columns: [{ name: "fires", type: "number", min: 1, max: 9, sum: 12 }],
+      statedIncompleteness: {
+        claims: [
+          {
+            period: 2026,
+            column: "year",
+            word: "incomplete",
+            sentence: "The 2026 data is incomplete and was last updated 21 August 2026.",
+          },
+        ],
+        unplaced: [],
+      },
+    };
+    const resolved = resolveGrounding("Fires reached 12.", profile);
+    expect(resolved.detail).toContain("2026 data is incomplete");
+  });
+
+  it("should say nothing where the profile carries no stated incompleteness", () => {
+    const resolved = resolveGrounding("Le glacier recule depuis 2003", meltProfile);
+    expect(resolved.detail).not.toContain("states an incompleteness");
   });
 });

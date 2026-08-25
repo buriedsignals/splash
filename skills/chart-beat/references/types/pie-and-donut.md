@@ -24,6 +24,8 @@ close to the worst way to show that — a bar puts the same two values on a shar
 few pixels of length difference is visible; on a circle, a few degrees of angle difference mostly
 isn't.
 
+<!-- limit: slices > 5 -->
+
 ## The one thing that goes wrong
 
 Angle is a weak channel for magnitude judgement — people are reliably worse at ranking wedges by

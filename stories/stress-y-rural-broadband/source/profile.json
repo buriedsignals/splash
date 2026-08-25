@@ -1,0 +1,64 @@
+{
+  "rowCount": 186,
+  "columns": [
+    {
+      "name": "municipality",
+      "type": "number",
+      "unit": "Commune",
+      "missing": 0,
+      "distinct": 186,
+      "min": -186,
+      "max": -1,
+      "sum": -17391,
+      "gaps": null,
+      "denominator": {
+        "column": "households"
+      }
+    },
+    {
+      "name": "region",
+      "type": "text",
+      "missing": 0,
+      "distinct": 5,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "broadband_pct",
+      "type": "text",
+      "reason": "looked numeric but only some values carry a unit (\"53.7 %\" has one, \"62.3\" does not) — nothing settles whether the whole column is in that unit",
+      "missing": 6,
+      "distinct": 154,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "households",
+      "type": "number",
+      "missing": 0,
+      "distinct": 186,
+      "min": 240,
+      "max": 47933,
+      "sum": 4430524,
+      "gaps": null
+    },
+    {
+      "name": "measured",
+      "type": "date",
+      "missing": 0,
+      "distinct": 1,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  }
+}

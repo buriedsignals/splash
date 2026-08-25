@@ -49,6 +49,33 @@ describe("freezeSource", () => {
     expect(written.columns).toHaveLength(2);
   });
 
+  it("should hand the article's own prose to the profiler, so a stated incompleteness survives the freeze", async () => {
+    // The wildfire dataset states its own incompleteness in a description line the article quotes,
+    // and intake freezes that line as PROSE. If the freeze does not hand it to the profiler, the
+    // claim exists nowhere a later phase can read it — which is how eight months of 2026 read as a
+    // full year beside fourteen complete ones.
+    const articlePath = join(dir, "draft.md");
+    const dataPath = join(dir, "fires.csv");
+    await writeFile(articlePath, "# Fires\n\nThe 2026 data is incomplete.\n");
+    await writeFile(dataPath, "year,fires\n2024,912\n2025,604\n2026,300\n");
+
+    const { profile } = await freezeSource({
+      storyDir: dir,
+      articlePath,
+      dataPath,
+    });
+
+    expect(profile.statedIncompleteness.readProse).toBe(true);
+    expect(profile.statedIncompleteness.claims).toEqual([
+      {
+        period: 2026,
+        column: "year",
+        word: "incomplete",
+        sentence: "The 2026 data is incomplete.",
+      },
+    ]);
+  });
+
   it("should refuse to freeze twice, so the frozen source stays frozen", async () => {
     const articlePath = join(dir, "draft.md");
     const dataPath = join(dir, "rainfall.csv");

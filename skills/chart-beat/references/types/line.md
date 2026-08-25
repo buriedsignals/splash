@@ -21,6 +21,8 @@ up" on the left axis and a "line went down" on the right axis can describe the s
 change and still look like opposite stories. Index both series to a common base, or split the
 frame in two.
 
+<!-- limit: series > 5 -->
+
 ## Where it goes wrong
 
 Anchoring the y-axis at zero. Zero is a rule about LENGTH — bars, columns, areas, anything read by

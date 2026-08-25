@@ -48,4 +48,11 @@ describe("parseCsv", () => {
       ["1", "2"],
     ]);
   });
+
+  it("should strip a leading byte-order mark from the raw text once, at the start", () => {
+    expect(parseCsv("﻿country,price\nSpain,1\n")).toEqual([
+      ["country", "price"],
+      ["Spain", "1"],
+    ]);
+  });
 });
