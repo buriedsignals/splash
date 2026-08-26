@@ -158,7 +158,6 @@ export async function startSplashApp({
     announce,
     onConfigure() {
       windowRef.location.hash = "readiness";
-      setup.click();
     },
     async onReopenFormat(expected) {
       try {
@@ -285,6 +284,10 @@ export async function startSplashApp({
         link.textContent = "Provider instructions";
         node.append(link);
       }
+      const hint = documentRef.createElement("p");
+      hint.className = "quiet";
+      hint.textContent = "Save or replace this key in Indicator Labs.";
+      node.append(hint);
       credentials.append(node);
     }
     const storyState = documentRef.querySelector("#story-state");
@@ -350,7 +353,7 @@ export async function startSplashApp({
       }
       announce("The protected setup page opened with this computer.");
     } catch {
-      announce("Splash could not request the setup page. No credential or newsroom value was changed.", true);
+      announce("Splash could not request the setup page. No newsroom value was changed.", true);
     } finally {
       setup.focus();
     }

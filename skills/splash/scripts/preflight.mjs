@@ -187,7 +187,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
       env,
       probeFn: probeMapTiler,
       fetchFn,
-      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys), then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
+      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys), then save it in Indicator Labs. Splash Readiness only reports whether it is present",
     }),
     datawrapper: await checkCapability({
       id: "datawrapper",
@@ -196,7 +196,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
       env,
       probeFn: probeDatawrapper,
       fetchFn,
-      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then use Splash Readiness → Set up credentials and newsroom to verify and save it with Engine",
+      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then save it in Indicator Labs. Splash Readiness only reports whether it is present",
     }),
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
@@ -214,7 +214,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
           ? `https://splash-scroller-${createHash("sha256").update(accountId.toLowerCase()).digest("hex").slice(0, 20)}.pages.dev`
           : null,
         whitelistOptional: true,
-        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom, then verify and save a Pages token under Credentials in Splash Readiness setup",
+        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom in Splash studio, then save a Pages-scoped token in Indicator Labs. Splash Readiness only reports whether the token is present",
       };
     })(),
   };

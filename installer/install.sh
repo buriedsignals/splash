@@ -89,10 +89,8 @@ if [ "$DOCTOR_EXIT" -ne 0 ]; then
   printf '\nWarning: bsig doctor reported problems (exit %s). Run it again with --json for details.\n' "$DOCTOR_EXIT" >&2
 fi
 
-# Spotlight-style onboarding: after a successful apply, open the SAME protected setup page the
-# Readiness app uses. It collects optional credentials and the newsroom identity through Engine's
-# broker; closing it early never uninstalls or damages the install — onboarding just stays
-# incomplete and can be reopened from Splash Readiness at any time.
+# After a successful apply, optionally open the same newsroom setup page the studio uses.
+# Provider keys are saved in Indicator Labs, not on this page.
 SPLASH_SETUP_STATE="skipped"
 if [ "${SPLASH_SKIP_SETUP:-}" != "1" ]; then
   SETUP_EXIT=0
@@ -107,8 +105,8 @@ fi
 
 printf '\nSplash is installed from %s.\n' "$ROOT"
 if [ "$SPLASH_SETUP_STATE" = "closed" ]; then
-  printf 'Onboarding page closed — saves made there are kept. Reopen anytime via Splash Readiness → “Set up credentials and newsroom”.\n'
+  printf 'Newsroom setup closed — saves made there are kept. Reopen anytime via Splash Readiness → “Set up newsroom”. Save MapTiler, Datawrapper, and Cloudflare keys in Indicator Labs.\n'
 else
-  printf 'Onboarding is incomplete: credentials and the newsroom identity are still unset. Open Splash Readiness → “Set up credentials and newsroom” when ready.\n'
+  printf 'Newsroom identity may still be unset. Open Splash Readiness → “Set up newsroom” when ready. Save provider keys in Indicator Labs.\n'
 fi
 printf 'Rerun this same command after intentional source or lockfile changes.\n'

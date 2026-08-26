@@ -4,7 +4,6 @@ import { CREDENTIAL_IDS, ENGINE_SPLASH_CONTRACT_MIN } from "../../apps/goose/con
 import { CREDENTIAL_CONTRACT_MESSAGE } from "./engine-bridge.mjs";
 import {
   inspectLegacyEnv,
-  readLegacyCandidate,
   readLegacyIntegrations,
   removeLegacyAssignments,
 } from "./legacy-env.mjs";
@@ -15,7 +14,6 @@ import { validateNewsroom } from "../../skills/splash/scripts/newsroom.mjs";
 
 const BODY_LIMIT = 32 << 10;
 const REQUEST_TIMEOUT_MS = 10_000;
-const CREDENTIAL_ID_SET = new Set(CREDENTIAL_IDS);
 
 function randomCapability() {
   return randomBytes(32).toString("base64url");
@@ -166,22 +164,10 @@ function hasCompatibleCredentialContract(contract) {
     && CREDENTIAL_IDS.every((id) => candidateMaxBytes(contract, id) > 0);
 }
 
-function isCandidateWithinContract(contract, id, candidate) {
-  return typeof candidate === "string"
-    && Buffer.byteLength(candidate, "utf8") <= candidateMaxBytes(contract, id);
-}
-function isStoredReplacement(result, expectedGeneration) {
-  return result?.ok === true
-    && result.stored === true
-    && Number.isSafeInteger(result.generation)
-    && result.generation > expectedGeneration;
-}
-
-
-function sendCredentialContractRefusal(response) {
-  return sendJson(response, 409, {
-    code: "credential-contract-unavailable",
-    message: CREDENTIAL_CONTRACT_MESSAGE,
+function sendDesktopOwnedCredentialRefusal(response) {
+  return sendJson(response, 410, {
+    code: "desktop-owned",
+    message: "Save Splash credentials in Indicator Labs. This page records newsroom identity only.",
   });
 }
 
@@ -263,11 +249,11 @@ function page(nonce) {
 <style nonce="${nonce}">
 :root{font-family:system-ui,sans-serif;color:#17202a;background:#f7f5ef}*{box-sizing:border-box}body{margin:0}main{width:min(44rem,100%);margin:auto;padding:1rem}h1{font-size:1.65rem;margin:.25rem 0}.lede{max-width:58ch}.tabs{display:flex;gap:.5rem;margin:1.25rem 0}.tabs button,button,a.action{min-width:44px;min-height:44px;border:2px solid #17202a;border-radius:.35rem;padding:.65rem .85rem;background:#fff;color:inherit;font:inherit;font-weight:650}.tabs button[aria-selected=true]{background:#17202a;color:#fff}[hidden]{display:none!important}label{display:block;margin:1rem 0}label span{display:block;font-weight:650;margin-bottom:.3rem}input{width:100%;min-height:44px;padding:.55rem;border:1px solid #59636d;border-radius:.3rem;font:inherit}.credential{border-top:1px solid #c6c4bc;padding:1rem 0}.credential p{margin:.35rem 0}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.status{padding:.65rem;background:#fff;border-left:4px solid #59636d}.error{border-color:#9d1c20;color:#741316}a{color:#064f76}a:focus,button:focus,input:focus{outline:3px solid #d18b00;outline-offset:2px}@media(max-width:320px){main{padding:.65rem}.tabs,.actions{display:block}.tabs button,.actions button{width:100%;margin:.2rem 0}body{overflow-x:hidden}}
 </style></head><body><main>
-<h1>Splash pre-flight</h1><p class="lede">Save service credentials in your operating system’s secure store, then record the newsroom details Splash may show in its work.</p>
-<nav class="tabs" role="tablist" aria-label="Setup sections"><button id="tab-credentials" role="tab" aria-selected="true" aria-controls="panel-credentials">Credentials</button><button id="tab-newsroom" role="tab" aria-selected="false" aria-controls="panel-newsroom">Newsroom</button></nav>
+<h1>Splash pre-flight</h1><p class="lede">Record the newsroom details Splash may show in its work. Save MapTiler, Datawrapper, and Cloudflare keys in Indicator Labs; this page only reports whether they are present.</p>
+<nav class="tabs" role="tablist" aria-label="Setup sections"><button id="tab-newsroom" role="tab" aria-selected="true" aria-controls="panel-newsroom">Newsroom</button><button id="tab-credentials" role="tab" aria-selected="false" aria-controls="panel-credentials">Key status</button></nav>
 <p id="summary" class="status" role="status" aria-live="polite" tabindex="-1">Opening the protected local session…</p>
-<section id="panel-credentials" role="tabpanel" aria-labelledby="tab-credentials"><div id="credentials"></div><div id="legacy"></div></section>
-<section id="panel-newsroom" role="tabpanel" aria-labelledby="tab-newsroom" hidden><p>Enter details manually, or measure declarations on the public newsroom website and confirm the proposal before saving.</p><button type="button" id="derive">Measure the public site</button><div id="proposal" aria-live="polite"></div><form id="newsroom-form">${fields}<div class="actions"><button type="submit">Save newsroom</button><button type="button" id="decline">Record that no house profile will be used</button></div></form></section>
+<section id="panel-newsroom" role="tabpanel" aria-labelledby="tab-newsroom"><p>Enter details manually, or measure declarations on the public newsroom website and confirm the proposal before saving.</p><button type="button" id="derive">Measure the public site</button><div id="proposal" aria-live="polite"></div><form id="newsroom-form">${fields}<div class="actions"><button type="submit">Save newsroom</button><button type="button" id="decline">Record that no house profile will be used</button></div></form></section>
+<section id="panel-credentials" role="tabpanel" aria-labelledby="tab-credentials" hidden><div id="credentials"></div><div id="legacy"></div></section>
 <div class="actions"><button id="done" type="button">Done</button><button id="close" type="button">Close setup</button></div>
 </main><script nonce="${nonce}">
 const summary=document.querySelector('#summary');let state=null;
@@ -276,9 +262,8 @@ async function api(path,options={}){const response=await fetch(path,{...options,
 function activate(name){for(const tab of document.querySelectorAll('[role=tab]')){const selected=tab.id==='tab-'+name;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;document.querySelector('#'+tab.getAttribute('aria-controls')).hidden=!selected}document.querySelector('#tab-'+name).focus()}
 const tabs=[...document.querySelectorAll('[role=tab]')];for(const tab of tabs){tab.tabIndex=tab.getAttribute('aria-selected')==='true'?0:-1;tab.addEventListener('click',()=>activate(tab.id.slice(4)));tab.addEventListener('keydown',event=>{let next=-1;if(event.key==='ArrowRight')next=(tabs.indexOf(tab)+1)%tabs.length;if(event.key==='ArrowLeft')next=(tabs.indexOf(tab)-1+tabs.length)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next<0)return;event.preventDefault();activate(tabs[next].id.slice(4))})}
 function safeLink(raw){try{const url=new URL(raw);return url.protocol==='https:'?url.href:null}catch{return null}}
-function renderCredentials(){const root=document.querySelector('#credentials');root.replaceChildren();for(const row of state.credentials){const box=document.createElement('section');box.className='credential';const slug=row.id.toLowerCase().replaceAll('_','-');const title=document.createElement('h2');title.textContent=row.metadata?.name||row.id;box.append(title);const status=document.createElement('p');status.id=slug+'-status';status.textContent=row.stored?'Saved, generation '+row.generation:'Not saved';box.append(status);const purpose=document.createElement('p');purpose.id=slug+'-purpose';purpose.textContent=row.metadata?.purpose||'';box.append(purpose);const href=safeLink(row.metadata?.acquisitionUrl);if(href){const link=document.createElement('a');link.href=href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Get this credential from the provider';box.append(link)}const label=document.createElement('label');const labelText=document.createElement('span');labelText.textContent='Paste a new value';const input=document.createElement('input');input.type='password';input.autocomplete='off';input.spellcheck=false;input.setAttribute('aria-describedby',slug+'-status '+slug+'-purpose');label.append(labelText,input);box.append(label);let attest=null;if(row.id==='MAPTILER_DELIVERY_KEY'||row.id==='CLOUDFLARE_API_TOKEN'){const wrap=document.createElement('label');attest=document.createElement('input');attest.type='checkbox';attest.style.width='44px';wrap.append(attest,document.createTextNode(row.id==='MAPTILER_DELIVERY_KEY'?' I confirm this key is origin-restricted':' I confirm this token has Pages edit scope'));box.append(wrap)}const save=document.createElement('button');save.type='button';save.textContent='Verify and save';save.addEventListener('click',async()=>{const candidate=input.value;input.value='';const validationContext=row.id==='MAPTILER_DELIVERY_KEY'?{originRestrictionsAttested:attest.checked}:row.id==='CLOUDFLARE_API_TOKEN'?{cloudflareAccountId:state.newsroom.profile?.cloudflareAccountId||'',pagesScopeAttested:attest.checked}:{};announce('Checking '+(row.metadata?.name||row.id)+'…');try{const result=await api('/api/credential/replace',{method:'POST',body:JSON.stringify({id:row.id,candidate,expectedGeneration:row.generation,validationContext})});announce(result.ok?'Saved. The field has been cleared.':result.reason||'The candidate was not saved.',!result.ok);await refresh()}catch(error){announce(error.body?.reason||error.body?.message||'The candidate was not saved.',true)}});box.append(save);root.append(box)}}
-function migrationContext(id){if(id==='MAPTILER_DELIVERY_KEY')return confirm('Confirm that this delivery key is restricted to the publication origin.')?{originRestrictionsAttested:true}:null;if(id==='CLOUDFLARE_API_TOKEN'){const account=state.newsroom.profile?.cloudflareAccountId||'';return account&&confirm('Confirm that this token has Pages edit scope.')?{cloudflareAccountId:account,pagesScopeAttested:true}:null}return {}}
-function renderLegacy(){const root=document.querySelector('#legacy');root.replaceChildren();if(!state.legacy?.exists)return;const title=document.createElement('h2');title.textContent='Existing .env migration';root.append(title);if(!state.legacy.safe){const warning=document.createElement('p');warning.className='status error';warning.textContent='The existing .env needs a manual syntax, ownership, or permissions repair before safe migration.';root.append(warning);return}for(const item of state.legacy.credentials){const row=document.createElement('p');row.textContent=item.id+' is present as '+item.sourceName+'. ';const move=document.createElement('button');move.type='button';move.textContent='Move to secure storage';move.addEventListener('click',async()=>{if(!confirm('Validate and save this existing credential in secure storage?'))return;const context=migrationContext(item.id);if(context===null){announce('The required attestation or service account is missing.',true);return}const current=state.credentials.find(value=>value.id===item.id);const confirmRemoval=confirm('After secure storage succeeds, remove only this exact assignment from .env?');try{const result=await api('/api/legacy/migrate-credential',{method:'POST',body:JSON.stringify({credentialId:item.id,expectedEnvRevision:state.legacy.revision,assignmentId:item.assignmentId,expectedGeneration:current?.generation||0,validationContext:context,confirmRemoval})});announce(result.ok?'Credential moved. Legacy assignment: '+result.legacyRemoval.status:(result.credential?.reason||'The credential was not moved.'),!result.ok);await refresh()}catch(error){announce(error.body?.message||'The credential was not moved.',true)}});row.append(move);root.append(row)}if(state.legacy.integrations.length){const integrations=document.createElement('button');integrations.type='button';integrations.textContent='Import non-secret service settings into NEWSROOM.md';integrations.addEventListener('click',async()=>{if(!confirm('Import the listed account and CMS settings into the newsroom profile?'))return;const confirmRemoval=confirm('After the newsroom write succeeds, remove only those exact settings from .env?');try{const result=await api('/api/legacy/import-integrations',{method:'POST',body:JSON.stringify({expectedEnvRevision:state.legacy.revision,assignments:state.legacy.integrations.map(({field,assignmentId})=>({field,assignmentId})),expectedNewsroomRevision:state.newsroom.revision,confirmImport:true,confirmReplaceDecline:state.newsroom.declined,confirmRemoval})});state.newsroom=result.newsroom;announce('Service settings imported. Legacy assignments: '+result.legacyRemoval.status);await refresh()}catch(error){announce(error.body?.message||'Service settings were not imported.',true)}});root.append(integrations)}}
+function renderCredentials(){const root=document.querySelector('#credentials');root.replaceChildren();const intro=document.createElement('p');intro.textContent='Save MapTiler, Datawrapper, and Cloudflare keys in Indicator Labs. This page only reports whether they are present.';root.append(intro);for(const row of state.credentials){const box=document.createElement('section');box.className='credential';const slug=row.id.toLowerCase().replaceAll('_','-');const title=document.createElement('h2');title.textContent=row.metadata?.name||row.id;box.append(title);const status=document.createElement('p');status.id=slug+'-status';status.textContent=row.stored?'Saved, generation '+row.generation:'Not saved';box.append(status);const purpose=document.createElement('p');purpose.id=slug+'-purpose';purpose.textContent=row.metadata?.purpose||'';box.append(purpose);const href=safeLink(row.metadata?.acquisitionUrl);if(href){const link=document.createElement('a');link.href=href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Get this credential from the provider';box.append(link)}const hint=document.createElement('p');hint.textContent='Save or replace this key in Indicator Labs.';box.append(hint);root.append(box)}}
+function renderLegacy(){const root=document.querySelector('#legacy');root.replaceChildren();if(!state.legacy?.exists)return;const title=document.createElement('h2');title.textContent='Existing .env migration';root.append(title);if(!state.legacy.safe){const warning=document.createElement('p');warning.className='status error';warning.textContent='The existing .env needs a manual syntax, ownership, or permissions repair before non-secret settings can be imported.';root.append(warning);return}if(state.legacy.credentials?.length){const note=document.createElement('p');note.textContent='Provider keys still in .env must be saved in Indicator Labs, then removed from .env by hand. This page does not collect secrets.';root.append(note)}if(state.legacy.integrations.length){const integrations=document.createElement('button');integrations.type='button';integrations.textContent='Import non-secret service settings into NEWSROOM.md';integrations.addEventListener('click',async()=>{if(!confirm('Import the listed account and CMS settings into the newsroom profile?'))return;const confirmRemoval=confirm('After the newsroom write succeeds, remove only those exact settings from .env?');try{const result=await api('/api/legacy/import-integrations',{method:'POST',body:JSON.stringify({expectedEnvRevision:state.legacy.revision,assignments:state.legacy.integrations.map(({field,assignmentId})=>({field,assignmentId})),expectedNewsroomRevision:state.newsroom.revision,confirmImport:true,confirmReplaceDecline:state.newsroom.declined,confirmRemoval})});state.newsroom=result.newsroom;announce('Service settings imported. Legacy assignments: '+result.legacyRemoval.status);await refresh()}catch(error){announce(error.body?.message||'Service settings were not imported.',true)}});root.append(integrations)}}
 function renderNewsroom(){const profile=state.newsroom.profile||{};for(const input of document.querySelectorAll('#newsroom-form input'))input.value=profile[input.name]||''}
 async function refresh(){state=await api('/api/status',{method:'POST',body:'{}'});renderCredentials();renderLegacy();renderNewsroom()}
 document.querySelector('#derive').addEventListener('click',async()=>{const url=document.querySelector('#newsroom-url').value;announce('Measuring the public newsroom site…');try{const result=await api('/api/derive',{method:'POST',body:JSON.stringify({url})});const proposal=document.querySelector('#proposal');proposal.replaceChildren();const heading=document.createElement('h2');heading.textContent='Measured proposal';proposal.append(heading);for(const [field,row] of Object.entries(result.fields)){if(!row)continue;const item=document.createElement('p');item.textContent=field+': '+row.value+' — '+row.source+' ('+row.evidence+')';proposal.append(item)}const apply=document.createElement('button');apply.type='button';apply.textContent='Apply this proposal to empty fields';apply.addEventListener('click',()=>{if(!confirm('Apply these measured values to the empty newsroom fields?'))return;for(const [field,row] of Object.entries(result.fields)){const input=document.querySelector('#newsroom-'+field);if(row&&input&&!input.value)input.value=row.value}announce('Proposal applied to the form. Review it, then save newsroom.')});proposal.append(apply);announce('Proposal ready for review. Nothing has been written.')}catch(error){announce(error.body?.message||'The site could not be measured safely; enter branding manually.',true)}});
@@ -411,26 +396,13 @@ export async function startSetupController({
         exactObject(await readJson(request), [], "status request");
         return sendJson(response, 200, await publicStatus());
       }
-      if (url.pathname === "/api/credential/replace") {
-        const body = exactObject(await readJson(request), ["id", "candidate", "expectedGeneration", "validationContext"], "credential replacement");
-        if (!CREDENTIAL_ID_SET.has(body.id)) throw new Error("unsupported credential id");
-        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
-        if (!isCandidateWithinContract(sessionCredentialContract, body.id, body.candidate)) {
-          throw new Error("credential candidate exceeds the retained Engine contract");
-        }
-        const result = await runMutation(() => engineBridge.replace(body.id, {
-          candidate: body.candidate,
-          expectedGeneration: body.expectedGeneration,
-          validationContext: body.validationContext,
-        }));
-        return sendJson(response, result.ok ? 200 : result.status === "conflict" ? 409 : 422, result);
-      }
-      if (url.pathname === "/api/credential/remove") {
-        const body = exactObject(await readJson(request), ["id", "expectedGeneration"], "credential removal");
-        if (!CREDENTIAL_ID_SET.has(body.id)) throw new Error("unsupported credential id");
-        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
-        const result = await runMutation(() => engineBridge.remove(body.id, { expectedGeneration: body.expectedGeneration }));
-        return sendJson(response, result.ok ? 200 : result.status === "conflict" ? 409 : 422, result);
+      if (
+        url.pathname === "/api/credential/replace"
+        || url.pathname === "/api/credential/remove"
+        || url.pathname === "/api/legacy/migrate-credential"
+      ) {
+        await readJson(request);
+        return sendDesktopOwnedCredentialRefusal(response);
       }
       if (url.pathname === "/api/newsroom") {
         const body = exactObject(await readJson(request), ["expectedRevision", "changes", "decline", "confirmDecline", "confirmReplaceDecline"], "newsroom update");
@@ -441,44 +413,6 @@ export async function startSetupController({
         const body = exactObject(await readJson(request), ["url"], "newsroom derivation");
         if (typeof body.url !== "string" || body.url.length > 4096) throw new Error("newsroom derivation URL is invalid");
         const result = await runMutation(() => deriveProposal(body.url));
-        return sendJson(response, result.ok ? 200 : 422, result);
-      }
-      if (url.pathname === "/api/legacy/migrate-credential") {
-        const body = exactObject(await readJson(request), [
-          "credentialId", "expectedEnvRevision", "assignmentId", "expectedGeneration",
-          "validationContext", "confirmRemoval",
-        ], "legacy credential migration");
-        if (!CREDENTIAL_ID_SET.has(body.credentialId) || typeof body.confirmRemoval !== "boolean") throw new Error("legacy credential migration is invalid");
-        if (!hasCompatibleCredentialContract(sessionCredentialContract)) return sendCredentialContractRefusal(response);
-        const result = await runMutation(async () => {
-          const legacy = await readLegacyCandidate(legacyEnvPath, {
-            credentialId: body.credentialId,
-            expectedRevision: body.expectedEnvRevision,
-            assignmentId: body.assignmentId,
-          });
-          if (!isCandidateWithinContract(sessionCredentialContract, body.credentialId, legacy.candidate)) {
-            throw new Error("legacy credential candidate exceeds the retained Engine contract");
-          }
-          const stored = await engineBridge.replace(body.credentialId, {
-            candidate: legacy.candidate,
-            expectedGeneration: body.expectedGeneration,
-            validationContext: body.validationContext,
-          });
-          if (!isStoredReplacement(stored, body.expectedGeneration)) {
-            return { ok: false, credential: stored, legacyRemoval: { status: "retained" } };
-          }
-          if (!body.confirmRemoval) return { ok: true, credential: stored, legacyRemoval: { status: "awaiting-confirmation" } };
-          try {
-            const legacyStatus = await removeLegacyAssignments(legacyEnvPath, {
-              expectedRevision: body.expectedEnvRevision,
-              assignments: [{ credentialId: body.credentialId, assignmentId: body.assignmentId }],
-              confirmRemoval: true,
-            });
-            return { ok: true, credential: stored, legacyRemoval: { status: "removed", legacy: legacyStatus } };
-          } catch (error) {
-            return { ok: true, credential: stored, legacyRemoval: { status: "retained", outcome: error?.code === "REVISION_CONFLICT" ? "conflict" : "removal-failed" } };
-          }
-        });
         return sendJson(response, result.ok ? 200 : 422, result);
       }
       if (url.pathname === "/api/legacy/import-integrations") {

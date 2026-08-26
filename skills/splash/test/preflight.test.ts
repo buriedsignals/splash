@@ -531,6 +531,7 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       const row = report.capabilities[id];
       expect(row.fill).toBeTruthy();
       expect(row.fill).toContain(variable);
+      expect(row.fill).toContain("Indicator Labs");
       expect(row.fill).toContain("Splash Readiness");
       expect(row.fill).not.toContain(".env");
     }

@@ -25,11 +25,11 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/configure-pages@1f0c5cde4bc74cd7e1254d0cb4de8d49e9068c7d # v4
-      - name: Stage Pages without the journalist bash installer
+      - name: Stage Pages without a journalist bash installer
         run: |
           mkdir -p _pages
           cp -R landing/. _pages/
-          rm -f _pages/install.sh
+          test ! -e _pages/install.sh
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: _pages

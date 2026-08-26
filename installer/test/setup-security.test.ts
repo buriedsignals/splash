@@ -555,9 +555,11 @@ describe("protected setup Engine credential contract", () => {
       body: JSON.stringify({ id: "DATAWRAPPER_TOKEN", expectedGeneration: 1 }),
     });
 
-    expect(replaced.status).toBe(200);
-    expect(removed.status).toBe(200);
+    expect(replaced.status).toBe(410);
+    expect(removed.status).toBe(410);
+    expect(await replaced.json()).toMatchObject({ code: "desktop-owned" });
     expect(calls.filter(({ args }) => args[1] === "list")).toHaveLength(1);
+    expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
   });
 
   const incompatibleContracts: Array<{
@@ -612,7 +614,7 @@ describe("protected setup Engine credential contract", () => {
       });
       expect(typeof status.broker.message).toBe("string");
       expect(status.broker.message.length).toBeLessThanOrEqual(2048);
-      expect(replacement.status).toBe(409);
+      expect(replacement.status).toBe(410);
     });
   }
 
@@ -675,10 +677,10 @@ describe("protected setup Engine credential contract", () => {
       credentialIndependentPathsAvailable: true,
     });
     expect(newsroom.status).toBe(200);
-    expect([replacement.status, removal.status, migration.status]).toEqual([409, 409, 409]);
+    expect([replacement.status, removal.status, migration.status]).toEqual([410, 410, 410]);
     expect(refusal).toEqual({
-      code: "credential-contract-unavailable",
-      message: "Update or repair Engine before changing Splash credentials.",
+      code: "desktop-owned",
+      message: "Save Splash credentials in Indicator Labs. This page records newsroom identity only.",
     });
     expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
     expect(calls.some(({ input }) => input.includes(candidate))).toBe(false);
@@ -974,7 +976,7 @@ describe("protected setup Engine credential contract", () => {
       }),
     });
 
-    expect(migration.status).not.toBe(200);
+    expect(migration.status).toBe(410);
     expect(await readFile(envPath, "utf8")).toBe(`MAPTILER_API_KEY=${candidate}\nUNRELATED=keep\n`);
     expect(JSON.stringify(await migration.json())).not.toContain(candidate);
   });
@@ -1116,11 +1118,11 @@ describe("protected setup Engine credential contract", () => {
       }),
     });
 
-    expect(accepted.status).toBe(200);
-    expect(oversized.status).toBe(400);
+    expect(accepted.status).toBe(410);
+    expect(oversized.status).toBe(410);
     expect(await oversized.json()).toEqual({
-      code: "invalid-request",
-      message: "The request was refused without changing setup state.",
+      code: "desktop-owned",
+      message: "Save Splash credentials in Indicator Labs. This page records newsroom identity only.",
     });
     expect(calls.some(({ input }) => input.includes("oversized-canary"))).toBe(false);
   });
@@ -1133,7 +1135,12 @@ describe("token-bound loopback setup controller", () => {
     expect(page.headers.get("cache-control")).toContain("no-store");
     expect(page.headers.get("content-security-policy")).toContain("default-src 'none'");
     expect(page.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(await page.text()).not.toContain(controller.capability);
+    const html = await page.text();
+    expect(html).not.toContain(controller.capability);
+    expect(html).toContain("Indicator Labs");
+    expect(html).not.toContain("Paste a new value");
+    expect(html).not.toContain('type="password"');
+    expect(html).not.toContain("type='password'");
 
     const wrongOrigin = await fetch(`${controller.origin}/session`, {
       method: "POST",
@@ -1200,8 +1207,8 @@ describe("token-bound loopback setup controller", () => {
       headers: { origin: controller.origin, cookie, "content-type": "application/json" },
       body: JSON.stringify({ id: "MAPTILER_KEY", candidate: "controller-secret-canary-12345", expectedGeneration: 0, validationContext: {} }),
     });
-    expect(saved.status).toBe(200);
-    expect(observed).toBe("controller-secret-canary-12345");
+    expect(saved.status).toBe(410);
+    expect(observed).toBe("");
     expect(JSON.stringify(lifecycle)).not.toContain("controller-secret-canary");
 
     const done = await fetch(`${controller.origin}/api/done`, {
@@ -1213,23 +1220,30 @@ describe("token-bound loopback setup controller", () => {
     expect(await controller.closed).toEqual({ reason: "done" });
   });
 
-  test("refuses Close setup while a credential mutation is in flight", async () => {
+  test("refuses Close setup while a newsroom mutation is in flight", async () => {
     let begin!: () => void;
     let finish!: () => void;
     const began = new Promise<void>((settle) => { begin = settle; });
     const finished = new Promise<void>((settle) => { finish = settle; });
-    const controller = await controllerFixture(stubBridge({
-      async replace(id: string) {
+    const { root, path } = await fixture();
+    const controller = await startSetupController({
+      engineBridge: stubBridge(),
+      newsroomPath: path,
+      legacyEnvPath: join(root, ".env"),
+      idleMs: 10_000,
+      overallMs: 20_000,
+      deriveProposal: async () => {
         begin();
         await finished;
-        return { ok: true, id, stored: true, generation: 1, metadata: { id } };
+        return { ok: true, fields: {} };
       },
-    }));
+    });
+    controllers.push(controller);
     const { cookie } = await openSession(controller);
-    const saving = fetch(`${controller.origin}/api/credential/replace`, {
+    const deriving = fetch(`${controller.origin}/api/derive`, {
       method: "POST",
       headers: { origin: controller.origin, cookie, "content-type": "application/json" },
-      body: JSON.stringify({ id: "MAPTILER_KEY", candidate: "in-flight-secret-canary", expectedGeneration: 0, validationContext: {} }),
+      body: JSON.stringify({ url: "https://example.test/" }),
     });
     await began;
     const earlyClose = await fetch(`${controller.origin}/api/close`, {
@@ -1239,7 +1253,7 @@ describe("token-bound loopback setup controller", () => {
     });
     expect(earlyClose.status).toBe(409);
     finish();
-    expect((await saving).status).toBe(200);
+    expect((await deriving).status).toBe(200);
     const closed = await fetch(`${controller.origin}/api/close`, {
       method: "POST",
       headers: { origin: controller.origin, cookie, "content-type": "application/json" },
@@ -1296,7 +1310,7 @@ describe("token-bound loopback setup controller", () => {
     }
   });
 
-  test("moves an inspected legacy credential through Engine before exact confirmed removal", async () => {
+  test("refuses to move an inspected legacy credential from setup", async () => {
     const { root, path } = await fixture();
     const envPath = join(root, ".env");
     await writeFile(path, PROFILE);
@@ -1338,14 +1352,12 @@ describe("token-bound loopback setup controller", () => {
         confirmRemoval: true,
       }),
     });
-    expect(movedResponse.status).toBe(200);
-    const moved = await movedResponse.json();
-    expect(moved.legacyRemoval.status).toBe("removed");
-    expect(candidate).toBe("legacy-controller-secret-12345");
-    expect(JSON.stringify(moved)).not.toContain("legacy-controller-secret");
+    expect(movedResponse.status).toBe(410);
+    expect(await movedResponse.json()).toMatchObject({ code: "desktop-owned" });
+    expect(candidate).toBe("");
     expect(JSON.stringify(lifecycle)).not.toContain("legacy-controller-secret");
     const remaining = await readFile(envPath, "utf8");
-    expect(remaining).toBe("UNRELATED=keep\n");
+    expect(remaining).toBe("MAPTILER_API_KEY=legacy-controller-secret-12345\nUNRELATED=keep\n");
   });
 
   test("a stale newsroom blocks non-secret legacy import before either authority changes", async () => {
@@ -1544,7 +1556,7 @@ fi
       method: "POST",
       headers: { origin, cookie, "content-type": "application/json" },
       body: JSON.stringify({ id: "MAPTILER_KEY", candidate, expectedGeneration: 0, validationContext: {} }),
-    })).status).toBe(200);
+    })).status).toBe(410);
     child.stdin.write(`${JSON.stringify({ command: "close" })}\n`);
     child.stdin.end();
     while (true) {

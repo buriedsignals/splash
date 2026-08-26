@@ -247,7 +247,7 @@ describe("à-la-carte chooser state", () => {
     expect(find(root, (node) => node.tagName === "select")).toBeTruthy();
     expect(find(root, (node) => node.type === "radio")).toBeTruthy();
     await find(root, (node) =>
-      node.textContent.startsWith("Configure optional"),
+      node.textContent.startsWith("Open Readiness for optional"),
     ).click();
     expect(configurations).toBe(1);
     expect(confirms).toBe(0);

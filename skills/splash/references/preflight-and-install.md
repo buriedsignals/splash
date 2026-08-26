@@ -50,11 +50,10 @@ would never touch.
 3. **The capabilities, with what would open each.** Every row names its provider and acquisition
    page; it never asks for or carries the value.
 
-When any capability row is closed, offer the Splash studio's **Set up credentials and newsroom**
-action once, or continue without that optional capability. Never ask the journalist to paste a
-credential into chat or a terminal. The protected page verifies and saves each provider
-independently through Engine, clears the input, and leaves the multi-provider session open until
-the journalist chooses Done. Refresh status after it closes.
+When any capability row is closed, point the journalist at **Indicator Labs** to save the missing
+key, or continue without that optional capability. Never ask them to paste a credential into chat,
+a terminal, or the Splash studio. Studio Readiness only reports whether each key is present.
+Newsroom identity stays on the studio setup page. Refresh status after Indicator Labs closes.
 
 ## The newsroom's identity has four honest outcomes
 
@@ -110,9 +109,10 @@ Never dispatch the fixed Europe or Potomac proof cameras for an unrelated story.
 
 **Engine owns the production credential names and values.** `MAPTILER_KEY`,
 `MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
-by the Splash studio. The journalist enters them only in its protected loopback setup page;
-Engine validates and stores them through the operating-system credential broker, then hydrates only
-the closed operation that requires one. `resolveEnvKey` still accepts historical aliases when an
+by Indicator Labs and reported as status in the Splash studio. The journalist enters them only in
+Indicator Labs; Engine validates and stores them through the operating-system credential broker,
+then hydrates only the closed operation that requires one. Studio Readiness never accepts a pasted
+value. `resolveEnvKey` still accepts historical aliases when an
 explicit legacy root is inspected or run during migration — read-only compatibility input, not the
 setup path and not a reason to ask for a credential in chat.
 

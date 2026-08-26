@@ -481,7 +481,7 @@ export function createAlaCarteChooser({
       if (view.repairAction === "open-readiness" && onConfigure) {
         const configure = documentRef.createElement("button");
         configure.type = "button";
-        configure.textContent = "Configure this capability";
+        configure.textContent = "Open Readiness";
         configure.addEventListener("click", () => onConfigure());
         empty.append(configure);
       }
@@ -555,7 +555,7 @@ export function createAlaCarteChooser({
           const configure = documentRef.createElement("button");
           configure.type = "button";
           configure.className = "configure-choice";
-          configure.textContent = `Configure ${choice.label}`;
+          configure.textContent = `Open Readiness for ${choice.label}`;
           configure.addEventListener("click", () => onConfigure());
           fieldset.append(configure);
         }
@@ -564,7 +564,7 @@ export function createAlaCarteChooser({
             const configure = documentRef.createElement("button");
             configure.type = "button";
             configure.className = "configure-choice";
-            configure.textContent = `Configure optional ${implication.label}`;
+            configure.textContent = `Open Readiness for optional ${implication.label}`;
             configure.addEventListener("click", () => onConfigure());
             fieldset.append(configure);
           }
