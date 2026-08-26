@@ -56,7 +56,7 @@
         </div>
         <p class="quiet">
           Credentials are entered only in the protected page on this computer,
-          never in this MCP view or chat.
+          never in chat.
         </p>
       </section>
 
@@ -69,9 +69,19 @@
           <span id="story-state" class="pill">Unbound</span>
         </div>
         <p id="story-detail">
-          Ask the model to nominate a story. Engine will inspect it without
-          changing it, then you confirm the exact location here.
+          Inspect a story directory on this computer, then confirm the exact
+          location here. Engine does not change the story until you confirm.
         </p>
+        <label for="story-path">
+          <span>Story directory</span>
+          <input
+            id="story-path"
+            name="story-path"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
         <div class="choice-modes" role="group" aria-label="Choice mode">
           <button id="mode-a-la-carte" type="button" aria-pressed="true">
             À la carte
@@ -82,8 +92,8 @@
         </div>
         <div id="pending-story"></div>
         <div class="actions">
-          <button id="review-story" type="button" disabled>
-            Review nominated story
+          <button id="nominate-story" type="button" disabled>
+            Inspect this story
           </button>
           <button id="load-selection" type="button" disabled>
             Refresh choices

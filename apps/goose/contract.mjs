@@ -1,4 +1,3 @@
-export const RESOURCE_URI = "ui://splash/app";
 export const ENGINE_SPLASH_CONTRACT_MIN = 1;
 export const CREDENTIAL_IDS = Object.freeze([
   "MAPTILER_KEY",

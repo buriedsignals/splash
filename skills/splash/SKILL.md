@@ -38,6 +38,14 @@ owner's own skill or persona brief; this document duplicates no owner body.
   from what a previous turn was doing. For a new story, preflight and
   `createStory({root, title})` first create the canonical directory and its local `AGENTS.md`;
   then call `whereIs` for the first time.
+- Once per session, open the Splash studio in the journalist's browser rather
+  than collecting readiness or visual choices in chat. From the Splash checkout,
+  with Engine environment (`SPLASH_CHECKOUT_ROOT`, `SPLASH_BSIG_PATH`,
+  `SPLASH_NEWSROOM_PATH`), run `bun --no-env-file apps/goose/studio/open.mjs`.
+  Goose may instead call `open_splash`. The studio is a loopback page: the
+  journalist confirms the story and treatment there; this skill resumes from
+  `whereIs` after that. Never put the studio URL or its capability token in
+  chat.
 - When a caller (human or agent) asks to skip a phase — refuse, report `missing` verbatim, and
   stop. A missing prerequisite is **reported**, never argued around, never designed around.
 - Once per session, before any story exists: run `runPreflight`

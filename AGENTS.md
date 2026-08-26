@@ -91,7 +91,7 @@ bun --no-env-file run survey:check
 bun --no-env-file run catalog:check
 ```
 
-For installer, host-projection, or MCP-app changes, also run the focused suites and the canonical
+For installer, host-projection, or studio/MCP changes, also run the focused suites and the canonical
 Engine doctor or lifecycle checks appropriate to the change:
 
 ```bash

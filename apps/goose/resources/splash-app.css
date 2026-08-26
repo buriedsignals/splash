@@ -134,6 +134,23 @@ small {
 #pending-story {
   overflow-wrap: anywhere;
 }
+#story-path {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.3rem;
+  padding: 0.55rem;
+  border: 1px solid var(--color-border-secondary, GrayText);
+  border-radius: 0.35rem;
+  font: inherit;
+}
+label[for="story-path"] {
+  display: block;
+  margin-top: 0.75rem;
+}
+label[for="story-path"] span {
+  font-weight: 650;
+}
+
 .compact {
   margin-top: 0.55rem;
 }

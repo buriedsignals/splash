@@ -1,4 +1,3 @@
-import { App } from "@modelcontextprotocol/ext-apps";
 import { createAlaCarteChooser } from "./a-la-carte.mjs";
 import { createStoryboardChoice } from "./storyboard-choice.mjs";
 
@@ -6,33 +5,42 @@ function statusText(value) {
   return String(value ?? "").replaceAll("-", " ");
 }
 
-function validSetupURL(raw) {
-  try {
-    const url = new URL(raw);
-    return url.protocol === "http:" &&
-      url.hostname === "127.0.0.1" &&
-      Boolean(url.port) &&
-      url.pathname === "/" &&
-      Boolean(url.hash) &&
-      !url.search &&
-      !url.username &&
-      !url.password
-      ? url.href
-      : null;
-  } catch {
-    return null;
+function routeName(hash) {
+  return hash === "#choose" ? "choose" : "readiness";
+}
+
+function isCapabilityHash(hash) {
+  const value = String(hash ?? "").replace(/^#/, "");
+  return Boolean(value) && value !== "choose" && value !== "readiness";
+}
+
+export async function defaultApi(path, body = {}) {
+  const response = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.message || "Request refused");
+    error.body = payload;
+    throw error;
   }
+  return payload;
 }
 
 export async function startSplashApp({
-  AppClass = App,
   documentRef = document,
   windowRef = window,
+  api = defaultApi,
+  openUrl = (url) => windowRef.open(url, "_blank", "noopener,noreferrer"),
 } = {}) {
   const announcement = documentRef.querySelector("#announcement");
   const refresh = documentRef.querySelector("#refresh");
   const setup = documentRef.querySelector("#setup");
-  const reviewStory = documentRef.querySelector("#review-story");
+  const nominateStory = documentRef.querySelector("#nominate-story");
+  const storyPath = documentRef.querySelector("#story-path");
   const loadSelection = documentRef.querySelector("#load-selection");
   const choiceRoot = documentRef.querySelector("#choice-root");
   const modeAlaCarte = documentRef.querySelector("#mode-a-la-carte");
@@ -41,7 +49,8 @@ export async function startSplashApp({
     !announcement ||
     !refresh ||
     !setup ||
-    !reviewStory ||
+    !nominateStory ||
+    !storyPath ||
     !loadSelection ||
     !choiceRoot ||
     !modeAlaCarte ||
@@ -49,11 +58,6 @@ export async function startSplashApp({
   )
     throw new Error("Splash app markup is incomplete");
 
-  const app = new AppClass(
-    { name: "Splash", version: "0.1.0" },
-    {},
-    { autoResize: true, strict: true },
-  );
   let connected = false;
   let status = null;
   let pendingChallenge = "";
@@ -66,62 +70,49 @@ export async function startSplashApp({
   }
 
   function enableActions() {
-    const serverTools =
-      connected && Boolean(app.getHostCapabilities()?.serverTools);
-    refresh.disabled = !serverTools;
-    setup.disabled = !serverTools;
-    reviewStory.disabled = !serverTools;
-    loadSelection.disabled = !serverTools || status?.story?.status !== "bound";
-    modeAlaCarte.disabled = !serverTools || status?.story?.status !== "bound";
-    modeStoryboard.disabled = !serverTools || status?.story?.status !== "bound";
+    refresh.disabled = !connected;
+    setup.disabled = !connected;
+    nominateStory.disabled = !connected;
+    storyPath.disabled = !connected;
+    loadSelection.disabled = !connected || status?.story?.status !== "bound";
+    modeAlaCarte.disabled = !connected || status?.story?.status !== "bound";
+    modeStoryboard.disabled = !connected || status?.story?.status !== "bound";
   }
 
-  async function selectionTool(name, argumentsValue) {
-    const result = await app.callServerTool({
-      name,
-      arguments: argumentsValue,
-    });
-    if (
-      result?.isError ||
-      result?.structuredContent?.schemaVersion !== "splash-selection/v1"
-    ) {
-      const state = result?.structuredContent?.status;
-      if (state === "preflight-required") windowRef.location.hash = "readiness";
-      throw new Error(
-        state === "selection-conflict" || state === "recommendation-conflict"
-          ? "The story or available capabilities changed. Choices were refreshed; confirm again."
-          : state === "preflight-required"
-            ? "Complete Splash readiness before choosing a visual."
-            : state === "story-unbound"
-              ? "Confirm the exact story before choosing a visual."
-              : "The current storyboard decision could not be changed.",
-      );
-    }
-    return result.structuredContent;
+  function selectionError(error) {
+    const state = error?.body?.status;
+    if (state === "preflight-required") windowRef.location.hash = "readiness";
+    const message =
+      state === "selection-conflict" || state === "recommendation-conflict"
+        ? "The story or available capabilities changed. Choices were refreshed; confirm again."
+        : state === "preflight-required"
+          ? "Complete Splash readiness before choosing a visual."
+          : state === "story-unbound"
+            ? "Confirm the exact story before choosing a visual."
+            : error.message;
+    throw new Error(message);
   }
 
-  async function recommendationTool(name, argumentsValue) {
-    const result = await app.callServerTool({
-      name,
-      arguments: argumentsValue,
-    });
-    if (
-      result?.isError ||
-      result?.structuredContent?.schemaVersion !== "splash-storyboard-choice/v1"
-    ) {
-      const state = result?.structuredContent?.status;
-      if (state === "preflight-required") windowRef.location.hash = "readiness";
-      throw new Error(
-        state === "recommendation-conflict" || state === "selection-conflict"
-          ? "The story evidence or available capabilities changed. Recommendation refreshed; confirm again."
-          : state === "preflight-required"
-            ? "Complete Splash readiness before requesting a recommendation."
-            : state === "story-unbound"
-              ? "Confirm the exact story before requesting a recommendation."
-              : "The current Storyboard recommendation could not be read.",
-      );
+  async function selectionTool(path, body) {
+    try {
+      const model = await api(path, body);
+      if (model?.schemaVersion !== "splash-selection/v1") selectionError(new Error("The current storyboard decision could not be changed."));
+      return model;
+    } catch (error) {
+      selectionError(error);
     }
-    return result.structuredContent;
+  }
+
+  async function recommendationTool(path, body) {
+    try {
+      const model = await api(path, body);
+      if (model?.schemaVersion !== "splash-storyboard-choice/v1") {
+        selectionError(new Error("The current Storyboard recommendation could not be read."));
+      }
+      return model;
+    } catch (error) {
+      selectionError(error);
+    }
   }
 
   async function readSelection({ quiet = false } = {}) {
@@ -134,14 +125,11 @@ export async function startSplashApp({
     try {
       let model;
       if (choiceMode === "storyboard") {
-        const advised = await recommendationTool(
-          "read_splash_storyboard_recommendation",
-          {},
-        );
+        const advised = await recommendationTool("/api/recommendation/read", {});
         storyboardChooser.render(advised);
         model = advised.selection;
       } else {
-        model = await selectionTool("read_splash_selection", {});
+        model = await selectionTool("/api/selection/read", {});
         alaCarteChooser.render(model);
       }
       const detail = documentRef.querySelector("#choice-detail");
@@ -174,7 +162,7 @@ export async function startSplashApp({
     },
     async onReopenFormat(expected) {
       try {
-        return await selectionTool("reopen_splash_format", { expected });
+        return await selectionTool("/api/selection/reopen-format", { expected });
       } catch (error) {
         await readSelection({ quiet: true });
         throw error;
@@ -182,7 +170,7 @@ export async function startSplashApp({
     },
     async onReopenTreatment(expected) {
       try {
-        return await selectionTool("reopen_splash_treatment", { expected });
+        return await selectionTool("/api/selection/reopen-treatment", { expected });
       } catch (error) {
         await readSelection({ quiet: true });
         throw error;
@@ -194,10 +182,7 @@ export async function startSplashApp({
     ...sharedChooserOptions,
     async onConfirm({ optionId, expected }) {
       try {
-        return await selectionTool("confirm_splash_selection", {
-          optionId,
-          expected,
-        });
+        return await selectionTool("/api/selection/confirm", { optionId, expected });
       } catch (error) {
         await readSelection({ quiet: true });
         throw error;
@@ -209,7 +194,7 @@ export async function startSplashApp({
     ...sharedChooserOptions,
     async onConfirm({ optionId, expected, recommendationRevision }) {
       try {
-        return await recommendationTool("confirm_splash_storyboard_selection", {
+        return await recommendationTool("/api/recommendation/confirm", {
           optionId,
           expected,
           recommendationRevision,
@@ -223,14 +208,8 @@ export async function startSplashApp({
 
   function setChoiceMode(next) {
     choiceMode = next === "storyboard" ? "storyboard" : "a-la-carte";
-    modeAlaCarte.setAttribute(
-      "aria-pressed",
-      choiceMode === "a-la-carte" ? "true" : "false",
-    );
-    modeStoryboard.setAttribute(
-      "aria-pressed",
-      choiceMode === "storyboard" ? "true" : "false",
-    );
+    modeAlaCarte.setAttribute("aria-pressed", choiceMode === "a-la-carte" ? "true" : "false");
+    modeStoryboard.setAttribute("aria-pressed", choiceMode === "storyboard" ? "true" : "false");
     alaCarteChooser.clear();
     storyboardChooser.clear();
     if (status?.story?.status === "bound") void readSelection();
@@ -277,17 +256,26 @@ export async function startSplashApp({
       invalid: "Recorded newsroom profile is invalid",
       unknown: "Newsroom identity not read yet",
     }[newsroom.decision] ?? "Newsroom identity not read yet";
-    const newsroomCopy = [newsroom.name, Array.isArray(newsroom.languages) && newsroom.languages.length ? newsroom.languages.join(", ") : ""]
+    const newsroomCopy = [
+      newsroom.name,
+      Array.isArray(newsroom.languages) && newsroom.languages.length
+        ? newsroom.languages.join(", ")
+        : "",
+    ]
       .filter(Boolean)
       .join(" · ");
-    newsroomItem.append(card(newsroomLabel, newsroomCopy || "Use setup to record it or record an explicit decline.", newsroom.decision === "complete" || newsroom.decision === "declined" ? "pass" : "missing"));
+    newsroomItem.append(
+      card(
+        newsroomLabel,
+        newsroomCopy || "Use setup to record it or record an explicit decline.",
+        newsroom.decision === "complete" || newsroom.decision === "declined" ? "pass" : "missing",
+      ),
+    );
     blockers.append(newsroomItem);
     const credentials = documentRef.querySelector("#credentials");
     credentials.replaceChildren();
     for (const row of next.credentials ?? []) {
-      const detail = [statusText(row.state), row.purpose]
-        .filter(Boolean)
-        .join(" — ");
+      const detail = [statusText(row.state), row.purpose].filter(Boolean).join(" — ");
       const node = card(row.name || row.id, detail, row.state);
       if (row.acquisitionUrl) {
         const link = documentRef.createElement("a");
@@ -310,7 +298,7 @@ export async function startSplashApp({
     } else {
       storyState.textContent = "Unbound";
       storyDetail.textContent =
-        "Ask the model to nominate a story. Engine will inspect it without changing it, then you confirm the exact location here.";
+        "Inspect a story directory on this computer, then confirm the exact location here. Engine does not change the story until you confirm.";
       choiceDetail.textContent =
         "Options remain unavailable until a story is confirmed in this session.";
       alaCarteChooser.clear();
@@ -320,12 +308,9 @@ export async function startSplashApp({
   }
 
   function route() {
-    const name = windowRef.location.hash === "#choose" ? "choose" : "readiness";
+    const name = routeName(windowRef.location.hash);
     for (const button of documentRef.querySelectorAll("[data-route]"))
-      button.setAttribute(
-        "aria-current",
-        button.dataset.route === name ? "page" : "false",
-      );
+      button.setAttribute("aria-current", button.dataset.route === name ? "page" : "false");
     for (const panel of documentRef.querySelectorAll("[data-panel]"))
       panel.hidden = panel.id !== name;
     if (name === "choose" && connected && status?.story?.status === "bound")
@@ -333,36 +318,18 @@ export async function startSplashApp({
   }
   for (const button of documentRef.querySelectorAll("[data-route]"))
     button.addEventListener("click", () => {
-      windowRef.location.hash =
-        button.dataset.route === "choose" ? "choose" : "readiness";
+      windowRef.location.hash = button.dataset.route === "choose" ? "choose" : "readiness";
     });
   windowRef.addEventListener("hashchange", route);
-  route();
-
-  app.ontoolresult = (result) => {
-    if (result?.structuredContent?.schemaVersion === "splash-app/v2") {
-      render(result.structuredContent);
-      announce("Current Splash status loaded.");
-    }
-  };
 
   refresh.addEventListener("click", async () => {
     announce("Refreshing Splash readiness…");
     try {
-      const result = await app.callServerTool({
-        name: "refresh_splash_status",
-        arguments: {},
-      });
-      if (result?.isError) throw new Error("refresh refused");
-      render(result.structuredContent);
-      if (result.structuredContent?.story?.status === "bound")
-        await readSelection({ quiet: true });
+      render(await api("/api/status", {}));
+      if (status?.story?.status === "bound") await readSelection({ quiet: true });
       announce("Splash readiness refreshed.");
     } catch {
-      announce(
-        "Splash readiness could not be refreshed. The displayed state may be stale.",
-        true,
-      );
+      announce("Splash readiness could not be refreshed. The displayed state may be stale.", true);
     } finally {
       refresh.focus();
     }
@@ -370,129 +337,67 @@ export async function startSplashApp({
 
   setup.addEventListener("click", async () => {
     announce("Starting the protected setup page…");
-    let setupUrl = "";
     try {
-      const started = await app.callServerTool({
-        name: "start_splash_setup",
-        arguments: {},
-      });
-      setupUrl = validSetupURL(started?.structuredContent?.setupUrl);
-      if (started?.isError || !setupUrl) {
-        announce(
-          "The protected setup controller could not start. Nothing was changed.",
-          true,
-        );
+      const started = await api("/api/setup/start", {});
+      if (started?.setupUrl && openUrl(started.setupUrl)) {
+        announce("The protected setup page opened.");
         return;
       }
-      let opened = false;
-      let hostOutcome = "unsupported-host";
-      if (app.getHostCapabilities()?.openLinks) {
-        try {
-          const result = await app.openLink({ url: setupUrl });
-          opened = !result?.isError;
-          hostOutcome = opened ? "host-opened" : "host-denied";
-        } catch {
-          hostOutcome = "host-error";
-        }
+      const fallback = await api("/api/setup/open", {});
+      if (!fallback?.ok) {
+        announce("The protected setup page could not open. Nothing was changed.", true);
+        return;
       }
-      setupUrl = "";
-      if (!opened) {
-        const fallback = await app.callServerTool({
-          name: "open_splash_setup_locally",
-          arguments: {},
-        });
-        if (fallback?.isError || !fallback?.structuredContent?.ok) {
-          const cause =
-            fallback?.structuredContent?.status === "session-expired"
-              ? "The setup session expired before it could open."
-              : hostOutcome === "host-error"
-                ? "The host returned an error and this computer’s URL opener also failed."
-                : hostOutcome === "host-denied"
-                  ? "The host denied the page and this computer’s URL opener also failed."
-                  : "This host cannot open links and this computer has no working URL opener.";
-          announce(`${cause} Nothing was changed.`, true);
-          return;
-        }
-        announce(
-          hostOutcome === "host-error"
-            ? "The host returned an error, so the protected setup page opened with this computer."
-            : hostOutcome === "host-denied"
-              ? "The host denied the link; the protected setup page opened with this computer instead."
-              : "The protected setup page opened with this computer.",
-        );
-      } else {
-        announce("The host opened the protected setup page.");
-      }
+      announce("The protected setup page opened with this computer.");
     } catch {
-      setupUrl = "";
-      announce(
-        "Splash could not request the setup page. No credential or newsroom value was changed.",
-        true,
-      );
+      announce("Splash could not request the setup page. No credential or newsroom value was changed.", true);
     } finally {
       setup.focus();
     }
   });
 
-  reviewStory.addEventListener("click", async () => {
-    announce("Reading the nominated story for this app session…");
+  function showPending(descriptor, challenge) {
     const root = documentRef.querySelector("#pending-story");
     root.replaceChildren();
-    pendingChallenge = "";
+    pendingChallenge = challenge;
+    const summary = documentRef.createElement("p");
+    summary.textContent = `${descriptor.storyId} — ${descriptor.canonicalPath}`;
+    const confirm = documentRef.createElement("button");
+    confirm.type = "button";
+    confirm.textContent = "Confirm this story";
+    confirm.addEventListener("click", async () => {
+      const token = pendingChallenge;
+      pendingChallenge = "";
+      try {
+        const confirmed = await api("/api/story/confirm", { challenge: token });
+        root.replaceChildren();
+        render(await api("/api/status", {}));
+        await readSelection({ quiet: true });
+        announce("The displayed story is bound to this Splash session.");
+        void confirmed;
+      } catch {
+        announce("Story confirmation expired. Inspect and review the story again.", true);
+      }
+    });
+    root.append(summary, confirm);
+    announce("Review the exact story location, then confirm it.");
+    confirm.focus();
+  }
+
+  nominateStory.addEventListener("click", async () => {
+    announce("Asking Engine to inspect that story path…");
     try {
-      const result = await app.callServerTool({
-        name: "pending_splash_story",
-        arguments: {},
-      });
-      const descriptor = result?.structuredContent?.descriptor;
-      pendingChallenge = result?.structuredContent?.challenge ?? "";
-      if (!descriptor || !pendingChallenge) {
-        announce(
-          "No nominated story is waiting. Ask the model to nominate one first.",
-          true,
-        );
+      await api("/api/story/nominate", { path: storyPath.value.trim() });
+      const pending = await api("/api/story/pending", {});
+      if (!pending?.descriptor || !pending?.challenge) {
+        announce("Engine refused that story nomination. No story was bound.", true);
         return;
       }
-      const summary = documentRef.createElement("p");
-      summary.textContent = `${descriptor.storyId} — ${descriptor.canonicalPath}`;
-      const confirm = documentRef.createElement("button");
-      confirm.type = "button";
-      confirm.textContent = "Confirm this story";
-      confirm.addEventListener("click", async () => {
-        const challenge = pendingChallenge;
-        pendingChallenge = "";
-        try {
-          const confirmed = await app.callServerTool({
-            name: "confirm_splash_story",
-            arguments: { challenge },
-          });
-          if (confirmed?.isError) throw new Error("confirmation refused");
-          root.replaceChildren();
-          if (status)
-            render({
-              ...status,
-              story: {
-                status: "bound",
-                descriptor: confirmed.structuredContent.descriptor,
-              },
-            });
-          await readSelection({ quiet: true });
-          announce("The displayed story is bound to this Splash session.");
-        } catch {
-          announce(
-            "Story confirmation expired. Nominate and review the story again.",
-            true,
-          );
-        }
-      });
-      root.append(summary, confirm);
-      announce("Review the exact story location, then confirm it.");
-      confirm.focus();
+      showPending(pending.descriptor, pending.challenge);
     } catch {
-      announce(
-        "The nominated story could not be read. No story was bound.",
-        true,
-      );
+      announce("Engine refused that story nomination. No story was bound or changed.", true);
+    } finally {
+      nominateStory.focus();
     }
   });
 
@@ -505,25 +410,21 @@ export async function startSplashApp({
   });
 
   try {
-    await app.connect();
+    const capability = isCapabilityHash(windowRef.location.hash)
+      ? windowRef.location.hash.slice(1)
+      : "";
+    if (capability) windowRef.history.replaceState(null, "", windowRef.location.pathname);
+    if (!capability) throw new Error("This Splash studio link has expired.");
+    await api("/session", { capability });
     connected = true;
-    enableActions();
-    if (!app.getHostCapabilities()?.serverTools)
-      announce(
-        "This host does not prove app-only tools, so embedded setup and confirmation are disabled.",
-        true,
-      );
-    else if (!status)
-      announce("Splash is connected. Refresh to read current readiness.");
-  } catch {
+    render(await api("/api/status", {}));
+    route();
+    announce("Splash studio is ready.");
+  } catch (error) {
     connected = false;
     enableActions();
-    announce(
-      "The Splash app bridge could not initialize. Use the textual pre-flight flow.",
-      true,
-    );
+    announce(error.message, true);
   }
-  return app;
 }
 
 if (typeof document !== "undefined") void startSplashApp();

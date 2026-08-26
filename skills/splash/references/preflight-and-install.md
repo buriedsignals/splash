@@ -50,7 +50,7 @@ would never touch.
 3. **The capabilities, with what would open each.** Every row names its provider and acquisition
    page; it never asks for or carries the value.
 
-When any capability row is closed, offer the Readiness app's **Set up credentials and newsroom**
+When any capability row is closed, offer the Splash studio's **Set up credentials and newsroom**
 action once, or continue without that optional capability. Never ask the journalist to paste a
 credential into chat or a terminal. The protected page verifies and saves each provider
 independently through Engine, clears the input, and leaves the multi-provider session open until
@@ -90,7 +90,7 @@ the journalist chooses Done. Refresh status after it closes.
   it and never applied.
 
 A fresh managed install leaves the newsroom at `missing` until the journalist answers it; the
-tracked template is an example, never the active profile. The Readiness app starts
+tracked template is an example, never the active profile. The Splash studio starts
 `installer/configure.mjs` through Engine; its protected setup page writes the manifest-owned
 external `NEWSROOM.md` after validating it with this same reader, and OFFERS derivation
 (`POST /derive` runs newsroom-charter and shows every proposed value beside the declaration it was
@@ -110,7 +110,7 @@ Never dispatch the fixed Europe or Potomac proof cameras for an unrelated story.
 
 **Engine owns the production credential names and values.** `MAPTILER_KEY`,
 `MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
-by the Splash Readiness app. The journalist enters them only in its protected loopback setup page;
+by the Splash studio. The journalist enters them only in its protected loopback setup page;
 Engine validates and stores them through the operating-system credential broker, then hydrates only
 the closed operation that requires one. `resolveEnvKey` still accepts historical aliases when an
 explicit legacy root is inspected or run during migration — read-only compatibility input, not the
@@ -138,14 +138,14 @@ second managed installer. The shell wrapper does not create the stories root ahe
 missing root is created by adoption and removed if that transaction rolls back while empty.
 `scripts/splash-root.mjs`, `recordKey`, the root template, and the plaintext branch of
 `installer/configure.mjs` remain bounded legacy compatibility for an existing copied root; new setup
-uses the Readiness app and broker-backed controller.
+uses the Splash studio and broker-backed controller.
 
-## The Goose chooser is a view of the same gates
+## The localhost studio is a view of the same gates
 
-After the journalist confirms the exact Engine-inspected story path in the app session,
+After the journalist confirms the exact Engine-inspected story path in the studio session,
 À-la-carte reads only the current canonical gate and presents its reachable catalogue choices in
-stable order. Focus, filtering, details, setup links, cancellation, and app closure write nothing.
-An app-only Confirm must carry the observed story, catalogue, and capability revisions through the
-shared selection service; conflicts refresh instead of guessing. Changing publication format or
-treatment is a separate explicit rewind. If app-only tools are unavailable, keep the textual human
-gate rather than treating a model call as confirmation.
+stable order. Focus, filtering, details, setup links, and cancellation write nothing. Confirm must
+carry the observed story, catalogue, and capability revisions through the shared selection service;
+conflicts refresh instead of guessing. Changing publication format or treatment is a separate
+explicit rewind. If the studio page is unavailable, keep the textual human gate rather than treating
+a model call as confirmation.

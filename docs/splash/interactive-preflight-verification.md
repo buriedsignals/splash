@@ -7,8 +7,11 @@ initiative_prd: docs/splash/2026-08-14-interactive-preflight-and-visual-selectio
 
 # Splash interactive preflight and visual selection verification
 
-This is the durable closure record for the initiative. It remains after the implementation PRD is
-deleted. A row marked pending or blocked is not release evidence.
+**Current surface (2026-08-26):** Splash no longer ships an in-chat MCP App
+(`ui://` / `text/html;profile=mcp-app`). Readiness and visual selection run as
+a loopback HTTP studio opened in the local browser. Goose stdio MCP exposes
+`open_splash`; other runtimes run `apps/goose/studio/open.mjs`. Historical rows
+below remain measured evidence for the retired MCP App host contract.
 
 ## Compatibility and documentation baseline
 
@@ -18,13 +21,10 @@ fixture in these official sources:
 
 - [Goose MCP Apps tutorial](https://github.com/aaif-goose/goose/blob/main/documentation/docs/tutorials/building-mcp-apps.md): resources capability, `ui://` resource, and `text/html;profile=mcp-app`.
 - [MCP Apps specification](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx): app-only visibility and UI resource metadata.
-- [MCP Apps SDK](https://github.com/modelcontextprotocol/ext-apps): register one-shot handlers before
-  `App.connect()`, inspect `serverTools`/`openLinks` host capabilities, distinguish host tool-result
-  notifications from app-initiated `callServerTool`, and handle open-link denial separately from
-  transport failure. The current development lockfile resolves `@modelcontextprotocol/ext-apps`
-  1.7.5; this is dependency reproducibility for the adopted checkout, not a Splash release/source
-  pin. Its installed `App.openLink` contract returns `isError` for host denial and throws for
-  timeout or connection loss.
+- [MCP Apps SDK](https://github.com/modelcontextprotocol/ext-apps): historical host-contract
+  evidence for the retired in-chat MCP App. Splash no longer depends on
+  `@modelcontextprotocol/ext-apps`; the current development lockfile does not
+  include it.
 - [Goose MCP App renderer](https://github.com/aaif-goose/goose/blob/main/ui/desktop/src/components/McpApps/McpAppRenderer.tsx): current Desktop declares `openLinks` and connects `ui/open-link` to its confirmation handler.
 - [Goose extension configuration](https://github.com/aaif-goose/goose/blob/main/documentation/docs/getting-started/using-extensions.md): stdio extension YAML shape.
 - [Bun environment documentation](https://github.com/oven-sh/bun/blob/main/docs/runtime/environment-variables.mdx) and [Bun CLI parser](https://github.com/oven-sh/bun/blob/main/src/runtime/cli/Arguments.rs): `--no-env-file` and its position before the script argument.

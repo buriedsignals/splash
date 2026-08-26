@@ -4,10 +4,15 @@ type: feat
 status: in-progress
 date: 2026-08-14
 owner: Splash
-scope: Goose MCP App experience, credential onboarding, newsroom profile, visual selection, and storyboard confirmation
+scope: localhost Splash studio, Goose stdio MCP opener, credential onboarding, newsroom profile, visual selection, and storyboard confirmation
 ---
 
 # Splash interactive preflight and visual selection PRD
+
+**Current surface (2026-08-26):** the Goose MCP App view described below is
+retired. The journalist-facing UI is a loopback studio in the OS browser. Stdio
+MCP remains as a portable opener (`open_splash`); confirmation, setup, and
+selection stay on the local page.
 
 ## Summary
 

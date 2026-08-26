@@ -1,180 +1,192 @@
 import { describe, expect, it } from "bun:test";
-import { startCompatibilityApp } from "../compatibility/app-client.mjs";
+import { startSplashApp } from "../resources/splash-app.mjs";
 
 class FakeElement {
   dataset: Record<string, string> = {};
   textContent = "";
   disabled = false;
+  hidden = false;
+  id = "";
+  href = "";
+  target = "";
+  rel = "";
+  children: FakeElement[] = [];
   listeners = new Map<string, Array<(event: any) => unknown>>();
 
   addEventListener(name: string, listener: (event: any) => unknown) {
     this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener]);
   }
 
-  async dispatch(name: string, event: any = {}) {
-    await Promise.all((this.listeners.get(name) ?? []).map((listener) => listener(event)));
+  setAttribute(name: string, value: string) {
+    this.dataset[name] = value;
   }
+
+  append(...nodes: FakeElement[]) {
+    this.children.push(...nodes);
+  }
+
+  replaceChildren(...nodes: FakeElement[]) {
+    this.children = nodes;
+  }
+
+  focus() {}
 
   async click() {
     if (this.disabled) return;
-    await this.dispatch("click");
+    await Promise.all(
+      (this.listeners.get("click") ?? []).map((listener) => listener({})),
+    );
   }
 }
 
 class FakeDocument {
-  elements = new Map([
-    ["#status", new FakeElement()],
-    ["#detail", new FakeElement()],
+  elements = new Map<string, FakeElement>([
+    ["#announcement", new FakeElement()],
     ["#refresh", new FakeElement()],
-    ["#open-link", new FakeElement()],
+    ["#setup", new FakeElement()],
+    ["#nominate-story", new FakeElement()],
+    ["#story-path", new FakeElement()],
+    ["#load-selection", new FakeElement()],
+    ["#choice-root", new FakeElement()],
+    ["#mode-a-la-carte", new FakeElement()],
+    ["#mode-storyboard", new FakeElement()],
+    ["#runtime-state", new FakeElement()],
+    ["#blockers", new FakeElement()],
+    ["#credentials", new FakeElement()],
+    ["#story-state", new FakeElement()],
+    ["#story-detail", new FakeElement()],
+    ["#choice-detail", new FakeElement()],
+    ["#pending-story", new FakeElement()],
   ]);
+  routes = [new FakeElement(), new FakeElement()];
+  panels = [new FakeElement(), new FakeElement()];
   listeners = new Map<string, Array<(event: any) => unknown>>();
+
+  constructor() {
+    this.routes[0].dataset.route = "readiness";
+    this.routes[1].dataset.route = "choose";
+    this.panels[0].id = "readiness";
+    this.panels[1].id = "choose";
+    this.elements.set("[data-route]", this.routes[0]);
+    this.elements.set("[data-panel]", this.panels[0]);
+  }
 
   querySelector(selector: string) {
     return this.elements.get(selector) ?? null;
   }
 
+  querySelectorAll(selector: string) {
+    if (selector === "[data-route]") return this.routes;
+    if (selector === "[data-panel]") return this.panels;
+    return [];
+  }
+
+  createElement(name = "div") {
+    const node = new FakeElement();
+    node.id = name;
+    return node;
+  }
+
   addEventListener(name: string, listener: (event: any) => unknown) {
     this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener]);
   }
-
-  async keydown(key: string, { altKey = true, repeat = false } = {}) {
-    let prevented = false;
-    const event = { altKey, key, repeat, preventDefault: () => { prevented = true; } };
-    await Promise.all((this.listeners.get("keydown") ?? []).map((listener) => listener(event)));
-    return prevented;
-  }
 }
 
-type FakeOptions = {
-  hostCapabilities?: Record<string, unknown>;
-  connectError?: Error;
-  connectResult?: unknown;
-  refresh?: unknown | Error;
-  openLink?: unknown | Error;
-};
-
-function appClass(options: FakeOptions = {}) {
-  return class FakeApp {
-    static instance: FakeApp;
-    ontoolresult?: (result: any) => void;
-    refreshCalls = 0;
-    openLinkCalls = 0;
-
-    constructor() {
-      FakeApp.instance = this;
-    }
-
-    async connect() {
-      if (options.connectError) throw options.connectError;
-      if (options.connectResult) this.ontoolresult?.(options.connectResult);
-    }
-
-    getHostCapabilities() {
-      return options.hostCapabilities ?? { openLinks: {}, serverTools: {} };
-    }
-
-    async callServerTool() {
-      this.refreshCalls += 1;
-      if (options.refresh instanceof Error) throw options.refresh;
-      return options.refresh ?? { content: [{ type: "text", text: "Fresh status" }] };
-    }
-
-    async openLink() {
-      this.openLinkCalls += 1;
-      if (options.openLink instanceof Error) throw options.openLink;
-      return options.openLink ?? {};
-    }
+function statusFixture() {
+  return {
+    schemaVersion: "splash-app/v2",
+    runtime: { status: "ready" },
+    newsroom: { decision: "missing" },
+    readiness: { ready: false, checks: [], blockers: [] },
+    credentials: [],
+    story: { status: "unbound", descriptor: null },
   };
 }
 
-function text(documentRef: FakeDocument, selector: string) {
-  return documentRef.querySelector(selector)!.textContent;
-}
-
-describe("compatibility app client behavior", () => {
-  it("handles host results and manual refresh success and error", async () => {
+describe("Splash studio browser client", () => {
+  it("refuses to start without a capability hash", async () => {
     const documentRef = new FakeDocument();
-    const AppClass = appClass();
-    const app = await startCompatibilityApp({ AppClass, documentRef } as any) as InstanceType<typeof AppClass>;
-    app.ontoolresult?.({ content: [{ type: "text", text: "Host result" }] });
-    expect(text(documentRef, "#detail")).toBe("Host result");
+    await startSplashApp({
+      documentRef,
+      windowRef: {
+        location: { hash: "", pathname: "/" },
+        history: { replaceState() {} },
+        addEventListener() {},
+        open() {
+          return null;
+        },
+      } as any,
+      api: async () => {
+        throw new Error("api must not run");
+      },
+    });
+    expect(documentRef.querySelector("#announcement")!.textContent).toContain(
+      "expired",
+    );
+    expect(documentRef.querySelector("#refresh")!.disabled).toBe(true);
+  });
+
+  it("opens a studio session over fetch and refreshes status", async () => {
+    const calls: string[] = [];
+    const documentRef = new FakeDocument();
+    const windowRef = {
+      location: { hash: "#studio-capability", pathname: "/" },
+      history: {
+        replaceState() {
+          windowRef.location.hash = "";
+        },
+      },
+      addEventListener() {},
+      open() {
+        return { closed: false };
+      },
+    };
+    await startSplashApp({
+      documentRef,
+      windowRef: windowRef as any,
+      api: async (path: string) => {
+        calls.push(path);
+        if (path === "/session") return { ok: true };
+        if (path === "/api/status") return statusFixture();
+        throw new Error(`unexpected ${path}`);
+      },
+    });
+    expect(calls).toEqual(["/session", "/api/status"]);
+    expect(documentRef.querySelector("#refresh")!.disabled).toBe(false);
+    expect(documentRef.querySelector("#announcement")!.textContent).toContain(
+      "ready",
+    );
     await documentRef.querySelector("#refresh")!.click();
-    expect(text(documentRef, "#detail")).toBe("Fresh status");
-
-    const failedDocument = new FakeDocument();
-    const FailedApp = appClass({ refresh: new Error("broker unavailable") });
-    await startCompatibilityApp({ AppClass: FailedApp, documentRef: failedDocument } as any);
-    await failedDocument.querySelector("#refresh")!.click();
-    expect(text(failedDocument, "#detail")).toBe("Manual refresh failed: broker unavailable");
+    expect(calls).toEqual(["/session", "/api/status", "/api/status"]);
   });
 
-  it("does not overwrite a host result delivered during connect", async () => {
+  it("opens setup through the local page, not an MCP tool name", async () => {
+    const calls: string[] = [];
     const documentRef = new FakeDocument();
-    const AppClass = appClass({ connectResult: { content: [{ type: "text", text: "Initial tool result" }] } });
-    await startCompatibilityApp({ AppClass, documentRef } as any);
-    expect(text(documentRef, "#detail")).toBe("Initial tool result");
-  });
-
-  it("keeps textual refresh available when app-to-tool support is missing", async () => {
-    const documentRef = new FakeDocument();
-    const AppClass = appClass({ hostCapabilities: { openLinks: {} } });
-    await startCompatibilityApp({ AppClass, documentRef } as any);
-    expect(documentRef.querySelector("#refresh")!.disabled).toBe(true);
-    expect(text(documentRef, "#detail")).toContain("did not declare app-to-tool support");
-  });
-
-  it("keeps missing capability, denial, and host error distinct", async () => {
-    const missingDocument = new FakeDocument();
-    const MissingApp = appClass({ hostCapabilities: {} });
-    await startCompatibilityApp({ AppClass: MissingApp, documentRef: missingDocument } as any);
-    expect(missingDocument.querySelector("#open-link")!.disabled).toBe(true);
-    expect(text(missingDocument, "#detail")).toContain("did not declare open-link support");
-
-    const acceptedDocument = new FakeDocument();
-    const AcceptedApp = appClass();
-    await startCompatibilityApp({ AppClass: AcceptedApp, documentRef: acceptedDocument } as any);
-    await acceptedDocument.querySelector("#open-link")!.click();
-    expect(text(acceptedDocument, "#detail")).toContain("accepted the loopback link request");
-
-    const deniedDocument = new FakeDocument();
-    const DeniedApp = appClass({ openLink: { isError: true } });
-    await startCompatibilityApp({ AppClass: DeniedApp, documentRef: deniedDocument } as any);
-    await deniedDocument.querySelector("#open-link")!.click();
-    expect(text(deniedDocument, "#detail")).toContain("denied the link request");
-
-    const errorDocument = new FakeDocument();
-    const ErrorApp = appClass({ openLink: new Error("transport lost") });
-    await startCompatibilityApp({ AppClass: ErrorApp, documentRef: errorDocument } as any);
-    await errorDocument.querySelector("#open-link")!.click();
-    expect(text(errorDocument, "#detail")).toBe("The host returned an open-link error: transport lost");
-  });
-
-  it("does not let late host results erase a user action", async () => {
-    const documentRef = new FakeDocument();
-    const AppClass = appClass({ openLink: { isError: true } });
-    const app = await startCompatibilityApp({ AppClass, documentRef } as any) as InstanceType<typeof AppClass>;
-    await documentRef.querySelector("#open-link")!.click();
-    app.ontoolresult?.({ content: [{ type: "text", text: "Late host result" }] });
-    expect(text(documentRef, "#detail")).toContain("denied the link request");
-  });
-
-  it("disables actions after connect failure", async () => {
-    const documentRef = new FakeDocument();
-    const AppClass = appClass({ connectError: new Error("handshake failed") });
-    await startCompatibilityApp({ AppClass, documentRef } as any);
-    expect(text(documentRef, "#detail")).toBe("The MCP App bridge did not initialize: handshake failed");
-    expect(documentRef.querySelector("#refresh")!.disabled).toBe(true);
-    expect(documentRef.querySelector("#open-link")!.disabled).toBe(true);
-  });
-
-  it("runs each Alt shortcut once and ignores key repeat", async () => {
-    const documentRef = new FakeDocument();
-    const AppClass = appClass();
-    const app = await startCompatibilityApp({ AppClass, documentRef } as any) as InstanceType<typeof AppClass>;
-    expect(await documentRef.keydown("r")).toBe(true);
-    expect(app.refreshCalls).toBe(1);
-    expect(await documentRef.keydown("r", { repeat: true })).toBe(false);
-    expect(app.refreshCalls).toBe(1);
+    const opened: string[] = [];
+    await startSplashApp({
+      documentRef,
+      windowRef: {
+        location: { hash: "#studio-capability", pathname: "/" },
+        history: { replaceState() {} },
+        addEventListener() {},
+      } as any,
+      openUrl: (url: string) => {
+        opened.push(url);
+        return { closed: false };
+      },
+      api: async (path: string) => {
+        calls.push(path);
+        if (path === "/session") return { ok: true };
+        if (path === "/api/status") return statusFixture();
+        if (path === "/api/setup/start")
+          return { status: "ready", setupUrl: "http://127.0.0.1:9/#setup" };
+        throw new Error(`unexpected ${path}`);
+      },
+    });
+    await documentRef.querySelector("#setup")!.click();
+    expect(calls).toContain("/api/setup/start");
+    expect(calls).not.toContain("start_splash_setup");
+    expect(opened).toEqual(["http://127.0.0.1:9/#setup"]);
   });
 });
