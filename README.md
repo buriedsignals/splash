@@ -118,26 +118,41 @@ browser, and installed runtime before hydrating `MAPTILER_KEY`.
 
 ## Install
 
-Journalist install is Indicator Labs on Mac or Windows. Join at
-[buriedsignals.com/join](https://buriedsignals.com/join). Secrets enter
-through the operating-system credential prompt, not a website form.
+Managed journalist install is Indicator Labs on Mac or Windows. Join at
+[buriedsignals.com/join](https://buriedsignals.com/join). Indicator Labs adds
+guided setup, credential management, repair, and automatic updates.
 
-Contributor / development checkout:
+Agent-led manual installation uses the same Engine through its public signed
+standalone release. Fetch the JSON response for the host platform:
+
+```text
+https://navigator.indicator.media/api/artifacts/bootstrap/bsig/<platform>
+```
+
+`<platform>` is `darwin-arm64`, `darwin-amd64`, `linux-arm64`,
+`linux-amd64`, or `windows-amd64`. Download the returned archive, checksum,
+signature, and public key; verify both SHA-256 and Minisign before extracting
+or executing `bsig`. Then run `bsig catalog sync`.
+
+Windows 11 amd64 is a **prepared host**: Engine does not install Goose Desktop,
+Git, Bun, Docker, or Node. Missing tools fail at plan time. An agent installs
+the catalog-pinned release with `bsig plan install splash`, reviews the emitted
+plan, and applies that exact `plan.json`. After doctor is green, launch Goose
+from the Start menu. Do not run `install.sh` on Windows.
+
+Contributor / development checkout on macOS or Linux:
 
 ```bash
 git clone https://github.com/buriedsignals/splash.git
 cd splash
 bun install --frozen-lockfile
-bash installer/install.sh
+bash installer/install.sh --bsig /absolute/path/to/bsig
 ```
 
-`installer/install.sh` runs one Engine apply transaction: it adopts the
-checkout, installs the complete dependency and browser payload, runs a
-no-value smoke check, projects flat skill links into `~/.agents/skills/`, and
-registers Splash with Goose when Goose is present. Any failure rolls back the
-transaction. Stories land under `~/.local/share/splash-stories/` and newsroom
-configuration at `~/.config/splash/NEWSROOM.md`; use `--root` or
-`--stories-root` for explicit absolute paths.
+`installer/install.sh` adopts the checkout through one Engine transaction,
+installs the dependency and browser payload, runs the no-value smoke check,
+projects the shipped skills, and registers Splash with Goose when present.
+Stories and newsroom configuration remain outside the replaceable checkout.
 
 For the canonical manifest, runtime, data-path, and Goose-registration health
 check, run `bsig doctor --product splash`.
