@@ -3258,7 +3258,7 @@ Stage.register(
 
     const GALLEY_COL = 400; // the measure of one web, in texels
     const GALLEY_GAP = 16; // dead paper between two columns of the atlas
-    const GALLEY_H = 3630; // one lap: eleven slots of 330
+    const GALLEY_H = 4400; // one lap: eleven slots, each its press's height
     const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
 
     function buildGalley() {
@@ -3296,137 +3296,526 @@ Stage.register(
       };
       const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
 
-      const SLOT = GALLEY_H / ARTICLES.length;
-      const FS = 11,
-        LH = R(FS * 1.5);
-
-      /* One paper, into one slot of one column. Clipped to the slot: a body
-       * that overruns is cut, which is what a galley does. */
-      const slot = (A, x0, top) => {
-        const M = 14,
-          meas = GALLEY_COL - M * 2,
-          left = x0 + M;
-        g.save();
-        g.beginPath();
-        g.rect(x0, top, GALLEY_COL, SLOT);
-        g.clip();
+      /* A cut. Not a photograph — a plate: at a galley's measure a halftone
+       * would only ever be a grey rectangle, so it is a lit gradient with a
+       * subject standing in it, and its caption under a hairline. The same
+       * reasoning the front page makes, at a quarter of the size. */
+      const cut = (x, y, w, h, caption) => {
+        /* Held well off black. The first version ran to #3a3a3a with a hard
+         * ellipse cut into it, and at a galley's size that is not a
+         * photograph — it is a censor's bar with an eye in it. A halftone on
+         * newsprint is a middle grey that never reaches either end, and its
+         * subject has no edge, so the subject is a soft radial and the ground
+         * it stands on stays in the middle of the range. */
+        const grd = g.createLinearGradient(x, y, x + w * 0.5, y + h);
+        grd.addColorStop(0.0, "#b4b0a8");
+        grd.addColorStop(0.5, "#6e6a64");
+        grd.addColorStop(1.0, "#948f87");
+        g.fillStyle = grd;
+        g.fillRect(R(x), R(y), R(w), R(h));
+        const sub = g.createRadialGradient(
+          x + w * 0.38,
+          y + h * 0.52,
+          h * 0.04,
+          x + w * 0.38,
+          y + h * 0.52,
+          h * 0.52,
+        );
+        sub.addColorStop(0.0, "rgba(232,229,222,.82)");
+        sub.addColorStop(0.55, "rgba(232,229,222,.24)");
+        sub.addColorStop(1.0, "rgba(232,229,222,0)");
+        g.fillStyle = sub;
+        g.fillRect(R(x), R(y), R(w), R(h));
+        const dk = g.createRadialGradient(
+          x + w * 0.78,
+          y + h * 0.72,
+          h * 0.05,
+          x + w * 0.78,
+          y + h * 0.72,
+          h * 0.6,
+        );
+        dk.addColorStop(0.0, "rgba(38,36,33,.55)");
+        dk.addColorStop(1.0, "rgba(38,36,33,0)");
+        g.fillStyle = dk;
+        g.fillRect(R(x), R(y), R(w), R(h));
         g.fillStyle = "#111111";
-
-        let y = top + 13;
-        rule(left, y, meas, 2);
-        y += 20;
-
-        // the masthead
-        g.textAlign = "left";
-        const name = A.paper.toUpperCase();
-        const ms = fit(name, "700", 20, meas * 0.86);
-        g.font = "700 " + ms + "px " + SERIF;
-        track(name, x0 + GALLEY_COL / 2, y, ms * 0.09);
-        y += 8;
-        rule(left, y, meas, 1);
-        y += 13;
-
-        // dateline and byline, one line, ends of the measure
-        const ds = fit(A.date, "400", 8.5, meas * 0.46);
-        g.font = ds + "px " + SERIF;
-        g.fillText(A.date, left, y);
-        g.textAlign = "right";
-        const bs = fit(A.by, "400", 8.5, meas * 0.5);
-        g.font = bs + "px " + SERIF;
-        g.fillText(A.by, left + meas, y);
-        y += 7;
-        rule(left, y, meas, 1);
-        y += 24;
-
-        // the headline
-        g.textAlign = "center";
-        let hs = 27;
-        for (const l of A.head) hs = Math.min(hs, fit(l, "700", 27, meas));
-        g.font = "700 " + hs + "px " + SERIF;
-        for (const l of A.head) {
-          g.fillText(l, x0 + GALLEY_COL / 2, y);
-          y += R(hs * 1.08);
-        }
-        y += 4;
-
-        // the deck
-        const ss = fit(A.sub, "400", 11, meas * 0.95);
-        g.font = ss + "px " + SERIF;
-        g.fillText(A.sub, x0 + GALLEY_COL / 2, y);
-        y += 10;
-        rule(x0 + GALLEY_COL / 2 - meas * 0.18, y, meas * 0.36, 1);
-        y += 20;
-
-        /* The body, one measure, justified except on the last line of a
-         * paragraph — the same rule the front page sets by, so the two read as
-         * the same press. */
-        const bodyFont = FS + "px " + SERIF;
-        g.textAlign = "left";
-        const bot = top + SLOT - 12;
-        let first = true;
-        for (const blk of A.body) {
-          if (y > bot) break;
-          if (blk.h) {
-            if (first) continue;
-            let ts = FS * 1.02;
-            for (;;) {
-              g.font = "700 " + R(ts) + "px " + SERIF;
-              if (g.measureText(blk.t).width <= meas || ts < 6) break;
-              ts *= 0.93;
+        let yy = y + h + 8;
+        if (caption) {
+          g.fillRect(R(x), R(y + h + 2), R(w), 1);
+          g.font = "7.5px " + SERIF;
+          g.textAlign = "left";
+          const words = caption.split(/\s+/);
+          let line = [];
+          for (const t of words) {
+            line.push(t);
+            if (g.measureText(line.join(" ")).width > w) {
+              line.pop();
+              g.fillText(line.join(" "), x, yy);
+              yy += 10;
+              line = [t];
             }
-            g.textAlign = "center";
-            g.fillText(blk.t, x0 + GALLEY_COL / 2, y);
-            g.textAlign = "left";
-            y += LH * 1.5;
+          }
+          if (line.length) {
+            g.fillText(line.join(" "), x, yy);
+            yy += 10;
+          }
+        }
+        return yy;
+      };
+
+      /* The body of an article, into one or two columns of a slot. Justified
+       * except on the last line of a paragraph — the rule the front page sets
+       * by, so the two read as the same press. Stops at the foot of the slot,
+       * which is what a galley does: the article is cut, not shrunk. */
+      const flowCol = (A, o) => {
+        const { left, meas, top, bot, fs, lh, cols, drop, plate } = o;
+        const gut = cols > 1 ? 9 : 0;
+        const colW = (meas - gut * (cols - 1)) / cols;
+        const bodyFont = fs + "px " + SERIF;
+
+        // break the whole article once, then pour it into the columns
+        const lines = [];
+        let firstPara = true,
+          started = false;
+        const DROPN = 3;
+        let dropCh = "",
+          dropW = 0,
+          dropSize = 0;
+        if (drop) {
+          const b0 = A.body.find((b) => !b.h);
+          dropCh = b0 ? b0.t.charAt(0) : "";
+          dropSize = R(lh * DROPN * 0.8);
+          g.font = "700 " + dropSize + "px " + SERIF;
+          dropW = g.measureText(dropCh).width + fs * 0.22;
+        }
+        for (const blk of A.body) {
+          if (blk.h) {
+            if (started) lines.push({ head: true, text: blk.t });
             continue;
           }
-          first = false;
+          started = true;
           g.font = bodyFont;
-          const ws = blk.t.split(/\s+/).filter(Boolean);
+          let ws = blk.t.split(/\s+/).filter(Boolean);
+          if (firstPara && drop && ws.length)
+            ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
           let i = 0,
-            head = true;
-          while (i < ws.length && y <= bot) {
-            const indent = head ? FS * 1.1 : 0;
+            first = true;
+          while (i < ws.length) {
+            const di = drop && lines.length < DROPN ? dropW : 0;
+            const indent = (first && !drop ? fs * 1.05 : 0) + di;
             const line = [];
             let w = indent;
             while (i < ws.length) {
               const add = g.measureText((line.length ? " " : "") + ws[i]).width;
-              if (w + add > meas && line.length) break;
+              if (w + add > colW && line.length) break;
               line.push(ws[i]);
               w += add;
               i++;
             }
-            const last = i >= ws.length;
-            if (last || line.length === 1) {
-              g.fillText(line.join(" "), left + indent, y);
+            lines.push({ words: line, indent, justify: i < ws.length });
+            first = false;
+          }
+          firstPara = false;
+        }
+
+        let li = 0;
+        for (let c = 0; c < cols && li < lines.length; c++) {
+          const x0 = left + c * (colW + gut);
+          // the hairline between two columns, which is most of what says
+          // "newspaper" at this size
+          if (c > 0)
+            g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(bot - top + fs));
+          let ly = top;
+          while (ly < bot && li < lines.length) {
+            if (
+              plate &&
+              x0 + colW > plate.x + 1 &&
+              x0 < plate.x + plate.w - 1 &&
+              ly > plate.y &&
+              ly - fs < plate.y + plate.h
+            ) {
+              ly += lh;
+              continue;
+            }
+            const L = lines[li++];
+            if (L.head) {
+              let ts = fs * 1.02;
+              for (;;) {
+                g.font = "700 " + R(ts) + "px " + SERIF;
+                if (g.measureText(L.text).width <= colW || ts < 5.5) break;
+                ts *= 0.93;
+              }
+              g.textAlign = "center";
+              g.fillText(L.text, x0 + colW / 2, ly + fs * 0.2);
+              g.textAlign = "left";
+              ly += lh * 1.5;
+              continue;
+            }
+            g.font = bodyFont;
+            if (!L.justify || L.words.length === 1) {
+              g.fillText(L.words.join(" "), x0 + L.indent, ly);
             } else {
-              const wd = line.map((t) => g.measureText(t).width);
+              const wd = L.words.map((t) => g.measureText(t).width);
               const gap =
-                (meas - indent - wd.reduce((a, b) => a + b, 0)) / (line.length - 1);
-              let cx = left + indent;
-              for (let k = 0; k < line.length; k++) {
-                g.fillText(line[k], cx, y);
+                (colW - L.indent - wd.reduce((a, b) => a + b, 0)) /
+                (L.words.length - 1);
+              let cx = x0 + L.indent;
+              for (let k = 0; k < L.words.length; k++) {
+                g.fillText(L.words[k], cx, ly);
                 cx += wd[k] + gap;
               }
             }
-            head = false;
-            y += LH;
+            ly += lh;
           }
         }
-        g.restore();
+        if (drop && dropCh) {
+          g.font = "700 " + dropSize + "px " + SERIF;
+          g.fillText(dropCh, left, top + fs + lh * (DROPN - 1) * 0.98);
+        }
       };
+
+      /* The five presses, set to a galley's measure.
+       *
+       * What separates them here is what separates them on a page, and none of
+       * it is decoration: where the name sits and how it is set, what the rules
+       * do, whether the headline is centred or ranged left and in which face,
+       * and what furniture the press carries at all — a black band, a price
+       * line, a boxed dateline, a drop cap, a plate. Set the same article in
+       * all five and it reads as five different papers, which is the point of
+       * having five.
+       *
+       * Each is handed the foot of its own slot and fills it. The slots are not
+       * the same height: a monthly is air and a penny paper is dense, and equal
+       * slots were exactly what made the first web read as a machine rather
+       * than as newsprint.
+       */
+      const PRESS = {
+        // one name across the top under a double rule, a centred headline, and
+        // a plate across the measure a few lines in
+        broadsheet(A, x0, top, H0) {
+          const M = 14,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          let y = top + 14;
+          rule(left, y, meas, 3);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 22;
+          g.textAlign = "center";
+          const ms = fit(A.paper, "700", 23, meas * 0.9);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, mid, y);
+          y += 8;
+          rule(left, y, meas, 1);
+          y += 12;
+          g.font = "8px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 24;
+          g.textAlign = "center";
+          let hs = 25;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 25, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.08);
+          }
+          y += 3;
+          const ss = fit(A.sub, "400", 10, meas * 0.95);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 9;
+          rule(mid - meas * 0.16, y, meas * 0.32, 1);
+          y += 18;
+          g.textAlign = "left";
+          const fs = 10,
+            lh = 14;
+          const plate = A.cut
+            ? { x: left, w: meas, y: y + lh * 5, h: 54 }
+            : null;
+          if (plate) {
+            const after = cut(plate.x, plate.y, plate.w, plate.h, A.cap);
+            plate.h = after - plate.y;
+          }
+          flowCol(A, {
+            left,
+            meas,
+            top: y + fs,
+            bot: top + H0 - 10,
+            fs,
+            lh,
+            cols: 1,
+            plate,
+          });
+        },
+
+        // the name reversed out of a black band, one line of type as big as it
+        // will go ranged left, a plate across the measure, and a black foot
+        tabloid(A, x0, top, H0) {
+          const M = 12,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          const band = 42;
+          g.fillStyle = "#111111";
+          g.fillRect(R(x0), R(top), GALLEY_COL, band);
+          g.fillStyle = "#ffffff";
+          g.textAlign = "center";
+          const name = A.paper.toUpperCase();
+          const ms = fit(name, "700", 30, meas * 0.96);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(name, x0 + GALLEY_COL / 2, top + R(band * 0.72));
+          g.fillStyle = "#111111";
+          let y = top + band + 16;
+          g.font = "8px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 6;
+          rule(left, y, meas, 2);
+          y += 32;
+          g.textAlign = "left";
+          let hs = 42;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 42, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 0.92);
+          }
+          y += 4;
+          const ss = fit(A.sub, "400", 11, meas);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 14;
+          if (A.cut) y = cut(left, y, meas, 62, A.cap) + 6;
+          flowCol(A, {
+            left,
+            meas,
+            top: y + 9,
+            bot: top + H0 - 22,
+            fs: 9,
+            lh: 12.5,
+            cols: 2,
+          });
+          g.fillStyle = "#111111";
+          g.fillRect(R(x0), R(top + H0 - 14), GALLEY_COL, 8);
+        },
+
+        // air. a small tracked name, a title set in the same face as the body,
+        // an italic line under it, a tracked byline, and a drop cap
+        monthly(A, x0, top, H0) {
+          const M = 34,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 26;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 10, meas * 0.7);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.42);
+          y += 9;
+          rule(mid - meas * 0.11, y, meas * 0.22, 1);
+          y += 34;
+          let hs = 26;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "400", 26, meas * 0.92));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.16);
+          }
+          y += 12;
+          const ss = fit(A.sub, "400", 10, meas * 0.86);
+          g.font = "italic " + ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 20;
+          const bs = 7.5;
+          g.font = bs + "px " + SERIF;
+          track(A.by, mid, y, bs * 0.5);
+          y += 26;
+          g.textAlign = "left";
+          const fs = 10,
+            lh = 15.5;
+          const plate =
+            A.cut === "square"
+              ? { x: left + meas * 0.42, w: meas * 0.58, y: y + lh * 6, h: 46 }
+              : null;
+          if (plate) cut(plate.x, plate.y, plate.w, plate.h, null);
+          flowCol(A, {
+            left,
+            meas,
+            top: y,
+            bot: top + H0 - 12,
+            fs,
+            lh,
+            cols: 1,
+            drop: true,
+            plate,
+          });
+        },
+
+        // six point and hairlines. a price between two rules, a deck that steps
+        // down a size a line at a time, and no plate: the presses of 1835 had
+        // none
+        penny(A, x0, top, H0) {
+          const M = 10,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          let y = top + 10;
+          rule(left, y, meas, 1);
+          y += 16;
+          g.textAlign = "center";
+          const ms = fit(A.paper, "700", 21, meas * 0.8);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, mid, y);
+          y += 7;
+          rule(left, y, meas, 3);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 11;
+          g.font = "7px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "center";
+          g.fillText("PRICE ONE PENNY", mid, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 5;
+          rule(left, y, meas, 1);
+          y += 20;
+          g.textAlign = "center";
+          // the deck steps down a size a line at a time, which is how a paper
+          // with no photographs held the top of its page
+          let hs = 19;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 19, meas));
+          for (const l of A.head) {
+            g.font = "700 " + R(hs) + "px " + SERIF;
+            g.fillText(l, mid, y);
+            y += R(hs * 1.12);
+            hs *= 0.84;
+          }
+          const ss = fit(A.sub, "400", 9, meas * 0.95);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 8;
+          rule(mid - meas * 0.2, y, meas * 0.4, 1);
+          y += 14;
+          g.textAlign = "left";
+          flowCol(A, {
+            left,
+            meas,
+            top: y,
+            bot: top + H0 - 10,
+            fs: 8,
+            lh: 11,
+            cols: 2,
+          });
+        },
+
+        // the name ranged left, the dateline boxed off to the right between two
+        // hairlines, and a heavy rule under both
+        rail(A, x0, top, H0) {
+          const M = 13,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          g.textAlign = "left";
+          const ms = fit(A.paper, "700", 20, meas * 0.6);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, left, top + 26);
+          const bx = left + meas * 0.62,
+            bw = meas * 0.38,
+            bt = top + 12,
+            bh = 20;
+          rule(bx, bt, bw, 1);
+          rule(bx, bt + bh, bw, 1);
+          g.textAlign = "right";
+          g.font = "7px " + SERIF;
+          g.fillText(A.date, left + meas, bt + 9);
+          g.fillText(A.by, left + meas, bt + 17);
+          let y = top + 34;
+          rule(left, y, meas, 2);
+          y += 26;
+          g.textAlign = "left";
+          let hs = 27;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "700", 27, meas * 0.94));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 1.05);
+          }
+          y += 3;
+          const ss = fit(A.sub, "400", 10, meas);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 8;
+          rule(left, y, meas * 0.34, 1);
+          y += 18;
+          const fs = 9.5,
+            lh = 13.5;
+          const plate =
+            A.cut === "left"
+              ? { x: left, w: meas * 0.52, y: y + lh * 3, h: 44 }
+              : null;
+          if (plate) cut(plate.x, plate.y, plate.w, plate.h, null);
+          flowCol(A, {
+            left,
+            meas,
+            top: y,
+            bot: top + H0 - 10,
+            fs,
+            lh,
+            cols: 1,
+            plate,
+          });
+        },
+      };
+
+      /* How tall a slot is, by press. A monthly is air and a penny paper is
+       * dense; giving them the same height is what made the first web read as
+       * a machine stamping identical blocks rather than as newsprint. The
+       * weights are normalised so a lap is exactly the texture's height,
+       * whatever they are — which is what keeps the loop seamless. */
+      const WEIGHT = {
+        broadsheet: 1.0,
+        tabloid: 1.3,
+        monthly: 1.22,
+        penny: 0.86,
+        rail: 1.0,
+      };
+      const wOf = (A) => WEIGHT[A.tpl] || 1;
+      const wSum = ARTICLES.reduce((a, A) => a + wOf(A), 0);
+      const unit = GALLEY_H / wSum;
 
       /* Three columns, three orders. ARTICLES.length is prime, so any stride
        * walks the whole list — and three different strides mean no two webs
-       * can ever be showing the same paper at the same height, however long
-       * the press runs. */
+       * can be showing the same paper at the same height, however long the
+       * press runs. The slot heights differ per press, so the three columns
+       * also stop breaking at the same places, which is the other half of not
+       * looking like a machine. */
       const STRIDE = [1, 4, 7],
         START = [0, 5, 9];
       for (let c = 0; c < 3; c++) {
         const x0 = c * (GALLEY_COL + GALLEY_GAP);
+        let y = 0;
         for (let k = 0; k < ARTICLES.length; k++) {
           const A = ARTICLES[(START[c] + k * STRIDE[c]) % ARTICLES.length];
-          slot(A, x0, k * SLOT);
+          const h = unit * wOf(A);
+          g.save();
+          g.beginPath();
+          g.rect(x0, y, GALLEY_COL, h);
+          g.clip();
+          g.fillStyle = "#111111";
+          (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h);
+          g.restore();
+          y += h;
         }
       }
       return cv;
