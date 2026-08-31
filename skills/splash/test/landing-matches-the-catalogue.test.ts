@@ -54,11 +54,11 @@ describe("the delivered landing page describes the authoritative inventories", (
     expect(readFileSync(landingPath, "utf8")).toBe(divergent);
   });
 
-  it("credits IMJ with the Scoutpost wordmark and the funder site", () => {
+  it("credits IMJ with its inline wordmark and the funder site", () => {
     const html = readFileSync(join(ROOT, "landing", "index.html"), "utf8");
     expect(html).toContain("https://www.imj-fjm.ch/");
-    expect(html).toContain('src="logo_imj_schwarz.svg"');
-    expect(html).toContain('alt="IMJ"');
+    expect(html).toContain('<g id="imj">');
+    expect(html).toContain('aria-label="Initiative for Media Innovation"');
     expect(html).not.toContain(
       "Splash was funded by the Innovationsfonds für multimedialen Journalismus.",
     );

@@ -21,6 +21,16 @@ export function formsOnPage(html) {
   )) {
     groups[skill] = [...(groups[skill] ?? []), form];
   }
+  if (Object.keys(groups).length > 0) return groups;
+
+  const familySkills = { Charts: "chart-beat", Maps: "map-beat" };
+  for (const [, family, forms] of html.matchAll(
+    /{\s*nom:\s*'(Charts|Maps)',\s*formes:\s*\[([\s\S]*?)\]\s*}/g,
+  )) {
+    groups[familySkills[family]] = [
+      ...forms.matchAll(/\[\s*'([^']+)'\s*,/g),
+    ].map(([, form]) => form);
+  }
   return groups;
 }
 
@@ -31,7 +41,15 @@ export function labelsThatDisagree(html) {
 }
 
 export function countsOnPage(html) {
-  return [...html.matchAll(/(\d+)\s+forms\b/g)].map(([, count]) => Number(count));
+  const counts = [...html.matchAll(/(\d+)\s+forms\b/g)].map(([, count]) =>
+    Number(count),
+  );
+  for (const [, count] of html.matchAll(
+    /<li class="lb(?:slot|tab)"[^>]*>[\s\S]*?<em>(\d+)<\/em><\/li>/g,
+  )) {
+    counts.push(Number(count));
+  }
+  return counts;
 }
 
 export function landingDrift({ html, catalogue }) {

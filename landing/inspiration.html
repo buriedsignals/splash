@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspiration — Splash</title>
+<meta name="description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://towumekminbldlabbyss.supabase.co" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===================================================================== *
+   * INFOVIZ — the inspiration gallery, in the Splash house style.
+   *
+   * Same tokens, same gestures, same rhythm as the landing: one gutter, one
+   * header band, three vertical steps, three radii. Nothing here invents its
+   * own measure.
+   *
+   * The one rule that shapes the whole page is the ink/paper alternation of
+   * the design system: a section that flips its ground flips its accent with
+   * it. Blue lives on paper only, amber on ink only. Sections run
+   * ink -> paper -> ink -> paper -> ink.
+   *
+   * No WebGL. The landing carries a sculpture because it is a landing; this
+   * is a tool, and a shader behind a search field steals the click. The
+   * coherence is carried by type, colour and gesture.
+   * ===================================================================== */
+  :root { --ink:#14141c; --paper:#edeae3; --table:#e6e2d9; --blue:#1a2ffb; --amber:#f2b13c;
+          --D:'Bricolage Grotesque',Helvetica,sans-serif;
+          --C:'Space Grotesk',Helvetica,sans-serif;
+          --gut: clamp(22px, 2.4vw, 40px);      /* side margin, everywhere */
+          --bar: clamp(54px, 6vh, 72px);        /* the header band */
+          --vs:  clamp(88px, 13vh, 168px);      /* a section's breathing room */
+          --vs-s: clamp(40px, 6vh, 76px);       /* half a breath */
+          --max: 1600px;
+          --rad-l: clamp(12px, 1.4vw, 28px);   /* what floats */
+          --rad:   clamp(9px, .8vw, 14px);     /* what rests */
+          --rad-s: 7px; }                      /* what you touch */
+
+  *{box-sizing:border-box}
+  /* `hidden` is an ATTRIBUTE, and the UA sheet gives it `display:none` at the
+     lowest possible specificity: any class rule setting a display wins over
+     it. Half the elements here are hidden at rest AND laid out with flex —
+     the quota, the load-more, both forms — so without this the attribute
+     silently does nothing, and an empty amber gauge sits under the hero. */
+  [hidden]{display:none!important}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+  body{margin:0;background:var(--ink);color:var(--ink);font-family:var(--C);
+       font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0;font-family:var(--D);font-weight:300;letter-spacing:-.03em;line-height:1.02}
+  img{max-width:100%;display:block}
+
+  /* THE HEADER IS THE LANDING'S, and the wordmark is the point of it: SPLASH
+     is set in the DISPLAY face at 22px, in caps and lower case, while
+     everything beside it is 11px mono caps. It is the one word on the site
+     that is a name rather than a label, and setting it like a label — which
+     is what these pages were doing — files the brand under its own chrome.
+
+     The nav carries no active state and that is the landing's choice, kept:
+     the one item that is marked is the one that ASKS for something, and it is
+     marked by a dashed rule rather than by weight. A second marked item would
+     compete with it, and on a bar of three that is a real cost. The current
+     page is said in `aria-current`, which is where it belongs. */
+  header{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+         justify-content:space-between;align-items:center;height:var(--bar);
+         padding:0 var(--gut);color:#fff;
+         font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.15em;
+         text-transform:uppercase;mix-blend-mode:difference}
+  header a{color:inherit;text-decoration:none;transition:opacity .25s ease}
+  header a:hover{opacity:.62}
+  .wordmark{font-family:var(--D);font-weight:800;font-size:22px;
+            letter-spacing:-.035em;text-transform:none;line-height:1}
+  header .hnav{display:flex;gap:26px;align-items:center}
+  header .hnav a{white-space:nowrap}
+  /* The dashed rule is the call to action's whole signal. Five pixels of
+     offset because at three it reads as a strikethrough on 11px caps. */
+  header .hnav a.cta{text-decoration:underline;text-decoration-style:dashed;
+                     text-underline-offset:5px}
+
+  /* ---- THE MENU ------------------------------------------------------
+     The bar cannot hold three mentions and a 22px wordmark on a 390px frame,
+     so the shared header hides them — which left the phone with no way to
+     reach the other pages at all. It gets a control instead of a deletion.
+     The button lives INSIDE `.hnav` so the right-hand group stays one object;
+     as a separate child of the header it would have been spread out by the
+     bar's `space-between`. */
+  /* The negative margin puts the WORD on the gutter, not the padding that
+     makes it a thumb-sized target. */
+  .hmenu{display:none;background:none;border:0;cursor:pointer;color:inherit;
+         font:inherit;letter-spacing:inherit;text-transform:inherit;
+         padding:14px 3px;margin-right:-3px}
+
+  /* The panel is its own fixed layer ABOVE the header, so it escapes the
+     bar's difference blend: a panel painted through that filter would invert
+     against its own ink and neither the words nor the ground would be the
+     colour they were chosen to be. */
+  .menu{position:fixed;inset:0;z-index:90;background:var(--ink);color:var(--paper);
+        display:flex;flex-direction:column;justify-content:center;
+        gap:clamp(24px,4.4vh,44px);
+        padding:calc(var(--bar) + var(--vs-s)) var(--gut) var(--vs-s);
+        opacity:0;transition:opacity .3s ease}
+  .menu:focus{outline:none}
+  .menu.open{opacity:1}
+  .menu nav{display:flex;flex-direction:column}
+  .menu nav a{display:flex;align-items:center;gap:14px;
+              color:inherit;text-decoration:none;
+              font-family:var(--D);font-weight:300;letter-spacing:-.03em;
+              line-height:1.02;font-size:clamp(30px,9vw,54px);
+              padding:clamp(15px,2.6vh,22px) 0;
+              border-bottom:1px solid rgba(237,234,227,.14);
+              opacity:0;transform:translateY(26px)}
+  .menu nav a:first-child{border-top:1px solid rgba(237,234,227,.14)}
+  /* The square is the page's own eyebrow mark, reused: the current page is
+     said by the same sign here as everywhere else on the site. */
+  .menu nav a i{width:9px;height:9px;flex:0 0 auto;background:var(--amber)}
+  /* The arrow is a MARK, not a word: set at the link's own size it was drawn
+     taller than the caps it follows and read as a fourth letterform. It keeps
+     its own scale, and pulls back the flex gap it inherited as an item. */
+  .menu nav a em{font-style:normal;font-size:.44em;opacity:.55;margin-left:-5px}
+  /* The three read as one set: same face, same rule, same rank. The call was
+     an amber button here, which made it a different KIND of thing from its
+     two neighbours — a panel of three destinations does not need one of them
+     shouting, the bar behind it already carries the call. */
+  .menu.open nav a{opacity:1;transform:none;
+    transition:opacity .45s ease,transform .6s cubic-bezier(.16,.84,.3,1)}
+  .menu.open nav a:nth-child(1){transition-delay:.06s}
+  .menu.open nav a:nth-child(2){transition-delay:.13s}
+  .menu.open nav a:nth-child(3){transition-delay:.2s}
+  @media (prefers-reduced-motion:reduce){
+    .menu,.menu.open,.menu nav a{transition:none}
+    .menu nav a{opacity:1;transform:none}
+  }
+  .mclose{position:absolute;top:0;right:var(--gut);height:var(--bar);
+          display:flex;align-items:center;padding:0 2px;
+          background:none;border:0;cursor:pointer;color:var(--paper);
+          font-family:var(--C);font-size:11px;font-weight:500;
+          letter-spacing:.15em;text-transform:uppercase;opacity:.6}
+  .mclose:hover,.mclose:focus-visible{opacity:1}
+
+  /* The arrival. Every element rises 58px as it reveals, in reading order.
+     The curve leaves fast and brakes long — that is what gives the weight,
+     more than the duration does. */
+  @keyframes riseC{from{opacity:0;transform:translateY(58px)}
+                   to{opacity:1;transform:none}}
+  .rise{opacity:0;animation:riseC 1.05s cubic-bezier(.16,.84,.3,1) var(--d,0s) both}
+  @media (prefers-reduced-motion:reduce){ .rise{animation:none;opacity:1} }
+
+  /* The eyebrow, one shape for the whole page: a 7px square then the label in
+     mono caps. The square is NOT rounded — it is a sign, not an object, and a
+     rounded 7px square is a smudge. Its colour is the section's accent. */
+  .eye{display:flex;align-items:center;gap:9px;font-family:var(--C);
+       font-size:11.5px;font-weight:500;letter-spacing:.2em;
+       text-transform:uppercase;opacity:.6}
+  .eye i{width:7px;height:7px;flex:0 0 auto;background:currentColor}
+  .on-ink .eye i{background:var(--amber)}
+  .on-paper .eye i{background:var(--blue)}
+
+  /* One button, two grounds. The accent follows the ground, so the same class
+     is amber on ink and blue on paper and never both. */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+       padding:13px 20px;border:0;cursor:pointer;text-decoration:none;
+       font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.14em;
+       text-transform:uppercase;border-radius:var(--rad-s);
+       transition:filter .2s ease,transform .2s ease,opacity .2s ease}
+  .on-ink .btn{background:var(--amber);color:var(--ink)}
+  .on-paper .btn{background:var(--blue);color:#fff}
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none}
+  .btn.ghost{background:transparent}
+  .on-ink .btn.ghost{border:1px solid rgba(237,234,227,.26);color:var(--paper)}
+  .on-paper .btn.ghost{border:1px solid rgba(20,20,28,.24);color:var(--ink)}
+
+  .on-ink{background:var(--ink);color:var(--paper)}
+  .on-paper{background:var(--paper);color:var(--ink)}
+  section{position:relative}
+
+  /* ===================================================================
+     THE HERO — ink.
+
+     Not the landing's full window. This page is a gallery, and a hero that
+     takes the whole frame buries the first story below the fold; at 82vh the
+     first row peeks and the page reads as what it is. The search field is the
+     hero's GESTURE — it sits where the landing puts its two buttons, and it
+     is written as a rule with a word on it, not as a boxed input. A box would
+     be the only chrome-looking object on the page.
+     =================================================================== */
+  .hero{min-height:clamp(500px,82vh,900px);display:flex;flex-direction:column;
+        justify-content:center;gap:clamp(26px,4vh,48px);
+        padding:calc(var(--bar) + var(--vs-s)) var(--gut) var(--vs-s)}
+  .hero>*{width:100%;max-width:var(--max);margin:0 auto}
+  /* `margin:0` is written again HERE and it is not redundant: `.hero>*` sets
+     `margin:0 auto` and outranks the `h1,h2,h3` reset, so the title — the one
+     child with a max-width of its own — was centring itself inside the hero
+     while the eyebrow, the lede and the field all hung on the gutter. */
+  .hero h1{margin:0;font-size:clamp(40px,7.4vw,124px);line-height:.92;
+           letter-spacing:-.045em;max-width:15ch}
+  .hero h1 span,.hero h1 em{display:block;font-style:normal}
+  .hero h1 em{color:var(--amber)}
+  .hlede{margin:0;max-width:46ch;font-size:clamp(13.5px,1.25vw,16px);
+         line-height:1.6;opacity:.58}
+
+  /* The field. One rule under a word, and the rule takes the accent on focus.
+     The submit is a square of amber pinned to the right of the same rule, so
+     the two read as one object rather than a field beside a button. */
+  .sform{display:flex;align-items:flex-end;gap:clamp(12px,1.6vw,22px);
+         border-bottom:1px solid rgba(237,234,227,.28);padding-bottom:12px;
+         transition:border-color .3s ease}
+  .sform:focus-within{border-bottom-color:var(--amber)}
+  /* THE FIELD IS A TARGET BEFORE IT IS A TYPEFACE. Its own box was 22px tall
+     on a phone — the text's own height — which is a quarter of a fingertip on
+     the page's single most important gesture. The reserve is taken on TOP,
+     and nothing moves: the row is aligned on its bottom edge and an input
+     centres its text in its content box, so with the padding above, the words
+     stay exactly on the rule they sat on. Only the tappable area grows. */
+  .sform input{flex:1;min-width:0;background:transparent;border:0;outline:none;
+               color:var(--paper);font-family:var(--D);font-weight:300;
+               letter-spacing:-.02em;line-height:1.1;
+               font-size:clamp(20px,3.1vw,44px);padding:24px 0 0}
+  .sform input::placeholder{color:rgba(237,234,227,.3)}
+  .sform button{flex:0 0 auto;width:clamp(46px,4.4vw,62px);height:clamp(46px,4.4vw,62px);
+                padding:0;border-radius:var(--rad-s)}
+  .sform button svg{width:19px;height:19px}
+
+  /* The bar under the field: what is left of the day's quota on the left, the
+     way into the agent on the right. Both are mono caps — they are chrome,
+     and chrome does not use the display face. */
+  .hbar{display:flex;align-items:center;justify-content:space-between;
+        gap:18px;flex-wrap:wrap}
+  .quota{display:flex;align-items:center;gap:11px;min-width:0;flex:1 1 240px;
+         max-width:360px}
+  .qtrack{flex:1;height:3px;border-radius:999px;background:rgba(237,234,227,.16);
+          overflow:hidden}
+  .qfill{height:100%;border-radius:999px;background:var(--amber);width:100%;
+         transition:width .5s cubic-bezier(.16,.84,.3,1)}
+  .quota span{flex:0 0 auto;font-size:11px;letter-spacing:.1em;opacity:.5;
+              font-variant-numeric:tabular-nums;white-space:nowrap}
+  .quota button{background:none;border:0;padding:0;cursor:pointer;color:var(--amber);
+                font:inherit;font-size:11px;letter-spacing:.1em;text-decoration:underline;
+                text-underline-offset:3px}
+  /* Pushed right by its own margin and not by `space-between`: the gauge only
+     exists once a search has been run, and before that the lone pill fell back
+     to the left. The way into the agent does not move when a search lands. */
+  .mcplink{margin-left:auto;display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+           padding:9px 15px;border-radius:999px;color:var(--paper);
+           border:1px solid rgba(237,234,227,.22);
+           font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+           transition:border-color .25s ease,background .25s ease}
+  .mcplink:hover{border-color:var(--amber);background:rgba(242,177,60,.08)}
+  .mcplink svg{width:14px;height:14px;color:var(--amber)}
+
+  /* ===================================================================
+     THE RESULTS — paper.
+
+     The landing's `four ways out` grammar, carried over whole: opaque rows
+     stacked in markup order, an accent rule drawn under the hovered row, and
+     a sheet pulled out of the row from underneath. Here the sheet is the
+     THUMBNAIL. On the live site the image is a 120x90 box glued to the left
+     of every row; as a sheet it becomes the reward of the gesture, and the
+     list stays a list — forty titles read as forty titles, not as a wall of
+     stamps.
+
+     The rows are what cuts the sheet, so they must be OPAQUE and later in the
+     markup than the sheet they cut. Nothing is masked by an `overflow`: a
+     mask would clip the sheet's corners the moment it tilts.
+     =================================================================== */
+  .res{padding:var(--vs) var(--gut);overflow:hidden}
+  .rstage{max-width:var(--max);margin:0 auto}
+  .rhead{display:flex;align-items:flex-end;justify-content:space-between;
+         gap:24px;flex-wrap:wrap;margin-bottom:clamp(22px,3.4vh,40px)}
+  .rhead h2{font-size:clamp(28px,4.2vw,62px);max-width:18ch}
+  .rhead .eye{margin-bottom:clamp(14px,2vh,22px)}
+  .rcount{font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.16em;
+          text-transform:uppercase;opacity:.45;font-variant-numeric:tabular-nums}
+
+  .rlist{position:relative;list-style:none;margin:0;padding:0}
+  .rlist>li:first-child{border-top:1px solid rgba(20,20,28,.16)}
+  /* The BOTTOM OF THE FOLDER. Under the last row there is no row left to cut,
+     and the last sheet would come out into open air. This panel of paper is
+     laid after every row, so it covers them, and it is out of flow: it costs
+     the section not one pixel of height. The section clips it, which is why
+     `.res` carries `overflow:hidden` — otherwise it would lay a band of paper
+     over the top of the ink section that follows. */
+  /* 64px, not 260. The pan only has to reach as far as the last row's open
+     card can fall — thirty pixels of dip plus what the tilt drops its
+     bottom-left corner by — and every extra pixel is a sheet of paper laid
+     over whatever comes next INSIDE the section. At 260 it was covering the
+     load-more button and the link to the source archive: both were in the
+     DOM, both measured correctly, and neither could be seen. */
+  .rlist::after{content:'';position:absolute;left:0;right:0;top:100%;
+                height:64px;background:var(--paper);z-index:2}
+  /* The rows arrive one behind another. They are not `.up` blocks because
+     they are built by the script long after the observer has walked the page,
+     so their cascade is driven from `arm` instead — same curve, shorter step. */
+  .rlist>li{position:relative;z-index:1;background:var(--paper);
+            border-bottom:1px solid rgba(20,20,28,.16);
+            opacity:0;transform:translateY(26px);
+            transition:background .34s ease,opacity .5s ease,
+                       transform .65s cubic-bezier(.16,.84,.3,1)}
+  .rlist>li.rin{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .rlist>li{opacity:1;transform:none;transition:background .34s ease}
+  }
+  /* THE RIGHT HALF BELONGS TO THE SHEET. Source and date started out on the
+     right of the row, which is exactly where the thumbnail comes out — it
+     covered the very line it illustrates, and the two rows above it as well.
+     They sit over the title now, left, which is also the order the live site
+     reads in. The title is capped so that a long one cannot run under an open
+     sheet either. */
+  /* THE CARD'S TWO MEASURES, written once and used by everything below: the
+     size it reaches when open, and the factor it is held at while it rests in
+     the row. The resting width the text must clear is the product of the two,
+     so it cannot drift out of step with the card. */
+  /* THE CARD'S MEASURES, written once and used by everything below.
+     `--cw`  the width it reaches when open.
+     `--sc`  the factor it is held at while it rests in the row.
+     `--res` the RESERVE: empty mount under the picture. The card dips below
+             its own rule as it opens so that its bottom edge disappears under
+             the next row — a sheet whose end you can see is no longer a sheet
+             coming out of a folder. The reserve is what the next row eats, so
+             the picture itself is never touched.
+     `--in`  how far the RESTING thumbnail is inset from the gutter. The open
+             card is drawn a random distance leftwards, and without this inset
+             any such draw uncovered a strip of the neighbour's thumbnail at
+             the card's right edge. Inset further than the draw can ever
+             reach, the open card always overhangs them. */
+  .rlist{--cw:min(400px,32vw);--sc:.34;--res:52px;--in:48px}
+  .rlink{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);
+         column-gap:clamp(14px,2vw,32px);row-gap:5px;
+         min-height:calc((var(--cw) - 18px) * .625 * var(--sc) + 34px);
+         align-content:center;
+         padding:clamp(15px,2vh,22px) 0;
+         /* The reserve is the OPEN width, not the resting one. Reserving only
+            the thumbnail left the open card free to unfold over a long title
+            in the row above. Reserved at full width the column is empty at
+            rest, which is not waste: it is what makes the thumbnails read as
+            a column rather than as three stray stamps. */
+         padding-right:calc(var(--cw) + clamp(20px,3vw,52px));
+         color:inherit;text-decoration:none;outline:none}
+  /* THE WHOLE ROW IS THE TARGET. The thumbnail does not take the pointer — it
+     must not, or the row's hover would flicker as you crossed it — so without
+     this the one thing a reader actually aims at, the picture, would not open
+     the story. The link is stretched over its row instead. */
+  .rlink::after{content:'';position:absolute;inset:0}
+  .rlink>b{grid-row:1/3;align-self:start;padding-top:.15em;
+           font-family:var(--C);font-size:11.5px;font-weight:500;
+           letter-spacing:.16em;color:var(--blue);font-variant-numeric:tabular-nums}
+  .rlink>em{grid-column:2;font-style:normal;font-family:var(--C);
+            font-size:10.5px;font-weight:500;letter-spacing:.14em;
+            text-transform:uppercase;opacity:.42}
+  .rlink>em u{text-decoration:none;color:var(--blue);opacity:.9}
+  .rlink>span{grid-column:2;font-family:var(--D);font-weight:300;
+              letter-spacing:-.022em;line-height:1.12;
+              font-size:clamp(18px,2vw,31px);max-width:min(46ch,100%)}
+  .rlink>em:empty{display:none}
+
+  /* HOVER ONLY COUNTS AFTER A REAL MOVE. The page lands under a pointer that
+     has not moved and the browser calls that a hover at once — a sheet came
+     out during the arrival without anyone asking. The keyboard has no such
+     flaw (focus is always a gesture), so it is not gated. The class is reset
+     on every render, because every render lands new rows under that same
+     motionless pointer. */
+  .rlist.rbouge>li:hover,.rlist>li:focus-within{background:var(--table)}
+  /* An accent rule is drawn under the hovered row, OVER its own: two borders
+     swapping would make the row's height jump. It has two tempos, and that is
+     deliberate — it retracts on the page's curve, but drawn on that same
+     curve it reached the far edge in a fifth of its duration and you never
+     saw it drawn. Out it takes a long run and an almost straight curve. */
+  .rlist>li::after{content:'';position:absolute;left:0;right:0;bottom:-1px;
+                   height:1px;background:var(--blue);
+                   transform:scaleX(0);transform-origin:0 50%;
+                   transition:transform .46s cubic-bezier(.16,.84,.3,1)}
+  .rlist.rbouge>li:hover::after,.rlist>li:focus-within::after{
+    transform:scaleX(1);transition:transform .95s cubic-bezier(.42,0,.24,1)}
+
+  /* THE SHEET, AND IT IS VISIBLE AT REST.
+     It used to be filed under the rule and to rise only on hover. That is a
+     lovely gesture and it survives here — but a gallery whose pictures only
+     exist under the pointer is a gallery people scroll past. So the card is
+     always there, laid in the row's right margin at a fraction of its size,
+     and the hover BRINGS IT TO FULL SIZE and tilts it. Same object, same
+     grammar, one state earlier.
+
+     Growing from a resting scale is why the size is carried by a TRANSFORM
+     and not by width: a card that grows by layout reflows its row, and forty
+     rows reflowing under a pointer is the thing that has already frozen a
+     page in this project. Nothing here touches layout after the first paint.
+
+     At full size the card is taller than its row, so it overruns into the row
+     below — which is opaque and comes later in the markup, and therefore cuts
+     it. That cut is what still makes it a sheet rather than a panel. */
+  /* THE CLIP IS PLACED BY ITS BOTTOM, and that is the whole trick. Centring
+     the clip put the RESTING card 37px above its own row, because the clip
+     keeps the card's full unscaled height while the card shrinks toward one
+     of its own corners: two different boxes, only one of them centred. The
+     clip's bottom is set to where the resting card's bottom belongs — half a
+     resting height below the row's middle — and the card holds that edge in
+     both states, so opening it moves nothing that was already placed. */
+  /* What is centred in the row is the PICTURE, not the card. The card is
+     taller than its picture by the reserve, and at rest that reserve is
+     transparent — so centring the card would have hung every thumbnail
+     visibly low. The offset below subtracts half a resting picture and one
+     resting reserve from the row's middle, which is where the card's bottom
+     edge has to be for the picture above it to sit on the centre line. */
+  .rclip{position:absolute;right:0;width:var(--cw);
+         bottom:calc(50% - (var(--cw) - 18px) * .3125 * var(--sc)
+                         - var(--res) * var(--sc));
+         /* The pointer. The card follows the mouse by a dozen pixels, and the
+            move is carried by the CLIP and not by the card: the card already
+            carries its scale and its tilt, and one property cannot carry two
+            gestures at two speeds. */
+         transform:translate(var(--mx,0px),var(--my,0px)) rotate(var(--rz,0deg));
+         transition:transform .55s cubic-bezier(.22,.7,.3,1);
+         /* IT DOES NOT TAKE THE POINTER. The clip is a box far taller than the
+            resting thumbnail, laid over the rows above and below; left
+            hittable, crossing it would hand the hover to a neighbour's clip
+            and the card you aimed at would fold while another opened behind
+            it. The row is the target — `.rlink::after` covers it, thumbnail
+            included, so the picture is still clickable. */
+         pointer-events:none}
+  /* THE PIVOT IS NEAR THE TOP-RIGHT, and both halves of that matter.
+     RIGHT, so the card holds the gutter as it grows and opens leftwards into
+     the empty half of the row rather than out of the frame.
+     RIGHT, so the card holds the gutter as it grows and opens leftwards into
+     the column reserved for it rather than out of the frame.
+     BOTTOM, so it grows UPWARD — and that direction is forced, not chosen.
+     The rows are opaque and painted in markup order, so anything a card puts
+     BELOW its own row is eaten by the next one: opening downward showed half
+     a picture, which is the opposite of the point. Upward it passes over rows
+     that come earlier and is therefore whole. It is still pushed down a few
+     pixels as it opens, so the next row bites its bottom edge — the sheet
+     stays engaged in the folder instead of floating free of it. */
+  /* AT REST IT IS A PICTURE; OPEN IT BECOMES A SHEET. The white mount, the
+     hairline and the shadow only arrive with the gesture — in the column the
+     row is a thumbnail like any other, and the card is what the hover MAKES
+     of it. That is the whole progression, and it is why the frame is not
+     painted before it is asked for.
+
+     The padding is held at 7px in BOTH states even though it shows in only
+     one. It is the mount's thickness, so it belongs to the layout, and
+     animating it would resize the card's box on every hover — a layout change
+     forty rows deep, under a moving pointer. Only colour and shadow move. */
+  /* Both states declare the SAME four functions in the same order, so the
+     browser interpolates them one by one instead of decomposing a matrix.
+     Nothing here reads a layout value, so opening a card costs no reflow. */
+  .rcard{padding:9px 9px var(--res);box-sizing:border-box;background:transparent;
+         border-radius:var(--rad);
+         box-shadow:0 10px 30px rgba(20,20,28,0),
+                    inset 0 0 0 1px rgba(20,20,28,0);
+         transform-origin:100% 100%;
+         transform:translateX(calc(-1 * var(--in))) translateY(0px)
+                   scale(var(--sc)) rotate(0deg);
+         transition:transform .52s cubic-bezier(.16,.84,.3,1),
+                    background-color .34s ease,box-shadow .4s ease}
+  .rcard img{width:100%;aspect-ratio:16/10;object-fit:cover;
+             border-radius:calc(var(--rad) - 3px);background:var(--table)}
+  /* THE DIP IS 30px AND IT IS NOT DECORATIVE. The card's bottom edge sits at
+     or a little above its row's rule; opened without it, that white edge
+     would end in plain sight in the middle of the page. Thirty pixels puts it
+     under the next row for every row height this list produces, and the
+     reserve is 52 — so what the next row eats is empty mount, never picture. */
+  .rlist.rbouge>li:hover .rcard,.rlist>li:focus-within .rcard{
+    transform:translateX(calc(-1 * var(--dx,0px))) translateY(30px)
+              scale(1) rotate(var(--a,1.6deg));
+    background:#fbfaf7;
+    box-shadow:0 18px 44px rgba(20,20,28,.26),
+               inset 0 0 0 1px rgba(20,20,28,.14)}
+  @media (prefers-reduced-motion:reduce){
+    .rcard,.rclip{transition:none}
+  }
+
+  /* NO HOVER, OR NO ROOM. Two different reasons to give up the drawer, one
+     fold: the picture takes the full width of the row and sits above its
+     title, which is the order the live site reads in on a phone. */
+  @media (hover:none),(max-width:860px){
+    /* THE ROW'S RHYTHM MOVES ONTO THE PICTURE. Folded, the picture becomes
+       the row's FIRST element, and it sits outside the link's padding — so it
+       was hard against the rule of the row above: no air at the top, ninety
+       pixels of it at the bottom. The step above the picture now matches the
+       step below the title, and the caption keeps a shorter gap to the image
+       it belongs to than to the row that follows it. */
+    /* The step is a PADDING on the row, not a margin on the picture: a top
+       margin here has nothing to butt against — no border, no padding above
+       it — so it collapses straight out through the row's edge. The space
+       then lands BETWEEN the rows instead of inside them, unevenly, and the
+       row's own highlight no longer covers it. */
+    .rlist>li{padding-top:clamp(16px,2.2vh,24px)}
+    .rclip{position:static;width:auto;transform:none;margin:0 0 13px}
+    .rcard{transform:none;padding:0;box-shadow:none;transition:none;
+           background:transparent}
+    /* The open state is CANCELLED here, not merely unused. A narrow desktop
+       window still has a pointer, and the hover rule outranks the rule above
+       it: without this the folded, full-width picture would take the mount,
+       the shadow and the tilt and jump sixteen pixels down under the cursor. */
+    .rlist.rbouge>li:hover .rcard,.rlist>li:focus-within .rcard{
+      transform:none;background:transparent;box-shadow:none}
+    .rcard img{border-radius:var(--rad)}
+    .rlink{min-height:0;padding:0 0 clamp(16px,2.2vh,24px)}
+    .rlist::after{display:none}
+  }
+  /* Both sit ABOVE the pan as well as below it in the flow. Shrinking the pan
+     is what actually fixed them, but nothing should depend on that arithmetic
+     staying true if the dip is ever retuned. */
+  .rfoot{position:relative;z-index:3;
+         display:flex;justify-content:center;margin-top:clamp(26px,4vh,48px)}
+  /* No rule above it: the list's last row already draws one, and a second a
+     few pixels below reads as a mistake rather than as a separation. */
+  .rsrc{position:relative;z-index:3;
+        display:flex;justify-content:flex-end;margin-top:clamp(18px,2.4vh,28px)}
+  /* Padded rather than enlarged: the mark stays 10.5px, the target does not. */
+  .rsrc a{display:inline-flex;align-items:center;gap:9px;color:inherit;
+          padding:12px 2px;margin:-12px -2px;
+          text-decoration:none;font-family:var(--C);font-size:10.5px;
+          font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+          opacity:.45;transition:opacity .25s ease,color .25s ease}
+  .rsrc a:hover,.rsrc a:focus-visible{opacity:1;color:var(--blue)}
+  .rsrc svg{width:15px;height:15px}
+  /* THE THREE ANSWERS THE LIST CAN GIVE WHEN IT HAS NO LIST.
+     They were one centred line of red mono caps floating in an empty band,
+     which is not a design but a leftover. Each is an OBJECT now, hung on the
+     same gutter as everything else, and each says which of the three it is by
+     its MATERIAL rather than by a colour invented for the occasion:
+
+       — SEARCHING is not a state, it is a moment: no frame, just the bars.
+       — NOTHING FOUND is a paper card. Nothing went wrong.
+       — THE WALL is an INK card laid on the paper section, taking the amber
+         accent that ink always takes here. The page owns no red, and
+         borrowing one would put a colour on the page that appears nowhere
+         else; a block of ink on paper says stop loudly enough. */
+  .rstate{padding:clamp(26px,4vh,44px) 0}
+  .rstate.load{display:flex;align-items:center;gap:14px;
+               padding:clamp(30px,6vh,70px) 0}
+  .rstate.load p{margin:0;font-family:var(--C);font-size:11px;font-weight:500;
+                 letter-spacing:.16em;text-transform:uppercase;opacity:.42}
+  .rbox{max-width:56ch;border-radius:var(--rad);padding:clamp(22px,2.6vw,34px)}
+  .rbox.paper{border:1px solid rgba(20,20,28,.18);background:rgba(20,20,28,.03)}
+  .rbox.ink{background:var(--ink);color:var(--paper)}
+  .rbox .eye{opacity:.55}
+  .rbox.paper .eye i{background:var(--blue)}
+  .rbox.ink .eye i{background:var(--amber)}
+  .rbox h3{margin:clamp(13px,1.8vh,19px) 0 0;
+           font-size:clamp(21px,2.5vw,34px);max-width:22ch}
+  .rbox p{margin:12px 0 0;font-size:13.5px;line-height:1.6;opacity:.6;max-width:46ch}
+  .rbox .btn{margin-top:clamp(17px,2.4vh,25px)}
+  /* The section is on paper, so `.on-paper .btn` would paint this one blue.
+     Inside an ink card the accent is amber, like everywhere else on ink. */
+  .rbox.ink .btn{background:var(--amber);color:var(--ink)}
+
+  /* The three bars are infoviz's own loader, kept — it is the one piece of
+     motion the site already owned. Only its inks change. */
+  .bars{display:inline-flex;gap:5px;align-items:flex-end;height:30px}
+  .bars i{display:block;width:7px;border-radius:2px;background:currentColor;
+          transform-origin:bottom center;animation:barP .8s ease-in-out infinite}
+  .bars i:nth-child(1){height:14px}
+  .bars i:nth-child(2){height:30px;background:var(--blue);animation-delay:.15s}
+  .bars i:nth-child(3){height:22px;animation-delay:.3s}
+  @keyframes barP{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+  @media (prefers-reduced-motion:reduce){ .bars i{animation:none} }
+
+  /* ===================================================================
+     THE AGENT — ink.
+
+     On the live site this is a popover pinned beside the search box. Here it
+     is a section, because it is the page's second argument and a popover
+     cannot carry an argument.
+     =================================================================== */
+  .mcp{padding:var(--vs) var(--gut)}
+  .mstage{max-width:var(--max);margin:0 auto;
+          display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:clamp(30px,5vw,90px);align-items:start}
+  .mcp h2{margin:clamp(18px,2.6vh,30px) 0 0;font-size:clamp(28px,4.2vw,62px);max-width:15ch}
+  .mcp p.mlede{margin:clamp(16px,2.4vh,26px) 0 0;max-width:46ch;
+               font-size:clamp(13.5px,1.2vw,16px);line-height:1.6;opacity:.58}
+  .mtabs{display:flex;gap:4px;padding:4px;border-radius:var(--rad-s);
+         background:rgba(237,234,227,.07);width:fit-content}
+  .mtabs button{border:0;cursor:pointer;background:transparent;color:var(--paper);
+                padding:8px 16px;border-radius:4px;opacity:.5;
+                font-family:var(--C);font-size:11px;font-weight:500;
+                letter-spacing:.13em;text-transform:uppercase;
+                transition:background .2s ease,color .2s ease,opacity .2s ease}
+  .mtabs button[aria-selected="true"]{background:var(--amber);color:var(--ink);opacity:1}
+  .mbox{position:relative;margin-top:16px;border-radius:var(--rad);
+        background:#11121a;border:1px solid rgba(237,234,227,.13)}
+  .mbox pre{margin:0;padding:18px 54px 18px 18px;overflow-x:auto;
+            font:500 12px/1.7 ui-monospace,Menlo,Consolas,monospace;
+            color:var(--paper);white-space:pre-wrap;word-break:break-all}
+  .mcopy{position:absolute;top:11px;right:11px;width:32px;height:32px;padding:0;
+         display:grid;place-items:center;cursor:pointer;border-radius:5px;
+         background:rgba(237,234,227,.08);border:0;color:var(--paper);
+         transition:background .2s ease,color .2s ease}
+  .mcopy:hover{background:var(--amber);color:var(--ink)}
+  .mcopy svg{width:14px;height:14px}
+  .mhint{margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.5}
+  .mhint a{color:var(--amber)}
+  .mhint code{font:500 11.5px/1 ui-monospace,Menlo,Consolas,monospace;
+              padding:2px 5px;border-radius:4px;background:rgba(237,234,227,.08)}
+  .masauth{background:none;border:0;padding:0;cursor:pointer;color:var(--amber);
+           font:inherit;text-decoration:underline;text-underline-offset:3px}
+  @media (max-width:900px){ .mstage{grid-template-columns:1fr} }
+
+  /* ===================================================================
+     THE NEWSLETTER — paper. Buried Signals signs the page.
+     =================================================================== */
+  .news{padding:var(--vs) var(--gut)}
+  .nstage{max-width:1120px;margin:0 auto}
+  .nbrand{text-align:center;margin-bottom:clamp(34px,5vh,64px)}
+  /* The scan reveal, kept from the live site: an amber copy of the wordmark is
+     clipped to nothing and opens left to right behind a glowing bar. The path
+     data is written ONCE, in a hidden symbol, and drawn twice. */
+  .scan{position:relative;display:inline-block;color:var(--ink)}
+  .scan svg{height:clamp(30px,3.6vw,44px);width:auto;display:block}
+  .scan .amb{position:absolute;inset:0;color:var(--blue);
+             clip-path:inset(0 100% 0 0);transition:clip-path .5s ease-in-out}
+  .scan:hover .amb{clip-path:inset(0 0% 0 0)}
+  .scan::after{content:'';position:absolute;top:-4px;bottom:-4px;width:2px;
+               background:var(--blue);box-shadow:0 0 8px 2px rgba(26,47,251,.45);
+               left:0;opacity:0;pointer-events:none;
+               transition:left .5s ease-in-out,opacity .15s ease}
+  .scan:hover::after{left:100%;opacity:1}
+  .nbrand p{margin:14px 0 0;font-size:clamp(13.5px,1.2vw,17px);opacity:.55}
+  .ngrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+         gap:clamp(28px,4vw,64px);align-items:start}
+  .nform{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
+  .nform input{flex:1 1 200px;min-width:0;padding:12px 15px;border-radius:var(--rad-s);
+               background:var(--table);border:1px solid rgba(20,20,28,.16);
+               color:var(--ink);font-family:var(--C);font-size:13px;outline:none;
+               transition:border-color .2s ease}
+  .nform input:focus{border-color:var(--blue)}
+  .nform input::placeholder{color:rgba(20,20,28,.4)}
+  .nnote{margin:13px 0 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.42}
+  .nnote.ok{color:var(--blue);opacity:1;font-weight:500}
+  .nnote.ko{color:#a3261a;opacity:1;font-weight:500}
+  .npro{border:1px solid rgba(20,20,28,.18);border-radius:var(--rad);
+        padding:clamp(20px,2.4vw,30px);background:rgba(20,20,28,.03)}
+  .npro h3{font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.18em;
+           text-transform:uppercase;color:var(--blue)}
+  .npro h3 span{opacity:.45;color:var(--ink);font-weight:400;letter-spacing:.12em}
+  .npro ul{list-style:none;margin:18px 0 0;padding:0;display:flex;
+           flex-direction:column;gap:11px}
+  .npro li{position:relative;padding-left:20px;font-size:13px;line-height:1.5}
+  .npro li::before{content:'';position:absolute;left:0;top:.52em;
+                   width:8px;height:8px;background:var(--blue)}
+  .npill{display:inline-block;margin-top:20px;padding:7px 14px;border-radius:999px;
+         background:var(--blue);color:#fff;font-family:var(--C);font-size:11px;
+         font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+  @media (max-width:820px){ .ngrid{grid-template-columns:1fr} }
+
+  /* ===================================================================
+     THE FOOT — ink, and COMMON to every page of the site.
+
+     It carries no page-specific word, which is the whole point: the same
+     block closes the landing, the case studies and the gallery, so a reader
+     who arrives at the bottom of any of them is told the same thing about
+     what Splash is and where to get it. Anything that belongs to one page
+     only belongs above this line — the gallery's source archive, for one,
+     now sits under the list it describes rather than down here.
+
+     AN AMBER PLATE. The page runs ink, paper, ink, paper — and then does not
+     alternate one more time, it FLARES. Amber has been the accent on every
+     ink section above; ending on it whole turns the last screen into the one
+     surface the eye has been trained on all the way down. It is the only
+     third ground on the site and it is spent here, once.
+
+     On it the inks invert: the type is ink, and the buttons are ink filled
+     with amber, which is exactly the page's ink-ground button turned over.
+
+     EVERYTHING HANGS ON THE LEFT GUTTER. The links were a right-aligned
+     ragged column of mono caps, which aligns to nothing — three different
+     word-lengths flush right read as three accidents. As buttons they have
+     boxes, boxes have edges, and their edges stack on the same line the
+     wordmark and the statement already sit on. The alignment problem was the
+     ragged right, and giving the links a shape is what dissolved it. */
+  .foot{background:var(--amber);color:var(--ink);
+        padding:var(--vs) var(--gut) clamp(30px,4.4vh,54px)}
+  .fstage{max-width:var(--max);margin:0 auto;
+          display:grid;grid-template-columns:minmax(0,1fr) auto;
+          gap:clamp(34px,6vw,110px);
+          /* The credit sits on the BUTTONS' line, not on the wordmark's. Top
+             aligned it hung alone in the corner of a large empty plate; level
+             with the last row of the block it closes the rectangle. */
+          align-items:end}
+  .fmark{display:inline-block;font-family:var(--D);font-weight:800;font-size:22px;
+         letter-spacing:-.035em;line-height:1;color:inherit;text-decoration:none;
+         padding:11px 2px;margin:-11px -2px}
+  /* The two beats are made by WEIGHT OF INK, not by a second hue: on an amber
+     ground there is no colour left to accent with that would not be a fourth
+     one. The fragment is full ink, the sentence around it is ink at 72%. */
+  .flede{margin:clamp(18px,2.6vh,28px) 0 0;max-width:52ch;
+         font-family:var(--D);font-weight:300;letter-spacing:-.02em;
+         font-size:clamp(16px,1.55vw,25px);line-height:1.34;
+         color:rgba(20,20,28,.72)}
+  .flede em{font-style:normal;color:var(--ink)}
+
+  /* A ROW, and it wraps. Stacked they would rebuild the ragged column the
+     boxes were brought in to fix. */
+  .flinks{display:flex;flex-wrap:wrap;gap:10px;
+          margin-top:clamp(24px,3.4vh,40px)}
+  .flinks a{display:inline-flex;align-items:center;justify-content:center;
+            padding:14px 21px;border-radius:var(--rad-s);
+            background:var(--ink);color:var(--amber);text-decoration:none;
+            font-family:var(--C);font-size:11px;font-weight:500;
+            letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
+            transition:background .22s ease,transform .22s ease}
+  .flinks a:hover,.flinks a:focus-visible{background:#24242f;transform:translateY(-1px)}
+
+  .ffund{display:flex;flex-direction:column;align-items:flex-end;gap:13px}
+  .ffund span{font-family:var(--C);font-size:11.5px;font-weight:500;
+              letter-spacing:.14em;text-transform:uppercase;
+              color:rgba(20,20,28,.5)}
+  .ffund a{display:block;color:inherit;opacity:.85;transition:opacity .25s ease}
+  .ffund a:hover{opacity:1}
+  /* The mark is monochrome and inherits `currentColor`, so the shipped file —
+     a dark grey meant for paper — needs no amber twin. Smaller than it was:
+     at 46px it outweighed the block it credits. */
+  .imj{width:auto;height:clamp(28px,2.5vw,34px);fill:currentColor}
+
+  .fmeta{max-width:var(--max);margin:clamp(34px,5vh,64px) auto 0;
+         display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+         padding-top:clamp(20px,3vh,32px);
+         border-top:1px solid rgba(20,20,28,.22);
+         font-family:var(--C);font-size:10.5px;font-weight:500;
+         letter-spacing:.14em;text-transform:uppercase;
+         color:rgba(20,20,28,.55)}
+
+  @media (max-width:900px){
+    .fstage{grid-template-columns:1fr;gap:clamp(26px,4vh,42px)}
+    /* The credit joins the left gutter with everything else: keeping it flush
+       right when there is no second column left to face is an alignment to
+       nothing, which is the defect this whole block was rebuilt to remove. */
+    .ffund{align-items:flex-start}
+  }
+
+  /* ===================================================================
+     THE MODAL — the magic link. Ink on any ground, because it is a panel and
+     not a section: it belongs to the page's chrome.
+     =================================================================== */
+  .veil{position:fixed;inset:0;z-index:100;display:none;place-items:center;
+        padding:20px;background:rgba(10,10,14,.62);backdrop-filter:blur(3px)}
+  .veil[data-open]{display:grid}
+  .modal{width:min(400px,100%);background:#11121a;color:var(--paper);
+         border:1px solid rgba(237,234,227,.14);border-radius:var(--rad);
+         padding:clamp(20px,2.4vw,28px);
+         animation:riseC .4s cubic-bezier(.16,.84,.3,1) both}
+  .mtop{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .mtop h3{font-size:19px}
+  .mx{background:transparent;border:0;cursor:pointer;color:var(--paper);opacity:.5;
+      padding:2px;line-height:0}
+  .mx:hover{opacity:1}
+  .mx svg{width:15px;height:15px}
+  .modal p{margin:12px 0 0;font-size:12.5px;line-height:1.6;opacity:.55}
+  .modal form{margin-top:18px;display:flex;flex-direction:column;gap:9px}
+  .modal input{padding:12px 15px;border-radius:var(--rad-s);background:#0d0e15;
+               border:1px solid rgba(237,234,227,.16);color:var(--paper);
+               font-family:var(--C);font-size:13px;outline:none;
+               transition:border-color .2s ease}
+  .modal input:focus{border-color:var(--amber)}
+  .modal input::placeholder{color:rgba(237,234,227,.34)}
+  .modal .btn{background:var(--amber);color:var(--ink);width:100%}
+  .mmsg{margin:12px 0 0;font-size:12px;font-weight:500;letter-spacing:.08em}
+  .mmsg.ok{color:var(--amber);opacity:1}
+  .mmsg.ko{color:#e8846f;opacity:1}
+
+  /* The one honest line on this panel: today the session lands on
+     infoviz.design, because the cookie is posted SameSite=Lax and will not
+     travel to another origin. */
+  .mwarn{margin-top:14px;padding-top:13px;border-top:1px solid rgba(237,234,227,.12);
+         font-size:10.5px;letter-spacing:.09em;line-height:1.6;opacity:.4}
+
+  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+  /* THE ARRIVAL, one grammar for everything below the hero — and every block
+     is watched ON ITS OWN, not through its section.
+     Watching the sections is why only the hero ever looked animated: a
+     section here is six hundred pixels tall, its TOP edge crosses the trigger
+     line long before its content is anywhere near the screen, and the whole
+     cascade played out below the fold. The reader then scrolled into a page
+     that had already finished arriving.
+     The rise is 34px on the page's own curve — out fast, braking long, the
+     same one the hero uses — because at 24px over four tenths of a second it
+     was a fade with a twitch rather than a move. */
+  .up{opacity:0;transform:translateY(34px);
+      transition:opacity .55s ease,transform .75s cubic-bezier(.16,.84,.3,1)}
+  .up.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .up,.up.in{opacity:1;transform:none;transition:none}
+  }
+
+  @media (max-width:860px){
+    header{font-size:10px;letter-spacing:.12em}
+    /* ALL of them, the call included. The bar used to keep the call and drop
+       the rest, which was the best a bar with no menu could do; now that the
+       panel carries all three, leaving one of them outside would say the same
+       thing twice, two taps apart. The bar is a wordmark and a way in. */
+    header .hnav a{display:none}
+    .hmenu{display:block}
+    .wordmark{font-size:19px}
+    .hero{min-height:clamp(460px,76vh,760px)}
+    .hlede{font-size:12.5px}
+    .btn{padding:12px 15px;font-size:10px;letter-spacing:.1em}
+    .rhead h2{font-size:clamp(26px,7.4vw,38px)}
+    .mcp h2{font-size:clamp(28px,8.4vw,44px)}
+  }
+
+  /* THE PHONE PROPER — 560px and under. The band above also covers tablets in
+     portrait, which are 768 to 834 wide and have room the phone does not. */
+  @media (max-width:560px){
+    /* Three buttons on a wrapping row come out two-and-one, which reads as a
+       row that ran out of space rather than as a set. Stacked full width they
+       are a set, and each is a whole thumb wide. */
+    .flinks{flex-direction:column;align-items:stretch}
+    .flinks a{width:100%}
+    /* The command is the one place a long unbroken token exists. */
+    .mbox pre{font-size:11.5px;padding:16px 48px 16px 16px}
+  }
+
+  /* ---- WHAT A FINGER NEEDS ------------------------------------------
+     A mouse hits a thirty-pixel control; a thumb does not. These grow ONLY
+     where there is no hover to be had, so the desk keeps its compact controls
+     and the touch screen gets ones that can actually be pressed. The type
+     never changes size — only the box around it does. */
+  @media (hover:none){
+    .mtabs button{min-height:44px;padding:8px 18px}
+    .mcopy{width:40px;height:40px}
+    .flinks a{padding:17px 21px}
+    .btn{padding:15px 20px}
+    .rsrc a{padding:15px 4px;margin:-15px -4px}
+  }
+
+  /* THE FRAME ON ITS SIDE — under 560px of HEIGHT. A phone turned, or a
+     squashed desktop window. The problem is no longer the width but the
+     height, so the title is measured to fall on TWO lines rather than three:
+     kept at its portrait width it took the whole frame and pushed the field,
+     which is the page's one gesture, off the bottom edge. */
+  @media (max-height:560px){
+    .hero{min-height:0;gap:clamp(14px,2.4vh,20px)}
+    .hero h1{font-size:clamp(26px,4.6vw,46px);max-width:26ch}
+    .hlede{display:none}
+    /* The field keeps a reachable box, but not the full portrait reserve:
+       there are only 390px of height to spend here. */
+    .sform input{font-size:clamp(18px,2.4vw,28px);padding-top:14px}
+  }
+</style>
+</head>
+<body>
+
+<header class="rise" style="--d:.10s">
+  <a class="wordmark" href="https://splash.buriedsignals.com/">Splash</a>
+  <span class="hnav">
+    <a href="https://splash.buriedsignals.com/case-studies">How it works</a>
+    <a href="https://splash.buriedsignals.com/inspiration" aria-current="page">Get inspiration</a>
+    <a class="cta" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">Get the skills &nearr;</a>
+    <button class="hmenu" id="hmenu" type="button"
+            aria-expanded="false" aria-controls="menu">Menu</button>
+  </span>
+</header>
+
+<div class="menu" id="menu" hidden tabindex="-1" aria-label="Site" role="dialog" aria-modal="true">
+  <button class="mclose" id="mclose" type="button">Close</button>
+  <nav>
+    <a href="https://splash.buriedsignals.com/case-studies">How it works</a>
+    <a href="https://splash.buriedsignals.com/inspiration" aria-current="page"><i></i>Get inspiration</a>
+    <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">Get the skills <em>&nearr;</em></a>
+  </nav>
+</div>
+
+<!-- ===================== THE HERO ===================== -->
+<section class="hero on-ink">
+  <h1>
+    <span class="rise" style="--d:.28s">Visual stories</span>
+    <em class="rise" style="--d:.38s">from newsrooms worldwide.</em>
+  </h1>
+  <p class="hlede rise" style="--d:.48s">A searchable gallery of exceptional data-driven visual journalism.
+  Look for a subject, read what the newsroom actually made of it — and hand the
+  same gallery to the agent that builds your own.</p>
+
+  <form class="sform rise" style="--d:.58s" id="sform" autocomplete="off">
+    <label class="sr" for="q">Search the gallery</label>
+    <input id="q" name="q" type="text" placeholder="climate change, urban data, election graphics…">
+    <button class="btn" type="submit" id="sbtn" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/>
+      </svg>
+    </button>
+  </form>
+
+  <div class="hbar rise" style="--d:.66s">
+    <div class="quota" id="quota" hidden>
+      <div class="qtrack" id="qtrack"><div class="qfill" id="qfill"></div></div>
+      <span id="qtext"></span>
+      <button type="button" id="qsign" hidden>Sign in for more searches</button>
+    </div>
+    <a class="mcplink" href="#mcp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+      </svg>
+      Use as MCP
+    </a>
+  </div>
+</section>
+
+<!-- ===================== THE RESULTS ===================== -->
+<section class="res on-paper arm" id="results">
+  <div class="rstage">
+    <div class="rhead up">
+      <div>
+        <div class="eye"><i></i><span id="rkicker">The gallery</span></div>
+        <h2 id="rtitle">Featured</h2>
+      </div>
+      <div class="rcount" id="rcount"></div>
+    </div>
+
+    <div class="rstate load" id="rstate">
+      <span class="bars"><i></i><i></i><i></i></span><p>Loading the gallery</p>
+    </div>
+    <ol class="rlist" id="rlist" hidden></ol>
+
+    <div class="rfoot" id="rfoot" hidden>
+      <button class="btn ghost" id="more" type="button">Load more</button>
+    </div>
+
+    <!-- The archive belongs to the GALLERY, not to the site's foot. The foot
+         is now common to every page, and this link is true of one of them. -->
+    <div class="rsrc up">
+      <a href="https://huggingface.co/datasets/tomvaillant/visuals"
+         target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><use href="#hf"/></svg>
+        All sources &nearr;
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE AGENT ===================== -->
+<section class="mcp on-ink arm" id="mcp">
+  <div class="mstage">
+    <div class="up">
+      <div class="eye"><i></i>Use as MCP</div>
+      <h2>Query the gallery from inside your agent.</h2>
+      <p class="mlede">The same search, exposed as an MCP server. Your assistant can
+      look for precedent while it is building — so the form it proposes is one a
+      newsroom has already published, not one it invented.</p>
+    </div>
+    <div class="up">
+      <div class="mtabs" role="tablist" aria-label="Client">
+        <button type="button" role="tab" data-tool="claude" aria-selected="true">Claude Code</button>
+        <button type="button" role="tab" data-tool="codex" aria-selected="false">Codex</button>
+      </div>
+      <div class="mbox">
+        <pre id="mcmd"></pre>
+        <button class="mcopy" type="button" id="mcopy" aria-label="Copy command">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+        </button>
+      </div>
+      <p class="mhint" id="mhint"></p>
+      <p class="mhint" style="margin-top:9px">The server is rate-limited per account —
+      <button type="button" class="masauth" id="msign">sign in to use it</button>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE NEWSLETTER ===================== -->
+<section class="news on-paper arm">
+  <div class="nstage">
+    <div class="nbrand up">
+      <a class="scan" href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer"
+         aria-label="Buried Signals">
+        <svg viewBox="75 42 1194 191" aria-hidden="true"><use href="#bsw"/></svg>
+        <svg class="amb" viewBox="75 42 1194 191" aria-hidden="true"><use href="#bsw"/></svg>
+      </a>
+      <p>Investigations with AI. The tools to run your own.</p>
+    </div>
+
+    <div class="ngrid">
+      <div class="up">
+        <p style="margin:0;font-size:13.5px;opacity:.6">Free monthly investigations, tools, and methodology.</p>
+        <form class="nform" id="nform" autocomplete="off">
+          <label class="sr" for="nmail">Email address</label>
+          <input id="nmail" type="email" placeholder="your@email.com" required>
+          <button class="btn" type="submit" id="nbtn">Subscribe</button>
+        </form>
+        <p class="nnote" id="nnote">Join 400+ journalists.</p>
+      </div>
+
+      <div class="npro up">
+        <h3>Pro Membership <span>(Launching May 2026)</span></h3>
+        <ul>
+          <li>Collaborative investigations — shared leads, data &amp; methodology</li>
+          <li>Live workshops and hands-on training sessions</li>
+          <li>Expanded tool suite access and priority features</li>
+          <li>In-depth investigation methodologies and AI techniques</li>
+          <li>AI tools for content production and distribution</li>
+        </ul>
+        <span class="npill">From $25/mo</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE FOOT ===================== -->
+<footer class="foot arm">
+  <div class="fstage">
+    <div class="fmain up">
+      <a class="fmark" href="https://splash.buriedsignals.com/">Splash</a>
+      <p class="flede">Splash is an open skill pack that gives any newsroom
+      <em>a visual desk</em> — the AI you already use, taught to build
+      scrollytelling maps, chart stories, interactive graphics and motion
+      video. Open source, key-free to try, and ready for any CMS.</p>
+
+      <nav class="flinks" aria-label="Splash">
+        <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">Skill files</a>
+        <a href="https://buriedsignals.com/consulting" target="_blank" rel="noopener noreferrer">Work with me &nearr;</a>
+        <a href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer">Buried Signals &nearr;</a>
+      </nav>
+    </div>
+
+    <div class="ffund up">
+      <span>Funded by</span>
+      <a href="https://www.imj-fjm.ch/" target="_blank" rel="noopener noreferrer"
+         aria-label="Initiative for Media Innovation">
+        <svg class="imj" viewBox="0 0 86 53.25" aria-hidden="true"><use href="#imj"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="fmeta">
+    <span>Splash &middot; v0.1</span>
+    <span>&copy; 2026 Buried Signals — MIT licensed</span>
+  </div>
+</footer>
+
+<!-- ===================== THE MODAL ===================== -->
+<div class="veil" id="veil" role="dialog" aria-modal="true" aria-labelledby="vh">
+  <div class="modal">
+    <div class="mtop">
+      <h3 id="vh">Sign in for more searches</h3>
+      <button class="mx" type="button" id="vx" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p id="vsub">Enter your email to receive a sign-in link.</p>
+    <form id="vform" autocomplete="off">
+      <label class="sr" for="vmail">Email address</label>
+      <input id="vmail" type="email" placeholder="your@email.com" required>
+      <button class="btn" type="submit" id="vbtn">Send sign-in link</button>
+    </form>
+    <p class="mmsg" id="vmsg" hidden></p>
+    <p class="mwarn" id="vwarn" hidden>The link signs you in on infoviz.design. The
+    session cookie is issued SameSite=Lax, so it does not follow you back to this page yet.</p>
+  </div>
+</div>
+
+<!-- Path data written once, drawn twice: the wordmark's second copy is the
+     amber scan layer, and `use` costs nothing beyond a reference. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<g id="bsw" fill="currentColor">
+<path d="M686.762 76.973C691.661 70.811 703.637 75.219 713.148 87.853L742.373 76.973C735.986 55.212 721.277 42 694.956 42C667.086 42 650.248 61.818 650.248 83.385C650.248 106.894 663.989 115.443 675.215 122.243L699.02 136.815C699.02 136.815 718.846 148.904 703.637 160.325C694.956 166.844 683.343 152.164 675.215 140.701L645.603 152.164C649.28 175.091 664.376 193.938 695.149 193.938C723.406 193.938 743.34 176.84 743.34 150.804C743.34 129.821 731.535 117.969 719.729 110.78L692.44 94.071C682.869 88.377 681.863 83.135 686.762 76.973Z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M156.674 115.443C172.931 122.243 179.318 137.204 179.318 151.193C179.318 173.148 160.738 190.829 133.642 190.829H75V45.109H130.933C158.028 45.109 176.221 60.458 176.221 84.356C176.221 96.402 170.608 109.42 156.674 115.443ZM127.062 74.447H109.063V103.785H126.869C136.739 103.785 141.965 97.179 141.965 89.019C141.965 80.664 136.739 74.447 127.062 74.447ZM109.063 161.102H129.772C139.449 161.102 144.868 154.496 144.868 146.336C144.868 138.37 139.449 131.569 129.578 131.569H109.063V161.102Z"/>
+<path d="M279.705 89.602V190.829H189.903V89.602H223.579V161.491H246.029V89.602H279.705Z"/>
+<path d="M295.784 89.602V190.829H329.46V119.329H346.491V89.602H295.784Z"/>
+<path d="M391.238 89.602V190.829H357.562V89.602H391.238Z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M497.304 174.897L478.144 154.496C472.531 161.685 466.338 164.405 457.048 164.405C445.629 164.405 438.856 159.353 436.533 149.639H504.078C504.659 146.724 504.852 143.227 504.852 139.924C504.852 108.448 485.305 86.493 455.694 86.493C423.759 86.493 401.696 108.448 401.696 140.313C401.696 171.594 423.566 193.938 456.081 193.938C473.306 193.938 486.853 188.497 497.304 174.897ZM454.919 114.86C464.403 114.86 470.596 120.883 471.951 130.015H436.34C438.662 120.3 444.855 114.86 454.919 114.86Z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M558.34 193.938C530.664 193.938 510.73 172.177 510.73 140.313C510.73 108.254 531.632 86.493 559.889 86.493C571.114 86.493 580.984 90.185 585.823 96.208H586.597C586.597 95.998 586.583 95.744 586.562 95.375C586.506 94.381 586.403 92.545 586.403 88.436V50.977H619.692V190.829H588.726V187.72C588.726 184.806 588.919 182.474 589.113 181.114H588.339C581.952 189.469 571.114 193.938 558.34 193.938ZM544.599 139.73C544.599 154.302 553.502 163.822 565.888 163.822C578.468 163.822 587.565 154.302 587.565 139.73C587.565 125.352 578.468 116.026 565.888 116.026C553.502 116.026 544.599 125.352 544.599 139.73Z"/>
+<path d="M788.495 89.602V190.829H754.819V89.602H788.495Z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M799.147 138.37C799.147 169.068 819.275 189.857 846.951 189.857C858.563 189.857 868.628 185.777 873.079 179.754H873.853C873.66 181.697 873.66 182.863 873.66 186.943V203.662H823.628V233H886.714L906.755 212.96V89.602H875.982V93.488C875.982 96.208 876.176 97.957 876.369 99.317H875.595C869.402 91.156 858.951 86.493 845.983 86.493C818.888 86.493 799.147 107.283 799.147 138.37ZM853.725 115.832C866.112 115.832 874.821 124.575 874.821 137.981C874.821 151.387 866.112 160.325 853.725 160.325C841.532 160.325 832.823 151.582 832.823 137.981C832.823 124.575 841.532 115.832 853.725 115.832Z"/>
+<path d="M922.732 190.829V89.602H1013.31V190.829H979.633V118.552H956.408V190.829H922.732Z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M1023.95 140.313C1023.95 172.177 1043.88 193.938 1071.56 193.938C1084.72 193.938 1095.37 189.275 1101.56 181.114H1102.33C1102.14 182.474 1101.95 184.417 1101.95 187.137V190.829H1132.72V89.602H1101.95V92.905C1101.95 96.014 1102.14 97.374 1102.33 98.345H1101.56C1095.95 90.962 1086.08 86.493 1073.11 86.493C1045.05 86.493 1023.95 108.254 1023.95 140.313ZM1079.11 164.211C1066.72 164.211 1057.82 154.496 1057.82 139.73C1057.82 125.352 1066.72 115.832 1079.11 115.832C1091.69 115.832 1100.78 125.352 1100.78 139.73C1100.78 154.496 1091.69 164.211 1079.11 164.211Z"/>
+<path d="M1182.11 190.829H1148.43L1150.06 50.977H1183.74L1182.11 190.829Z"/>
+<path d="M1224.97 116.22C1224.97 113.111 1227.3 110.974 1230.78 110.974C1237.36 110.974 1243.55 116.414 1246.65 121.66L1267.94 108.06C1261.75 96.597 1250.91 86.493 1230.01 86.493C1209.88 86.493 1194.97 101.065 1194.97 117.386C1194.97 136.038 1206.2 142.256 1217.43 148.473L1229.23 155.273C1234.46 157.993 1236.01 159.936 1236.01 162.462C1236.01 165.765 1233.49 167.902 1229.62 167.902C1220.72 167.902 1214.91 160.131 1213.55 155.856L1190.91 168.874C1194.97 181.503 1206.2 193.938 1229.62 193.938C1254 193.938 1268.13 180.531 1268.13 161.491C1268.13 144.198 1257.68 137.204 1247.23 131.569L1234.65 124.769C1227.3 120.883 1224.97 119.329 1224.97 116.22Z"/>
+<path d="M358.247 55.123H390.841V77.396H358.247V55.123Z"/>
+<path d="M786.558 55.123H753.965V77.396H786.558V55.123Z"/>
+</g>
+<g id="imj"><path d="M73.79,34.42c0,4.84-2.68,9.11-6.16,12.81l6.34,6.02c5.48-6.16,8.69-12.26,8.69-18.93V.88h-8.89l.02,33.54Z"/><path d="M59.24,38.6h8.72V15.44C67.95,3.67,63.55.12,54.51.12c-4.73,0-8.72,1.58-12.28,3.32C40.4,1.18,37.16.12,33.26.12c-3.57,0-6.72,1.28-9.71,2.87l-1.08-2.11h-7.22v37.73h8.72V9.33c2.32-.98,5.06-1.81,7.3-1.81,6.81,0,5.89,4.38,5.89,11.62v19.47h8.63V15.44c0-2.49-.17-3.92-.41-5.81,2.41-1.21,5.89-2.11,8.13-2.11,6.64,0,5.73,4.38,5.73,11.62v19.47Z"/><rect y=".88" width="8.72" height="37.73"/><rect x="91.76" y=".9" width="2.41" height="15.08"/><path d="M99.59,7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25Z"/><path d="M111.23,7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25Z"/><path d="M129.22,11.37v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84ZM126.79,11.41c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M138.24,4.73c-1.17,4.5-2.46,8.46-2.5,9.05-.11-.59-1.4-4.55-2.59-9.05h-2.41c1.22,4.52,2.66,8.94,3.37,11.25h3.14c.8-2.32,2.18-6.73,3.4-11.25h-2.41Z"/><path d="M145.66,9.23c-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25ZM148.04,13.37c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><path d="M158.7,15.75l-.25-1.94c-.64.11-1.26.18-1.86.18-.8,0-.85-.36-.85-1.98v-5.13h2.59v-2.16h-2.59v-2.59h-1.9l-.5,2.59-1.15.45v1.71h1.15v5.96c0,2.3.69,3.35,2.82,3.35,1.4,0,2.55-.45,2.55-.45Z"/><polygon points="162.9 2.52 162.9 .59 160.42 .59 160.42 3.2 162.41 3.2 162.9 2.52"/><rect x="160.44" y="4.73" width="2.41" height="11.25"/><path d="M170.08,16.21c3.1,0,4.43-1.53,4.43-4.84v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84ZM167.83,9.34c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07Z"/><path d="M183.51,15.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98Z"/><path d="M196.2,12.69c0-2.03-.67-2.75-3.44-3.47-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51Z"/><path d="M201.32,15.98V6.89h2.09v-2.16h-2.09v-.56c0-1.51,0-1.96.8-1.96.57,0,1.35.07,1.68.11l.28-1.94c-.39-.11-1.24-.38-2.34-.38-2.13,0-2.82,1.08-2.82,3.35v1.37l-1.15.45v1.71h1.15v9.09h2.41Z"/><path d="M213.9,11.37v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84ZM211.47,11.41c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M221.89,4.5c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M234.63,15.98h2V.23h-2.41v4.64c-1.15-.23-2.25-.36-2.96-.36-2.13,0-3.51,1.28-3.51,4.57v2.34c0,3.13,1.24,4.79,3.51,4.79,1.12,0,2.11-.41,3.05-.9l.32.68ZM234.22,13.26c-.69.4-1.45.74-2.16.74-1.4,0-1.88-.83-1.88-2.3v-2.7c0-1.53.55-2.3,1.88-2.3.69,0,1.42.05,2.16.14v6.41Z"/><path d="M247.14,12.69c0-2.03-.67-2.75-3.44-3.47-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51Z"/><path d="M258.16,15.98V6.89h2.09v-2.16h-2.09v-.56c0-1.51,0-1.96.8-1.96.57,0,1.35.07,1.68.11l.28-1.94c-.39-.11-1.24-.38-2.34-.38-2.13,0-2.82,1.08-2.82,3.35v1.37l-1.15.45v1.71h1.15v9.09h2.41Z"/><polygon points="269.63 2.23 269.63 .68 267.41 .68 267.41 2.9 269.17 2.9 269.63 2.23"/><rect x="263.87" y=".68" width="2.23" height="2.23"/><path d="M268.85,15.33l.34.65h1.97V4.73h-2.41v8.73c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88Z"/><path d="M276.47,7.63c.57-.29,1.38-.5,2.09-.5.14,0,.5,0,.76.02l.18-2.48c-.11-.02-.3-.04-.5-.04-1.33,0-2.27.72-2.59.97l-.34-.88h-2v11.25h2.41V7.63Z"/><path d="M102.5,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M115.33,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><polygon points="120.75 37.61 121.46 38.48 123.16 38.48 123.16 22.73 120.75 22.73 120.75 37.61"/><path d="M129.54,36.5c-.8,0-.85-.36-.85-1.98v-5.13h2.59v-2.16h-2.59v-2.59h-1.9l-.5,2.59-1.15.45v1.71h1.15v5.96c0,2.3.69,3.35,2.82,3.35,1.4,0,2.55-.45,2.55-.45l-.25-1.94c-.64.11-1.26.18-1.86.18Z"/><polygon points="133.38 25.7 135.37 25.7 135.86 25.03 135.86 23.09 133.38 23.09 133.38 25.7"/><rect x="133.4" y="27.23" width="2.41" height="11.25"/><path d="M149.56,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M160.14,27.01c-2.87,0-4.43,1.53-4.43,4.84v2.03c0,3.83,1.95,4.84,4.98,4.84,1.17,0,2.23-.14,3.24-.58l-.3-1.96c-.64.14-1.63.34-2.94.34-1.72,0-2.59-.34-2.59-2.36v-.2h6.17s.05-1.06.05-2.16c0-3.71-1.84-4.77-4.18-4.77ZM161.95,31.82h-3.88v-.31c0-1.71.78-2.36,2.07-2.36,1.12,0,1.81.65,1.81,2.36v.31Z"/><path d="M172.93,27.37c-1.15-.23-2.25-.36-2.96-.36-2.13,0-3.51,1.28-3.51,4.57v2.34c0,3.13,1.24,4.79,3.51,4.79,1.12,0,2.11-.41,3.05-.9l.32.68h2v-15.75h-2.41v4.64ZM172.93,35.76c-.69.4-1.45.74-2.16.74-1.4,0-1.88-.83-1.88-2.3v-2.7c0-1.53.55-2.3,1.88-2.3.69,0,1.42.05,2.16.14v6.41Z"/><polygon points="178.32 25.7 180.32 25.7 180.8 25.03 180.8 23.09 178.32 23.09 178.32 25.7"/><rect x="178.34" y="27.23" width="2.41" height="11.25"/><path d="M187.2,27.01c-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84ZM189.18,35.87c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><polygon points="194.46 37.61 195.17 38.48 196.87 38.48 196.87 22.73 194.46 22.73 194.46 37.61"/><path d="M203.96,27.01c-2.87,0-4.43,1.53-4.43,4.84v2.03c0,3.83,1.95,4.84,4.98,4.84,1.17,0,2.23-.14,3.24-.58l-.3-1.96c-.64.14-1.63.34-2.94.34-1.72,0-2.59-.34-2.59-2.36v-.2h6.17s.05-1.06.05-2.16c0-3.71-1.84-4.77-4.18-4.77ZM205.77,31.82h-3.88v-.31c0-1.71.78-2.36,2.07-2.36,1.12,0,1.81.65,1.81,2.36v.31Z"/><path d="M216.06,27.01c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41v-8.73c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M228.16,35.78c0,1.91,0,1.94-1.93,2.93l.85,1.76c2.41-.36,3.49-1.49,3.49-4.68v-12.38h-2.41v12.38Z"/><path d="M237.91,27.01c-3.1,0-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84v-2.03c0-3.31-1.35-4.84-4.43-4.84ZM239.91,33.92c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M251.22,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><path d="M258.87,28.11l-.34-.88h-2v11.25h2.41v-8.35c.57-.29,1.38-.5,2.09-.5.14,0,.5,0,.76.02l.18-2.48c-.11-.02-.3-.04-.5-.04-1.33,0-2.27.72-2.59.97Z"/><path d="M269.38,27.01c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41v-8.73c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M279.14,27.01c-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84ZM281.11,35.87c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><polygon points="286.39 37.61 287.1 38.48 288.8 38.48 288.8 22.73 286.39 22.73 286.39 37.61"/><rect x="291.81" y="27.23" width="2.41" height="11.25"/><polygon points="291.78 25.7 293.78 25.7 294.26 25.03 294.26 23.09 291.78 23.09 291.78 25.7"/><path d="M301.17,31.73c-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51,0-2.03-.67-2.75-3.44-3.47Z"/><path d="M317.95,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M330.78,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><path d="M340.15,31.73c-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51,0-2.03-.67-2.75-3.44-3.47Z"/></g>
+<path id="hf" d="M16.781 3.277c2.997 1.704 4.844 4.851 4.844 8.258 0 .995-.155 1.955-.443 2.857a1.332 1.332 0 011.125.4 1.41 1.41 0 01.2 1.723c.204.165.352.385.428.632l.017.062c.06.222.12.69-.2 1.166.244.37.279.836.093 1.236-.255.57-.893 1.018-2.128 1.5l-.202.078-.131.048c-.478.173-.89.295-1.061.345l-.086.024c-.89.243-1.808.375-2.732.394-1.32 0-2.3-.36-2.923-1.067a9.852 9.852 0 01-3.18.018C9.778 21.647 8.802 22 7.494 22a11.249 11.249 0 01-2.541-.343l-.221-.06-.273-.08a16.574 16.574 0 01-1.175-.405c-1.237-.483-1.875-.93-2.13-1.501-.186-.4-.151-.867.093-1.236a1.42 1.42 0 01-.2-1.166 1.36 1.36 0 01.447-.694 1.41 1.41 0 01.2-1.723 1.332 1.332 0 011.124-.4 9.478 9.478 0 01-.443-2.857c0-3.407 1.847-6.554 4.844-8.258a9.798 9.798 0 019.562 0zM4.021 16.512a.532.532 0 00-.44.223c-.12.169-.114.328-.02.598l.03.081.037.09.043.098.098.211.056.12.176.377.05.115c.263.632.37 1.117.128 1.362-.055.055-.144.06-.246.03l-.06-.023-.064-.031a3.474 3.474 0 01-.317-.192l-.116-.08a4.68 4.68 0 00-.223-.145l-.11-.065c-.283-.16-.53-.223-.716-.14a.39.39 0 00-.22.28c-.058.29.135.55.5.79l.13.08.14.077.146.074.152.07.235.1.166.066.26.098.184.066.291.098.207.066.328.099.36.101.026.007c.7.19 1.42.297 2.144.317 1.152 0 1.887-.353 2.267-1.043l.055-.108c.42-.9.32-1.86-.28-2.7-.397-.554-.68-.928-.85-1.122-.657-.75-1.144-.393-1.276-.257l-.058.063a.822.822 0 00.033 1.096l.598.65c.24.28.4.63.16.87-.14.13-.32.11-.5-.02a3.652 3.652 0 01-.32-.28l-.161-.163-.185-.194-.278-.297-.474-.512-.242-.257-.221-.23-.135-.135a2.68 2.68 0 00-.152-.14l-.078-.061a1.023 1.023 0 00-.6-.226zm15.958 0a1.023 1.023 0 00-.6.226l-.078.062a2.68 2.68 0 00-.152.139l-.135.136-.22.229-.243.257-.474.512-.278.297-.185.194-.16.163a3.652 3.652 0 01-.321.28c-.18.13-.36.15-.5.02-.24-.24-.08-.59.16-.87l.598-.65a.822.822 0 00.033-1.096c-.12-.15-.6-.55-1.334.194-.17.194-.453.568-.85 1.122-.6.84-.7 1.8-.28 2.7l.055.108c.38.69 1.115 1.043 2.267 1.043a9.68 9.68 0 002.144-.317l.026-.007.36-.101.328-.1.207-.065.291-.098.184-.066.26-.098.166-.066.235-.1.152-.07.146-.074.14-.077.13-.08c.365-.24.558-.5.5-.79a.39.39 0 00-.22-.28c-.186-.083-.433-.02-.716.14l-.11.065a4.68 4.68 0 00-.223.145l-.116.08c-.113.076-.22.14-.317.192l-.064.031-.06.023c-.102.03-.191.025-.246-.03-.242-.245-.135-.73.128-1.362l.05-.115.176-.377.056-.12.098-.211.043-.098.037-.09.03-.081c.094-.27.1-.43-.02-.598a.532.532 0 00-.44-.223zM12 5.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM9.5 13a.5.5 0 01.5.5 2 2 0 004 0 .5.5 0 011 0 3 3 0 01-6 0 .5.5 0 01.5-.5zm-.25-3.75a1 1 0 110 2 1 1 0 010-2zm5.5 0a1 1 0 110 2 1 1 0 010-2z"/>
+</defs></svg>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ===================================================================== *
+   * THE WIRING.
+   *
+   * Every request goes to the live infoviz backend, cross-origin. Three
+   * things about that are not obvious and are the reason this file reads the
+   * way it does:
+   *
+   * 1. THE CREDENTIALS MODE DECIDES WHETHER WE CAN READ THE QUOTA. The API
+   *    answers `Access-Control-Expose-Headers: *`, and a browser only honours
+   *    that wildcard when the request's credentials mode is NOT `include`.
+   *    Ask with credentials cross-origin and `X-RateLimit-*` become
+   *    unreadable — the gauge goes blind for a cookie that could never have
+   *    been sent anyway (see 2). So: `include` same-origin, `omit` elsewhere.
+   *
+   * 2. THE SESSION DOES NOT TRAVEL. The backend posts its session cookie
+   *    SameSite=Lax, so it is never attached to a cross-site fetch. Signed-in
+   *    quotas and `/auth/status` therefore only mean something when this page
+   *    is served from infoviz.design itself. The page says so rather than
+   *    pretending; one word in the backend (`samesite="none", secure=True`)
+   *    is what would change it.
+   *
+   * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. The live site loads
+   *    `@supabase/supabase-js` for a single RPC call. One `fetch` with the
+   *    public anon key does the same thing, which is what keeps this page a
+   *    single file with no CDN.
+   * ===================================================================== */
+
+  const API   = 'https://infoviz.design';
+  const MCP   = API + '/mcp/';
+  const SB    = 'https://towumekminbldlabbyss.supabase.co';
+  const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
+
+  const SAME = location.origin === API;
+  const CRED = SAME ? 'include' : 'omit';
+
+  const PER_PAGE = 10;
+  const FEATURED = 3;
+
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------------------------------------------------------------- state */
+  let all = [];          // everything the last query returned
+  let page = 1;          // how many slices of PER_PAGE are on screen
+  let seen = 0;          // rows already on screen, so `load more` only animates the new ones
+  let searched = false;  // featured, or a real result set
+  let busy = false;
+  let limit = 5, left = null;
+
+  /* ------------------------------------------------------------ the quota */
+  const drawQuota = () => {
+    const el = $('quota');
+    if (left === null) { el.hidden = true; return; }
+    el.hidden = false;
+    /* At zero the gauge stops being a gauge: an empty track says nothing the
+       sentence does not, and the only useful thing left on that line is the
+       way out. The track goes, the offer takes its place. */
+    if (left <= 0) {
+      $('qtrack').hidden = true;
+      $('qtext').textContent = 'Daily limit reached ·';
+      $('qsign').hidden = false;
+      return;
+    }
+    $('qtrack').hidden = false;
+    $('qsign').hidden = true;
+    $('qfill').style.width = Math.max(0, (left / limit) * 100) + '%';
+    $('qtext').textContent = left + (left === 1 ? ' query left today' : ' queries left today');
+  };
+
+  const readLimits = (res) => {
+    const l = res.headers.get('X-RateLimit-Limit');
+    const r = res.headers.get('X-RateLimit-Remaining');
+    if (l !== null) limit = parseInt(l, 10) || limit;
+    if (r !== null) left = parseInt(r, 10);
+    drawQuota();
+  };
+
+  /* --------------------------------------------------------- the states */
+  const paint = (html, cls) => {
+    const el = $('rstate');
+    el.className = 'rstate' + (cls ? ' ' + cls : '');
+    el.innerHTML = html;
+    el.hidden = false;
+    $('rlist').hidden = true;
+    $('rfoot').hidden = true;
+  };
+
+  const loading = (label) =>
+    paint('<span class="bars"><i></i><i></i><i></i></span><p>' + label + '</p>', 'load');
+
+  /* The caller says WHICH of the three answers this is; it never says how one
+     is drawn. `body` may carry text the server wrote, so it arrives escaped. */
+  const box = (kind, eyebrow, head, body, action) => paint(
+    '<div class="rbox ' + kind + '">'
+    + '<div class="eye"><i></i>' + eyebrow + '</div>'
+    + '<h3>' + head + '</h3>'
+    + '<p>' + body + '</p>'
+    + (action || '')
+    + '</div>', kind);
+
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const t = new Date(d);
+    if (isNaN(t)) return '';
+    return t.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  /* ------------------------------------------------------------ the list */
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  /* An item's `url` and `image` come from the API and are therefore untrusted:
+     they are written into href/src, so anything but http(s) is dropped rather
+     than escaped. `javascript:` in an href is not a rendering problem, it is
+     an execution one, and escaping does not touch it. */
+  const safeUrl = (u) => {
+    try {
+      const p = new URL(u, location.href);
+      return (p.protocol === 'http:' || p.protocol === 'https:') ? p.href : '';
+    } catch { return ''; }
+  };
+
+  const render = () => {
+    const list = $('rlist');
+    const shown = all.slice(0, page * PER_PAGE);
+
+    if (!shown.length) {
+      box('paper', 'No match', 'Nothing in the gallery for that one.',
+          'Try a broader subject — a theme rather than a name, a place rather '
+          + 'than a single event.');
+      $('rcount').textContent = '';
+      return;
+    }
+
+    /* The rows about to be replaced are still being watched, and an observer
+       holds a strong reference to every target it has not let go of. Dropping
+       them here is what keeps a long session of searches from accumulating
+       one detached row per result, forever. */
+    for (const li of list.children) io.unobserve(li);
+
+    list.innerHTML = shown.map((it, i) => {
+      const href = safeUrl(it.url);
+      const img  = safeUrl(it.image);
+      const meta = [it.source, fmtDate(it.date)].filter(Boolean);
+      const n    = String(i + 1).padStart(2, '0');
+      /* A row without a story to open is still a row: it keeps its rank and
+         its rule, it just is not a link. Rendering it as an <a href=""> would
+         reload the page on click. */
+      const inner =
+        '<b>' + n + '</b>' +
+        '<em>' + (meta.length
+                    ? '<u>' + esc(meta[0]) + '</u>' + (meta[1] ? ' · ' + esc(meta[1]) : '')
+                    : '') + '</em>' +
+        '<span>' + esc(it.title || 'Untitled') + '</span>';
+      const link = href
+        ? '<a class="rlink" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>'
+        : '<div class="rlink">' + inner + '</div>';
+      const sheet = img
+        ? '<div class="rclip"><div class="rcard"><img loading="lazy" alt="" src="' + esc(img) + '"></div></div>'
+        : '';
+      /* The sheet is written BEFORE the row that carries the text, and both
+         before the next <li>: markup order is what decides who cuts whom. */
+      return '<li>' + sheet + link + '</li>';
+    }).join('');
+
+    $('rstate').hidden = true;
+    list.hidden = false;
+    $('rfoot').hidden = !(searched && shown.length < all.length);
+
+    $('rcount').textContent = searched
+      ? 'Showing ' + shown.length + ' of ' + all.length
+      : '';
+
+    arm(list, seen);
+    seen = shown.length;
+  };
+
+  /* ---------------------------------------------------- the sheet's draw */
+  /* The draw is redone on every ENTER, so coming back to the same row does not
+     replay the same gesture, and it is posted on `pointerenter` — before the
+     hover has moved anything, while the sheet is still filed under the rule.
+     Posted after, you would see it jump sideways on its way out.
+     An angle too close to the previous one is refused: twice in a row within
+     half a degree reads as no draw at all. */
+  /* THE ANGLE IS ALWAYS POSITIVE, and that is a constraint rather than a
+     taste. The card pivots on its bottom-right corner, so a positive (i.e.
+     clockwise) angle carries its top edge OUT past the gutter, while a
+     negative one pulls it inward and uncovers the thumbnail of the row above.
+     Both signs looked equally good; only one of them is correct. */
+  const ANG_MIN = 1.0, ANG_MAX = 2.6;
+  const draw = (li) => {
+    const prev = parseFloat(li.dataset.a || 0);
+    let a = 0;
+    for (let i = 0; i < 8; i++) {
+      a = ANG_MIN + Math.random() * (ANG_MAX - ANG_MIN);
+      if (Math.abs(a - prev) > 0.5) break;
+    }
+    li.dataset.a = a.toFixed(2);
+    const c = li.querySelector('.rclip');
+    if (!c) return;
+    c.style.setProperty('--a', a.toFixed(2) + 'deg');
+    /* How far left the card is drawn as it opens. Capped BELOW the resting
+       inset (`--in`, 48px): a draw that reached it would let the neighbouring
+       thumbnails out from behind the card's right edge. */
+    c.style.setProperty('--dx', Math.round(Math.random() * 40) + 'px');
+  };
+
+  /* The list becomes hover-sensitive on the first REAL move, and the count is
+     reset on EVERY render — a render lands new rows under a pointer that has
+     not moved, which the browser calls a hover at once. One global listener,
+     armed for a single firing. */
+  const arm = (list, from) => {
+    const kids = [...list.children];
+    kids.forEach((li, i) => {
+      draw(li);
+      li.addEventListener('pointerenter', () => draw(li));
+      li.addEventListener('focusin', () => draw(li));
+      /* Rows the reader has ALREADY seen do not arrive a second time. A
+         `load more` rebuilds the whole list, so without this the first ten
+         would replay their entrance every time more is asked for, and the
+         page would flinch under the reader's own click. */
+      if (i < from) { li.classList.add('rin'); return; }
+      /* A NEW row is handed to the same observer the rest of the page uses,
+         so it arrives when it reaches the frame — not when the script built
+         it. Built-time was the whole defect: `featured` runs at load, and the
+         list is below the fold, so those rows finished their entrance where
+         nobody could see them. */
+      li.dataset.on = 'rin';
+      li.dataset.step = '55';
+      io.observe(li);
+    });
+    list.classList.remove('rbouge');
+    addEventListener('pointermove', () => list.classList.add('rbouge'),
+                     { passive: true, once: true });
+  };
+
+  /* The sheet follows the pointer, left to right. The listener sits on the
+     LIST and not on each row — one instead of forty — and it is passive. The
+     position is written into a variable, so the CSS transition does the
+     smoothing, not an animation loop running for a fifteen-pixel move. */
+  $('rlist').addEventListener('pointermove', (e) => {
+    const li = e.target.closest && e.target.closest('#rlist > li');
+    if (!li) return;
+    const c = li.querySelector('.rclip');
+    if (!c) return;
+    const kx = (e.clientX / innerWidth) * 2 - 1;
+    const ky = (e.clientY / innerHeight) * 2 - 1;
+    c.style.setProperty('--mx', (kx * 14).toFixed(1) + 'px');
+    c.style.setProperty('--my', (ky * 8).toFixed(1) + 'px');
+    /* The tilt FOLLOWS the move, it does not double it: it is drawn from the
+       position and the transition brings it half a beat late. That trailing is
+       the inertia — a sheet held by one corner leans AFTER being moved. */
+    c.style.setProperty('--rz', (kx * 1).toFixed(2) + 'deg');
+  }, { passive: true });
+
+  /* ---------------------------------------------------------- the search */
+  async function search(q) {
+    if (busy) return;
+    busy = true;
+    $('sbtn').disabled = true;
+    searched = true;
+    page = 1;
+    seen = 0;
+    $('rkicker').textContent = 'Search';
+    $('rtitle').textContent = '“' + q + '”';
+    loading('Searching the gallery');
+
+    try {
+      const res = await fetch(API + '/api/graphics/examples', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: CRED,
+        body: JSON.stringify({ query: q }),
+      });
+      readLimits(res);
+
+      if (res.status === 429) {
+        const d = await res.json().catch(() => ({}));
+        limit = d.limit || limit; left = 0; drawQuota();
+        all = [];
+        box('ink', 'Limit reached',
+            limit + ' searches a day, and that was the ' + (limit === 5 ? 'fifth' : 'last') + '.',
+            'The count resets at midnight UTC. A free account raises it to '
+            + (limit === 5 ? 10 : limit) + ' a day.',
+            '<button class="btn" type="button" id="signin">Sign in for more</button>');
+        const s = $('signin');
+        if (s) s.addEventListener('click', () => openModal(
+          'Sign in for more searches',
+          'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
+        return;
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.detail || 'The gallery did not answer.');
+      }
+
+      const data = await res.json();
+      all = Array.isArray(data.items) ? data.items : [];
+      render();
+    } catch (err) {
+      all = [];
+      box('ink', 'No answer', 'The gallery did not come back.',
+          esc(err.message || 'The request failed before it reached infoviz.design.'),
+          '<button class="btn" type="button" id="retry">Try again</button>');
+      const r = $('retry');
+      if (r) r.addEventListener('click', () => search(q));
+    } finally {
+      busy = false;
+      $('sbtn').disabled = false;
+    }
+  }
+
+  /* -------------------------------------------------------- the featured */
+  async function featured() {
+    loading('Loading the gallery');
+    try {
+      const res = await fetch(SB + '/rest/v1/rpc/get_random_posts', {
+        method: 'POST',
+        headers: {
+          'apikey': SBKEY,
+          'Authorization': 'Bearer ' + SBKEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ custom_limit: FEATURED }),
+      });
+      if (!res.ok) throw new Error('Failed to fetch featured stories');
+      const rows = await res.json();
+      all = (rows || []).map((p) => ({
+        title: p.title,
+        source: p.author || undefined,
+        date: p.published_date || undefined,
+        url: p.source_url || undefined,
+        image: p.image_url || undefined,
+      }));
+      searched = false;
+      page = 1;
+      seen = 0;
+      render();
+    } catch (err) {
+      all = [];
+      box('ink', 'No answer', 'The featured stories did not load.',
+          esc(err.message || 'The request failed before it reached the archive.'),
+          '<button class="btn" type="button" id="refeat">Try again</button>');
+      const r = $('refeat');
+      if (r) r.addEventListener('click', featured);
+    }
+  }
+
+  /* -------------------------------------------------------------- events */
+  /* ------------------------------------------------------------ the menu */
+  const menu = $('menu'), hmenu = $('hmenu');
+  let menuWasFocused = null;
+
+  const openMenu = () => {
+    menuWasFocused = document.activeElement;
+    menu.hidden = false;
+    hmenu.setAttribute('aria-expanded', 'true');
+    /* The scroll is locked on the DOCUMENT, not on the panel: without it the
+       page behind keeps travelling under the reader's thumb and the menu
+       comes back down onto somewhere else entirely. */
+    document.documentElement.style.overflow = 'hidden';
+    /* One frame between `display` and the class, or there is no state to
+       transition from and the panel simply appears. */
+    /* The PANEL takes the focus, not its close button: focusing a button
+       programmatically lights the browser's ring for a reader who opened the
+       menu with a thumb and never asked to see it. The panel is a dialog, a
+       screen reader lands inside it either way, and Escape is a window
+       listener so the keyboard loses nothing. */
+    requestAnimationFrame(() => {
+      menu.classList.add('open');
+      menu.focus();
+    });
+  };
+
+  const closeMenu = () => {
+    if (menu.hidden) return;
+    menu.classList.remove('open');
+    hmenu.setAttribute('aria-expanded', 'false');
+    document.documentElement.style.overflow = '';
+    setTimeout(() => { menu.hidden = true; }, 300);
+    if (menuWasFocused) menuWasFocused.focus();
+  };
+
+  hmenu.addEventListener('click', openMenu);
+  $('mclose').addEventListener('click', closeMenu);
+  for (const a of menu.querySelectorAll('a')) a.addEventListener('click', closeMenu);
+
+  /* A frame widened past the band leaves the panel open over a bar that has
+     its full nav back — two navigations at once, one of them unreachable. */
+  const wide = matchMedia('(min-width:861px)');
+  wide.addEventListener('change', (m) => { if (m.matches) closeMenu(); });
+
+  /* Its own listener rather than a branch in the sign-in panel's: that one is
+     declared further down and reading it from here would be a use before
+     initialisation. Two small listeners, no ordering to remember. */
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) closeMenu();
+  });
+
+  /* A placeholder cut off mid-word reads as a broken field rather than as an
+     example of what to type. The narrow frame gets a shorter one — the same
+     kind of subjects, fewer of them — and it follows a rotation, so the field
+     is right whichever way the phone is held. */
+  const narrow = matchMedia('(max-width:640px)');
+  const setHint = (m) => {
+    $('q').placeholder = m.matches
+      ? 'climate, elections, migration…'
+      : 'climate change, urban data, election graphics…';
+  };
+  setHint(narrow);
+  narrow.addEventListener('change', setHint);
+
+  $('sform').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const q = $('q').value.trim();
+    if (!q) return;
+    search(q);
+    /* The results are below the fold by design; a search that leaves the
+       reader in the hero looks like a search that did nothing. */
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  $('more').addEventListener('click', () => { page += 1; render(); });
+
+  /* -------------------------------------------------------------- the MCP */
+  const CMDS = {
+    claude: {
+      cmd: 'claude mcp add-json infoviz \'{"type":"http","url":"' + MCP + '"}\'',
+      hint: 'Paste in your terminal. You’ll authenticate via your browser.',
+    },
+    codex: {
+      cmd: '[mcp_servers.infoviz]\nurl = "' + MCP + '"',
+      hint: 'Add to <code>~/.codex/config.toml</code>, then restart Codex.',
+    },
+  };
+  let tool = 'claude';
+  const drawCmd = () => {
+    $('mcmd').textContent = CMDS[tool].cmd;
+    $('mhint').innerHTML = CMDS[tool].hint;
+    for (const b of document.querySelectorAll('.mtabs button'))
+      b.setAttribute('aria-selected', String(b.dataset.tool === tool));
+  };
+  for (const b of document.querySelectorAll('.mtabs button'))
+    b.addEventListener('click', () => { tool = b.dataset.tool; drawCmd(); });
+  drawCmd();
+
+  $('mcopy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(CMDS[tool].cmd);
+      const b = $('mcopy');
+      b.dataset.done = '1';
+      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '<path d="M20 6L9 17l-5-5"/></svg>';
+      setTimeout(() => {
+        delete b.dataset.done;
+        b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+          + '<rect x="9" y="9" width="13" height="13" rx="2"/>'
+          + '<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+      }, 2000);
+    } catch { /* the clipboard API is refused in some contexts; nothing to say */ }
+  });
+
+  /* ------------------------------------------------------- the newsletter */
+  $('nform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const note = $('nnote');
+    const btn = $('nbtn');
+    btn.disabled = true;
+    btn.textContent = 'Subscribing…';
+    note.className = 'nnote';
+    try {
+      const res = await fetch(API + '/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('nmail').value }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        note.className = 'nnote ok';
+        note.textContent = json.existing ? 'You’re already subscribed.' : 'Check your inbox.';
+        $('nform').hidden = true;
+      } else {
+        note.className = 'nnote ko';
+        note.textContent = json.error || json.detail || 'Something went wrong.';
+      }
+    } catch {
+      note.className = 'nnote ko';
+      note.textContent = 'Network error. Please try again.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Subscribe';
+    }
+  });
+
+  /* ------------------------------------------------------------ the modal */
+  const veil = $('veil');
+  const openModal = (heading, subtitle) => {
+    if (heading) $('vh').textContent = heading;
+    if (subtitle) $('vsub').textContent = subtitle;
+    veil.setAttribute('data-open', '');
+    $('vwarn').hidden = SAME;
+    $('vmail').focus();
+  };
+
+  $('qsign').addEventListener('click', () => openModal(
+    'Sign in for more searches',
+    'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
+
+  $('msign').addEventListener('click', () => openModal(
+    'Sign in to use MCP',
+    'Enter your email to authenticate with Claude Code or Codex.'));
+  const closeModal = () => {
+    veil.removeAttribute('data-open');
+    $('vmsg').hidden = true;
+    $('vform').hidden = false;
+  };
+  $('vx').addEventListener('click', closeModal);
+  veil.addEventListener('click', (e) => { if (e.target === veil) closeModal(); });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && veil.hasAttribute('data-open')) closeModal();
+  });
+
+  $('vform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('vmsg'), btn = $('vbtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(API + '/auth/send-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: CRED,
+        body: JSON.stringify({ email: $('vmail').value }),
+      });
+      const json = await res.json().catch(() => ({}));
+      msg.hidden = false;
+      if (res.ok) {
+        msg.className = 'mmsg ok';
+        msg.textContent = json.message || 'Check your email for a sign-in link.';
+        $('vform').hidden = true;
+      } else {
+        msg.className = 'mmsg ko';
+        msg.textContent = json.error || json.detail || 'Something went wrong.';
+      }
+    } catch {
+      msg.hidden = false;
+      msg.className = 'mmsg ko';
+      msg.textContent = 'Network error. Please try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send sign-in link';
+    }
+  });
+
+  /* ------------------------------------------------------- the auth probe */
+  /* Only meaningful when the page is served by infoviz.design itself; anywhere
+     else the cookie cannot ride along and the answer is always anonymous. We
+     still ask, so a same-origin deployment needs no second version of the file. */
+  async function status() {
+    if (!SAME) return;
+    try {
+      const res = await fetch(API + '/auth/status', { credentials: 'include' });
+      if (!res.ok) return;
+      const d = await res.json();
+      if (d.daily_limit) { limit = d.daily_limit; drawQuota(); }
+    } catch { /* the gauge simply stays on what the headers said */ }
+  }
+
+  /* ------------------------------------------------------- the arrival */
+  /* ONE observer for everything that arrives on scroll — the page's static
+     blocks and the list's rows alike. The rows went through a separate path
+     that fired when the SCRIPT BUILT them, which for the featured set is at
+     load: they finished arriving below the fold and the reader scrolled into
+     a settled list. Whether something has been seen is a property of the
+     viewport, never of when it was created.
+     What class an element takes, and how tight its stagger is, are written on
+     the element: the two families start from different distances. Ones that
+     cross the line in the same callback are staggered by their order down the
+     page — that is what makes a cascade instead of things appearing at once. */
+  const io = new IntersectionObserver((entries) => {
+    entries.filter((e) => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      .forEach((e, i) => {
+        const el = e.target;
+        const step = +el.dataset.step || 90;
+        el.style.transitionDelay = Math.min(i, 9) * step + 'ms';
+        el.classList.add(el.dataset.on || 'in');
+        io.unobserve(el);
+      });
+  }, { rootMargin: '0px 0px -14% 0px', threshold: 0.08 });
+  for (const el of document.querySelectorAll('.up')) io.observe(el);
+
+  featured();
+  status();
+})();
+</script>
+
+</body>
+</html>
