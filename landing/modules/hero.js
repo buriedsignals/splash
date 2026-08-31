@@ -204,7 +204,7 @@ Stage.register(
             t: 'Worse was to follow. It was "soon perceived by estate owners and agents of property that a greater percentage of profits could be realized by the conversion of houses and blocks into barracks, and dividing their space into smaller proportions capable of containing human life within four walls. . . . Blocks were rented of real estate owners, or \'purchased on time,\' or taken in charge at a percentage, and held for under-letting." With the appearance of the middleman, wholly irresponsible, and utterly reckless and unrestrained, began the era of tenement building which turned out such blocks as Gotham Court, where, in one cholera epidemic that scarcely touched the clean wards, the tenants died at the rate of one hundred and ninety-five to the thousand of population; which forced the general mortality of the city up front l in 41.83 in 1815, to 1 in 27.33 in 1855, a year of unusual freedom from epidemic disease, and which wrung from the early organizers of the Health Department this wail: "There are numerous examples of tenement-houses in which are lodged several hundred people that have a pro rata allotment of ground area scarcely equal to two-square yards upon the city lot, court-yards and all included." The tenement-house population had swelled to half a million souls by that time, and on the East Side, in what is still the most densely populated district in all the world, China not excluded, it was packed at the rate of 290,000 to the square mile, a state of affairs wholly unexampled. The utmost cupidity of other lands and other days had never contrived to herd much more than half that number within the same space. The greatest crowding of Old London was at the rate of 175,816. Swine roamed the streets and gutters as their principal scavengers. The death of a child in a tenement was registered at the Bureau of Vital Statistics as "plainly due to suffocation in the foul air of an unventilated apartment," and the Senators, who had come down from Albany to find out what was the matter with New York, reported that "there are annually cut off from the population by disease and death enough human beings to people a city, and enough human labor to sustain it." And yet experts had testified that, as compared with uptown, rents were from twenty-five to thirty per cent. higher in the worst slums of the lower wards, with such accommodations as were enjoyed, for instance, by a "family with boarders" in Cedar Street, who fed hogs in the Stellar that contained eight or ten loads of manure; or "one room 12 x 19 with five families living in it, comprising twenty persons of both sexes and all ages, with only two beds, without partition, screen, chair, or table." The rate of rent has been successfully maintained to the present day, though the hog at least has been eliminated.',
           },
         ],
-        tpl: "monthly",
+        tpl: "illustrated",
         cols: 2,
         cut: "square",
         cap: "BANDIT'S ROOST, 59½ MULBERRY STREET. PHOTOGRAPH BY JACOB RIIS.",
@@ -361,7 +361,7 @@ Stage.register(
             t: "But more potent still, they took the crude, simple desires of the workers, soldiers and peasants, and from them built their immediate programme. And so, while the oborontsi Mensheviki and Socialist Revolutionaries involved themselves in ​compromise with the bourgeoisie, the Bolsheviki rapidly captured the Russian masses. In July they were hunted and despised; by September the metropolitan workmen, the sailors of the Baltic Fleet, and the soldiers, had been won almost entirely to their cause. The September municipal elections in the large cities ) were significant; only 18 per cent of the returns were Menshevik and Socialist Revolutionary, against more than 70 per cent in June…",
           },
         ],
-        tpl: "monthly",
+        tpl: "review",
         cols: 2,
       },
       {
@@ -562,7 +562,7 @@ Stage.register(
             t: "“Stay there, my grafter!” replied Mr. Councilman. “Can you lend me a hundred for a day or two?”",
           },
         ],
-        tpl: "rail",
+        tpl: "pictorial",
         cols: 3,
         cut: "left",
         cap: "THE MUNICIPAL COURTS BUILDING, ST. LOUIS.",
@@ -3280,7 +3280,7 @@ Stage.register(
      * 7260 rows, and at three columns wide that is thirty-four megabytes
      * before mipmaps. It read badly too, because an eight-point paper allowed
      * to run six hundred rows is a grey slab. */
-    const GALLEY_MAX = 520;
+    const GALLEY_MAX = 640;
     const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
     // Settled by the measuring pass, and read by the frame to size the window
     // it slides down the web. Never a literal.
@@ -3386,6 +3386,42 @@ Stage.register(
       const track = (text, cx, y, sp) =>
         trackDraw(text, cx - trackWidth(text, sp) / 2, y, sp);
       const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
+      const diamond = (cx, cy, r) => {
+        g.save();
+        g.translate(cx, cy);
+        g.rotate(Math.PI / 4);
+        g.fillRect(-r, -r, r * 2, r * 2);
+        g.restore();
+      };
+      // two hairlines with a lozenge between them — a monthly's mark, where a
+      // paper would put a rule
+      const lozenge = (cx, y, w) => {
+        rule(cx - w, y, w - 7, 1);
+        rule(cx + 7, y, w - 7, 1);
+        diamond(cx, y + 0.5, 2.1);
+      };
+
+      /* A plate's box takes the PICTURE's shape.
+       *
+       * It used to be a height chosen per press — 78 rows for a monthly, 64
+       * for a rail — with the photograph cover-fitted into it. Two of the six
+       * are PORTRAITS: Bandit's Roost and the Doré both run 960 by 1186, a
+       * ratio of 0.81, and cover-fitting a portrait into a box five times
+       * wider than it is tall throws away nineteen twentieths of the plate.
+       * What was left read as a stretched strip, which is what it was. Taken
+       * from the image instead, the box IS the picture's rectangle — bounded
+       * by the measure and by a height the page can afford — and nothing is
+       * cropped at all. */
+      const plateBox = (x, y, maxW, maxH, img) => {
+        const r = img && img.width ? img.width / img.height : 1.6;
+        let w = maxW,
+          h = w / r;
+        if (h > maxH) {
+          h = maxH;
+          w = h * r;
+        }
+        return { x: x + (maxW - w) / 2, y, w, h };
+      };
 
       /* A cut. A real photograph when one has arrived, held back to what
        * newsprint could actually hold: no black, no white, and no colour —
@@ -3698,12 +3734,13 @@ const budgetOf = (A, frac, lo, hi) => {
           g.textAlign = "left";
           const fs = 9.5,
             lh = 12.6;
-          const plate = A.cut ? { x: left, w: meas, y: y + lh * 4, h: 0 } : null;
-          if (plate) {
-            plate.h = 62;
+          const plate = A.cut
+            ? plateBox(left, y + lh * 4, meas, 196, imgOf(A))
+            : null;
+          if (plate)
             plate.h =
-              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) - plate.y;
-          }
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) -
+              plate.y;
           return (
             flowCol(A, {
               left,
@@ -3713,7 +3750,7 @@ const budgetOf = (A, frac, lo, hi) => {
               fs,
               lh,
               cols: 1,
-              budget: budgetOf(A, 0.11, 12, 22),
+              budget: budgetOf(A, 0.085, 10, 18),
               plate,
             }) + 12
           );
@@ -3757,7 +3794,10 @@ const budgetOf = (A, frac, lo, hi) => {
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, left, y);
           y += 13;
-          if (A.cut) y = cut(left, y, meas, 74, A.cap, imgOf(A)) + 5;
+          if (A.cut) {
+            const b = plateBox(left, y, meas, 190, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 5;
+          }
           const end = flowCol(A, {
             left,
             meas,
@@ -3766,72 +3806,31 @@ const budgetOf = (A, frac, lo, hi) => {
             fs: 8.6,
             lh: 11.6,
             cols: 2,
-            budget: budgetOf(A, 0.16, 14, 34),
+            budget: budgetOf(A, 0.125, 12, 26),
           });
           g.fillStyle = "#111111";
           g.fillRect(R(x0), R(end + 8), GALLEY_COL, 7);
           return end + 22;
         },
 
-        /* A MONTHLY. Not a newspaper with wider margins — a different object.
-         *
-         * Scribner's, the Atlantic and the Masses opened an article the same
-         * way for thirty years, and every part of it is doing work:
-         *
-         *  · the magazine's name small and widely tracked, because it is a
-         *    running head and not a masthead — the reader already knows what
-         *    they are holding;
-         *  · an ornament rather than a rule. A rule is a newspaper's way of
-         *    separating things that compete; a monthly has one article on the
-         *    page and nothing to separate it from, so the mark is decorative
-         *    and centred;
-         *  · the title in the TEXT face, never bold. This is the single thing
-         *    that separates a magazine from a paper at a glance: a paper shouts
-         *    its headline in a fatter cut, a monthly sets its title in the same
-         *    face as the essay and lets size and air do the work;
-         *  · the deck in italic, the author in tracked caps, both centred;
-         *  · a decorated initial three lines deep, and the opening words in
-         *    caps a size down, which is what carries the eye from a letter that
-         *    size back down into nine-point text;
-         *  · one plate, FULL MEASURE. The version before this one inset it to
-         *    sixty per cent of a single-column measure, so the text jumped the
-         *    whole line to clear it and left an L of white beside the picture
-         *    with an orphan under it;
-         *  · and an end mark, because a magazine article ends — it does not
-         *    simply stop when the column runs out.
-         */
+        /* THE ATLANTIC MONTHLY. The austere one: no illustration, one column,
+         * everything centred, and the whole page carried by air and by the
+         * decorated initial. The Atlantic did not illustrate its essays, so
+         * this template has no plate at all — which is the point of it. */
         monthly(A, x0, top, capH) {
           const M = 40,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
             mid = x0 + GALLEY_COL / 2;
-
-          // the running head
           g.textAlign = "center";
-          let y = top + 30;
+          let y = top + 34;
           const nm = A.paper.toUpperCase();
           const ms = fit(nm, "400", 9.5, meas * 0.78);
           g.font = ms + "px " + SERIF;
           track(nm, mid, y, ms * 0.46);
-
-          // the ornament: two hairlines and a lozenge between them
           y += 12;
-          const ow = meas * 0.3;
-          rule(mid - ow, y, ow - 7, 1);
-          rule(mid + 7, y, ow - 7, 1);
-          g.save();
-          g.translate(mid, y + 0.5);
-          g.rotate(Math.PI / 4);
-          g.fillRect(-2.1, -2.1, 4.2, 4.2);
-          g.restore();
-
-          // the title, in the text face
-          /* Letterspaced. A monthly's title is set in the text face, and a
-           * text face at title size set solid reads as a paragraph that grew;
-           * the tracking is what makes it a title. Fitted to a narrower
-           * measure first, because the fitting cannot see the tracking it is
-           * about to be given. */
-          y += 36;
+          lozenge(mid, y, meas * 0.3);
+          y += 38;
           let hs = 25;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "400", 25, meas * 0.86));
@@ -3840,47 +3839,185 @@ const budgetOf = (A, frac, lo, hi) => {
             track(l, mid, y, hs * 0.045);
             y += R(hs * 1.2);
           }
-
-          // the deck, italic, and the author in tracked caps
           y += 6;
           const ss = fit(A.sub, "italic 400", 9.5, meas * 0.9);
           g.font = "italic 400 " + ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
           y += 20;
-          const bs = 7.5;
-          g.font = bs + "px " + SERIF;
-          track(A.by, mid, y, bs * 0.62);
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.62);
           y += 30;
-
           g.textAlign = "left";
-          const fs = 9.5,
-            lh = 14.4;
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 26,
+            fs: 9.5, lh: 14.4, cols: 1, drop: true,
+            openCaps: 4,
+            budget: budgetOf(A, 0.085, 10, 17),
+          });
+          diamond(mid, end + 9, 2.4);
+          return end + 26;
+        },
 
-          /* The plate takes the whole measure and sits four lines in, so the
-           * opening — initial, caps, first sentence — is read before the eye
-           * is given anywhere else to go. */
+        /* SCRIBNER'S. The illustrated monthly, and it does not look like the
+         * Atlantic: the essay is set in TWO columns, the title sits between
+         * two rules rather than under an ornament, and there is a plate. Three
+         * magazines composed by one template were three magazines a reader
+         * could not tell apart, which is the thing this fixes. */
+        illustrated(A, x0, top, capH) {
+          const M = 22,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 26;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 9, meas * 0.6);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.5);
+          y += 10;
+          rule(left, y, meas, 1);
+          y += 30;
+          let hs = 23;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "400", 23, meas * 0.8));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            track(l, mid, y, hs * 0.05);
+            y += R(hs * 1.16);
+          }
+          y += 4;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
+          y += 16;
+          const ss = fit(A.sub, "italic 400", 9, meas * 0.86);
+          g.font = "italic 400 " + ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 17;
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.6);
+          y += 22;
+          g.textAlign = "left";
+          const fs = 8.6,
+            lh = 12.2;
+          /* On a two-column page the cut takes ONE column, not the measure.
+           * Centred across both — which is what plateBox does when it is
+           * handed the whole measure and a portrait to fit — it punched a hole
+           * through the middle of both columns and dropped its caption over
+           * the type on either side of it. */
+          const colW = (meas - 9) / 2;
           const plate = A.cut
-            ? { x: left, w: meas, y: y + lh * 6, h: 0 }
+            ? plateBox(left, y + lh * 3, colW, 210, imgOf(A))
             : null;
           if (plate)
             plate.h =
-              cut(plate.x, plate.y, plate.w, 78, A.cap, imgOf(A), "centre") -
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A), "centre") -
               plate.y;
-
           const end = flowCol(A, {
-            left, meas, top: y, bot: top + capH - 26,
-            fs, lh, cols: 1, drop: true, plate,
-            openCaps: 4,
-            budget: budgetOf(A, 0.1, 11, 20),
+            left, meas, top: y, bot: top + capH - 24,
+            fs, lh, cols: 2, drop: true, plate,
+            openCaps: 3,
+            budget: budgetOf(A, 0.15, 16, 32),
           });
+          diamond(mid, end + 9, 2.2);
+          return end + 24;
+        },
 
-          // the end mark
-          g.save();
-          g.translate(mid, end + 9);
-          g.rotate(Math.PI / 4);
-          g.fillRect(-2.4, -2.4, 4.8, 4.8);
-          g.restore();
+        /* THE MASSES. A radical arts monthly of 1917, and nothing about it is
+         * genteel: everything ranged LEFT, a heavy rule, the title big and
+         * flush, no ornament, no initial, and a great deal of air above it.
+         * Set beside the Atlantic it should read as a different century, which
+         * is very nearly what it was. */
+        review(A, x0, top, capH) {
+          const M = 26,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          g.textAlign = "left";
+          let y = top + 34;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "700", 11, meas * 0.5);
+          g.font = "700 " + ms + "px " + SERIF;
+          trackDraw(nm, left, y, ms * 0.3);
+          y += 10;
+          rule(left, y, meas, 4);
+          y += 46;
+          let hs = 32;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "700", 32, meas * 0.98));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 1.02);
+          }
+          y += 10;
+          const ss = fit(A.sub, "italic 400", 10, meas * 0.9);
+          g.font = "italic 400 " + ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 16;
+          g.font = "7.5px " + SERIF;
+          trackDraw(A.by, left, y, 7.5 * 0.55);
+          y += 8;
+          rule(left, y, meas * 0.22, 1);
+          y += 26;
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 22,
+            fs: 9.5, lh: 14.8, cols: 1,
+            openCaps: 5,
+            budget: budgetOf(A, 0.085, 10, 16),
+          });
+          rule(left, end + 10, meas * 0.22, 4);
           return end + 26;
+        },
+
+        /* McCLURE'S. The muckraking monthly led with its picture: a headpiece
+         * across the measure at the very top, the magazine's name over it, and
+         * the title underneath. It was set as `rail` before this — a daily
+         * paper's template, with a boxed dateline that collided with its own
+         * masthead and no furniture at the head of the page at all. */
+        pictorial(A, x0, top, capH) {
+          const M = 20,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 24;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 9.5, meas * 0.66);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.48);
+          y += 14;
+          // the headpiece, before anything else on the page
+          if (A.cut) {
+            const p = plateBox(left, y, meas, 168, imgOf(A));
+            y = cut(p.x, p.y, p.w, p.h, A.cap, imgOf(A), "centre") + 12;
+          }
+          rule(left, y, meas, 1);
+          y += 28;
+          let hs = 24;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "700", 24, meas * 0.92));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.1);
+          }
+          y += 4;
+          const ss = fit(A.sub, "400", 9, meas * 0.9);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 8;
+          rule(mid - meas * 0.12, y, meas * 0.24, 1);
+          y += 12;
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.6);
+          y += 22;
+          g.textAlign = "left";
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 20,
+            fs: 8.8, lh: 12.4, cols: 2,
+            openCaps: 3,
+            budget: budgetOf(A, 0.14, 14, 28),
+          });
+          diamond(mid, end + 9, 2.2);
+          return end + 24;
         },
 
         // eight point and hairlines. a price between two rules, a deck that
@@ -3938,7 +4075,7 @@ const budgetOf = (A, frac, lo, hi) => {
               fs: 7.6,
               lh: 10.2,
               cols: 2,
-              budget: budgetOf(A, 0.28, 24, 60),
+              budget: budgetOf(A, 0.2, 18, 44),
             }) + 12
           );
         },
@@ -3950,20 +4087,27 @@ const budgetOf = (A, frac, lo, hi) => {
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
           g.textAlign = "left";
-          const ms = fit(A.paper, "700", 20, meas * 0.6);
+          /* The head, rebuilt. The name was fitted to sixty per cent of the
+           * measure and set on a baseline fourteen rows under the top rule of
+           * the dateline box beside it, so at any size over about seventeen
+           * its ascenders ran into that rule — and the page began on nothing
+           * at all, no furniture above the name. It opens on a hairline now,
+           * and the box is dropped clear of the name's line. */
+          rule(left, top + 11, meas, 1);
+          const ms = fit(A.paper, "700", 19, meas * 0.54);
           g.font = "700 " + ms + "px " + SERIF;
-          g.fillText(A.paper, left, top + 26);
-          const bx = left + meas * 0.62,
-            bw = meas * 0.38,
-            bt = top + 12,
-            bh = 20;
+          g.fillText(A.paper, left, top + 40);
+          const bx = left + meas * 0.6,
+            bw = meas * 0.4,
+            bt = top + 22,
+            bh = 21;
           rule(bx, bt, bw, 1);
           rule(bx, bt + bh, bw, 1);
           g.textAlign = "right";
           g.font = "7px " + SERIF;
           g.fillText(A.date, left + meas, bt + 9);
-          g.fillText(A.by, left + meas, bt + 17);
-          let y = top + 34;
+          g.fillText(A.by, left + meas, bt + 18);
+          let y = top + 50;
           rule(left, y, meas, 2);
           y += 26;
           g.textAlign = "left";
@@ -3987,10 +4131,13 @@ const budgetOf = (A, frac, lo, hi) => {
            * a single-column measure the text could not run beside it — it
            * jumped the whole line — and left an L of white with an orphan
            * stranded under the picture. */
-          const plate = A.cut ? { x: left, w: meas, y: y + lh * 3, h: 0 } : null;
+          const plate = A.cut
+            ? plateBox(left, y + lh * 3, meas, 200, imgOf(A))
+            : null;
           if (plate)
             plate.h =
-              cut(plate.x, plate.y, plate.w, 64, A.cap, imgOf(A)) - plate.y;
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) -
+              plate.y;
           return (
             flowCol(A, {
               left,
@@ -4000,7 +4147,7 @@ const budgetOf = (A, frac, lo, hi) => {
               fs,
               lh,
               cols: 1,
-              budget: budgetOf(A, 0.11, 12, 22),
+              budget: budgetOf(A, 0.085, 10, 18),
               plate,
             }) + 12
           );
