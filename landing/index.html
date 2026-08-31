@@ -2767,6 +2767,8 @@
     running = false;
     trigger = () => {};
     lock(false);
+    // la piste part de zéro, comme après le trajet qui portait la page ici
+    place();
     if (word) {
       word.classList.add('in');
       // les copies entières prennent la main juste après l'encrage, en
@@ -3216,16 +3218,24 @@
     if (doesIn && scrollY < doesY - 4) { scrollTo(0, doesY); backToWhite(); return; }
     if (waysIn && scrollY < waysY - 4) { scrollTo(0, waysY); backToDoes(); return; }
 
-    // filet : rentré dans les pavés par un chemin qui n'a joué aucune séquence
-    if (scrollY > firstTop && scrollY < exitY - 60) {
-      whited = false;
-      inBounds();
-      if (word) word.classList.remove('in', 'out', 'done');
-      showNotes(false);
-      if (lastCard) lastCard.classList.remove('out');
-    } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
-      armed = true; hero.classList.remove('gone');
-      trigger = leave; fire = 1; freeBack = false; lock(true);
+    /* Les deux filets du hero — et ils ne valent que s'il est là. Sans arc,
+     * le second s'exécutait à chaque événement au-dessus du haut de page :
+     * il touchait `hero`, qui est nul, donc TOUT le gestionnaire de défilement
+     * levait une exception — et s'il ne l'avait pas levée il aurait repris le
+     * verrou et figé la page. Plus rien ne défilait et aucune transition ne
+     * partait. */
+    if (chapter) {
+      // filet : rentré dans les pavés par un chemin qui n'a joué aucune séquence
+      if (scrollY > firstTop && scrollY < exitY - 60) {
+        whited = false;
+        inBounds();
+        if (word) word.classList.remove('in', 'out', 'done');
+        showNotes(false);
+        if (lastCard) lastCard.classList.remove('out');
+      } else if (scrollY < 4 && !armed) {    // filet : Home, barre, restauration
+        armed = true; hero.classList.remove('gone');
+        trigger = leave; fire = 1; freeBack = false; lock(true);
+      }
     }
   }, { passive: true });
 
