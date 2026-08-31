@@ -26,6 +26,10 @@ Stage.register(
     // The ground is a design decision, so it stays in the document: the module
     // reads data-ground off the section and falls back to the house ink. The
     // render is referenced to it, so the two can never drift apart.
+    // Is the hero's own arc in the document at all? Read once, here, because
+    // the camera and the webs are set up long before the module is returned.
+    const ARC0 = !!document.querySelector("#hero-arc");
+
     const INK = [0.078, 0.078, 0.11]; // #14141c
     const ground = INK.slice();
     function readGround(el) {
@@ -4482,7 +4486,10 @@ void main(){
       webW: 0.17, // half-width, as a fraction of the visible half-width
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
       webSpread: 0.6, // where the outer two sit, in visible half-widths
-      webEdge: 0.5, // the height at which the paper starts going back in
+      // The height at which the paper starts going back into the machine. On
+      // ink a long fade reads as the web leaving; on paper it reads as a
+      // gradient, so on paper it is held much later.
+      webEdge: ARC0 ? 0.5 : 0.82,
       webSpeed: 0.052, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       webLift: 1.0,
@@ -4930,7 +4937,12 @@ void main(){
     let FLY = 2.8; // seconds of flight, braking the whole way
     // the plate stops following the body the moment it breaks
     let plateA = [0, 0, 0];
-    let centre = [0.3, 0.06],
+    /* Where the camera looks. Off to the right and a touch up, because the
+     * block had to sit clear of the hero's headline. The paper section has its
+     * own contents in the middle of the frame, so there the webs are centred:
+     * pushed right they left a bare band down the left and cut a column off
+     * against the right edge. */
+    let centre = ARC0 ? [0.3, 0.06] : [0, 0],
       presence = 1,
       scale = 0.9; // reset from the
     // canvas on first resize: a fixed start is either wasteful on a small
@@ -4986,11 +4998,23 @@ void main(){
       );
     }
 
+    /* WHERE THE WEBS ARE DRAWN.
+     *
+     * The arc when it is in the document: the hero and the chapter it breaks
+     * into, measured as one, because owning only the hero would hand the
+     * canvas away mid-explosion.
+     *
+     * When it is not — it has been lifted out — the webs still have work: they
+     * are the ground of the paper section that took its place. There they run
+     * and nothing else does. No wind, no break, no field of plates, no glass
+     * to stand inside: those are the arc's second act, and the section has its
+     * own contents to carry. */
+    const ARC = !!document.querySelector("#hero-arc");
+    const WEBS_ONLY = !ARC;
+
     return {
       name: "hero",
-      // Stage measures the pair: the hero and the chapter it breaks into.
-      // Owning only the hero would hand the canvas away mid-explosion.
-      section: "#hero-arc",
+      section: ARC ? "#hero-arc" : "#proof",
       field: ground,
 
       /* The exit keeps the frame until it is finished. It floods the journal
@@ -5198,7 +5222,7 @@ void main(){
             ".gl-field{background:transparent!important}";
           document.head.appendChild(st);
         }
-        section = document.querySelector("#hero");
+        section = document.querySelector(ARC ? "#hero" : "#proof");
         // the fixed stage carries the ground now; neither section paints it
         if (section) section.classList.add("gl-field");
         const chap = document.querySelector("#chapter");
@@ -5536,6 +5560,8 @@ void main(){
           const u = Math.min(1, (tB - SQUASH) / FLY);
           burst = 1 - Math.pow(1 - u, 5); // flies out, then all but stops
         }
+        // the paper section wants the webs and nothing after them
+        if (WEBS_ONLY) burst = 0;
 
         // the section's own interface waits for the field to settle
         const chap = document.querySelector("#chapter");
@@ -5941,8 +5967,20 @@ void main(){
          * travelling lobes, four refraction indices marched twice each and
          * fanned into fourteen spectral samples. It went with the block.
          */
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.viewport(0, 0, fw, fh);
+        /* Where the webs are painted.
+         *
+         * Into the buffer when the arc is here, because the glass pass reads
+         * that buffer back and is what puts it on screen. With webs only there
+         * is no glass pass — so there is nothing to copy the buffer out, and
+         * painting into it would put the webs somewhere no one ever sees. They
+         * go straight onto the canvas instead. */
+        if (WEBS_ONLY) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, cw, ch);
+        } else {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+          gl.viewport(0, 0, fw, fh);
+        }
         gl.clearColor(ground[0], ground[1], ground[2], 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -6192,7 +6230,7 @@ void main(){
 
         gl.bindVertexArray(null);
 
-        if (!OFF.inside) {
+        if (!OFF.inside && !WEBS_ONLY) {
           // out of the buffer and through the glass we are now standing in
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);

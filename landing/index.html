@@ -295,8 +295,18 @@
      fond elle donne 1,46:1, ce qui n'est pas lisible, alors le numéro de
      chaque preuve est tiré vers l'encre jusqu'à 4,92:1. Même couleur, autre
      valeur — et la valeur est ce qu'un lecteur voit. */
+  /* ELLE MONTE PAR-DESSUS LE DERNIER ÉCRAN DU MOT.
+     La piste finit sa course à `p = 1`, c'est-à-dire au dernier pixel où la
+     scène du mot est encore collée — après quoi cette scène, vide, défile
+     encore d'un écran avant que la section suivante n'arrive. Personne ne
+     voyait jamais cet écran : le rideau vers l'orchestration prenait la page
+     exactement à la fin de la course. En m'intercalant j'ai repoussé ce rideau
+     et découvert le blanc. Un écran de marge négative remet la section de
+     papier là où le rideau prenait la main : le mot sort, le papier est déjà
+     là. */
   .proof{background:var(--paper);color:var(--ink);
-         padding:0 var(--gut);position:relative}
+         padding:0 var(--gut);position:relative;
+         margin-top:-100vh;z-index:1}
   .proof .card{background:var(--table);border-color:rgba(20,20,28,.11)}
   .proof .card .meta{color:#7a5a12}
   .proof .card p{opacity:.68}
@@ -2060,6 +2070,7 @@
 </footer>
 
 <script src="modules/stage.js"></script>
+<script src="modules/hero.js"></script>
 <script src="modules/word.js"></script>
 <script src="modules/sheets.js"></script>
 <script src="modules/nappe.js"></script>
