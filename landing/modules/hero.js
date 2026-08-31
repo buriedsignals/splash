@@ -3274,13 +3274,23 @@ Stage.register(
 
     const GALLEY_COL = 400; // the measure of one web, in texels
     const GALLEY_GAP = 16; // dead paper between two columns of the atlas
-    const GALLEY_MIN = 250; // the shortest a slot may be
-    /* And the longest — a memory decision as much as a typographic one. A lap
-     * is one texture: uncapped, the two densest papers alone took the sheet to
-     * 7260 rows, and at three columns wide that is thirty-four megabytes
-     * before mipmaps. It read badly too, because an eight-point paper allowed
-     * to run six hundred rows is a grey slab. */
-    const GALLEY_MAX = 640;
+    /* A PAGE IS A PAGE. Its depth is the sheet its press printed on, as a
+     * ratio of the measure — a broadsheet is a tall thin thing, a monthly is
+     * nearly square — and never how much of the article happened to be set.
+     * Measuring the text instead gave eleven pages of eleven different heights
+     * with no reason behind any of them, and a short piece produced a stub. */
+    const PAGE_RATIO = {
+      broadsheet: 1.5,
+      tabloid: 1.44,
+      penny: 1.56,
+      rail: 1.48,
+      monthly: 1.42,
+      illustrated: 1.35,
+      review: 1.3,
+      pictorial: 1.36,
+    };
+    const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
+
     const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
     // Settled by the measuring pass, and read by the frame to size the window
     // it slides down the web. Never a literal.
@@ -3507,46 +3517,38 @@ Stage.register(
         return yy;
       };
 
-/* The body, into one or two columns.
+/* The body of a page.
  *
- * Justified except on the last line of a paragraph, and every paragraph
- * but the first is indented. The exception matters: the first paragraph
- * of an article that opens on a decorated initial is set flush, because
- * the initial is its indent — but the version before this one made the
- * whole ARTICLE flush whenever it had one, so the three magazines had no
- * paragraphs a reader could see at all. They read as a single slab.
+ * TWO THINGS CHANGED HERE, and they are the same thing seen twice.
  *
- * How much of an article is set is a LINE BUDGET, not a height: a slot
- * that stops at a height stops all eleven papers at the same height,
- * because every one of these articles has more text than any slot can
- * hold. Taken as a fraction of what the article actually runs to, a long
- * piece gets more column inches than a short one, which is both what a
- * page does and the only thing here that makes the three webs break at
- * different heights.
+ * A page is a PAGE. Its depth comes from the sheet the press printed on
+ * — a fixed format per press — and never from how much of the article
+ * happened to be set. Before this, a slot stopped where the text
+ * stopped, so the eleven pages were eleven different heights with no
+ * reason behind any of them, and a short piece produced a stub.
+ *
+ * And a page is FULL. No newspaper has ever left the foot of a column
+ * empty: when a story runs out, the next one starts under a rule. So the
+ * flow is handed the articles that follow this one in its own column's
+ * order, and it keeps taking them — a rule, the paper's own headline,
+ * its byline, its text — until every column is full to the last line.
+ *
+ * The columns are balanced: every line is a slot, a crosshead is two, a
+ * continuation head is four, and the plate blocks as many as it is deep
+ * in the column it sits in.
  */
 const flowCol = (A, o) => {
-  const {
-    left,
-    meas,
-    top,
-    bot,
-    fs,
-    lh,
-    cols,
-    drop,
-    plate,
-    budget,
-    openCaps,
-    gutRule,
-  } = o;
+  const { left, meas, top, bot, fs, lh, cols, drop, plate, openCaps, fill } = o;
   const gut = cols > 1 ? 9 : 0;
   const colW = (meas - gut * (cols - 1)) / cols;
   const bodyFont = fs + "px " + SERIF;
-  // the opening words, set in caps a size down — the convention every
-  // monthly of the period opens on, and what stops a decorated initial
-  // from sitting on ordinary text like a dropped brick
   const capsFont = R(fs * 0.92) + "px " + SERIF;
   const DROPN = 3;
+
+  // the page's own depth, in lines, and what the columns must hold
+  const depth = Math.max(4, Math.floor((bot - top) / lh));
+  const blocked = plate ? Math.ceil(plate.h / lh) + 1 : 0;
+  const want = depth * cols - blocked;
 
   let dropCh = "",
     dropW = 0,
@@ -3562,83 +3564,71 @@ const flowCol = (A, o) => {
     dropW = g.measureText(dropCh).width + fs * 0.24;
   }
 
-  /* Break once, then pour. Words carry their own font, because the
-   * opening ones are set in caps a size down and a line that measured
-   * them at body size would be measured wrong. */
   const lines = [];
-  let firstPara = true,
-    started = false,
-    body = 0,
-    capsLeft = openCaps || 0;
-  for (const blk of A.body) {
-    if (budget && body >= budget) break;
-    if (blk.h) {
-      if (started) lines.push({ head: true, text: blk.t });
-      continue;
-    }
-    started = true;
-    let ws = blk.t.split(/\s+/).filter(Boolean);
-    if (firstPara && drop && ws.length)
-      ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
-    const toks = ws.map((t) => {
-      if (firstPara && capsLeft > 0) {
-        capsLeft--;
-        return { t: t.toUpperCase(), caps: true };
+  let slots = 0;
+  const add = (L, n) => {
+    lines.push(L);
+    slots += n;
+  };
+
+  // one article's worth of lines, poured in
+  const pour = (art, isFirst) => {
+    let firstPara = true,
+      started = false,
+      capsLeft = isFirst ? openCaps || 0 : 0;
+    for (const blk of art.body) {
+      if (slots >= want) return;
+      if (blk.h) {
+        if (started) add({ head: true, text: blk.t }, 2);
+        continue;
       }
-      return { t, caps: false };
-    });
-    let i = 0,
-      first = true;
-    while (i < toks.length && (!budget || body < budget)) {
-      const di = drop && lines.length < DROPN ? dropW : 0;
-      // flush only where the initial IS the indent — the first paragraph
-      // of an article that has one
-      const indent = (first && !(drop && firstPara) ? fs * 1.05 : 0) + di;
-      const line = [];
-      let w = indent;
-      while (i < toks.length) {
-        g.font = toks[i].caps ? capsFont : bodyFont;
-        const add = g.measureText((line.length ? " " : "") + toks[i].t).width;
-        if (w + add > colW && line.length) break;
-        line.push(toks[i]);
-        w += add;
-        i++;
+      started = true;
+      let ws = blk.t.split(/\s+/).filter(Boolean);
+      if (isFirst && firstPara && drop && ws.length)
+        ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
+      const toks = ws.map((t) => {
+        if (firstPara && capsLeft > 0) {
+          capsLeft--;
+          return { t: t.toUpperCase(), caps: true };
+        }
+        return { t, caps: false };
+      });
+      let i = 0,
+        first = true;
+      while (i < toks.length && slots < want) {
+        const di = isFirst && drop && lines.length < DROPN ? dropW : 0;
+        const indent =
+          (first && !(isFirst && drop && firstPara) ? fs * 1.05 : 0) + di;
+        const line = [];
+        let w = indent;
+        while (i < toks.length) {
+          g.font = toks[i].caps ? capsFont : bodyFont;
+          const adv = g.measureText((line.length ? " " : "") + toks[i].t).width;
+          if (w + adv > colW && line.length) break;
+          line.push(toks[i]);
+          w += adv;
+          i++;
+        }
+        add({ toks: line, indent, justify: i < toks.length }, 1);
+        first = false;
       }
-      lines.push({ toks: line, indent, justify: i < toks.length });
-      body++;
-      first = false;
+      firstPara = false;
     }
-    firstPara = false;
+  };
+
+  pour(A, true);
+  for (const nxt of fill || []) {
+    if (slots >= want) break;
+    add({ brk: true, text: nxt.head.join(" "), by: nxt.by }, 4);
+    pour(nxt, false);
   }
 
-  /* THE COLUMNS ARE BALANCED, not filled one after the other.
-   *
-   * Filling the first column to the foot of the slot and pouring what was left
-   * into the second gave the second three lines and a great white block under
-   * them — on a two-column page that is the most visible fault there is. Every
-   * line is a slot, a crosshead is two, and the plate blocks as many as it is
-   * deep in the column it sits in; the depth is what all of that comes to,
-   * divided by the number of columns. Every column then ends on the same line
-   * and the page has no hole in it. */
-  const slotsOf = (L) => (L.head ? 2 : 1);
-  let need = 0;
-  for (const L of lines) need += slotsOf(L);
-  const blocked = plate ? Math.ceil(plate.h / lh) + 1 : 0;
-  const depth = Math.max(
-    4,
-    Math.min(
-      Math.floor((bot - top) / lh),
-      Math.ceil((need + blocked) / cols),
-    ),
-  );
-
-  let li = 0,
-    deepest = top;
+  let li = 0;
   for (let c = 0; c < cols && li < lines.length; c++) {
     const x0 = left + c * (colW + gut);
-    let ly = top;
+    let ly = top,
+      used = 0;
     const from = li;
-    let used = 0;
     while (used < depth && li < lines.length) {
       if (
         plate &&
@@ -3652,26 +3642,47 @@ const flowCol = (A, o) => {
         continue;
       }
       const L = lines[li++];
-      if (L.head) {
-        // a magazine's crossheads are tracked caps, not bold: bold in a
-        // text face this light reads as a different magazine
-        let ts = R(fs * 0.88);
-        g.font = ts + "px " + SERIF;
+
+      // the next story on the page: a rule, its headline, its byline
+      if (L.brk) {
+        if (used + 4 > depth) {
+          li--;
+          break;
+        }
+        g.fillRect(R(x0), R(ly - fs * 0.4), R(colW), 2);
+        ly += lh * 0.9;
+        let ts = R(fs * 1.24);
+        for (;;) {
+          g.font = "700 " + ts + "px " + SERIF;
+          if (g.measureText(L.text).width <= colW || ts < 6) break;
+          ts -= 0.5;
+        }
         g.textAlign = "center";
-        const sp = ts * 0.18;
-        track(L.text.toUpperCase(), x0 + colW / 2, ly + fs * 0.2, sp);
+        g.fillText(L.text, x0 + colW / 2, ly);
+        ly += lh;
+        g.font = R(fs * 0.8) + "px " + SERIF;
+        track(L.by, x0 + colW / 2, ly, fs * 0.24);
+        g.textAlign = "left";
+        ly += lh * 1.1;
+        used += 4;
+        continue;
+      }
+
+      if (L.head) {
+        const ts = R(fs * 0.88);
+        g.font = ts + "px " + SERIF;
+        track(L.text.toUpperCase(), x0 + colW / 2, ly + fs * 0.2, ts * 0.18);
         ly += lh * 1.6;
         used += 2;
         continue;
       }
+
       const wd = L.toks.map((t) => {
         g.font = t.caps ? capsFont : bodyFont;
         return g.measureText(t.t).width;
       });
-      const spaceW = (() => {
-        g.font = bodyFont;
-        return g.measureText(" ").width;
-      })();
+      g.font = bodyFont;
+      const spaceW = g.measureText("i i").width - g.measureText("ii").width;
       const sum = wd.reduce((a, b) => a + b, 0);
       const gap =
         L.justify && L.toks.length > 1
@@ -3687,28 +3698,14 @@ const flowCol = (A, o) => {
       used++;
     }
     if (c > 0 && li > from)
-      g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(ly - top + fs - lh));
-    deepest = Math.max(deepest, top + depth * lh);
+      g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(depth * lh - lh * 0.4));
   }
   if (drop && dropCh) {
     g.font = "700 " + dropSize + "px " + SERIF;
     g.textAlign = "left";
     g.fillText(dropCh, left, top + lh * (DROPN - 1));
   }
-  return Math.max(deepest, plate ? plate.y + plate.h : top);
-};
-
-/* How many lines of an article get set, as a fraction of what it runs
- * to, floored and capped. A monthly gives a long read; a penny paper
- * packs short items. These are the only numbers that make the eleven
- * slots differ in height at all. */
-const budgetOf = (A, frac, lo, hi) => {
-  const words = A.body.reduce(
-    (n, b) => n + (b.h ? 0 : b.t.split(/\s+/).length),
-    0,
-  );
-  // about nine words to a line at these measures
-  return Math.max(lo, Math.min(hi, Math.round((words / 9) * frac)));
+  return top + depth * lh;
 };
 
       const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
@@ -3716,7 +3713,7 @@ const budgetOf = (A, frac, lo, hi) => {
       return {
         // one name across the top under a double rule, a centred headline, and
         // a plate across the measure a few lines in
-        broadsheet(A, x0, top, capH) {
+        broadsheet(A, x0, top, capH, fill) {
           const M = 14,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -3777,7 +3774,7 @@ const budgetOf = (A, frac, lo, hi) => {
               fs,
               lh,
               cols: 1,
-              budget: budgetOf(A, 0.085, 10, 18),
+              fill,
               plate,
             }) + 12
           );
@@ -3785,7 +3782,7 @@ const budgetOf = (A, frac, lo, hi) => {
 
         // the name reversed out of a black band, one line of type as big as it
         // will go ranged left, a cut across the measure, and a black foot
-        tabloid(A, x0, top, capH) {
+        tabloid(A, x0, top, capH, fill) {
           const M = 12,
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
@@ -3799,28 +3796,34 @@ const budgetOf = (A, frac, lo, hi) => {
           g.font = "700 " + ms + "px " + SERIF;
           g.fillText(name, x0 + GALLEY_COL / 2, top + R(band * 0.72));
           g.fillStyle = "#111111";
-          let y = top + band + 16;
+          /* The air. The dateline sat six rows above a two-point rule, so its
+           * descenders touched it, and the headline's baseline was thirty rows
+           * under that rule — which at forty point puts the tops of the caps
+           * ON it. Both gaps are opened, and the one over the headline is
+           * measured from the size the headline actually came out at rather
+           * than being a number that happened to work at one size. */
+          let y = top + band + 18;
           g.font = "8px " + SERIF;
           g.textAlign = "left";
           g.fillText(A.date, left, y);
           g.textAlign = "right";
           g.fillText(A.by, left + meas, y);
-          y += 6;
+          y += 11;
           rule(left, y, meas, 2);
-          y += 30;
           g.textAlign = "left";
           let hs = 40;
           for (const l of A.head) hs = Math.min(hs, fit(l, "700", 40, meas));
+          y += R(hs * 0.74) + 20;
           g.font = "700 " + hs + "px " + SERIF;
           for (const l of A.head) {
             g.fillText(l, left, y);
             y += R(hs * 0.92);
           }
-          y += 4;
+          y += 12;
           const ss = fit(A.sub, "400", 10.5, meas);
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, left, y);
-          y += 13;
+          y += 18;
           if (A.cut) {
             const b = plateBox(left, y, meas, 190, imgOf(A));
             y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 5;
@@ -3833,7 +3836,7 @@ const budgetOf = (A, frac, lo, hi) => {
             fs: 8.6,
             lh: 11.6,
             cols: 2,
-            budget: budgetOf(A, 0.125, 12, 26),
+            fill,
           });
           g.fillStyle = "#111111";
           g.fillRect(R(x0), R(end + 8), GALLEY_COL, 7);
@@ -3844,7 +3847,7 @@ const budgetOf = (A, frac, lo, hi) => {
          * everything centred, and the whole page carried by air and by the
          * decorated initial. The Atlantic did not illustrate its essays, so
          * this template has no plate at all — which is the point of it. */
-        monthly(A, x0, top, capH) {
+        monthly(A, x0, top, capH, fill) {
           const M = 40,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -3877,9 +3880,8 @@ const budgetOf = (A, frac, lo, hi) => {
           g.textAlign = "left";
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 26,
-            fs: 9.5, lh: 14.4, cols: 1, drop: true,
+            fs: 9.5, lh: 14.4, cols: 1, drop: true, fill,
             openCaps: 4,
-            budget: budgetOf(A, 0.085, 10, 17),
           });
           diamond(mid, end + 9, 2.4);
           return end + 26;
@@ -3890,7 +3892,7 @@ const budgetOf = (A, frac, lo, hi) => {
          * two rules rather than under an ornament, and there is a plate. Three
          * magazines composed by one template were three magazines a reader
          * could not tell apart, which is the thing this fixes. */
-        illustrated(A, x0, top, capH) {
+        illustrated(A, x0, top, capH, fill) {
           const M = 22,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -3936,8 +3938,12 @@ const budgetOf = (A, frac, lo, hi) => {
            * At the head of column two it interrupts nothing: column one runs
            * clean from its initial, column two starts under the picture. */
           const colW = (meas - 9) / 2;
+          /* Its top sits on the first line's cap-height, not on that line's
+           * baseline: level with the baseline, one line of text still fits
+           * ABOVE the picture — correctly, since that line's body is clear of
+           * it — and the column then opened on a single stranded line. */
           const plate = A.cut
-            ? plateBox(left + colW + 9, y, colW, 214, imgOf(A))
+            ? plateBox(left + colW + 9, y - fs, colW, 214, imgOf(A))
             : null;
           if (plate)
             plate.h =
@@ -3945,9 +3951,8 @@ const budgetOf = (A, frac, lo, hi) => {
               plate.y;
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 24,
-            fs, lh, cols: 2, drop: true, plate,
+            fs, lh, cols: 2, drop: true, plate, fill,
             openCaps: 3,
-            budget: budgetOf(A, 0.15, 16, 32),
           });
           diamond(mid, end + 9, 2.2);
           return end + 24;
@@ -3958,7 +3963,7 @@ const budgetOf = (A, frac, lo, hi) => {
          * flush, no ornament, no initial, and a great deal of air above it.
          * Set beside the Atlantic it should read as a different century, which
          * is very nearly what it was. */
-        review(A, x0, top, capH) {
+        review(A, x0, top, capH, fill) {
           const M = 26,
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
@@ -3991,9 +3996,8 @@ const budgetOf = (A, frac, lo, hi) => {
           y += 30;
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 22,
-            fs: 9.5, lh: 14.8, cols: 1,
+            fs: 9.5, lh: 14.8, cols: 1, fill,
             openCaps: 5,
-            budget: budgetOf(A, 0.085, 10, 16),
           });
           rule(left, end + 10, meas * 0.22, 4);
           return end + 26;
@@ -4004,7 +4008,7 @@ const budgetOf = (A, frac, lo, hi) => {
          * the title underneath. It was set as `rail` before this — a daily
          * paper's template, with a boxed dateline that collided with its own
          * masthead and no furniture at the head of the page at all. */
-        pictorial(A, x0, top, capH) {
+        pictorial(A, x0, top, capH, fill) {
           const M = 20,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -4044,9 +4048,8 @@ const budgetOf = (A, frac, lo, hi) => {
           g.textAlign = "left";
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 20,
-            fs: 8.8, lh: 12.4, cols: 2,
+            fs: 8.8, lh: 12.4, cols: 2, fill,
             openCaps: 3,
-            budget: budgetOf(A, 0.14, 14, 28),
           });
           diamond(mid, end + 9, 2.2);
           return end + 24;
@@ -4055,7 +4058,7 @@ const budgetOf = (A, frac, lo, hi) => {
         // eight point and hairlines. a price between two rules, a deck that
         // steps down a size a line at a time, and no plate: the presses of
         // 1835 had none
-        penny(A, x0, top, capH) {
+        penny(A, x0, top, capH, fill) {
           const M = 10,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -4107,14 +4110,14 @@ const budgetOf = (A, frac, lo, hi) => {
               fs: 7.6,
               lh: 10.2,
               cols: 2,
-              budget: budgetOf(A, 0.2, 18, 44),
+              fill,
             }) + 12
           );
         },
 
         // the name ranged left, the dateline boxed off to its right between
         // two hairlines, and a heavy rule under both
-        rail(A, x0, top, capH) {
+        rail(A, x0, top, capH, fill) {
           const M = 13,
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
@@ -4178,7 +4181,7 @@ const budgetOf = (A, frac, lo, hi) => {
               fs,
               lh,
               cols: 1,
-              budget: budgetOf(A, 0.085, 10, 18),
+              fill,
               plate,
             }) + 12
           );
@@ -4187,26 +4190,9 @@ const budgetOf = (A, frac, lo, hi) => {
     }
 
     function buildGalley() {
-      /* Pass one: how tall does each paper want to be? Composed onto a scratch
-       * canvas one column wide and thrown away. The alternative is a weight
-       * per press written by hand, which is what the first galley had, and a
-       * paper whose body ran out before its slot did then left a hole. */
-      const probe = document.createElement("canvas");
-      probe.width = GALLEY_COL;
-      probe.height = GALLEY_MAX + 40;
-      const pg = probe.getContext("2d");
-      const P0 = galleyPresses(pg);
-      const nat = new Map();
-      for (const A of ARTICLES) {
-        pg.clearRect(0, 0, probe.width, probe.height);
-        pg.fillStyle = "#111111";
-        pg.textAlign = "left";
-        const end = (P0[A.tpl] || P0.broadsheet)(A, 0, 0, GALLEY_MAX);
-        nat.set(A, Math.round(Math.max(GALLEY_MIN, Math.min(GALLEY_MAX, end))));
-      }
-      // The three columns hold the same eleven articles, so their totals agree
-      // and a lap is exactly this whatever the measuring came out at.
-      GALLEY_H = ARTICLES.reduce((a, A) => a + nat.get(A), 0);
+      // The three columns hold the same eleven papers, so their totals agree
+      // and a lap is exactly the eleven page depths whatever order they run in.
+      GALLEY_H = ARTICLES.reduce((a, A) => a + pageH(A), 0);
 
       const cv = document.createElement("canvas");
       cv.width = GALLEY_W;
@@ -4229,15 +4215,20 @@ const budgetOf = (A, frac, lo, hi) => {
         const x0 = c * (GALLEY_COL + GALLEY_GAP);
         let y = 0;
         for (let k = 0; k < ARTICLES.length; k++) {
-          const A = ARTICLES[(START[c] + k * STRIDE[c]) % ARTICLES.length];
-          const h = nat.get(A);
+          const at = (n) =>
+            ARTICLES[(START[c] + n * STRIDE[c]) % ARTICLES.length];
+          const A = at(k);
+          // what the page carries on after this story runs out: the next two
+          // papers on this column, in this column's own order
+          const fill = [at(k + 1), at(k + 2)];
+          const h = pageH(A);
           g.save();
           g.beginPath();
           g.rect(x0, y, GALLEY_COL, h);
           g.clip();
           g.fillStyle = "#111111";
           g.textAlign = "left";
-          (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h);
+          (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h, fill);
           g.restore();
           y += h;
         }
