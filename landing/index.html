@@ -283,45 +283,24 @@
              font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.36}
 
   /* --- LES QUATRE PREUVES, sur papier ------------------------------------
-     Les tuiles de l'ancien chapitre. Elles y étaient posées sur l'encre et
-     empilées par le défilement — un pavé par écran, et il fallait traverser
-     quatre écrans pour les avoir lues. Ici elles ne bougent pas : elles se
-     lisent d'un coup, sur le papier, entre le mot et l'orchestration.
+     Les tuiles de l'ancien chapitre, avec EXACTEMENT leur comportement : la
+     même scène collée au cadre, les mêmes pavés superposés dans la même case
+     de grille, la même montée pilotée par `stack()`. Rien de la mécanique n'a
+     changé — elle se mesure seulement sur cette section-ci au lieu du
+     chapitre, qui est sorti avec le hero.
 
-     L'ambre de la maison ne peut pas les traverser : sur le papier des tuiles
-     elle donne 1,46:1, ce qui n'est pas lisible. Le numéro de chaque preuve
-     est donc tiré vers l'encre jusqu'à 4,92:1, ce qui passe. C'est la même
-     couleur, pas la même valeur — et la valeur est ce qu'un lecteur voit. */
-  /* DEUX ÉCRANS, et le contenu collé dans le premier. Posée à sa hauteur
-     naturelle — 875 px, moins qu'un écran — la section n'était jamais lue :
-     la porte du rideau vers l'orchestration est UN ÉCRAN avant elle, donc
-     elle tombait au-dessus de la section et la page était emportée avant
-     qu'on y arrive. Deux écrans laissent exactement un écran de lecture
-     libre avant la porte. */
-  .proof{background:var(--paper);color:var(--ink);height:200vh;position:relative}
-  .pfstage{position:sticky;top:0;height:100vh;height:100dvh;
-           display:flex;align-items:center;padding:var(--bar) var(--gut) var(--vs-s)}
-  .pfwrap{max-width:var(--max);margin:0 auto;width:100%}
-  .pfeye{display:flex;align-items:center;gap:9px;margin:0 0 var(--vs-s);
-         font:500 10.5px/1 var(--C);letter-spacing:.17em;text-transform:uppercase;
-         opacity:.52}
-  .pfeye i{display:block;width:7px;height:7px;border-radius:1px;background:#7a5a12}
-  .pfgrid{display:grid;gap:clamp(14px,1.6vw,24px);
-          grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pfcard{display:flex;flex-direction:column;background:var(--table);
-          border:1px solid rgba(20,20,28,.10);border-radius:var(--rad-l);
-          padding:clamp(24px,2.4vw,38px) clamp(26px,2.6vw,40px)}
-  .pfmeta{font:500 10px/1 var(--C);letter-spacing:.17em;text-transform:uppercase;
-          color:#7a5a12}
-  .pfcard h3{margin:16px 0 0;font-family:var(--D);font-weight:600;
-             font-size:clamp(21px,1.75vw,28px);line-height:1.06;letter-spacing:-.015em;
-             text-wrap:balance}
-  .pfcard p{margin:14px 0 0;font-size:14px;line-height:1.55;opacity:.68;max-width:46ch}
-  .pfsrc{margin-top:auto;padding-top:24px;
-         border-top:1px solid rgba(20,20,28,.13);
-         font:500 9.5px/1.4 var(--C);letter-spacing:.17em;text-transform:uppercase;
-         opacity:.42}
-  @media (max-width:820px){ .pfgrid{grid-template-columns:1fr} }
+     Ce qui change est la VALEUR. Elles étaient posées sur l'encre ; elles sont
+     sur le papier. Un pavé sombre y ferait un trou, donc le pavé est clair et
+     l'encre passe dedans. Et l'ambre de la maison ne traverse pas : sur ce
+     fond elle donne 1,46:1, ce qui n'est pas lisible, alors le numéro de
+     chaque preuve est tiré vers l'encre jusqu'à 4,92:1. Même couleur, autre
+     valeur — et la valeur est ce qu'un lecteur voit. */
+  .proof{background:var(--paper);color:var(--ink);
+         padding:0 var(--gut);position:relative}
+  .proof .card{background:var(--table);border-color:rgba(20,20,28,.11)}
+  .proof .card .meta{color:#7a5a12}
+  .proof .card p{opacity:.68}
+  .proof .card .src{border-top-color:rgba(20,20,28,.13);opacity:.44}
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
   #hsec{height:520vh;position:relative}
@@ -1800,36 +1779,23 @@
 </section>
 
 <section class="proof" id="proof" data-ground="#edeae3">
-  <div class="pfstage">
-  <div class="pfwrap">
-    <div class="pfeye"><i></i>Why it is worth showing</div>
-    <div class="pfgrid">
-      <article class="pfcard">
-        <div class="pfmeta">01 · The evidence</div>
-        <h3>Visual journalism makes reporting easier to inspect.</h3>
-        <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
-        <div class="pfsrc">Source · EJC State of Data Journalism Survey, 2023</div>
-      </article>
-      <article class="pfcard">
-        <div class="pfmeta">02 · Trust</div>
-        <h3>Good design helps readers trust the work.</h3>
-        <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
-        <div class="pfsrc">Source · Information Design Journal · ACM CHI, 2024–25</div>
-      </article>
-      <article class="pfcard">
-        <div class="pfmeta">03 · The AI shift</div>
-        <h3>When articles become inputs, visual form becomes identity.</h3>
-        <p>AI turns fixed articles into &ldquo;liquid information&rdquo; that machines break apart and recompose.</p>
-        <div class="pfsrc">Source · Reuters Institute, 2025</div>
-      </article>
-      <article class="pfcard">
-        <div class="pfmeta">04 · Discovery</div>
-        <h3>Visuals create another way for the story to travel.</h3>
-        <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
-        <div class="pfsrc">Source · Google AI Search documentation</div>
-      </article>
-    </div>
-  </div>
+  <div class="cstage">
+    <div class="pile"><div class="card"><div class="meta">01 &middot; The evidence</div>
+    <h3>Visual journalism makes reporting easier to inspect.</h3>
+    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
+    <div class="src">Source &middot; EJC State of Data Journalism Survey, 2023</div></div></div>
+    <div class="pile"><div class="card"><div class="meta">02 &middot; Trust</div>
+    <h3>Good design helps readers trust the work.</h3>
+    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
+    <div class="src">Source &middot; Information Design Journal &middot; ACM CHI, 2024&ndash;25</div></div></div>
+    <div class="pile"><div class="card"><div class="meta">03 &middot; The AI shift</div>
+    <h3>When articles become inputs, visual form becomes identity.</h3>
+    <p>AI turns fixed articles into &ldquo;liquid information&rdquo; that machines break apart and recompose.</p>
+    <div class="src">Source &middot; Reuters Institute, 2025</div></div></div>
+    <div class="pile"><div class="card"><div class="meta">04 &middot; Discovery</div>
+    <h3>Visuals create another way for the story to travel.</h3>
+    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
+    <div class="src">Source &middot; Google AI Search documentation</div></div></div>
   </div>
 </section>
 
@@ -2403,6 +2369,11 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   const hero = document.querySelector('.hero');
   const chapter = document.querySelector('.chapter');
+  /* Qui PORTE la pile. C'était le chapitre du hero ; l'arc étant sorti, c'est
+   * la section de papier posée entre le mot et l'orchestration. La mécanique
+   * ne change pas d'un iota — `stack()` est une fonction pure du défilement —
+   * seul l'objet sur lequel elle se mesure change. */
+  const pileHost = chapter || document.getElementById('proof');
   const firstCard = document.querySelector('.card');
   let armed = true, running = false;
   /* Les repères de la page — où se pose chaque verrou. Mesurés une fois par
@@ -2682,14 +2653,14 @@
 
   const marks = () => {
     slotH = innerHeight;
-    if (chapter) {
+    if (pileHost) {
       /* Le dernier pavé a droit au même temps mort que les autres. Sans lui,
        * il se posait pile sur le plafond : à peine arrivé, la sortie partait
        * et on n'avait pas le temps de le lire. Le chapitre est donc allongé
        * d'un temps mort, et le plafond descend d'autant — la scène reste
        * collée exactement jusque-là, les deux mesures ne peuvent pas diverger. */
-      chapter.style.height = ((piles.length + DWELL) * slotH) + 'px';
-      firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
+      pileHost.style.height = ((piles.length + DWELL) * slotH) + 'px';
+      firstTop = Math.round(pileHost.getBoundingClientRect().top + scrollY);
       exitY = firstTop + Math.round((piles.length - 1 + DWELL) * slotH);
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
@@ -2844,6 +2815,12 @@
     lock(false);
     // la piste part de zéro, comme après le trajet qui portait la page ici
     place();
+    /* Les pavés sont là et se montent au seul défilement. `entryK` est la
+     * montée que le défilement ne peut pas donner : elle n'existait que parce
+     * que la sortie du hero DÉPOSAIT le lecteur sur le premier pavé, déjà à sa
+     * place. Ici on y arrive en défilant, donc il n'y a rien à rattraper. */
+    piled = true;
+    entryK = 0;
     if (word) {
       word.classList.add('in');
       // les copies entières prennent la main juste après l'encrage, en
