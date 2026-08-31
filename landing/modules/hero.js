@@ -3330,16 +3330,61 @@ Stage.register(
           s *= 0.94;
         }
       };
-      const track = (text, cx, y, sp) => {
-        const cs = [...text];
-        let w = -sp;
-        for (const c of cs) w += g.measureText(c).width + sp;
-        let x = cx - w / 2;
-        for (const c of cs) {
-          g.fillText(c, x, y);
-          x += g.measureText(c).width + sp;
+      /* LETTERSPACING, which every masthead, crosshead and caption here
+       * needs and which a canvas has no `tracking` for.
+       *
+       * Two ways, and the fallback is the one to distrust. Drawing a string
+       * glyph by glyph at advances taken from measureText(c) is wrong twice
+       * over: measureText(" ") returns ZERO, because a lone space is collapsed
+       * before it is measured, so word spaces close up and a title reads SHOOK
+       * THEWORLD; and a narrow letter measured ALONE does not carry the
+       * advance it has inside a run, so SPIRITUAL came out SP IR ITUAL. The
+       * context's own `letterSpacing` has neither problem, so it is used
+       * wherever it exists, and the glyph loop is kept only for a context that
+       * does not have it — where a slightly uneven masthead beats none.
+       *
+       * It is set after the font and put back to ZERO before returning —
+       * never to a captured value, which is what leaked it into the body. */
+      const HAS_LS = "letterSpacing" in g;
+      const spaceW = () =>
+        g.measureText("i i").width - g.measureText("ii").width;
+      const trackWidth = (text, sp) => {
+        if (HAS_LS) {
+          g.letterSpacing = sp.toFixed(2) + "px";
+          const w = g.measureText(text).width - sp; // the last glyph's trail
+          g.letterSpacing = "0px";
+          return w;
         }
+        const sw = spaceW();
+        let w = -sp;
+        for (const c of [...text])
+          w += (c === " " ? sw : g.measureText(c).width) + sp;
+        return w;
       };
+      const trackDraw = (text, x, y, sp) => {
+        const al = g.textAlign;
+        g.textAlign = "left";
+        if (HAS_LS) {
+          g.letterSpacing = sp.toFixed(2) + "px";
+          g.fillText(text, x, y);
+          // back to ZERO, not to whatever was read out of the context before.
+          // Restoring the captured value left every body paragraph after a
+          // masthead letterspaced — the getter does not hand back "0px" on a
+          // context that has never been set, so the restore was a no-op and
+          // the tracking leaked into the whole article.
+          g.letterSpacing = "0px";
+        } else {
+          const sw = spaceW();
+          let cx = x;
+          for (const c of [...text]) {
+            if (c !== " ") g.fillText(c, cx, y);
+            cx += (c === " " ? sw : g.measureText(c).width) + sp;
+          }
+        }
+        g.textAlign = al;
+      };
+      const track = (text, cx, y, sp) =>
+        trackDraw(text, cx - trackWidth(text, sp) / 2, y, sp);
       const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
 
       /* A cut. A real photograph when one has arrived, held back to what
@@ -3348,7 +3393,7 @@ Stage.register(
        * drawn plate, which is a lit ground with a subject standing in it
        * rather than a halftone, because at a galley's size a halftone is a
        * grey rectangle and a hard-edged subject is a censor's bar. */
-      const cut = (x, y, w, h, caption, img) => {
+      const cut = (x, y, w, h, caption, img, style) => {
         if (img && img.width) {
           const s = Math.max(w / img.width, h / img.height);
           const dw = img.width * s,
@@ -3393,145 +3438,217 @@ Stage.register(
         if (caption) {
           g.fillRect(R(x), R(yy), R(w), 1);
           yy += 10;
-          g.font = "7px " + SERIF;
+          /* A monthly centres its caption and tracks it; a paper ranges it
+           * left under the cut and leaves it at that. Both are period, and
+           * which one is used is one more thing that tells the two apart at a
+           * glance — which is the whole job of these templates. */
+          const mid = style === "centre";
+          const fsz = mid ? 6.5 : 7;
+          const sp = mid ? fsz * 0.16 : 0;
+          g.font = fsz + "px " + SERIF;
           g.textAlign = "left";
+          const txt = mid ? caption.toUpperCase() : caption;
+          const wid = (ws) =>
+            mid
+              ? trackWidth(ws.join(" "), sp)
+              : g.measureText(ws.join(" ")).width;
+          const put = (ws) => {
+            if (mid) trackDraw(ws.join(" "), x + (w - wid(ws)) / 2, yy, sp);
+            else g.fillText(ws.join(" "), x, yy);
+            yy += mid ? 10 : 9;
+          };
           let line = [];
-          for (const t of caption.split(/\s+/)) {
+          for (const t of txt.split(/\s+/)) {
             line.push(t);
-            if (g.measureText(line.join(" ")).width > w) {
+            if (wid(line) > w) {
               line.pop();
-              g.fillText(line.join(" "), x, yy);
-              yy += 9;
+              put(line);
               line = [t];
             }
           }
-          if (line.length) {
-            g.fillText(line.join(" "), x, yy);
-            yy += 9;
-          }
+          if (line.length) put(line);
         }
         return yy;
       };
 
-      /* The body, into one or two columns. Justified except on the last line
-       * of a paragraph. Returns the foot of the deepest column it filled, so
-       * the press above can report a height that is the article's and not a
-       * number somebody chose. */
-      const flowCol = (A, o) => {
-        const { left, meas, top, bot, fs, lh, cols, drop, plate } = o;
-        const gut = cols > 1 ? 9 : 0;
-        const colW = (meas - gut * (cols - 1)) / cols;
-        const bodyFont = fs + "px " + SERIF;
-        const DROPN = 3;
+/* The body, into one or two columns.
+ *
+ * Justified except on the last line of a paragraph, and every paragraph
+ * but the first is indented. The exception matters: the first paragraph
+ * of an article that opens on a decorated initial is set flush, because
+ * the initial is its indent — but the version before this one made the
+ * whole ARTICLE flush whenever it had one, so the three magazines had no
+ * paragraphs a reader could see at all. They read as a single slab.
+ *
+ * How much of an article is set is a LINE BUDGET, not a height: a slot
+ * that stops at a height stops all eleven papers at the same height,
+ * because every one of these articles has more text than any slot can
+ * hold. Taken as a fraction of what the article actually runs to, a long
+ * piece gets more column inches than a short one, which is both what a
+ * page does and the only thing here that makes the three webs break at
+ * different heights.
+ */
+const flowCol = (A, o) => {
+  const {
+    left,
+    meas,
+    top,
+    bot,
+    fs,
+    lh,
+    cols,
+    drop,
+    plate,
+    budget,
+    openCaps,
+    gutRule,
+  } = o;
+  const gut = cols > 1 ? 9 : 0;
+  const colW = (meas - gut * (cols - 1)) / cols;
+  const bodyFont = fs + "px " + SERIF;
+  // the opening words, set in caps a size down — the convention every
+  // monthly of the period opens on, and what stops a decorated initial
+  // from sitting on ordinary text like a dropped brick
+  const capsFont = R(fs * 0.92) + "px " + SERIF;
+  const DROPN = 3;
 
-        let dropCh = "",
-          dropW = 0,
-          dropSize = 0;
-        if (drop) {
-          const b0 = A.body.find((b) => !b.h);
-          dropCh = b0 ? b0.t.charAt(0) : "";
-          /* The cap spans from the first line's own cap-height down to the
-           * third line's baseline. Times' capital is about seven tenths of its
-           * body, so that span divided by seven tenths IS the size — the first
-           * version guessed at lh*DROPN*0.8 and set the letter a third of a
-           * line short, then drew it a whole body size too low on top of that,
-           * which is why it floated in the middle of the paragraph. */
-          dropSize = R((lh * (DROPN - 1) + fs * 0.7) / 0.7);
-          g.font = "700 " + dropSize + "px " + SERIF;
-          dropW = g.measureText(dropCh).width + fs * 0.24;
-        }
+  let dropCh = "",
+    dropW = 0,
+    dropSize = 0;
+  if (drop) {
+    const b0 = A.body.find((b) => !b.h);
+    dropCh = b0 ? b0.t.charAt(0) : "";
+    /* The cap spans the first line's own cap-height down to the third
+     * line's baseline. Times' capital is about seven tenths of its body,
+     * so that span over seven tenths IS the size. */
+    dropSize = R((lh * (DROPN - 1) + fs * 0.7) / 0.7);
+    g.font = "700 " + dropSize + "px " + SERIF;
+    dropW = g.measureText(dropCh).width + fs * 0.24;
+  }
 
-        const lines = [];
-        let firstPara = true,
-          started = false;
-        for (const blk of A.body) {
-          if (blk.h) {
-            if (started) lines.push({ head: true, text: blk.t });
-            continue;
-          }
-          started = true;
-          g.font = bodyFont;
-          let ws = blk.t.split(/\s+/).filter(Boolean);
-          if (firstPara && drop && ws.length)
-            ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
-          let i = 0,
-            first = true;
-          while (i < ws.length) {
-            const di = drop && lines.length < DROPN ? dropW : 0;
-            const indent = (first && !drop ? fs * 1.05 : 0) + di;
-            const line = [];
-            let w = indent;
-            while (i < ws.length) {
-              const add = g.measureText((line.length ? " " : "") + ws[i]).width;
-              if (w + add > colW && line.length) break;
-              line.push(ws[i]);
-              w += add;
-              i++;
-            }
-            lines.push({ words: line, indent, justify: i < ws.length });
-            first = false;
-          }
-          firstPara = false;
-        }
+  /* Break once, then pour. Words carry their own font, because the
+   * opening ones are set in caps a size down and a line that measured
+   * them at body size would be measured wrong. */
+  const lines = [];
+  let firstPara = true,
+    started = false,
+    body = 0,
+    capsLeft = openCaps || 0;
+  for (const blk of A.body) {
+    if (budget && body >= budget) break;
+    if (blk.h) {
+      if (started) lines.push({ head: true, text: blk.t });
+      continue;
+    }
+    started = true;
+    let ws = blk.t.split(/\s+/).filter(Boolean);
+    if (firstPara && drop && ws.length)
+      ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
+    const toks = ws.map((t) => {
+      if (firstPara && capsLeft > 0) {
+        capsLeft--;
+        return { t: t.toUpperCase(), caps: true };
+      }
+      return { t, caps: false };
+    });
+    let i = 0,
+      first = true;
+    while (i < toks.length && (!budget || body < budget)) {
+      const di = drop && lines.length < DROPN ? dropW : 0;
+      // flush only where the initial IS the indent — the first paragraph
+      // of an article that has one
+      const indent = (first && !(drop && firstPara) ? fs * 1.05 : 0) + di;
+      const line = [];
+      let w = indent;
+      while (i < toks.length) {
+        g.font = toks[i].caps ? capsFont : bodyFont;
+        const add = g.measureText((line.length ? " " : "") + toks[i].t).width;
+        if (w + add > colW && line.length) break;
+        line.push(toks[i]);
+        w += add;
+        i++;
+      }
+      lines.push({ toks: line, indent, justify: i < toks.length });
+      body++;
+      first = false;
+    }
+    firstPara = false;
+  }
 
-        let li = 0,
-          deepest = top;
-        for (let c = 0; c < cols && li < lines.length; c++) {
-          const x0 = left + c * (colW + gut);
-          let ly = top;
-          const started0 = li;
-          while (ly < bot && li < lines.length) {
-            if (
-              plate &&
-              x0 + colW > plate.x + 1 &&
-              x0 < plate.x + plate.w - 1 &&
-              ly > plate.y &&
-              ly - fs < plate.y + plate.h
-            ) {
-              ly += lh;
-              continue;
-            }
-            const L = lines[li++];
-            if (L.head) {
-              let ts = fs * 1.02;
-              for (;;) {
-                g.font = "700 " + R(ts) + "px " + SERIF;
-                if (g.measureText(L.text).width <= colW || ts < 5.5) break;
-                ts *= 0.93;
-              }
-              g.textAlign = "center";
-              g.fillText(L.text, x0 + colW / 2, ly + fs * 0.2);
-              g.textAlign = "left";
-              ly += lh * 1.5;
-              continue;
-            }
-            g.font = bodyFont;
-            if (!L.justify || L.words.length === 1) {
-              g.fillText(L.words.join(" "), x0 + L.indent, ly);
-            } else {
-              const wd = L.words.map((t) => g.measureText(t).width);
-              const gap =
-                (colW - L.indent - wd.reduce((a, b) => a + b, 0)) /
-                (L.words.length - 1);
-              let cx = x0 + L.indent;
-              for (let k = 0; k < L.words.length; k++) {
-                g.fillText(L.words[k], cx, ly);
-                cx += wd[k] + gap;
-              }
-            }
-            ly += lh;
-          }
-          // the hairline runs only as deep as the type beside it
-          if (c > 0 && li > started0)
-            g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(ly - top + fs - lh));
-          deepest = Math.max(deepest, ly);
-        }
-        if (drop && dropCh) {
-          g.font = "700 " + dropSize + "px " + SERIF;
-          g.fillText(dropCh, left, top + lh * (DROPN - 1));
-        }
-        return Math.max(deepest, plate ? plate.y + plate.h : top);
-      };
+  let li = 0,
+    deepest = top;
+  for (let c = 0; c < cols && li < lines.length; c++) {
+    const x0 = left + c * (colW + gut);
+    let ly = top;
+    const from = li;
+    while (ly < bot && li < lines.length) {
+      if (
+        plate &&
+        x0 + colW > plate.x + 1 &&
+        x0 < plate.x + plate.w - 1 &&
+        ly > plate.y &&
+        ly - fs < plate.y + plate.h
+      ) {
+        ly += lh;
+        continue;
+      }
+      const L = lines[li++];
+      if (L.head) {
+        // a magazine's crossheads are tracked caps, not bold: bold in a
+        // text face this light reads as a different magazine
+        let ts = R(fs * 0.88);
+        g.font = ts + "px " + SERIF;
+        g.textAlign = "center";
+        const sp = ts * 0.18;
+        track(L.text.toUpperCase(), x0 + colW / 2, ly + fs * 0.2, sp);
+        ly += lh * 1.6;
+        continue;
+      }
+      const wd = L.toks.map((t) => {
+        g.font = t.caps ? capsFont : bodyFont;
+        return g.measureText(t.t).width;
+      });
+      const spaceW = (() => {
+        g.font = bodyFont;
+        return g.measureText(" ").width;
+      })();
+      const sum = wd.reduce((a, b) => a + b, 0);
+      const gap =
+        L.justify && L.toks.length > 1
+          ? (colW - L.indent - sum) / (L.toks.length - 1)
+          : spaceW;
+      let cx = x0 + L.indent;
+      for (let k = 0; k < L.toks.length; k++) {
+        g.font = L.toks[k].caps ? capsFont : bodyFont;
+        g.fillText(L.toks[k].t, cx, ly);
+        cx += wd[k] + gap;
+      }
+      ly += lh;
+    }
+    if (c > 0 && li > from)
+      g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(ly - top + fs - lh));
+    deepest = Math.max(deepest, ly);
+  }
+  if (drop && dropCh) {
+    g.font = "700 " + dropSize + "px " + SERIF;
+    g.textAlign = "left";
+    g.fillText(dropCh, left, top + lh * (DROPN - 1));
+  }
+  return Math.max(deepest, plate ? plate.y + plate.h : top);
+};
+
+/* How many lines of an article get set, as a fraction of what it runs
+ * to, floored and capped. A monthly gives a long read; a penny paper
+ * packs short items. These are the only numbers that make the eleven
+ * slots differ in height at all. */
+const budgetOf = (A, frac, lo, hi) => {
+  const words = A.body.reduce(
+    (n, b) => n + (b.h ? 0 : b.t.split(/\s+/).length),
+    0,
+  );
+  // about nine words to a line at these measures
+  return Math.max(lo, Math.min(hi, Math.round((words / 9) * frac)));
+};
 
       const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
 
@@ -3596,6 +3713,7 @@ Stage.register(
               fs,
               lh,
               cols: 1,
+              budget: budgetOf(A, 0.11, 12, 22),
               plate,
             }) + 12
           );
@@ -3648,66 +3766,121 @@ Stage.register(
             fs: 8.6,
             lh: 11.6,
             cols: 2,
+            budget: budgetOf(A, 0.16, 14, 34),
           });
           g.fillStyle = "#111111";
           g.fillRect(R(x0), R(end + 8), GALLEY_COL, 7);
           return end + 22;
         },
 
-        // air. a small tracked name, the title in the body face, an italic
-        // line under it, a tracked byline, and a drop cap
+        /* A MONTHLY. Not a newspaper with wider margins — a different object.
+         *
+         * Scribner's, the Atlantic and the Masses opened an article the same
+         * way for thirty years, and every part of it is doing work:
+         *
+         *  · the magazine's name small and widely tracked, because it is a
+         *    running head and not a masthead — the reader already knows what
+         *    they are holding;
+         *  · an ornament rather than a rule. A rule is a newspaper's way of
+         *    separating things that compete; a monthly has one article on the
+         *    page and nothing to separate it from, so the mark is decorative
+         *    and centred;
+         *  · the title in the TEXT face, never bold. This is the single thing
+         *    that separates a magazine from a paper at a glance: a paper shouts
+         *    its headline in a fatter cut, a monthly sets its title in the same
+         *    face as the essay and lets size and air do the work;
+         *  · the deck in italic, the author in tracked caps, both centred;
+         *  · a decorated initial three lines deep, and the opening words in
+         *    caps a size down, which is what carries the eye from a letter that
+         *    size back down into nine-point text;
+         *  · one plate, FULL MEASURE. The version before this one inset it to
+         *    sixty per cent of a single-column measure, so the text jumped the
+         *    whole line to clear it and left an L of white beside the picture
+         *    with an orphan under it;
+         *  · and an end mark, because a magazine article ends — it does not
+         *    simply stop when the column runs out.
+         */
         monthly(A, x0, top, capH) {
-          const M = 32,
+          const M = 40,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
             mid = x0 + GALLEY_COL / 2;
+
+          // the running head
           g.textAlign = "center";
-          let y = top + 26;
+          let y = top + 30;
           const nm = A.paper.toUpperCase();
-          const ms = fit(nm, "400", 10, meas * 0.7);
+          const ms = fit(nm, "400", 9.5, meas * 0.78);
           g.font = ms + "px " + SERIF;
-          track(nm, mid, y, ms * 0.42);
-          y += 9;
-          rule(mid - meas * 0.11, y, meas * 0.22, 1);
-          y += 32;
+          track(nm, mid, y, ms * 0.46);
+
+          // the ornament: two hairlines and a lozenge between them
+          y += 12;
+          const ow = meas * 0.3;
+          rule(mid - ow, y, ow - 7, 1);
+          rule(mid + 7, y, ow - 7, 1);
+          g.save();
+          g.translate(mid, y + 0.5);
+          g.rotate(Math.PI / 4);
+          g.fillRect(-2.1, -2.1, 4.2, 4.2);
+          g.restore();
+
+          // the title, in the text face
+          /* Letterspaced. A monthly's title is set in the text face, and a
+           * text face at title size set solid reads as a paragraph that grew;
+           * the tracking is what makes it a title. Fitted to a narrower
+           * measure first, because the fitting cannot see the tracking it is
+           * about to be given. */
+          y += 36;
           let hs = 25;
-          for (const l of A.head) hs = Math.min(hs, fit(l, "400", 25, meas * 0.92));
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "400", 25, meas * 0.86));
           g.font = "400 " + hs + "px " + SERIF;
           for (const l of A.head) {
-            g.fillText(l, mid, y);
-            y += R(hs * 1.16);
+            track(l, mid, y, hs * 0.045);
+            y += R(hs * 1.2);
           }
-          y += 11;
-          const ss = fit(A.sub, "400", 9.5, meas * 0.86);
-          g.font = "italic " + ss + "px " + SERIF;
+
+          // the deck, italic, and the author in tracked caps
+          y += 6;
+          const ss = fit(A.sub, "italic 400", 9.5, meas * 0.9);
+          g.font = "italic 400 " + ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
-          y += 19;
+          y += 20;
           const bs = 7.5;
           g.font = bs + "px " + SERIF;
-          track(A.by, mid, y, bs * 0.5);
-          y += 26;
+          track(A.by, mid, y, bs * 0.62);
+          y += 30;
+
           g.textAlign = "left";
           const fs = 9.5,
-            lh = 13.4;
-          const plate =
-            A.cut === "square"
-              ? { x: left + meas * 0.4, w: meas * 0.6, y: y + lh * 6, h: 0 }
-              : null;
+            lh = 14.4;
+
+          /* The plate takes the whole measure and sits four lines in, so the
+           * opening — initial, caps, first sentence — is read before the eye
+           * is given anywhere else to go. */
+          const plate = A.cut
+            ? { x: left, w: meas, y: y + lh * 6, h: 0 }
+            : null;
           if (plate)
-            plate.h = cut(plate.x, plate.y, plate.w, 52, A.cap, imgOf(A)) - plate.y;
-          return (
-            flowCol(A, {
-              left,
-              meas,
-              top: y,
-              bot: top + capH - 14,
-              fs,
-              lh,
-              cols: 1,
-              drop: true,
-              plate,
-            }) + 14
-          );
+            plate.h =
+              cut(plate.x, plate.y, plate.w, 78, A.cap, imgOf(A), "centre") -
+              plate.y;
+
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 26,
+            fs, lh, cols: 1, drop: true, plate,
+            openCaps: 4,
+            budget: budgetOf(A, 0.1, 11, 20),
+          });
+
+          // the end mark
+          g.save();
+          g.translate(mid, end + 9);
+          g.rotate(Math.PI / 4);
+          g.fillRect(-2.4, -2.4, 4.8, 4.8);
+          g.restore();
+          return end + 26;
         },
 
         // eight point and hairlines. a price between two rules, a deck that
@@ -3765,6 +3938,7 @@ Stage.register(
               fs: 7.6,
               lh: 10.2,
               cols: 2,
+              budget: budgetOf(A, 0.28, 24, 60),
             }) + 12
           );
         },
@@ -3809,12 +3983,14 @@ Stage.register(
           y += 18;
           const fs = 9,
             lh = 12.2;
-          const plate =
-            A.cut === "left"
-              ? { x: left, w: meas * 0.54, y: y + lh * 3, h: 0 }
-              : null;
+          /* Full measure, for the same reason the monthly's is. Inset to half
+           * a single-column measure the text could not run beside it — it
+           * jumped the whole line — and left an L of white with an orphan
+           * stranded under the picture. */
+          const plate = A.cut ? { x: left, w: meas, y: y + lh * 3, h: 0 } : null;
           if (plate)
-            plate.h = cut(plate.x, plate.y, plate.w, 50, A.cap, imgOf(A)) - plate.y;
+            plate.h =
+              cut(plate.x, plate.y, plate.w, 64, A.cap, imgOf(A)) - plate.y;
           return (
             flowCol(A, {
               left,
@@ -3824,6 +4000,7 @@ Stage.register(
               fs,
               lh,
               cols: 1,
+              budget: budgetOf(A, 0.11, 12, 22),
               plate,
             }) + 12
           );
