@@ -115,10 +115,6 @@
      passage de main se fait blanc sur blanc, donc aucun n'a de transition. */
   #veil{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:#fff}
 
-  #hud{position:fixed;right:10px;top:52px;z-index:99;background:rgba(20,20,28,.9);
-       color:#8de08d;padding:7px 9px;white-space:pre;pointer-events:none;
-       font:600 10.5px/1.4 ui-monospace,Menlo,monospace}
-
   /* Le hero occupe la fenêtre, exactement : deux rangées, le titre centré
      dans ce qui reste une fois l'en-tête réservé, le pied posé sur la
      gouttière du bas. En flex centré, les deux flottaient ensemble au milieu
@@ -1475,10 +1471,6 @@
     header .hnav a{display:none}
     .hmenu{display:block}
     .wordmark{font-size:19px}
-    /* Le témoin de mise au point n'a plus de place en haut à droite : il
-       recouvrait le compteur du parcours et le nom de la famille. */
-    #hud{right:6px;top:auto;bottom:6px;font-size:9px;padding:5px 6px;opacity:.75}
-
     /* ---- le hero ------------------------------------------------------
        Les deux boutons faisaient 344 px de large pour 346 disponibles : le
        second passait à la ligne dès qu'une police chargeait un demi-pixel
@@ -1718,7 +1710,6 @@
     <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">Get the skills <em>&nearr;</em></a>
   </nav>
 </div>
-<div id="hud">initialisation…</div>
 <div id="veil" aria-hidden="true"></div>
 
 <div id="hero-arc">
@@ -3250,23 +3241,6 @@
       trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });
-
-  let frames = 0, lastT = performance.now(), stalls = 0;
-  const beat = () => {
-    frames++;
-    const now = performance.now(), d = now - lastT;
-    if (d >= 500) {
-      const fps = Math.round(frames / (d / 1000));
-      frames = 0; lastT = now;
-      if (d > 1200) stalls++;
-      hud.textContent = 'y ' + Math.round(scrollY) + '\nfps ' + fps +
-        '\npiste ' + Math.round(track.scrollWidth) + ' / ' + innerWidth +
-        '\nblocages ' + stalls + '\nscene ' + (window.__active || '—') +
-        '\nT · post-it ' + (notesOn ? 'on' : 'off');
-    }
-    requestAnimationFrame(beat);
-  };
-  requestAnimationFrame(beat);
 
   /* ---- ce que fait Splash ------------------------------------------------
    * Six temps qui se croisent SUR PLACE. Aucun ne glisse : le seul mouvement

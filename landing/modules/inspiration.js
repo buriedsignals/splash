@@ -264,77 +264,6 @@ Stage.register(
     outColor = vec4(t.rgb * uDim, t.a * uAlpha);
   }`;
 
-    /* ----------------------------------------------------------- dev controls */
-    function buildPanel(onChange) {
-      const box = document.createElement("div");
-      box.style.cssText =
-        "position:fixed;right:16px;top:80px;z-index:9999;display:none;gap:7px;" +
-        "background:#14141c;color:#edeae3;padding:14px 16px;font:500 11px/1.5 " +
-        "'Public Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;min-width:250px";
-      const rows = [
-        ["count", 6, 70, 1],
-        ["rMouth", 1, 8, 0.1],
-        ["rThroat", 0, 2.5, 0.05],
-        ["centerX", -2, 2, 0.05],
-        ["centerY", -1.5, 1.5, 0.05],
-        ["swallow", 0.1, 0.95, 0.02],
-        ["clear", 0, 1.4, 0.02],
-        ["clearFade", 0.05, 1, 0.02],
-        ["shrink", 0, 0.95, 0.02],
-        ["dim", 0.2, 1, 0.02],
-        ["flatten", 0.2, 1.2, 0.02],
-        ["zMouth", -6, 0, 0.1],
-        ["zThroat", -30, -3, 0.5],
-        ["spin", -0.3, 0.3, 0.005],
-        ["swirl", -8, 8, 0.1],
-        ["roll", 0, 2, 0.05],
-        ["suck", 0, 0.15, 0.002],
-        ["pull", 0, 4, 0.05],
-        ["mouse", 0, 2, 0.05],
-        ["fov", 25, 95, 1],
-      ];
-      for (const [key, min, max, stp] of rows) {
-        const row = document.createElement("label");
-        row.style.cssText =
-          "display:grid;grid-template-columns:62px 1fr 46px;gap:8px;align-items:center";
-        const name = document.createElement("span");
-        name.textContent = key;
-        const input = document.createElement("input");
-        input.type = "range";
-        input.min = min;
-        input.max = max;
-        input.step = stp;
-        input.value = P[key];
-        input.style.cssText = "width:100%;accent-color:#f2b13c";
-        const out = document.createElement("span");
-        out.style.cssText =
-          "text-align:right;font-variant-numeric:tabular-nums";
-        out.textContent = P[key];
-        input.addEventListener("input", () => {
-          P[key] = parseFloat(input.value);
-          out.textContent = P[key];
-          onChange(key);
-        });
-        row.append(name, input, out);
-        box.appendChild(row);
-      }
-      const dump = document.createElement("button");
-      dump.textContent = "copy values";
-      dump.style.cssText =
-        "margin-top:10px;width:100%;background:#f2b13c;border:0;padding:7px;font:inherit;cursor:pointer";
-      dump.addEventListener("click", () => {
-        const txt = JSON.stringify(P);
-        navigator.clipboard?.writeText(txt);
-        console.log("[inspiration]", txt);
-      });
-      box.appendChild(dump);
-      document.body.appendChild(box);
-      addEventListener("keydown", (e) => {
-        if (e.key === "i" || e.key === "I")
-          box.style.display = box.style.display === "none" ? "grid" : "none";
-      });
-    }
-
     /* -------------------------------------------------------------- lifecycle */
     return {
       name: "inspiration",
@@ -449,11 +378,6 @@ Stage.register(
           document.fonts.ready.then(build).catch(build);
         } else build();
 
-        buildPanel((key) => {
-          if (key === "count") tiles = seed(P.count);
-          if (key === "flatten") this.resize(innerWidth, innerHeight);
-          this.resize(innerWidth, innerHeight);
-        });
         this.resize(innerWidth, innerHeight);
       },
 

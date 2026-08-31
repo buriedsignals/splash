@@ -763,64 +763,6 @@ void main(){
   outColor = vec4(col, 1.0);
 }`;
 
-    /* --------------------------------------------------- le panneau, touche P
-     * La taille d'une tuile en orbite et son rayon se règlent à l'œil : trop
-     * grande elle mange le mot, trop loin elle sort du cadre, et les deux
-     * bougent ensemble parce qu'une tuile tournée d'un quart présente sa
-     * diagonale. Un curseur dit ça en deux secondes ; une conversation, non. */
-    function buildPanel() {
-      const box = document.createElement("div");
-      box.style.cssText =
-        "position:fixed;right:16px;bottom:16px;z-index:9999;display:none;gap:7px;" +
-        "background:#14141c;color:#edeae3;padding:14px 16px;font:500 11px/1.5 " +
-        "'Space Grotesk',ui-monospace,monospace;letter-spacing:.07em;" +
-        "text-transform:uppercase;min-width:250px";
-      const rows = [
-        ["size", 0.3, 2.4, 0.02],
-        ["rad", 0.2, 1.4, 0.01],
-        ["orb", 0, 8, 0.1],
-        ["spin", 0, 10, 0.1],
-        ["away", 0.5, 4, 0.05],
-        ["settle", 0.4, 4, 0.05],
-      ];
-      for (const [key, min, max, step] of rows) {
-        const row = document.createElement("label");
-        row.style.cssText =
-          "display:grid;grid-template-columns:54px 1fr 42px;gap:8px;align-items:center";
-        const name = document.createElement("span");
-        name.textContent = key;
-        const input = document.createElement("input");
-        input.type = "range";
-        input.min = min; input.max = max; input.step = step; input.value = P[key];
-        input.style.cssText = "width:100%;accent-color:#1a2ffb";
-        const out = document.createElement("span");
-        out.style.cssText = "text-align:right;font-variant-numeric:tabular-nums";
-        out.textContent = P[key];
-        input.addEventListener("input", () => {
-          P[key] = parseFloat(input.value);
-          out.textContent = P[key];
-        });
-        row.append(name, input, out);
-        box.appendChild(row);
-      }
-      const dump = document.createElement("button");
-      dump.textContent = "copier";
-      dump.style.cssText =
-        "margin-top:10px;width:100%;background:#1a2ffb;color:#edeae3;border:0;" +
-        "padding:7px;font:inherit;cursor:pointer";
-      dump.addEventListener("click", () => {
-        const txt = JSON.stringify(P);
-        navigator.clipboard?.writeText(txt);
-        console.log("[publish]", txt);
-      });
-      box.appendChild(dump);
-      document.body.appendChild(box);
-      addEventListener("keydown", (e) => {
-        if (e.key === "p" || e.key === "P")
-          box.style.display = box.style.display === "none" ? "grid" : "none";
-      });
-    }
-
     return {
       name: "sheets",
       section: "#does",
@@ -858,8 +800,6 @@ void main(){
           tx = (e.clientX / innerWidth) * 2 - 1;
           ty = (e.clientY / innerHeight) * 2 - 1;
         }, { passive: true });
-
-        buildPanel();
       },
 
       frame(ctx) {

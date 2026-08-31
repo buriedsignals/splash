@@ -169,89 +169,6 @@ const Stage = (() => {
     return t;
   }
 
-  /* ------------------------------------------------------------------ meter
-   * A stats.js-shaped readout, written out rather than pulled in: the page has
-   * to stay a single file with no CDN, and the panel is four numbers and a bar
-   * graph. Off unless asked for — "?stats" in the URL, or the S key.
-   */
-  const meter = (() => {
-    let box,
-      num,
-      gfx,
-      on = false,
-      w = 78,
-      h = 30;
-    let frames = 0,
-      acc = 0,
-      worst = 0,
-      cost = 0,
-      since = 0;
-    const bars = new Array(w).fill(0);
-
-    function build() {
-      box = document.createElement("div");
-      box.style.cssText =
-        "position:fixed;left:8px;bottom:8px;z-index:99999;padding:6px 7px 5px;" +
-        "background:rgba(12,12,16,.86);border:1px solid rgba(255,255,255,.14);" +
-        "font:600 10px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;" +
-        "color:#8de08d;letter-spacing:.04em;pointer-events:none;" +
-        "-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)";
-      num = document.createElement("div");
-      gfx = document.createElement("canvas");
-      gfx.width = w * 2;
-      gfx.height = h * 2;
-      gfx.style.cssText = `display:block;width:${w}px;height:${h}px;margin-top:4px`;
-      box.appendChild(num);
-      box.appendChild(gfx);
-      document.body.appendChild(box);
-    }
-
-    function paint(fps, ms) {
-      // the active module may name the path it is on, so a slow frame can be
-      // pinned to a phase instead of guessed at
-      const tag = window.__glPath ? "  " + window.__glPath : "";
-      num.textContent = `${fps} FPS  ${ms.toFixed(1)} MS${tag}`;
-      num.style.color =
-        fps >= 50 ? "#8de08d" : fps >= 30 ? "#e8c86a" : "#e88080";
-      const c = gfx.getContext("2d");
-      c.setTransform(2, 0, 0, 2, 0, 0);
-      c.clearRect(0, 0, w, h);
-      c.fillStyle = "rgba(255,255,255,.07)";
-      c.fillRect(0, 0, w, h);
-      for (let i = 0; i < w; i++) {
-        const v = Math.min(1, bars[i] / 70); // 70 fps full scale
-        if (!bars[i]) continue;
-        c.fillStyle =
-          bars[i] >= 50 ? "#8de08d" : bars[i] >= 30 ? "#e8c86a" : "#e88080";
-        c.fillRect(i, h - v * h, 1, v * h);
-      }
-    }
-
-    return {
-      toggle(force) {
-        on = force === undefined ? !on : force;
-        if (on && !box) build();
-        if (box) box.style.display = on ? "block" : "none";
-      },
-      // dt is the real frame interval; ms is what the active module cost us
-      tick(dt, ms) {
-        if (!on) return;
-        frames++;
-        acc += dt;
-        worst = Math.max(worst, ms);
-        if (acc < 0.5) return;
-        const fps = Math.round(frames / acc);
-        bars.shift();
-        bars.push(fps);
-        cost = worst;
-        paint(fps, cost);
-        frames = 0;
-        acc = 0;
-        worst = 0;
-      },
-    };
-  })();
-
   /* -------------------------------------------------------------- lifecycle */
   function boot() {
     if (started) return;
@@ -285,11 +202,6 @@ const Stage = (() => {
         mod.ready = false;
       }
     }
-    if (/[?&]stats\b/.test(location.search)) meter.toggle(true);
-    addEventListener("keydown", (e) => {
-      if (e.key === "s" || e.key === "S") meter.toggle();
-    });
-
     requestAnimationFrame(frame);
   }
 
@@ -399,7 +311,6 @@ const Stage = (() => {
         gl.ONE,
         gl.ONE_MINUS_SRC_ALPHA,
       );
-      const t0 = performance.now();
       try {
         active.frame({
           t: time,
@@ -415,9 +326,6 @@ const Stage = (() => {
         note("frame:" + active.name, e);
         active.ready = false;
       }
-      meter.tick(dt, performance.now() - t0);
-    } else {
-      meter.tick(dt, 0);
     }
     requestAnimationFrame(frame);
   }
