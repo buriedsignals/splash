@@ -4300,7 +4300,7 @@ uniform vec4 uWin;
  * was below the pivot goes to black, what was above it stays paper. x is the
  * pivot, y the steepness; a zero y leaves the sample alone, which is what
  * every plate passes. */
-uniform vec2 uInkC;
+uniform vec3 uInkC;   // pivot, gain, mip bias
 uniform vec3 uBG;
 uniform float uRoom, uExposure, uPresence;
 // The flood at the end of the chapter: the sheet is taken to one flat colour
@@ -4337,7 +4337,11 @@ void main(){
     // column can never bleed into the one set beside it.
     st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
-  vec3 base = texture(uTex, st).rgb;
+  /* A sharper mip than the card would pick. It chooses one from the rate the
+   * coordinates change, which is right for a photograph and wrong for type:
+   * the level it lands on has already averaged the ink away. Half a level
+   * back costs some aliasing on the rules and gives the type its edges. */
+  vec3 base = texture(uTex, st, uInkC.z).rgb;
   if(uInkC.y > 0.0) base = clamp((base - uInkC.x) * uInkC.y + uInkC.x, 0.0, 1.0);
   vec3 col = base * uLift * vShade;
   col = 1.0 - exp(-col * uExposure);
@@ -4496,22 +4500,40 @@ void main(){
       // the three webs. Widths and heights are fractions of what the camera
       // can see at the webs' own depth, so the composition holds on any frame
       // rather than being a set of world units tuned to one window.
-      webW: ARC0 ? 0.17 : 0.2, // half-width, in visible half-widths
+      // and wider on paper: 400 texels of column shown across 300 pixels is a
+      // minification the type does not survive. At 0.24 it is near enough
+      // one to one.
+      webW: ARC0 ? 0.17 : 0.24,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
-      webSpread: 0.6, // where the outer two sit, in visible half-widths
+      // wider apart on paper, so the ground still shows between the webs —
+      // at 0.6 the three columns closed up into one sheet
+      webSpread: ARC0 ? 0.6 : 0.68,
       // The height at which the paper starts going back into the machine. On
       // ink a long fade reads as the web leaving; on paper it reads as a
       // gradient, so on paper it is held much later.
-      webEdge: ARC0 ? 0.5 : 0.82,
+      /* And on paper it comes back to 0.66. At 0.82 the webs ran to the top
+       * of the frame and the navigation sat on dense body type; the fade frees
+       * the header band and the foot without reading as a gradient. */
+      webEdge: ARC0 ? 0.5 : 0.66,
       webSpeed: 0.052, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // On ink the webs are the light in the frame and are lifted to it. On
       // paper they are ON the light, and lifted the same they blew out to
       // white — the ground and the web became one surface.
       webLift: ARC0 ? 1.34 : 1.0,
-      inkPivot: 0.62, // where the curve splits ink from paper
-      inkGain: ARC0 ? 0.0 : 1.85, // and how hard; nothing on ink, where the
-      // type is already carried by the block's own contrast
+      /* WHERE THE CURVE SPLITS INK FROM PAPER, and it is not a taste value.
+       *
+       * The ground mapping sends any sample above 0.577 toward WHITE and
+       * anything below it toward the ink. After the mipmap has averaged a line
+       * of nine-point type with the paper around it, that line arrives at
+       * about 0.7 — above the threshold, so it was being drawn LIGHTER than
+       * the ground it sits on. That is why it could not be read, and no gain
+       * would have fixed it: the pivot was on the wrong side. At 0.84 the
+       * averaged type lands under the threshold and goes dark, while the
+       * paper, which arrives at 1.0, still clears it. */
+      inkPivot: 0.84,
+      inkGain: ARC0 ? 0.0 : 2.0,
+      inkBias: ARC0 ? 0.0 : -0.65, // half a mip sharper, for the type's edges
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -6053,7 +6075,7 @@ void main(){
           gl.uniform3f(uq.uAy, 0, hh, 0);
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
-          gl.uniform2f(uq.uInkC, P.inkPivot, P.inkGain);
+          gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
           const du = GALLEY_COL / GALLEY_W,
             gutter = (GALLEY_COL + GALLEY_GAP) / GALLEY_W;
@@ -6119,7 +6141,7 @@ void main(){
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
           gl.uniform1f(uq.uEdge, 0);
-          gl.uniform2f(uq.uInkC, 0.5, 0.0);
+          gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);
           gl.uniform1f(uq.uWash, 0);
