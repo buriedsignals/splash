@@ -3611,13 +3611,35 @@ const flowCol = (A, o) => {
     firstPara = false;
   }
 
+  /* THE COLUMNS ARE BALANCED, not filled one after the other.
+   *
+   * Filling the first column to the foot of the slot and pouring what was left
+   * into the second gave the second three lines and a great white block under
+   * them — on a two-column page that is the most visible fault there is. Every
+   * line is a slot, a crosshead is two, and the plate blocks as many as it is
+   * deep in the column it sits in; the depth is what all of that comes to,
+   * divided by the number of columns. Every column then ends on the same line
+   * and the page has no hole in it. */
+  const slotsOf = (L) => (L.head ? 2 : 1);
+  let need = 0;
+  for (const L of lines) need += slotsOf(L);
+  const blocked = plate ? Math.ceil(plate.h / lh) + 1 : 0;
+  const depth = Math.max(
+    4,
+    Math.min(
+      Math.floor((bot - top) / lh),
+      Math.ceil((need + blocked) / cols),
+    ),
+  );
+
   let li = 0,
     deepest = top;
   for (let c = 0; c < cols && li < lines.length; c++) {
     const x0 = left + c * (colW + gut);
     let ly = top;
     const from = li;
-    while (ly < bot && li < lines.length) {
+    let used = 0;
+    while (used < depth && li < lines.length) {
       if (
         plate &&
         x0 + colW > plate.x + 1 &&
@@ -3626,6 +3648,7 @@ const flowCol = (A, o) => {
         ly - fs < plate.y + plate.h
       ) {
         ly += lh;
+        used++;
         continue;
       }
       const L = lines[li++];
@@ -3638,6 +3661,7 @@ const flowCol = (A, o) => {
         const sp = ts * 0.18;
         track(L.text.toUpperCase(), x0 + colW / 2, ly + fs * 0.2, sp);
         ly += lh * 1.6;
+        used += 2;
         continue;
       }
       const wd = L.toks.map((t) => {
@@ -3660,10 +3684,11 @@ const flowCol = (A, o) => {
         cx += wd[k] + gap;
       }
       ly += lh;
+      used++;
     }
     if (c > 0 && li > from)
       g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(ly - top + fs - lh));
-    deepest = Math.max(deepest, ly);
+    deepest = Math.max(deepest, top + depth * lh);
   }
   if (drop && dropCh) {
     g.font = "700 " + dropSize + "px " + SERIF;
@@ -3734,13 +3759,15 @@ const budgetOf = (A, frac, lo, hi) => {
           g.textAlign = "left";
           const fs = 9.5,
             lh = 12.6;
-          const plate = A.cut
-            ? plateBox(left, y + lh * 4, meas, 196, imgOf(A))
-            : null;
-          if (plate)
-            plate.h =
-              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) -
-              plate.y;
+          /* The cut OPENS the body; it does not interrupt it. Dropped four
+           * lines in, on a single column, it fell in the middle of a sentence
+           * — the reader got half a clause, a photograph, and then the other
+           * half. Above the first line it costs nothing and reads as a plate. */
+          if (A.cut) {
+            const b = plateBox(left, y, meas, 178, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 9;
+          }
+          const plate = null;
           return (
             flowCol(A, {
               left,
@@ -3828,9 +3855,9 @@ const budgetOf = (A, frac, lo, hi) => {
           const ms = fit(nm, "400", 9.5, meas * 0.78);
           g.font = ms + "px " + SERIF;
           track(nm, mid, y, ms * 0.46);
-          y += 12;
+          y += 15;
           lozenge(mid, y, meas * 0.3);
-          y += 38;
+          y += 42;
           let hs = 25;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "400", 25, meas * 0.86));
@@ -3874,9 +3901,9 @@ const budgetOf = (A, frac, lo, hi) => {
           const ms = fit(nm, "400", 9, meas * 0.6);
           g.font = ms + "px " + SERIF;
           track(nm, mid, y, ms * 0.5);
-          y += 10;
+          y += 14;
           rule(left, y, meas, 1);
-          y += 30;
+          y += 34;
           let hs = 23;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "400", 23, meas * 0.8));
@@ -3885,9 +3912,9 @@ const budgetOf = (A, frac, lo, hi) => {
             track(l, mid, y, hs * 0.05);
             y += R(hs * 1.16);
           }
-          y += 4;
+          y += 11;
           rule(mid - meas * 0.14, y, meas * 0.28, 1);
-          y += 16;
+          y += 21;
           const ss = fit(A.sub, "italic 400", 9, meas * 0.86);
           g.font = "italic 400 " + ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
@@ -3903,9 +3930,14 @@ const budgetOf = (A, frac, lo, hi) => {
            * handed the whole measure and a portrait to fit — it punched a hole
            * through the middle of both columns and dropped its caption over
            * the type on either side of it. */
+          /* The cut heads the SECOND column. In the measure it holed both
+           * columns and dropped its caption over the type either side; four
+           * lines down the first column it cut the opening sentence in two.
+           * At the head of column two it interrupts nothing: column one runs
+           * clean from its initial, column two starts under the picture. */
           const colW = (meas - 9) / 2;
           const plate = A.cut
-            ? plateBox(left, y + lh * 3, colW, 210, imgOf(A))
+            ? plateBox(left + colW + 9, y, colW, 214, imgOf(A))
             : null;
           if (plate)
             plate.h =
@@ -3936,9 +3968,9 @@ const budgetOf = (A, frac, lo, hi) => {
           const ms = fit(nm, "700", 11, meas * 0.5);
           g.font = "700 " + ms + "px " + SERIF;
           trackDraw(nm, left, y, ms * 0.3);
-          y += 10;
+          y += 14;
           rule(left, y, meas, 4);
-          y += 46;
+          y += 50;
           let hs = 32;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "700", 32, meas * 0.98));
@@ -3954,9 +3986,9 @@ const budgetOf = (A, frac, lo, hi) => {
           y += 16;
           g.font = "7.5px " + SERIF;
           trackDraw(A.by, left, y, 7.5 * 0.55);
-          y += 8;
+          y += 12;
           rule(left, y, meas * 0.22, 1);
-          y += 26;
+          y += 30;
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 22,
             fs: 9.5, lh: 14.8, cols: 1,
@@ -3986,11 +4018,11 @@ const budgetOf = (A, frac, lo, hi) => {
           y += 14;
           // the headpiece, before anything else on the page
           if (A.cut) {
-            const p = plateBox(left, y, meas, 168, imgOf(A));
+            const p = plateBox(left + meas * 0.17, y, meas * 0.66, 150, imgOf(A));
             y = cut(p.x, p.y, p.w, p.h, A.cap, imgOf(A), "centre") + 12;
           }
           rule(left, y, meas, 1);
-          y += 28;
+          y += 34;
           let hs = 24;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "700", 24, meas * 0.92));
@@ -3999,13 +4031,13 @@ const budgetOf = (A, frac, lo, hi) => {
             g.fillText(l, mid, y);
             y += R(hs * 1.1);
           }
-          y += 4;
+          y += 9;
           const ss = fit(A.sub, "400", 9, meas * 0.9);
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
-          y += 8;
-          rule(mid - meas * 0.12, y, meas * 0.24, 1);
           y += 12;
+          rule(mid - meas * 0.12, y, meas * 0.24, 1);
+          y += 17;
           g.font = "7.5px " + SERIF;
           track(A.by, mid, y, 7.5 * 0.6);
           y += 22;
@@ -4131,13 +4163,12 @@ const budgetOf = (A, frac, lo, hi) => {
            * a single-column measure the text could not run beside it — it
            * jumped the whole line — and left an L of white with an orphan
            * stranded under the picture. */
-          const plate = A.cut
-            ? plateBox(left, y + lh * 3, meas, 200, imgOf(A))
-            : null;
-          if (plate)
-            plate.h =
-              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) -
-              plate.y;
+          // the cut opens the body here too, for the same reason
+          if (A.cut) {
+            const b = plateBox(left, y, meas, 182, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 9;
+          }
+          const plate = null;
           return (
             flowCol(A, {
               left,
