@@ -99,7 +99,8 @@ Stage.register(
         tpl: "broadsheet",
         cols: 3,
         cut: "wide",
-        cap: "THE ANTECHAMBER OF THE TOMB, LOOKING NORTH.",
+        cap: "THE ANTECHAMBER OF THE TOMB. PHOTOGRAPH BY HARRY BURTON, 1922.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Tutankhamun_tomb_photographs_2_011.jpg/960px-Tutankhamun_tomb_photographs_2_011.jpg",
       },
       {
         paper: "The New York World",
@@ -140,7 +141,8 @@ Stage.register(
         tpl: "tabloid",
         cols: 2,
         cut: "band",
-        cap: "THE WOMEN'S PAVILION, BLACKWELL'S ISLAND.",
+        cap: "NEW YORK CITY ASYLUM FOR THE INSANE (WOMEN), BLACKWELL'S ISLAND.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/468_NEW-YORK_CITY_ASYLUM_FOR_THE_INSANE_%28WOMAN%29_BLACKWELL%27S_ISLAND.jpg/960px-468_NEW-YORK_CITY_ASYLUM_FOR_THE_INSANE_%28WOMAN%29_BLACKWELL%27S_ISLAND.jpg",
       },
       {
         paper: "The Morning Chronicle",
@@ -205,7 +207,8 @@ Stage.register(
         tpl: "monthly",
         cols: 2,
         cut: "square",
-        cap: "A REAR TENEMENT IN MULBERRY STREET.",
+        cap: "BANDIT'S ROOST, 59½ MULBERRY STREET. PHOTOGRAPH BY JACOB RIIS.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg/960px-Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg",
       },
       {
         paper: "The North Star",
@@ -492,7 +495,8 @@ Stage.register(
         tpl: "rail",
         cols: 4,
         cut: "left",
-        cap: "A COURT OFF THE HAYMARKET.",
+        cap: "WENTWORTH STREET, WHITECHAPEL. ENGRAVING BY GUSTAVE DORÉ, 1872.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Gustave_Dor%C3%A9_-_Wentworth_Street_Whitechapel_-_London%2C_a_Pilgrimage.jpg/960px-Gustave_Dor%C3%A9_-_Wentworth_Street_Whitechapel_-_London%2C_a_Pilgrimage.jpg",
       },
       {
         paper: "McClure's Magazine",
@@ -561,7 +565,8 @@ Stage.register(
         tpl: "rail",
         cols: 3,
         cut: "left",
-        cap: "THE MUNICIPAL ASSEMBLY, ST. LOUIS.",
+        cap: "THE MUNICIPAL COURTS BUILDING, ST. LOUIS.",
+        img: "https://upload.wikimedia.org/wikipedia/commons/c/c9/Municipal_Courts_Building_%28NBY_433708%29.jpg",
       },
       {
         paper: "The San Francisco Examiner",
@@ -630,7 +635,8 @@ Stage.register(
         tpl: "tabloid",
         cols: 3,
         cut: "band",
-        cap: "THE FIELD AT CHICKAMAUGA, LOOKING SOUTH.",
+        cap: "THE CHICKAMAUGA BATTLEFIELD, SEPTEMBER 1863.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Chickamauga_battlefield._%28Sept_19-20%2C_1863%29_LOC_99447309.jpg/960px-Chickamauga_battlefield._%28Sept_19-20%2C_1863%29_LOC_99447309.jpg",
       },
     ];
     /* The draw is published and overridable. A page that prints a different
@@ -3235,45 +3241,87 @@ Stage.register(
     /* ----------------------------------------------------------- the galley
      * The hero is paper coming off a press, and a web of newsprint has no page
      * boundary — so what the webs carry cannot be a front page. It is a
-     * GALLEY: one measure, set end to end, the eleven papers following one
-     * another down the column with their mastheads between them.
+     * GALLEY: one measure, the eleven papers following one another down the
+     * column with their mastheads between them.
      *
      * Three galleys are set SIDE BY SIDE into one texture. Three webs then
      * cost one upload rather than three, and each reads its own column at its
-     * own offset. Only v repeats; u is clamped, and the columns are set apart
-     * by a strip of dead paper, so no column can ever bleed into its
-     * neighbour under a mipmap.
+     * own offset. Only v repeats; u is clamped and the columns are set apart
+     * by a strip of dead paper, so no column can bleed into its neighbour
+     * under a mipmap.
      *
-     * Each paper gets a SLOT of equal height and is cut off at the end of it.
-     * That is what makes the loop seamless: every slot boundary is the same
-     * rule, so the join between the last slot and the first is one more
-     * article break rather than a visible seam. Setting each paper in full
-     * would also put a masthead every forty thousand pixels, and what makes a
-     * web read as newspaper is meeting a new one often.
+     * Every paper is set by ITS OWN PRESS. Each article names one in `tpl` and
+     * the five are the five the front page knows. What separates them is what
+     * separates them on a page, and none of it is decoration: where the name
+     * sits and how it is set, what the rules do, whether the headline is
+     * centred or ranged left and in which face, and what furniture the press
+     * carries at all.
+     *
+     * A slot is AS TALL AS ITS ARTICLE, measured before anything is drawn. The
+     * first version gave every press a hand-written weight, and a paper whose
+     * body ran out before its slot did left a hole — which no newspaper has,
+     * because the column simply goes on. The three columns hold the same
+     * eleven articles in three orders, so their totals agree and one lap is
+     * exactly the texture's height however the measuring comes out. That is
+     * what keeps the loop seamless.
      */
-    // A rate and a starting height per web. Both are read once per frame; the
-    // rates are within a tenth of each other so the three stay a set.
+    // A rate and a starting height per web. The rates are within a tenth of
+    // each other so the three stay a set, and apart enough that the gap
+    // between two mastheads keeps changing — which is what says three presses
+    // rather than one image cut into three.
     const WEB_SPD = [1.0, 0.912, 1.068];
     const WEB_PHASE = [0.0, 0.37, 0.71];
 
     const GALLEY_COL = 400; // the measure of one web, in texels
     const GALLEY_GAP = 16; // dead paper between two columns of the atlas
-    const GALLEY_H = 4400; // one lap: eleven slots, each its press's height
+    const GALLEY_MIN = 250; // the shortest a slot may be
+    /* And the longest — a memory decision as much as a typographic one. A lap
+     * is one texture: uncapped, the two densest papers alone took the sheet to
+     * 7260 rows, and at three columns wide that is thirty-four megabytes
+     * before mipmaps. It read badly too, because an eight-point paper allowed
+     * to run six hundred rows is a grey slab. */
+    const GALLEY_MAX = 520;
     const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
+    // Settled by the measuring pass, and read by the frame to size the window
+    // it slides down the web. Never a literal.
+    let GALLEY_H = 4400;
 
-    function buildGalley() {
-      const cv = document.createElement("canvas");
-      cv.width = GALLEY_W;
-      cv.height = GALLEY_H;
-      const g = cv.getContext("2d");
+    /* The photographs. Every one of these is a real plate belonging to the
+     * story it sits in, public domain, and served with an open CORS header —
+     * which the hero needs, because a canvas that has drawn a cross-origin
+     * image without one cannot be uploaded as a texture at all.
+     *
+     * They are fetched, not carried: the page holds no image files. If one
+     * fails, or the header ever goes away, the press keeps the drawn plate it
+     * had before and nothing else changes.
+     */
+    const PRESS_IMG = new Map();
+    function loadPressImages(done) {
+      const urls = [...new Set(ARTICLES.map((a) => a.img).filter(Boolean))];
+      let left = urls.length;
+      if (!left) return;
+      for (const u of urls) {
+        const im = new Image();
+        im.crossOrigin = "anonymous";
+        im.onload = () => {
+          PRESS_IMG.set(u, im);
+          if (!--left) done();
+        };
+        im.onerror = () => {
+          if (!--left) done();
+        };
+        im.src = u;
+      }
+    }
+
+    /* The five presses, bound to one drawing context. Bound rather than free
+     * because the galley is composed twice: once onto a scratch canvas to find
+     * out how tall each paper wants to be, and once for real. Each press
+     * returns the height it used. */
+    function galleyPresses(g) {
       const SERIF = '"Times New Roman", Times, Georgia, serif';
       const R = Math.round;
-      g.fillStyle = "#ffffff";
-      g.fillRect(0, 0, GALLEY_W, GALLEY_H);
-      g.textBaseline = "alphabetic";
 
-      /* Set to fit, not to a fixed size — eleven papers do not share a name
-       * length. Same walk-down as the front page uses. */
       const fit = (text, weight, start, max) => {
         let s = start;
         for (;;) {
@@ -3282,8 +3330,6 @@ Stage.register(
           s *= 0.94;
         }
       };
-      /* Letter-spaced, drawn glyph by glyph: a canvas has no tracking, and a
-       * masthead set solid reads as body copy. */
       const track = (text, cx, y, sp) => {
         const cs = [...text];
         let w = -sp;
@@ -3296,98 +3342,108 @@ Stage.register(
       };
       const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
 
-      /* A cut. Not a photograph — a plate: at a galley's measure a halftone
-       * would only ever be a grey rectangle, so it is a lit gradient with a
-       * subject standing in it, and its caption under a hairline. The same
-       * reasoning the front page makes, at a quarter of the size. */
-      const cut = (x, y, w, h, caption) => {
-        /* Held well off black. The first version ran to #3a3a3a with a hard
-         * ellipse cut into it, and at a galley's size that is not a
-         * photograph — it is a censor's bar with an eye in it. A halftone on
-         * newsprint is a middle grey that never reaches either end, and its
-         * subject has no edge, so the subject is a soft radial and the ground
-         * it stands on stays in the middle of the range. */
-        const grd = g.createLinearGradient(x, y, x + w * 0.5, y + h);
-        grd.addColorStop(0.0, "#b4b0a8");
-        grd.addColorStop(0.5, "#6e6a64");
-        grd.addColorStop(1.0, "#948f87");
-        g.fillStyle = grd;
-        g.fillRect(R(x), R(y), R(w), R(h));
-        const sub = g.createRadialGradient(
-          x + w * 0.38,
-          y + h * 0.52,
-          h * 0.04,
-          x + w * 0.38,
-          y + h * 0.52,
-          h * 0.52,
-        );
-        sub.addColorStop(0.0, "rgba(232,229,222,.82)");
-        sub.addColorStop(0.55, "rgba(232,229,222,.24)");
-        sub.addColorStop(1.0, "rgba(232,229,222,0)");
-        g.fillStyle = sub;
-        g.fillRect(R(x), R(y), R(w), R(h));
-        const dk = g.createRadialGradient(
-          x + w * 0.78,
-          y + h * 0.72,
-          h * 0.05,
-          x + w * 0.78,
-          y + h * 0.72,
-          h * 0.6,
-        );
-        dk.addColorStop(0.0, "rgba(38,36,33,.55)");
-        dk.addColorStop(1.0, "rgba(38,36,33,0)");
-        g.fillStyle = dk;
-        g.fillRect(R(x), R(y), R(w), R(h));
+      /* A cut. A real photograph when one has arrived, held back to what
+       * newsprint could actually hold: no black, no white, and no colour —
+       * a rotary press in 1890 had one ink. When none has arrived it is the
+       * drawn plate, which is a lit ground with a subject standing in it
+       * rather than a halftone, because at a galley's size a halftone is a
+       * grey rectangle and a hard-edged subject is a censor's bar. */
+      const cut = (x, y, w, h, caption, img) => {
+        if (img && img.width) {
+          const s = Math.max(w / img.width, h / img.height);
+          const dw = img.width * s,
+            dh = img.height * s;
+          g.save();
+          g.beginPath();
+          g.rect(R(x), R(y), R(w), R(h));
+          g.clip();
+          g.drawImage(img, R(x + (w - dw) / 2), R(y + (h - dh) / 2), R(dw), R(dh));
+          // one ink: the saturation of a grey fill, over the photograph's own
+          // hue and luminosity
+          g.globalCompositeOperation = "saturation";
+          g.fillStyle = "#808080";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.globalCompositeOperation = "source-over";
+          // and off both ends of the range, the way ink on absorbent paper is
+          g.fillStyle = "rgba(244,241,234,.17)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.restore();
+        } else {
+          const grd = g.createLinearGradient(x, y, x + w * 0.5, y + h);
+          grd.addColorStop(0.0, "#b4b0a8");
+          grd.addColorStop(0.5, "#6e6a64");
+          grd.addColorStop(1.0, "#948f87");
+          g.fillStyle = grd;
+          g.fillRect(R(x), R(y), R(w), R(h));
+          const sub = g.createRadialGradient(
+            x + w * 0.38,
+            y + h * 0.52,
+            h * 0.04,
+            x + w * 0.38,
+            y + h * 0.52,
+            h * 0.52,
+          );
+          sub.addColorStop(0.0, "rgba(232,229,222,.8)");
+          sub.addColorStop(1.0, "rgba(232,229,222,0)");
+          g.fillStyle = sub;
+          g.fillRect(R(x), R(y), R(w), R(h));
+        }
         g.fillStyle = "#111111";
-        let yy = y + h + 8;
+        let yy = y + h + 3;
         if (caption) {
-          g.fillRect(R(x), R(y + h + 2), R(w), 1);
-          g.font = "7.5px " + SERIF;
+          g.fillRect(R(x), R(yy), R(w), 1);
+          yy += 10;
+          g.font = "7px " + SERIF;
           g.textAlign = "left";
-          const words = caption.split(/\s+/);
           let line = [];
-          for (const t of words) {
+          for (const t of caption.split(/\s+/)) {
             line.push(t);
             if (g.measureText(line.join(" ")).width > w) {
               line.pop();
               g.fillText(line.join(" "), x, yy);
-              yy += 10;
+              yy += 9;
               line = [t];
             }
           }
           if (line.length) {
             g.fillText(line.join(" "), x, yy);
-            yy += 10;
+            yy += 9;
           }
         }
         return yy;
       };
 
-      /* The body of an article, into one or two columns of a slot. Justified
-       * except on the last line of a paragraph — the rule the front page sets
-       * by, so the two read as the same press. Stops at the foot of the slot,
-       * which is what a galley does: the article is cut, not shrunk. */
+      /* The body, into one or two columns. Justified except on the last line
+       * of a paragraph. Returns the foot of the deepest column it filled, so
+       * the press above can report a height that is the article's and not a
+       * number somebody chose. */
       const flowCol = (A, o) => {
         const { left, meas, top, bot, fs, lh, cols, drop, plate } = o;
         const gut = cols > 1 ? 9 : 0;
         const colW = (meas - gut * (cols - 1)) / cols;
         const bodyFont = fs + "px " + SERIF;
-
-        // break the whole article once, then pour it into the columns
-        const lines = [];
-        let firstPara = true,
-          started = false;
         const DROPN = 3;
+
         let dropCh = "",
           dropW = 0,
           dropSize = 0;
         if (drop) {
           const b0 = A.body.find((b) => !b.h);
           dropCh = b0 ? b0.t.charAt(0) : "";
-          dropSize = R(lh * DROPN * 0.8);
+          /* The cap spans from the first line's own cap-height down to the
+           * third line's baseline. Times' capital is about seven tenths of its
+           * body, so that span divided by seven tenths IS the size — the first
+           * version guessed at lh*DROPN*0.8 and set the letter a third of a
+           * line short, then drew it a whole body size too low on top of that,
+           * which is why it floated in the middle of the paragraph. */
+          dropSize = R((lh * (DROPN - 1) + fs * 0.7) / 0.7);
           g.font = "700 " + dropSize + "px " + SERIF;
-          dropW = g.measureText(dropCh).width + fs * 0.22;
+          dropW = g.measureText(dropCh).width + fs * 0.24;
         }
+
+        const lines = [];
+        let firstPara = true,
+          started = false;
         for (const blk of A.body) {
           if (blk.h) {
             if (started) lines.push({ head: true, text: blk.t });
@@ -3418,14 +3474,12 @@ Stage.register(
           firstPara = false;
         }
 
-        let li = 0;
+        let li = 0,
+          deepest = top;
         for (let c = 0; c < cols && li < lines.length; c++) {
           const x0 = left + c * (colW + gut);
-          // the hairline between two columns, which is most of what says
-          // "newspaper" at this size
-          if (c > 0)
-            g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(bot - top + fs));
           let ly = top;
+          const started0 = li;
           while (ly < bot && li < lines.length) {
             if (
               plate &&
@@ -3467,32 +3521,24 @@ Stage.register(
             }
             ly += lh;
           }
+          // the hairline runs only as deep as the type beside it
+          if (c > 0 && li > started0)
+            g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(ly - top + fs - lh));
+          deepest = Math.max(deepest, ly);
         }
         if (drop && dropCh) {
           g.font = "700 " + dropSize + "px " + SERIF;
-          g.fillText(dropCh, left, top + fs + lh * (DROPN - 1) * 0.98);
+          g.fillText(dropCh, left, top + lh * (DROPN - 1));
         }
+        return Math.max(deepest, plate ? plate.y + plate.h : top);
       };
 
-      /* The five presses, set to a galley's measure.
-       *
-       * What separates them here is what separates them on a page, and none of
-       * it is decoration: where the name sits and how it is set, what the rules
-       * do, whether the headline is centred or ranged left and in which face,
-       * and what furniture the press carries at all — a black band, a price
-       * line, a boxed dateline, a drop cap, a plate. Set the same article in
-       * all five and it reads as five different papers, which is the point of
-       * having five.
-       *
-       * Each is handed the foot of its own slot and fills it. The slots are not
-       * the same height: a monthly is air and a penny paper is dense, and equal
-       * slots were exactly what made the first web read as a machine rather
-       * than as newsprint.
-       */
-      const PRESS = {
+      const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
+
+      return {
         // one name across the top under a double rule, a centred headline, and
         // a plate across the measure a few lines in
-        broadsheet(A, x0, top, H0) {
+        broadsheet(A, x0, top, capH) {
           const M = 14,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -3533,30 +3579,31 @@ Stage.register(
           rule(mid - meas * 0.16, y, meas * 0.32, 1);
           y += 18;
           g.textAlign = "left";
-          const fs = 10,
-            lh = 14;
-          const plate = A.cut
-            ? { x: left, w: meas, y: y + lh * 5, h: 54 }
-            : null;
+          const fs = 9.5,
+            lh = 12.6;
+          const plate = A.cut ? { x: left, w: meas, y: y + lh * 4, h: 0 } : null;
           if (plate) {
-            const after = cut(plate.x, plate.y, plate.w, plate.h, A.cap);
-            plate.h = after - plate.y;
+            plate.h = 62;
+            plate.h =
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) - plate.y;
           }
-          flowCol(A, {
-            left,
-            meas,
-            top: y + fs,
-            bot: top + H0 - 10,
-            fs,
-            lh,
-            cols: 1,
-            plate,
-          });
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y + fs,
+              bot: top + capH - 14,
+              fs,
+              lh,
+              cols: 1,
+              plate,
+            }) + 12
+          );
         },
 
         // the name reversed out of a black band, one line of type as big as it
-        // will go ranged left, a plate across the measure, and a black foot
-        tabloid(A, x0, top, H0) {
+        // will go ranged left, a cut across the measure, and a black foot
+        tabloid(A, x0, top, capH) {
           const M = 12,
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
@@ -3578,38 +3625,39 @@ Stage.register(
           g.fillText(A.by, left + meas, y);
           y += 6;
           rule(left, y, meas, 2);
-          y += 32;
+          y += 30;
           g.textAlign = "left";
-          let hs = 42;
-          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 42, meas));
+          let hs = 40;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 40, meas));
           g.font = "700 " + hs + "px " + SERIF;
           for (const l of A.head) {
             g.fillText(l, left, y);
             y += R(hs * 0.92);
           }
           y += 4;
-          const ss = fit(A.sub, "400", 11, meas);
+          const ss = fit(A.sub, "400", 10.5, meas);
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, left, y);
-          y += 14;
-          if (A.cut) y = cut(left, y, meas, 62, A.cap) + 6;
-          flowCol(A, {
+          y += 13;
+          if (A.cut) y = cut(left, y, meas, 74, A.cap, imgOf(A)) + 5;
+          const end = flowCol(A, {
             left,
             meas,
             top: y + 9,
-            bot: top + H0 - 22,
-            fs: 9,
-            lh: 12.5,
+            bot: top + capH - 26,
+            fs: 8.6,
+            lh: 11.6,
             cols: 2,
           });
           g.fillStyle = "#111111";
-          g.fillRect(R(x0), R(top + H0 - 14), GALLEY_COL, 8);
+          g.fillRect(R(x0), R(end + 8), GALLEY_COL, 7);
+          return end + 22;
         },
 
-        // air. a small tracked name, a title set in the same face as the body,
-        // an italic line under it, a tracked byline, and a drop cap
-        monthly(A, x0, top, H0) {
-          const M = 34,
+        // air. a small tracked name, the title in the body face, an italic
+        // line under it, a tracked byline, and a drop cap
+        monthly(A, x0, top, capH) {
+          const M = 32,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
             mid = x0 + GALLEY_COL / 2;
@@ -3621,49 +3669,51 @@ Stage.register(
           track(nm, mid, y, ms * 0.42);
           y += 9;
           rule(mid - meas * 0.11, y, meas * 0.22, 1);
-          y += 34;
-          let hs = 26;
-          for (const l of A.head)
-            hs = Math.min(hs, fit(l, "400", 26, meas * 0.92));
+          y += 32;
+          let hs = 25;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "400", 25, meas * 0.92));
           g.font = "400 " + hs + "px " + SERIF;
           for (const l of A.head) {
             g.fillText(l, mid, y);
             y += R(hs * 1.16);
           }
-          y += 12;
-          const ss = fit(A.sub, "400", 10, meas * 0.86);
+          y += 11;
+          const ss = fit(A.sub, "400", 9.5, meas * 0.86);
           g.font = "italic " + ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
-          y += 20;
+          y += 19;
           const bs = 7.5;
           g.font = bs + "px " + SERIF;
           track(A.by, mid, y, bs * 0.5);
           y += 26;
           g.textAlign = "left";
-          const fs = 10,
-            lh = 15.5;
+          const fs = 9.5,
+            lh = 13.4;
           const plate =
             A.cut === "square"
-              ? { x: left + meas * 0.42, w: meas * 0.58, y: y + lh * 6, h: 46 }
+              ? { x: left + meas * 0.4, w: meas * 0.6, y: y + lh * 6, h: 0 }
               : null;
-          if (plate) cut(plate.x, plate.y, plate.w, plate.h, null);
-          flowCol(A, {
-            left,
-            meas,
-            top: y,
-            bot: top + H0 - 12,
-            fs,
-            lh,
-            cols: 1,
-            drop: true,
-            plate,
-          });
+          if (plate)
+            plate.h = cut(plate.x, plate.y, plate.w, 52, A.cap, imgOf(A)) - plate.y;
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y,
+              bot: top + capH - 14,
+              fs,
+              lh,
+              cols: 1,
+              drop: true,
+              plate,
+            }) + 14
+          );
         },
 
-        // six point and hairlines. a price between two rules, a deck that steps
-        // down a size a line at a time, and no plate: the presses of 1835 had
-        // none
-        penny(A, x0, top, H0) {
+        // eight point and hairlines. a price between two rules, a deck that
+        // steps down a size a line at a time, and no plate: the presses of
+        // 1835 had none
+        penny(A, x0, top, capH) {
           const M = 10,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
@@ -3691,8 +3741,6 @@ Stage.register(
           rule(left, y, meas, 1);
           y += 20;
           g.textAlign = "center";
-          // the deck steps down a size a line at a time, which is how a paper
-          // with no photographs held the top of its page
           let hs = 19;
           for (const l of A.head) hs = Math.min(hs, fit(l, "700", 19, meas));
           for (const l of A.head) {
@@ -3701,27 +3749,29 @@ Stage.register(
             y += R(hs * 1.12);
             hs *= 0.84;
           }
-          const ss = fit(A.sub, "400", 9, meas * 0.95);
+          const ss = fit(A.sub, "400", 8.5, meas * 0.95);
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, mid, y);
           y += 8;
           rule(mid - meas * 0.2, y, meas * 0.4, 1);
           y += 14;
           g.textAlign = "left";
-          flowCol(A, {
-            left,
-            meas,
-            top: y,
-            bot: top + H0 - 10,
-            fs: 8,
-            lh: 11,
-            cols: 2,
-          });
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y,
+              bot: top + capH - 12,
+              fs: 7.6,
+              lh: 10.2,
+              cols: 2,
+            }) + 12
+          );
         },
 
-        // the name ranged left, the dateline boxed off to the right between two
-        // hairlines, and a heavy rule under both
-        rail(A, x0, top, H0) {
+        // the name ranged left, the dateline boxed off to its right between
+        // two hairlines, and a heavy rule under both
+        rail(A, x0, top, capH) {
           const M = 13,
             meas = GALLEY_COL - M * 2,
             left = x0 + M;
@@ -3743,63 +3793,81 @@ Stage.register(
           rule(left, y, meas, 2);
           y += 26;
           g.textAlign = "left";
-          let hs = 27;
-          for (const l of A.head)
-            hs = Math.min(hs, fit(l, "700", 27, meas * 0.94));
+          let hs = 26;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 26, meas * 0.94));
           g.font = "700 " + hs + "px " + SERIF;
           for (const l of A.head) {
             g.fillText(l, left, y);
             y += R(hs * 1.05);
           }
           y += 3;
-          const ss = fit(A.sub, "400", 10, meas);
+          const ss = fit(A.sub, "400", 9.5, meas);
           g.font = ss + "px " + SERIF;
           g.fillText(A.sub, left, y);
           y += 8;
           rule(left, y, meas * 0.34, 1);
           y += 18;
-          const fs = 9.5,
-            lh = 13.5;
+          const fs = 9,
+            lh = 12.2;
           const plate =
             A.cut === "left"
-              ? { x: left, w: meas * 0.52, y: y + lh * 3, h: 44 }
+              ? { x: left, w: meas * 0.54, y: y + lh * 3, h: 0 }
               : null;
-          if (plate) cut(plate.x, plate.y, plate.w, plate.h, null);
-          flowCol(A, {
-            left,
-            meas,
-            top: y,
-            bot: top + H0 - 10,
-            fs,
-            lh,
-            cols: 1,
-            plate,
-          });
+          if (plate)
+            plate.h = cut(plate.x, plate.y, plate.w, 50, A.cap, imgOf(A)) - plate.y;
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y,
+              bot: top + capH - 12,
+              fs,
+              lh,
+              cols: 1,
+              plate,
+            }) + 12
+          );
         },
       };
+    }
 
-      /* How tall a slot is, by press. A monthly is air and a penny paper is
-       * dense; giving them the same height is what made the first web read as
-       * a machine stamping identical blocks rather than as newsprint. The
-       * weights are normalised so a lap is exactly the texture's height,
-       * whatever they are — which is what keeps the loop seamless. */
-      const WEIGHT = {
-        broadsheet: 1.0,
-        tabloid: 1.3,
-        monthly: 1.22,
-        penny: 0.86,
-        rail: 1.0,
-      };
-      const wOf = (A) => WEIGHT[A.tpl] || 1;
-      const wSum = ARTICLES.reduce((a, A) => a + wOf(A), 0);
-      const unit = GALLEY_H / wSum;
+    function buildGalley() {
+      /* Pass one: how tall does each paper want to be? Composed onto a scratch
+       * canvas one column wide and thrown away. The alternative is a weight
+       * per press written by hand, which is what the first galley had, and a
+       * paper whose body ran out before its slot did then left a hole. */
+      const probe = document.createElement("canvas");
+      probe.width = GALLEY_COL;
+      probe.height = GALLEY_MAX + 40;
+      const pg = probe.getContext("2d");
+      const P0 = galleyPresses(pg);
+      const nat = new Map();
+      for (const A of ARTICLES) {
+        pg.clearRect(0, 0, probe.width, probe.height);
+        pg.fillStyle = "#111111";
+        pg.textAlign = "left";
+        const end = (P0[A.tpl] || P0.broadsheet)(A, 0, 0, GALLEY_MAX);
+        nat.set(A, Math.round(Math.max(GALLEY_MIN, Math.min(GALLEY_MAX, end))));
+      }
+      // The three columns hold the same eleven articles, so their totals agree
+      // and a lap is exactly this whatever the measuring came out at.
+      GALLEY_H = ARTICLES.reduce((a, A) => a + nat.get(A), 0);
+
+      const cv = document.createElement("canvas");
+      cv.width = GALLEY_W;
+      cv.height = GALLEY_H;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, GALLEY_W, GALLEY_H);
+      g.textBaseline = "alphabetic";
+      const PRESS = galleyPresses(g);
 
       /* Three columns, three orders. ARTICLES.length is prime, so any stride
-       * walks the whole list — and three different strides mean no two webs
-       * can be showing the same paper at the same height, however long the
-       * press runs. The slot heights differ per press, so the three columns
-       * also stop breaking at the same places, which is the other half of not
-       * looking like a machine. */
+       * walks the whole list, and three different strides mean no two webs can
+       * be showing the same paper at the same height however long the press
+       * runs. The slots differ in height, so the three also stop breaking at
+       * the same places — which is the other half of not reading as a machine
+       * stamping identical blocks. */
       const STRIDE = [1, 4, 7],
         START = [0, 5, 9];
       for (let c = 0; c < 3; c++) {
@@ -3807,12 +3875,13 @@ Stage.register(
         let y = 0;
         for (let k = 0; k < ARTICLES.length; k++) {
           const A = ARTICLES[(START[c] + k * STRIDE[c]) % ARTICLES.length];
-          const h = unit * wOf(A);
+          const h = nat.get(A);
           g.save();
           g.beginPath();
           g.rect(x0, y, GALLEY_COL, h);
           g.clip();
           g.fillStyle = "#111111";
+          g.textAlign = "left";
           (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h);
           g.restore();
           y += h;
@@ -4712,8 +4781,13 @@ void main(){
          * stops at the end of the lap and smears its last row down the rest of
          * the column. u stays clamped, which is what keeps one column of the
          * atlas out of its neighbour. */
-        {
-          galleyTex = gl.createTexture();
+        /* Composed and uploaded twice: once now, with drawn plates, so the
+         * webs are running before anything has been over the network, and
+         * again once the photographs have arrived. The hero therefore never
+         * waits on Wikimedia, and if a plate never comes — or the CORS header
+         * that lets a canvas carrying it be uploaded at all ever goes away —
+         * the first upload is simply the one that stands. */
+        const uploadGalley = () => {
           gl.bindTexture(gl.TEXTURE_2D, galleyTex);
           gl.texImage2D(
             gl.TEXTURE_2D,
@@ -4724,15 +4798,21 @@ void main(){
             buildGalley(),
           );
           gl.generateMipmap(gl.TEXTURE_2D);
-          gl.texParameteri(
-            gl.TEXTURE_2D,
-            gl.TEXTURE_MIN_FILTER,
-            gl.LINEAR_MIPMAP_LINEAR,
-          );
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        }
+        };
+        galleyTex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+        gl.texParameteri(
+          gl.TEXTURE_2D,
+          gl.TEXTURE_MIN_FILTER,
+          gl.LINEAR_MIPMAP_LINEAR,
+        );
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        // u clamps so a column cannot bleed into the one set beside it; v
+        // repeats, because a web scrolls for ever
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        uploadGalley();
+        loadPressImages(uploadGalley);
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
