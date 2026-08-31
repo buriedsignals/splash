@@ -98,7 +98,15 @@ function statusFixture() {
     runtime: { status: "ready" },
     newsroom: { decision: "missing" },
     readiness: { ready: false, checks: [], blockers: [] },
-    credentials: [],
+    credentials: [
+      {
+        id: "MAPTILER_KEY",
+        name: "MapTiler development key",
+        state: "not-saved",
+        purpose: "Render maps.",
+        acquisitionUrl: "https://cloud.maptiler.com/account/keys",
+      },
+    ],
     story: { status: "unbound", descriptor: null },
   };
 }
@@ -156,6 +164,10 @@ describe("Splash studio browser client", () => {
     expect(documentRef.querySelector("#announcement")!.textContent).toContain(
       "ready",
     );
+    const credentialCard = documentRef.querySelector("#credentials")!.children[0];
+    expect(credentialCard.children[1].textContent).toContain("MAPTILER_KEY");
+    expect(credentialCard.children.at(-1)!.textContent).toContain("outside Splash");
+    expect(credentialCard.children.at(-1)!.textContent).toContain("refresh status");
     await documentRef.querySelector("#refresh")!.click();
     expect(calls).toEqual(["/session", "/api/status", "/api/status"]);
   });

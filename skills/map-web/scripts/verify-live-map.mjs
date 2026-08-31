@@ -439,8 +439,7 @@ if (import.meta.main) {
     return at >= 0 ? argv[at + 1] : fallback;
   };
   const htmlPath = flag("--html", join(import.meta.dirname, "..", "output-proof", "population.html"));
-  // The Splash root's own `.env` — the same file `recordKey` writes into. See `splash-root.mjs`
-  // for why a fixed three-level climb was the wrong shape.
+  // Explicit legacy verification reads the copied Splash root's `.env`; managed runs use Engine.
   const envPath = splashEnvPath(import.meta.dirname);
   const env = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, "utf8")) : {};
   const key = flag("--key", process.env.MAPTILER_KEY ?? env.MAPTILER_KEY);

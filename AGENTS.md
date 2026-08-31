@@ -71,8 +71,8 @@ and uninstall. Do not add a second Splash lifecycle or mutate those paths after 
 
 Engine projects every directory under `skills/` containing `SKILL.md` as one flat link in the shared
 agents store. Derive that inventory from the filesystem; do not maintain another hard-coded skill
-list or add separate Goose or Claude skill links. `installer/place-skills.mjs` is retained only as
-the setup page's non-mutating compatibility/dry-run model. It is not an installer.
+list or add separate Goose or Claude skill links. `installer/place-skills.mjs` is retained only as a
+non-mutating compatibility/dry-run model. It is not an installer.
 
 Stories and `NEWSROOM.md` are external, data-bearing state. Provider credentials and validation
 receipts belong only to Engine's operating-system credential broker. The adopted checkout,

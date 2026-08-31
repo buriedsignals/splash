@@ -113,6 +113,8 @@ describe("production Splash MCP studio opener", () => {
     expect(html).toContain("Choose visual");
     expect(html).toContain("Inspect this story");
     expect(html).toContain("/api/status");
+    expect(html).toContain("Open-source users");
+    expect(html).toContain("bsig");
     expect(html).not.toContain("start_splash_setup");
     expect(html).not.toContain("open_splash_setup_locally");
     expect(html).not.toMatch(/type=["']password|API[_ -]?key input/i);

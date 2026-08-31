@@ -50,10 +50,12 @@ would never touch.
 3. **The capabilities, with what would open each.** Every row names its provider and acquisition
    page; it never asks for or carries the value.
 
-When any capability row is closed, point the journalist at **Indicator Labs** to save the missing
-key, or continue without that optional capability. Never ask them to paste a credential into chat,
-a terminal, or the Splash studio. Studio Readiness only reports whether each key is present.
-Newsroom identity stays on the studio setup page. Refresh status after Indicator Labs closes.
+When any capability row is closed, use one of two paths or continue without that optional capability:
+Indicator Labs users save the missing key in the desktop app; open-source users have a trusted local
+agent prepare Engine's protected `bsig` stdin/keychain flow for the exact ID and enter the value only
+through a private operating-system or terminal prompt. Never put a credential in chat, command
+arguments, shell history, a repository `.env`, or the Splash studio/setup page. Studio Readiness
+reports status only. Newsroom identity stays on the setup page; refresh status after configuring keys.
 
 ## The newsroom's identity has four honest outcomes
 
@@ -109,12 +111,14 @@ Never dispatch the fixed Europe or Potomac proof cameras for an unrelated story.
 
 **Engine owns the production credential names and values.** `MAPTILER_KEY`,
 `MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
-by Indicator Labs and reported as status in the Splash studio. The journalist enters them only in
-Indicator Labs; Engine validates and stores them through the operating-system credential broker,
-then hydrates only the closed operation that requires one. Studio Readiness never accepts a pasted
-value. `resolveEnvKey` still accepts historical aliases when an
-explicit legacy root is inspected or run during migration — read-only compatibility input, not the
-setup path and not a reason to ask for a credential in chat.
+by Indicator Labs and reported as status in the Splash studio. Indicator Labs collects them for
+managed installations. In an open-source installation, a trusted local agent may prepare Engine's
+protected `bsig` stdin/keychain flow, but the journalist enters each value only through a private
+prompt outside agent chat and Splash. Engine validates and stores values through the operating-system
+credential broker, then hydrates only the closed operation that requires one. Studio Readiness never
+accepts a pasted value. `resolveEnvKey` still accepts historical aliases when an explicit legacy root
+is inspected or run during migration — read-only compatibility input, not the setup path and not a
+reason to ask for a credential in chat.
 
 ## The Engine-managed development install and its data boundaries
 
@@ -136,9 +140,9 @@ per-run copy of checkout, dependency tree, Bun runtime, or browser is made. Flat
 reconciled inside the same Engine apply/uninstall transaction; legacy `place-skills.mjs` is not a
 second managed installer. The shell wrapper does not create the stories root ahead of Engine; a
 missing root is created by adoption and removed if that transaction rolls back while empty.
-`scripts/splash-root.mjs`, `recordKey`, the root template, and the plaintext branch of
-`installer/configure.mjs` remain bounded legacy compatibility for an existing copied root; new setup
-uses the Splash studio and broker-backed controller.
+`scripts/splash-root.mjs` and the root template remain bounded read-only compatibility for an
+explicitly operated copied root. The setup server has no plaintext branch: new setup uses the Splash
+studio and status-only broker-backed controller.
 
 ## The localhost studio is a view of the same gates
 

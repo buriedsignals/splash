@@ -162,12 +162,12 @@ async function checkNewsroom(newsroomPath) {
 // because neither one may ever stop the session (spec: "A. Preflight reports capabilities, not a
 // verdict" in SKILL.md) — a capability that is not open only narrows what a later phase may offer,
 // it is never a verdict on the environment as a whole.
-// `fill` is what turns a report into an OFFER. Every reason string already names the exact variable
-// ("MAPTILER_KEY is not set"), and yet there was no code path anywhere in this toolchain that
-// accepted a key from a journalist — so a closed capability closed for the whole session with no
-// moment at which it could be opened. `fill` now names the Engine credential ID, provider, and the
-// protected Readiness setup action. The legacy recordKey writer is deliberately not a production
-// remedy. `fill` is carried on OPEN rows too: a row describes a capability, not only a failure.
+// `fill` is what turns a report into an OFFER. Every row names the exact credential ID, provider,
+// and both supported setup paths. Managed users save through Indicator Labs. Open-source users use
+// Engine's protected bsig stdin/keychain flow outside Splash, with the value entered only through a
+// private prompt rather than chat, command arguments, shell history, or repository files. Splash
+// Readiness reports status only. `fill` is carried on OPEN rows too: a row describes a capability,
+// not only a failure.
 async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn, fill }) {
   const key = resolveEnvKey(env, canonicalEnv);
   const result = await probeFn(key, fetchFn);
@@ -187,7 +187,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
       env,
       probeFn: probeMapTiler,
       fetchFn,
-      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys), then save it in Indicator Labs. Splash Readiness only reports whether it is present",
+      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys). Indicator Labs: save it in the desktop app. Open source: configure this ID through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
     }),
     datawrapper: await checkCapability({
       id: "datawrapper",
@@ -196,7 +196,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
       env,
       probeFn: probeDatawrapper,
       fetchFn,
-      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens, then save it in Indicator Labs. Splash Readiness only reports whether it is present",
+      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens. Indicator Labs: save it in the desktop app. Open source: configure this ID through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
     }),
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
@@ -214,7 +214,7 @@ export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEM
           ? `https://splash-scroller-${createHash("sha256").update(accountId.toLowerCase()).digest("hex").slice(0, 20)}.pages.dev`
           : null,
         whitelistOptional: true,
-        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom in Splash studio, then save a Pages-scoped token in Indicator Labs. Splash Readiness only reports whether the token is present",
+        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom in Splash studio, then obtain a Pages-scoped token. Indicator Labs: save the token in the desktop app. Open source: configure CLOUDFLARE_API_TOKEN through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
       };
     })(),
   };

@@ -4,11 +4,11 @@
 
 ### Human-gated visual journalism for AI agents
 
-**Turns reporting material into web, video, scrollytelling, and static visuals — storyboard approval, real rendered drafts, and per-output delivery, all in a journalist-owned story directory. 17 skills, 4 formats, local-first.**
+**Turns reporting material into web, video, scrollytelling, and static visuals — storyboard approval, real rendered drafts, and per-output delivery, all in a journalist-owned story directory. 16 skills, 4 formats, local-first.**
 
 [Workflow](#workflow) | [Delivery](#delivery-and-delivery) | [Install](#install) | [Story Directory](#story-directory)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![17 Skills](https://img.shields.io/badge/skills-17-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-Engine_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
+[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![16 Skills](https://img.shields.io/badge/skills-16-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-Engine_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
 
 [![Stars](https://img.shields.io/github/stars/buriedsignals/splash?style=flat-square&logo=github&label=Stars)](https://github.com/buriedsignals/splash/stargazers)[![Issues](https://img.shields.io/github/issues/buriedsignals/splash?style=flat-square&logo=github&label=Issues)](https://github.com/buriedsignals/splash/issues)[![Last Commit](https://img.shields.io/github/last-commit/buriedsignals/splash?style=flat-square&logo=github&label=Last%20Commit)](https://github.com/buriedsignals/splash/commits)[![Contributors](https://img.shields.io/github/contributors/buriedsignals/splash?style=flat-square&logo=github&label=Contributors)](https://github.com/buriedsignals/splash/graphs/contributors)
 
@@ -108,13 +108,19 @@ delivery keeps the prior export intact until replacement completes.
 ## Credentials
 
 Credentials are stored through Engine's operating-system credential broker —
-never in MCP arguments, model context, or committed files. The Splash studio
-is a loopback-only page: Goose opens it with `open_splash`, other harnesses
-run `apps/goose/studio/open.mjs`. It links to each provider's key page and
-accepts values on a separate setup page. Map craft's provider-bearing bake is
-a fixed Engine operation: each beat supplies a strict story-local
-`MAP-BAKE.json`, and Engine verifies camera, GeoJSON/data digests, managed
-browser, and installed runtime before hydrating `MAPTILER_KEY`.
+never in MCP arguments, model context, committed files, or Splash's loopback
+pages. The Splash studio and setup page report the exact credential IDs, status,
+and provider links; neither accepts a secret.
+
+Indicator Labs users save credentials in the desktop app. For an open-source
+installation, a trusted local agent can prepare Engine's protected `bsig`
+stdin/keychain flow for the exact ID while the user enters the value only through
+a private operating-system or terminal prompt. Never place a value in chat,
+command arguments, shell history, a repository file, or a Splash page. Refresh
+Readiness after setup. Map craft's provider-bearing bake is a fixed Engine
+operation: each beat supplies a strict story-local `MAP-BAKE.json`, and Engine
+verifies camera, GeoJSON/data digests, managed browser, and installed runtime
+before hydrating `MAPTILER_KEY`.
 
 ## Install
 
@@ -167,7 +173,7 @@ check, run `bsig doctor --product splash`.
 | `map-beat` / `map-web` | Map production with Engine-verified bakes. |
 | `image-beat` | Static and illustrated outputs. |
 | `scrolly` | Scrollytelling production. |
-| `dw-beat` / `dw-chart` | Datawrapper-delegated charts. |
+| `dw-beat` | Datawrapper-delegated charts. |
 | `analyst` | Dataset profiling before visual selection. |
 | `palette` | Newsroom palette and visual identity. |
 | `newsroom-charter` | Newsroom configuration and constraints. |
@@ -180,6 +186,8 @@ check, run `bsig doctor --product splash`.
 | Doc | For |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Repository workflow and product constraints. |
+| [`llms.txt`](llms.txt) | Compact public AI index. |
+| [`llms_full.txt`](llms_full.txt) | Flattened public AI reference for one-shot ingestion. |
 | [`skills/splash/SKILL.md`](skills/splash/SKILL.md) | Orchestration and human-gated workflow. |
 | [`skills/deliver/SKILL.md`](skills/deliver/SKILL.md) | Delivery forms, safeguards, and handover contract. |
 | [`skills/doctrine/SKILL.md`](skills/doctrine/SKILL.md) | Visual and editorial doctrine. |

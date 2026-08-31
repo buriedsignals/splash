@@ -90,7 +90,7 @@ if [ "$DOCTOR_EXIT" -ne 0 ]; then
 fi
 
 # After a successful apply, optionally open the same newsroom setup page the studio uses.
-# Provider keys are saved in Indicator Labs, not on this page.
+# It reports credential IDs and status but never accepts provider key values.
 SPLASH_SETUP_STATE="skipped"
 if [ "${SPLASH_SKIP_SETUP:-}" != "1" ]; then
   SETUP_EXIT=0
@@ -105,8 +105,8 @@ fi
 
 printf '\nSplash is installed from %s.\n' "$ROOT"
 if [ "$SPLASH_SETUP_STATE" = "closed" ]; then
-  printf 'Newsroom setup closed — saves made there are kept. Reopen anytime via Splash Readiness → “Set up newsroom”. Save MapTiler, Datawrapper, and Cloudflare keys in Indicator Labs.\n'
+  printf 'Newsroom setup closed — saves made there are kept. Reopen anytime via Splash Readiness → “Set up newsroom”. Indicator Labs users save provider keys in the desktop app; open-source users configure the reported IDs through Engine’s protected bsig stdin/keychain flow, entering values only in a private prompt outside chat and Splash.\n'
 else
-  printf 'Newsroom identity may still be unset. Open Splash Readiness → “Set up newsroom” when ready. Save provider keys in Indicator Labs.\n'
+  printf 'Newsroom identity may still be unset. Open Splash Readiness → “Set up newsroom” when ready. Indicator Labs users save provider keys in the desktop app; open-source users configure the reported IDs through Engine’s protected bsig stdin/keychain flow, entering values only in a private prompt outside chat and Splash.\n'
 fi
 printf 'Rerun this same command after intentional source or lockfile changes.\n'

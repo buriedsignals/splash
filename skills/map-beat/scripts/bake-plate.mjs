@@ -85,10 +85,8 @@ if (sealed && (!sealedRuntimeValues.every(Boolean) || Boolean(sealedStylePath) =
 if (sealedBrowserPath && (!isAbsolute(sealedBrowserPath) || !existsSync(sealedBrowserPath))) {
   throw new Error(`sealed Chrome is not an existing absolute path: ${sealedBrowserPath}`);
 }
-// The Splash root's own `.env` — the same file `recordKey` writes a journalist's key into. This
-// used to be a fixed three-level climb (`../../../.env`), which is `twin/.env` in this checkout and
-// the DEVELOPER's `.env` anywhere the skills are installed as a symlink, because both Bun and Node
-// resolve the link before computing `import.meta.url`. See `splash-root.mjs`.
+// Explicit legacy runs may read the copied Splash root's `.env`; managed Engine operations hydrate
+// scoped credentials instead. `splash-root.mjs` avoids the former fixed-climb path.
 const keyPath = sealed ? null : flag("--env", splashEnvPath(import.meta.dirname));
 
 /**

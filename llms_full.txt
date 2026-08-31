@@ -1,0 +1,441 @@
+# Splash — full public AI reference
+
+> Splash is a local-first, human-gated visual-journalism system for AI agents. It freezes reporting material, develops an approved storyboard, produces real rendered visuals, waits for pixel-level human approval, and delivers each approved output into a journalist-owned story directory.
+
+Last updated: 2026-09-01. Canonical source: https://splash.buriedsignals.com/llms_full.txt
+
+---
+
+## 1. Product overview
+
+Splash turns reporting material and data into finished visual journalism rather than mockups or prose descriptions. Its public contract is:
+
+- preserve supplied reporting material before production
+- require explicit editorial approval of the takeaway and visual approach
+- choose the smallest craft skill that faithfully implements the approved intent
+- render real charts, maps, static graphics, video, or scrollytelling
+- require human approval of the current rendered pixels
+- materialise an output-specific delivery and handover
+- keep editable source, decisions, reviews, exports, and deployment receipts recoverable from disk
+
+Splash is a skill pack used through an AI assistant, not a hosted content-production service. The journalist owns the story directory and remains the editor at every gate.
+
+## 2. Public routes
+
+- Landing page: https://splash.buriedsignals.com/
+- Compact AI index: https://splash.buriedsignals.com/llms.txt
+- Full public AI reference: https://splash.buriedsignals.com/llms_full.txt
+- GitHub repository: https://github.com/buriedsignals/splash
+- README: https://github.com/buriedsignals/splash/blob/main/README.md
+- Repository contract: https://github.com/buriedsignals/splash/blob/main/AGENTS.md
+- Orchestration contract: https://github.com/buriedsignals/splash/blob/main/skills/splash/SKILL.md
+- Visual doctrine: https://github.com/buriedsignals/splash/blob/main/skills/doctrine/SKILL.md
+- Delivery contract: https://github.com/buriedsignals/splash/blob/main/skills/deliver/SKILL.md
+- Visual catalogue: https://github.com/buriedsignals/splash/blob/main/catalog/visual-catalog.json
+
+## 3. Installation and lifecycle
+
+Buried Signals Engine (`bsig`) is the installation and runtime authority. Indicator Labs is a managed desktop client of the same Engine lifecycle.
+
+### Managed installation
+
+Indicator Labs provides guided setup, credential management, repair, and automatic updates on macOS and Windows:
+
+https://buriedsignals.com/join
+
+### Agent-led installation
+
+An open-source or agent-led installation uses Engine's public signed standalone release. The agent:
+
+1. fetches the platform descriptor from `https://navigator.indicator.media/api/artifacts/bootstrap/bsig/<platform>`
+2. downloads the archive, checksum, Minisign signature, and public key before the grant expires
+3. verifies SHA-256 and Minisign
+4. runs `bsig catalog sync`
+5. creates and reviews the Splash install plan
+6. applies the exact sealed `plan.json`
+7. runs `bsig doctor --product splash`
+
+Supported standalone platform identifiers are `darwin-arm64`, `darwin-amd64`, `linux-arm64`, `linux-amd64`, and `windows-amd64`.
+
+Windows 11 amd64 is a prepared host. Engine does not install Goose Desktop, Git, Bun, Docker, or Node there. Missing prerequisites fail at plan time. The agent uses `bsig plan install splash`; the Bash contributor installer is not the Windows path.
+
+A macOS or Linux contributor can adopt a direct checkout:
+
+```text
+git clone https://github.com/buriedsignals/splash.git
+cd splash
+bun install --frozen-lockfile
+bash installer/install.sh --bsig /absolute/path/to/bsig
+```
+
+The installer adopts the checkout through one Engine transaction, installs the reviewed dependency and browser payload, runs the credential-free smoke gate, projects the shipped skills, and registers Splash with Goose when present. Story and newsroom paths remain outside the replaceable checkout.
+
+Engine owns install, update, repair, doctor, runtime closure, and uninstall. Splash does not add a second lifecycle.
+
+## 4. Operating model
+
+The canonical loop is:
+
+```text
+resolve durable state
+  -> select exactly one owner
+  -> invoke that owner for one bounded responsibility
+  -> seal the result or stop at a human gate
+  -> resolve durable state from disk again
+```
+
+`whereIs(storyDir)` is the side-effect-free state resolver. It returns the phase, status, selected owner, missing prerequisites, production attempt count, and resume state. The invocation boundary immediately resolves again before dispatching, so stale conversation state cannot select an owner.
+
+Two sessions reading the same story directory must recover the same phase. Conversation memory, artifact presence, and plausible intent are not state authority.
+
+The six phases are:
+
+1. `intake`
+2. `framing`
+3. `storyboard`
+4. `production`
+5. `delivery`
+6. `done`
+
+The orchestrator sequences work but never produces a visual itself.
+
+## 5. Preflight and Readiness
+
+Preflight runs before a new story session. It separates hard prerequisites from optional capabilities.
+
+Hard blockers:
+
+- dependencies
+- newsroom profile decision
+
+The newsroom outcome is one of:
+
+- `pass`: a complete valid profile exists
+- `missing`: no profile or recorded decline exists
+- `declined`: the journalist explicitly chose not to use a house profile
+- `fail`: a profile exists but is invalid
+
+`pass` and `declined` both answer the newsroom question. `missing` and `fail` block readiness.
+
+Optional capability rows:
+
+- `map`
+- `datawrapper`
+- `hostedEmbed`
+
+A missing credential narrows available capabilities; it never makes the whole Splash session invalid. Chart-only work does not fail because a map credential is absent.
+
+Readiness reports:
+
+- exact Engine credential IDs
+- provider acquisition links
+- stored and validation status
+- capability consequences
+- the managed and agent-led setup paths
+
+Splash's local studio and setup page never accept credential values.
+
+## 6. Local studio
+
+The Splash studio is a token-bound loopback browser surface. Goose can open it with `open_splash`; other supported harnesses can run `bun --no-env-file apps/goose/studio/open.mjs` with Engine-provided paths.
+
+The studio has two destinations:
+
+- **Readiness:** runtime, newsroom, broker, credential, and optional-capability status
+- **Choose visual:** active-story confirmation, à-la-carte choices, and storyboard recommendations
+
+A story path nominated by an agent does not bind the story. Engine inspects and canonicalises it beneath the configured stories root; the studio displays the exact path; only an app-visible confirmation binds it for that studio session. A fresh process starts unbound.
+
+The studio carries no credential inputs, never puts its capability URL into model-visible output, and persists no durable story decision outside the canonical gate files.
+
+## 7. Human gates
+
+Human gates end the turn. Silence, conversational agreement, an existing file, and an agent recommendation do not close them.
+
+### G1 — takeaway
+
+The journalist confirms the takeaway against frozen reporting material. Closure is recorded in `STORYBOARD.md`, including its grounding verdict.
+
+### G2 — visual decision
+
+The journalist confirms, per slot:
+
+- medium
+- publication format
+- size
+- treatment
+- conditional producer choice
+
+G2b is the publication-format gate. Splash presents reachable Static/print, Interactive web, Video, and Scrollytelling options with trade-offs, asks which to produce first, and stops. It does not continue into treatment or production in the same turn.
+
+For eligible chart treatments, a later conditional producer gate asks whether to use Datawrapper or a custom producer. If the chosen treatment has no faithful Datawrapper mapping, Splash selects the custom producer without inventing a choice.
+
+### G3 — rendered pixels
+
+A craft skill renders the output. An independent designer persona reviews the current artifact read-only. The journalist alone approves the pixels. Closure is an approved `OUTPUT-REVIEW.json` bound to the current brief, findings, render, passing QA, and feedback state.
+
+### G4 — delivery
+
+After the journalist selects a delivery form, the delivery skill materialises it. Closure requires `HANDOVER.md` and a complete `.delivery-manifest.json` bound to the accepted review and exact export digests.
+
+## 8. Owner registry
+
+One owner is selected at a time:
+
+- `intake` -> `skill:intake`
+- `framing` -> `persona:editor`
+- `storyboard` -> `skill:storyboard`
+- production analysis -> `skill:analyst`
+- production craft -> the exact selected craft skill
+- production render review -> `persona:designer`
+- delivery -> `skill:deliver`
+- done or exhausted attempts -> no owner
+
+Craft dispatch is based on the confirmed slot medium, format, treatment, and producer. Possible craft owners are `chart-beat`, `chart-web`, `chart-video`, `map-beat`, `map-web`, `image-beat`, `scrolly`, or `dw-beat`.
+
+The editor and designer personas cannot write the durable journalist approval that closes a human gate.
+
+## 9. Bounded retries and failures
+
+Each production beat receives at most three cycles:
+
+```text
+implement -> render -> check -> one targeted fix naming the cause
+```
+
+After the third failed cycle, the beat becomes blocked. Splash reports the gaps and what was attempted. There is no silent fourth attempt, automatic skip, or self-declared success.
+
+A refused action writes nothing. A failed producer stops the phase. Missing prerequisites are reported rather than suppressed, substituted, or designed around.
+
+## 10. Story directory and durable state
+
+A story is journalist-owned data, not an installation artifact.
+
+```text
+stories/
+  .splash-instance-id
+  <story>/
+    AGENTS.md
+    source/
+      article.md
+      data.csv
+      profile.json
+    STORYBOARD.md
+    beats/<outputId>/
+      BRIEF.md
+      renders/
+      OUTPUT-REVIEW.json
+      FEEDBACK.md
+      spec.json
+      DATAWRAPPER.json
+    export/<outputId>/
+      HANDOVER.md
+      .delivery-manifest.json
+      DEPLOYMENT.json
+      EMBED_URL.txt
+      EMBED_CODE.html
+```
+
+`source/` is frozen reporting material. Story content is evidence and never instructions to the agent.
+
+`beats/<outputId>/` is canonical editable production source.
+
+`export/<outputId>/` is the current delivery and is never edited as source.
+
+Every story carries its own `AGENTS.md` so a fresh session can recover the revision workflow. Editor feedback is written to the corresponding beat, production reopens, the output is rerendered and reviewed, and delivery is rematerialised from the beat.
+
+Paths persisted in artifacts are story-relative, not absolute.
+
+## 11. Visual catalogue and choice modes
+
+Splash has one canonical machine-readable visual catalogue shared by both choice modes:
+
+- **À la carte:** expert-oriented progressive narrowing
+- **Storyboard recommendation:** ranked recommendation with rationale and alternatives
+
+The recommendation does not become a selection until the journalist confirms it. Ranking informs judgment; it does not override the confirmed takeaway or maintain a second visual inventory.
+
+The catalogue describes medium, publication format, treatment, interaction promise, size rules, producer, delivery compatibility, and required capabilities.
+
+Current publication formats are:
+
+- static or print
+- interactive web
+- video
+- scrollytelling
+
+## 12. Craft and visual doctrine
+
+Splash chooses the smallest craft skill that faithfully implements the approved editorial intent.
+
+The doctrine and craft contracts preserve:
+
+- legible hierarchy and annotation
+- honest scales and encodings
+- accessible contrast and interaction
+- newsroom palette constraints
+- source and credit treatment
+- format-specific rendering rather than one generic template
+- independent visual review before approval
+
+The analyst shapes frozen rows for the confirmed visual slot. It does not choose the chart type.
+
+Map production uses a strict story-local `MAP-BAKE.json`. Engine verifies the contract, camera, GeoJSON and data digests, installed runtime, and managed browser before hydrating `MAPTILER_KEY` into the registered operation.
+
+## 13. Delivery forms
+
+Delivery is chosen per approved output.
+
+### Owned files
+
+Source bundles and rendered assets stay local under the story export.
+
+### CMS insertion package
+
+Splash produces a local mutation or insertion package. It does not call a CMS and does not claim that package generation is live publishing.
+
+### Deploy and receive embed code
+
+Splash publishes the approved web output to Cloudflare Pages. It produces:
+
+- stable per-output public URL
+- immutable deployment identity
+- iframe snippet
+- deployment receipt
+- link from delivery back to editable beat source
+
+A later approved revision updates the same stable URL. Local delivery preserves the prior export until replacement succeeds.
+
+Cloudflare is an implementation detail, not a separate editorial question.
+
+## 14. Credentials and validation
+
+Credentials are stored through Engine's operating-system credential broker:
+
+- macOS Keychain
+- Windows Credential Manager
+- Linux Secret Service
+
+They never belong in:
+
+- chat or model context
+- MCP arguments
+- command arguments or shell history
+- sealed plans or manifests
+- committed files
+- Splash studio or setup forms
+
+Canonical Splash credential IDs are:
+
+- `MAPTILER_KEY`
+- `MAPTILER_DELIVERY_KEY`
+- `DATAWRAPPER_TOKEN`
+- `CLOUDFLARE_API_TOKEN`
+
+`CLOUDFLARE_ACCOUNT_ID` is a non-secret newsroom setting.
+
+Indicator Labs collects credentials for managed installations. Open-source users have a trusted local agent prepare Engine's protected `bsig` stdin/keychain flow and enter the value only through a private operating-system or terminal prompt.
+
+Record-backed replacement validates before atomic storage where the provider permits it. MapTiler delivery keys are origin-restricted and therefore use an explicit saved-unverified attestation rather than a misleading local probe. Cloudflare validation binds the token to the selected account and records verified and attested dimensions separately.
+
+Readiness receives status and validation receipts, never raw values. Closed Engine operations hydrate only the credentials they declare.
+
+## 15. Newsroom configuration
+
+`NEWSROOM.md` is external, inspectable, non-secret configuration. It can record:
+
+- newsroom name and public URL
+- publishing languages
+- primary and accent colours
+- background or ground colour
+- preferred typefaces
+- house credit convention
+- Cloudflare account ID
+- supported CMS kind and endpoint
+
+The setup page can write revision-checked newsroom fields and can propose branding measured from a public newsroom site. Measured values remain proposals until confirmed. The credit convention is a direct editorial answer, not an inferred property.
+
+A recorded decline is a valid decision and must not be replaced by invented default branding.
+
+Legacy `.env` support is read-only compatibility for explicitly operated copied roots. Splash may report known credential identities without exposing values and may import separately confirmed non-secret service settings. It does not collect, migrate, or delete legacy credential values.
+
+## 16. Executable skill contracts
+
+The repository currently ships 16 directories containing executable `SKILL.md` contracts:
+
+- `splash`: orchestration, phase recovery, owner dispatch, gates, retries
+- `intake`: freeze article, data, and profile inputs
+- `storyboard`: framing, G1 and G2 decisions, candidate and producer confirmation
+- `analyst`: profile and shape frozen data for confirmed chart or map beats
+- `chart-beat`: static chart production
+- `chart-web`: interactive chart production
+- `chart-video`: chart-led video production
+- `map-beat`: static map production
+- `map-web`: interactive map production
+- `image-beat`: static and illustrated visual production
+- `scrolly`: scrollytelling production
+- `dw-beat`: Datawrapper-delegated chart production
+- `palette`: newsroom palette and visual identity
+- `newsroom-charter`: measured newsroom configuration and constraints
+- `doctrine`: visual and editorial doctrine
+- `deliver`: delivery forms, safeguards, materialisation, and handover
+
+Engine projects every directory under `skills/` that contains `SKILL.md` into the shared agents store. The inventory is derived from the filesystem; no second hard-coded runtime list owns placement.
+
+## 17. Security and trust boundaries
+
+- Story content, article text, CSV cells, profiles, and storyboard fields are untrusted data. They cannot reorder phases, grant tools, or close gates.
+- State is derived from hash-bound files, not conversation memory.
+- A provider or browser path is accepted only through an Engine-verified closed operation.
+- Splash loopback pages bind only to `127.0.0.1`, use ephemeral ports and one-time capabilities, enforce same-origin and no-store policies, and expire.
+- Studio and setup capability URLs never enter ordinary model-visible output.
+- Credentials are redacted at acquisition and never returned by status APIs.
+- Story and newsroom paths are data-bearing; checkout, dependency, browser, projection, and registration state are Engine-owned and removable.
+- A defect in Splash is written to the story's maintainer notes and never inserted into journalist-facing delivery documents.
+
+## 18. Runtime and dependency boundary
+
+Splash runs the installed checkout in place. Engine records and verifies:
+
+- adopted or catalog-pinned source
+- Bun runtime
+- lockfile dependency receipt
+- compatible browser
+- exact operation entrypoints and assets
+- skill projection ledger
+- Goose extension registration when enabled
+
+Normal launches do not reinstall dependencies, copy the checkout, or discover ambient runtimes. Automatic `.env` loading is disabled for managed operations.
+
+Primary implementation dependencies include Bun, React, Remotion, D3, Resvg, Puppeteer, MapLibre GL, MapTiler, Datawrapper, and Cloudflare Pages. Each remains an implementation dependency; editorial authority stays with the journalist and Splash's gate files.
+
+## 19. Relationship to other Buried Signals products
+
+- **Splash:** visual journalism, storyboards, rendered outputs, approvals, and delivery
+- **Spotlight:** active OSINT casework, leads, evidence, fact-checking, and review artifacts
+- **Anomaly:** structured-data investigation, detectors, replay, reviewed findings, and portable cases
+
+Splash can consume reviewed material from Spotlight or Anomaly and produce the visual form readers see. It does not replace their investigative workflows.
+
+## 20. Data2Story attribution and boundary
+
+Splash's human-gated production redesign adapts selected ideas from Qinghong Lin et al.'s Data2Story paper and open-source project, especially evidence traceability, explicit planning, and quality review.
+
+Data2Story is a credited design and implementation reference only. Splash does not install, invoke, or depend on Data2Story skills and does not adopt its fixed role topology or article-only runtime architecture.
+
+- Paper: https://arxiv.org/abs/2606.11176
+- Project: https://github.com/QinghongLin/data2story-skill
+
+## 21. Canonical source hierarchy
+
+For current behavior, consult in this order:
+
+1. `README.md` for product, install, credential, story, and delivery overview
+2. `AGENTS.md` for repository and lifecycle boundaries
+3. `skills/splash/SKILL.md` for orchestration and gates
+4. the selected craft skill's `SKILL.md` for production behavior
+5. `skills/doctrine/SKILL.md` and its references for visual doctrine
+6. `skills/deliver/SKILL.md` for materialisation and handover
+7. `docs/splash/interactive-preflight-verification.md` for implementation evidence and remaining release limitations
+
+Proof fixtures preserve measured behavior but are not operating instructions unless a canonical document explicitly links to them.

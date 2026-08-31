@@ -1,30 +1,14 @@
-// THE DEFECT THIS FILE CLOSES: the key had two homes, and neither knew about the other.
+// Legacy map runs once found `.env` with a fixed `../../../` climb. That happened to reach the
+// checkout root during development, but symlinked or namespaced installations could silently read a
+// developer's file instead of the copied root's file.
 //
-// `recordKey` — the one code path in this toolchain that accepts a key from a journalist — writes
-// it to `<root>/.env` (`keys.mjs`). The map producers read theirs from
-// `new URL("../../../.env", import.meta.url)`, i.e. three directories above the script, which in
-// this development checkout is `twin/.env`. In the checkout those two happen to be the same file,
-// so nothing ever showed. Anywhere else they are not, and the failure is silent in the worst
-// direction: both Bun and Node resolve a symlink BEFORE computing `import.meta.url`, so installing
-// the skills as a symlink does not repair it — it makes the producer read the DEVELOPER's `.env`
-// while the journalist's own key sits unread in their own root.
+// Resolve the nearest Splash root by its `package.json` `#shared/*` import marker. Managed Engine
+// operations do not use this environment path; they hydrate only the credential IDs declared by a
+// closed operation. This helper remains read-only compatibility for an explicitly operated copied
+// root.
 //
-// The fix is not a patch on one of the two paths. It is to DEFINE the root once, so that both
-// resolutions land on the same file by construction: a Splash root is the nearest ancestor
-// directory holding a `package.json` that declares the `#shared/*` subpath import. That marker is
-// not arbitrary — it is the one thing that makes a directory a Splash root rather than any other
-// folder: `#shared/*` is how every beat loads the vendored craft mechanism, so a directory that
-// does not declare it cannot run a beat at all.
-//
-// This resolves correctly in BOTH topologies, which is the whole point:
-//   - the development checkout — a script in `twin/skills/<skill>/scripts/` walks up to `twin/`;
-//   - an installed newsroom root — a script in `<root>/skills/<skill>/scripts/` walks up to
-//     `<root>/`, which is exactly where `recordKey` writes.
-//
-// It is DUPLICATED, byte for byte, into every skill that needs it, never imported across a skill
-// boundary — the twin's method (`no-cross-skill-imports.test.ts`), the same way `render-still.mjs`
-// travels. `the-key-has-one-home.test.ts` walks the copies and proves they stay in step, and proves
-// they agree with `recordKey` about where the file is.
+// The file is duplicated byte-for-byte into every skill that needs it. The parity test verifies both
+// flat and product-namespaced skill layouts and rejects another fixed climb.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -62,7 +46,7 @@ export function splashRoot(startDir) {
   );
 }
 
-/** The one `.env` a Splash root has — the same file `recordKey({root})` writes into. */
+/** The read-only `.env` compatibility path for an explicitly operated copied root. */
 export function splashEnvPath(startDir) {
   return join(splashRoot(startDir), ".env");
 }

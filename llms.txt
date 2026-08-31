@@ -1,0 +1,84 @@
+# Splash
+
+> Local-first, human-gated visual journalism for AI agents. Splash freezes reporting material, develops an approved storyboard, produces real charts, maps, video, scrollytelling, and static graphics, and delivers each approved output into a journalist-owned story directory.
+
+## Start here
+
+- [Landing page](https://splash.buriedsignals.com/): public product overview and visual menu
+- [Full public AI reference](https://splash.buriedsignals.com/llms_full.txt): flattened product and runtime contract for one-shot ingestion
+- [README](https://github.com/buriedsignals/splash/blob/main/README.md): product, workflow, installation, credentials, skills, and delivery
+- [Repository contract](https://github.com/buriedsignals/splash/blob/main/AGENTS.md): product boundaries, canonical documentation, lifecycle, and verification
+- [Orchestration skill](https://github.com/buriedsignals/splash/blob/main/skills/splash/SKILL.md): disk-derived state machine, owner registry, gates, retries, and refusal rules
+- [Visual doctrine](https://github.com/buriedsignals/splash/blob/main/skills/doctrine/SKILL.md): visual and editorial doctrine
+- [Delivery contract](https://github.com/buriedsignals/splash/blob/main/skills/deliver/SKILL.md): owned files, CMS insertion packages, hosted embeds, and handover
+- [GitHub repository](https://github.com/buriedsignals/splash): source, issues, and history
+
+## Core workflow
+
+`Intake -> Storyboard approval -> Craft beat -> Render and visual approval -> Delivery -> Editor feedback and revision`
+
+- Splash re-derives the current phase from the story directory before every action.
+- Human gates never close from conversation tone, silence, or artifact presence.
+- The orchestrator selects one owner and never produces a visual itself.
+- Each production beat gets at most three implement-render-check cycles before blocking for editorial direction.
+- Editable source lives under `beats/<outputId>/`; current delivery lives under `export/<outputId>/` and is never edited as source.
+
+## Human gates
+
+- **G1:** journalist confirms the takeaway against frozen reporting material.
+- **G2:** journalist confirms medium, publication format, size, treatment, and any conditional producer choice.
+- **G3:** journalist approves the current rendered pixels after independent review and passing QA.
+- **G4:** Splash materialises the journalist-selected delivery form and writes a hash-bound handover.
+
+## Outputs
+
+- Static and print graphics
+- Interactive web visuals
+- Video
+- Scrollytelling
+- Charts, including delegated Datawrapper production
+- Maps with Engine-verified, story-local bake contracts
+- Owned local files
+- CMS insertion packages; Splash does not call a CMS
+- Cloudflare Pages publication with stable embed URL, iframe code, and deployment receipt
+
+## Local-first boundary
+
+- Stories, source material, beats, approvals, exports, and newsroom configuration stay in journalist-owned local paths.
+- Credentials stay in Engine's operating-system credential broker, never in chat, MCP arguments, committed files, or Splash's loopback pages.
+- Indicator Labs manages credentials for desktop installations.
+- Open-source and agent-led installations use the same signed Engine lifecycle and protected `bsig` stdin/keychain flow.
+- Splash Readiness reports exact credential IDs, provider links, stored state, and validation status but never accepts secret values.
+
+## Installation
+
+- [Managed installation](https://buriedsignals.com/join): Indicator Labs on macOS or Windows
+- [Agent-led installation](https://github.com/buriedsignals/splash/blob/main/README.md#install): signed standalone Engine, catalog sync, reviewed plan, exact apply, and doctor
+- Windows uses a prepared host and `bsig plan install splash`; do not run the Bash contributor installer there.
+- A macOS/Linux contributor checkout can be adopted through `bash installer/install.sh --bsig /absolute/path/to/bsig`.
+
+## Skill contracts
+
+- [splash](https://github.com/buriedsignals/splash/blob/main/skills/splash/SKILL.md): orchestration and durable phase recovery
+- [intake](https://github.com/buriedsignals/splash/blob/main/skills/intake/SKILL.md): freeze reporting material
+- [storyboard](https://github.com/buriedsignals/splash/blob/main/skills/storyboard/SKILL.md): editorial framing and visual decisions
+- [analyst](https://github.com/buriedsignals/splash/blob/main/skills/analyst/SKILL.md): profile and shape frozen data
+- [chart-beat](https://github.com/buriedsignals/splash/blob/main/skills/chart-beat/SKILL.md), [chart-web](https://github.com/buriedsignals/splash/blob/main/skills/chart-web/SKILL.md), [chart-video](https://github.com/buriedsignals/splash/blob/main/skills/chart-video/SKILL.md): chart production by format
+- [map-beat](https://github.com/buriedsignals/splash/blob/main/skills/map-beat/SKILL.md), [map-web](https://github.com/buriedsignals/splash/blob/main/skills/map-web/SKILL.md): map production
+- [image-beat](https://github.com/buriedsignals/splash/blob/main/skills/image-beat/SKILL.md): static and illustrated outputs
+- [scrolly](https://github.com/buriedsignals/splash/blob/main/skills/scrolly/SKILL.md): scrollytelling
+- [dw-beat](https://github.com/buriedsignals/splash/blob/main/skills/dw-beat/SKILL.md): delegated Datawrapper charts
+- [palette](https://github.com/buriedsignals/splash/blob/main/skills/palette/SKILL.md): newsroom palette and visual identity
+- [newsroom-charter](https://github.com/buriedsignals/splash/blob/main/skills/newsroom-charter/SKILL.md): measured newsroom constraints
+- [doctrine](https://github.com/buriedsignals/splash/blob/main/skills/doctrine/SKILL.md): visual and editorial doctrine
+- [deliver](https://github.com/buriedsignals/splash/blob/main/skills/deliver/SKILL.md): materialisation and handover
+
+## Canonical implementation evidence
+
+- [Interactive setup verification](https://github.com/buriedsignals/splash/blob/main/docs/splash/interactive-preflight-verification.md)
+- [Residual production findings](https://github.com/buriedsignals/splash/blob/main/docs/residual-review-findings/feat-data2story-human-gated-production.md)
+- [Visual catalogue](https://github.com/buriedsignals/splash/blob/main/catalog/visual-catalog.json)
+
+## Compatibility
+
+- Canonical full reference: https://splash.buriedsignals.com/llms_full.txt

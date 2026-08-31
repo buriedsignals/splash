@@ -29,35 +29,34 @@ one flat symlink per skill under `~/.agents/skills/`. That shared store is read
 by Codex and Goose, so Splash does not create a separate `~/.goose` link or a
 root `~/.claude/skills/splash` link.
 
-The current 15 skills are:
+The current 16 skills are:
 
 ```text
-chart-beat       chart-video      chart-web       deliver
-doctrine         dw-beat          image-beat      intake
-map-beat         map-web          newsroom-charter palette
-scrolly          splash           storyboard
+analyst          chart-beat       chart-video      chart-web
+deliver          doctrine         dw-beat          image-beat
+intake           map-beat         map-web          newsroom-charter
+palette          scrolly          splash           storyboard
 ```
 
 ## Configure Splash
 
-Either run the local configurator:
+Splash Readiness and `installer/configure.mjs` report credential status and
+collect non-secret newsroom details only. They never accept API keys.
 
-```bash
-bun installer/configure.mjs --root "$PWD"
-```
-
-or copy `.env.example` to `.env` and fill only the capabilities you need:
+Indicator Labs users save credentials in the desktop app. Open-source users
+follow the signed Engine installation in the repository README, then have a
+trusted local agent prepare Engine's protected `bsig` stdin/keychain flow for
+the exact IDs reported by preflight:
 
 - `MAPTILER_KEY`
 - `MAPTILER_DELIVERY_KEY`
 - `DATAWRAPPER_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
-- optional `CMS_KIND`, `CMS_ENDPOINT`, and `CMS_TOKEN`
 
-Do not commit `.env`. `splash-doctor` or
-`bun installer/doctor.mjs --root "$PWD"` reports which optional capabilities are
-available.
+Enter each value only through a private operating-system or terminal prompt,
+never agent chat, command arguments, shell history, or repository files.
+`CLOUDFLARE_ACCOUNT_ID` is non-secret newsroom configuration and remains in
+`NEWSROOM.md`. Do not create a new `.env`; it is read-only legacy compatibility.
 
 Provider-backed producers need outbound network access. If Codex is using the
 `workspace-write` sandbox, the supported setting is:

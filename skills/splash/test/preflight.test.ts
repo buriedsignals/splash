@@ -514,9 +514,9 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(report.ready).toBe(false);
   });
 
-  // PREFLIGHT OFFERS, it does not accept the value. New setup routes to the protected Engine page;
-  // the retained legacy .env writer must never reappear in canonical guidance.
-  it("should carry, on every capability row, an Engine setup remedy naming that row's own credential ID", async () => {
+  // PREFLIGHT OFFERS exact IDs and both external setup routes; it never accepts a value or restores
+  // the retained legacy .env writer.
+  it("should carry, on every capability row, both safe setup routes naming that row's own credential ID", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
     const expected: Record<string, string> = {
@@ -532,6 +532,9 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       expect(row.fill).toBeTruthy();
       expect(row.fill).toContain(variable);
       expect(row.fill).toContain("Indicator Labs");
+      expect(row.fill).toContain("Open source");
+      expect(row.fill).toContain("bsig stdin/keychain flow");
+      expect(row.fill).toContain("private prompt");
       expect(row.fill).toContain("Splash Readiness");
       expect(row.fill).not.toContain(".env");
     }

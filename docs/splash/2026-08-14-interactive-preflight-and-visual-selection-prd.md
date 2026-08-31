@@ -14,19 +14,27 @@ retired. The journalist-facing UI is a loopback studio in the OS browser. Stdio
 MCP remains as a portable opener (`open_splash`); confirmation, setup, and
 selection stay on the local page.
 
+**Credential-input amendment (2026-09-01):** Splash's studio and setup page
+report credential IDs, provider links, and broker status only. Indicator Labs
+owns credential input for managed installations. Open-source users configure
+the same IDs through Engine's protected `bsig` stdin/keychain flow outside
+Splash, with values entered through a private prompt rather than agent chat.
+This amendment supersedes older local credential-input, mutation, and migration
+requirements retained below as implementation history.
+
 ## Summary
 
-Splash will give journalists a graphical path from preflight to a confirmed visual choice. A Goose
-MCP App view will report readiness, explain unavailable capabilities, collect non-sensitive choices,
-and present the same visual catalogue in two modes: an expert-oriented à-la-carte chooser and an
-AI-recommended storyboard chooser. API keys will never be entered in the MCP view. The app will open
-a branded local browser page where the journalist can follow provider links, paste credentials,
-verify them, and save them through Engine's operating-system credential broker.
+Splash gives journalists a graphical path from preflight to a confirmed visual choice. The local
+studio reports readiness, explains unavailable capabilities, collects non-sensitive choices, and
+presents the same visual catalogue in two modes: an expert-oriented à-la-carte chooser and an
+AI-recommended storyboard chooser. It shows every credential's exact Engine ID, status, purpose, and
+provider link but never accepts a value.
 
-The local setup page will also collect the newsroom's non-sensitive identity, colours, typography,
-language, and credit convention. Splash will stop treating a repository `.env` as the primary home
-for credentials. Existing `.env` values will have an explicit migration path, and key-dependent
-operations will receive credentials only when they run.
+The separate local setup page collects the newsroom's non-sensitive identity, colours, typography,
+language, and credit convention while repeating credential status and safe setup guidance. Managed
+users save credentials in Indicator Labs. Open-source users configure them through Engine's
+protected `bsig` stdin/keychain flow outside Splash. Existing `.env` values are reported by ID for
+manual migration; neither Splash page reads or moves those values.
 
 During development, Splash will use the same Engine control plane as Spotlight and Mycroft: one
 install/adopt action, one manifest, doctor, launch, repair, and uninstall. That action adopts the
@@ -123,9 +131,11 @@ than preserved behind a more polished page.
 
 ## Key decisions
 
-- **Sensitive input is out of band.** The Goose MCP App may show credential status and initiate
-  setup, but credential values are entered only on a separate local browser page. They do not pass
-  through MCP tool arguments, the model context, chat, or an embedded MCP form.
+- **Sensitive input is out of band.** Splash pages show credential status and official provider
+  links but never accept values. Indicator Labs supplies the protected input path for managed
+  installations. Open-source users use Engine's protected `bsig` stdin/keychain flow outside Splash,
+  entering values through a private operating-system or terminal prompt rather than MCP arguments,
+  model context, chat, command arguments, shell history, or repository files.
 - **Engine owns credential storage.** Splash extends the existing Engine key inventory and storage
   contract rather than adding another JavaScript keychain abstraction. Engine remains responsible
   for macOS Keychain, Linux Secret Service, Windows Credential Manager, redaction, validation, and
@@ -165,15 +175,15 @@ than preserved behind a more polished page.
 
 ## Actors
 
-- **A1. Journalist:** configures the newsroom, supplies credentials, chooses visuals, and confirms or
-  rejects AI recommendations.
+- **A1. Journalist:** configures the newsroom, obtains credentials from providers, chooses visuals,
+  and confirms or rejects AI recommendations.
 - **A2. Goose MCP host:** renders the embedded Splash views, exposes supported host capabilities, and
   may grant or deny requests to open an external browser URL.
-- **A3. Splash MCP server:** reports preflight state, serves UI resources, opens the local setup flow,
-  and persists non-sensitive selection state without receiving credential values through MCP.
+- **A3. Splash MCP server:** reports preflight state, serves UI resources, opens the local newsroom
+  setup flow, and persists non-sensitive selection state without receiving credential values.
 - **A4. Local setup controller:** serves the token-bound loopback page, validates request shape,
-  writes revision-checked non-secret configuration, and passes credential candidates to Engine over
-  stdin without contacting providers itself.
+  writes revision-checked non-secret configuration, reports Engine credential status, and refuses
+  credential input or mutation.
 - **A5. Engine:** owns credential metadata, secure storage, redaction, validation boundaries, and
   scoped runtime hydration.
 - **A6. Provider:** issues and validates a credential, such as MapTiler, Datawrapper, or Cloudflare.
@@ -182,12 +192,13 @@ than preserved behind a more polished page.
 
 ```mermaid
 flowchart TB
-  J[Journalist in Goose] --> A[Splash MCP App view]
-  A -->|read status and choose visuals| M[Splash MCP server]
-  A -->|Configure credentials| O[Host-approved external link]
-  O --> L[Token-bound local setup page]
+  J[Journalist in local studio] --> M[Splash MCP server]
+  M -->|credential IDs, provider links, status| J
+  J -->|managed secret input| I[Indicator Labs]
+  J -->|open-source private stdin prompt| E[Engine credential broker]
+  I --> E
+  J -->|open newsroom setup| L[Token-bound local setup page]
   L -->|non-secret profile values| P[Newsroom profile]
-  L -->|credential via stdin| E[Engine credential broker]
   E --> S[Native secure store]
   E -->|hydrate registered operation| X[Key-dependent Splash action]
   M --> B[Confirmed active-story binding]
@@ -213,11 +224,11 @@ an active recommendation deep-links there. Back returns to Readiness. Reload on 
 reconstructs the destination and gate from canonical state; a new MCP process starts unbound and
 requires confirmation again.
 
-The external setup page has two persistent tabs: **Credentials** and **Newsroom & integrations**. It
-opens the tab and card that triggered setup, while keeping the other tab reachable. Done leads to the
-non-sensitive completion summary; Close setup states that completed saves remain committed and warns
-only about unsaved or in-flight work. Returning to Goose restores focus to the initiating control and
-refreshes status when the host supports it, with a visible manual Refresh fallback.
+The external setup page has two persistent tabs: **Newsroom** and **Key status**. Key status lists
+the exact Engine IDs, official provider links, current broker state, and the managed/open-source
+setup routes without rendering credential inputs. Newsroom remains editable. Done and Close setup
+refer only to completed non-secret saves. Returning to the studio restores focus to the initiating
+control and refreshes status when supported, with a visible manual Refresh fallback.
 
 ## Credential and configuration inventory
 
@@ -249,37 +260,30 @@ hard-coded provider lists.
   repairable state.
 - **Outcome:** The journalist can continue with available capabilities or deliberately open setup.
 
-### F2. Configure and verify credentials
+### F2. Configure credentials outside Splash
 
-- **Trigger:** The journalist chooses Configure credentials.
-- **Actors:** A1, A2, A3, A4, A5, A6.
-- **Steps:** The MCP view asks the host to open the loopback URL. The page shows provider cards with
-  purpose, required scope, visible destination domain, official acquisition link, concealed paste
-  field, and Save and verify action. The controller passes a bounded candidate request to Engine
-  through stdin; Engine validates and commits it as one authority operation. Each successful save
-  clears that input while the page remains open until the journalist chooses Done or Close setup.
-- **Outcome:** The page separately reports broker availability, stored state, validation outcome and
-  timestamp, and resulting capability. A rejected or unavailable replacement remains an attempt
-  result while any prior stored credential stays authoritative. The MCP view refreshes status without
-  receiving the secret.
+- **Trigger:** Preflight reports a closed credential-backed capability.
+- **Actors:** A1, A3, A5, A6 and Indicator Labs for managed installations.
+- **Steps:** Splash shows the exact Engine credential ID, purpose, required scope, and official
+  provider acquisition link. Managed users save it in Indicator Labs. Open-source users have a
+  trusted local agent prepare Engine's protected `bsig` stdin/keychain flow, then enter the value
+  only through a private prompt outside chat and Splash. Splash never receives the value.
+- **Outcome:** Refresh reports broker availability, stored state, validation outcome and timestamp,
+  and resulting capability. Credential-independent work remains available throughout.
 
-Credential cards use this complete interaction-state contract:
+Credential cards use this display-state contract:
 
-| State | Visible status | Enabled actions and transition rules |
+| State | Visible status | Available action |
 | --- | --- | --- |
-| Broker unavailable | Secure storage unavailable with the specific platform/contract reason | Retry status; provider links and newsroom editing remain available; Save, Replace, and Remove are disabled |
-| Not saved | Not saved; capability consequence named | Get key; paste; Save and verify |
-| Saving or replacing | Verifying without displaying the candidate | Disable the field and all duplicate/destructive actions; announce progress; Close setup warns that the in-flight result may still commit |
-| Saved and verified | Saved; verified dimensions and timestamp; resulting capability | Replace; Remove; refresh status |
-| Saved, unverified | Saved; each unverified dimension and reason | Replace; Remove; continue only where the capability contract permits |
-| Replacement rejected, prior retained | Attempt rejected; previous saved credential still authoritative | Clear the candidate field; Retry with a newly pasted value; Remove remains separately available |
-| Provider unavailable, prior retained | Provider unavailable; previous stored/validation state unchanged | Clear the candidate field; Retry; never relabel the prior value invalid |
-| Stale conflict | State changed in another session; nothing written | Clear the candidate field; Refresh before another mutation |
-| Removing | Confirmation names every capability that will close | Confirm removal or keep; prevent duplicate submission; success returns to Not saved |
+| Broker unavailable | Secure storage unavailable with the specific platform/contract reason | Follow the Engine repair guidance; provider links and newsroom editing remain available |
+| Not saved | Not saved; capability consequence and exact credential ID named | Obtain the key and use Indicator Labs or the protected open-source `bsig` path |
+| Saved and verified | Saved; verified dimensions and timestamp; resulting capability | Continue or replace outside Splash, then refresh |
+| Saved, unverified | Saved; each unverified dimension and reason | Complete required attestations outside Splash or continue only where the capability contract permits |
+| Status changed elsewhere | Refreshed broker state | Re-evaluate available capabilities; Splash performs no credential mutation |
 
-Close setup never rolls back completed saves. Done clears unsaved secret fields, shows a non-sensitive
-summary, and tells the journalist to return to Goose and use the visible manual Refresh action before
-the session expires; it does not assume an undocumented Goose deep-link.
+Closing setup never affects credentials because the page cannot mutate them. Done reports only
+non-sensitive newsroom saves and tells the journalist to refresh credential status after completing
+either external setup path.
 
 ### F3. Configure the newsroom
 
@@ -324,26 +328,24 @@ the session expires; it does not assume an undocumented Goose deep-link.
 - **Trigger:** Goose reloads, the MCP App closes, setup is closed, or a session resumes later.
 - **Actors:** A1, A2, A3, A5.
 - **Steps:** Splash reconstructs non-sensitive state from canonical files and obtains only saved/not
-  saved or validation status from Engine. It never repopulates credential fields. Every mutation
-  presents the revision or generation observed by the view; stale state returns a conflict and asks
-  for refresh rather than applying last-writer-wins.
+  saved or validation status from Engine. It never renders credential fields or exposes mutation
+  actions. Newsroom and visual-selection mutations still present the revision observed by the view;
+  stale state returns a conflict and asks for refresh rather than applying last-writer-wins.
 - **Outcome:** The journalist resumes at the same unresolved gate without re-entering completed
   choices.
 
-### F7. Migrate a legacy `.env`
+### F7. Retire a legacy `.env`
 
 - **Trigger:** Splash detects supported credential names in the current legacy root `.env`.
 - **Actors:** A1, A4, A5.
-- **Steps:** The page names detected credential IDs without showing values, offers an explicit move
-  to secure storage, and separately offers the named non-secret integration fields for import into
-  `NEWSROOM.md`. Revision-checked non-secret import completes before a dependent Cloudflare token is
-  validated and stored through Engine. The page separately asks whether migrated lines should be
-  removed. Broker storage becomes authoritative per successfully migrated credential. Line removal
-  proceeds only when the file digest and exact supported assignments still match the inspected
-  preimage; reading alone never edits the file.
-- **Outcome:** The secure store becomes authoritative only for each successfully migrated credential
-  ID. Refused or failed migrations leave the legacy file intact and authoritative for those IDs in
-  the explicit degraded compatibility state.
+- **Steps:** The page names detected credential IDs without showing or reading values and separately
+  offers named non-secret integration fields for revision-checked import into `NEWSROOM.md`.
+  Credential values are moved to Engine outside Splash: through Indicator Labs for managed users or
+  the protected `bsig` stdin/keychain flow for open-source users. After broker status confirms the
+  matching ID is stored, the user removes the legacy assignment by hand.
+- **Outcome:** Splash never chooses credential authority or deletes a secret-bearing line. Explicit
+  legacy direct runs may continue reading an unmigrated `.env`; managed Engine operations use only
+  broker state.
 
 ## Functional requirements
 
@@ -357,19 +359,16 @@ the session expires; it does not assume an undocumented Goose deep-link.
 - R2. The MCP App must never request or transport passwords, API keys, access tokens, or payment
   credentials through tool arguments, model context, app state synchronization, or in-band form
   submission.
-- R3. Credential setup must open an external browser interaction after explicit user action. Splash
-  must check the host's open-link capability and handle denial or failure. A user-requested
-  platform-local opener may launch the capability URL directly without returning it through MCP. If
-  neither route can open the page, setup reports unavailable and offers retry; no mutation-authorizing
-  URL or pairing secret may be placed in an ordinary tool result or model context.
-- R4. The local controller must bind only to loopback on an ephemeral port, apply a per-run
+- R3. Every credential card must show the exact Engine ID, current status, purpose, required scope,
+  and official provider link. It must explain the Indicator Labs managed path and the protected
+  open-source `bsig` stdin/keychain path without rendering an input or authorizing a mutation.
+- R4. The local newsroom controller must bind only to loopback on an ephemeral port, apply a per-run
   unguessable session boundary, reject cross-origin and unexpected-host requests, set no-store
   responses, enforce request-size and idle/overall timeouts, and become unusable after successful
-  Done, Close setup, or expiry. Individual provider saves do not end a multi-provider session, and
-  Close setup does not undo completed saves.
-- R5. Engine must validate and commit a credential candidate as one authority operation. Invalid,
-  unavailable, rate-limited, or insufficiently demonstrated candidates must not replace the prior
-  stored value. A prior courtesy `/verify` call is not authorization to save.
+  Done, Close setup, or expiry. Credential mutation routes fail closed without calling Engine.
+- R5. Engine's external credential clients must validate and commit a candidate as one authority
+  operation. Invalid, unavailable, rate-limited, or insufficiently demonstrated candidates must not
+  replace the prior stored value. Splash only reads the resulting public status.
 - R6. Neither success nor failure responses, logs, analytics, exception messages,
   application-visible setup URLs, generated files, nor recorded provider request URLs may contain
   submitted credential values. A provider-required authentication transport may carry a value on
@@ -407,26 +406,21 @@ the session expires; it does not assume an undocumented Goose deep-link.
   installed once and must never be copied or reinstalled for an individual launch. Development apply
   may refresh those recorded identities after an intentional source or lockfile change; ordinary
   launches may not.
-- R12. A credential saved during preflight must be usable by the next relevant operation without
-  requiring the user to discover and run a terminal command. Planning may choose a scoped
-  per-operation launcher or an equivalent brokered boundary; restarting the entire host is not the
-  normal success path.
-- R13. Replace and remove must be explicit actions. Existing values are never shown, and a failed
-  replacement must not silently destroy the last working value. Mutations must compare the broker
-  generation observed by the page and reject stale requests without writing. Engine must hold a
-  cross-process per-credential transaction lock across the final generation reread and Set/Delete so
-  two processes cannot both pass the comparison. Engine registry policy must mark Splash entries as
-  record-backed: legacy raw `keys set` and `keys validate` verbs reject them, while removal requires
-  the record-aware expected-generation contract. Existing raw IDs retain their current behaviour.
+- R12. A credential configured through Indicator Labs or the open-source protected Engine flow must
+  be usable by the next relevant operation. Preflight must name the exact ID and safe route; it must
+  not require secret retrieval or place values in model-visible context.
+- R13. Replace and remove remain explicit, generation-checked Engine operations for clients outside
+  Splash. Existing values are never shown, and a failed replacement must not silently destroy the
+  last working value. Splash exposes status only.
 - R14. MapTiler delivery keys that cannot be honestly probed must display saved-unverified rather
-  than verified. Cloudflare may report token-active and account-access
-  separately, but must not label Pages Edit scope verified unless a non-mutating provider response
-  actually proves that grant. The interface must explain each unverified dimension.
+  than verified. Cloudflare may report token-active and account-access separately, but must not label
+  Pages Edit scope verified unless a non-mutating provider response actually proves that grant. The
+  interface must explain each unverified dimension.
 
-### Newsroom configuration
+### Non-secret newsroom and integration configuration
 
-- R15. Credential and newsroom setup must be available as distinct tabs or pages in the same branded
-  local setup experience.
+- R15. Credential status and newsroom setup must be distinct tabs or pages in the same branded local
+  experience. Only the newsroom side accepts input.
 - R16. Newsroom fields must use the canonical `NEWSROOM.md` reader and validation rules. The interface
   must not invent a second branding schema. Updates must be atomic, preserve supported content not
   owned by the form, and compare the loaded document revision before replacing it while holding a
@@ -495,14 +489,13 @@ the session expires; it does not assume an undocumented Goose deep-link.
   available.
 - R31. Current `.env` reading may remain temporarily as an explicit compatibility boundary, but new
   setup must not write credentials there. Canonical documentation and preflight repair copy must
-  point to secure setup instead.
-- R32. Legacy imports must be opt-in, name only supported credential IDs, validate before changing
-  authority, and require separate confirmation before removing old lines. Broker state wins only for
-  successfully migrated IDs; legacy compatibility remains authoritative only for unmigrated IDs.
-  Named non-secret integration fields must be separately confirmed into revision-checked
-  `NEWSROOM.md` before dependent credential validation.
-  Unsafe ownership, symlinks, unsupported syntax, duplicate or conflicting assignments, or a changed
-  preimage must abort removal without altering the file.
+  point to Engine's protected setup outside Splash.
+- R32. Legacy discovery must name only supported credential IDs and never return values. Splash may
+  import separately confirmed non-secret integration fields into revision-checked `NEWSROOM.md`,
+  but it must not migrate or delete credential assignments. Users move values through Indicator Labs
+  or the protected open-source `bsig` path, confirm broker status, and remove legacy credential lines
+  themselves. Unsafe ownership, symlinks, unsupported syntax, duplicate or conflicting assignments,
+  or a changed preimage must abort non-secret import without altering the file.
 - R33. Microsoft support must be described by tested runtime topology. Native Windows, Windows
   calling into WSL, and Linux Engine inside WSL are distinct cases; unsupported combinations must
   not display a generic saved/ready state. Native Windows and WSL are unsupported in the first
@@ -545,24 +538,23 @@ the session expires; it does not assume an undocumented Goose deep-link.
 
 ## Acceptance examples
 
-- AE1. **Covers R1-R6.** Given Goose supports MCP Apps and open links, when the journalist chooses
-  Configure credentials, then the host opens the loopback page and no credential value appears in
-  any MCP request or response.
-- AE2. **Covers R3.** Given the host denies the open-link request, when the journalist explicitly
-  retries through the platform-local opener, then the capability URL is delivered directly to the
-  browser and never through MCP. If the opener also fails, setup reports unavailable without
-  returning an authorizing URL or pretending the browser opened.
+- AE1. **Covers R1-R6.** Given a credential is missing, the studio and setup page show its exact ID,
+  purpose, provider link, and both external setup routes without rendering an input or carrying a
+  value in MCP.
+- AE2. **Covers R3.** Given an open-source installation, preflight directs a trusted local agent to
+  prepare Engine's protected stdin/keychain flow while the user enters the value through a private
+  prompt outside chat and Splash.
 - AE3. **Covers R4-R6.** Given a different local origin or a request without the active session
-  boundary, when it posts to setup, then the controller rejects it and writes nothing.
-- AE4. **Covers R5, R13.** Given an invalid Datawrapper token and an existing working stored token,
-  when replacement is attempted, then validation fails, the old token remains authoritative, and
-  neither value is returned or logged.
-- AE5. **Covers R7-R14.** Given a valid MapTiler development key, when Save and verify succeeds, then
-  Engine reports the key ID as saved and valid with a new generation and the next registered
-  map-bake action can use it without a `.env` or host restart; a concurrent stale replacement writes
-  nothing.
-- AE6. **Covers R14.** Given an origin-restricted MapTiler delivery key, when it is saved, then the
-  interface says saved-unverified and does not report a local 403 as proof the key is broken.
+  boundary, when it posts to setup, the controller rejects it and writes nothing. Given a credential
+  mutation request with a valid session, the controller returns `credential-input-disabled` and
+  never calls an Engine mutation.
+- AE4. **Covers R5, R13.** Given an external Engine client rejects a replacement, the prior stored
+  record remains authoritative and Splash reports only the resulting public status.
+- AE5. **Covers R7-R14.** Given a valid MapTiler development key is saved through either external
+  path, Refresh reports the key ID as saved and valid and the next registered map-bake action can use
+  it without a `.env` or host restart.
+- AE6. **Covers R14.** Given an origin-restricted MapTiler delivery key is saved, the interface says
+  saved-unverified and does not report a local 403 as proof the key is broken.
 - AE7. **Covers R15-R18.** Given an incomplete newsroom profile, when the journalist confirms manual
   branding fields, then the canonical newsroom reader accepts the result, preserves unowned
   supported content, and stores no brand value in the keychain; a concurrent profile edit causes a

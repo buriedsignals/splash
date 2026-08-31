@@ -6,14 +6,14 @@ import { acquireTargetLock } from "./target-lock.mjs";
 const MAX_ENV_BYTES = 128 << 10;
 const MAX_VALUE_BYTES = 16 << 10;
 
-export const LEGACY_CREDENTIAL_NAMES = Object.freeze({
+const LEGACY_CREDENTIAL_NAMES = Object.freeze({
   MAPTILER_KEY: ["MAPTILER_KEY", "MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
   MAPTILER_DELIVERY_KEY: ["MAPTILER_DELIVERY_KEY"],
   DATAWRAPPER_TOKEN: ["DATAWRAPPER_TOKEN", "DATAWRAPPER_API_TOKEN"],
   CLOUDFLARE_API_TOKEN: ["CLOUDFLARE_API_TOKEN"],
 });
 
-export const LEGACY_INTEGRATION_NAMES = Object.freeze({
+const LEGACY_INTEGRATION_NAMES = Object.freeze({
   cloudflareAccountId: "CLOUDFLARE_ACCOUNT_ID",
   cmsKind: "CMS_KIND",
   cmsEndpoint: "CMS_ENDPOINT",
@@ -92,19 +92,28 @@ function parse(text) {
       issues.push({ code: "unsupported-syntax", line: index + 1 });
       return;
     }
+    const name = match[1];
+    const credentialId = NAME_TO_CREDENTIAL.get(name);
     let value;
-    try {
-      value = parseValue(match[2]);
-    } catch {
-      issues.push({ code: "unsupported-value", line: index + 1 });
-      return;
+    let valuePresent;
+    if (credentialId) {
+      // Credential assignments are status metadata only. Never decode or expose a parsed value.
+      valuePresent = match[2].trim() !== "";
+    } else {
+      try {
+        value = parseValue(match[2]);
+        valuePresent = value !== "";
+      } catch {
+        issues.push({ code: "unsupported-value", line: index + 1 });
+        return;
+      }
     }
     assignments.push({
       index,
       line: index + 1,
-      raw,
-      name: match[1],
+      name,
       value,
+      valuePresent,
       assignmentId: assignmentIdentity(index, raw),
     });
   });
@@ -127,7 +136,7 @@ function parse(text) {
   }
   for (const [id, group] of credentialGroups) {
     if (group.length > 1) issues.push({ code: "ambiguous-credential", credentialId: id });
-    else if (!group[0].value) issues.push({ code: "empty-credential", credentialId: id });
+    else if (!group[0].valuePresent) issues.push({ code: "empty-credential", credentialId: id });
   }
   for (const [field, group] of integrationGroups) {
     if (group.length > 1) issues.push({ code: "ambiguous-integration", field });
@@ -197,26 +206,18 @@ export async function inspectLegacyEnv(path) {
   }
 }
 
-function exactAssignment(source, kind, id, expectedRevision, assignmentId) {
+function exactIntegration(source, field, expectedRevision, assignmentId) {
   if (revision(source.text) !== expectedRevision) {
     const error = new Error("legacy .env changed since it was inspected");
     error.code = "REVISION_CONFLICT";
     throw error;
   }
   assertSafe(source);
-  const groups = kind === "credential" ? source.parsed.credentialGroups : source.parsed.integrationGroups;
-  const group = groups.get(id) ?? [];
+  const group = source.parsed.integrationGroups.get(field) ?? [];
   if (group.length !== 1 || group[0].assignmentId !== assignmentId) {
-    throw new Error("legacy assignment identity no longer matches the inspected file");
+    throw new Error("legacy integration identity no longer matches the inspected file");
   }
   return group[0];
-}
-
-export async function readLegacyCandidate(path, { credentialId, expectedRevision, assignmentId } = {}) {
-  if (!Object.hasOwn(LEGACY_CREDENTIAL_NAMES, credentialId)) throw new Error("unsupported legacy credential id");
-  const source = await load(path);
-  const assignment = exactAssignment(source, "credential", credentialId, expectedRevision, assignmentId);
-  return { credentialId, candidate: assignment.value, sourceName: assignment.name, assignmentId };
 }
 
 export async function readLegacyIntegrations(path, { expectedRevision, assignments = [] } = {}) {
@@ -224,7 +225,7 @@ export async function readLegacyIntegrations(path, { expectedRevision, assignmen
   const values = {};
   for (const requested of assignments) {
     if (!Object.hasOwn(LEGACY_INTEGRATION_NAMES, requested.field)) throw new Error("unsupported legacy integration field");
-    const assignment = exactAssignment(source, "integration", requested.field, expectedRevision, requested.assignmentId);
+    const assignment = exactIntegration(source, requested.field, expectedRevision, requested.assignmentId);
     values[requested.field] = assignment.value;
   }
   return values;
@@ -263,14 +264,11 @@ export async function removeLegacyAssignments(path, {
     const source = await load(path);
     const indexes = new Set();
     for (const requested of assignments) {
-      if (!requested || typeof requested !== "object" || Boolean(requested.credentialId) === Boolean(requested.field)) {
-        throw new Error("each legacy removal must identify exactly one credential or integration field");
+      if (!requested || typeof requested !== "object" || typeof requested.field !== "string" || "credentialId" in requested) {
+        throw new Error("each legacy removal must identify exactly one integration field");
       }
-      const kind = requested.credentialId ? "credential" : "integration";
-      const id = requested.credentialId ?? requested.field;
-      if (kind === "credential" && !Object.hasOwn(LEGACY_CREDENTIAL_NAMES, id)) throw new Error("unsupported legacy credential id");
-      if (kind === "integration" && !Object.hasOwn(LEGACY_INTEGRATION_NAMES, id)) throw new Error("unsupported legacy integration field");
-      const assignment = exactAssignment(source, kind, id, expectedRevision, requested.assignmentId);
+      if (!Object.hasOwn(LEGACY_INTEGRATION_NAMES, requested.field)) throw new Error("unsupported legacy integration field");
+      const assignment = exactIntegration(source, requested.field, expectedRevision, requested.assignmentId);
       indexes.add(assignment.index);
     }
     const text = source.parsed.lines.filter((_, index) => !indexes.has(index)).join("");

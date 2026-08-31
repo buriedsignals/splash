@@ -1,39 +1,10 @@
 /**
- * ONE KEY, ONE HOME — the guard for a defect that could not show itself in this checkout.
+ * LEGACY ENV ROOT — read-only compatibility for copied roots.
  *
- * `recordKey({root})` writes a journalist's key to `<root>/.env`. The map producers used to read
- * theirs from `new URL("../../../.env", import.meta.url)` — a fixed three-level climb, which in
- * this development checkout lands on `twin/.env`, the very same file. So in the only place anyone
- * ever ran it, the two agreed, and the defect was invisible.
- *
- * Anywhere else they do not agree, and the failure mode is the bad one. Both Bun and Node resolve a
- * symlink BEFORE computing `import.meta.url`, so installing the skills as a symlink into a host's
- * skills directory does not repair the climb — it makes the producer read the DEVELOPER's `.env`
- * while the journalist's own key sits unread in their own root. A newsroom would see maps that
- * work on the machine that built them and fail on theirs, with a key they can prove is present.
- *
- * WHAT THIS FILE ASSERTS, and the mutation that reddens each (all run in a copy outside the tree):
- *
- *   1. Every vendored copy of `splash-root.mjs` is byte-identical to the canonical one.
- *      MUTATION: change one character in `map-web/scripts/splash-root.mjs`.
- *
- *   2. Every copy, called from a skill script's own directory inside a SYNTHETIC root, names the
- *      same `.env` that `recordKey` actually writes — proved by calling `recordKey` and reading the
- *      file back through the path the producer resolved, rather than by comparing two strings.
- *      MUTATION: make `splashRoot` return `dirname(dirname(dirname(startDir)))` unconditionally.
- *
- *   3. No script anywhere under `skills/` reaches a `.env` by a fixed climb again. This is the
- *      shape that created the two homes; it is cheap to reintroduce and it reads as ordinary.
- *      MUTATION: put `../../../.env` back in `map-beat/scripts/bake-plate.mjs`.
- *
- * WHAT IT DOES NOT CLOSE, named rather than left to be discovered:
- *
- *   - `scrolly/scripts/bake-plate.mjs` resolves its `.env` as `join(process.cwd(), ".env")` —
- *     a THIRD convention, and one that depends on where the session happens to be standing. It is
- *     excluded from rule 3 below (which only bans the fixed climb) and is left alone deliberately:
- *     that file is being edited by another agent in this worktree as this lands. It needs the same
- *     treatment and it is reported, not silently patched around.
- *   - Whether the `.env` a producer finds actually CONTAINS the key. That is preflight's question.
+ * Managed Engine operations hydrate scoped credentials and never load a checkout `.env`. Explicit
+ * legacy map runs still resolve `<root>/.env`; this guard keeps every vendored root helper identical,
+ * verifies flat and namespaced skill layouts resolve the same root, and prevents the former fixed
+ * `../../../.env` climb from returning.
  */
 import { describe, it, expect } from "bun:test";
 import {
@@ -46,7 +17,6 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { recordKey } from "../scripts/keys.mjs";
 
 const SPLASH_TWIN = join(import.meta.dirname, "..");
 const SKILLS = join(SPLASH_TWIN, "..");
@@ -80,8 +50,8 @@ describe("splash-root.mjs — the duplicated copies stay in step", () => {
   });
 });
 
-describe("a producer's .env and recordKey's .env are the same file", () => {
-  it("should resolve, from every copy, to the file recordKey actually writes", async () => {
+describe("a legacy producer resolves the Splash root .env", () => {
+  it("should resolve the same root file from every vendored copy", async () => {
     const lab = await mkdtemp(join(tmpdir(), "splash-onehome-"));
     try {
       // A synthetic Splash root: it carries the manifest that makes it a root, and the skills sit
@@ -138,9 +108,9 @@ describe("a producer's .env and recordKey's .env are the same file", () => {
         }
       }
 
-      // The claim is not that two strings match — it is that a key the journalist gives us lands
-      // where the producer will look. So write one, then read it back through the resolved path.
-      await recordKey({ root, name: "MAPTILER_KEY", value: "one-home-probe" });
+      // Confirm the resolved path is not merely the right string: a direct legacy file is readable
+      // through the producer's own helper.
+      await writeFile(join(root, ".env"), "MAPTILER_KEY=one-home-probe\n", { mode: 0o600 });
       const { splashEnvPath } = await import(
         `${join(root, "skills", "map-beat", "scripts", "splash-root.mjs")}?readback=1`
       );
@@ -177,21 +147,6 @@ describe("a producer's .env and recordKey's .env are the same file", () => {
     }
   }, 30_000);
 
-  it("should accept MAPTILER_DELIVERY_KEY, the key ruling R1b requires", async () => {
-    const lab = await mkdtemp(join(tmpdir(), "splash-deliverykey-"));
-    try {
-      await recordKey({
-        root: lab,
-        name: "MAPTILER_DELIVERY_KEY",
-        value: "restricted-key",
-      });
-      expect(await readFile(join(lab, ".env"), "utf8")).toContain(
-        "MAPTILER_DELIVERY_KEY=restricted-key",
-      );
-    } finally {
-      await rm(lab, { recursive: true, force: true });
-    }
-  });
 });
 
 /** `src` with line and block comments removed; string literals are preserved untouched. */

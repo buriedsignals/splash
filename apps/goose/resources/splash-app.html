@@ -4,15 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Splash</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4 C 12.5 10.5, 9 14.5, 9 19.5 a7 7 0 0 0 14 0 C 23 14.5 19.5 10.5 16 4 Z' fill='%2349C6FF'/%3E%3Ccircle cx='5.5' cy='8' r='2' fill='%23D4A853'/%3E%3Ccircle cx='26.5' cy='8' r='2' fill='%23D4A853'/%3E%3C/svg%3E" />
     <style>
       /*__SPLASH_CSS__*/
     </style>
   </head>
   <body>
     <main aria-labelledby="title">
-      <header>
+      <header class="masthead">
+        <div class="brand-lockup">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 4C12.5 10.5 9 14.5 9 19.5a7 7 0 0 0 14 0C23 14.5 19.5 10.5 16 4Z" fill="#49c6ff" />
+            <circle cx="5.5" cy="8" r="2" fill="#d4a853" />
+            <circle cx="26.5" cy="8" r="2" fill="#d4a853" />
+          </svg>
+          <h1 id="title">Splash</h1>
+        </div>
         <p class="eyebrow">Visual journalism workspace</p>
-        <h1 id="title">Splash</h1>
       </header>
       <nav aria-label="Splash destinations">
         <button type="button" data-route="readiness" aria-current="page">
@@ -55,9 +63,10 @@
           </button>
         </div>
         <p class="quiet">
-          Save MapTiler, Datawrapper, and Cloudflare keys in Indicator Labs.
-          This page records newsroom identity and shows whether those keys are
-          present.
+          Indicator Labs users save keys in the desktop app. Open-source users
+          configure the exact IDs shown through Engine’s protected bsig
+          stdin/keychain flow, entering values only in a private prompt outside
+          chat and Splash. This page reports status only.
         </p>
       </section>
 

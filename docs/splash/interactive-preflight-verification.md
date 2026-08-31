@@ -458,26 +458,30 @@ clean install must confirm the same boundary before release.
 
 ## U4 local setup and migration boundary
 
-The default `installer/configure.mjs` path now starts an Engine-backed loopback controller. The old
-plaintext writer remains only behind the explicit `--legacy-plaintext` compatibility flag; the
-managed install path does not select it. The controller binds an ephemeral `127.0.0.1` port, exchanges
-a one-use URL-fragment capability for an HttpOnly same-site cookie, enforces exact Host and Origin,
-bounded JSON bodies, no-store/CSP/referrer headers, and refuses shutdown while a credential mutation
-is unresolved. Credential candidates are cleared from the browser field immediately, sent only over
-bounded stdin to the exact `bsig` executable, and rejected if Engine reflects them anywhere in its
-control output.
+The default `installer/configure.mjs` path starts an Engine-backed loopback controller. The
+controller binds an ephemeral `127.0.0.1` port, exchanges a one-use URL-fragment capability for an
+HttpOnly same-site cookie, enforces exact Host and Origin, bounded JSON bodies,
+no-store/CSP/referrer headers, and idle/overall expiry.
 
-The credential and newsroom destinations are semantic keyboard-operable tabs. The newsroom writer
+After the 2026-08-26 credential-input cutover, this page calls only Engine credential list/status
+operations. It shows every exact ID, provider link, stored generation, and validation state but has no
+secret field. `/api/credential/replace`, `/api/credential/remove`, and
+`/api/legacy/migrate-credential` return `410 credential-input-disabled` after consuming the bounded
+request body and never call the Engine mutation boundary. Indicator Labs remains the managed input
+path. Open-source users configure the same IDs through Engine's protected `bsig` stdin/keychain flow
+outside Splash, entering values through a private prompt rather than chat or command arguments.
+
+The key-status and newsroom destinations are semantic keyboard-operable tabs. The newsroom writer
 uses a revision digest plus an adjacent cross-process lock held across final reread, fsynced temp
 write, and atomic rename; it preserves unowned front matter and prose. Declining a profile and
 replacing that decision each require a separate confirmation. Optional non-secret Cloudflare/CMS
 configuration is canonical `NEWSROOM.md` state, not broker state.
 
 Legacy `.env` discovery returns identities and assignment handles but no values. Unsafe ownership,
-permissions, symlinks, shell syntax, duplicates, and alias ambiguity fail closed. A candidate is read
-only inside the confirmed migration operation, committed through Engine first, and removed from the
-legacy file only by a second exact-revision confirmation. Non-secret service settings follow the
-same compare-and-swap rule, and a newsroom conflict changes neither authority.
+permissions, symlinks, shell syntax, duplicates, and alias ambiguity fail closed. The page may import
+named non-secret service settings through the same compare-and-swap rule. It never reads, migrates,
+or removes credential values: the user first configures the ID through the managed or open-source
+Engine path, confirms broker status, and then removes the legacy assignment by hand.
 
 Newsroom derivation uses one outbound boundary that rejects local/private/reserved names and
 addresses, credentials in URLs, non-default ports, mixed DNS answers, unsafe redirects, content
@@ -486,21 +490,33 @@ the request does not perform a second unverified resolution. Relative stylesheet
 the final checked redirect URL. A real request through that policy to `https://example.com` returned
 the public HTML successfully; private/intranet derivation remains manual by design.
 
-The controller also runs as a separate child with a closed newline-delimited lifecycle protocol.
-Its parent receives readiness/closure or a stable startup error only; credential HTTP bodies and
-candidate values never enter that channel.
+The controller runs as a separate child with a closed newline-delimited lifecycle protocol. Its
+parent receives readiness/closure or a stable startup error only; HTTP bodies never enter that
+channel.
 
-Focused verification with host loopback access on 2026-08-14:
+Focused verification on 2026-09-01:
 
 ```text
-bun test installer/test/setup-security.test.ts installer/test/legacy-env.test.ts \
-  installer/test/the-setup-page.test.ts
-PASS: 37 tests, 0 failures, 174 expectations
+bun --no-env-file test installer/test apps/goose/test skills/splash/test
+PASS: 1,621 tests, 3 skipped, 0 failures, 2,880 expectations
 ```
 
-The restricted sandbox mapped loopback binds to `EADDRINUSE`; the identical command passed with host
-access. This is not visual release QA. Real browser layout/focus inspection, expiry timing, host
-open-link/opener outcomes, and native broker use through the page remain for U5/U10.
+These tests cover the loopback refusal boundary, exact open-source/managed copy, visible credential
+IDs, status-only studio bundle, and preflight remedies. Credential mutation through the Splash page
+is intentionally absent.
+
+`dev-browser` then opened the real `installer/configure.mjs` surface against a locally built Engine
+binary, completed the protected session, and switched to **Key status**. The rendered page showed
+all four canonical IDs, both managed/open-source routes, and zero password inputs. Visual inspection
+confirmed the setup page contains status and provider links only, with the shared guidance rendered
+once above the credential cards.
+
+A visual-language pass then matched the local setup and full Readiness/Choose visual studio to the
+landing page's bright editorial system: `#F5F0E6` paper, `#FCFAF3` plates, serif display headings,
+spaced utility labels, cyan/amber rules, and the Splash mark. A fixture-backed Engine status session
+avoided live-keychain access while exercising the real controller. Browser verification rendered all
+four credential rows with zero password fields, bound a story, rendered three visual-choice cards,
+and confirmed both surfaces fit a 320 CSS-pixel viewport without horizontal overflow.
 
 ## U5 production Goose application shell
 

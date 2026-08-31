@@ -274,7 +274,7 @@ export async function startSplashApp({
     const credentials = documentRef.querySelector("#credentials");
     credentials.replaceChildren();
     for (const row of next.credentials ?? []) {
-      const detail = [statusText(row.state), row.purpose].filter(Boolean).join(" — ");
+      const detail = [row.id, statusText(row.state), row.purpose].filter(Boolean).join(" — ");
       const node = card(row.name || row.id, detail, row.state);
       if (row.acquisitionUrl) {
         const link = documentRef.createElement("a");
@@ -286,7 +286,7 @@ export async function startSplashApp({
       }
       const hint = documentRef.createElement("p");
       hint.className = "quiet";
-      hint.textContent = "Save or replace this key in Indicator Labs.";
+      hint.textContent = "Configure this exact ID outside Splash through the path below, then refresh status.";
       node.append(hint);
       credentials.append(node);
     }

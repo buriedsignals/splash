@@ -32,15 +32,9 @@
 // touches nothing. It is idempotent: a correct link already in place is left alone and reported as
 // `ok`.
 //
-// IT IS ALSO A MODULE, and that is deliberate rather than incidental. The setup page
-// (`configure.mjs`) has to REPORT the store — the owner expected a per-host question, there is
-// correctly none, and a page that then says nothing at all leaves him unable to tell a wired
-// install from an unwired one. Reporting it needs three facts: which hosts exist, which store each
-// one reads, and what the placement would do. All three live HERE, next to the code that acts on
-// them, and `configure.mjs` imports them rather than keeping a second copy that would drift on its
-// first day. (The no-cross-skill-imports rule bans an import leaving a SKILL; both of these files
-// are the installer's own, outside `skills/`, so the rule does not reach them — see that guard's
-// own header for what it walks.)
+// It is also a module so dry-run compatibility callers can use the exact same host/door model as
+// the CLI without copying the inventory. Engine owns production skill projection; this module does
+// not create a second managed lifecycle.
 
 import { existsSync, lstatSync, readlinkSync, symlinkSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";

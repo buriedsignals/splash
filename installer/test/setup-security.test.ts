@@ -557,7 +557,7 @@ describe("protected setup Engine credential contract", () => {
 
     expect(replaced.status).toBe(410);
     expect(removed.status).toBe(410);
-    expect(await replaced.json()).toMatchObject({ code: "desktop-owned" });
+    expect(await replaced.json()).toMatchObject({ code: "credential-input-disabled" });
     expect(calls.filter(({ args }) => args[1] === "list")).toHaveLength(1);
     expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
   });
@@ -679,8 +679,8 @@ describe("protected setup Engine credential contract", () => {
     expect(newsroom.status).toBe(200);
     expect([replacement.status, removal.status, migration.status]).toEqual([410, 410, 410]);
     expect(refusal).toEqual({
-      code: "desktop-owned",
-      message: "Save Splash credentials in Indicator Labs. This page records newsroom identity only.",
+      code: "credential-input-disabled",
+      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
     });
     expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
     expect(calls.some(({ input }) => input.includes(candidate))).toBe(false);
@@ -1121,8 +1121,8 @@ describe("protected setup Engine credential contract", () => {
     expect(accepted.status).toBe(410);
     expect(oversized.status).toBe(410);
     expect(await oversized.json()).toEqual({
-      code: "desktop-owned",
-      message: "Save Splash credentials in Indicator Labs. This page records newsroom identity only.",
+      code: "credential-input-disabled",
+      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
     });
     expect(calls.some(({ input }) => input.includes("oversized-canary"))).toBe(false);
   });
@@ -1138,6 +1138,9 @@ describe("token-bound loopback setup controller", () => {
     const html = await page.text();
     expect(html).not.toContain(controller.capability);
     expect(html).toContain("Indicator Labs");
+    expect(html).toContain("Open-source users");
+    expect(html).toContain("Credential ID:");
+    expect(html).toContain("bsig stdin/keychain flow");
     expect(html).not.toContain("Paste a new value");
     expect(html).not.toContain('type="password"');
     expect(html).not.toContain("type='password'");
@@ -1353,7 +1356,7 @@ describe("token-bound loopback setup controller", () => {
       }),
     });
     expect(movedResponse.status).toBe(410);
-    expect(await movedResponse.json()).toMatchObject({ code: "desktop-owned" });
+    expect(await movedResponse.json()).toMatchObject({ code: "credential-input-disabled" });
     expect(candidate).toBe("");
     expect(JSON.stringify(lifecycle)).not.toContain("legacy-controller-secret");
     const remaining = await readFile(envPath, "utf8");
