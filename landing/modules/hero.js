@@ -3232,448 +3232,211 @@ Stage.register(
       return cv;
     }
 
+    /* ----------------------------------------------------------- the galley
+     * The hero is paper coming off a press, and a web of newsprint has no page
+     * boundary — so what the webs carry cannot be a front page. It is a
+     * GALLEY: one measure, set end to end, the eleven papers following one
+     * another down the column with their mastheads between them.
+     *
+     * Three galleys are set SIDE BY SIDE into one texture. Three webs then
+     * cost one upload rather than three, and each reads its own column at its
+     * own offset. Only v repeats; u is clamped, and the columns are set apart
+     * by a strip of dead paper, so no column can ever bleed into its
+     * neighbour under a mipmap.
+     *
+     * Each paper gets a SLOT of equal height and is cut off at the end of it.
+     * That is what makes the loop seamless: every slot boundary is the same
+     * rule, so the join between the last slot and the first is one more
+     * article break rather than a visible seam. Setting each paper in full
+     * would also put a masthead every forty thousand pixels, and what makes a
+     * web read as newspaper is meeting a new one often.
+     */
+    // A rate and a starting height per web. Both are read once per frame; the
+    // rates are within a tenth of each other so the three stay a set.
+    const WEB_SPD = [1.0, 0.912, 1.068];
+    const WEB_PHASE = [0.0, 0.37, 0.71];
+
+    const GALLEY_COL = 400; // the measure of one web, in texels
+    const GALLEY_GAP = 16; // dead paper between two columns of the atlas
+    const GALLEY_H = 3630; // one lap: eleven slots of 330
+    const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
+
+    function buildGalley() {
+      const cv = document.createElement("canvas");
+      cv.width = GALLEY_W;
+      cv.height = GALLEY_H;
+      const g = cv.getContext("2d");
+      const SERIF = '"Times New Roman", Times, Georgia, serif';
+      const R = Math.round;
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, GALLEY_W, GALLEY_H);
+      g.textBaseline = "alphabetic";
+
+      /* Set to fit, not to a fixed size — eleven papers do not share a name
+       * length. Same walk-down as the front page uses. */
+      const fit = (text, weight, start, max) => {
+        let s = start;
+        for (;;) {
+          g.font = weight + " " + R(s) + "px " + SERIF;
+          if (g.measureText(text).width <= max || s < 7) return R(s);
+          s *= 0.94;
+        }
+      };
+      /* Letter-spaced, drawn glyph by glyph: a canvas has no tracking, and a
+       * masthead set solid reads as body copy. */
+      const track = (text, cx, y, sp) => {
+        const cs = [...text];
+        let w = -sp;
+        for (const c of cs) w += g.measureText(c).width + sp;
+        let x = cx - w / 2;
+        for (const c of cs) {
+          g.fillText(c, x, y);
+          x += g.measureText(c).width + sp;
+        }
+      };
+      const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
+
+      const SLOT = GALLEY_H / ARTICLES.length;
+      const FS = 11,
+        LH = R(FS * 1.5);
+
+      /* One paper, into one slot of one column. Clipped to the slot: a body
+       * that overruns is cut, which is what a galley does. */
+      const slot = (A, x0, top) => {
+        const M = 14,
+          meas = GALLEY_COL - M * 2,
+          left = x0 + M;
+        g.save();
+        g.beginPath();
+        g.rect(x0, top, GALLEY_COL, SLOT);
+        g.clip();
+        g.fillStyle = "#111111";
+
+        let y = top + 13;
+        rule(left, y, meas, 2);
+        y += 20;
+
+        // the masthead
+        g.textAlign = "left";
+        const name = A.paper.toUpperCase();
+        const ms = fit(name, "700", 20, meas * 0.86);
+        g.font = "700 " + ms + "px " + SERIF;
+        track(name, x0 + GALLEY_COL / 2, y, ms * 0.09);
+        y += 8;
+        rule(left, y, meas, 1);
+        y += 13;
+
+        // dateline and byline, one line, ends of the measure
+        const ds = fit(A.date, "400", 8.5, meas * 0.46);
+        g.font = ds + "px " + SERIF;
+        g.fillText(A.date, left, y);
+        g.textAlign = "right";
+        const bs = fit(A.by, "400", 8.5, meas * 0.5);
+        g.font = bs + "px " + SERIF;
+        g.fillText(A.by, left + meas, y);
+        y += 7;
+        rule(left, y, meas, 1);
+        y += 24;
+
+        // the headline
+        g.textAlign = "center";
+        let hs = 27;
+        for (const l of A.head) hs = Math.min(hs, fit(l, "700", 27, meas));
+        g.font = "700 " + hs + "px " + SERIF;
+        for (const l of A.head) {
+          g.fillText(l, x0 + GALLEY_COL / 2, y);
+          y += R(hs * 1.08);
+        }
+        y += 4;
+
+        // the deck
+        const ss = fit(A.sub, "400", 11, meas * 0.95);
+        g.font = ss + "px " + SERIF;
+        g.fillText(A.sub, x0 + GALLEY_COL / 2, y);
+        y += 10;
+        rule(x0 + GALLEY_COL / 2 - meas * 0.18, y, meas * 0.36, 1);
+        y += 20;
+
+        /* The body, one measure, justified except on the last line of a
+         * paragraph — the same rule the front page sets by, so the two read as
+         * the same press. */
+        const bodyFont = FS + "px " + SERIF;
+        g.textAlign = "left";
+        const bot = top + SLOT - 12;
+        let first = true;
+        for (const blk of A.body) {
+          if (y > bot) break;
+          if (blk.h) {
+            if (first) continue;
+            let ts = FS * 1.02;
+            for (;;) {
+              g.font = "700 " + R(ts) + "px " + SERIF;
+              if (g.measureText(blk.t).width <= meas || ts < 6) break;
+              ts *= 0.93;
+            }
+            g.textAlign = "center";
+            g.fillText(blk.t, x0 + GALLEY_COL / 2, y);
+            g.textAlign = "left";
+            y += LH * 1.5;
+            continue;
+          }
+          first = false;
+          g.font = bodyFont;
+          const ws = blk.t.split(/\s+/).filter(Boolean);
+          let i = 0,
+            head = true;
+          while (i < ws.length && y <= bot) {
+            const indent = head ? FS * 1.1 : 0;
+            const line = [];
+            let w = indent;
+            while (i < ws.length) {
+              const add = g.measureText((line.length ? " " : "") + ws[i]).width;
+              if (w + add > meas && line.length) break;
+              line.push(ws[i]);
+              w += add;
+              i++;
+            }
+            const last = i >= ws.length;
+            if (last || line.length === 1) {
+              g.fillText(line.join(" "), left + indent, y);
+            } else {
+              const wd = line.map((t) => g.measureText(t).width);
+              const gap =
+                (meas - indent - wd.reduce((a, b) => a + b, 0)) / (line.length - 1);
+              let cx = left + indent;
+              for (let k = 0; k < line.length; k++) {
+                g.fillText(line[k], cx, y);
+                cx += wd[k] + gap;
+              }
+            }
+            head = false;
+            y += LH;
+          }
+        }
+        g.restore();
+      };
+
+      /* Three columns, three orders. ARTICLES.length is prime, so any stride
+       * walks the whole list — and three different strides mean no two webs
+       * can ever be showing the same paper at the same height, however long
+       * the press runs. */
+      const STRIDE = [1, 4, 7],
+        START = [0, 5, 9];
+      for (let c = 0; c < 3; c++) {
+        const x0 = c * (GALLEY_COL + GALLEY_GAP);
+        for (let k = 0; k < ARTICLES.length; k++) {
+          const A = ARTICLES[(START[c] + k * STRIDE[c]) % ARTICLES.length];
+          slot(A, x0, k * SLOT);
+        }
+      }
+      return cv;
+    }
+
     /* ------------------------------------------------------------ the glass */
     const VS = `#version 300 es
 in vec2 p;
 out vec2 vUv;
 void main(){ vUv = p*0.5+0.5; gl_Position = vec4(p,0.0,1.0); }`;
-
-    const FS = `#version 300 es
-precision highp float;
-uniform vec2  uRes;
-uniform float uTime;
-uniform vec2  uCam, uCentre;
-uniform float uZoom, uPresence;
-uniform vec3  uBG;
-uniform float uBox, uRound, uWarp, uWarpF, uWobble;
-uniform mat3  uOrient;   // world -> object: aim, drag and idle, composed on the CPU
-uniform mat3  uPlate;    // the plate holds the orientation it had when the body broke
-uniform float uIor, uDisp, uAbsorb, uFres, uFilm, uIrid;
-uniform float uGain, uRoom, uShade, uEnvRot, uSoft, uPanel, uExposure;
-uniform float uNews, uPageZoom, uInk, uPaper, uSheet, uCurl, uSheetS;
-uniform float uBurst;   // 0 = one body, 1 = the pieces at their far end
-uniform float uPack;    // the compression the body takes just before it goes
-uniform float uPageRes, uPageLod;
-uniform sampler2D uPage;
-out vec4 outColor;
-
-#define NSPEC 12
-#define NANCHOR 4
-#define INSTEP 32
-const float TAU = 6.2831853;
-
-float gRoom;
-float gLod;
-int   gSpec;   // spectral samples: fewer once the field fills the screen
-mat3  gSpin;
-mat3  gPlate;
-
-float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453123); }
-mat3 rotY(float a){ float c=cos(a), s=sin(a); return mat3(c,0.,-s, 0.,1.,0., s,0.,c); }
-mat3 rotX(float a){ float c=cos(a), s=sin(a); return mat3(1.,0.,0., 0.,c,s, 0.,-s,c); }
-
-// a box with its own extent per axis — the flat plate needs one, and faking it
-// by scaling z made the distance eight times too cautious to ever march to
-float sdBoxR(vec3 p, vec3 b, float r){
-  vec3 q = abs(p) - b + r;
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
-}
-
-float sdRoundBox(vec3 p, float b, float r){
-  vec3 q = abs(p) - vec3(b - r);
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
-}
-
-// low-frequency lobes: the faces swell and hollow the way a soap film does
-float warp(vec3 q){
-  float t = uTime*uWobble;
-  float a = sin(q.x*1.9 + t*0.50)*sin(q.y*2.3 - t*0.37)*sin(q.z*2.1 + t*0.43);
-  float b = sin(q.y*3.7 + t*0.31)*sin(q.z*3.1 - t*0.53)*sin(q.x*3.3 + t*0.29);
-  return a + 0.45*b;
-}
-
-// The break. The pieces are low-poly shards, not blobs: each is the
-// intersection of NFACE half-spaces, which is a convex polyhedron with a
-// handful of flat faces and hard edges — glass, rather than putty. The planes
-// are drawn once on the CPU and handed over as uniforms, so the shader does no
-// hashing at all; it only reads them.
-#define NSHARD 20
-#define NFACE 6
-uniform vec4  uPlanes[NSHARD*NFACE];   // xyz = face normal, w = its offset
-uniform vec3  uShardP[NSHARD];         // where each shard has got to
-uniform float uShardS[NSHARD];         // and how big it is
-uniform float uShardR[NSHARD];         // its bounding radius, for the early out
-uniform float uShardT[NSHARD];         // which tile of the atlas it carries
-uniform float uShardQ[NSHARD];         // and how many quarter turns to undo
-uniform float uFieldR;                 // one sphere around the whole field
-uniform vec3  uShardU[NSHARD], uShardV[NSHARD], uShardW[NSHARD];  // its own frame
-uniform sampler2D uPanels;             // the gallery, tiled
-uniform float uPanelN, uPanelsOn;
-
-float pieces(vec3 q, vec3 w){
-  // One sphere around the lot, tested first. A ray spends most of its march
-  // far from everything, and without this it paid twenty square roots on every
-  // step of that approach — the single most expensive thing in the frame.
-  float fd = length(q) - uFieldR;
-  if(fd > 0.25) return fd;
-
-  float d = 1e5;
-  for(int i=0;i<NSHARD;i++){
-    // most samples are nowhere near most shards, so test the bounding sphere
-    // first and skip the faces entirely — fourteen shards would otherwise cost
-    // eighty-four dot products on every step of every ray
-    vec3  rel = q - uShardP[i];
-    float bs = length(rel) - uShardR[i];
-    if(bs > 0.30){ d = min(d, bs); continue; }
-    float sc = uShardS[i];
-    vec3  o = rel / sc;
-    float b = -1e5;
-    for(int k=0;k<NFACE;k++){
-      vec4 pl = uPlanes[i*NFACE + k];
-      b = max(b, dot(o, pl.xyz) - pl.w);
-    }
-    d = min(d, b * sc);                // back out of the shard's scale
-  }
-  return d;
-}
-
-// One tile of the gallery atlas, for the flake that carries it.
-// The plate lies at some quarter turn; the picture is turned back by it here,
-// inside the tile, so the chart reads upright whatever the plate is doing.
-vec2 turnUV(vec2 uv, float q){
-  if(q > 2.5) return vec2(1.0 - uv.y, uv.x);
-  if(q > 1.5) return vec2(1.0 - uv.x, 1.0 - uv.y);
-  if(q > 0.5) return vec2(uv.y, 1.0 - uv.x);
-  return uv;
-}
-
-vec3 panelAt(float i, vec2 uv, float q){
-  float n = uPanelN;
-  float t = mod(i, n*n);
-  vec2 tile = vec2(mod(t, n), floor(t/n));
-  // the flip belongs to the tile's own uv, before the tile is placed: applied
-  // to the atlas coordinate it mirrors the whole sheet and picks another row
-  vec2 c = clamp(uv, 0.0, 1.0);
-  vec2 fv = turnUV(vec2(c.x, 1.0 - c.y), q);
-  return textureLod(uPanels, (tile + fv) / n, 0.0).rgb;
-}
-
-// The page, once the glass is gone: a sheet of paper and nothing else. The slab
-// is only thick enough to contain the curl, so there is no socle under it.
-float paper(vec3 w){
-  vec3 q = gPlate * w;
-  float t = 0.13*uPack*uCurl + 0.014;
-  return sdBoxR(q, vec3(uBox*1.05*uSheetS*uPack, uBox*1.45*uSheetS*uPack, t), 0.006);
-}
-
-float map(vec3 p){
-  vec3 q = gSpin * p;
-  float d;
-  if(uBurst < 0.001){
-    d = sdRoundBox(q/uPack, uBox, uRound) * uPack;   // the compression breath
-  } else {
-    // the flakes ride the page's frame, not the body's: gPlate settles to
-    // identity, so their faces come round to the camera instead of keeping
-    // whatever angle the spin-up happened to leave them at
-    d = min(pieces(gPlate * p, p), paper(p));
-  }
-  d -= warp(q*uWarpF) * uWarp * (1.0 - uBurst);
-  // 0.52 is the price of the warp, which breaks the distance bound. Once the
-  // body has broken there is no warp left and the plates are honest planes, so
-  // the ray may take nearly its full step — halving the steps it needs.
-  return d * (uBurst > 0.001 ? 0.94 : 0.52);
-}
-
-vec3 nrm(vec3 p){
-  vec2 e = vec2(1.0,-1.0)*0.0016;
-  return normalize(e.xyy*map(p+e.xyy) + e.yyx*map(p+e.yyx) +
-                   e.yxy*map(p+e.yxy) + e.xxx*map(p+e.xxx));
-}
-
-float strip(vec2 uv, vec2 c, vec2 s){
-  s *= uPanel;
-  float du = abs(fract(uv.x - c.x + 0.5) - 0.5);
-  float dv = abs(uv.y - c.y);
-  return 1.0 - smoothstep(-uSoft, uSoft, max(du - s.x, dv - s.y));
-}
-
-float pageTone(vec2 t, float bias){
-  float ink = textureLod(uPage, vec2(t.x, 1.0 - t.y), clamp(gLod + bias, 0.0, 9.0)).r;
-  return clamp(1.0 - (1.0 - ink)*uInk, 0.0, 1.0);
-}
-
-// white panels overhead, the same page lying on the table underneath. panels
-// and page carry their own coverage, so the walls behind them can lift out of
-// black without washing the ink out with them
-vec3 env(vec3 d){
-  d = rotY(uEnvRot) * d;
-  vec2 uv = vec2(atan(d.z, d.x)/TAU, asin(clamp(d.y,-1.0,1.0))/3.14159265);
-  float l = 0.0, cov = 0.0, c;
-  c = strip(uv, vec2(-0.15, 0.30), vec2(0.200, 0.135)); l = max(l, 1.00*c); cov = max(cov, c);
-  c = strip(uv, vec2( 0.30,-0.10), vec2(0.105, 0.230)); l = max(l, 0.92*c); cov = max(cov, c);
-  c = strip(uv, vec2( 0.46, 0.06), vec2(0.250, 0.045)); l = max(l, 0.80*c); cov = max(cov, c);
-  c = strip(uv, vec2(-0.03, 0.46), vec2(0.400, 0.060)); l = max(l, 0.45*c); cov = max(cov, c);
-  if(d.y < -0.02){
-    vec2 q = d.xz * (-1.15/d.y);
-    vec2 t = (q - vec2(0.10, 0.05)) / (vec2(0.98, 1.36)*max(uPageZoom,0.05)) * 0.5 + 0.5;
-    float on = step(0.0,t.x)*step(t.x,1.0)*step(0.0,t.y)*step(t.y,1.0);
-    l = mix(l, mix(1.0, pageTone(t, 1.0), uNews) * uPaper, on);
-    cov = max(cov, on);
-  }
-  // away from the panels the room is shaded: that shadow is the only thing a
-  // glass body can read by when the ground is light
-  return mix(vec3(gRoom*uShade), vec3(l*uGain), cov);
-}
-
-// tone map, then sit the result against the ground: an untouched ray lands on
-// uBG, shadow pulls to black, a caught light to white
-vec3 grade(vec3 col){
-  col = 1.0 - exp(-col * uExposure);
-  float R = 1.0 - exp(-gRoom*uExposure);
-  vec3  up = clamp((col - R)/max(1.0 - R, 1e-3), 0.0, 1.0);
-  vec3  dn = clamp(col/max(R, 1e-3), 0.0, 1.0);
-  col = mix(uBG*dn, mix(uBG, vec3(1.0), up), step(vec3(R), col));
-  return mix(uBG, max(col, 0.0), uPresence);
-}
-
-vec3 spectrum(float t){
-  return clamp(vec3(1.55) - abs(4.0*vec3(t) - vec3(3.0,2.0,1.0)), 0.0, 1.0);
-}
-
-// the sheet suspended in the middle of the body, curling slowly
-float sheetF(vec3 q){
-  return q.z - uPack*uCurl*(0.13*sin(q.x*2.3 + uTime*0.37) + 0.10*sin(q.y*1.9 - uTime*0.29));
-}
-vec2 sheetUV(vec3 q){
-  return q.xy / (vec2(uBox*1.05, uBox*1.45) * uSheetS * uPack) * 0.5 + 0.5;
-}
-
-bool trace(vec3 ro, vec3 rd, out vec3 p){
-  float t = 0.0;
-  for(int i=0;i<72;i++){
-    p = ro + rd*t;
-    float d = map(p);
-    if(d < 0.0016) return true;
-    t += max(d, 0.0016);
-    if(t > uZoom + 3.0) break;
-  }
-  return false;
-}
-
-// march the interior, hand back where and how the ray leaves — and whether it
-// ran into the sheet on the way out
-void through(vec3 p, vec3 n, vec3 rd, float ior,
-             out vec3 op, out vec3 on, out vec3 od, out float len,
-             out float ph, out vec2 puv, out float sh, out vec2 suv, out float sidx){
-  vec3 dir = refract(rd, n, 1.0/ior);
-  if(dot(dir,dir) < 1e-8) dir = reflect(rd, n);
-  dir = normalize(dir);
-  ph = 0.0; puv = vec2(0.5);
-  sh = 0.0; suv = vec2(0.5); sidx = 0.0;
-
-  // Which flake did we just enter, and where does the ray cross its face? The
-  // flakes are thin and convex, so the crossing is one division — no need to
-  // hunt for it along the march the way the newspaper needs.
-  if(uPanelsOn > 0.5 && uBurst > 0.001){
-    int si = -1; float best = 1e5;
-    for(int i=0;i<NSHARD;i++){
-      float dd = length(p - uShardP[i]) - uShardR[i];
-      if(dd < best){ best = dd; si = i; }
-    }
-    if(best < 0.06 && si >= 0){
-      vec3  rel = p - uShardP[si];
-      float sc  = uShardS[si];
-      vec3  nZ = uPlanes[si*NFACE + 4].xyz;
-      vec3  dir0 = refract(rd, n, 1.0/ior);
-      if(dot(dir0,dir0) < 1e-8) dir0 = reflect(rd, n);
-      dir0 = normalize(dir0);
-      float dn = dot(dir0, nZ);
-      if(abs(dn) > 1e-4){
-        float tt = -dot(rel, nZ)/dn;
-        if(tt > 0.0 && tt < 4.0*sc){
-          vec3 x = rel + dir0*tt;
-          vec2 uv = vec2(dot(x, uPlanes[si*NFACE + 0].xyz),
-                         dot(x, uPlanes[si*NFACE + 2].xyz)) / (sc*1.85) + 0.5;
-          if(uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0){
-            sh = 1.0; suv = uv; sidx = float(si);
-          }
-        }
-      }
-    }
-  }
-
-  vec3  cur = p - n*0.02;
-  float t = 0.0;
-  float f0 = sheetF(gPlate * cur);
-  for(int i=0;i<INSTEP;i++){
-    float d = -map(cur);
-    if(d < 0.0018) break;
-    float st = max(d, 0.0035);
-    vec3  nx = cur + dir*st;
-    float f1 = sheetF(gPlate * nx);
-    if(uSheet > 0.001 && f0*f1 < 0.0){
-      float a = f0/(f0 - f1);
-      vec2 uvp = sheetUV(gPlate * mix(cur, nx, a));
-      if(uvp.x > 0.0 && uvp.x < 1.0 && uvp.y > 0.0 && uvp.y < 1.0){
-        ph = 1.0; puv = uvp;
-        cur = mix(cur, nx, a); t += st*a;
-        break;                                   // the sheet is opaque
-      }
-    }
-    cur = nx; f0 = f1; t += st;
-    if(t > 7.0) break;
-  }
-  op = cur; on = nrm(cur); od = dir; len = t;
-}
-
-void main(){
-  gRoom = uRoom;
-  gSpin = uOrient;
-  gPlate = uPlate;
-
-  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y - uCentre;
-  mat3 cam = rotY(uCam.x) * rotX(uCam.y);
-  vec3 ro = cam * vec3(0.0, 0.0, uZoom);
-  vec3 rd = normalize(cam * normalize(vec3(uv, -2.05)));
-
-  // Once the body has broken there is nothing here worth marching for: the
-  // plates and the page are flat quads, and they are drawn by the rasteriser.
-  // Marching 72 steps a pixel to find twenty rectangles was the whole cost.
-  if(uBurst > 0.001){ outColor = vec4(uBG, 1.0); return; }
-
-  vec3 hit;
-  if(!trace(ro, rd, hit)){ outColor = vec4(uBG, 1.0); return; }
-
-  // Neither the page nor the flakes go through the glass path any more.
-  //
-  // The page is paper: sending it through refraction also put a shadow on it,
-  // because the interior march starts 0.02 inside the surface and the sheet is
-  // only 0.022 thick, so some rays began past it and came back dark glass.
-  //
-  // The flakes are panels: they carry pictures, and a picture split across
-  // fourteen wavelengths and two refractions is a smear. Shaded flat they read
-  // as what they are — and they were also the most expensive thing on the
-  // page, covering most of the frame at four interior marches per pixel.
-  // Only a lit rim is left of the glass.
-  vec3 n = nrm(hit);
-  vec2  su0 = sheetUV(gPlate * hit);
-  vec2  sdx = dFdx(su0), sdy = dFdy(su0);
-  if(uBurst > 0.001){
-    float dPaper = paper(hit);
-    if(dPaper < 0.005){
-      gLod = 0.5*log2(max(dot(sdx,sdx), dot(sdy,sdy)) * uPageRes*uPageRes + 1e-9) + uPageLod;
-      vec3 col = vec3(mix(1.0, pageTone(su0, 0.0), uNews) * uPaper * 1.35);
-      outColor = vec4(grade(col), 1.0);
-      return;
-    }
-    if(uPanelsOn > 0.5){
-      // the shards live in body space, so the hit has to be taken there too —
-      // comparing a world point against them sampled the atlas somewhere else
-      // entirely, which is why every panel came back the atlas's dark fill
-      vec3 hq = gPlate * hit;
-      int si = -1; float best = 1e5;
-      for(int i=0;i<NSHARD;i++){
-        float dd = length(hq - uShardP[i]) - uShardR[i];
-        if(dd < best){ best = dd; si = i; }
-      }
-      if(si >= 0 && best < 0.12){
-        vec3  rel = hq - uShardP[si];
-        float sc  = uShardS[si];
-        // The tile is mapped from the flake's four side offsets, so it lands
-        // corner to corner whatever rectangle this one happens to be — no
-        // clamping, and no smeared border passing for empty space.
-        float ou = uPlanes[si*NFACE + 0].w, ol = uPlanes[si*NFACE + 1].w;
-        float ov = uPlanes[si*NFACE + 2].w, od = uPlanes[si*NFACE + 3].w;
-        vec2  uv = vec2((dot(rel, uShardU[si])/sc + ol) / (ou + ol),
-                        (dot(rel, uShardV[si])/sc + od) / (ov + od));
-        float face = abs(dot(gPlate * n, uShardW[si]));   // 1 flat on, 0 edge on
-        vec3  col = panelAt(uShardT[si], uv, uShardQ[si]) * uPaper * 2.4;
-        // The sides take the tile's own ground, read from its corner — which is
-        // the theme's background on a chart and the water on a map. Lifting the
-        // face colour toward a constant instead is what left grey slabs on the
-        // edge of every panel, and grey belongs to none of these grounds.
-        vec3 rim = panelAt(uShardT[si], vec2(0.03), uShardQ[si]) * uPaper * 2.4;
-        col = mix(rim * 0.88, col, smoothstep(0.30, 0.66, face));
-        outColor = vec4(grade(col), 1.0);
-        return;
-      }
-    }
-  }
-
-  float ct = clamp(dot(n,-rd), 0.0, 1.0);
-  float fres = mix(0.03, 1.0, pow(1.0 - ct, 5.0)) * uFres;
-
-  // four real interior traces spread across the spectrum; every sample rides
-  // on an interpolation of the pair around it, so the rainbow stays continuous
-  vec3  ap[NANCHOR], an[NANCHOR], ad[NANCHOR];
-  float al[NANCHOR], ai[NANCHOR], ah[NANCHOR], as[NANCHOR], ax[NANCHOR];
-  vec2  au[NANCHOR], av[NANCHOR];
-  for(int k=0;k<NANCHOR;k++){
-    float g = float(k)/float(NANCHOR-1);
-    float io = uIor + (g - 0.5)*uDisp;
-    ai[k] = io;
-    through(hit, n, rd, io, ap[k], an[k], ad[k], al[k], ah[k], au[k], as[k], av[k], ax[k]);
-  }
-
-  // one screen-space footprint for the page, from the middle wavelength: the
-  // refracted rays have no usable derivatives of their own and the type moires
-  vec2  dx = dFdx(au[1]), dy = dFdy(au[1]);
-  gLod = 0.5*log2(max(dot(dx,dx), dot(dy,dy)) * uPageRes*uPageRes + 1e-9) + uPageLod;
-
-  // Whole body, the flakes cover a corner of the frame and twelve samples are
-  // cheap. Once they have flown they cover most of it, and the loop is the
-  // single heaviest thing on the page — six samples there, dithered, is a
-  // straight halving that the jitter hides.
-  gSpec = uBurst > 0.35 ? NSPEC/2 : NSPEC;
-  float jit = hash21(gl_FragCoord.xy + uTime);
-  vec3 acc = vec3(0.0), wsum = vec3(1e-4);
-  for(int i=0;i<NSPEC;i++){
-    if(i >= gSpec) break;
-    float f = (float(i) + jit) / float(gSpec);
-    float x = f * float(NANCHOR-1);
-    int   k = int(min(floor(x), float(NANCHOR-2)));
-    float s = x - float(k);
-
-    vec3  en = normalize(mix(an[k], an[k+1], s));
-    vec3  ed = normalize(mix(ad[k], ad[k+1], s));
-    float el = mix(al[k], al[k+1], s);
-    float io = mix(ai[k], ai[k+1], s);
-
-    vec3 outd = refract(ed, -en, io);
-    vec3 e;
-    if(dot(outd,outd) < 1e-8) e = env(reflect(ed, en)) * 0.55;   // total internal
-    else                      e = env(normalize(outd));
-
-    // each wavelength reaches the sheet along its own bent path, so the type
-    // comes apart into colour exactly where the glass is thickest
-    float hs = mix(ah[k], ah[k+1], s) * uSheet;
-    if(hs > 0.001){
-      vec2 su = mix(au[k], au[k+1], s);
-      e = mix(e, vec3(mix(1.0, pageTone(su, 0.0), uNews) * uPaper * 0.42), hs);
-    }
-    // the flake is a panel: the gallery sits inside it, split by wavelength on
-    // the way in exactly as the newsprint is
-    float hp = mix(as[k], as[k+1], s);
-    if(hp > 0.001){
-      // lit well above the glass around it: seen through the flake and its
-      // absorption, anything dimmer than this reads as a black chip
-      e = mix(e, panelAt(ax[k], mix(av[k], av[k+1], s), 0.0) * uPaper * 2.6 + 0.10, hp);
-    }
-
-    vec3 w = spectrum(f);
-    acc  += w * e * exp(-uAbsorb * el);
-    wsum += w;
-  }
-  vec3 col = acc / wsum * 3.0;
-
-  // the reflection draws the hard contour; a thin-film shift turns it into the
-  // pink/mint halo the shell carries at grazing angles
-  float film = uFilm * 6.0 / (0.18 + 0.82*ct);
-  vec3  tint = 0.5 + 0.5*cos(TAU*(vec3(0.0,0.33,0.67) + film + 0.35));
-  col = mix(col, env(reflect(rd, n)) * mix(vec3(1.0), tint*1.35, uIrid), clamp(fres,0.0,1.0));
-
-  outColor = vec4(grade(col), 1.0);
-}`;
 
     /* ------------------------------------------------------------ the plates
      * Flat rectangles with a picture on them do not need a distance field.
@@ -3688,6 +3451,7 @@ uniform vec2 uRes, uCentre;
 uniform float uZoom, uBend, uT;
 out vec2 vUv;
 out float vShade;
+out float vEdge;
 void main(){
   // The plates are flat and pass straight through. The page is a sheet of
   // paper: it is subdivided and lifted off its own plane by three travelling
@@ -3707,12 +3471,17 @@ void main(){
   gl_Position = vec4(uvp.x * 2.0 * uRes.y / uRes.x, uvp.y * 2.0, 0.0, 1.0);
   vUv = p*0.5 + 0.5;
   vShade = sh;
+  vEdge = uvp.y * 2.0;   // where this fragment sits in the frame, for the fade
 }`;
 
     const QUAD_FS = `#version 300 es
 precision highp float;
 uniform sampler2D uTex;
 uniform float uTile, uTiles, uAlpha, uLift, uSpin;
+// The window a web reads out of the galley: origin and span, in texture
+// coordinates. Zero span means "no window" — every plate takes that path and
+// samples the atlas exactly as before.
+uniform vec4 uWin;
 uniform vec3 uBG;
 uniform float uRoom, uExposure, uPresence;
 // The flood at the end of the chapter: the sheet is taken to one flat colour
@@ -3722,6 +3491,13 @@ uniform float uWash;
 uniform vec3 uWashC;
 in vec2 vUv;
 in float vShade;
+in float vEdge;
+// Where the paper starts leaving the frame, as a height in clip space. A web
+// that ran to the edge would put newsprint under the navigation and under the
+// standfirst, and neither could then be read; it also lies about the press,
+// where the web comes out of the machine and goes back into it. Zero for every
+// plate — they keep their hard edges.
+uniform float uEdge;
 out vec4 outColor;
 void main(){
   // the sheet's v runs the other way from the canvas, so it is flipped here —
@@ -3736,6 +3512,11 @@ void main(){
            : uSpin > 1.5 ? vec2(1.0 - uv.x, 1.0 - uv.y)
            : uSpin > 0.5 ? vec2(uv.y, 1.0 - uv.x) : uv;
     st = (vec2(mod(t, uTiles), floor(t/uTiles)) + clamp(q, 0.0, 1.0)) / uTiles;
+  } else if(uWin.w > 0.0){
+    // The web is a window onto one column of the galley, slid along v. Only v
+    // wraps — the texture repeats vertically and clamps horizontally, so a
+    // column can never bleed into the one set beside it.
+    st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
   vec3 col = texture(uTex, st).rgb * uLift * vShade;
   col = 1.0 - exp(-col * uExposure);
@@ -3744,34 +3525,12 @@ void main(){
   vec3  dn = clamp(col/max(R, 1e-3), 0.0, 1.0);
   col = mix(uBG*dn, mix(uBG, vec3(1.0), up), step(vec3(R), col));
   vec3 lit = mix(uBG, max(col, 0.0), uPresence);
-  outColor = vec4(mix(lit, uWashC, uWash), uAlpha);
+  float fade = uEdge > 0.0
+    ? 1.0 - smoothstep(uEdge, uEdge + 0.40, abs(vEdge))
+    : 1.0;
+  outColor = vec4(mix(lit, uWashC, uWash), uAlpha * fade);
 }`;
 
-    // The blit: the scene is raymarched into a smaller buffer, then stretched.
-    // It also carries the glow — a ring of taps around each pixel, counting
-    // only what is brighter than the ground, so a light ground cannot
-    // additively wash itself out. Cheaper here than a separable blur, and the
-    // source is already downscaled.
-    const BLIT = `#version 300 es
-precision highp float;
-uniform sampler2D uTex;
-uniform vec2  uTexel;
-uniform vec3  uBG;
-uniform float uGlow;
-in vec2 vUv;
-out vec4 outColor;
-void main(){
-  vec3 base = texture(uTex, vUv).rgb;
-  if(uGlow < 0.02){ outColor = vec4(base, 1.0); return; }   // 24 taps, skipped
-  vec3 halo = vec3(0.0);
-  for(int i=0;i<12;i++){
-    float a = float(i)*0.5235988;
-    vec2 d = vec2(cos(a), sin(a)) * uTexel;
-    halo += max(texture(uTex, vUv + d* 7.0).rgb - uBG, 0.0);
-    halo += max(texture(uTex, vUv + d*17.0).rgb - uBG, 0.0);
-  }
-  outColor = vec4(base + halo * (uGlow/24.0), 1.0);
-}`;
 
     /* Inside the block. Once the body has broken, the marcher has nothing
      * left to trace — but the glass should not simply stop existing: the
@@ -3913,6 +3672,16 @@ void main(){
       curl: 0.18,
       sheetS: 0.5,
       bend: 0.16, // how far the sheet lifts off its own plane
+      // the three webs. Widths and heights are fractions of what the camera
+      // can see at the webs' own depth, so the composition holds on any frame
+      // rather than being a set of world units tuned to one window.
+      webW: 0.17, // half-width, as a fraction of the visible half-width
+      webH: 1.35, // half-height — over one, so no end of paper is ever in shot
+      webSpread: 0.6, // where the outer two sit, in visible half-widths
+      webEdge: 0.5, // the height at which the paper starts going back in
+      webSpeed: 0.052, // laps per second
+      webBend: 0.55, // how far the paper leaves its plane, relative to bend
+      webLift: 1.0,
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -3983,19 +3752,17 @@ void main(){
     }
 
     let gl,
-      prog,
-      blit,
+
       quad,
       inside,
-      u,
-      ub,
       uq,
       ui,
       vao,
       quadVao,
       pageVao,
       pageCount = 0,
-      pageTex;
+      pageTex,
+      galleyTex;
     let panelTex = null,
       panelsOn = 0;
     let fbTex,
@@ -4439,8 +4206,6 @@ void main(){
         // where it belongs from the first frame; the timeline is kept because
         // the break still walks the same orientation back.
         intro = IN_DONE;
-        prog = api.program(VS, FS);
-        blit = api.program(VS, BLIT);
         inside = api.program(VS, GLASS);
         quad = api.program(QUAD_VS, QUAD_FS);
         uq = api.uniforms(quad, [
@@ -4465,62 +4230,9 @@ void main(){
           "uPresence",
           "uWash",
           "uWashC",
+          "uWin",
+          "uEdge",
         ]);
-        u = api.uniforms(prog, [
-          "uRes",
-          "uTime",
-          "uCam",
-          "uCentre",
-          "uZoom",
-          "uPresence",
-          "uBG",
-          "uBox",
-          "uRound",
-          "uWarp",
-          "uWarpF",
-          "uWobble",
-          "uOrient",
-          "uPlate",
-          "uIor",
-          "uDisp",
-          "uAbsorb",
-          "uFres",
-          "uFilm",
-          "uIrid",
-          "uGain",
-          "uRoom",
-          "uShade",
-          "uEnvRot",
-          "uSoft",
-          "uPanel",
-          "uExposure",
-          "uNews",
-          "uPageZoom",
-          "uInk",
-          "uPaper",
-          "uSheet",
-          "uCurl",
-          "uSheetS",
-          "uBurst",
-          "uPack",
-          "uPlanes[0]",
-          "uShardP[0]",
-          "uShardS[0]",
-          "uShardR[0]",
-          "uPanels",
-          "uPanelN",
-          "uPanelsOn",
-          "uShardU[0]",
-          "uShardV[0]",
-          "uShardW[0]",
-          "uShardT[0]",
-          "uShardQ[0]",
-          "uFieldR",
-          "uPageRes",
-          "uPageLod",
-          "uPage",
-        ]);
-        ub = api.uniforms(blit, ["uTex", "uTexel", "uBG", "uGlow"]);
         ui = api.uniforms(inside, [
           "uTex",
           "uBG",
@@ -4548,7 +4260,7 @@ void main(){
           new Float32Array([-1, -1, 3, -1, -1, 3]),
           gl.STATIC_DRAW,
         );
-        for (const p of [prog, blit, inside]) {
+        for (const p of [inside]) {
           const al = gl.getAttribLocation(p, "p");
           if (al >= 0) {
             gl.enableVertexAttribArray(al);
@@ -4606,6 +4318,32 @@ void main(){
         }
 
         pageTex = api.texFromCanvas(buildPage());
+        /* The galley cannot go through texFromCanvas: that helper clamps both
+         * axes, and a web scrolls for ever — v has to REPEAT or the paper
+         * stops at the end of the lap and smears its last row down the rest of
+         * the column. u stays clamped, which is what keeps one column of the
+         * atlas out of its neighbour. */
+        {
+          galleyTex = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            buildGalley(),
+          );
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(
+            gl.TEXTURE_2D,
+            gl.TEXTURE_MIN_FILTER,
+            gl.LINEAR_MIPMAP_LINEAR,
+          );
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        }
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
@@ -5114,18 +4852,30 @@ void main(){
         // MARCH is the raymarched glass, QUADS the rasterised plates seen from
         // inside it. They cost nothing alike, and a slow frame on one says
         // nothing about the other.
-        const marching = burst < 0.045;
-        window.__glPath = marching
-          ? burst > 0.001
-            ? "MARCH+"
-            : "MARCH"
-          : "QUADS";
+        /* Nothing marches any more. The hero was a block of glass and the
+         * marcher was how it existed; the hero is now three webs of paper,
+         * which are geometry. Kept as a constant rather than deleted on the
+         * spot so the passes that ask "is the block still whole?" — the
+         * buffer's resolution, the glass wall past the break — keep reading
+         * the same answer they always did. */
+        /* The webs' geometry, worked out before anything is placed, because
+         * the plates are anchored to it. What the camera sees at the webs'
+         * depth is taken off the vertex shader rather than guessed at: it
+         * projects clip.y = (P.y * 2.05 / d) * 2, so the edge of the frame is
+         * at P.y = d/4.1, and x is stretched by the aspect on the way. */
+        const webDZ = Math.max(0.25, zoom);
+        const webNH = webDZ / 4.1,
+          webNW = webNH * (cw / Math.max(1, ch));
+        const webHW = webNW * P.webW,
+          webHH = webNH * P.webH;
+        const WEB_ROWS = Math.ceil(NSHARD / 3);
+        window.__glPath = "QUADS";
         // the marcher traces into a fraction of the canvas and is stretched
         // back up; the plates are drawn at full size, because they are type and
         // hairlines and resampling them is what reads as pixelation
         sizeBuffer(
-          marching ? Math.max(2, Math.round(cw * scale)) : cw,
-          marching ? Math.max(2, Math.round(ch * scale)) : ch,
+          cw,
+          ch,
         );
 
         // the aim eases in; the drag coasts, damps, and relaxes back to square
@@ -5328,12 +5078,18 @@ void main(){
             sn = Math.sin(sd.skew);
           const fx = followX[i] * sd.amp,
             fy = followY[i] * sd.amp;
-          // At burst 0 every plate sits on the page, in the middle of the
-          // frame; the break carries it out to its place in the corridor. The
-          // same throw as before, but out of the page and aimed at the field's
-          // own layout rather than at a point on a sphere, so the pieces settle
-          // straight into it.
-          // out of the page on the break's own throw, then eased into its
+          // At burst 0 every plate sits WHERE THE PAPER IS. The hero used to
+          // be one block and the pieces were all born at its centre; it is
+          // three webs now, so a plate starts as a piece torn out of one —
+          // its column, and its own height down that column. Three columns of
+          // seven, which is what twenty plates come to. Without this the
+          // paper would simply fade while a separate set of plates flew in
+          // from the middle, and the break would read as two things crossing
+          // rather than as one thing tearing.
+          const anX = ((i % 3) - 1) * webNW * P.webSpread;
+          const anY =
+            (((Math.floor(i / 3) + 0.5) / WEB_ROWS) * 2 - 1) * webNH * 0.94;
+          // out of the paper on the break's own throw, then eased into its
           // place in the corridor as the cards come up
           const tx = sd.dir[0] * sd.dist,
             ty = sd.dir[1] * sd.dist,
@@ -5342,16 +5098,16 @@ void main(){
           const oy = ty + (by - ty) * settle;
           const oz = tz + (z - tz) * settle;
           shardP[i * 3] =
-            pageC[0] +
-            (ox - pageC[0]) * burst +
-            (fx * cs - fy * sn) * 0.95 * par * burst;
+            anX + (ox - anX) * burst + (fx * cs - fy * sn) * 0.95 * par * burst;
           shardP[i * 3 + 1] =
-            pageC[1] +
-            (oy - pageC[1]) * burst +
-            (fx * sn + fy * cs) * 0.68 * par * burst;
+            anY + (oy - anY) * burst + (fx * sn + fy * cs) * 0.68 * par * burst;
           shardP[i * 3 + 2] = pageC[2] + (oz - pageC[2]) * burst;
+          // and it starts at the width of the column it was torn from, so the
+          // piece is the paper's own size at the moment it comes away
+          const born = Math.min(1, webHW / Math.max(1e-3, sd.siz * 0.9));
           shardS[i] =
-            (sd.siz + (shardS[i] - sd.siz) * settle) * (0.25 + 0.75 * burst);
+            (sd.siz + (shardS[i] - sd.siz) * settle) *
+            (born + (1 - born) * burst);
           shardR[i] = shardS[i] * sd.far;
           fieldR = Math.max(
             fieldR,
@@ -5363,90 +5119,95 @@ void main(){
         // Past the break the field is quads and the marcher has nothing left to
         // find: skipping both passes outright is worth more than making them
         // cheap. Stage has already cleared the canvas to the ground.
-        if (marching) {
-          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-          gl.viewport(0, 0, fw, fh);
-          gl.disable(gl.BLEND);
-          gl.useProgram(prog);
-          gl.bindVertexArray(vao);
-          gl.uniform2f(u.uRes, fw, fh);
-          gl.uniform1f(u.uTime, clock);
-          gl.uniform2f(u.uCam, 0, 0); // the field parallaxes, the camera does not
-          gl.uniformMatrix3fv(u.uOrient, false, orient);
-          gl.uniformMatrix3fv(u.uPlate, false, plate);
-          gl.uniform2f(u.uCentre, centre[0], centre[1]);
-          gl.uniform1f(u.uZoom, zoom);
-          gl.uniform1f(u.uPresence, presence * ctx.vis);
-          gl.uniform3f(u.uBG, ground[0], ground[1], ground[2]);
-          gl.uniform1f(u.uBox, P.box);
-          gl.uniform1f(u.uRound, P.round);
-          gl.uniform1f(u.uWarp, P.warp);
-          gl.uniform1f(u.uWarpF, P.warpF);
-          gl.uniform1f(u.uWobble, P.wobble);
-          gl.uniform1f(u.uIor, P.ior);
-          gl.uniform1f(u.uDisp, P.disp);
-          gl.uniform1f(u.uAbsorb, P.absorb);
-          gl.uniform1f(u.uFres, P.fres);
-          gl.uniform1f(u.uFilm, P.film);
-          gl.uniform1f(u.uIrid, P.irid);
-          gl.uniform1f(u.uGain, P.gain);
-          gl.uniform1f(u.uRoom, P.room);
-          gl.uniform1f(u.uShade, P.shade);
-          gl.uniform1f(u.uEnvRot, P.envRot);
-          gl.uniform1f(u.uSoft, P.soft);
-          gl.uniform1f(u.uPanel, P.panel);
-          gl.uniform1f(u.uExposure, P.exposure);
-          gl.uniform1f(u.uNews, P.news);
-          gl.uniform1f(u.uPageZoom, P.pageZoom);
-          gl.uniform1f(u.uInk, P.ink);
-          gl.uniform1f(u.uPaper, P.paper);
-          gl.uniform1f(u.uSheet, P.sheet);
-          gl.uniform1f(u.uCurl, P.curl);
-          gl.uniform1f(u.uSheetS, P.sheetS);
-          gl.uniform1f(u.uBurst, burst);
-          gl.uniform1f(u.uPack, pack);
-          // Placed in the frame rather than in the world: each shard gets an
-          // angle and a radius as a fraction of what is visible at its own depth,
-          // so however far it comes forward it stays on screen.
-          gl.uniform1f(u.uFieldR, fieldR);
-          gl.uniform4fv(u["uPlanes[0]"], planes);
-          gl.uniform3fv(u["uShardP[0]"], shardP);
-          gl.uniform1fv(u["uShardS[0]"], shardS);
-          gl.uniform1fv(u["uShardR[0]"], shardR);
-          gl.uniform3fv(u["uShardU[0]"], shardU);
-          gl.uniform3fv(u["uShardV[0]"], shardV);
-          gl.uniform3fv(u["uShardW[0]"], shardW);
-          gl.uniform1fv(u["uShardT[0]"], tileNow);
-          gl.uniform1fv(u["uShardQ[0]"], spinOf);
-          gl.uniform1f(u.uPageRes, PAGE_RES);
-          gl.uniform1f(u.uPageLod, P.pageLod);
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, pageTex);
-          gl.uniform1i(u.uPage, 0);
-          gl.activeTexture(gl.TEXTURE1);
-          gl.bindTexture(gl.TEXTURE_2D, panelTex || pageTex);
-          gl.uniform1i(u.uPanels, 1);
-          gl.uniform1f(u.uPanelN, PANEL_N);
-          gl.uniform1f(u.uPanelsOn, panelsOn);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
+        /* Nothing is marched. The hero is three webs of paper and a field
+         * of plates, and both are geometry: the buffer is cleared to the
+         * ground and they are drawn straight into it. What used to stand here
+         * was the block's own distance field — a rounded box hollowed by
+         * travelling lobes, four refraction indices marched twice each and
+         * fanned into fourteen spectral samples. It went with the block.
+         */
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.viewport(0, 0, fw, fh);
+        gl.clearColor(ground[0], ground[1], ground[2], 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          gl.viewport(0, 0, cw, ch);
-          gl.useProgram(blit);
+        /* ---- the three webs ---------------------------------------------
+         * Paper coming off a press. Each web is the subdivided sheet the page
+         * was already drawn on — so the travelling waves that lift it off its
+         * own plane, and the slope that shades it, are the ones this file
+         * already had — reading its own column of the galley through a window
+         * that slides down for ever.
+         *
+         * Sized off what the camera can actually see at the webs' own depth
+         * rather than in world units: the three columns then hold their
+         * composition on a phone and on a wide desktop, instead of being tuned
+         * to whatever window they were written in.
+         *
+         * They let go as the break takes over — by then their pieces are the
+         * plates, and two paper surfaces in the same place would fight.
+         */
+        /* The paper lets go exactly over the throw that carries its pieces
+         * away. Held longer and a web sits behind the plates it has already
+         * become; released sooner and there is a gap where the hero is
+         * nothing at all. */
+        const webFade = (1 - sm(0.0, 0.22, burst)) * presence * ctx.vis;
+        if (webFade > 0.002 && galleyTex) {
+          const nw = webNW,
+            hw = webHW,
+            hh = webHH;
+          gl.useProgram(quad);
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.uniform2f(uq.uRes, cw, ch);
+          gl.uniform2f(uq.uCentre, centre[0], centre[1]);
+          gl.uniform1f(uq.uZoom, zoom);
+          gl.uniform3f(uq.uBG, ground[0], ground[1], ground[2]);
+          gl.uniform1f(uq.uRoom, P.room);
+          gl.uniform1f(uq.uExposure, P.exposure);
+          gl.uniform1f(uq.uPresence, presence * ctx.vis);
+          gl.uniform1f(uq.uAlpha, webFade);
+          gl.uniform1f(uq.uLift, P.paper * 1.34 * P.webLift);
           gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, fbTex);
-          gl.uniform1i(ub.uTex, 0);
-          gl.uniform2f(ub.uTexel, 1 / fw, 1 / fh);
-          gl.uniform3f(ub.uBG, ground[0], ground[1], ground[2]);
-          // the halo belongs to the glass, not to the panels: it fades out with
-          // the break, or every plate wears a bright fringe
-          gl.uniform1f(ub.uGlow, P.glow * (1 - burst * 0.86));
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-        } else {
-          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-          gl.viewport(0, 0, fw, fh);
-          gl.clearColor(ground[0], ground[1], ground[2], 1);
-          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+          gl.uniform1i(uq.uTex, 0);
+          gl.uniform1f(uq.uTiles, 0);
+          gl.uniform1f(uq.uTile, 0);
+          gl.uniform1f(uq.uSpin, 0);
+          gl.uniform1f(uq.uWash, 0);
+          gl.uniform3f(uq.uWashC, WASH_C[0], WASH_C[1], WASH_C[2]);
+          gl.uniform3f(uq.uAz, 0, 0, 1);
+          gl.uniform3f(uq.uAx, hw, 0, 0);
+          gl.uniform3f(uq.uAy, 0, hh, 0);
+          gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
+          gl.uniform1f(uq.uEdge, P.webEdge);
+          gl.bindVertexArray(pageVao);
+          const du = GALLEY_COL / GALLEY_W,
+            gutter = (GALLEY_COL + GALLEY_GAP) / GALLEY_W;
+          /* How much of a lap is in shot is NOT a taste decision — it is
+           * whatever keeps a texel square. Choose it by hand and the type is
+           * stretched or squeezed by however wrong the guess was, and it goes
+           * wrong again the moment the column changes width. */
+          const dv = (GALLEY_COL * hh) / (GALLEY_H * hw);
+          /* The three do not run at the same rate. Identical speeds read as
+           * one image cut into three; a few per cent apart and the gap between
+           * two mastheads keeps changing, which is what says three presses. */
+          for (let k = 0; k < 3; k++) {
+            const rate = P.webSpeed * WEB_SPD[k];
+            gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
+            gl.uniform4f(
+              uq.uWin,
+              k * gutter,
+              (clock * rate + WEB_PHASE[k]) % 1,
+              du,
+              dv,
+            );
+            // and the waves are out of phase too, or the three sheets ripple
+            // in lockstep and the eye reads one sheet again
+            gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
+            gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
+          }
+          gl.uniform4f(uq.uWin, 0, 0, 0, 0);
+          gl.bindVertexArray(null);
         }
 
         // ---- the plates, straight onto the canvas at full resolution ------
@@ -5483,6 +5244,7 @@ void main(){
           gl.uniform1f(uq.uTiles, PANEL_N);
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
+          gl.uniform1f(uq.uEdge, 0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);
           gl.uniform1f(uq.uWash, 0);
@@ -5615,7 +5377,7 @@ void main(){
 
         gl.bindVertexArray(null);
 
-        if (!marching && !OFF.inside) {
+        if (!OFF.inside) {
           // out of the buffer and through the glass we are now standing in
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);
