@@ -4290,6 +4290,17 @@ uniform float uTile, uTiles, uAlpha, uLift, uSpin;
 // coordinates. Zero span means "no window" — every plate takes that path and
 // samples the atlas exactly as before.
 uniform vec4 uWin;
+/* THE INK CURVE, on the webs only.
+ *
+ * A column of newsprint four hundred texels wide is shown about two hundred
+ * and fifty wide, so every texel the card sees is a MIPMAP AVERAGE of ink and
+ * paper. Nine-point type averaged with the paper around it is grey, and on a
+ * paper ground grey type on near-white paper is what "not readable" looks
+ * like. The curve pushes the two apart again before the ground mapping: what
+ * was below the pivot goes to black, what was above it stays paper. x is the
+ * pivot, y the steepness; a zero y leaves the sample alone, which is what
+ * every plate passes. */
+uniform vec2 uInkC;
 uniform vec3 uBG;
 uniform float uRoom, uExposure, uPresence;
 // The flood at the end of the chapter: the sheet is taken to one flat colour
@@ -4326,7 +4337,9 @@ void main(){
     // column can never bleed into the one set beside it.
     st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
-  vec3 col = texture(uTex, st).rgb * uLift * vShade;
+  vec3 base = texture(uTex, st).rgb;
+  if(uInkC.y > 0.0) base = clamp((base - uInkC.x) * uInkC.y + uInkC.x, 0.0, 1.0);
+  vec3 col = base * uLift * vShade;
   col = 1.0 - exp(-col * uExposure);
   float R = 1.0 - exp(-uRoom*uExposure);
   vec3  up = clamp((col - R)/max(1.0 - R, 1e-3), 0.0, 1.0);
@@ -4483,7 +4496,7 @@ void main(){
       // the three webs. Widths and heights are fractions of what the camera
       // can see at the webs' own depth, so the composition holds on any frame
       // rather than being a set of world units tuned to one window.
-      webW: 0.17, // half-width, as a fraction of the visible half-width
+      webW: ARC0 ? 0.17 : 0.2, // half-width, in visible half-widths
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
       webSpread: 0.6, // where the outer two sit, in visible half-widths
       // The height at which the paper starts going back into the machine. On
@@ -4492,7 +4505,13 @@ void main(){
       webEdge: ARC0 ? 0.5 : 0.82,
       webSpeed: 0.052, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
-      webLift: 1.0,
+      // On ink the webs are the light in the frame and are lifted to it. On
+      // paper they are ON the light, and lifted the same they blew out to
+      // white — the ground and the web became one surface.
+      webLift: ARC0 ? 1.34 : 1.0,
+      inkPivot: 0.62, // where the curve splits ink from paper
+      inkGain: ARC0 ? 0.0 : 1.85, // and how hard; nothing on ink, where the
+      // type is already carried by the block's own contrast
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -5060,6 +5079,7 @@ void main(){
           "uWashC",
           "uWin",
           "uEdge",
+          "uInkC",
         ]);
         ui = api.uniforms(inside, [
           "uTex",
@@ -6019,7 +6039,7 @@ void main(){
           gl.uniform1f(uq.uExposure, P.exposure);
           gl.uniform1f(uq.uPresence, presence * ctx.vis);
           gl.uniform1f(uq.uAlpha, webFade);
-          gl.uniform1f(uq.uLift, P.paper * 1.34 * P.webLift);
+          gl.uniform1f(uq.uLift, P.paper * P.webLift);
           gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, galleyTex);
           gl.uniform1i(uq.uTex, 0);
@@ -6033,6 +6053,7 @@ void main(){
           gl.uniform3f(uq.uAy, 0, hh, 0);
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
+          gl.uniform2f(uq.uInkC, P.inkPivot, P.inkGain);
           gl.bindVertexArray(pageVao);
           const du = GALLEY_COL / GALLEY_W,
             gutter = (GALLEY_COL + GALLEY_GAP) / GALLEY_W;
@@ -6098,6 +6119,7 @@ void main(){
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
           gl.uniform1f(uq.uEdge, 0);
+          gl.uniform2f(uq.uInkC, 0.5, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);
           gl.uniform1f(uq.uWash, 0);
