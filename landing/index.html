@@ -1712,41 +1712,6 @@
 </div>
 <div id="veil" aria-hidden="true"></div>
 
-<div id="hero-arc">
-<section class="hero" data-ground="#14141c">
-  <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
-  <h1><span class="rise" style="--d:.26s">Welcome to</span><em class="rise" style="--d:.38s">the visual world.</em></h1>
-  <div class="heroft">
-    <p class="rise" style="--d:.54s">Your desk already writes the story. Splash teaches the assistant it already uses to show it — charts, maps, motion and scrollytelling, from the reporting you have done.</p>
-    <div class="rise" style="--d:.66s;display:flex;gap:9px">
-      <a href="https://splash.buriedsignals.com/inspiration" style="background:var(--amber);color:var(--ink)">Get inspired</a>
-      <a href="https://buriedsignals.com/join" target="_blank" rel="noopener" style="border:1px solid rgba(237,234,227,.26);color:var(--paper)">Start building &nearr;</a>
-    </div>
-  </div>
-</section>
-
-<section class="chapter" data-ground="#14141c">
-  <div class="cstage">
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">01 · The evidence</div>
-    <h3>Visual journalism makes reporting easier to inspect.</h3>
-    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
-    <div class="src">Source · EJC State of Data Journalism Survey, 2023</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">02 · Trust</div>
-    <h3>Good design helps readers trust the work.</h3>
-    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
-    <div class="src">Source · Information Design Journal · ACM CHI, 2024–25</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">03 · The AI shift</div>
-    <h3>When articles become inputs, visual form becomes identity.</h3>
-    <p>AI turns fixed articles into “liquid information” that machines break apart and recompose.</p>
-    <div class="src">Source · Reuters Institute, 2025</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">04 · Discovery</div>
-    <h3>Visuals create another way for the story to travel.</h3>
-    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
-    <div class="src">Source · Google AI Search documentation</div></div></div>
-  </div>
-</section>
-</div>
-
 <section id="hsec" data-ground="#ffffff">
   <div id="hstage">
     <div id="htrack">
@@ -2054,7 +2019,6 @@
 </footer>
 
 <script src="modules/stage.js"></script>
-<script src="modules/hero.js"></script>
 <script src="modules/word.js"></script>
 <script src="modules/sheets.js"></script>
 <script src="modules/nappe.js"></script>
@@ -2784,9 +2748,32 @@
   addEventListener('load', remark);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remark);
 
-  // le hero tient la page dès le chargement, et la reprend si on y revient
-  trigger = leave;
-  lock(true);
+  /* Le hero tient la page dès le chargement, et la reprend si on y revient.
+   *
+   * SAUF S'IL N'EST PAS LÀ. L'arc du hero est sorti du document (il est garé
+   * dans docs/parked/), et tout ce qui suit n'était atteint que par sa sortie :
+   * c'est elle qui blanchissait le cadre, portait la page jusqu'à la section
+   * Splash et lui disait d'entrer. Sans elle la page s'ouvrait sur un écran
+   * blanc — la section était dans le document mais n'avait jamais reçu
+   * l'ordre. Sans arc, on démarre donc directement dans l'état que cette
+   * sortie laissait derrière elle. */
+  if (chapter) {
+    trigger = leave;
+    lock(true);
+  } else {
+    whited = true;
+    bounds = false;
+    armed = false;
+    running = false;
+    trigger = () => {};
+    lock(false);
+    if (word) {
+      word.classList.add('in');
+      // les copies entières prennent la main juste après l'encrage, en
+      // repérage — ici il n'y a pas d'encrage à attendre
+      setTimeout(() => word.classList.add('done'), 60);
+    }
+  }
 
   /* ---- les bornes des pavés ---------------------------------------------
    * Entre le hero et le blanc, la page défile librement — mais bornée. Le

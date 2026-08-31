@@ -1,0 +1,45 @@
+<!-- PARKED, not served.
+     The hero arc lifted out of landing/index.html on request: the three webs of
+     newsprint and the chapter they break into. Both are ONE gesture in two
+     acts, driven by one module (landing/modules/hero.js, which stays on disk
+     and is simply no longer loaded) and one scroll sequence, so neither could
+     be taken out without the other.
+
+     To put it back: paste this block above <section id="hsec"> in
+     landing/index.html and restore the <script src="modules/hero.js"></script>
+     line beside the other modules.
+-->
+<div id="hero-arc">
+<section class="hero" data-ground="#14141c">
+  <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
+  <h1><span class="rise" style="--d:.26s">Welcome to</span><em class="rise" style="--d:.38s">the visual world.</em></h1>
+  <div class="heroft">
+    <p class="rise" style="--d:.54s">Your desk already writes the story. Splash teaches the assistant it already uses to show it — charts, maps, motion and scrollytelling, from the reporting you have done.</p>
+    <div class="rise" style="--d:.66s;display:flex;gap:9px">
+      <a href="https://splash.buriedsignals.com/inspiration" style="background:var(--amber);color:var(--ink)">Get inspired</a>
+      <a href="https://buriedsignals.com/join" target="_blank" rel="noopener" style="border:1px solid rgba(237,234,227,.26);color:var(--paper)">Start building &nearr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" data-ground="#14141c">
+  <div class="cstage">
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">01 · The evidence</div>
+    <h3>Visual journalism makes reporting easier to inspect.</h3>
+    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
+    <div class="src">Source · EJC State of Data Journalism Survey, 2023</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">02 · Trust</div>
+    <h3>Good design helps readers trust the work.</h3>
+    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
+    <div class="src">Source · Information Design Journal · ACM CHI, 2024–25</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">03 · The AI shift</div>
+    <h3>When articles become inputs, visual form becomes identity.</h3>
+    <p>AI turns fixed articles into “liquid information” that machines break apart and recompose.</p>
+    <div class="src">Source · Reuters Institute, 2025</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">04 · Discovery</div>
+    <h3>Visuals create another way for the story to travel.</h3>
+    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
+    <div class="src">Source · Google AI Search documentation</div></div></div>
+  </div>
+</section>
+</div>
