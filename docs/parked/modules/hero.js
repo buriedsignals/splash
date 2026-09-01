@@ -3880,30 +3880,17 @@ Stage.register(
      * point: the reel is showing what the form looks like, so a chart on it
      * has to be a chart somebody actually published.
      *
-     * They are files, carried by the page rather than fetched, because a
-     * canvas that has drawn a cross-origin image cannot be uploaded as a
-     * texture and a capture has no CORS header to give. */
-    /* Relative to the DOCUMENT, not to this file: an <img> src resolves
-     * against the page's own URL, never against the script's. These bench
-     * pages live in docs/parked/, so the climb is two levels and then back
-     * down into the delivered page's own folder — one copy of the captures,
-     * not two. */
-    const PRESS_BASE = "../../landing/press/";
-    const PRESS_ASSETS = {
-      photo: [
-        "photo-1015.jpg", "photo-1016.jpg", "photo-1043.jpg", "photo-1044.jpg",
-        "photo-1051.jpg", "photo-1074.jpg", "photo-1080.jpg", "photo-219.jpg",
-        "photo-326.jpg", "photo-429.jpg", "photo-447.jpg", "photo-494.jpg",
-      ],
-      chart: [
-        "shot-llms.png",      // Major LLMs ranked by performance — IiB
-        "shot-billions.png",  // Billions — IiB
-        "shot-war.png",       // Four years of the Russia-Ukraine war — IiB
-        "shot-vax.png",       // Vaccines & autism — IiB
-        "shot-leftright.png", // Left vs. Right — IiB
-      ],
-      map: ["shot-owidlife.png", "shot-owidren.png"],
-    };
+     * They arrive as data URIs from press-assets.js, and the reason is not
+     * speed. The galley is a canvas that becomes a texture, and the bench
+     * reads that same canvas back with toDataURL; both throw on a canvas an
+     * image has TAINTED. A file loaded from disk taints one — under file://
+     * a document is its own opaque origin — so a bench page opened straight
+     * off the disk would lose the entire reel the moment a photograph was
+     * drawn into it. A data URI has no origin to be foreign to.
+     *
+     * If the table is not on the page the holes keep their drawn stand-ins
+     * and nothing else changes. */
+    const PRESS_ASSETS = (window.PRESS_DATA || { photo: [], chart: [], map: [] });
 
     const PRESS_IMG = new Map();
     function loadPressImages(done) {
@@ -3911,11 +3898,7 @@ Stage.register(
         ...new Set(
           ARTICLES.map((a) => a.img)
             .concat(LANDMARKS.map((k) => k.img))
-            .concat(
-              Object.values(PRESS_ASSETS)
-                .flat()
-                .map((f) => PRESS_BASE + f),
-            )
+            .concat(Object.values(PRESS_ASSETS).flat())
             .filter(Boolean),
         ),
       ];
@@ -3923,7 +3906,10 @@ Stage.register(
       if (!left) return;
       for (const u of urls) {
         const im = new Image();
-        im.crossOrigin = "anonymous";
+        // Only what is actually fetched over the network needs it — and on a
+        // file:// URL it does not merely do nothing, it fails the check and
+        // the image never loads.
+        if (/^https?:/i.test(u)) im.crossOrigin = "anonymous";
         im.onload = () => {
           PRESS_IMG.set(u, im);
           if (!--left) done();
@@ -4344,7 +4330,7 @@ const flowCol = (A, o) => {
          * press had one ink, and the whole ramp says so. */
         const list = PRESS_ASSETS[kind];
         const real =
-          list && PRESS_IMG.get(PRESS_BASE + list[(seed || 0) % list.length]);
+          list && list.length && PRESS_IMG.get(list[(seed || 0) % list.length]);
         if (real) {
           const br = w / h;
           let sw = real.width,
