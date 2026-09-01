@@ -3938,12 +3938,18 @@ Stage.register(
     let outSec = 0;
     let bootAt = null;
     let waveT = 0;
-    /* WHERE THE LOWEST EDGE OF THE PAPER IS, in viewport pixels, while the
-     * page is being handed over. The frame is opaque — the gaps between the
-     * columns are ground, not a window onto the section below — so what
-     * uncovers the text is this ONE line rising: everything above it is still
-     * the press, everything under it is the page. */
-    let webCut = 0;
+    /* WHERE EACH COLUMN'S FOOT IS, and where the column is across the frame,
+     * in viewport pixels, while the page is being handed over.
+     *
+     * ONE line for the three was a curtain: the lowest foot of the three held
+     * the whole width down, so a column that had already left kept a slab of
+     * ground over the page until the slowest one caught up — a black block
+     * coming up the frame, which is the opposite of paper leaving. Three
+     * feet, one per column, and the page is uncovered under each as that one
+     * goes. The narrow gap between two columns is closed by splitting the
+     * frame at the midpoint between their centres, so there is no strip that
+     * belongs to no column and therefore none that shows through early. */
+    const webBand = [];
     /* The boot screen is clipped by where the paper actually is, so the web
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
@@ -10024,7 +10030,7 @@ void main(){
           /* The three do not run at the same rate. Identical speeds read as
            * one image cut into three; a few per cent apart and the gap between
            * two mastheads keeps changing, which is what says three presses. */
-          webCut = Infinity;
+          webBand.length = 0;
           for (let k = 0; k < 3; k++) {
             /* NORMALISED BY THE LENGTH OF THE REEL. A web's speed on screen
              * is its rate over the fraction of the reel in shot, and that
@@ -10117,7 +10123,6 @@ void main(){
             const rise = ((1 - inE) - outE) * (cyw + hh + webNH);
             // and the foot of this sheet, for the line that uncovers the page
             const foot = cyw - hh - rise;
-            if (foot < webCut) webCut = foot;
             gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
@@ -10154,6 +10159,20 @@ void main(){
               P.ptrSize,
               hh / Math.max(1e-4, hw),
             );
+            /* THIS COLUMN'S FOOT AND ITS PLACE ACROSS THE FRAME. The same
+             * projection the vertex shader uses, run on two numbers instead
+             * of on every vertex — and on the sheet's OWN depth, because the
+             * curve has already put the outer two further away than the
+             * middle. */
+            if (window.__heroHold) {
+              const r = canvas.getBoundingClientRect();
+              const fy = (foot * 2.05) / dz + centre[1];
+              const fx = ((xC * 2.05) / dz + centre[0]) * (ch / Math.max(1, cw));
+              webBand[k] = [
+                r.left + (fx + 0.5) * r.width,
+                r.top + (0.5 - fy) * r.height,
+              ];
+            }
             gl.uniform4f(
               uq.uWin,
               k * gutter,
@@ -10188,17 +10207,12 @@ void main(){
             WEB_WIN[3] = dv;
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
           }
-          /* THE LINE THE PAGE IS UNCOVERED BY. The lowest foot of the three,
-           * projected back to a viewport pixel and biased a few pixels DOWN:
-           * a line placed too high leaves a strip of the page's text standing
-           * over paper, which is the one thing it must never do, while a line
-           * placed too low hides a strip of ground that has nothing on it. */
-          if (window.__heroHold && webCut < Infinity) {
-            const r = canvas.getBoundingClientRect();
-            const cyc =
-              (webCut * 2.05) / Math.max(0.08, zoom) + centre[1];
-            window.__webCut = r.top + ((1 - cyc * 2) / 2) * r.height + 10;
-          }
+          /* Biased ten pixels DOWN, and the bias has only one safe direction:
+           * placed too low a foot hides a strip of ground with nothing on it,
+           * placed too high it leaves a strip of the page's text standing over
+           * paper, which is the one thing it must never do. */
+          if (window.__heroHold && webBand.length === 3)
+            window.__webBands = webBand.map((b) => [b[0], b[1] + 10]);
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
           // the plates are flat, and they are drawn with the same program
           gl.uniform3f(uq.uCurve, 0, 0, 0);

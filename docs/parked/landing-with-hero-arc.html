@@ -342,7 +342,9 @@
      canevas est effacé à zéro — donc le cadre a la forme des feuilles et de
      rien d'autre, et le texte sort de dessous à mesure qu'elles s'en vont.
      Retiré à la fin du geste, quand il n'y a plus de papier pour le cacher. */
-  .chapter.behind{clip-path:inset(var(--cut,100vh) 0 0 0)}
+  /* Rien tant que rien n'a été mesuré : la forme est posée en ligne à chaque
+     frame, et celle-ci est le repli — vide, jamais l'inverse. */
+  .chapter.behind{clip-path:polygon(0 100%,100% 100%,100% 100%,0 100%)}
   /* ET L'UI SE RETIRE PENDANT LA TRAVERSÉE. Un en-tête qui flotte au-dessus
      d'un geste qui prend tout le cadre est la seule chose immobile de l'image,
      donc la seule qu'on regarde. !important pour la même raison que le boot :
@@ -2728,19 +2730,44 @@
   const webbedOut = () => (window.__webOutK === undefined) || window.__webOutK >= 0.999;
   const webbedIn  = () => (window.__webOutK === undefined) || window.__webOutK <= 0.001;
 
-  /* LA COUPE, POSÉE À CHAQUE FRAME. Le module publie le pied le plus bas des
-   * trois feuilles ; la section est coupée à cette hauteur, donc elle n'existe
-   * que SOUS le papier — et sous le papier veut dire sous tout le cadre, pas
-   * seulement sous les feuilles. Tant qu'aucune valeur n'est publiée la coupe
-   * vaut tout l'écran, c'est-à-dire rien de visible : jamais l'inverse. */
+  /* LA COUPE, POSÉE À CHAQUE FRAME — un escalier, pas une ligne.
+   *
+   * Le module publie le pied de CHAQUE colonne et sa place en travers du
+   * cadre. Une seule ligne pour les trois, c'était un rideau : le pied le plus
+   * bas tenait toute la largeur, donc une colonne déjà partie gardait une dalle
+   * de fond par-dessus la page en attendant la plus lente — un bloc noir qui
+   * monte, ce qui est l'inverse de du papier qui s'en va. Ici la page est
+   * découverte sous chaque colonne à mesure que celle-là part.
+   *
+   * La frontière entre deux bandes est le milieu de leurs centres : il n'y a
+   * donc aucune bande qui n'appartienne à personne, et rien ne peut passer par
+   * l'écart entre deux feuilles.
+   *
+   * Les points sont relatifs à la BOÎTE de la section, pas à la fenêtre : elle
+   * se déplace pendant le retour, et une forme mesurée à l'écran et posée dans
+   * son repère à elle se décale d'autant. */
   let cutRaf = 0;
   const cutOn = () => {
     chapter.classList.add('behind');
     const step = () => {
       if (!window.__heroHold) return;
-      const v = window.__webCut;
-      chapter.style.setProperty('--cut',
-        (typeof v === 'number' ? Math.max(0, Math.min(innerHeight, v)) : innerHeight) + 'px');
+      const b = window.__webBands;
+      const H = innerHeight, W = innerWidth;
+      const top = chapter.getBoundingClientRect().top;
+      let shape = 'polygon(0px ' + (H - top) + 'px,' + W + 'px ' + (H - top) +
+                  'px,' + W + 'px ' + (H - top) + 'px,0px ' + (H - top) + 'px)';
+      if (b && b.length === 3) {
+        const xs = [0, (b[0][0] + b[1][0]) / 2, (b[1][0] + b[2][0]) / 2, W];
+        const y = (v) => Math.max(0, Math.min(H, v)) - top;
+        const pts = [];
+        for (let i = 0; i < 3; i++) {
+          pts.push(xs[i].toFixed(1) + 'px ' + y(b[i][1]).toFixed(1) + 'px');
+          pts.push(xs[i + 1].toFixed(1) + 'px ' + y(b[i][1]).toFixed(1) + 'px');
+        }
+        pts.push(W + 'px ' + (H - top) + 'px', '0px ' + (H - top) + 'px');
+        shape = 'polygon(' + pts.join(',') + ')';
+      }
+      chapter.style.clipPath = shape;
       cutRaf = requestAnimationFrame(step);
     };
     step();
@@ -2748,7 +2775,7 @@
   const cutOff = () => {
     cancelAnimationFrame(cutRaf);
     chapter.classList.remove('behind');
-    chapter.style.removeProperty('--cut');
+    chapter.style.clipPath = '';
   };
 
   /* LA TRAVERSÉE, dans l'ordre : la page est tenue, l'ui se retire, la page est
