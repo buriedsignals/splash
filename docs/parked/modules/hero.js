@@ -9595,6 +9595,24 @@ void main(){
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
             const rate = P["webSpd" + k];
+            /* EACH WEB CLIMBS INTO PLACE, and it does not fade. Paper fed off
+             * a press arrives from below at full ink; a sheet that appears
+             * by getting less transparent is a layer being switched on. It
+             * starts a whole frame below where it belongs, so the boot's
+             * mark is covered by newsprint rather than by nothing.
+             *
+             * SMOOTHER-STEP, not an ease-out. A cubic spends most of its
+             * speed in the first third and then crawls, and the eye reads
+             * the crawl as the motion stopping before it has stopped — a
+             * quintic has zero velocity AND zero acceleration at both ends,
+             * so there is no moment where the arrival hands over to the
+             * running speed. That handover was the brutal part; it is not
+             * an event any more. */
+            const inK = clamp01(
+              (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.7,
+            );
+            const inE = inK * inK * inK * (inK * (inK * 6 - 15) + 10);
+
             /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
              * the web stops running and starts EDITING: it holds on a page for
              * a beat and cuts to the next, three pages apart from its
@@ -9626,9 +9644,18 @@ void main(){
                * on the same three pages of the reel however different the
                * pages themselves were. One phase, drawn at load, moves the
                * whole set — the spacing between the webs is untouched. */
+              /* AND THE PAPER IS RUNNING FASTER AS IT ARRIVES. The sheet
+               * used to climb into place while the reel scrolled at its
+               * cruising rate the whole time, so the moment the climb
+               * finished was the moment all the motion stopped at once.
+               * A decaying offset in the scroll gives the press an extra
+               * turn of speed that eases into the running one — the
+               * arrival is a press winding down to its rate, which is what
+               * it looks like on a stone floor. */
+              const runIn = (1 - inE) * 0.075;
               v =
                 (clock * rate + WEB_PHASE + k / 3 +
-                  P["webLag" + k] * PAGE_STEP * 0.5 + 1) % 1;
+                  P["webLag" + k] * PAGE_STEP * 0.5 - runIn + 2) % 1;
             }
             const cxw = (k - 1) * nw * P.webSpread + nw * P.webX,
               cyw = webNH * P.webY;
@@ -9662,15 +9689,6 @@ void main(){
             );
             // and the waves are out of phase too, or the three sheets ripple
             // in lockstep and the eye reads one sheet again
-            /* EACH WEB CLIMBS INTO PLACE, and it does not fade. Paper being
-             * fed off a press arrives from below at full ink; a sheet that
-             * appears by getting less transparent is a layer being switched
-             * on. It starts a whole frame below where it belongs, so the
-             * boot's mark is covered by newsprint rather than by nothing. */
-            const inK = clamp01(
-              (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.05,
-            );
-            const inE = 1 - Math.pow(1 - inK, 3);
             gl.uniform1f(uq.uAlpha, webFade);
             gl.uniform3f(uq.uC, cxw, cyw - (1 - inE) * (hh + webNH) * 2.05, 0);
             gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
