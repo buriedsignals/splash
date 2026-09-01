@@ -4769,7 +4769,28 @@ const flowCol = (A, o) => {
               if (hit) continue;
               g.fillText(line(), cx, ly);
             }
-            if (c > 0) g.fillRect(R(cx - gut / 2), R(y - fs), 1, R(depth * lh));
+          }
+
+          /* THE HAIRLINES, BROKEN WHERE A BLOCK CROSSES THEM.
+           *
+           * A rule between two columns was drawn down the whole depth of the
+           * page, and the blocks are painted before it — so any picture
+           * spanning that boundary got a line ruled straight through it. The
+           * line belongs between COLUMNS OF TYPE; where a block bridges them
+           * there are no two columns to separate. Each boundary is therefore
+           * drawn in the segments the blocks leave it. */
+          for (let c = 1; c < cols; c++) {
+            const lx = R(left + c * (colW + gut) - gut / 2);
+            const gaps = blocks
+              .filter((b) => b.col < c && b.col + b.span > c)
+              .map((b) => [b.at, b.at + b.lines])
+              .sort((a, b) => a[0] - b[0]);
+            let r = 0;
+            for (const [g0, g1] of gaps) {
+              if (g0 > r) g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh));
+              r = Math.max(r, g1);
+            }
+            if (r < depth) g.fillRect(lx, R(y - fs + r * lh), 1, R((depth - r) * lh));
           }
           return top + capH;
         },
