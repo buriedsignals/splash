@@ -4355,18 +4355,24 @@ const flowCol = (A, o) => {
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
             mid = x0 + GALLEY_COL / 2;
-          let y = top + 10;
+          /* The masthead sat sixteen rows under the hairline above it and
+           * seven above the triple rule below — and at twenty-one point the
+           * caps reach fifteen rows above their own baseline, so the name
+           * touched the line over it on all three penny papers. Both gaps are
+           * measured from the size the name actually came out at instead of
+           * being numbers that happened to clear a smaller one. */
+          let y = top + 12;
           rule(left, y, meas, 1);
-          y += 16;
           g.textAlign = "center";
           const ms = fit(A.paper, "700", 21, meas * 0.8);
+          y += R(ms * 0.74) + 13;
           g.font = "700 " + ms + "px " + SERIF;
           g.fillText(A.paper, mid, y);
-          y += 7;
+          y += 12;
           rule(left, y, meas, 3);
           y += 6;
           rule(left, y, meas, 1);
-          y += 11;
+          y += 13;
           g.font = "7px " + SERIF;
           g.textAlign = "left";
           g.fillText(A.date, left, y);
